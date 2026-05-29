@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using WildBunch.Api;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
+using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
 
@@ -12,7 +12,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task PostGamesReturnsCreatedSession()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -32,7 +32,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task GetGameByIdReturnsCreatedSession()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -54,7 +54,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task PostTravelToConnectedTownReturnsSuccessAndUpdatedState()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -82,7 +82,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task GetMissingGameReturnsNotFound()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}");
@@ -93,7 +93,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task TravelMissingGameReturnsNotFound()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync(

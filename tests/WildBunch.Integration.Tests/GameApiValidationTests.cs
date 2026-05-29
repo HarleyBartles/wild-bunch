@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Testing;
 using WildBunch.Api;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
+using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
 
@@ -13,7 +13,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostGamesWithBlankPlayerNameReturnsValidationProblem()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("   "));
@@ -25,7 +25,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostGamesWithMissingPlayerNameReturnsValidationProblem()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games", new { });
@@ -37,7 +37,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostTravelWithBlankDestinationReturnsValidationProblem()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -56,7 +56,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostTravelWithMissingDestinationReturnsValidationProblem()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -75,7 +75,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task GetMalformedGameIdReturnsNotFound()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/games/not-a-guid");
@@ -86,7 +86,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task TravelToUnconnectedTownReturnsSuccessFalse()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));

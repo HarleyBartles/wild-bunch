@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
     <ProjectReference Include="..\WildBunch.Application\WildBunch.Application.csproj" />
     <ProjectReference Include="..\WildBunch.Domain\WildBunch.Domain.csproj" />
   </ItemGroup>
