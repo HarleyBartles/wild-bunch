@@ -203,6 +203,25 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             AddLogEntry(GameLogEntryKind.Travel, "Your horse can no longer carry you, so you continue on foot.");
         }
 
+        if (!progress.Completed)
+        {
+            var trailEvent = Journey.TryCreateTrailEvent();
+            if (trailEvent is not null)
+            {
+                ApplyTrailEvent(trailEvent);
+                var eventSnapshot = Journey.ToSnapshot();
+                AddLogEntry(GameLogEntryKind.Travel, trailEvent.Message);
+
+                return new TravelJourneyStepResult(
+                    true,
+                    JourneyStatus.Active,
+                    trailEvent.Message,
+                    trailEvent.Message,
+                    Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
+                    eventSnapshot);
+            }
+        }
+
         var encounter = Journey.TryCreateEncounter();
         if (encounter is not null)
         {
@@ -252,6 +271,25 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             ongoingMessage,
             Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
             ongoingSnapshot);
+    }
+
+    private void ApplyTrailEvent(JourneyTrailEventState trailEvent)
+    {
+        ArgumentNullException.ThrowIfNull(trailEvent);
+
+        switch (trailEvent.Kind)
+        {
+            case JourneyTrailEventKind.Lucky:
+                Player.SetWallet(Player.Wallet.Adjust(3m));
+                break;
+
+            case JourneyTrailEventKind.BadLuck:
+                Journey!.AddDelayDays(1);
+                break;
+
+            default:
+                throw new InvalidOperationException("Unknown trail event kind.");
+        }
     }
 
     public JourneyEncounterResolutionResult ResolveJourneyEncounter(string choiceId)

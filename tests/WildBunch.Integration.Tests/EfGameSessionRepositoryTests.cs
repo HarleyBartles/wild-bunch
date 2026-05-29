@@ -108,6 +108,36 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(3, reloaded.Journey.PendingEncounter.Choices.Count);
     }
 
+    [Fact]
+    public async Task SaveAfterLuckyTrailEventRoundTripsWalletGain()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var resolver = new TravelResolver();
+        var session = CreateLuckySession();
+
+        await repository.SaveAsync(session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("silvercreek"), loaded.Player.Inventory);
+
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
+
+        await repository.SaveAsync(loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(28m, reloaded!.Player.Wallet.Cash);
+        Assert.NotNull(reloaded.Journey);
+        Assert.Equal(1, reloaded.Journey!.RemainingDays);
+        Assert.Equal(0, reloaded.Journey.DelayDays);
+        Assert.Equal(1, reloaded.Clock.Turn);
+    }
+
     private static EfGameSessionRepository CreateRepository(SqlitePersistenceFixture fixture)
         => new(fixture.CreateContext(), new GameSessionJsonSerializer());
 
@@ -155,6 +185,46 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.Revolver, 1),
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 4)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateLuckySession()
+    {
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var world = new WildBunch.Domain.World.World(
+            new[] { dustvale, silvercreek },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Ira Flint",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("Wears a brass buckle with a cracked star engraving.") }),
+                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
+                SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
+            Array.Empty<Clue>());
+
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);

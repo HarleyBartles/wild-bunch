@@ -109,6 +109,23 @@ public sealed record JourneyEncounterState(
             });
 }
 
+public enum JourneyTrailEventKind
+{
+    Lucky = 0,
+    BadLuck = 1
+}
+
+public sealed record JourneyTrailEventState(
+    JourneyTrailEventKind Kind,
+    string Message)
+{
+    public static JourneyTrailEventState CreateLucky(string message)
+        => new(JourneyTrailEventKind.Lucky, message);
+
+    public static JourneyTrailEventState CreateBadLuck(string message)
+        => new(JourneyTrailEventKind.BadLuck, message);
+}
+
 public sealed class TravelJourney
 {
     internal TravelJourney(TravelPreview preview)
@@ -329,6 +346,26 @@ public sealed class TravelJourney
         }
 
         return null;
+    }
+
+    public JourneyTrailEventState? TryCreateTrailEvent()
+    {
+        if (Status != JourneyStatus.Active || PendingEncounter is not null || RemainingDistance == 0)
+        {
+            return null;
+        }
+
+        if (DaysTravelled != 1)
+        {
+            return null;
+        }
+
+        return Preview.RouteProfile.Risk switch
+        {
+            TrailRisk.Low when Preview.RouteProfile.WaterFeature == WaterFeature.Creek => JourneyTrailEventState.CreateLucky("You spot a hidden cache of trail coins and pocket an extra $3.00."),
+            TrailRisk.Moderate when Preview.RouteProfile.WaterFeature == WaterFeature.Spring => JourneyTrailEventState.CreateBadLuck("A washout forces a detour and costs you one extra delay day."),
+            _ => null
+        };
     }
 }
 

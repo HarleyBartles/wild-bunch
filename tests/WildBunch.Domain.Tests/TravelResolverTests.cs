@@ -101,6 +101,46 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
+    public void AdvanceJourneyDayCanTriggerALuckyTrailEventOnLowRiskRoutes()
+    {
+        var session = CreateLuckyFootSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("silvercreek"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.Contains("extra $3.00", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(28m, session.Player.Wallet.Cash);
+        Assert.Equal(0, session.Journey!.DelayDays);
+        Assert.Equal(1, session.Journey.RemainingDays);
+        Assert.Equal(1, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayCanTriggerABadLuckTrailEventOnModerateRiskRoutes()
+    {
+        var session = CreateBadLuckSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.Contains("delay day", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(1, session.Journey!.DelayDays);
+        Assert.Equal(2, session.Journey.RemainingDays);
+        Assert.Equal(1, session.Clock.Turn);
+    }
+
+    [Fact]
     public void AdvanceJourneyDayRecalculatesPacingWhenHorseFeedRunsOut()
     {
         var session = CreateMountedSession(withHorseFeed: 0);
@@ -293,6 +333,53 @@ public sealed class TravelResolverTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateLuckyFootSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var world = new DomainWorld(
+            new[] { pinecross, silvercreek },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-silver"), pinecross.Id, silvercreek.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateBadLuckSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var world = new DomainWorld(
+            new[] { pinecross, holloway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1),
+            new DomainInventoryItem(DomainItemKind.Revolver, 1),
+            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
     }
 
     private static GameSession CreateHighRiskSession(Wallet? wallet = null, int withRevolverAmmo = 2)
