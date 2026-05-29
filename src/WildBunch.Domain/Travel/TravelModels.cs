@@ -4,11 +4,12 @@ using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Domain.Travel;
 
-public sealed record TravelResult(bool Success, string Message)
+public sealed record TravelResult(bool Success, string Message, string LogMessage, int HeatIncrease)
 {
-    public static TravelResult Failed(string message) => new(false, message);
+    public static TravelResult Failed(string message) => new(false, message, message, 0);
 
-    public static TravelResult Succeeded(string message) => new(true, message);
+    public static TravelResult Succeeded(string message, string logMessage, int heatIncrease)
+        => new(true, message, logMessage, heatIncrease);
 }
 
 public sealed class TravelResolver
@@ -30,11 +31,9 @@ public sealed class TravelResolver
         }
 
         var heatIncrease = Math.Max(1, (int)trail.Risk);
-        session.ApplyTravel(
-            destinationTownId,
-            heatIncrease,
-            $"You travel from {currentTownId.Value} to {destinationTownId.Value}.");
-
-        return TravelResult.Succeeded($"Travelled to {destinationTownId.Value}.");
+        return TravelResult.Succeeded(
+            $"Travelled to {destinationTownId.Value}.",
+            $"You travel from {currentTownId.Value} to {destinationTownId.Value}.",
+            heatIncrease);
     }
 }

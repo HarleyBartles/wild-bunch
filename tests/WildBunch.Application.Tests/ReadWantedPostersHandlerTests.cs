@@ -22,7 +22,7 @@ public sealed class ReadWantedPostersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.NoticeBoard);
         repository.Seed(session);
-        var handler = new ReadWantedPostersHandler(repository, new ReadWantedPostersResolver(), new JournalResolver());
+        var handler = new ReadWantedPostersHandler(repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
 
@@ -43,7 +43,7 @@ public sealed class ReadWantedPostersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.None);
         repository.Seed(session);
-        var handler = new ReadWantedPostersHandler(repository, new ReadWantedPostersResolver(), new JournalResolver());
+        var handler = new ReadWantedPostersHandler(repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
 
@@ -62,7 +62,6 @@ public sealed class ReadWantedPostersHandlerTests
     {
         var handler = new ReadWantedPostersHandler(
             new InMemoryGameSessionRepository(),
-            new ReadWantedPostersResolver(),
             new JournalResolver());
 
         await Assert.ThrowsAsync<WildBunch.Application.Games.Exceptions.GameSessionNotFoundException>(

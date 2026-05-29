@@ -23,7 +23,7 @@ public sealed class GameSessionAggregateRootTests
         var beforeLogCount = session.LogEntries.Count;
         var beforeTurn = session.Clock.Turn;
 
-        session.ApplyCaseUpdate("A public lead is noted.");
+        session.RecordCaseUpdate("A public lead is noted.");
 
         Assert.Equal(beforeTurn + 1, session.Clock.Turn);
         Assert.Equal(beforeLogCount + 1, session.LogEntries.Count);

@@ -1,7 +1,9 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
+using WildBunch.Domain.WantedPosters;
 
 namespace WildBunch.Domain.Game;
 
@@ -83,7 +85,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return session;
     }
 
-    public void ApplyTravel(TownId destinationTownId, int heatIncrease, string message)
+    public void TravelTo(TownId destinationTownId, int heatIncrease, string message)
     {
         Player.TravelTo(destinationTownId);
         Clock.Advance();
@@ -91,7 +93,28 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         AddLogEntry(GameLogEntryKind.Travel, message);
     }
 
-    public void ApplyCaseUpdate(string message, bool advanceClock = true)
+    public ReadWantedPostersResult ReadWantedPosters()
+    {
+        var currentTown = World.GetTown(Player.CurrentTownId);
+
+        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
+        {
+            return ReadWantedPostersResult.Failed("There are no wanted posters here.");
+        }
+
+        var clue = CaseFile.RevealNextPublicClue();
+
+        if (clue is null)
+        {
+            RecordCaseUpdate("You study the wanted posters, but find nothing new.");
+            return ReadWantedPostersResult.Succeeded("You study the wanted posters, but find nothing new.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate($"You study the wanted posters and note a public lead: {clue.Description}.");
+        return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
+    }
+
+    public void RecordCaseUpdate(string message, bool advanceClock = true)
     {
         if (advanceClock)
         {

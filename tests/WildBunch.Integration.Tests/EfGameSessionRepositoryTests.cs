@@ -59,6 +59,7 @@ public sealed class EfGameSessionRepositoryTests
         var travelResult = resolver.Travel(loaded!.World, loaded, new TownId("silvercreek"));
 
         Assert.True(travelResult.Success);
+        loaded.TravelTo(new TownId("silvercreek"), travelResult.HeatIncrease, travelResult.LogMessage);
 
         await repository.SaveAsync(loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);

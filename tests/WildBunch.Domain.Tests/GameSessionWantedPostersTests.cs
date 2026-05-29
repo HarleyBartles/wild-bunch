@@ -10,15 +10,14 @@ using TrailId = WildBunch.Domain.World.TrailId;
 
 namespace WildBunch.Domain.Tests;
 
-public sealed class ReadWantedPostersResolverTests
+public sealed class GameSessionWantedPostersTests
 {
     [Fact]
     public void ReadingWantedPostersInSupportedTownAddsPublicClueAndLogEntry()
     {
         var session = CreateSession(TownServices.NoticeBoard);
-        var resolver = new ReadWantedPostersResolver();
 
-        var result = resolver.ReadWantedPosters(session);
+        var result = session.ReadWantedPosters();
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
@@ -35,10 +34,9 @@ public sealed class ReadWantedPostersResolverTests
     public void ReadingWantedPostersTwiceDoesNotDuplicateTheSameClue()
     {
         var session = CreateSession(TownServices.NoticeBoard);
-        var resolver = new ReadWantedPostersResolver();
 
-        var first = resolver.ReadWantedPosters(session);
-        var second = resolver.ReadWantedPosters(session);
+        var first = session.ReadWantedPosters();
+        var second = session.ReadWantedPosters();
 
         Assert.True(first.Success);
         Assert.True(second.Success);
@@ -53,9 +51,8 @@ public sealed class ReadWantedPostersResolverTests
     public void ReadingWantedPostersInUnsupportedTownFailsAndDoesNotMutateClues()
     {
         var session = CreateSession(TownServices.None);
-        var resolver = new ReadWantedPostersResolver();
 
-        var result = resolver.ReadWantedPosters(session);
+        var result = session.ReadWantedPosters();
 
         Assert.False(result.Success);
         Assert.False(result.SessionChanged);

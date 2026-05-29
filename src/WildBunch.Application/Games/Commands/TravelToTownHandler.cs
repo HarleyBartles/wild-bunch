@@ -29,6 +29,7 @@ public sealed class TravelToTownHandler
 
         if (travelResult.Success)
         {
+            session.TravelTo(destinationTownId, travelResult.HeatIncrease, travelResult.LogMessage);
             await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
         }
 

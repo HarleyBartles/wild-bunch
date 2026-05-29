@@ -18,7 +18,7 @@ namespace WildBunch.Domain.Tests;
 public sealed class TravelResolverTests
 {
     [Fact]
-    public void TravelToConnectedTownMovesPlayerAdvancesClockAndIncreasesHeat()
+    public void TravelToConnectedTownReturnsPlanWithoutMutatingSession()
     {
         var session = CreateSession();
         var resolver = new TravelResolver();
@@ -26,16 +26,38 @@ public sealed class TravelResolverTests
         var result = resolver.Travel(session.World, session, new TownId("silvercreek"));
 
         Assert.True(result.Success);
+        Assert.Equal("Travelled to silvercreek.", result.Message);
+        Assert.Equal("You travel from dustvale to silvercreek.", result.LogMessage);
+        Assert.Equal(1, result.HeatIncrease);
+        Assert.Equal(new TownId("dustvale"), session.Player.CurrentTownId);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(1, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
+        Assert.Equal(0, session.PursuitState.Heat);
+        Assert.Single(session.LogEntries);
+        Assert.Equal(GameLogEntryKind.Opening, session.LogEntries[0].Kind);
+    }
+
+    [Fact]
+    public void GameSessionTravelToAppliesCoherentTransitionAcrossOwnedState()
+    {
+        var session = CreateSession();
+
+        session.TravelTo(new TownId("silvercreek"), heatIncrease: 1, "You travel from dustvale to silvercreek.");
+
         Assert.Equal(new TownId("silvercreek"), session.Player.CurrentTownId);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Clock.Day);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(1, session.PursuitState.Heat);
-        Assert.Contains(session.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
+        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(GameLogEntryKind.Opening, session.LogEntries[0].Kind);
+        Assert.Equal(GameLogEntryKind.Travel, session.LogEntries[1].Kind);
+        Assert.Equal("You travel from dustvale to silvercreek.", session.LogEntries[1].Message);
     }
 
     [Fact]
-    public void TravelToUnconnectedTownFailsAndDoesNotMovePlayer()
+    public void TravelToUnconnectedTownFailsAndDoesNotMutateSession()
     {
         var session = CreateSession();
         var resolver = new TravelResolver();
@@ -43,28 +65,26 @@ public sealed class TravelResolverTests
         var result = resolver.Travel(session.World, session, new TownId("dryridge"));
 
         Assert.False(result.Success);
+        Assert.Equal("No trail connects those towns.", result.Message);
         Assert.Equal(new TownId("dustvale"), session.Player.CurrentTownId);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(0, session.PursuitState.Heat);
+        Assert.Single(session.LogEntries);
+        Assert.Equal(GameLogEntryKind.Opening, session.LogEntries[0].Kind);
     }
 
     [Fact]
     public void TravelDoesNotConsumeWalletOrInventory()
     {
         var session = CreateSession();
-        var resolver = new TravelResolver();
 
-        var result = resolver.Travel(session.World, session, new TownId("silvercreek"));
+        session.TravelTo(new TownId("silvercreek"), heatIncrease: 1, "You travel from dustvale to silvercreek.");
 
-        Assert.True(result.Success);
-        Assert.Equal(new TownId("silvercreek"), session.Player.CurrentTownId);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(1, session.Clock.Day);
-        Assert.Equal(1, session.Clock.Turn);
-        Assert.Equal(1, session.PursuitState.Heat);
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Canteen));
     }
 
     private static GameSession CreateSession()
