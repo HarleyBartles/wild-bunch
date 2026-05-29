@@ -49,12 +49,18 @@
 - Runtime session persistence is JSON snapshot-oriented today.
 - Do not normalize runtime session state into many DB tables unless explicitly directed.
 - Persistence adapters may map the domain to JSON now and tables later without forcing domain refactors.
+- In this greenfield repo, do not preserve compatibility shims for obsolete internal models unless Harley explicitly asks for one.
+- When a task calls for replacement, fully replace the old internal model instead of layering a compatibility adapter over it.
 
 ## Scope Discipline
 - Do only the requested slice.
 - No opportunistic broad refactors.
 - No unrelated feature work.
 - If a needed design decision is missing, return `BLOCKED` or `AMBER` rather than inventing broad architecture.
+
+## Worker Environment
+- The worker environment uses PowerShell, so do not use `&&` for command chaining.
+- Run commands separately or use PowerShell-safe sequencing when multiple commands are needed.
 
 ## Return Format
 - Status: `GREEN` | `AMBER` | `RED` | `BLOCKED`
