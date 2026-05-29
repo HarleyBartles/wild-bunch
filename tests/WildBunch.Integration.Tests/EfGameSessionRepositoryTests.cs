@@ -63,7 +63,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(new TownId("silvercreek"), reloaded!.Player.CurrentTownId);
         Assert.Equal(10, reloaded.Player.Supplies.Units);
         Assert.Equal(25m, reloaded.Player.Wallet.Cash);
-        Assert.True(reloaded.Player.Capabilities.MountedTravelAvailable);
+        Assert.True(new InventoryCapabilityResolver().Resolve(reloaded.Player.Inventory).MountedTravelAvailable);
         Assert.Equal(1, reloaded.Clock.Turn);
         Assert.Equal(1, reloaded.PursuitState.Heat);
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);

@@ -3,6 +3,7 @@ using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Inventory;
 
 namespace WildBunch.Application.Tests;
 
@@ -24,8 +25,10 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.Player.Wallet.Cash, result.Inventory.Wallet.Cash);
         Assert.Equal(session.Player.Inventory.Items.Count, result.Inventory.Items.Count);
         Assert.Equal(session.Player.Inventory.GetHorseCondition(), result.Inventory.HorseCondition);
-        Assert.Equal(session.Player.Capabilities.MountedTravelAvailable, result.Inventory.Capabilities.MountedTravelAvailable);
-        Assert.Equal(session.Player.Capabilities.GunfightCapable, result.Inventory.Capabilities.GunfightCapable);
+        var capabilityResolver = new InventoryCapabilityResolver();
+        var expectedCapabilities = capabilityResolver.Resolve(session.Player.Inventory);
+        Assert.Equal(expectedCapabilities.MountedTravelAvailable, result.Inventory.Capabilities.MountedTravelAvailable);
+        Assert.Equal(expectedCapabilities.GunfightCapable, result.Inventory.Capabilities.GunfightCapable);
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
         Assert.Equal(session.PursuitState.Heat, result.PursuitState.Heat);

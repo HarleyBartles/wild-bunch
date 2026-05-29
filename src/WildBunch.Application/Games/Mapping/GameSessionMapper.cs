@@ -5,8 +5,6 @@ using DomainGameLogEntry = WildBunch.Domain.Game.GameLogEntry;
 using DomainGameSession = WildBunch.Domain.Game.GameSession;
 using DomainPlayer = WildBunch.Domain.Game.Player;
 using DomainPursuitState = WildBunch.Domain.Game.PursuitState;
-using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
-using DomainInventoryCapabilities = WildBunch.Domain.Inventory.InventoryCapabilities;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
 using DomainTrail = WildBunch.Domain.World.Trail;
@@ -35,7 +33,7 @@ public static class GameSessionMapper
             ToDto(session.Player),
             ToDto(session.World),
             ToDto(session.CaseFile),
-            ToInventoryDto(session.Player),
+            InventoryMapper.ToDto(session.Player),
             new GameClockDto(session.Clock.Day, session.Clock.Turn),
             new PursuitStateDto(session.PursuitState.Heat),
             session.LogEntries.Select(ToDto).ToArray());
@@ -48,28 +46,6 @@ public static class GameSessionMapper
             player.Health,
             player.Money,
             player.Supplies.Units);
-
-    private static InventoryDto ToInventoryDto(DomainPlayer playerInventorySource)
-        => new(
-            new WalletDto(playerInventorySource.Wallet.Cash),
-            playerInventorySource.Inventory.Items.Select(ToDto).ToArray(),
-            playerInventorySource.Inventory.GetHorseCondition(),
-            ToDto(playerInventorySource.Capabilities));
-
-    private static InventoryItemDto ToDto(DomainInventoryItem item)
-        => new(item.Kind, item.Quantity, item.HorseCondition);
-
-    private static InventoryCapabilitiesDto ToDto(DomainInventoryCapabilities capabilities)
-        => new(
-            capabilities.MountedTravelAvailable,
-            capabilities.HorseUpkeepRequired,
-            capabilities.NormalRouteWaterSecure,
-            capabilities.TrailUtility,
-            capabilities.CloseThreatAvailable,
-            capabilities.FirearmThreatAvailable,
-            capabilities.GunfightCapable,
-            capabilities.RevolverUsable,
-            capabilities.RifleUsable);
 
     private static WorldDto ToDto(DomainWorld world)
         => new(
