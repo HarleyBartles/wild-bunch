@@ -5,7 +5,11 @@ using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Domain.Game;
 
-public sealed class GameSession
+/// <summary>
+/// Mutable live play-state aggregate root.
+/// Command handlers load and persist this root through <see cref="WildBunch.Application.Abstractions.IGameSessionRepository"/>.
+/// </summary>
+public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private readonly List<GameLogEntry> _logEntries = [];
 
