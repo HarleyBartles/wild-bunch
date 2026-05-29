@@ -12,7 +12,7 @@ public sealed record JournalSnapshot(
     TownId CurrentTownId,
     string CurrentTownName,
     string? AccusationId,
-    string TrueCulpritId,
+    string CaseSummary,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Clue> KnownClues,
     IReadOnlyList<GameLogEntry> LogEntries);

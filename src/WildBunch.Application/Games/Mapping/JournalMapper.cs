@@ -18,7 +18,7 @@ public static class JournalMapper
             new JournalTownDto(snapshot.CurrentTownId.Value, snapshot.CurrentTownName),
             new JournalCaseFileDto(
                 snapshot.AccusationId,
-                snapshot.TrueCulpritId,
+                snapshot.CaseSummary,
                 snapshot.Suspects.Select(ToDto).ToArray(),
                 snapshot.KnownClues.Select(ToDto).ToArray()),
             snapshot.LogEntries.Select(ToDto).ToArray());

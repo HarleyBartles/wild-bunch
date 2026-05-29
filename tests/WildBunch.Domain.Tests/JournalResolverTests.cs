@@ -27,10 +27,11 @@ public sealed class JournalResolverTests
         Assert.Equal(session.Player.CurrentTownId, result.CurrentTownId);
         Assert.Equal("Pinecross", result.CurrentTownName);
         Assert.Equal(session.CaseFile.Accusation?.Value, result.AccusationId);
-        Assert.Equal(session.CaseFile.TrueCulpritId.Value, result.TrueCulpritId);
+        Assert.Equal("Find the culprit before the law closes in.", result.CaseSummary);
         Assert.Equal(session.CaseFile.Suspects.Count, result.Suspects.Count);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.KnownClues.Count);
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
+        Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
 
     [Fact]
@@ -54,6 +55,7 @@ public sealed class JournalResolverTests
         Assert.Equal(beforeLogCount, session.LogEntries.Count);
         Assert.Equal(beforeSuspectCount, session.CaseFile.Suspects.Count);
         Assert.Equal(beforeClueCount, session.CaseFile.KnownClues.Count);
+        Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
 
     private static GameSession CreateSession()

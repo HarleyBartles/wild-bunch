@@ -32,10 +32,11 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.Player.CurrentTownId.Value, result.CurrentTown.Id);
         Assert.Equal("Pinecross", result.CurrentTown.Name);
         Assert.Equal(session.CaseFile.Accusation?.Value, result.CaseFile.AccusationId);
-        Assert.Equal(session.CaseFile.TrueCulpritId.Value, result.CaseFile.TrueCulpritId);
+        Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
         Assert.Equal(session.CaseFile.Suspects.Count, result.CaseFile.Suspects.Count);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
+        Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
 
     [Fact]

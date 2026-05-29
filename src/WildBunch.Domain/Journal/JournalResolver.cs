@@ -1,6 +1,4 @@
 using WildBunch.Domain.Game;
-using WildBunch.Domain.World;
-using DomainWorld = WildBunch.Domain.World.World;
 
 namespace WildBunch.Domain.Journal;
 
@@ -20,7 +18,7 @@ public sealed class JournalResolver
             currentTown.Id,
             currentTown.Name,
             session.CaseFile.Accusation.HasValue ? session.CaseFile.Accusation.Value.Value : null,
-            session.CaseFile.TrueCulpritId.Value,
+            "Find the culprit before the law closes in.",
             session.CaseFile.Suspects.ToArray(),
             session.CaseFile.KnownClues.ToArray(),
             session.LogEntries.ToArray());

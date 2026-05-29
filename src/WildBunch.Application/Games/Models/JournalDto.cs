@@ -16,6 +16,6 @@ public sealed record JournalTownDto(
 
 public sealed record JournalCaseFileDto(
     string? AccusationId,
-    string TrueCulpritId,
+    string CaseSummary,
     IReadOnlyList<SuspectDto> Suspects,
     IReadOnlyList<ClueDto> KnownClues);
