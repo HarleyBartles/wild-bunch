@@ -5,45 +5,32 @@ using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Travel;
 using TownId = WildBunch.Domain.World.TownId;
 
-namespace WildBunch.Application.Games.Commands;
+namespace WildBunch.Application.Games.Queries;
 
-public sealed class TravelToTownHandler
+public sealed class PreviewTravelHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
     private readonly TravelResolver _travelResolver;
 
-    public TravelToTownHandler(IGameSessionRepository gameSessionRepository, TravelResolver travelResolver)
+    public PreviewTravelHandler(IGameSessionRepository gameSessionRepository, TravelResolver travelResolver)
     {
         _gameSessionRepository = gameSessionRepository;
         _travelResolver = travelResolver;
     }
 
-    public async Task<GameTurnResultDto> HandleAsync(TravelToTownCommand command, CancellationToken cancellationToken = default)
+    public async Task<TravelPreviewResultDto> HandleAsync(PreviewTravelQuery query, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(query);
 
-        var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
+        var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
         var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var destinationTownId = new TownId(command.DestinationTownId);
+        var destinationTownId = new TownId(query.DestinationTownId);
         var previewResult = _travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, destinationTownId, session.Player.Inventory);
 
-        if (previewResult.Success && previewResult.Preview is not null)
-        {
-            var travelResult = session.StartJourney(previewResult.Preview);
-            await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
-
-            return new GameTurnResultDto(
-                travelResult.Success,
-                travelResult.Message,
-                GameSessionMapper.ToDto(session),
-                travelResult.Status,
-                travelResult.Journey is null ? null : TravelMapper.ToDto(travelResult.Journey));
-        }
-
-        return new GameTurnResultDto(
+        return new TravelPreviewResultDto(
             previewResult.Success,
             previewResult.Message,
-            GameSessionMapper.ToDto(session));
+            previewResult.Preview is null ? null : TravelMapper.ToDto(previewResult.Preview));
     }
 
     private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(

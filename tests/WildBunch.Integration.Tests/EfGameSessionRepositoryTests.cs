@@ -56,20 +56,25 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var travelResult = resolver.Travel(loaded!.World, loaded.Player.CurrentTownId, new TownId("silvercreek"));
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("holloway"), loaded.Player.Inventory);
 
-        Assert.True(travelResult.Success);
-        loaded.TravelTo(new TownId("silvercreek"), travelResult.HeatIncrease, travelResult.LogMessage);
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
 
         await repository.SaveAsync(loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(new TownId("silvercreek"), reloaded!.Player.CurrentTownId);
+        Assert.Equal(new TownId("dustvale"), reloaded!.Player.CurrentTownId);
         Assert.Equal(25m, reloaded.Player.Wallet.Cash);
         Assert.True(new DomainInventoryCapabilityResolver().Resolve(reloaded.Player.Inventory).MountedTravelAvailable);
         Assert.Equal(1, reloaded.Clock.Turn);
-        Assert.Equal(1, reloaded.PursuitState.Heat);
+        Assert.Equal(2, reloaded.PursuitState.Heat);
+        Assert.NotNull(reloaded.Journey);
+        Assert.Equal(1, reloaded.Journey!.RemainingDays);
+        Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(1, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
     }
 
@@ -80,13 +85,15 @@ public sealed class EfGameSessionRepositoryTests
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
         var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
 
         var world = new WildBunch.Domain.World.World(
-            new[] { dustvale, silvercreek, dryridge },
+            new[] { dustvale, silvercreek, holloway, dryridge },
             new[]
             {
-                new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low)
+                new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low),
+                new Trail(new TrailId("trail-2"), dustvale.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.River)
             });
 
         var suspects = new[]

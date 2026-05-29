@@ -5,6 +5,13 @@ using DomainGameLogEntry = WildBunch.Domain.Game.GameLogEntry;
 using DomainGameSession = WildBunch.Domain.Game.GameSession;
 using DomainPlayer = WildBunch.Domain.Game.Player;
 using DomainPursuitState = WildBunch.Domain.Game.PursuitState;
+using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
+using DomainTravelJourney = WildBunch.Domain.Travel.TravelJourney;
+using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
+using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
+using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
+using DomainTravelMode = WildBunch.Domain.Travel.TravelMode;
+using DomainJourneyStatus = WildBunch.Domain.Travel.JourneyStatus;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
 using DomainTrail = WildBunch.Domain.World.Trail;
@@ -36,6 +43,7 @@ public static class GameSessionMapper
             InventoryMapper.ToDto(session.Player),
             new GameClockDto(session.Clock.Day, session.Clock.Turn),
             new PursuitStateDto(session.PursuitState.Heat),
+            session.Journey is null ? null : ToDto(session.Journey),
             session.LogEntries.Select(ToDto).ToArray());
     }
 
@@ -62,6 +70,47 @@ public static class GameSessionMapper
             trail.FromTownId.Value,
             trail.ToTownId.Value,
             trail.Risk);
+
+    private static TravelJourneyDto ToDto(DomainTravelJourney journey)
+        => ToDto(journey.ToSnapshot());
+
+    private static TravelJourneyDto ToDto(DomainJourneySnapshot snapshot)
+        => new(
+            snapshot.OriginTownId.Value,
+            snapshot.OriginTownName,
+            snapshot.DestinationTownId.Value,
+            snapshot.DestinationTownName,
+            snapshot.TravelMode,
+            snapshot.Status,
+            snapshot.MountedTravelAvailable,
+            snapshot.WaterSecure,
+            snapshot.TotalDistance,
+            snapshot.RemainingDistance,
+            snapshot.ExpectedDays,
+            snapshot.RemainingDays,
+            snapshot.RequiredFood,
+            snapshot.AvailableFood,
+            snapshot.RequiredHorseFeed,
+            snapshot.AvailableHorseFeed,
+            snapshot.HorseCondition,
+            snapshot.DaysTravelled,
+            snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),
+            snapshot.Warnings,
+            ToDto(snapshot.RouteProfile));
+
+    private static TravelRouteProfileDto ToDto(DomainTravelRouteProfile routeProfile)
+        => new(
+            routeProfile.TrailId,
+            routeProfile.Risk,
+            routeProfile.Terrain,
+            routeProfile.WaterFeature,
+            routeProfile.TotalDistance,
+            routeProfile.MountedDailyProgress,
+            routeProfile.FootDailyProgress,
+            routeProfile.Warnings);
+
+    private static JourneyEncounterDto ToDto(DomainJourneyEncounter encounter)
+        => new(encounter.Kind, encounter.Message);
 
     private static CaseFileDto ToDto(DomainCaseFile caseFile)
     {

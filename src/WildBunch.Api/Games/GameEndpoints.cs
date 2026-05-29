@@ -50,11 +50,21 @@ public static class GameEndpoints
             .Produces<WantedPostersResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapGet("{id:guid}/travel/preview/{destinationTownId}", PreviewTravelAsync)
+            .WithName("PreviewTravel")
+            .Produces<TravelPreviewResultDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         games.MapPost("{id:guid}/travel", TravelAsync)
             .WithName("TravelGame")
             .Accepts<TravelRequest>("application/json")
             .Produces<GameTurnResultDto>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
+
+        games.MapPost("{id:guid}/travel/advance", AdvanceTravelDayAsync)
+            .WithName("AdvanceTravelDay")
+            .Produces<GameTurnResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
         return app;
@@ -196,6 +206,23 @@ public static class GameEndpoints
         }
     }
 
+    private static async Task<IResult> PreviewTravelAsync(
+        Guid id,
+        string destinationTownId,
+        PreviewTravelHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new PreviewTravelQuery(id, destinationTownId), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
     private static async Task<IResult> TravelAsync(
         Guid id,
         TravelRequest? request,
@@ -211,6 +238,22 @@ public static class GameEndpoints
         try
         {
             var result = await handler.HandleAsync(new TravelToTownCommand(id, validatedRequest.DestinationTownId), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> AdvanceTravelDayAsync(
+        Guid id,
+        AdvanceTravelDayHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new AdvanceTravelDayCommand(id), cancellationToken);
             return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)

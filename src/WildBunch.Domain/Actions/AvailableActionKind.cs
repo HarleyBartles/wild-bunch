@@ -9,5 +9,6 @@ public enum AvailableActionKind
     StayAtLodging = 4,
     VisitDoctor = 5,
     SendTelegram = 6,
-    ReadWantedPosters = 7
+    ReadWantedPosters = 7,
+    AdvanceTravelDay = 8
 }

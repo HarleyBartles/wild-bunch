@@ -75,6 +75,10 @@ public sealed class GameApiJournalTests
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
+        var advanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, advanceResponse.StatusCode);
+
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
         Assert.Equal(HttpStatusCode.OK, journalResponse.StatusCode);

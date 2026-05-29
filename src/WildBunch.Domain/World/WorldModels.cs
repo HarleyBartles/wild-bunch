@@ -6,11 +6,29 @@ public readonly record struct TrailId(string Value);
 
 public sealed record Town(TownId Id, string Name, TownServices Services);
 
+public enum TrailTerrain
+{
+    OpenRange = 0,
+    Badlands = 1,
+    Hills = 2,
+    Mountains = 3
+}
+
+public enum WaterFeature
+{
+    None = 0,
+    Creek = 1,
+    River = 2,
+    Spring = 3
+}
+
 public sealed record Trail(
     TrailId Id,
     TownId FromTownId,
     TownId ToTownId,
-    TrailRisk Risk)
+    TrailRisk Risk,
+    TrailTerrain Terrain = TrailTerrain.OpenRange,
+    WaterFeature WaterFeature = WaterFeature.Creek)
 {
     public bool Connects(TownId townId) => FromTownId.Equals(townId) || ToTownId.Equals(townId);
 

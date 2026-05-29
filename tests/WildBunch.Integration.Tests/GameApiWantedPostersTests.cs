@@ -106,6 +106,14 @@ public sealed class GameApiWantedPostersTests
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
+        var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
+
+        var secondAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, secondAdvanceResponse.StatusCode);
+
         var response = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -115,8 +123,8 @@ public sealed class GameApiWantedPostersTests
         Assert.NotNull(result);
         Assert.False(result!.Success);
         Assert.Equal("holloway", result.CurrentJournal.CurrentTown.Id);
-        Assert.Equal(1, result.CurrentJournal.Clock.Turn);
-        Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
+        Assert.Equal(2, result.CurrentJournal.Clock.Turn);
+        Assert.Equal(4, result.CurrentJournal.LogEntries.Count);
         Assert.DoesNotContain(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
 
         var payload = await response.Content.ReadAsStringAsync();

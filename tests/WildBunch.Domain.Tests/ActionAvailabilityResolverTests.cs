@@ -1,6 +1,7 @@
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
@@ -82,6 +83,22 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.Travel);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewMap);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewJournal);
+    }
+
+    [Fact]
+    public void ActiveJourneyReplacesTravelWithAdvanceTravelDay()
+    {
+        var session = CreateSession(TownServices.Supplies);
+        var travelResolver = new TravelResolver();
+        var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("connected"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var resolver = new ActionAvailabilityResolver();
+        var result = resolver.Resolve(session);
+
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.Travel);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
     }
 
     private static GameSession CreateSession(TownServices currentTownServices, bool addTrail = true)

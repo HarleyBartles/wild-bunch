@@ -1,6 +1,7 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Games.Models;
@@ -14,6 +15,7 @@ public sealed record GameSessionDto(
     InventoryDto Inventory,
     GameClockDto Clock,
     PursuitStateDto PursuitState,
+    TravelJourneyDto? Journey,
     IReadOnlyList<GameLogEntryDto> LogEntries);
 
 public sealed record PlayerDto(
@@ -97,7 +99,69 @@ public sealed record ClueDto(
 public sealed record GameTurnResultDto(
     bool Success,
     string Message,
-    GameSessionDto CurrentSession);
+    GameSessionDto CurrentSession,
+    JourneyStatus? JourneyStatus = null,
+    TravelJourneyDto? Journey = null);
+
+public sealed record TravelPreviewDto(
+    string OriginTownId,
+    string OriginTownName,
+    string DestinationTownId,
+    string DestinationTownName,
+    TravelMode TravelMode,
+    bool MountedTravelAvailable,
+    bool WaterSecure,
+    int TotalDistance,
+    int RemainingDistance,
+    int ExpectedDays,
+    int RemainingDays,
+    int RequiredFood,
+    int AvailableFood,
+    int RequiredHorseFeed,
+    int AvailableHorseFeed,
+    HorseCondition? HorseCondition,
+    IReadOnlyList<string> Warnings,
+    TravelRouteProfileDto RouteProfile);
+
+public sealed record TravelPreviewResultDto(
+    bool Success,
+    string Message,
+    TravelPreviewDto? Preview);
+
+public sealed record TravelRouteProfileDto(
+    string TrailId,
+    TrailRisk Risk,
+    TrailTerrain Terrain,
+    WaterFeature WaterFeature,
+    int TotalDistance,
+    int MountedDailyProgress,
+    int FootDailyProgress,
+    IReadOnlyList<string> Warnings);
+
+public sealed record TravelJourneyDto(
+    string OriginTownId,
+    string OriginTownName,
+    string DestinationTownId,
+    string DestinationTownName,
+    TravelMode TravelMode,
+    JourneyStatus Status,
+    bool MountedTravelAvailable,
+    bool WaterSecure,
+    int TotalDistance,
+    int RemainingDistance,
+    int ExpectedDays,
+    int RemainingDays,
+    int RequiredFood,
+    int AvailableFood,
+    int RequiredHorseFeed,
+    int AvailableHorseFeed,
+    HorseCondition? HorseCondition,
+    int DaysTravelled,
+    JourneyEncounterDto? PendingEncounter,
+    IReadOnlyList<string> Warnings,
+    TravelRouteProfileDto RouteProfile);
+
+public sealed record JourneyEncounterDto(string Kind, string Message);
 
 public sealed record GameClockDto(int Day, int Turn);
 

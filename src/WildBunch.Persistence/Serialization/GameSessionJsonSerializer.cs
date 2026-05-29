@@ -3,6 +3,7 @@ using System.Text.Json;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainInventoryItemKind = WildBunch.Domain.Inventory.ItemKind;
@@ -44,6 +45,7 @@ public sealed class GameSessionJsonSerializer
         CaseFileSnapshot CaseFile,
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
+        TravelJourneySnapshot? Journey,
         IReadOnlyList<GameLogEntrySnapshot> LogEntries)
     {
         public static GameSessionSnapshot FromDomain(GameSession session)
@@ -55,6 +57,7 @@ public sealed class GameSessionJsonSerializer
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
+                session.Journey?.ToSnapshot(),
                 session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray());
 
         public GameSession ToDomain()
@@ -64,6 +67,7 @@ public sealed class GameSessionJsonSerializer
             var player = PlayerSnapshot.ToDomain(Player);
             var pursuitState = PursuitStateSnapshot.ToDomain(PursuitState);
             var clock = GameClockSnapshot.ToDomain(Clock);
+            var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey);
             var session = GameSessionRehydrator.Create(
                 new GameSessionId(Id),
                 player,
@@ -71,7 +75,8 @@ public sealed class GameSessionJsonSerializer
                 caseFile,
                 pursuitState,
                 clock,
-                Status);
+                Status,
+                journey);
 
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             return session;
@@ -308,7 +313,8 @@ public sealed class GameSessionJsonSerializer
                 typeof(CaseFile),
                 typeof(PursuitState),
                 typeof(GameClock),
-                typeof(GameStatus)
+                typeof(GameStatus),
+                typeof(TravelJourney)
             },
             modifiers: null);
 
@@ -321,14 +327,15 @@ public sealed class GameSessionJsonSerializer
             CaseFile caseFile,
             PursuitState pursuitState,
             GameClock clock,
-            GameStatus status)
+            GameStatus status,
+            TravelJourney? journey)
         {
             if (Constructor is null)
             {
                 throw new InvalidOperationException("Unable to locate the GameSession persistence constructor.");
             }
 
-            return (GameSession)Constructor.Invoke(new object[] { id, player, world, caseFile, pursuitState, clock, status });
+            return (GameSession)Constructor.Invoke(new object[] { id, player, world, caseFile, pursuitState, clock, status, journey });
         }
 
         public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)

@@ -43,6 +43,18 @@ public sealed class Inventory
         return horse?.HorseCondition;
     }
 
+    public void SetHorseCondition(HorseCondition horseCondition)
+    {
+        var index = _items.FindIndex(item => item.Kind == ItemKind.Horse);
+        if (index < 0)
+        {
+            throw new InvalidOperationException("Horse is not present in inventory.");
+        }
+
+        var horse = _items[index];
+        _items[index] = new InventoryItem(ItemKind.Horse, horse.Quantity, horseCondition);
+    }
+
     public void AddItem(InventoryItem item)
         => AddItem(item.Kind, item.Quantity, item.HorseCondition);
 

@@ -1,6 +1,7 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainWorld = WildBunch.Domain.World.World;
@@ -24,7 +25,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         CaseFile caseFile,
         PursuitState pursuitState,
         GameClock clock,
-        GameStatus status)
+        GameStatus status,
+        TravelJourney? journey)
     {
         Id = id;
         Player = player;
@@ -33,6 +35,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         PursuitState = pursuitState;
         Clock = clock;
         Status = status;
+        Journey = journey;
     }
 
     public GameSessionId Id { get; }
@@ -48,6 +51,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     public PursuitState PursuitState { get; }
 
     public GameClock Clock { get; }
+
+    public TravelJourney? Journey { get; private set; }
 
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
@@ -81,18 +86,151 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             caseFile,
             new PursuitState(),
             new GameClock(),
-            GameStatus.Active);
+            GameStatus.Active,
+            journey: null);
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
     }
 
-    public void TravelTo(TownId destinationTownId, int heatIncrease, string message)
+    public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
-        Player.TravelTo(destinationTownId);
+        ArgumentNullException.ThrowIfNull(preview);
+
+        if (Journey is not null && Journey.Status == JourneyStatus.Active)
+        {
+            return TravelJourneyStepResult.Failed("You are already on the trail.");
+        }
+
+        Journey = TravelJourney.Start(preview);
+        AddLogEntry(
+            GameLogEntryKind.Travel,
+            $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName}.");
+
+        return new TravelJourneyStepResult(
+            true,
+            JourneyStatus.Active,
+            $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName}.",
+            $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName}.",
+            0,
+            Journey.ToSnapshot());
+    }
+
+    public TravelJourneyStepResult AdvanceJourneyDay()
+    {
+        if (Journey is null)
+        {
+            return TravelJourneyStepResult.Failed("No active journey is underway.");
+        }
+
+        if (Journey.Status != JourneyStatus.Active)
+        {
+            return new TravelJourneyStepResult(
+                false,
+                Journey.Status,
+                "The journey is not active.",
+                "The journey is not active.",
+                0,
+                Journey.ToSnapshot());
+        }
+
+        if (Journey.PendingEncounter is not null)
+        {
+            Journey.MarkInterrupted(Journey.PendingEncounter);
+            var interruptedSnapshot = Journey.ToSnapshot();
+            var interruptedMessage = Journey.PendingEncounter.Message;
+            AddLogEntry(GameLogEntryKind.Travel, interruptedMessage);
+            return new TravelJourneyStepResult(false, Journey.Status, interruptedMessage, interruptedMessage, 0, interruptedSnapshot);
+        }
+
+        var capabilities = new InventoryCapabilityResolver().Resolve(Player.Inventory);
+        if (Journey.TravelMode == TravelMode.Mounted && !capabilities.MountedTravelAvailable)
+        {
+            Journey.RecalculatePacing(TravelMode.Foot);
+        }
+
+        if (Player.Inventory.GetQuantity(ItemKind.Food) < 1)
+        {
+            Journey.MarkFailed();
+            var message = "The trail grinds to a halt when your food runs out.";
+            AddLogEntry(GameLogEntryKind.Travel, message);
+            var failedSnapshot = Journey.ToSnapshot();
+            Journey = null;
+            return new TravelJourneyStepResult(false, JourneyStatus.Failed, message, message, 0, failedSnapshot);
+        }
+
+        Player.Inventory.RemoveQuantity(ItemKind.Food, 1);
+        Journey.ConsumeFood();
+
+        var horseWentFoot = false;
+        var switchToFootAfterToday = false;
+
+        if (Journey.TravelMode == TravelMode.Mounted)
+        {
+            if (!Journey.TryConsumeHorseFeed())
+            {
+                var nextHorseCondition = AdvanceHorseCondition(Player.Inventory.GetHorseCondition() ?? HorseCondition.Healthy);
+                Player.Inventory.SetHorseCondition(nextHorseCondition);
+                Journey.SetHorseCondition(nextHorseCondition);
+
+                if (nextHorseCondition != HorseCondition.Healthy)
+                {
+                    switchToFootAfterToday = true;
+                }
+            }
+            else
+            {
+                Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, 1);
+            }
+        }
+
         Clock.Advance();
-        PursuitState.IncreaseHeat(heatIncrease);
-        AddLogEntry(GameLogEntryKind.Travel, message);
+        var progress = Journey.AdvanceOneDay();
+        if (switchToFootAfterToday)
+        {
+            Journey.RecalculatePacing(TravelMode.Foot);
+            horseWentFoot = true;
+        }
+        PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
+
+        if (horseWentFoot)
+        {
+            AddLogEntry(GameLogEntryKind.Travel, "Your horse can no longer carry you, so you continue on foot.");
+        }
+
+        if (progress.Completed)
+        {
+            var destinationTownId = Journey.Preview.DestinationTownId;
+            var destinationTownName = Journey.Preview.DestinationTownName;
+            var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
+            Journey.MarkCompleted();
+            var completedSnapshot = Journey.ToSnapshot();
+            Player.TravelTo(destinationTownId);
+            AddLogEntry(
+                GameLogEntryKind.Travel,
+                $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
+            Journey = null;
+
+            return new TravelJourneyStepResult(
+                true,
+                JourneyStatus.Completed,
+                $"You reach {destinationTownName}.",
+                $"You reach {destinationTownName} after {progress.DistanceTravelled} distance units.",
+                heatIncrease,
+                completedSnapshot);
+        }
+
+        var ongoingSnapshot = Journey.ToSnapshot();
+        var ongoingMessage = $"One trail day passes. {Journey.RemainingDays} day(s) remain on the route.";
+        AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
+
+        return new TravelJourneyStepResult(
+            true,
+            JourneyStatus.Active,
+            ongoingMessage,
+            ongoingMessage,
+            Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
+            ongoingSnapshot);
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
@@ -107,6 +245,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if (offer.ItemKind == ItemKind.Horse && offer.HorseCondition is null)
         {
             return StorePurchaseResult.Failed("Horse offers must define a horse condition.");
+        }
+
+        if (offer.ItemKind == ItemKind.Horse && quantity != 1)
+        {
+            return StorePurchaseResult.Failed("Horse items must have a quantity of 1.");
+        }
+
+        if (quantity != 1 && !IsStackableItemKind(offer.ItemKind))
+        {
+            return StorePurchaseResult.Failed($"{offer.ItemKind} does not stack.");
         }
 
         var totalPrice = offer.Price * quantity;
@@ -215,4 +363,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private static bool IsStackableItemKind(ItemKind kind)
         => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo or ItemKind.RifleAmmo;
+
+    private static HorseCondition AdvanceHorseCondition(HorseCondition currentHorseCondition)
+        => currentHorseCondition switch
+        {
+            HorseCondition.Healthy => HorseCondition.Hungry,
+            HorseCondition.Hungry => HorseCondition.Exhausted,
+            HorseCondition.Exhausted => HorseCondition.Lame,
+            HorseCondition.Lame => HorseCondition.Dead,
+            HorseCondition.Dead => HorseCondition.Dead,
+            _ => HorseCondition.Hungry
+        };
 }
