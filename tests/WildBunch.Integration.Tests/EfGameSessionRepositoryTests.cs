@@ -85,7 +85,7 @@ public sealed class EfGameSessionRepositoryTests
             new[] { dustvale, silvercreek, dryridge },
             new[]
             {
-                new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, SupplyCost: 2, TrailRisk.Low)
+                new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low)
             });
 
         var suspects = new[]

@@ -392,7 +392,6 @@ export default function App() {
                   </div>
                   <div className="destination-meta">
                     <span>{trails.length} trail{trails.length === 1 ? "" : "s"}</span>
-                    <span>{Math.min(...trails.map((trail) => trail.supplyCost))} min supplies</span>
                     <span>{trails.map((trail) => formatRisk(trail.risk)).join(", ")}</span>
                   </div>
                 </button>

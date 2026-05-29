@@ -46,7 +46,7 @@ public sealed class MigrationTests
 
         var world = new WildBunch.Domain.World.World(
             new[] { dustvale, silvercreek },
-            new[] { new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, 2, TrailRisk.Low) });
+            new[] { new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low) });
 
         var suspects = new[]
         {

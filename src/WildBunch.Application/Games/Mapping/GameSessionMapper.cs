@@ -61,7 +61,6 @@ public static class GameSessionMapper
             trail.Id.Value,
             trail.FromTownId.Value,
             trail.ToTownId.Value,
-            trail.SupplyCost,
             trail.Risk);
 
     private static CaseFileDto ToDto(DomainCaseFile caseFile)

@@ -25,13 +25,13 @@ internal static class SeedWorldBuilder
 
         var trails = new[]
         {
-            new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, SupplyCost: 2, TrailRisk.Low),
-            new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, SupplyCost: 3, TrailRisk.Moderate),
-            new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, SupplyCost: 2, TrailRisk.Low),
-            new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, SupplyCost: 4, TrailRisk.High),
-            new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, SupplyCost: 1, TrailRisk.Low),
-            new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, SupplyCost: 3, TrailRisk.Moderate),
-            new Trail(new TrailId("trail-red-ember"), redmesa.Id, emberfall.Id, SupplyCost: 5, TrailRisk.High)
+            new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low),
+            new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate),
+            new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low),
+            new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High),
+            new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low),
+            new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate),
+            new Trail(new TrailId("trail-red-ember"), redmesa.Id, emberfall.Id, TrailRisk.High)
         };
 
         return new World(towns, trails);

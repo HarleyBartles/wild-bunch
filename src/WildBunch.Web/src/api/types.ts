@@ -83,7 +83,6 @@ export interface TrailDto {
   id: string;
   fromTownId: string;
   toTownId: string;
-  supplyCost: number;
   risk: TrailRisk;
 }
 

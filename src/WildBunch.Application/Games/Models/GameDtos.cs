@@ -58,7 +58,6 @@ public sealed record TrailDto(
     string Id,
     string FromTownId,
     string ToTownId,
-    int SupplyCost,
     TrailRisk Risk);
 
 public sealed record CaseFileDto(

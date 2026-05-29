@@ -64,7 +64,7 @@ public sealed class GetJournalHandlerTests
             new[] { pinecross, redmesa },
             new[]
             {
-                new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, SupplyCost: 2, TrailRisk.Low)
+                new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low)
             });
 
         var suspects = new[]

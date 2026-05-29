@@ -10,7 +10,6 @@ public sealed record Trail(
     TrailId Id,
     TownId FromTownId,
     TownId ToTownId,
-    int SupplyCost,
     TrailRisk Risk)
 {
     public bool Connects(TownId townId) => FromTownId.Equals(townId) || ToTownId.Equals(townId);

@@ -77,7 +77,7 @@ public sealed class ReadWantedPostersHandlerTests
             new[] { currentTown, connectedTown },
             new[]
             {
-                new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, SupplyCost: 2, TrailRisk.Low)
+                new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low)
             });
 
         var suspects = new[]
