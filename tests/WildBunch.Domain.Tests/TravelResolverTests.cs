@@ -7,6 +7,7 @@ using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
+using CanteenState = WildBunch.Domain.Inventory.CanteenState;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
 using Trail = WildBunch.Domain.World.Trail;
@@ -102,6 +103,70 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
         Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDaySwitchesToFootImmediatelyWhenHorseBecomesLameAndRecalculatesRemainingDays()
+    {
+        var session = CreateProgressionSession(new HorseTravelState(0, 0, 2), TrailTerrain.Hills, WaterFeature.River);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
+        Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
+        Assert.Equal(1, session.Journey.RemainingDays);
+        Assert.Equal(1, result.Journey.RemainingDays);
+        Assert.Equal(new HorseTravelState(0, 0, 3), session.Player.Inventory.GetHorseState());
+        Assert.Contains("goes lame", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDaySwitchesToFootImmediatelyWhenHorseDiesAndRecalculatesRemainingDays()
+    {
+        var session = CreateProgressionSession(new HorseTravelState(1, 1, 0), TrailTerrain.Badlands, WaterFeature.None, canteenCharges: 0, trailRisk: TrailRisk.Moderate);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
+        Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
+        Assert.Equal(3, session.Journey.RemainingDays);
+        Assert.Equal(3, result.Journey.RemainingDays);
+        Assert.Equal(new HorseTravelState(2, 2, 1), session.Player.Inventory.GetHorseState());
+        Assert.Contains("dies", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayStillAssessesHorseUpkeepOnFootRoutesWhenTheHorseIsLiving()
+    {
+        var session = CreateProgressionSession(HorseTravelState.Healthy, TrailTerrain.Badlands, WaterFeature.None, withSaddle: false, canteenCharges: 0);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
+        Assert.Equal(TravelMode.Foot, preview.TravelMode);
+        Assert.False(preview.MountedTravelAvailable);
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
+        Assert.Equal(new HorseTravelState(1, 1, 1), session.Player.Inventory.GetHorseState());
+        Assert.Equal(1, session.Journey.RemainingDays);
     }
 
     [Fact]
@@ -498,6 +563,40 @@ public sealed class TravelResolverTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateProgressionSession(
+        HorseTravelState horseState,
+        TrailTerrain terrain,
+        WaterFeature waterFeature,
+        bool withSaddle = true,
+        int canteenCharges = 2,
+        TrailRisk trailRisk = TrailRisk.Low)
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, midway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, trailRisk, terrain, waterFeature)
+            });
+
+        var caseFile = CreateCaseFile();
+        var items = new List<DomainInventoryItem>
+        {
+            new(DomainItemKind.Food, 3),
+            new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(canteenCharges, 2)),
+            new(DomainItemKind.Horse, 1, horseState),
+            new(DomainItemKind.Knife, 1)
+        };
+
+        if (withSaddle)
+        {
+            items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
+        }
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items));
     }
 
     private static DomainWorld CreateWorld()

@@ -174,6 +174,36 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(0, reloaded.Player.Inventory.GetCanteenState()!.Charges);
     }
 
+    [Fact]
+    public async Task SaveAfterHorseLossFallbackRoundTripsFootTravelAndHorseState()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var resolver = new TravelResolver();
+        var session = CreateHorseLossFallbackSession();
+
+        await repository.SaveAsync(session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("midway"), loaded.Player.Inventory);
+
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
+
+        await repository.SaveAsync(loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.NotNull(reloaded!.Journey);
+        Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, reloaded.Journey!.TravelMode);
+        Assert.Equal(1, reloaded.Journey.RemainingDays);
+        Assert.Equal(new DomainHorseTravelState(0, 0, 3), reloaded.Player.Inventory.GetHorseState());
+        Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("goes lame", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static EfGameSessionRepository CreateRepository(SqlitePersistenceFixture fixture)
         => new(fixture.CreateContext(), new GameSessionJsonSerializer());
 
@@ -295,6 +325,40 @@ public sealed class EfGameSessionRepositoryTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateHorseLossFallbackSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
+        var world = new WildBunch.Domain.World.World(
+            new[] { pinecross, midway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, new DomainHorseTravelState(0, 0, 2)),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static CaseFile CreateCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge)
+        };
+
+        return new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
     }
 
     private static GameSession CreateHighRiskSession()

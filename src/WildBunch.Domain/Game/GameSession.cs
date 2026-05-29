@@ -167,8 +167,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Player.Inventory.RemoveQuantity(ItemKind.Food, 1);
         Journey.ConsumeFood();
 
-        var horseWentFoot = false;
-        var switchToFootAfterToday = false;
         var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
             Journey.Preview.RouteProfile.Terrain,
             Journey.Preview.RouteProfile.WaterFeature,
@@ -193,24 +191,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.SetHorseState(upkeep.HorseState);
         }
 
+        var horseLostMessage = string.Empty;
         if (upkeep.MountedTravelLost && Journey.TravelMode == TravelMode.Mounted)
         {
-            switchToFootAfterToday = true;
+            horseLostMessage = DescribeHorseLoss(upkeep.HorseState);
+            Journey.RecalculatePacing(TravelMode.Foot);
         }
 
         Clock.Advance();
         var progress = Journey.AdvanceOneDay();
-        if (switchToFootAfterToday)
-        {
-            Journey.RecalculatePacing(TravelMode.Foot);
-            horseWentFoot = true;
-        }
         PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
-
-        if (horseWentFoot)
-        {
-            AddLogEntry(GameLogEntryKind.Travel, "Your horse can no longer carry you, so you continue on foot.");
-        }
 
         if (!progress.Completed)
         {
@@ -219,13 +209,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             {
                 ApplyTrailEvent(trailEvent);
                 var eventSnapshot = Journey.ToSnapshot();
-                AddLogEntry(GameLogEntryKind.Travel, trailEvent.Message);
+                var trailEventMessage = PrependHorseLossMessage(horseLostMessage, trailEvent.Message);
+                AddLogEntry(GameLogEntryKind.Travel, trailEventMessage);
 
                 return new TravelJourneyStepResult(
                     true,
                     JourneyStatus.Active,
-                    trailEvent.Message,
-                    trailEvent.Message,
+                    trailEventMessage,
+                    trailEventMessage,
                     Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
                     eventSnapshot);
             }
@@ -236,13 +227,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         {
             Journey.MarkInterrupted(encounter);
             var interruptedSnapshot = Journey.ToSnapshot();
-            AddLogEntry(GameLogEntryKind.Travel, encounter.Message);
+            var encounterMessage = PrependHorseLossMessage(horseLostMessage, encounter.Message);
+            AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
 
             return new TravelJourneyStepResult(
                 false,
                 JourneyStatus.Interrupted,
-                "Your journey is interrupted by a trail encounter.",
-                encounter.Message,
+                horseLostMessage.Length == 0
+                    ? "Your journey is interrupted by a trail encounter."
+                    : $"Your journey is interrupted by a trail encounter. {horseLostMessage}",
+                encounterMessage,
                 0,
                 interruptedSnapshot);
         }
@@ -255,22 +249,31 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.MarkCompleted();
             var completedSnapshot = Journey.ToSnapshot();
             Player.TravelTo(destinationTownId);
+            var completionMessage = horseLostMessage.Length == 0
+                ? $"You reach {destinationTownName}."
+                : $"{horseLostMessage} You reach {destinationTownName}.";
             AddLogEntry(
                 GameLogEntryKind.Travel,
-                $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
+                horseLostMessage.Length == 0
+                    ? $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s)."
+                    : $"{horseLostMessage} You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
             Journey = null;
 
             return new TravelJourneyStepResult(
                 true,
                 JourneyStatus.Completed,
-                $"You reach {destinationTownName}.",
-                $"You reach {destinationTownName} after {progress.DistanceTravelled} distance units.",
+                completionMessage,
+                horseLostMessage.Length == 0
+                    ? $"You reach {destinationTownName} after {progress.DistanceTravelled} distance units."
+                    : $"{horseLostMessage} You reach {destinationTownName} after {progress.DistanceTravelled} distance units.",
                 heatIncrease,
                 completedSnapshot);
         }
 
         var ongoingSnapshot = Journey.ToSnapshot();
-        var ongoingMessage = $"One trail day passes. {Journey.RemainingDays} day(s) remain on the route.";
+        var ongoingMessage = horseLostMessage.Length == 0
+            ? $"One trail day passes. {Journey.RemainingDays} day(s) remain on the route."
+            : $"{horseLostMessage} One trail day passes on foot. {Journey.RemainingDays} day(s) remain on the route.";
         AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
 
         return new TravelJourneyStepResult(
@@ -281,6 +284,29 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
             ongoingSnapshot);
     }
+
+    private static string DescribeHorseLoss(HorseTravelState? horseState)
+    {
+        if (horseState is null)
+        {
+            return "Your horse can no longer carry you.";
+        }
+
+        if (horseState.IsDead)
+        {
+            return "Your horse dies on the trail.";
+        }
+
+        if (horseState.IsLame)
+        {
+            return "Your horse goes lame and can no longer carry you.";
+        }
+
+        return "Your horse can no longer carry you.";
+    }
+
+    private static string PrependHorseLossMessage(string horseLossMessage, string message)
+        => horseLossMessage.Length == 0 ? message : $"{horseLossMessage} {message}";
 
     private void ApplyTrailEvent(JourneyTrailEventState trailEvent)
     {
