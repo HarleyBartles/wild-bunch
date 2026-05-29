@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
+  buyStoreItem,
   createGame,
   getAvailableActions,
   getGame,
@@ -32,7 +33,7 @@ import {
 
 const storageKey = "wild-bunch.current-game-id";
 
-type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading";
+type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "buying";
 
 function townById(towns: TownDto[], townId: string) {
   return towns.find((town) => town.id === townId);
@@ -97,6 +98,19 @@ export default function App() {
   const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
 
+  async function loadTownStoreOffers(activeGameId: string, activeTownId: string) {
+    setStoreOffersLoading(true);
+
+    try {
+      const offers = await getTownStoreOffers(activeGameId, activeTownId);
+      setStoreOffers(offers);
+    } catch {
+      setStoreOffers(null);
+    } finally {
+      setStoreOffersLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!gameId || !currentTown?.id) {
       setStoreOffers(null);
@@ -108,7 +122,7 @@ export default function App() {
     const activeTownId = currentTown.id;
     let cancelled = false;
 
-    async function loadTownStoreOffers() {
+    void (async () => {
       setStoreOffersLoading(true);
 
       try {
@@ -125,9 +139,7 @@ export default function App() {
           setStoreOffersLoading(false);
         }
       }
-    }
-
-    void loadTownStoreOffers();
+    })();
 
     return () => {
       cancelled = true;
@@ -243,6 +255,41 @@ export default function App() {
       setNotice(result.message);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : "Unable to read wanted posters.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
+  async function handleBuyOffer(offer: TownStoreOffersDto["offers"][number], quantity: number) {
+    if (!gameId || !currentTown?.id) {
+      return;
+    }
+
+    setBusyMode("buying");
+    setNotice("");
+    setError("");
+
+    try {
+      const result = await buyStoreItem(gameId, currentTown.id, {
+        vendorType: offer.vendorType,
+        itemKind: offer.itemKind,
+        quantity,
+      });
+
+      setSession(result.currentSession);
+
+      if (result.success) {
+        await reloadCurrentGame(gameId);
+        await loadTownStoreOffers(gameId, currentTown.id);
+        setNotice(result.message);
+        setError("");
+        return;
+      }
+
+      setNotice("");
+      setError(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to buy the selected item.");
     } finally {
       setBusyMode("idle");
     }
@@ -384,7 +431,12 @@ export default function App() {
                 </dl>
               </article>
               <InventoryPanel inventory={session.inventory} />
-              <StoreOffersPanel storeOffers={storeOffers} loading={storeOffersLoading} />
+              <StoreOffersPanel
+                storeOffers={storeOffers}
+                loading={storeOffersLoading}
+                busy={loading}
+                onBuyOffer={handleBuyOffer}
+              />
             </div>
           ) : null}
         </section>

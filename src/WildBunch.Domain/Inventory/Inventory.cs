@@ -48,34 +48,21 @@ public sealed class Inventory
 
     public void AddItem(ItemKind kind, int quantity, HorseCondition? horseCondition = null)
     {
-        if (quantity < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity cannot be negative.");
-        }
+        ValidateAddItem(kind, quantity, horseCondition);
+        ApplyAddItem(kind, quantity, horseCondition);
+    }
 
-        if (quantity == 0)
+    public bool CanAddItem(ItemKind kind, int quantity, HorseCondition? horseCondition = null)
+    {
+        try
         {
-            return;
+            ValidateAddItem(kind, quantity, horseCondition);
+            return true;
         }
-
-        if (kind == ItemKind.Horse)
+        catch
         {
-            AddHorse(quantity, horseCondition);
-            return;
+            return false;
         }
-
-        if (horseCondition is not null)
-        {
-            throw new ArgumentException("Only horse items can carry a horse condition.", nameof(horseCondition));
-        }
-
-        if (StackableKinds.Contains(kind))
-        {
-            AddStackable(kind, quantity);
-            return;
-        }
-
-        AddNonStackable(kind, quantity);
     }
 
     public void RemoveQuantity(ItemKind kind, int quantity)
@@ -112,6 +99,66 @@ public sealed class Inventory
         _items[index] = new InventoryItem(current.Kind, remaining, current.HorseCondition);
     }
 
+    private static void ValidateAddItem(ItemKind kind, int quantity, HorseCondition? horseCondition)
+    {
+        if (quantity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity cannot be negative.");
+        }
+
+        if (quantity == 0)
+        {
+            return;
+        }
+
+        if (kind == ItemKind.Horse)
+        {
+            if (quantity != 1)
+            {
+                throw new InvalidOperationException("Horse items must have a quantity of 1.");
+            }
+
+            if (horseCondition is null)
+            {
+                throw new ArgumentNullException(nameof(horseCondition), "Horse items require a condition.");
+            }
+
+            return;
+        }
+
+        if (horseCondition is not null)
+        {
+            throw new ArgumentException("Only horse items can carry a horse condition.", nameof(horseCondition));
+        }
+
+        if (!StackableKinds.Contains(kind) && quantity != 1)
+        {
+            throw new InvalidOperationException($"{kind} does not stack.");
+        }
+    }
+
+    private void ApplyAddItem(ItemKind kind, int quantity, HorseCondition? horseCondition)
+    {
+        if (quantity == 0)
+        {
+            return;
+        }
+
+        if (kind == ItemKind.Horse)
+        {
+            AddHorse(quantity, horseCondition);
+            return;
+        }
+
+        if (StackableKinds.Contains(kind))
+        {
+            AddStackable(kind, quantity);
+            return;
+        }
+
+        AddNonStackable(kind);
+    }
+
     private void AddStackable(ItemKind kind, int quantity)
     {
         var index = _items.FindIndex(item => item.Kind == kind);
@@ -125,13 +172,8 @@ public sealed class Inventory
         _items[index] = new InventoryItem(current.Kind, current.Quantity + quantity, current.HorseCondition);
     }
 
-    private void AddNonStackable(ItemKind kind, int quantity)
+    private void AddNonStackable(ItemKind kind)
     {
-        if (quantity != 1)
-        {
-            throw new InvalidOperationException($"{kind} does not stack.");
-        }
-
         if (_items.Any(item => item.Kind == kind))
         {
             throw new InvalidOperationException($"{kind} already exists in inventory.");

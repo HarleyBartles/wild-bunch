@@ -73,6 +73,44 @@ public sealed class GameApiValidationTests
     }
 
     [Fact]
+    public async Task PostStoreBuyWithMissingFieldsReturnsValidationProblem()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(createdSession);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession!.Id}/towns/pinecross/store/buy",
+            new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "vendorType", "itemKind");
+    }
+
+    [Fact]
+    public async Task PostStoreBuyWithZeroQuantityReturnsValidationProblem()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(createdSession);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession!.Id}/towns/pinecross/store/buy",
+            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 0));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "quantity");
+    }
+
+    [Fact]
     public async Task GetMalformedGameIdReturnsNotFound()
     {
         using var factory = new SqliteApiFactory();

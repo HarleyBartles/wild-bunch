@@ -25,5 +25,6 @@ public static class StoreCatalogMapper
             offer.Price,
             offer.VendorType,
             offer.Availability,
-            offer.SourceNote);
+            offer.SourceNote,
+            offer.HorseCondition);
 }

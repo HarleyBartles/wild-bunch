@@ -88,6 +88,7 @@ export interface StoreOfferDto {
   vendorType: StoreVendorType;
   availability: StoreOfferAvailability;
   sourceNote: string;
+  horseCondition: HorseCondition | null;
 }
 
 export interface TownStoreOffersDto {
@@ -96,6 +97,12 @@ export interface TownStoreOffersDto {
   available: boolean;
   sourceNote: string;
   offers: StoreOfferDto[];
+}
+
+export interface BuyStoreItemRequest {
+  vendorType: StoreVendorType | null;
+  itemKind: ItemKind | null;
+  quantity: number;
 }
 
 export interface TrailDto {

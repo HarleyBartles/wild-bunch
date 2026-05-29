@@ -29,6 +29,28 @@ public static class RequestValidation
         return WriteResult(errors, out result);
     }
 
+    public static bool TryValidate(BuyStoreItemRequest? request, out IResult? result)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (request is null || request.VendorType is null)
+        {
+            errors["vendorType"] = ["Vendor type is required."];
+        }
+
+        if (request is null || request.ItemKind is null)
+        {
+            errors["itemKind"] = ["Item kind is required."];
+        }
+
+        if (request is null || request.Quantity < 1)
+        {
+            errors["quantity"] = ["Quantity must be at least 1."];
+        }
+
+        return WriteResult(errors, out result);
+    }
+
     private static bool WriteResult(Dictionary<string, string[]> errors, out IResult? result)
     {
         if (errors.Count == 0)

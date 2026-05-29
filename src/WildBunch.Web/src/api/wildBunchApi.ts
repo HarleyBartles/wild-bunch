@@ -1,5 +1,6 @@
 import type {
   AvailableActionDto,
+  BuyStoreItemRequest,
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
@@ -97,6 +98,13 @@ export function getJournal(gameId: string) {
 
 export function getTownStoreOffers(gameId: string, townId: string) {
   return requestJson<TownStoreOffersDto>(`/api/games/${gameId}/towns/${townId}/store-offers`);
+}
+
+export function buyStoreItem(gameId: string, townId: string, request: BuyStoreItemRequest) {
+  return requestJson<GameTurnResultDto>(`/api/games/${gameId}/towns/${townId}/store/buy`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
 }
 
 export function travel(gameId: string, destinationTownId: string) {

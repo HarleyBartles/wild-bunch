@@ -36,4 +36,9 @@ public sealed class Player
     {
         Health += amount;
     }
+
+    public void SetWallet(Wallet wallet)
+    {
+        Wallet = wallet;
+    }
 }

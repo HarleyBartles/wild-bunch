@@ -1,4 +1,6 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainWorld = WildBunch.Domain.World.World;
@@ -93,6 +95,40 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         AddLogEntry(GameLogEntryKind.Travel, message);
     }
 
+    public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
+    {
+        ArgumentNullException.ThrowIfNull(offer);
+
+        if (quantity < 1)
+        {
+            return StorePurchaseResult.Failed("Quantity must be at least 1.");
+        }
+
+        if (offer.ItemKind == ItemKind.Horse && offer.HorseCondition is null)
+        {
+            return StorePurchaseResult.Failed("Horse offers must define a horse condition.");
+        }
+
+        var totalPrice = offer.Price * quantity;
+        if (!Player.Wallet.CanAfford(totalPrice))
+        {
+            return StorePurchaseResult.Failed("Not enough cash.");
+        }
+
+        if (!CanPurchaseInventoryItem(offer, quantity, out var inventoryFailureMessage))
+        {
+            return StorePurchaseResult.Failed(inventoryFailureMessage);
+        }
+
+        var nextWallet = Player.Wallet.Spend(totalPrice);
+        Player.Inventory.AddItem(offer.ItemKind, quantity, offer.HorseCondition);
+        Player.SetWallet(nextWallet);
+
+        var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
+        AddLogEntry(GameLogEntryKind.Purchase, $"Purchased {quantityLabel} for ${totalPrice:0.00}.");
+        return StorePurchaseResult.Succeeded($"Purchased {quantityLabel} for ${totalPrice:0.00}.");
+    }
+
     public ReadWantedPostersResult ReadWantedPosters()
     {
         var currentTown = World.GetTown(Player.CurrentTownId);
@@ -134,4 +170,49 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         _logEntries.Add(new GameLogEntry(kind, message, Clock.Day, Clock.Turn));
     }
+
+    private bool CanPurchaseInventoryItem(StoreOffer offer, int quantity, out string failureMessage)
+    {
+        if (quantity < 1)
+        {
+            failureMessage = "Quantity must be at least 1.";
+            return false;
+        }
+
+        if (offer.ItemKind == ItemKind.Horse)
+        {
+            if (quantity != 1)
+            {
+                failureMessage = "Horse items must have a quantity of 1.";
+                return false;
+            }
+
+            if (Player.Inventory.HasItem(ItemKind.Horse))
+            {
+                failureMessage = "Horse already exists in inventory.";
+                return false;
+            }
+
+            failureMessage = string.Empty;
+            return true;
+        }
+
+        if (quantity != 1 && !IsStackableItemKind(offer.ItemKind))
+        {
+            failureMessage = $"{offer.ItemKind} does not stack.";
+            return false;
+        }
+
+        if (!IsStackableItemKind(offer.ItemKind) && Player.Inventory.HasItem(offer.ItemKind))
+        {
+            failureMessage = $"{offer.ItemKind} already exists in inventory.";
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    private static bool IsStackableItemKind(ItemKind kind)
+        => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo or ItemKind.RifleAmmo;
 }

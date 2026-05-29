@@ -188,6 +188,8 @@ export function formatLogKind(kind: number) {
       return "Travel";
     case 2:
       return "Case update";
+    case 3:
+      return "Purchase";
     default:
       return `Log ${kind}`;
   }
