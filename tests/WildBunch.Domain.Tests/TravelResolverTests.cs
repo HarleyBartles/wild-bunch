@@ -36,7 +36,7 @@ public sealed class TravelResolverTests
         Assert.True(result.Preview.WaterSecure);
         Assert.Equal(2, result.Preview.ExpectedDays);
         Assert.Equal(2, result.Preview.RequiredFood);
-        Assert.Equal(2, result.Preview.RequiredHorseFeed);
+        Assert.Equal(0, result.Preview.RequiredHorseFeed);
         Assert.Equal(TrailTerrain.Hills, result.Preview.RouteProfile.Terrain);
         Assert.Equal(WaterFeature.River, result.Preview.RouteProfile.WaterFeature);
         Assert.Equal(HorseTravelState.Healthy, result.Preview.HorseState);
@@ -97,10 +97,11 @@ public sealed class TravelResolverTests
         Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(1, session.Journey!.RemainingDays);
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
         Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
+        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -144,6 +145,47 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
+    public void AdvanceJourneyDayConsumesTwoCanteenChargesAndFeedsTheHorseOnDryBadlandsRoutes()
+    {
+        var session = CreateDryMountedSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        Assert.True(preview.WaterSecure);
+        Assert.Equal(1, preview.RequiredHorseFeed);
+        Assert.Contains(preview.Warnings, warning => warning.Contains("poor grazing", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(preview.Warnings, warning => warning.Contains("two canteen charges per day", StringComparison.OrdinalIgnoreCase));
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Completed, result.Status);
+        Assert.Null(session.Journey);
+        Assert.Equal(new TownId("dryfork"), session.Player.CurrentTownId);
+        Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
+        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(0, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(1, result.Journey!.DaysTravelled);
+        Assert.Equal(TravelMode.Mounted, result.Journey.TravelMode);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayConsumesOneCanteenChargeOnDryFootRoutesWithoutAHorse()
+    {
+        var session = CreateDryFootSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(session.Journey);
+        Assert.Equal(1, session.Player.Inventory.GetCanteenState()!.Charges);
+    }
+
+    [Fact]
     public void AdvanceJourneyDayKeepsMountedTravelWhenHorseFeedRunsOut()
     {
         var session = CreateMountedSession(withHorseFeed: 0);
@@ -157,7 +199,7 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(session.Journey);
         Assert.Equal(TravelMode.Mounted, session.Journey!.TravelMode);
-        Assert.Equal(new HorseTravelState(1, 0, 1), session.Player.Inventory.GetHorseState());
+        Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
@@ -183,7 +225,8 @@ public sealed class TravelResolverTests
         Assert.Equal(1, session.Clock.Day);
         Assert.Equal(2, session.Clock.Turn);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -336,6 +379,52 @@ public sealed class TravelResolverTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateDryMountedSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1),
+            new DomainInventoryItem(DomainItemKind.HorseFeed, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateDryFootSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
     }
 
     private static GameSession CreateLuckyFootSession()

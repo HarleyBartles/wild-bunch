@@ -126,6 +126,94 @@ public sealed record JourneyTrailEventState(
         => new(JourneyTrailEventKind.BadLuck, message);
 }
 
+public sealed record JourneyDailyUpkeepResult(
+    HorseTravelState? HorseState,
+    CanteenState? CanteenState,
+    int HorseFeedConsumed,
+    bool MountedTravelLost);
+
+public static class JourneyUpkeepRules
+{
+    public static bool HasGrazing(TrailTerrain terrain)
+        => terrain is TrailTerrain.OpenRange or TrailTerrain.Hills;
+
+    public static bool HasRouteWater(WaterFeature waterFeature)
+        => waterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
+
+    public static int ExhaustionIncrease(TrailTerrain terrain)
+        => terrain switch
+        {
+            TrailTerrain.OpenRange => 0,
+            TrailTerrain.Hills => 1,
+            TrailTerrain.Badlands => 1,
+            TrailTerrain.Mountains => 2,
+            _ => 1
+        };
+
+    public static int WaterChargesRequiredPerDay(HorseTravelState? horseState)
+        => horseState is not null && !horseState.IsDead ? 2 : 1;
+
+    public static JourneyDailyUpkeepResult ApplyDailyUpkeep(
+        TrailTerrain terrain,
+        WaterFeature waterFeature,
+        HorseTravelState? horseState,
+        CanteenState? canteenState,
+        int horseFeedAvailable)
+    {
+        var grazingAvailable = HasGrazing(terrain);
+        var routeWaterSecure = HasRouteWater(waterFeature);
+        var nextHorseState = horseState;
+        var nextCanteenState = canteenState;
+        var horseFeedConsumed = 0;
+        var livingHorse = horseState is not null && !horseState.IsDead;
+
+        if (livingHorse)
+        {
+            nextHorseState = grazingAvailable
+                ? horseState!.RecoverHunger(1)
+                : horseFeedAvailable > 0
+                    ? horseState!.RecoverHunger(1)
+                    : horseState!.IncreaseHunger(1);
+
+            if (routeWaterSecure)
+            {
+                nextHorseState = nextHorseState.RecoverThirst(1);
+            }
+            else if (nextCanteenState?.Charges >= 2)
+            {
+                nextCanteenState = nextCanteenState.Consume(2);
+                nextHorseState = nextHorseState.RecoverThirst(1);
+            }
+            else if (nextCanteenState?.Charges >= 1)
+            {
+                nextCanteenState = nextCanteenState.Consume(1);
+                nextHorseState = nextHorseState.IncreaseThirst(1);
+            }
+            else
+            {
+                nextHorseState = nextHorseState.IncreaseThirst(1);
+            }
+
+            nextHorseState = nextHorseState.IncreaseExhaustion(ExhaustionIncrease(terrain));
+
+            if (!grazingAvailable && horseFeedAvailable > 0)
+            {
+                horseFeedConsumed = 1;
+            }
+        }
+        else if (!routeWaterSecure && nextCanteenState?.Charges >= 1)
+        {
+            nextCanteenState = nextCanteenState.Consume(1);
+        }
+
+        return new JourneyDailyUpkeepResult(
+            nextHorseState,
+            nextCanteenState,
+            horseFeedConsumed,
+            livingHorse && nextHorseState is not null && !nextHorseState.CanProvideMountedTravel);
+    }
+}
+
 public sealed class TravelJourney
 {
     internal TravelJourney(TravelPreview preview)
@@ -303,6 +391,26 @@ public sealed class TravelJourney
         return true;
     }
 
+    public void ConsumeHorseFeed(int quantity)
+    {
+        if (quantity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Horse feed quantity cannot be negative.");
+        }
+
+        if (quantity == 0)
+        {
+            return;
+        }
+
+        if (HorseFeedRemaining < quantity)
+        {
+            throw new InvalidOperationException("Journey has no horse feed remaining.");
+        }
+
+        HorseFeedRemaining -= quantity;
+    }
+
     public void SetHorseState(HorseTravelState? horseState)
     {
         HorseState = horseState;
@@ -432,13 +540,20 @@ public sealed class TravelResolver
         var mountedTravelAvailable = capabilities.MountedTravelAvailable;
         var travelMode = mountedTravelAvailable ? TravelMode.Mounted : TravelMode.Foot;
         var horseState = inventory.GetHorseState();
+        var canteenState = inventory.GetCanteenState();
         var routeProfile = BuildRouteProfile(trail);
         var totalDistance = routeProfile.TotalDistance;
         var expectedDays = routeProfile.ExpectedDays(travelMode);
         var availableFood = inventory.GetQuantity(ItemKind.Food);
         var availableHorseFeed = inventory.GetQuantity(ItemKind.HorseFeed);
+        var grazingAvailable = JourneyUpkeepRules.HasGrazing(routeProfile.Terrain);
+        var routeWaterSecure = JourneyUpkeepRules.HasRouteWater(routeProfile.WaterFeature);
+        var livingHorse = horseState is not null && !horseState.IsDead;
         var requiredFood = expectedDays;
-        var requiredHorseFeed = travelMode == TravelMode.Mounted ? expectedDays : 0;
+        var requiredHorseFeed = livingHorse && !grazingAvailable ? expectedDays : 0;
+        var requiredCanteenCharges = routeWaterSecure ? 0 : expectedDays * JourneyUpkeepRules.WaterChargesRequiredPerDay(horseState);
+        var availableCanteenCharges = canteenState?.Charges ?? 0;
+        var waterSecure = routeWaterSecure || availableCanteenCharges >= requiredCanteenCharges;
         var warnings = new List<string>(routeProfile.Warnings);
 
         if (!mountedTravelAvailable)
@@ -446,19 +561,33 @@ public sealed class TravelResolver
             warnings.Add("Mounted travel is unavailable, so the route will continue on foot.");
         }
 
+        if (livingHorse && !grazingAvailable)
+        {
+            warnings.Add("Poor grazing means the horse will rely on feed on this trail.");
+        }
+
         if (availableFood < requiredFood)
         {
             warnings.Add("You do not have enough food to cover the full trail.");
         }
 
-        if (travelMode == TravelMode.Mounted && availableHorseFeed < requiredHorseFeed)
+        if (availableHorseFeed < requiredHorseFeed)
         {
-            warnings.Add("You do not have enough horse feed to keep the horse fresh for the whole trail.");
+            warnings.Add("You do not have enough horse feed to keep the horse fed on this trail.");
         }
 
-        if (!capabilities.NormalRouteWaterSecure)
+        if (!routeWaterSecure && livingHorse)
         {
-            warnings.Add("A canteen would keep water secure on this route.");
+            warnings.Add("This dry route needs two canteen charges per day to water both horse and rider.");
+        }
+        else if (!routeWaterSecure)
+        {
+            warnings.Add("This dry route needs one canteen charge per day for the rider.");
+        }
+
+        if (availableCanteenCharges < requiredCanteenCharges)
+        {
+            warnings.Add("You do not have enough canteen water to cover the whole trail.");
         }
 
         var preview = new TravelPreview(
@@ -469,7 +598,7 @@ public sealed class TravelResolver
             routeProfile,
             travelMode,
             mountedTravelAvailable,
-            capabilities.NormalRouteWaterSecure,
+            waterSecure,
             totalDistance,
             totalDistance,
             expectedDays,

@@ -70,7 +70,9 @@ public static class GameSessionMapper
             trail.Id.Value,
             trail.FromTownId.Value,
             trail.ToTownId.Value,
-            trail.Risk);
+            trail.Risk,
+            trail.Terrain,
+            trail.WaterFeature);
 
     private static TravelJourneyDto ToDto(DomainTravelJourney journey)
         => ToDto(journey.ToSnapshot());

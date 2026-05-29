@@ -1,4 +1,5 @@
 using WildBunch.Domain.Economy;
+using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryCapabilityResolver = WildBunch.Domain.Inventory.InventoryCapabilityResolver;
 using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
@@ -83,6 +84,18 @@ public sealed class InventoryCapabilityResolverTests
 
         Assert.True(resolver.Resolve(withCanteen).NormalRouteWaterSecure);
         Assert.False(resolver.Resolve(withoutCanteen).NormalRouteWaterSecure);
+    }
+
+    [Fact]
+    public void EmptyCanteenDoesNotSecureNormalRouteWater()
+    {
+        var resolver = new DomainInventoryCapabilityResolver();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new DomainCanteenState(0, 2))
+        });
+
+        Assert.False(resolver.Resolve(inventory).NormalRouteWaterSecure);
     }
 
     [Fact]

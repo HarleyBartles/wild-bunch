@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
-import { formatHorseCondition, formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
+import { formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
 
 interface StoreOffersPanelProps {
   storeOffers: TownStoreOffersDto | null;
@@ -44,7 +44,6 @@ function StoreOfferCard({
       <p>
         {formatStoreOfferAvailability(offer.availability)} - {offer.sourceNote}
       </p>
-      {offer.horseCondition !== null ? <p>Horse condition: {formatHorseCondition(offer.horseCondition)}</p> : null}
       <div className="button-row">
         <label className="field" style={{ flex: 1 }}>
           <span>Quantity</span>

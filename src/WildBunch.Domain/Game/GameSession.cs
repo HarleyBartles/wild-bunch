@@ -169,31 +169,33 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         var horseWentFoot = false;
         var switchToFootAfterToday = false;
+        var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
+            Journey.Preview.RouteProfile.Terrain,
+            Journey.Preview.RouteProfile.WaterFeature,
+            Player.Inventory.GetHorseState(),
+            Player.Inventory.GetCanteenState(),
+            Player.Inventory.GetQuantity(ItemKind.HorseFeed));
 
-        if (Journey.TravelMode == TravelMode.Mounted)
+        if (upkeep.HorseFeedConsumed > 0)
         {
-            var horseState = Player.Inventory.GetHorseState();
-            if (horseState is null)
-            {
-                Journey.RecalculatePacing(TravelMode.Foot);
-                switchToFootAfterToday = true;
-            }
-            else
-            {
-                var horseFed = Journey.TryConsumeHorseFeed();
-                if (horseFed)
-                {
-                    Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, 1);
-                }
+            Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, upkeep.HorseFeedConsumed);
+            Journey.ConsumeHorseFeed(upkeep.HorseFeedConsumed);
+        }
 
-                var updatedHorseState = Player.Inventory.AdvanceHorseState(horseFed);
-                Journey.SetHorseState(updatedHorseState);
+        if (upkeep.CanteenState is not null)
+        {
+            Player.Inventory.SetCanteenState(upkeep.CanteenState);
+        }
 
-                if (!updatedHorseState.CanProvideMountedTravel)
-                {
-                    switchToFootAfterToday = true;
-                }
-            }
+        if (upkeep.HorseState is not null)
+        {
+            Player.Inventory.SetHorseState(upkeep.HorseState);
+            Journey.SetHorseState(upkeep.HorseState);
+        }
+
+        if (upkeep.MountedTravelLost && Journey.TravelMode == TravelMode.Mounted)
+        {
+            switchToFootAfterToday = true;
         }
 
         Clock.Advance();

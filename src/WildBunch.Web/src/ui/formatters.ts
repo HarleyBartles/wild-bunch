@@ -1,4 +1,4 @@
-import type { InventoryCapabilitiesDto } from "../api/types";
+import type { CanteenStateDto, HorseTravelStateDto, InventoryCapabilitiesDto } from "../api/types";
 
 export function formatGameStatus(status: number) {
   switch (status) {
@@ -138,21 +138,30 @@ export function formatStoreOfferAvailability(availability: number) {
   }
 }
 
-export function formatHorseCondition(condition: number) {
-  switch (condition) {
-    case 0:
-      return "Healthy";
-    case 1:
-      return "Hungry";
-    case 2:
-      return "Exhausted";
-    case 3:
-      return "Lame";
-    case 4:
-      return "Dead";
-    default:
-      return `Condition ${condition}`;
+export function formatHorseTravelState(state: HorseTravelStateDto | null) {
+  if (state === null) {
+    return "None";
   }
+
+  const summary = [`Hunger ${state.hunger}`, `Thirst ${state.thirst}`, `Exhaustion ${state.exhaustion}`];
+
+  if (state.isDead) {
+    summary.push("Dead");
+  } else if (state.isLame) {
+    summary.push("Lame");
+  } else if (state.canProvideMountedTravel) {
+    summary.push("Mounted travel ready");
+  }
+
+  return summary.join(", ");
+}
+
+export function formatCanteenState(state: CanteenStateDto | null) {
+  if (state === null) {
+    return "None";
+  }
+
+  return `${state.charges}/${state.capacity} charges${state.hasWater ? "" : " (empty)"}`;
 }
 
 export function formatCapabilityLabel(label: keyof InventoryCapabilitiesDto) {

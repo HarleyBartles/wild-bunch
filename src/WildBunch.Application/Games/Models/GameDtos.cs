@@ -75,7 +75,9 @@ public sealed record TrailDto(
     string Id,
     string FromTownId,
     string ToTownId,
-    TrailRisk Risk);
+    TrailRisk Risk,
+    TrailTerrain Terrain,
+    WaterFeature WaterFeature);
 
 public sealed record CaseFileDto(
     string? AccusationId,

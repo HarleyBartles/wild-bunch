@@ -46,8 +46,14 @@ public sealed record HorseTravelState
     public HorseTravelState IncreaseHunger(int amount = 1)
         => Increase(Hunger, amount, hunger => new HorseTravelState(hunger, Thirst, Exhaustion));
 
+    public HorseTravelState RecoverHunger(int amount = 1)
+        => Decrease(Hunger, amount, hunger => new HorseTravelState(hunger, Thirst, Exhaustion));
+
     public HorseTravelState IncreaseThirst(int amount = 1)
         => Increase(Thirst, amount, thirst => new HorseTravelState(Hunger, thirst, Exhaustion));
+
+    public HorseTravelState RecoverThirst(int amount = 1)
+        => Decrease(Thirst, amount, thirst => new HorseTravelState(Hunger, thirst, Exhaustion));
 
     public HorseTravelState IncreaseExhaustion(int amount = 1)
         => Increase(Exhaustion, amount, exhaustion => new HorseTravelState(Hunger, Thirst, exhaustion));
@@ -60,5 +66,20 @@ public sealed record HorseTravelState
         }
 
         return amount == 0 ? projector(currentValue) : projector(currentValue + amount);
+    }
+
+    private static HorseTravelState Decrease(int currentValue, int amount, Func<int, HorseTravelState> projector)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Amount cannot be negative.");
+        }
+
+        if (amount == 0)
+        {
+            return projector(currentValue);
+        }
+
+        return projector(Math.Max(0, currentValue - amount));
     }
 }

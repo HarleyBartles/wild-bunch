@@ -76,8 +76,12 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded.Journey);
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(1, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
+        Assert.Equal(1, reloaded.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
+        Assert.Equal(TrailTerrain.Hills, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).Terrain);
+        Assert.Equal(WaterFeature.River, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).WaterFeature);
     }
 
     [Fact]
@@ -138,6 +142,36 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
         Assert.Equal(0, reloaded.Journey.DelayDays);
         Assert.Equal(1, reloaded.Clock.Turn);
+    }
+
+    [Fact]
+    public async Task SaveAfterDryTravelRoundTripsHorseAndCanteenState()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var resolver = new TravelResolver();
+        var session = CreateDryTravelSession();
+
+        await repository.SaveAsync(session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryridge"), loaded.Player.Inventory);
+
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
+
+        await repository.SaveAsync(loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(new TownId("dryridge"), reloaded!.Player.CurrentTownId);
+        Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(0, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
+        Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
+        Assert.Equal(0, reloaded.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     private static EfGameSessionRepository CreateRepository(SqlitePersistenceFixture fixture)
@@ -226,6 +260,37 @@ public sealed class EfGameSessionRepositoryTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateDryTravelSession()
+    {
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
+        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
+        var world = new WildBunch.Domain.World.World(
+            new[] { dustvale, dryridge },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), dustvale.Id, dryridge.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.HorseFeed, 1),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 

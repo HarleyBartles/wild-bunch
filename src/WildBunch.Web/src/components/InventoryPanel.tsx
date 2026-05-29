@@ -1,5 +1,5 @@
 import type { InventoryCapabilitiesDto, InventoryDto, InventoryItemDto } from "../api/types";
-import { formatCapabilityLabel, formatHorseCondition, formatItemKind } from "../ui/formatters";
+import { formatCanteenState, formatCapabilityLabel, formatHorseTravelState, formatItemKind } from "../ui/formatters";
 
 interface InventoryPanelProps {
   inventory: InventoryDto;
@@ -15,8 +15,12 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           <dd>${inventory.wallet.cash.toFixed(2)}</dd>
         </div>
         <div>
-          <dt>Horse condition</dt>
-          <dd>{inventory.horseCondition === null ? "None" : formatHorseCondition(inventory.horseCondition)}</dd>
+          <dt>Horse state</dt>
+          <dd>{formatHorseTravelState(inventory.horseState)}</dd>
+        </div>
+        <div>
+          <dt>Canteen</dt>
+          <dd>{formatCanteenState(inventory.canteenState)}</dd>
         </div>
         <div>
           <dt>Loadout items</dt>
@@ -29,13 +33,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       </dl>
       <div className="stack">
         {inventory.items.map((item: InventoryItemDto) => (
-          <div key={`${item.kind}-${item.horseCondition ?? "none"}`} className="compact-item">
+          <div key={`${item.kind}-${item.horseState?.hunger ?? "none"}-${item.canteenState?.charges ?? "none"}`} className="compact-item">
             <strong>
               {formatItemKind(item.kind)} x {item.quantity}
             </strong>
-            <p>
-              {item.horseCondition === null ? "No condition" : `Condition: ${formatHorseCondition(item.horseCondition)}`}
-            </p>
+            <p>{[item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null, item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null].filter(Boolean).join(" · ") || "No travel state"}</p>
           </div>
         ))}
       </div>

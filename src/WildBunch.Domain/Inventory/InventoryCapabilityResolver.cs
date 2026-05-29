@@ -9,7 +9,7 @@ public sealed class InventoryCapabilityResolver
         var horseState = inventory.GetHorseState();
         var hasLivingHorse = horseState is not null && !horseState.IsDead;
         var hasSaddle = inventory.HasItem(ItemKind.Saddle);
-        var hasCanteen = inventory.HasItem(ItemKind.Canteen);
+        var hasCanteenWater = inventory.GetCanteenState()?.HasWater == true;
         var hasKnife = inventory.HasItem(ItemKind.Knife);
         var revolverUsable = inventory.HasItem(ItemKind.Revolver) && inventory.GetQuantity(ItemKind.RevolverAmmo) > 0;
         var rifleUsable = inventory.HasItem(ItemKind.Rifle) && inventory.GetQuantity(ItemKind.RifleAmmo) > 0;
@@ -17,7 +17,7 @@ public sealed class InventoryCapabilityResolver
         return new InventoryCapabilities(
             MountedTravelAvailable: hasLivingHorse && !horseState!.IsLame && hasSaddle,
             HorseUpkeepRequired: hasLivingHorse,
-            NormalRouteWaterSecure: hasCanteen,
+            NormalRouteWaterSecure: hasCanteenWater,
             TrailUtility: hasKnife,
             CloseThreatAvailable: hasKnife,
             FirearmThreatAvailable: revolverUsable || rifleUsable,

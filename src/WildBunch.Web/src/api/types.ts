@@ -19,7 +19,8 @@ export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3;
 export type GameLogEntryKind = 0 | 1 | 2;
 export type ItemKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-export type HorseCondition = 0 | 1 | 2 | 3 | 4;
+export type TrailTerrain = 0 | 1 | 2 | 3;
+export type WaterFeature = 0 | 1 | 2 | 3;
 export type StoreVendorType = 0 | 1 | 2;
 export type StoreOfferAvailability = 0 | 1;
 
@@ -47,7 +48,8 @@ export interface WalletDto {
 export interface InventoryItemDto {
   kind: ItemKind;
   quantity: number;
-  horseCondition: HorseCondition | null;
+  horseState: HorseTravelStateDto | null;
+  canteenState: CanteenStateDto | null;
 }
 
 export interface InventoryCapabilitiesDto {
@@ -65,8 +67,24 @@ export interface InventoryCapabilitiesDto {
 export interface InventoryDto {
   wallet: WalletDto;
   items: InventoryItemDto[];
-  horseCondition: HorseCondition | null;
+  horseState: HorseTravelStateDto | null;
+  canteenState: CanteenStateDto | null;
   capabilities: InventoryCapabilitiesDto;
+}
+
+export interface HorseTravelStateDto {
+  hunger: number;
+  thirst: number;
+  exhaustion: number;
+  isLame: boolean;
+  isDead: boolean;
+  canProvideMountedTravel: boolean;
+}
+
+export interface CanteenStateDto {
+  charges: number;
+  capacity: number;
+  hasWater: boolean;
 }
 
 export interface PlayerDto {
@@ -88,7 +106,6 @@ export interface StoreOfferDto {
   vendorType: StoreVendorType;
   availability: StoreOfferAvailability;
   sourceNote: string;
-  horseCondition: HorseCondition | null;
 }
 
 export interface TownStoreOffersDto {
@@ -110,6 +127,8 @@ export interface TrailDto {
   fromTownId: string;
   toTownId: string;
   risk: TrailRisk;
+  terrain: TrailTerrain;
+  waterFeature: WaterFeature;
 }
 
 export interface WorldDto {

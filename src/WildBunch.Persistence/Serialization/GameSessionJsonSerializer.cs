@@ -165,13 +165,31 @@ public sealed class GameSessionJsonSerializer
             => new(new TownId(snapshot.Id), snapshot.Name, snapshot.Services);
     }
 
-    private sealed record TrailSnapshot(string Id, string FromTownId, string ToTownId, TrailRisk Risk)
+    private sealed record TrailSnapshot(
+        string Id,
+        string FromTownId,
+        string ToTownId,
+        TrailRisk Risk,
+        TrailTerrain Terrain,
+        WaterFeature WaterFeature)
     {
         public static TrailSnapshot FromDomain(DomainTrail trail)
-            => new(trail.Id.Value, trail.FromTownId.Value, trail.ToTownId.Value, trail.Risk);
+            => new(
+                trail.Id.Value,
+                trail.FromTownId.Value,
+                trail.ToTownId.Value,
+                trail.Risk,
+                trail.Terrain,
+                trail.WaterFeature);
 
         public static DomainTrail ToDomain(TrailSnapshot snapshot)
-            => new(new TrailId(snapshot.Id), new TownId(snapshot.FromTownId), new TownId(snapshot.ToTownId), snapshot.Risk);
+            => new(
+                new TrailId(snapshot.Id),
+                new TownId(snapshot.FromTownId),
+                new TownId(snapshot.ToTownId),
+                snapshot.Risk,
+                snapshot.Terrain,
+                snapshot.WaterFeature);
     }
 
     private sealed record CaseFileSnapshot(
