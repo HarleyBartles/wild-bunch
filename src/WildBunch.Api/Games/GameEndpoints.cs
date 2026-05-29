@@ -2,6 +2,7 @@ using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Games.Queries;
+using WildBunch.Api.Games.Validation;
 
 namespace WildBunch.Api.Games;
 
@@ -11,19 +12,39 @@ public static class GameEndpoints
     {
         var games = app.MapGroup("/api/games");
 
-        games.MapPost(string.Empty, CreateGameAsync);
-        games.MapGet("{id:guid}", GetGameAsync);
-        games.MapPost("{id:guid}/travel", TravelAsync);
+        games.MapPost(string.Empty, CreateGameAsync)
+            .WithName("CreateGame")
+            .Accepts<StartGameRequest>("application/json")
+            .Produces<GameSessionDto>(StatusCodes.Status201Created)
+            .ProducesValidationProblem();
+
+        games.MapGet("{id:guid}", GetGameAsync)
+            .WithName("GetGame")
+            .Produces<GameSessionDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        games.MapPost("{id:guid}/travel", TravelAsync)
+            .WithName("TravelGame")
+            .Accepts<TravelRequest>("application/json")
+            .Produces<GameTurnResultDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
 
         return app;
     }
 
     private static async Task<IResult> CreateGameAsync(
-        StartGameRequest request,
+        StartGameRequest? request,
         StartNewGameHandler handler,
         CancellationToken cancellationToken)
     {
-        var session = await handler.HandleAsync(new StartNewGameCommand(request.PlayerName), cancellationToken);
+        if (!RequestValidation.TryValidate(request, out var validationResult))
+        {
+            return validationResult!;
+        }
+
+        var validatedRequest = request!;
+        var session = await handler.HandleAsync(new StartNewGameCommand(validatedRequest.PlayerName), cancellationToken);
         return Results.Created($"/api/games/{session.Id}", session);
     }
 
@@ -45,13 +66,19 @@ public static class GameEndpoints
 
     private static async Task<IResult> TravelAsync(
         Guid id,
-        TravelRequest request,
+        TravelRequest? request,
         TravelToTownHandler handler,
         CancellationToken cancellationToken)
     {
+        if (!RequestValidation.TryValidate(request, out var validationResult))
+        {
+            return validationResult!;
+        }
+
+        var validatedRequest = request!;
         try
         {
-            var result = await handler.HandleAsync(new TravelToTownCommand(id, request.DestinationTownId), cancellationToken);
+            var result = await handler.HandleAsync(new TravelToTownCommand(id, validatedRequest.DestinationTownId), cancellationToken);
             return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)
