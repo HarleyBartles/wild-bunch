@@ -2,7 +2,11 @@ using WildBunch.Application.Games.Commands;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
-using WildBunch.Domain.Inventory;
+using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
+using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
+using DomainHorseCondition = WildBunch.Domain.Inventory.HorseCondition;
+using DomainInventoryCapabilityResolver = WildBunch.Domain.Inventory.InventoryCapabilityResolver;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
@@ -61,9 +65,8 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(reloaded);
         Assert.Equal(new TownId("silvercreek"), reloaded!.Player.CurrentTownId);
-        Assert.Equal(10, reloaded.Player.Supplies.Units);
         Assert.Equal(25m, reloaded.Player.Wallet.Cash);
-        Assert.True(new InventoryCapabilityResolver().Resolve(reloaded.Player.Inventory).MountedTravelAvailable);
+        Assert.True(new DomainInventoryCapabilityResolver().Resolve(reloaded.Player.Inventory).MountedTravelAvailable);
         Assert.Equal(1, reloaded.Clock.Turn);
         Assert.Equal(1, reloaded.PursuitState.Heat);
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
@@ -104,18 +107,18 @@ public sealed class EfGameSessionRepositoryTests
             CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
             Array.Empty<Clue>());
 
-        var inventory = new Inventory(new[]
+        var inventory = new DomainInventory(new[]
         {
-            new InventoryItem(ItemKind.Food, 3),
-            new InventoryItem(ItemKind.HorseFeed, 2),
-            new InventoryItem(ItemKind.Canteen, 1),
-            new InventoryItem(ItemKind.Horse, 1, HorseCondition.Healthy),
-            new InventoryItem(ItemKind.Saddle, 1),
-            new InventoryItem(ItemKind.Knife, 1),
-            new InventoryItem(ItemKind.Revolver, 1),
-            new InventoryItem(ItemKind.RevolverAmmo, 4)
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.HorseFeed, 2),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1),
+            new DomainInventoryItem(DomainItemKind.Revolver, 1),
+            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 4)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, Supplies.Starting());
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
     }
 }

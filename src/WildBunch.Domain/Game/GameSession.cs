@@ -44,7 +44,7 @@ public sealed class GameSession
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, supplies: null);
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null);
 
     public static GameSession StartNew(
         string playerName,
@@ -52,8 +52,7 @@ public sealed class GameSession
         CaseFile caseFile,
         TownId? startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet,
-        DomainInventory? inventory,
-        Supplies? supplies)
+        DomainInventory? inventory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -66,8 +65,7 @@ public sealed class GameSession
             startingTown.Id,
             health: 100,
             wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m),
-            inventory ?? DomainInventory.Empty(),
-            supplies ?? Supplies.Starting());
+            inventory ?? DomainInventory.Empty());
         var session = new GameSession(
             GameSessionId.New(),
             player,
@@ -81,9 +79,9 @@ public sealed class GameSession
         return session;
     }
 
-    public void ApplyTravel(TownId destinationTownId, int supplyCost, int heatIncrease, string message)
+    public void ApplyTravel(TownId destinationTownId, int heatIncrease, string message)
     {
-        Player.TravelTo(destinationTownId, supplyCost);
+        Player.TravelTo(destinationTownId);
         Clock.Advance();
         PursuitState.IncreaseHeat(heatIncrease);
         AddLogEntry(GameLogEntryKind.Travel, message);

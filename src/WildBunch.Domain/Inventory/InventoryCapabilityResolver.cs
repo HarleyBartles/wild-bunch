@@ -7,7 +7,7 @@ public sealed class InventoryCapabilityResolver
         ArgumentNullException.ThrowIfNull(inventory);
 
         var horseCondition = inventory.GetHorseCondition();
-        var hasLivingHorse = horseCondition is HorseCondition.Healthy or HorseCondition.Lame;
+        var hasLivingHorse = horseCondition is HorseCondition.Healthy or HorseCondition.Hungry or HorseCondition.Exhausted or HorseCondition.Lame;
         var hasHealthyHorse = horseCondition is HorseCondition.Healthy;
         var hasSaddle = inventory.HasItem(ItemKind.Saddle);
         var hasCanteen = inventory.HasItem(ItemKind.Canteen);

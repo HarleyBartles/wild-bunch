@@ -1,5 +1,9 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Economy;
+using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
+using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
 using WildBunch.Domain.Travel;
 using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
@@ -14,7 +18,7 @@ namespace WildBunch.Domain.Tests;
 public sealed class TravelResolverTests
 {
     [Fact]
-    public void TravelToConnectedTownMovesPlayerConsumesSuppliesAdvancesClockAndIncreasesHeat()
+    public void TravelToConnectedTownMovesPlayerAdvancesClockAndIncreasesHeat()
     {
         var session = CreateSession();
         var resolver = new TravelResolver();
@@ -23,7 +27,7 @@ public sealed class TravelResolverTests
 
         Assert.True(result.Success);
         Assert.Equal(new TownId("silvercreek"), session.Player.CurrentTownId);
-        Assert.Equal(10, session.Player.Supplies.Units);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Clock.Day);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(1, session.PursuitState.Heat);
@@ -40,29 +44,30 @@ public sealed class TravelResolverTests
 
         Assert.False(result.Success);
         Assert.Equal(new TownId("dustvale"), session.Player.CurrentTownId);
-        Assert.Equal(12, session.Player.Supplies.Units);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
-    public void TravelWithoutEnoughSuppliesFailsAndDoesNotMovePlayer()
+    public void TravelDoesNotConsumeWalletOrInventory()
     {
-        var session = CreateSession(supplyUnits: 1);
+        var session = CreateSession();
         var resolver = new TravelResolver();
 
         var result = resolver.Travel(session.World, session, new TownId("silvercreek"));
 
-        Assert.False(result.Success);
-        Assert.Equal(new TownId("dustvale"), session.Player.CurrentTownId);
-        Assert.Equal(1, session.Player.Supplies.Units);
+        Assert.True(result.Success);
+        Assert.Equal(new TownId("silvercreek"), session.Player.CurrentTownId);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(1, session.Clock.Day);
-        Assert.Equal(0, session.Clock.Turn);
-        Assert.Equal(0, session.PursuitState.Heat);
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(1, session.PursuitState.Heat);
     }
 
-    private static GameSession CreateSession(int supplyUnits = 12)
+    private static GameSession CreateSession()
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
@@ -81,9 +86,12 @@ public sealed class TravelResolverTests
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile);
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 1),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1)
+        });
 
-        session.Player.SpendSupplies(12 - supplyUnits);
-        return session;
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
     }
 }

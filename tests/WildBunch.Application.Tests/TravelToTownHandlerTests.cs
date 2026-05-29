@@ -2,6 +2,10 @@ using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Economy;
+using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
+using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
@@ -23,7 +27,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal("Travelled to silvercreek.", result.Message);
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal("silvercreek", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(10, result.CurrentSession.Player.Supplies);
+        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(1, result.CurrentSession.Clock.Turn);
         Assert.Equal(1, result.CurrentSession.PursuitState.Heat);
     }
@@ -42,31 +46,31 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal("No trail connects those towns.", result.Message);
         Assert.Equal(0, repository.SaveCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(12, result.CurrentSession.Player.Supplies);
+        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.Equal(0, result.CurrentSession.PursuitState.Heat);
     }
 
     [Fact]
-    public async Task TravelWithInsufficientSuppliesFailsAndDoesNotSave()
+    public async Task TravelSucceedsWithEmptyInventoryAndDoesNotChangeWallet()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(supplyUnits: 1);
+        var session = CreateSession(emptyInventory: true);
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, new TravelResolver());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
-        Assert.False(result.Success);
-        Assert.Equal("Not enough supplies to travel.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
-        Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(1, result.CurrentSession.Player.Supplies);
-        Assert.Equal(0, result.CurrentSession.Clock.Turn);
-        Assert.Equal(0, result.CurrentSession.PursuitState.Heat);
+        Assert.True(result.Success);
+        Assert.Equal("Travelled to silvercreek.", result.Message);
+        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal("silvercreek", result.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(1, result.CurrentSession.Clock.Turn);
+        Assert.Equal(1, result.CurrentSession.PursuitState.Heat);
     }
 
-    private static GameSession CreateSession(int supplyUnits = 12)
+    private static GameSession CreateSession(bool emptyInventory = false)
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
@@ -85,9 +89,14 @@ public sealed class TravelToTownHandlerTests
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile);
+        var inventory = emptyInventory
+            ? DomainInventory.Empty()
+            : new DomainInventory(new[]
+            {
+                new DomainInventoryItem(DomainItemKind.Food, 1),
+                new DomainInventoryItem(DomainItemKind.Canteen, 1)
+            });
 
-        session.Player.SpendSupplies(12 - supplyUnits);
-        return session;
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
     }
 }

@@ -82,8 +82,6 @@ public sealed class GameSessionJsonSerializer
         string Name,
         string CurrentTownId,
         int Health,
-        decimal Money,
-        int Supplies,
         WalletSnapshot? Wallet,
         InventorySnapshot? Inventory)
     {
@@ -92,8 +90,6 @@ public sealed class GameSessionJsonSerializer
                 player.Name,
                 player.CurrentTownId.Value,
                 player.Health,
-                player.Money,
-                player.Supplies.Units,
                 WalletSnapshot.FromDomain(player.Wallet),
                 InventorySnapshot.FromDomain(player.Inventory));
 
@@ -102,9 +98,8 @@ public sealed class GameSessionJsonSerializer
                 snapshot.Name,
                 new TownId(snapshot.CurrentTownId),
                 snapshot.Health,
-                WalletSnapshot.ToDomain(snapshot.Wallet, snapshot.Money),
-                InventorySnapshot.ToDomain(snapshot.Inventory),
-                new Supplies(snapshot.Supplies));
+                WalletSnapshot.ToDomain(snapshot.Wallet),
+                InventorySnapshot.ToDomain(snapshot.Inventory));
     }
 
     private sealed record WalletSnapshot(decimal Cash)
@@ -112,8 +107,10 @@ public sealed class GameSessionJsonSerializer
         public static WalletSnapshot FromDomain(Wallet wallet)
             => new(wallet.Cash);
 
-        public static Wallet ToDomain(WalletSnapshot? snapshot, decimal fallbackCash)
-            => snapshot is null ? new Wallet(fallbackCash) : new Wallet(snapshot.Cash);
+        public static Wallet ToDomain(WalletSnapshot? snapshot)
+            => snapshot is null
+                ? throw new InvalidOperationException("Unable to deserialize player wallet.")
+                : new Wallet(snapshot.Cash);
     }
 
     private sealed record InventorySnapshot(IReadOnlyList<InventoryItemSnapshot> Items)

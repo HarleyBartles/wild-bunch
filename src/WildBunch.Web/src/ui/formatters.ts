@@ -119,8 +119,12 @@ export function formatHorseCondition(condition: number) {
     case 0:
       return "Healthy";
     case 1:
-      return "Lame";
+      return "Hungry";
     case 2:
+      return "Exhausted";
+    case 3:
+      return "Lame";
+    case 4:
       return "Dead";
     default:
       return `Condition ${condition}`;

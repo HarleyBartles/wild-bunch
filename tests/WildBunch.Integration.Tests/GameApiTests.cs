@@ -40,6 +40,8 @@ public sealed class GameApiTests
         Assert.NotEmpty(session.LogEntries);
 
         var payload = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
@@ -68,6 +70,8 @@ public sealed class GameApiTests
         Assert.Equal(createdSession.CaseFile.OpeningLead, fetchedSession.CaseFile.OpeningLead);
 
         var payload = await getResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
@@ -95,7 +99,7 @@ public sealed class GameApiTests
         Assert.True(turnResult!.Success);
         Assert.Equal("Travelled to redmesa.", turnResult.Message);
         Assert.Equal("redmesa", turnResult.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(10, turnResult.CurrentSession.Player.Supplies);
+        Assert.Equal(25m, turnResult.CurrentSession.Inventory.Wallet.Cash);
         Assert.True(turnResult.CurrentSession.Inventory.Capabilities.MountedTravelAvailable);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(1, turnResult.CurrentSession.PursuitState.Heat);
@@ -104,6 +108,8 @@ public sealed class GameApiTests
         var payload = await travelResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

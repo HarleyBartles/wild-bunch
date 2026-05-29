@@ -43,9 +43,7 @@ public static class GameSessionMapper
         => new(
             player.Name,
             player.CurrentTownId.Value,
-            player.Health,
-            player.Money,
-            player.Supplies.Units);
+            player.Health);
 
     private static WorldDto ToDto(DomainWorld world)
         => new(

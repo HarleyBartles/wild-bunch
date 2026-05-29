@@ -19,7 +19,7 @@ export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3;
 export type GameLogEntryKind = 0 | 1 | 2;
 export type ItemKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-export type HorseCondition = 0 | 1 | 2;
+export type HorseCondition = 0 | 1 | 2 | 3 | 4;
 
 export interface StartGameRequest {
   playerName: string;
@@ -71,8 +71,6 @@ export interface PlayerDto {
   name: string;
   currentTownId: string;
   health: number;
-  money: number;
-  supplies: number;
 }
 
 export interface TownDto {

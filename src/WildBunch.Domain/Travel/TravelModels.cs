@@ -29,15 +29,9 @@ public sealed class TravelResolver
             return TravelResult.Failed("No trail connects those towns.");
         }
 
-        if (!session.Player.Supplies.CanAfford(trail.SupplyCost))
-        {
-            return TravelResult.Failed("Not enough supplies to travel.");
-        }
-
         var heatIncrease = Math.Max(1, (int)trail.Risk);
         session.ApplyTravel(
             destinationTownId,
-            trail.SupplyCost,
             heatIncrease,
             $"You travel from {currentTownId.Value} to {destinationTownId.Value}.");
 

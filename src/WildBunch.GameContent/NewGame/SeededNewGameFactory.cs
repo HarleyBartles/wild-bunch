@@ -20,7 +20,6 @@ public sealed class SeededNewGameFactory : INewGameFactory
             caseFile,
             new TownId("pinecross"),
             Wallet.Starting(25m),
-            inventory,
-            Supplies.Starting());
+            inventory);
     }
 }

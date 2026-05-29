@@ -300,14 +300,6 @@ export default function App() {
                     <dd>{session.player.health}</dd>
                   </div>
                   <div>
-                    <dt>Money</dt>
-                    <dd>${session.player.money.toFixed(2)}</dd>
-                  </div>
-                  <div>
-                    <dt>Supplies</dt>
-                    <dd>{session.player.supplies}</dd>
-                  </div>
-                  <div>
                     <dt>Heat</dt>
                     <dd>{session.pursuitState.heat}</dd>
                   </div>

@@ -76,7 +76,6 @@ public sealed class StubNewGameFactory : INewGameFactory
             caseFile,
             dustvale.Id,
             Wallet.Starting(25m),
-            inventory,
-            Supplies.Starting());
+            inventory);
     }
 }

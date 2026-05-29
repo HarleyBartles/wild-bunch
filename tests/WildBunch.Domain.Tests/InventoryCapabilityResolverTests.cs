@@ -27,6 +27,8 @@ public sealed class InventoryCapabilityResolverTests
 
     [Theory]
     [InlineData(DomainHorseCondition.Healthy, true)]
+    [InlineData(DomainHorseCondition.Hungry, false)]
+    [InlineData(DomainHorseCondition.Exhausted, false)]
     [InlineData(DomainHorseCondition.Lame, false)]
     [InlineData(DomainHorseCondition.Dead, false)]
     public void MountedTravelRequiresHealthyHorseAndSaddle(DomainHorseCondition horseCondition, bool expected)
@@ -46,10 +48,14 @@ public sealed class InventoryCapabilityResolverTests
     {
         var resolver = new DomainInventoryCapabilityResolver();
         var healthyHorse = new DomainInventory(new[] { new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Healthy) });
+        var hungryHorse = new DomainInventory(new[] { new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Hungry) });
+        var exhaustedHorse = new DomainInventory(new[] { new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Exhausted) });
         var lameHorse = new DomainInventory(new[] { new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Lame) });
         var deadHorse = new DomainInventory(new[] { new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Dead) });
 
         Assert.True(resolver.Resolve(healthyHorse).HorseUpkeepRequired);
+        Assert.True(resolver.Resolve(hungryHorse).HorseUpkeepRequired);
+        Assert.True(resolver.Resolve(exhaustedHorse).HorseUpkeepRequired);
         Assert.True(resolver.Resolve(lameHorse).HorseUpkeepRequired);
         Assert.False(resolver.Resolve(deadHorse).HorseUpkeepRequired);
     }

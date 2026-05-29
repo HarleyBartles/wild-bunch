@@ -19,9 +19,7 @@ public sealed record GameSessionDto(
 public sealed record PlayerDto(
     string Name,
     string CurrentTownId,
-    int Health,
-    decimal Money,
-    int Supplies);
+    int Health);
 
 public sealed record InventoryDto(
     WalletDto Wallet,

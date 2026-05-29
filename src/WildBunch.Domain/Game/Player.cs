@@ -6,7 +6,7 @@ namespace WildBunch.Domain.Game;
 
 public sealed class Player
 {
-    public Player(string name, TownId currentTownId, int health, Wallet wallet, DomainInventory inventory, Supplies supplies)
+    public Player(string name, TownId currentTownId, int health, Wallet wallet, DomainInventory inventory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -15,7 +15,6 @@ public sealed class Player
         Health = health;
         Wallet = wallet;
         Inventory = inventory;
-        Supplies = supplies;
     }
 
     public string Name { get; }
@@ -26,30 +25,15 @@ public sealed class Player
 
     public Wallet Wallet { get; private set; }
 
-    public Supplies Supplies { get; private set; }
-
-    public decimal Money => Wallet.Cash;
-
     public DomainInventory Inventory { get; private set; }
 
-    public void TravelTo(TownId destinationTownId, int supplyCost)
+    public void TravelTo(TownId destinationTownId)
     {
-        SpendSupplies(supplyCost);
         CurrentTownId = destinationTownId;
-    }
-
-    public void SpendSupplies(int amount)
-    {
-        Supplies = Supplies.Subtract(amount);
     }
 
     public void AdjustHealth(int amount)
     {
         Health += amount;
-    }
-
-    public void AdjustMoney(decimal amount)
-    {
-        Wallet = Wallet.Adjust(amount);
     }
 }

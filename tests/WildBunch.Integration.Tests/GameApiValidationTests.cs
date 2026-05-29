@@ -106,7 +106,6 @@ public sealed class GameApiValidationTests
         Assert.False(turnResult!.Success);
         Assert.Equal("No trail connects those towns.", turnResult.Message);
         Assert.Equal("pinecross", turnResult.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(12, turnResult.CurrentSession.Player.Supplies);
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(0, turnResult.CurrentSession.PursuitState.Heat);
     }
