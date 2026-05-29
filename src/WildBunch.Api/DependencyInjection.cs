@@ -15,6 +15,15 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddWildBunchServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("ViteDevClient", policy =>
+            {
+                policy.WithOrigins("http://localhost:5173")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
         services.AddPersistence(configuration);
         services.AddGameContent();
         services.AddSingleton<TravelResolver>();

@@ -12,6 +12,7 @@ app.Services.ApplyWildBunchMigrations();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors("ViteDevClient");
     app.MapOpenApi();
 }
 
