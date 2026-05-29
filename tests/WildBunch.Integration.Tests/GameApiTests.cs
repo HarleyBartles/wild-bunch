@@ -24,8 +24,10 @@ public sealed class GameApiTests
         Assert.NotNull(session);
         Assert.NotEqual(Guid.Empty, session!.Id);
         Assert.Equal("Ranger Vale", session.Player.Name);
-        Assert.Equal("briar-glen", session.Player.CurrentTownId);
+        Assert.Equal("pinecross", session.Player.CurrentTownId);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, session.Status);
+        Assert.Equal(6, session.World.Towns.Count);
+        Assert.Equal(7, session.World.Trails.Count);
         Assert.NotEmpty(session.LogEntries);
     }
 
@@ -64,7 +66,7 @@ public sealed class GameApiTests
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("cinder-ford"));
+            new TravelRequest("redmesa"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
@@ -72,8 +74,8 @@ public sealed class GameApiTests
 
         Assert.NotNull(turnResult);
         Assert.True(turnResult!.Success);
-        Assert.Equal("Travelled to cinder-ford.", turnResult.Message);
-        Assert.Equal("cinder-ford", turnResult.CurrentSession.Player.CurrentTownId);
+        Assert.Equal("Travelled to redmesa.", turnResult.Message);
+        Assert.Equal("redmesa", turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(10, turnResult.CurrentSession.Player.Supplies);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(1, turnResult.CurrentSession.PursuitState.Heat);
@@ -98,7 +100,7 @@ public sealed class GameApiTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{Guid.NewGuid()}/travel",
-            new TravelRequest("cinder-ford"));
+            new TravelRequest("dryfork"));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

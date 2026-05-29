@@ -1,10 +1,10 @@
 using WildBunch.Api.Games;
-using WildBunch.Api.Infrastructure;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Domain.Travel;
 using WildBunch.Persistence;
+using WildBunch.GameContent;
 
 namespace WildBunch.Api;
 
@@ -13,7 +13,7 @@ public static class DependencyInjection
     public static IServiceCollection AddWildBunchServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddPersistence(configuration);
-        services.AddSingleton<INewGameFactory, SimpleNewGameFactory>();
+        services.AddGameContent();
         services.AddSingleton<TravelResolver>();
         services.AddScoped<StartNewGameHandler>();
         services.AddScoped<GetGameSessionHandler>();
