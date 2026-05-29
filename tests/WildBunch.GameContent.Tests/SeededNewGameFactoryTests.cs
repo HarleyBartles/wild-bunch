@@ -16,6 +16,7 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Equal("Ranger Vale", session.Player.Name);
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+        Assert.Equal(WildBunch.Domain.Travel.TravelDifficulty.Normal, session.TravelDifficulty);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(8, session.Player.Inventory.Items.Count);
         Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());

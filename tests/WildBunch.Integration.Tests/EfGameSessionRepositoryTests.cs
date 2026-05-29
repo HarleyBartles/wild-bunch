@@ -47,6 +47,22 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Fact]
+    public async Task SaveAndLoadEasyTravelSessionRetainsTravelDifficulty()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var session = CreateEasySession();
+
+        await repository.SaveAsync(session);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(TravelDifficulty.Easy, reloaded!.TravelDifficulty);
+        Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Capacity);
+        Assert.True(reloaded.Player.Inventory.GetHorseState()!.CanProvideMountedTravelFor(TravelRulesProfile.For(TravelDifficulty.Easy)));
+    }
+
+    [Fact]
     public async Task SaveAfterTravelUpdatesReloadedState()
     {
         using var fixture = new SqlitePersistenceFixture();
@@ -297,6 +313,43 @@ public sealed class EfGameSessionRepositoryTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateEasySession()
+    {
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+
+        var world = new WildBunch.Domain.World.World(
+            new[] { dustvale, holloway },
+            new[]
+            {
+                new Trail(new TrailId("trail-easy"), dustvale.Id, holloway.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 5m)
+            });
+
+        var caseFile = new CaseFile(
+            null,
+            Array.Empty<Suspect>(),
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
+            Array.Empty<Clue>());
+
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new DomainCanteenState(10, 10)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, new DomainHorseTravelState(3, 2, 3)),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1)
+        });
+
+        return GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            dustvale.Id,
+            Wallet.Starting(25m),
+            inventory,
+            TravelDifficulty.Easy);
     }
 
     private static GameSession CreateDryTravelSession()

@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Models;
+using DomainTravelRulesProfile = WildBunch.Domain.Travel.TravelRulesProfile;
 using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainInventoryCapabilities = WildBunch.Domain.Inventory.InventoryCapabilities;
@@ -12,31 +13,32 @@ public static class InventoryMapper
 {
     private static readonly DomainInventoryCapabilityResolver CapabilityResolver = new();
 
-    public static InventoryDto ToDto(DomainPlayer player)
+    public static InventoryDto ToDto(DomainPlayer player, DomainTravelRulesProfile? travelRulesProfile = null)
     {
         ArgumentNullException.ThrowIfNull(player);
+        travelRulesProfile ??= DomainTravelRulesProfile.Default;
 
         return new InventoryDto(
             new WalletDto(player.Wallet.Cash),
-            player.Inventory.Items.Select(ToDto).ToArray(),
-            ToDto(player.Inventory.GetHorseState()),
+            player.Inventory.Items.Select(item => ToDto(item, travelRulesProfile)).ToArray(),
+            ToDto(player.Inventory.GetHorseState(), travelRulesProfile),
             ToDto(player.Inventory.GetCanteenState()),
-            ToDto(CapabilityResolver.Resolve(player.Inventory)));
+            ToDto(CapabilityResolver.Resolve(player.Inventory, travelRulesProfile)));
     }
 
-    private static InventoryItemDto ToDto(DomainInventoryItem item)
-        => new(item.Kind, item.Quantity, ToDto(item.HorseState), ToDto(item.CanteenState));
+    private static InventoryItemDto ToDto(DomainInventoryItem item, DomainTravelRulesProfile travelRulesProfile)
+        => new(item.Kind, item.Quantity, ToDto(item.HorseState, travelRulesProfile), ToDto(item.CanteenState));
 
-    private static HorseTravelStateDto? ToDto(DomainHorseTravelState? horseState)
+    private static HorseTravelStateDto? ToDto(DomainHorseTravelState? horseState, DomainTravelRulesProfile travelRulesProfile)
         => horseState is null
             ? null
             : new HorseTravelStateDto(
                 horseState.Hunger,
                 horseState.Thirst,
                 horseState.Exhaustion,
-                horseState.IsLame,
-                horseState.IsDead,
-                horseState.CanProvideMountedTravel);
+                horseState.IsLameFor(travelRulesProfile),
+                horseState.IsDeadFor(travelRulesProfile),
+                horseState.CanProvideMountedTravelFor(travelRulesProfile));
 
     private static CanteenStateDto? ToDto(DomainCanteenState? canteenState)
         => canteenState is null

@@ -1,3 +1,5 @@
+using WildBunch.Domain.Travel;
+
 namespace WildBunch.Domain.Inventory;
 
 public sealed record HorseTravelState
@@ -32,11 +34,29 @@ public sealed record HorseTravelState
 
     public int Exhaustion { get; }
 
-    public bool IsDead => Hunger >= 3 || Thirst >= 2 || Exhaustion >= 5;
+    public bool IsDead => IsDeadFor(TravelRulesProfile.Default);
 
-    public bool IsLame => !IsDead && Exhaustion >= 3;
+    public bool IsLame => IsLameFor(TravelRulesProfile.Default);
 
-    public bool CanProvideMountedTravel => !IsDead && !IsLame;
+    public bool CanProvideMountedTravel => CanProvideMountedTravelFor(TravelRulesProfile.Default);
+
+    public bool IsDeadFor(TravelRulesProfile travelRulesProfile)
+    {
+        ArgumentNullException.ThrowIfNull(travelRulesProfile);
+        return travelRulesProfile.IsHorseDead(this);
+    }
+
+    public bool IsLameFor(TravelRulesProfile travelRulesProfile)
+    {
+        ArgumentNullException.ThrowIfNull(travelRulesProfile);
+        return travelRulesProfile.IsHorseLame(this);
+    }
+
+    public bool CanProvideMountedTravelFor(TravelRulesProfile travelRulesProfile)
+    {
+        ArgumentNullException.ThrowIfNull(travelRulesProfile);
+        return travelRulesProfile.CanProvideMountedTravel(this);
+    }
 
     public HorseTravelState AdvanceTravelDay(bool horseFed)
         => horseFed

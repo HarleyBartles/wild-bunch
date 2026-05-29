@@ -1,17 +1,21 @@
 using WildBunch.Application.Games.Models;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
 using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterChoiceState;
 using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
-using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
+using DomainTravelRulesProfile = WildBunch.Domain.Travel.TravelRulesProfile;
 
 namespace WildBunch.Application.Games.Mapping;
 
 public static class TravelMapper
 {
-    public static TravelPreviewDto ToDto(DomainTravelPreview preview)
-        => new(
+    public static TravelPreviewDto ToDto(DomainTravelPreview preview, DomainTravelRulesProfile? travelRulesProfile = null)
+    {
+        travelRulesProfile ??= DomainTravelRulesProfile.Default;
+
+        return new TravelPreviewDto(
             preview.OriginTownId.Value,
             preview.OriginTownName,
             preview.DestinationTownId.Value,
@@ -33,12 +37,16 @@ public static class TravelMapper
             preview.AvailableFood,
             preview.RequiredHorseFeed,
             preview.AvailableHorseFeed,
-            ToHorseDto(preview.HorseState),
+            ToHorseDto(preview.HorseState, travelRulesProfile),
             preview.Warnings,
             ToDto(preview.RouteProfile));
+    }
 
-    public static TravelJourneyDto ToDto(DomainJourneySnapshot snapshot)
-        => new(
+    public static TravelJourneyDto ToDto(DomainJourneySnapshot snapshot, DomainTravelRulesProfile? travelRulesProfile = null)
+    {
+        travelRulesProfile ??= DomainTravelRulesProfile.Default;
+
+        return new TravelJourneyDto(
             snapshot.OriginTownId.Value,
             snapshot.OriginTownName,
             snapshot.DestinationTownId.Value,
@@ -61,23 +69,28 @@ public static class TravelMapper
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
             snapshot.AvailableHorseFeed,
-            ToHorseDto(snapshot.HorseState),
+            ToHorseDto(snapshot.HorseState, travelRulesProfile),
             snapshot.DaysTravelled,
             snapshot.DelayDays,
             snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),
             snapshot.Warnings,
             ToDto(snapshot.RouteProfile));
+    }
 
-    public static HorseTravelStateDto? ToHorseDto(DomainHorseTravelState? horseState)
-        => horseState is null
+    public static HorseTravelStateDto? ToHorseDto(DomainHorseTravelState? horseState, DomainTravelRulesProfile? travelRulesProfile = null)
+    {
+        travelRulesProfile ??= DomainTravelRulesProfile.Default;
+
+        return horseState is null
             ? null
             : new HorseTravelStateDto(
                 horseState.Hunger,
                 horseState.Thirst,
                 horseState.Exhaustion,
-                horseState.IsLame,
-                horseState.IsDead,
-                horseState.CanProvideMountedTravel);
+                horseState.IsLameFor(travelRulesProfile),
+                horseState.IsDeadFor(travelRulesProfile),
+                horseState.CanProvideMountedTravelFor(travelRulesProfile));
+    }
 
     public static TravelRouteProfileDto ToDto(DomainTravelRouteProfile routeProfile)
         => new(

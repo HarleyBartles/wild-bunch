@@ -25,7 +25,12 @@ public sealed class PreviewTravelHandler
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
         var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var destinationTownId = new TownId(query.DestinationTownId);
-        var previewResult = _travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, destinationTownId, session.Player.Inventory);
+        var previewResult = _travelResolver.PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId,
+            destinationTownId,
+            session.Player.Inventory,
+            session.TravelRules);
 
         return new TravelPreviewResultDto(
             previewResult.Success,

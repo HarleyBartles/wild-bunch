@@ -3,6 +3,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Tests.TestDoubles;
@@ -18,9 +19,12 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<string> RequestedPlayerNames { get; } = [];
 
-    public GameSession Create(string playerName)
+    public List<TravelDifficulty> RequestedTravelDifficulties { get; } = [];
+
+    public GameSession Create(string playerName, TravelDifficulty travelDifficulty = TravelDifficulty.Normal)
     {
         RequestedPlayerNames.Add(playerName);
+        RequestedTravelDifficulties.Add(travelDifficulty);
         return _sessionToReturn;
     }
 

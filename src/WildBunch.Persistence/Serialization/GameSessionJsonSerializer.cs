@@ -41,6 +41,7 @@ public sealed class GameSessionJsonSerializer
     private sealed record GameSessionSnapshot(
         Guid Id,
         GameStatus Status,
+        TravelDifficulty TravelDifficulty,
         PlayerSnapshot Player,
         WorldSnapshot World,
         CaseFileSnapshot CaseFile,
@@ -53,12 +54,13 @@ public sealed class GameSessionJsonSerializer
             => new(
                 session.Id.Value,
                 session.Status,
+                session.TravelDifficulty,
                 PlayerSnapshot.FromDomain(session.Player),
                 WorldSnapshot.FromDomain(session.World),
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
-                session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot()),
+                session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot(session.TravelRules)),
                 session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray());
 
         public GameSession ToDomain()
@@ -77,7 +79,8 @@ public sealed class GameSessionJsonSerializer
                 pursuitState,
                 clock,
                 Status,
-                journey);
+                journey,
+                TravelDifficulty);
 
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             return session;
@@ -509,7 +512,8 @@ public sealed class GameSessionJsonSerializer
                 typeof(PursuitState),
                 typeof(GameClock),
                 typeof(GameStatus),
-                typeof(TravelJourney)
+                typeof(TravelJourney),
+                typeof(TravelDifficulty)
             },
             modifiers: null);
 
@@ -523,14 +527,15 @@ public sealed class GameSessionJsonSerializer
             PursuitState pursuitState,
             GameClock clock,
             GameStatus status,
-            TravelJourney? journey)
+            TravelJourney? journey,
+            TravelDifficulty travelDifficulty)
         {
             if (Constructor is null)
             {
                 throw new InvalidOperationException("Unable to locate the GameSession persistence constructor.");
             }
 
-            return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey });
+            return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, travelDifficulty });
         }
 
         public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)

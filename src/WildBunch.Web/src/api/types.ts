@@ -1,4 +1,5 @@
 export type GameStatus = 0 | 1 | 2;
+export type TravelDifficulty = 0 | 1 | 2;
 
 export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export const AvailableActionKind = {
@@ -26,6 +27,7 @@ export type StoreOfferAvailability = 0 | 1;
 
 export interface StartGameRequest {
   playerName: string;
+  travelDifficulty: TravelDifficulty;
 }
 
 export interface TravelRequest {
@@ -196,6 +198,7 @@ export interface GameLogEntryDto {
 export interface GameSessionDto {
   id: string;
   status: GameStatus;
+  travelDifficulty: TravelDifficulty;
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;

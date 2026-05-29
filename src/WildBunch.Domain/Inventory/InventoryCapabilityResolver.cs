@@ -1,13 +1,16 @@
+using WildBunch.Domain.Travel;
+
 namespace WildBunch.Domain.Inventory;
 
 public sealed class InventoryCapabilityResolver
 {
-    public InventoryCapabilities Resolve(Inventory inventory)
+    public InventoryCapabilities Resolve(Inventory inventory, TravelRulesProfile? travelRulesProfile = null)
     {
         ArgumentNullException.ThrowIfNull(inventory);
+        travelRulesProfile ??= TravelRulesProfile.Default;
 
         var horseState = inventory.GetHorseState();
-        var hasLivingHorse = horseState is not null && !horseState.IsDead;
+        var hasLivingHorse = horseState is not null && horseState.IsDeadFor(travelRulesProfile) == false;
         var hasSaddle = inventory.HasItem(ItemKind.Saddle);
         var hasCanteenWater = inventory.GetCanteenState()?.HasWater == true;
         var hasKnife = inventory.HasItem(ItemKind.Knife);
@@ -15,7 +18,7 @@ public sealed class InventoryCapabilityResolver
         var rifleUsable = inventory.HasItem(ItemKind.Rifle) && inventory.GetQuantity(ItemKind.RifleAmmo) > 0;
 
         return new InventoryCapabilities(
-            MountedTravelAvailable: hasLivingHorse && !horseState!.IsLame && hasSaddle,
+            MountedTravelAvailable: hasLivingHorse && !horseState!.IsLameFor(travelRulesProfile) && hasSaddle,
             HorseUpkeepRequired: hasLivingHorse,
             NormalRouteWaterSecure: hasCanteenWater,
             TrailUtility: hasKnife,

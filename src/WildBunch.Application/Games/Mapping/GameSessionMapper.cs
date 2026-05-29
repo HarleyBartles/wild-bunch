@@ -38,13 +38,14 @@ public static class GameSessionMapper
         return new GameSessionDto(
             session.Id.Value,
             session.Status,
+            session.TravelDifficulty,
             ToDto(session.Player),
             ToDto(session.World),
             ToDto(session.CaseFile),
-            InventoryMapper.ToDto(session.Player),
+            InventoryMapper.ToDto(session.Player, session.TravelRules),
             new GameClockDto(session.Clock.Day, session.Clock.Turn),
             new PursuitStateDto(session.PursuitState.Heat),
-            session.Journey is null ? null : ToDto(session.Journey),
+            session.Journey is null ? null : ToDto(session.Journey, session.TravelRules),
             session.LogEntries.Select(ToDto).ToArray());
     }
 
@@ -75,10 +76,10 @@ public static class GameSessionMapper
             trail.WaterFeature,
             trail.RideDayDistance);
 
-    private static TravelJourneyDto ToDto(DomainTravelJourney journey)
-        => ToDto(journey.ToSnapshot());
+    private static TravelJourneyDto ToDto(DomainTravelJourney journey, WildBunch.Domain.Travel.TravelRulesProfile travelRulesProfile)
+        => ToDto(journey.ToSnapshot(travelRulesProfile), travelRulesProfile);
 
-    private static TravelJourneyDto ToDto(DomainJourneySnapshot snapshot)
+    private static TravelJourneyDto ToDto(DomainJourneySnapshot snapshot, WildBunch.Domain.Travel.TravelRulesProfile travelRulesProfile)
         => new(
             snapshot.OriginTownId.Value,
             snapshot.OriginTownName,
@@ -102,7 +103,7 @@ public static class GameSessionMapper
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
             snapshot.AvailableHorseFeed,
-            TravelMapper.ToHorseDto(snapshot.HorseState),
+            TravelMapper.ToHorseDto(snapshot.HorseState, travelRulesProfile),
             snapshot.DaysTravelled,
             snapshot.DelayDays,
             snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),

@@ -1,3 +1,5 @@
+using WildBunch.Domain.Travel;
+
 namespace WildBunch.Domain.Inventory;
 
 public sealed record CanteenState
@@ -23,7 +25,11 @@ public sealed record CanteenState
         Capacity = capacity;
     }
 
-    public static CanteenState Full(int capacity = 2) => new(capacity, capacity);
+    public static CanteenState Full()
+        => Full(TravelRulesProfile.Default.CanteenCapacity);
+
+    public static CanteenState Full(int capacity)
+        => new(capacity, capacity);
 
     public int Charges { get; }
 

@@ -4,6 +4,7 @@ import type {
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
+  TravelDifficulty,
   TownStoreOffersDto,
   StartGameRequest,
   TravelRequest,
@@ -77,10 +78,10 @@ function extractErrorMessage(body: unknown) {
   return "";
 }
 
-export function createGame(playerName: string) {
+export function createGame(playerName: string, travelDifficulty: TravelDifficulty = 0) {
   return requestJson<GameSessionDto>("/api/games", {
     method: "POST",
-    body: JSON.stringify({ playerName } satisfies StartGameRequest),
+    body: JSON.stringify({ playerName, travelDifficulty } satisfies StartGameRequest),
   });
 }
 

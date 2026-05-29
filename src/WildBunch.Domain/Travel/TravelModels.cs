@@ -170,22 +170,27 @@ public static class JourneyUpkeepRules
             _ => 1
         };
 
-    public static int WaterChargesRequiredPerDay(HorseTravelState? horseState)
-        => horseState is not null && !horseState.IsDead ? 2 : 1;
+    public static int WaterChargesRequiredPerDay(HorseTravelState? horseState, TravelRulesProfile? travelRulesProfile = null)
+    {
+        travelRulesProfile ??= TravelRulesProfile.Default;
+        return horseState is not null && !horseState.IsDeadFor(travelRulesProfile) ? 2 : 1;
+    }
 
     public static JourneyDailyUpkeepResult ApplyDailyUpkeep(
         TrailTerrain terrain,
         WaterFeature waterFeature,
         HorseTravelState? horseState,
         CanteenState? canteenState,
-        int horseFeedAvailable)
+        int horseFeedAvailable,
+        TravelRulesProfile? travelRulesProfile = null)
     {
+        travelRulesProfile ??= TravelRulesProfile.Default;
         var grazingAvailable = HasGrazing(terrain);
         var routeWaterSecure = HasRouteWater(waterFeature);
         var nextHorseState = horseState;
         var nextCanteenState = canteenState;
         var horseFeedConsumed = 0;
-        var livingHorse = horseState is not null && !horseState.IsDead;
+        var livingHorse = horseState is not null && !horseState.IsDeadFor(travelRulesProfile);
 
         if (livingHorse)
         {
@@ -230,7 +235,7 @@ public static class JourneyUpkeepRules
             nextHorseState,
             nextCanteenState,
             horseFeedConsumed,
-            livingHorse && nextHorseState is not null && !nextHorseState.CanProvideMountedTravel);
+            livingHorse && nextHorseState is not null && !nextHorseState.CanProvideMountedTravelFor(travelRulesProfile));
     }
 }
 
@@ -454,16 +459,19 @@ public sealed class TravelJourney
         HorseState = horseState;
     }
 
-    private int CanteenChargesPerDay => JourneyUpkeepRules.WaterChargesRequiredPerDay(HorseState);
+    private int CanteenChargesPerDay(TravelRulesProfile travelRulesProfile)
+        => JourneyUpkeepRules.WaterChargesRequiredPerDay(HorseState, travelRulesProfile);
 
-    public TravelJourneySnapshot ToSnapshot()
+    public TravelJourneySnapshot ToSnapshot(TravelRulesProfile? travelRulesProfile = null)
     {
+        travelRulesProfile ??= TravelRulesProfile.Default;
+        var canteenChargesPerDay = CanteenChargesPerDay(travelRulesProfile);
         var requiredCanteenCharges = RemainingRideDayDistance == 0 || JourneyUpkeepRules.HasRouteWater(Preview.RouteProfile.WaterFeature)
             ? 0
-            : RemainingDays * CanteenChargesPerDay;
+            : RemainingDays * canteenChargesPerDay;
         var waterSecure = JourneyUpkeepRules.HasRouteWater(Preview.RouteProfile.WaterFeature) || AvailableCanteenCharges >= requiredCanteenCharges;
         var canteenReserveCharges = AvailableCanteenCharges - requiredCanteenCharges;
-        var delayMarginDays = CanteenChargesPerDay == 0 ? 0 : Math.Max(0, canteenReserveCharges / CanteenChargesPerDay);
+        var delayMarginDays = canteenChargesPerDay == 0 ? 0 : Math.Max(0, canteenReserveCharges / canteenChargesPerDay);
 
         return new(
             Preview.OriginTownId,
@@ -473,18 +481,18 @@ public sealed class TravelJourney
             Preview.RouteProfile,
             TravelMode,
             Status,
-            Preview.MountedTravelAvailable && (HorseState?.CanProvideMountedTravel ?? false),
+            Preview.MountedTravelAvailable && (HorseState?.CanProvideMountedTravelFor(travelRulesProfile) ?? false),
             waterSecure,
             Preview.RideDayDistance,
             RemainingRideDayDistance,
             Preview.ExpectedDays,
             RemainingDays,
-            CanteenChargesPerDay,
+            canteenChargesPerDay,
             requiredCanteenCharges,
             AvailableCanteenCharges,
             canteenReserveCharges,
             delayMarginDays,
-            CanteenChargesPerDay > 0 && canteenReserveCharges <= 0,
+            canteenChargesPerDay > 0 && canteenReserveCharges <= 0,
             Preview.RequiredFood,
             FoodRemaining,
             Preview.RequiredHorseFeed,
@@ -496,14 +504,16 @@ public sealed class TravelJourney
             Preview.Warnings);
     }
 
-    public JourneyEncounterState? TryCreateEncounter()
+    public JourneyEncounterState? TryCreateEncounter(TravelRulesProfile? travelRulesProfile = null)
     {
+        travelRulesProfile ??= TravelRulesProfile.Default;
+
         if (Status != JourneyStatus.Active || PendingEncounter is not null)
         {
             return null;
         }
 
-        if (Preview.RouteProfile.Risk == TrailRisk.High && DaysTravelled == 1)
+        if (Preview.RouteProfile.Risk == TrailRisk.High && DaysTravelled == travelRulesProfile.FirstEncounterDay)
         {
             return JourneyEncounterState.CreateFoe("A hard-eyed trail rider steps out from the brush and blocks your way.");
         }
@@ -511,14 +521,16 @@ public sealed class TravelJourney
         return null;
     }
 
-    public JourneyTrailEventState? TryCreateTrailEvent()
+    public JourneyTrailEventState? TryCreateTrailEvent(TravelRulesProfile? travelRulesProfile = null)
     {
+        travelRulesProfile ??= TravelRulesProfile.Default;
+
         if (Status != JourneyStatus.Active || PendingEncounter is not null || RemainingRideDayDistance == 0)
         {
             return null;
         }
 
-        if (DaysTravelled != 1)
+        if (DaysTravelled != travelRulesProfile.FirstTrailEventDay)
         {
             return null;
         }
@@ -570,10 +582,12 @@ public sealed class TravelResolver
         DomainWorld world,
         TownId currentTownId,
         TownId destinationTownId,
-        DomainInventory inventory)
+        DomainInventory inventory,
+        TravelRulesProfile? travelRulesProfile = null)
     {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(inventory);
+        travelRulesProfile ??= TravelRulesProfile.Default;
 
         if (!world.TryGetTown(currentTownId, out var originTown))
         {
@@ -591,22 +605,22 @@ public sealed class TravelResolver
             return TravelPreviewResult.Failed("No trail connects those towns.");
         }
 
-        var capabilities = CapabilityResolver.Resolve(inventory);
+        var capabilities = CapabilityResolver.Resolve(inventory, travelRulesProfile);
         var mountedTravelAvailable = capabilities.MountedTravelAvailable;
         var travelMode = mountedTravelAvailable ? TravelMode.Mounted : TravelMode.Foot;
         var horseState = inventory.GetHorseState();
         var canteenState = inventory.GetCanteenState();
-        var routeProfile = BuildRouteProfile(trail);
+        var routeProfile = BuildRouteProfile(trail, travelRulesProfile);
         var rideDayDistance = routeProfile.RideDayDistance;
         var expectedDays = routeProfile.ExpectedDays(travelMode);
         var availableFood = inventory.GetQuantity(ItemKind.Food);
         var availableHorseFeed = inventory.GetQuantity(ItemKind.HorseFeed);
         var grazingAvailable = JourneyUpkeepRules.HasGrazing(routeProfile.Terrain);
         var routeWaterSecure = JourneyUpkeepRules.HasRouteWater(routeProfile.WaterFeature);
-        var livingHorse = horseState is not null && !horseState.IsDead;
+        var livingHorse = horseState is not null && !horseState.IsDeadFor(travelRulesProfile);
         var requiredFood = expectedDays;
         var requiredHorseFeed = livingHorse && !grazingAvailable ? expectedDays : 0;
-        var canteenChargesPerDay = routeWaterSecure ? 0 : JourneyUpkeepRules.WaterChargesRequiredPerDay(horseState);
+        var canteenChargesPerDay = routeWaterSecure ? 0 : JourneyUpkeepRules.WaterChargesRequiredPerDay(horseState, travelRulesProfile);
         var requiredCanteenCharges = expectedDays * canteenChargesPerDay;
         var availableCanteenCharges = canteenState?.Charges ?? 0;
         var canteenReserveCharges = availableCanteenCharges - requiredCanteenCharges;
@@ -689,11 +703,8 @@ public sealed class TravelResolver
             preview);
     }
 
-    private static TravelRouteProfile BuildRouteProfile(Trail trail)
+    private static TravelRouteProfile BuildRouteProfile(Trail trail, TravelRulesProfile travelRulesProfile)
     {
-        const decimal mountedDailyProgress = 1m;
-        const decimal footDailyProgress = 0.5m;
-
         var warnings = new List<string>();
 
         if (trail.Risk >= TrailRisk.Moderate)
@@ -712,8 +723,8 @@ public sealed class TravelResolver
             trail.Terrain,
             trail.WaterFeature,
             trail.RideDayDistance,
-            mountedDailyProgress,
-            footDailyProgress,
+            travelRulesProfile.MountedRideDayProgress,
+            travelRulesProfile.FootRideDayProgress,
             warnings);
     }
 }
