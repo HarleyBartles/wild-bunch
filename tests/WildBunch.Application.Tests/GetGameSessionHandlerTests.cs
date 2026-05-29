@@ -1,6 +1,8 @@
+using System.Text.Json;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
+using WildBunch.Domain.Cases;
 
 namespace WildBunch.Application.Tests;
 
@@ -22,6 +24,11 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
         Assert.Equal(session.PursuitState.Heat, result.PursuitState.Heat);
+        Assert.Equal(new SuspectId("suspect-1"), session.CaseFile.TrueCulpritId);
+
+        var payload = JsonSerializer.Serialize(result);
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

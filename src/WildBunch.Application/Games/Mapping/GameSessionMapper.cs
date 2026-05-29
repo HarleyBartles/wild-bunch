@@ -68,7 +68,6 @@ public static class GameSessionMapper
         return new CaseFileDto(
             accusationId,
             caseFile.Suspects.Select(ToDto).ToArray(),
-            caseFile.TrueCulpritId.Value,
             caseFile.KnownClues.Select(ToDto).ToArray());
     }
 

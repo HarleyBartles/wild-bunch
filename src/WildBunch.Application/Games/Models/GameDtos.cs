@@ -40,7 +40,6 @@ public sealed record TrailDto(
 public sealed record CaseFileDto(
     string? AccusationId,
     IReadOnlyList<SuspectDto> Suspects,
-    string TrueCulpritId,
     IReadOnlyList<ClueDto> KnownClues);
 
 public sealed record SuspectDto(

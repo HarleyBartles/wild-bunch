@@ -29,6 +29,10 @@ public sealed class GameApiTests
         Assert.Equal(6, session.World.Towns.Count);
         Assert.Equal(7, session.World.Trails.Count);
         Assert.NotEmpty(session.LogEntries);
+
+        var payload = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -51,6 +55,10 @@ public sealed class GameApiTests
         Assert.NotNull(fetchedSession);
         Assert.Equal(createdSession.Id, fetchedSession!.Id);
         Assert.Equal(createdSession.Player.Name, fetchedSession.Player.Name);
+
+        var payload = await getResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -79,6 +87,10 @@ public sealed class GameApiTests
         Assert.Equal(10, turnResult.CurrentSession.Player.Supplies);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(1, turnResult.CurrentSession.PursuitState.Heat);
+
+        var payload = await travelResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
