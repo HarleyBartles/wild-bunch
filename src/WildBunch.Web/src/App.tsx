@@ -9,12 +9,12 @@ import {
 } from "./api/wildBunchApi";
 import type {
   AvailableActionDto,
-  AvailableActionKind,
   GameSessionDto,
   JournalDto,
   TrailDto,
   TownDto,
 } from "./api/types";
+import { AvailableActionKind } from "./api/types";
 
 const storageKey = "wild-bunch.current-game-id";
 
