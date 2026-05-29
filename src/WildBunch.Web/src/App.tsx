@@ -11,6 +11,8 @@ import type {
   AvailableActionDto,
   GameSessionDto,
   JournalDto,
+  InventoryCapabilitiesDto,
+  InventoryItemDto,
   TrailDto,
   TownDto,
 } from "./api/types";
@@ -104,6 +106,71 @@ function formatClueKind(kind: number) {
       return "Rumor";
     default:
       return `Clue ${kind}`;
+  }
+}
+
+function formatItemKind(kind: number) {
+  switch (kind) {
+    case 0:
+      return "Food";
+    case 1:
+      return "Horse feed";
+    case 2:
+      return "Canteen";
+    case 3:
+      return "Horse";
+    case 4:
+      return "Saddle";
+    case 5:
+      return "Knife";
+    case 6:
+      return "Revolver";
+    case 7:
+      return "Revolver ammo";
+    case 8:
+      return "Rifle";
+    case 9:
+      return "Rifle ammo";
+    default:
+      return `Item ${kind}`;
+  }
+}
+
+function formatHorseCondition(condition: number) {
+  switch (condition) {
+    case 0:
+      return "Healthy";
+    case 1:
+      return "Lame";
+    case 2:
+      return "Dead";
+    default:
+      return `Condition ${condition}`;
+  }
+}
+
+function formatCapabilityLabel(label: keyof InventoryCapabilitiesDto) {
+  switch (label) {
+    case "mountedTravelAvailable":
+      return "Mounted travel";
+    case "horseUpkeepRequired":
+      return "Horse upkeep";
+    case "normalRouteWaterSecure":
+      return "Water secure";
+    case "trailUtility":
+      return "Trail utility";
+    case "closeThreatAvailable":
+      return "Close threat";
+    case "firearmThreatAvailable":
+      return "Firearm threat";
+    case "gunfightCapable":
+      return "Gunfight capable";
+    case "revolverUsable":
+      return "Revolver usable";
+    case "rifleUsable":
+      return "Rifle usable";
+    default:
+      return label;
   }
 }
 
@@ -448,6 +515,47 @@ export default function App() {
                     <dd>{session.logEntries.length}</dd>
                   </div>
                 </dl>
+              </article>
+
+              <article className="status-card">
+                <h3>Inventory</h3>
+                <dl className="stat-list">
+                  <div>
+                    <dt>Cash</dt>
+                    <dd>${session.inventory.wallet.cash.toFixed(2)}</dd>
+                  </div>
+                  <div>
+                    <dt>Horse condition</dt>
+                    <dd>{session.inventory.horseCondition === null ? "None" : formatHorseCondition(session.inventory.horseCondition)}</dd>
+                  </div>
+                  <div>
+                    <dt>Loadout items</dt>
+                    <dd>{session.inventory.items.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Capabilities</dt>
+                    <dd>{Object.values(session.inventory.capabilities).filter(Boolean).length}</dd>
+                  </div>
+                </dl>
+                <div className="stack">
+                  {session.inventory.items.map((item: InventoryItemDto) => (
+                    <div key={`${item.kind}-${item.horseCondition ?? "none"}`} className="compact-item">
+                      <strong>
+                        {formatItemKind(item.kind)} x {item.quantity}
+                      </strong>
+                      <p>
+                        {item.horseCondition === null ? "No condition" : `Condition: ${formatHorseCondition(item.horseCondition)}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="tag-row">
+                  {Object.entries(session.inventory.capabilities).map(([key, enabled]) => (
+                    <span key={key} className="tag">
+                      {formatCapabilityLabel(key as keyof InventoryCapabilitiesDto)}: {enabled ? "Yes" : "No"}
+                    </span>
+                  ))}
+                </div>
               </article>
             </div>
           ) : null}

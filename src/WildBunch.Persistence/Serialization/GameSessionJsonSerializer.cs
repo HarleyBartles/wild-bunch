@@ -1,7 +1,12 @@
 using System.Reflection;
 using System.Text.Json;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
+using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
+using DomainInventoryItemKind = WildBunch.Domain.Inventory.ItemKind;
+using DomainHorseCondition = WildBunch.Domain.Inventory.HorseCondition;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
@@ -73,18 +78,62 @@ public sealed class GameSessionJsonSerializer
         }
     }
 
-    private sealed record PlayerSnapshot(string Name, string CurrentTownId, int Health, decimal Money, int Supplies)
+    private sealed record PlayerSnapshot(
+        string Name,
+        string CurrentTownId,
+        int Health,
+        decimal Money,
+        int Supplies,
+        WalletSnapshot? Wallet,
+        InventorySnapshot? Inventory)
     {
         public static PlayerSnapshot FromDomain(Player player)
-            => new(player.Name, player.CurrentTownId.Value, player.Health, player.Money, player.Supplies.Units);
+            => new(
+                player.Name,
+                player.CurrentTownId.Value,
+                player.Health,
+                player.Money,
+                player.Supplies.Units,
+                WalletSnapshot.FromDomain(player.Wallet),
+                InventorySnapshot.FromDomain(player.Inventory));
 
         public static Player ToDomain(PlayerSnapshot snapshot)
             => new(
                 snapshot.Name,
                 new TownId(snapshot.CurrentTownId),
                 snapshot.Health,
-                snapshot.Money,
+                WalletSnapshot.ToDomain(snapshot.Wallet, snapshot.Money),
+                InventorySnapshot.ToDomain(snapshot.Inventory),
                 new Supplies(snapshot.Supplies));
+    }
+
+    private sealed record WalletSnapshot(decimal Cash)
+    {
+        public static WalletSnapshot FromDomain(Wallet wallet)
+            => new(wallet.Cash);
+
+        public static Wallet ToDomain(WalletSnapshot? snapshot, decimal fallbackCash)
+            => snapshot is null ? new Wallet(fallbackCash) : new Wallet(snapshot.Cash);
+    }
+
+    private sealed record InventorySnapshot(IReadOnlyList<InventoryItemSnapshot> Items)
+    {
+        public static InventorySnapshot FromDomain(DomainInventory inventory)
+            => new(inventory.Items.Select(InventoryItemSnapshot.FromDomain).ToArray());
+
+        public static DomainInventory ToDomain(InventorySnapshot? snapshot)
+            => snapshot is null
+                ? DomainInventory.Empty()
+                : new DomainInventory(snapshot.Items.Select(InventoryItemSnapshot.ToDomain));
+    }
+
+    private sealed record InventoryItemSnapshot(DomainInventoryItemKind Kind, int Quantity, DomainHorseCondition? HorseCondition)
+    {
+        public static InventoryItemSnapshot FromDomain(DomainInventoryItem item)
+            => new(item.Kind, item.Quantity, item.HorseCondition);
+
+        public static DomainInventoryItem ToDomain(InventoryItemSnapshot snapshot)
+            => new(snapshot.Kind, snapshot.Quantity, snapshot.HorseCondition);
     }
 
     private sealed record WorldSnapshot(IReadOnlyList<TownSnapshot> Towns, IReadOnlyList<TrailSnapshot> Trails)

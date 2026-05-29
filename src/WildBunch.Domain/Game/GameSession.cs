@@ -1,4 +1,8 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
+using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using DomainInventoryCapabilities = WildBunch.Domain.Inventory.InventoryCapabilities;
+using DomainInventoryCapabilityResolver = WildBunch.Domain.Inventory.InventoryCapabilityResolver;
 using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
 
@@ -43,6 +47,16 @@ public sealed class GameSession
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, supplies: null);
+
+    public static GameSession StartNew(
+        string playerName,
+        DomainWorld world,
+        CaseFile caseFile,
+        TownId? startingTownId,
+        Wallet? wallet,
+        DomainInventory? inventory,
+        Supplies? supplies)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -50,8 +64,13 @@ public sealed class GameSession
 
         var resolvedTownId = startingTownId ?? world.Towns.First().Id;
         var startingTown = world.GetTown(resolvedTownId);
-
-        var player = new Player(playerName, startingTown.Id, health: 100, money: 25m, Supplies.Starting());
+        var player = new Player(
+            playerName,
+            startingTown.Id,
+            health: 100,
+            wallet ?? Wallet.Starting(25m),
+            inventory ?? DomainInventory.Empty(),
+            supplies ?? Supplies.Starting());
         var session = new GameSession(
             GameSessionId.New(),
             player,
@@ -109,14 +128,15 @@ public enum GameStatus
 
 public sealed class Player
 {
-    public Player(string name, World.TownId currentTownId, int health, decimal money, Supplies supplies)
+    public Player(string name, World.TownId currentTownId, int health, Wallet wallet, DomainInventory inventory, Supplies supplies)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         Name = name;
         CurrentTownId = currentTownId;
         Health = health;
-        Money = money;
+        Wallet = wallet;
+        Inventory = inventory;
         Supplies = supplies;
     }
 
@@ -126,9 +146,15 @@ public sealed class Player
 
     public int Health { get; private set; }
 
-    public decimal Money { get; private set; }
+    public Wallet Wallet { get; private set; }
 
     public Supplies Supplies { get; private set; }
+
+    public decimal Money => Wallet.Cash;
+
+    public DomainInventory Inventory { get; private set; }
+
+    public DomainInventoryCapabilities Capabilities => new DomainInventoryCapabilityResolver().Resolve(Inventory);
 
     public void TravelTo(World.TownId destinationTownId, int supplyCost)
     {
@@ -148,7 +174,7 @@ public sealed class Player
 
     public void AdjustMoney(decimal amount)
     {
-        Money += amount;
+        Wallet = Wallet.Adjust(amount);
     }
 }
 

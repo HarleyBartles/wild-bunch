@@ -26,6 +26,11 @@ public sealed class GameApiTests
         Assert.Equal("Ranger Vale", session.Player.Name);
         Assert.Equal("pinecross", session.Player.CurrentTownId);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, session.Status);
+        Assert.Equal(25m, session.Inventory.Wallet.Cash);
+        Assert.Equal(8, session.Inventory.Items.Count);
+        Assert.True(session.Inventory.Capabilities.MountedTravelAvailable);
+        Assert.True(session.Inventory.Capabilities.GunfightCapable);
+        Assert.False(session.Inventory.Capabilities.RifleUsable);
         Assert.Equal(6, session.World.Towns.Count);
         Assert.Equal(7, session.World.Trails.Count);
         Assert.Equal("A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
@@ -59,6 +64,7 @@ public sealed class GameApiTests
         Assert.NotNull(fetchedSession);
         Assert.Equal(createdSession.Id, fetchedSession!.Id);
         Assert.Equal(createdSession.Player.Name, fetchedSession.Player.Name);
+        Assert.Equal(createdSession.Inventory.Wallet.Cash, fetchedSession.Inventory.Wallet.Cash);
         Assert.Equal(createdSession.CaseFile.OpeningLead, fetchedSession.CaseFile.OpeningLead);
 
         var payload = await getResponse.Content.ReadAsStringAsync();
@@ -90,6 +96,7 @@ public sealed class GameApiTests
         Assert.Equal("Travelled to redmesa.", turnResult.Message);
         Assert.Equal("redmesa", turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(10, turnResult.CurrentSession.Player.Supplies);
+        Assert.True(turnResult.CurrentSession.Inventory.Capabilities.MountedTravelAvailable);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(1, turnResult.CurrentSession.PursuitState.Heat);
         Assert.Equal(0, turnResult.CurrentSession.CaseFile.KillerReleaseState.Progress);

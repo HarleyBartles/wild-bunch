@@ -18,6 +18,8 @@ export type SuspectStatus = 0 | 1 | 2;
 export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3;
 export type GameLogEntryKind = 0 | 1 | 2;
+export type ItemKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+export type HorseCondition = 0 | 1 | 2;
 
 export interface StartGameRequest {
   playerName: string;
@@ -34,6 +36,35 @@ export interface GameClockDto {
 
 export interface PursuitStateDto {
   heat: number;
+}
+
+export interface WalletDto {
+  cash: number;
+}
+
+export interface InventoryItemDto {
+  kind: ItemKind;
+  quantity: number;
+  horseCondition: HorseCondition | null;
+}
+
+export interface InventoryCapabilitiesDto {
+  mountedTravelAvailable: boolean;
+  horseUpkeepRequired: boolean;
+  normalRouteWaterSecure: boolean;
+  trailUtility: boolean;
+  closeThreatAvailable: boolean;
+  firearmThreatAvailable: boolean;
+  gunfightCapable: boolean;
+  revolverUsable: boolean;
+  rifleUsable: boolean;
+}
+
+export interface InventoryDto {
+  wallet: WalletDto;
+  items: InventoryItemDto[];
+  horseCondition: HorseCondition | null;
+  capabilities: InventoryCapabilitiesDto;
 }
 
 export interface PlayerDto {
@@ -125,6 +156,7 @@ export interface GameSessionDto {
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;
+  inventory: InventoryDto;
   clock: GameClockDto;
   pursuitState: PursuitStateDto;
   logEntries: GameLogEntryDto[];

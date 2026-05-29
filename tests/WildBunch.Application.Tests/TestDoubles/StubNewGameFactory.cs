@@ -1,6 +1,8 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Tests.TestDoubles;
@@ -55,6 +57,26 @@ public sealed class StubNewGameFactory : INewGameFactory
             new SuspectId("suspect-1"),
             CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
             Array.Empty<Clue>());
-        return GameSession.StartNew("Ranger Vale", world, caseFile);
+
+        var inventory = new Inventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 3),
+            new InventoryItem(ItemKind.HorseFeed, 2),
+            new InventoryItem(ItemKind.Canteen, 1),
+            new InventoryItem(ItemKind.Horse, 1, HorseCondition.Healthy),
+            new InventoryItem(ItemKind.Saddle, 1),
+            new InventoryItem(ItemKind.Knife, 1),
+            new InventoryItem(ItemKind.Revolver, 1),
+            new InventoryItem(ItemKind.RevolverAmmo, 4)
+        });
+
+        return GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            dustvale.Id,
+            Wallet.Starting(25m),
+            inventory,
+            Supplies.Starting());
     }
 }

@@ -1,6 +1,7 @@
 using WildBunch.GameContent.NewGame;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 
 namespace WildBunch.GameContent.Tests;
 
@@ -15,6 +16,18 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Equal("Ranger Vale", session.Player.Name);
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(8, session.Player.Inventory.Items.Count);
+        Assert.Equal(HorseCondition.Healthy, session.Player.Inventory.GetHorseCondition());
+        Assert.True(session.Player.Capabilities.MountedTravelAvailable);
+        Assert.True(session.Player.Capabilities.HorseUpkeepRequired);
+        Assert.True(session.Player.Capabilities.NormalRouteWaterSecure);
+        Assert.True(session.Player.Capabilities.TrailUtility);
+        Assert.True(session.Player.Capabilities.CloseThreatAvailable);
+        Assert.True(session.Player.Capabilities.FirearmThreatAvailable);
+        Assert.True(session.Player.Capabilities.GunfightCapable);
+        Assert.True(session.Player.Capabilities.RevolverUsable);
+        Assert.False(session.Player.Capabilities.RifleUsable);
         Assert.Equal(6, session.World.Towns.Count);
         Assert.Equal(7, session.World.Trails.Count);
         Assert.Contains(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("redmesa")));

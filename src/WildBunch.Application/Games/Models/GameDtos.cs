@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Games.Models;
@@ -10,6 +11,7 @@ public sealed record GameSessionDto(
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,
+    InventoryDto Inventory,
     GameClockDto Clock,
     PursuitStateDto PursuitState,
     IReadOnlyList<GameLogEntryDto> LogEntries);
@@ -20,6 +22,30 @@ public sealed record PlayerDto(
     int Health,
     decimal Money,
     int Supplies);
+
+public sealed record InventoryDto(
+    WalletDto Wallet,
+    IReadOnlyList<InventoryItemDto> Items,
+    HorseCondition? HorseCondition,
+    InventoryCapabilitiesDto Capabilities);
+
+public sealed record WalletDto(decimal Cash);
+
+public sealed record InventoryItemDto(
+    ItemKind Kind,
+    int Quantity,
+    HorseCondition? HorseCondition);
+
+public sealed record InventoryCapabilitiesDto(
+    bool MountedTravelAvailable,
+    bool HorseUpkeepRequired,
+    bool NormalRouteWaterSecure,
+    bool TrailUtility,
+    bool CloseThreatAvailable,
+    bool FirearmThreatAvailable,
+    bool GunfightCapable,
+    bool RevolverUsable,
+    bool RifleUsable);
 
 public sealed record WorldDto(
     IReadOnlyList<TownDto> Towns,

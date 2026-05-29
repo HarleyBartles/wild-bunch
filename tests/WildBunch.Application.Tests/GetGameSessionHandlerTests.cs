@@ -21,6 +21,11 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.Id.Value, result.Id);
         Assert.Equal(session.Player.Name, result.Player.Name);
         Assert.Equal(session.Player.CurrentTownId.Value, result.Player.CurrentTownId);
+        Assert.Equal(session.Player.Wallet.Cash, result.Inventory.Wallet.Cash);
+        Assert.Equal(session.Player.Inventory.Items.Count, result.Inventory.Items.Count);
+        Assert.Equal(session.Player.Inventory.GetHorseCondition(), result.Inventory.HorseCondition);
+        Assert.Equal(session.Player.Capabilities.MountedTravelAvailable, result.Inventory.Capabilities.MountedTravelAvailable);
+        Assert.Equal(session.Player.Capabilities.GunfightCapable, result.Inventory.Capabilities.GunfightCapable);
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
         Assert.Equal(session.PursuitState.Heat, result.PursuitState.Heat);

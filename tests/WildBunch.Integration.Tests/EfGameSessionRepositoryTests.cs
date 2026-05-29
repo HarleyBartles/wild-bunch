@@ -1,6 +1,8 @@
 using WildBunch.Application.Games.Commands;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
@@ -25,6 +27,9 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.Id, reloaded!.Id);
         Assert.Equal(session.Player.Name, reloaded.Player.Name);
         Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.Wallet.Cash, reloaded.Player.Wallet.Cash);
+        Assert.Equal(session.Player.Inventory.Items.Count, reloaded.Player.Inventory.Items.Count);
+        Assert.Equal(session.Player.Inventory.GetHorseCondition(), reloaded.Player.Inventory.GetHorseCondition());
         Assert.Equal(session.Status, reloaded.Status);
         Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
         Assert.Equal(session.CaseFile.OpeningLead.Description, reloaded.CaseFile.OpeningLead.Description);
@@ -57,6 +62,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded);
         Assert.Equal(new TownId("silvercreek"), reloaded!.Player.CurrentTownId);
         Assert.Equal(10, reloaded.Player.Supplies.Units);
+        Assert.Equal(25m, reloaded.Player.Wallet.Cash);
+        Assert.True(reloaded.Player.Capabilities.MountedTravelAvailable);
         Assert.Equal(1, reloaded.Clock.Turn);
         Assert.Equal(1, reloaded.PursuitState.Heat);
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
@@ -96,6 +103,19 @@ public sealed class EfGameSessionRepositoryTests
             new SuspectId("suspect-1"),
             CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
             Array.Empty<Clue>());
-        return GameSession.StartNew("Ranger Vale", world, caseFile);
+
+        var inventory = new Inventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 3),
+            new InventoryItem(ItemKind.HorseFeed, 2),
+            new InventoryItem(ItemKind.Canteen, 1),
+            new InventoryItem(ItemKind.Horse, 1, HorseCondition.Healthy),
+            new InventoryItem(ItemKind.Saddle, 1),
+            new InventoryItem(ItemKind.Knife, 1),
+            new InventoryItem(ItemKind.Revolver, 1),
+            new InventoryItem(ItemKind.RevolverAmmo, 4)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, Supplies.Starting());
     }
 }
