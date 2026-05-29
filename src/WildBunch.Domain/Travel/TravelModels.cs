@@ -839,8 +839,37 @@ public sealed class TravelResolver
 
         return new TravelPreviewResult(
             true,
-            $"Previewed trail from {originTown.Name} to {destinationTown.Name}.",
+            $"Previewed {travelMode.ToString().ToLowerInvariant()} travel from {originTown.Name} to {destinationTown.Name}: {rideDayDistance:0.##} ride-day unit(s), {expectedDays} day(s); {DescribeCanteenCoverage(routeProfile.WaterFeature, canteenChargesPerDay, canteenReserveCharges, delayMarginDays)}",
             preview);
+    }
+
+    private static string DescribeCanteenCoverage(
+        WaterFeature waterFeature,
+        int canteenChargesPerDay,
+        int canteenReserveCharges,
+        int delayMarginDays)
+    {
+        if (JourneyUpkeepRules.HasRouteWater(waterFeature))
+        {
+            return "Route water is secure, so no canteen reserve is required";
+        }
+
+        if (canteenChargesPerDay <= 0)
+        {
+            return "No canteen water is required on this trail";
+        }
+
+        if (canteenReserveCharges == 0)
+        {
+            return "The canteen exactly covers the base trail and has no reserve for delays";
+        }
+
+        if (canteenReserveCharges > 0)
+        {
+            return $"The canteen has {canteenReserveCharges} spare charge(s) and can absorb {delayMarginDays} delay day(s)";
+        }
+
+        return $"The canteen is short by {Math.Abs(canteenReserveCharges)} charge(s) for the base trail";
     }
 
     private static TravelRouteProfile BuildRouteProfile(Trail trail, TravelRulesProfile travelRulesProfile)

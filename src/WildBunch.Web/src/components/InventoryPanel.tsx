@@ -37,7 +37,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             <strong>
               {formatItemKind(item.kind)} x {item.quantity}
             </strong>
-            <p>{[item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null, item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null].filter(Boolean).join(" · ") || "No travel state"}</p>
+            <p>{[item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null, item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null].filter(Boolean).join(" | ") || "No travel state"}</p>
           </div>
         ))}
       </div>

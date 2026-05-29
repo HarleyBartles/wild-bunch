@@ -111,15 +111,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         Journey = TravelJourney.Start(preview);
+        var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
         AddLogEntry(
             GameLogEntryKind.Travel,
-            $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName}.");
+            startMessage);
 
         return new TravelJourneyStepResult(
             true,
             JourneyStatus.Active,
-            $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName}.",
-            $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName}.",
+            startMessage,
+            startMessage,
             0,
             Journey.ToSnapshot(TravelRules));
     }
@@ -289,8 +290,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         var ongoingSnapshot = Journey.ToSnapshot(TravelRules);
         var ongoingMessage = horseLostMessage.Length == 0
-            ? $"One trail day passes. {Journey.RemainingDays} day(s) remain on the route."
-            : $"{horseLostMessage} One trail day passes on foot. {Journey.RemainingDays} day(s) remain on the route.";
+            ? $"One trail day passes. {ongoingSnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(ongoingSnapshot)}."
+            : $"{horseLostMessage} One trail day passes on foot. {ongoingSnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(ongoingSnapshot)}.";
         AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
 
         return new TravelJourneyStepResult(
@@ -556,8 +557,46 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, bribeMessage, Journey.ToSnapshot(TravelRules));
 
             default:
-                return JourneyEncounterResolutionResult.Failed("That choice is not recognized.", Journey.Status, Journey.ToSnapshot(TravelRules));
+                return JourneyEncounterResolutionResult.Failed("That choice is not available for this encounter.", Journey.Status, Journey.ToSnapshot(TravelRules));
         }
+    }
+
+    private static string DescribeTravelMode(TravelMode travelMode)
+        => travelMode == TravelMode.Mounted ? "by mounted travel" : "on foot";
+
+    private static string DescribeCanteenCoverage(TravelPreview preview)
+        => DescribeCanteenCoverage(preview.RouteProfile.WaterFeature, preview.CanteenChargesPerDay, preview.CanteenReserveCharges, preview.DelayMarginDays);
+
+    private static string DescribeCanteenCoverage(TravelJourneySnapshot snapshot)
+        => DescribeCanteenCoverage(snapshot.RouteProfile.WaterFeature, snapshot.CanteenChargesPerDay, snapshot.CanteenReserveCharges, snapshot.DelayMarginDays);
+
+    private static string DescribeCanteenCoverage(
+        WaterFeature waterFeature,
+        int canteenChargesPerDay,
+        int canteenReserveCharges,
+        int delayMarginDays)
+    {
+        if (JourneyUpkeepRules.HasRouteWater(waterFeature))
+        {
+            return "Route water is secure, so no canteen reserve is required";
+        }
+
+        if (canteenChargesPerDay <= 0)
+        {
+            return "No canteen water is required on this trail";
+        }
+
+        if (canteenReserveCharges == 0)
+        {
+            return "The canteen exactly covers the base trail and has no reserve for delays";
+        }
+
+        if (canteenReserveCharges > 0)
+        {
+            return $"The canteen has {canteenReserveCharges} spare charge(s) and can absorb {delayMarginDays} delay day(s)";
+        }
+
+        return $"The canteen is short by {Math.Abs(canteenReserveCharges)} charge(s) for the base trail";
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)

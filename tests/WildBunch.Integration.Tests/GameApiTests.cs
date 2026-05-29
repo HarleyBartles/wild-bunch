@@ -107,6 +107,9 @@ public sealed class GameApiTests
         Assert.Equal(2, preview.Preview.RequiredFood);
         Assert.Equal(0, preview.Preview.RequiredCanteenCharges);
         Assert.Equal(0, preview.Preview.CanteenChargesPerDay);
+        Assert.Equal(0, preview.Preview.DelayMarginDays);
+        Assert.NotNull(preview.Preview.RouteProfile);
+        Assert.Equal(2m, preview.Preview.RouteProfile.RideDayDistance);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
@@ -120,6 +123,10 @@ public sealed class GameApiTests
         Assert.True(turnResult!.Success);
         Assert.Equal(JourneyStatus.Active, turnResult.JourneyStatus);
         Assert.NotNull(turnResult.Journey);
+        Assert.Equal(TravelMode.Mounted, turnResult.Journey!.TravelMode);
+        Assert.Equal(2m, turnResult.Journey.RideDayDistance);
+        Assert.Equal(2, turnResult.Journey.ExpectedDays);
+        Assert.Equal(0, turnResult.Journey.DelayDays);
         Assert.Equal("pinecross", turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.NotNull(turnResult.CurrentSession.Journey);
@@ -228,6 +235,7 @@ public sealed class GameApiTests
         Assert.NotNull(firstAdvance.Journey!.PendingEncounter);
         Assert.Equal("foe", firstAdvance.Journey.PendingEncounter!.Kind);
         Assert.Equal(3, firstAdvance.Journey.PendingEncounter.Choices.Count);
+        Assert.Equal(new[] { "run", "fight", "bribe" }, firstAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
         Assert.Equal(2, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
         var blockedAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
@@ -255,6 +263,7 @@ public sealed class GameApiTests
         Assert.NotNull(resolved.CurrentSession.Journey);
         Assert.Null(resolved.CurrentSession.Journey!.PendingEncounter);
         Assert.Equal(0, resolved.CurrentSession.Journey.DelayDays);
+        Assert.Equal(TravelMode.Mounted, resolved.CurrentSession.Journey.TravelMode);
 
         var resumeAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 

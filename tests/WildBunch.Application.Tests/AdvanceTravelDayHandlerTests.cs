@@ -28,6 +28,10 @@ public sealed class AdvanceTravelDayHandlerTests
         Assert.Equal(JourneyTrailEventId.LuckyFoodCache, result.TrailEvent!.Id);
         Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent.Kind);
         Assert.Equal("Trail grub cache", result.TrailEvent.Title);
+        Assert.Equal(0m, result.TrailEvent.WalletDelta);
+        Assert.Equal(2, result.TrailEvent.FoodDelta);
+        Assert.Equal(0, result.TrailEvent.CanteenChargeDelta);
+        Assert.Contains("jerky", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(4, result.CurrentSession.Inventory.Items.First(item => item.Kind == ItemKind.Food).Quantity);
     }
 

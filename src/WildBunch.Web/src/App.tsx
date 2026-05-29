@@ -12,6 +12,7 @@ import {
 import type {
   AvailableActionDto,
   GameSessionDto,
+  GameTurnResultDto,
   JournalDto,
   TownStoreOffersDto,
   TrailDto,
@@ -19,6 +20,7 @@ import type {
 } from "./api/types";
 import { AvailableActionKind } from "./api/types";
 import { InventoryPanel } from "./components/InventoryPanel";
+import { TravelPanel } from "./components/TravelPanel";
 import { StoreOffersPanel } from "./components/StoreOffersPanel";
 import {
   formatActionKind,
@@ -83,6 +85,7 @@ export default function App() {
   const [actions, setActions] = useState<AvailableActionDto[]>([]);
   const [storeOffers, setStoreOffers] = useState<TownStoreOffersDto | null>(null);
   const [storeOffersLoading, setStoreOffersLoading] = useState(false);
+  const [lastTravelResult, setLastTravelResult] = useState<GameTurnResultDto | null>(null);
   const [busyMode, setBusyMode] = useState<BusyMode>("booting");
   const [notice, setNotice] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -161,6 +164,7 @@ export default function App() {
     setError("");
     setStoreOffers(null);
     setStoreOffersLoading(false);
+    setLastTravelResult(null);
 
     try {
       const [sessionResult, actionsResult, journalResult] = await Promise.all([
@@ -197,6 +201,7 @@ export default function App() {
     setError("");
     setStoreOffers(null);
     setStoreOffersLoading(false);
+    setLastTravelResult(null);
 
     try {
       const createdSession = await createGame(trimmedName);
@@ -231,6 +236,7 @@ export default function App() {
     try {
       const result = await travel(gameId, destinationTownId);
       setSession(result.currentSession);
+      setLastTravelResult(result);
       await reloadCurrentGame(gameId);
       setNotice(result.message);
     } catch (exception) {
@@ -302,6 +308,7 @@ export default function App() {
     setActions([]);
     setStoreOffers(null);
     setStoreOffersLoading(false);
+    setLastTravelResult(null);
     setNotice("");
     setError("");
     setBusyMode("idle");
@@ -437,6 +444,7 @@ export default function App() {
                 busy={loading}
                 onBuyOffer={handleBuyOffer}
               />
+              <TravelPanel journey={session.journey} latestTravelResult={lastTravelResult} />
             </div>
           ) : null}
         </section>

@@ -24,13 +24,19 @@ public sealed class TravelToTownHandlerTests
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
         Assert.True(result.Success);
-        Assert.Equal("You set out from Dustvale toward Silver Creek.", result.Message);
+        Assert.Contains("You set out from Dustvale toward Silver Creek", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ride-day unit(s)", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
+        Assert.NotNull(result.Journey);
+        Assert.Equal("dustvale", result.Journey!.OriginTownId);
+        Assert.Equal("silvercreek", result.Journey.DestinationTownId);
+        Assert.Equal(result.CurrentSession.Journey!.TravelMode, result.Journey.TravelMode);
+        Assert.Equal(result.CurrentSession.Journey.RouteProfile.TrailId, result.Journey.RouteProfile.TrailId);
     }
 
     [Fact]
@@ -63,7 +69,8 @@ public sealed class TravelToTownHandlerTests
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
         Assert.True(result.Success);
-        Assert.Equal("You set out from Dustvale toward Silver Creek.", result.Message);
+        Assert.Contains("You set out from Dustvale toward Silver Creek", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ride-day unit(s)", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);

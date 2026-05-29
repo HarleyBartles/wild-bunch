@@ -49,6 +49,62 @@ export function formatRisk(risk: number) {
   }
 }
 
+export function formatTravelMode(mode: number) {
+  switch (mode) {
+    case 0:
+      return "Mounted";
+    case 1:
+      return "Foot";
+    default:
+      return `Mode ${mode}`;
+  }
+}
+
+export function formatJourneyStatus(status: number) {
+  switch (status) {
+    case 0:
+      return "Active";
+    case 1:
+      return "Interrupted";
+    case 2:
+      return "Completed";
+    case 3:
+      return "Failed";
+    default:
+      return `Status ${status}`;
+  }
+}
+
+export function formatTrailTerrain(terrain: number) {
+  switch (terrain) {
+    case 0:
+      return "Open range";
+    case 1:
+      return "Hills";
+    case 2:
+      return "Badlands";
+    case 3:
+      return "Mountains";
+    default:
+      return `Terrain ${terrain}`;
+  }
+}
+
+export function formatWaterFeature(feature: number) {
+  switch (feature) {
+    case 0:
+      return "None";
+    case 1:
+      return "Creek";
+    case 2:
+      return "River";
+    case 3:
+      return "Spring";
+    default:
+      return `Water ${feature}`;
+  }
+}
+
 export function formatServices(services: number) {
   const labels: string[] = [];
   if (services & 1) labels.push("Supplies");

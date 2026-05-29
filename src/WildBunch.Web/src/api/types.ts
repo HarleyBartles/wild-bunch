@@ -1,5 +1,13 @@
 export type GameStatus = 0 | 1 | 2;
 export type TravelDifficulty = 0 | 1 | 2;
+export type JourneyStatus = 0 | 1 | 2 | 3;
+export const JourneyStatus = {
+  Active: 0,
+  Interrupted: 1,
+  Completed: 2,
+  Failed: 3,
+} as const;
+export type TravelMode = 0 | 1;
 
 export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export const AvailableActionKind = {
@@ -89,6 +97,92 @@ export interface CanteenStateDto {
   charges: number;
   capacity: number;
   hasWater: boolean;
+}
+
+export interface TravelRouteProfileDto {
+  trailId: string;
+  risk: TrailRisk;
+  terrain: TrailTerrain;
+  waterFeature: WaterFeature;
+  rideDayDistance: number;
+  mountedRideDayProgress: number;
+  footRideDayProgress: number;
+  warnings: string[];
+}
+
+export interface TravelPreviewDto {
+  originTownId: string;
+  originTownName: string;
+  destinationTownId: string;
+  destinationTownName: string;
+  travelMode: TravelMode;
+  mountedTravelAvailable: boolean;
+  waterSecure: boolean;
+  rideDayDistance: number;
+  remainingRideDayDistance: number;
+  expectedDays: number;
+  remainingDays: number;
+  canteenChargesPerDay: number;
+  requiredCanteenCharges: number;
+  availableCanteenCharges: number;
+  canteenReserveCharges: number;
+  delayMarginDays: number;
+  delayRisk: boolean;
+  requiredFood: number;
+  availableFood: number;
+  requiredHorseFeed: number;
+  availableHorseFeed: number;
+  horseState: HorseTravelStateDto | null;
+  warnings: string[];
+  routeProfile: TravelRouteProfileDto;
+}
+
+export interface TravelPreviewResultDto {
+  success: boolean;
+  message: string;
+  preview: TravelPreviewDto | null;
+}
+
+export interface JourneyEncounterChoiceDto {
+  id: string;
+  label: string;
+}
+
+export interface JourneyEncounterDto {
+  kind: string;
+  message: string;
+  choices: JourneyEncounterChoiceDto[];
+}
+
+export interface TravelJourneyDto {
+  originTownId: string;
+  originTownName: string;
+  destinationTownId: string;
+  destinationTownName: string;
+  travelMode: TravelMode;
+  status: JourneyStatus;
+  mountedTravelAvailable: boolean;
+  waterSecure: boolean;
+  rideDayDistance: number;
+  remainingRideDayDistance: number;
+  expectedDays: number;
+  remainingDays: number;
+  canteenChargesPerDay: number;
+  requiredCanteenCharges: number;
+  availableCanteenCharges: number;
+  canteenReserveCharges: number;
+  delayMarginDays: number;
+  delayRisk: boolean;
+  requiredFood: number;
+  availableFood: number;
+  requiredHorseFeed: number;
+  availableHorseFeed: number;
+  horseState: HorseTravelStateDto | null;
+  daysTravelled: number;
+  delayDays: number;
+  pendingEncounter: JourneyEncounterDto | null;
+  warnings: string[];
+  routeProfile: TravelRouteProfileDto;
 }
 
 export interface PlayerDto {
@@ -222,6 +316,7 @@ export interface GameSessionDto {
   inventory: InventoryDto;
   clock: GameClockDto;
   pursuitState: PursuitStateDto;
+  journey: TravelJourneyDto | null;
   logEntries: GameLogEntryDto[];
 }
 
