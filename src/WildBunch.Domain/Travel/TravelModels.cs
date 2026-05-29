@@ -1,0 +1,46 @@
+using DomainGameSession = WildBunch.Domain.Game.GameSession;
+using DomainWorld = WildBunch.Domain.World.World;
+using TownId = WildBunch.Domain.World.TownId;
+
+namespace WildBunch.Domain.Travel;
+
+public sealed record TravelResult(bool Success, string Message)
+{
+    public static TravelResult Failed(string message) => new(false, message);
+
+    public static TravelResult Succeeded(string message) => new(true, message);
+}
+
+public sealed class TravelResolver
+{
+    public TravelResult Travel(
+        DomainWorld world,
+        DomainGameSession session,
+        TownId destinationTownId)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(session);
+
+        var currentTownId = session.Player.CurrentTownId;
+        var trail = world.FindConnectedTrail(currentTownId, destinationTownId);
+
+        if (trail is null)
+        {
+            return TravelResult.Failed("No trail connects those towns.");
+        }
+
+        if (!session.Player.Supplies.CanAfford(trail.SupplyCost))
+        {
+            return TravelResult.Failed("Not enough supplies to travel.");
+        }
+
+        var heatIncrease = Math.Max(1, (int)trail.Risk);
+        session.ApplyTravel(
+            destinationTownId,
+            trail.SupplyCost,
+            heatIncrease,
+            $"You travel from {currentTownId.Value} to {destinationTownId.Value}.");
+
+        return TravelResult.Succeeded($"Travelled to {destinationTownId.Value}.");
+    }
+}
