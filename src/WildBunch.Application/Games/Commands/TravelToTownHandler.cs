@@ -25,7 +25,7 @@ public sealed class TravelToTownHandler
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
         var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var destinationTownId = new TownId(command.DestinationTownId);
-        var travelResult = _travelResolver.Travel(session.World, session, destinationTownId);
+        var travelResult = _travelResolver.Travel(session.World, session.Player.CurrentTownId, destinationTownId);
 
         if (travelResult.Success)
         {

@@ -4,6 +4,7 @@ import {
   getAvailableActions,
   getGame,
   getJournal,
+  getTownStoreOffers,
   readWantedPosters,
   travel,
 } from "./api/wildBunchApi";
@@ -11,11 +12,13 @@ import type {
   AvailableActionDto,
   GameSessionDto,
   JournalDto,
+  TownStoreOffersDto,
   TrailDto,
   TownDto,
 } from "./api/types";
 import { AvailableActionKind } from "./api/types";
 import { InventoryPanel } from "./components/InventoryPanel";
+import { StoreOffersPanel } from "./components/StoreOffersPanel";
 import {
   formatActionKind,
   formatAliasKind,
@@ -77,6 +80,8 @@ export default function App() {
   const [session, setSession] = useState<GameSessionDto | null>(null);
   const [journal, setJournal] = useState<JournalDto | null>(null);
   const [actions, setActions] = useState<AvailableActionDto[]>([]);
+  const [storeOffers, setStoreOffers] = useState<TownStoreOffersDto | null>(null);
+  const [storeOffersLoading, setStoreOffersLoading] = useState(false);
   const [busyMode, setBusyMode] = useState<BusyMode>("booting");
   const [notice, setNotice] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -93,6 +98,43 @@ export default function App() {
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
 
   useEffect(() => {
+    if (!gameId || !currentTown?.id) {
+      setStoreOffers(null);
+      setStoreOffersLoading(false);
+      return;
+    }
+
+    const activeGameId = gameId;
+    const activeTownId = currentTown.id;
+    let cancelled = false;
+
+    async function loadTownStoreOffers() {
+      setStoreOffersLoading(true);
+
+      try {
+        const offers = await getTownStoreOffers(activeGameId, activeTownId);
+        if (!cancelled) {
+          setStoreOffers(offers);
+        }
+      } catch {
+        if (!cancelled) {
+          setStoreOffers(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setStoreOffersLoading(false);
+        }
+      }
+    }
+
+    void loadTownStoreOffers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTown?.id, gameId]);
+
+  useEffect(() => {
     const storedGameId = window.localStorage.getItem(storageKey);
     if (!storedGameId) {
       setBusyMode("idle");
@@ -105,6 +147,8 @@ export default function App() {
   async function hydrateGame(activeGameId: string) {
     setBusyMode((current) => (current === "booting" ? "booting" : "refreshing"));
     setError("");
+    setStoreOffers(null);
+    setStoreOffersLoading(false);
 
     try {
       const [sessionResult, actionsResult, journalResult] = await Promise.all([
@@ -139,6 +183,8 @@ export default function App() {
 
     setBusyMode("starting");
     setError("");
+    setStoreOffers(null);
+    setStoreOffersLoading(false);
 
     try {
       const createdSession = await createGame(trimmedName);
@@ -207,6 +253,8 @@ export default function App() {
     setSession(null);
     setJournal(null);
     setActions([]);
+    setStoreOffers(null);
+    setStoreOffersLoading(false);
     setNotice("");
     setError("");
     setBusyMode("idle");
@@ -336,6 +384,7 @@ export default function App() {
                 </dl>
               </article>
               <InventoryPanel inventory={session.inventory} />
+              <StoreOffersPanel storeOffers={storeOffers} loading={storeOffersLoading} />
             </div>
           ) : null}
         </section>

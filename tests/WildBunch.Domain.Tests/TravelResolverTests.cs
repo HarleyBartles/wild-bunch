@@ -23,7 +23,7 @@ public sealed class TravelResolverTests
         var session = CreateSession();
         var resolver = new TravelResolver();
 
-        var result = resolver.Travel(session.World, session, new TownId("silvercreek"));
+        var result = resolver.Travel(session.World, session.Player.CurrentTownId, new TownId("silvercreek"));
 
         Assert.True(result.Success);
         Assert.Equal("Travelled to silvercreek.", result.Message);
@@ -62,7 +62,7 @@ public sealed class TravelResolverTests
         var session = CreateSession();
         var resolver = new TravelResolver();
 
-        var result = resolver.Travel(session.World, session, new TownId("dryridge"));
+        var result = resolver.Travel(session.World, session.Player.CurrentTownId, new TownId("dryridge"));
 
         Assert.False(result.Success);
         Assert.Equal("No trail connects those towns.", result.Message);

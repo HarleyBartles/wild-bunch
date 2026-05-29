@@ -1,4 +1,3 @@
-using DomainGameSession = WildBunch.Domain.Game.GameSession;
 using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
 
@@ -16,13 +15,11 @@ public sealed class TravelResolver
 {
     public TravelResult Travel(
         DomainWorld world,
-        DomainGameSession session,
+        TownId currentTownId,
         TownId destinationTownId)
     {
         ArgumentNullException.ThrowIfNull(world);
-        ArgumentNullException.ThrowIfNull(session);
 
-        var currentTownId = session.Player.CurrentTownId;
         var trail = world.FindConnectedTrail(currentTownId, destinationTownId);
 
         if (trail is null)

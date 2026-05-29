@@ -33,6 +33,11 @@ public static class GameEndpoints
             .Produces<JournalDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapGet("{gameSessionId:guid}/towns/{townId}/store-offers", GetTownStoreOffersAsync)
+            .WithName("GetTownStoreOffers")
+            .Produces<TownStoreOffersDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         games.MapPost("{id:guid}/wanted-posters/read", ReadWantedPostersAsync)
             .WithName("ReadWantedPosters")
             .Produces<WantedPostersResultDto>(StatusCodes.Status200OK)
@@ -106,6 +111,27 @@ public static class GameEndpoints
             return Results.Ok(journal);
         }
         catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> GetTownStoreOffersAsync(
+        Guid gameSessionId,
+        string townId,
+        GetTownStoreOffersHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var storeOffers = await handler.HandleAsync(new GetTownStoreOffersQuery(gameSessionId, townId), cancellationToken);
+            return Results.Ok(storeOffers);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (TownNotFoundException)
         {
             return Results.NotFound();
         }

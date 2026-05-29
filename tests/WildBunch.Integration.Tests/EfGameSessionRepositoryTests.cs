@@ -56,7 +56,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var travelResult = resolver.Travel(loaded!.World, loaded, new TownId("silvercreek"));
+        var travelResult = resolver.Travel(loaded!.World, loaded.Player.CurrentTownId, new TownId("silvercreek"));
 
         Assert.True(travelResult.Success);
         loaded.TravelTo(new TownId("silvercreek"), travelResult.HeatIncrease, travelResult.LogMessage);

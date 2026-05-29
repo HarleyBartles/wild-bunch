@@ -39,6 +39,9 @@ public sealed class World
 
     public Town GetTown(TownId townId) => _towns[townId];
 
+    public bool TryGetTown(TownId townId, out Town? town)
+        => _towns.TryGetValue(townId, out town);
+
     public Trail? FindConnectedTrail(TownId originTownId, TownId destinationTownId)
         => _trails.FirstOrDefault(trail => trail.Connects(originTownId, destinationTownId));
 

@@ -3,6 +3,7 @@ import type {
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
+  TownStoreOffersDto,
   StartGameRequest,
   TravelRequest,
   WantedPostersResultDto,
@@ -92,6 +93,10 @@ export function getAvailableActions(gameId: string) {
 
 export function getJournal(gameId: string) {
   return requestJson<JournalDto>(`/api/games/${gameId}/journal`);
+}
+
+export function getTownStoreOffers(gameId: string, townId: string) {
+  return requestJson<TownStoreOffersDto>(`/api/games/${gameId}/towns/${townId}/store-offers`);
 }
 
 export function travel(gameId: string, destinationTownId: string) {
