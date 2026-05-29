@@ -21,7 +21,15 @@ public sealed record TravelRulesProfile(
     int BadLuckTrailCanteenLoss,
     int BadLuckTrailHorseExhaustion,
     int BadLuckTrailHorseThirst,
-    int TrailEventHeatIncrease)
+    int TrailEventHeatIncrease,
+    int EncounterRunMountedHeatIncrease,
+    int EncounterRunMountedHorseExhaustion,
+    int EncounterRunFootHeatIncrease,
+    int EncounterRunFootHealthLoss,
+    decimal EncounterBribeCash,
+    int EncounterFightAmmoHealthLoss,
+    int EncounterFightUnarmedHealthLoss,
+    int EncounterFightHeatIncrease)
 {
     public static TravelRulesProfile Default { get; } = new(
         TravelDifficulty.Normal,
@@ -42,7 +50,15 @@ public sealed record TravelRulesProfile(
         BadLuckTrailCanteenLoss: 1,
         BadLuckTrailHorseExhaustion: 1,
         BadLuckTrailHorseThirst: 1,
-        TrailEventHeatIncrease: 1);
+        TrailEventHeatIncrease: 1,
+        EncounterRunMountedHeatIncrease: 1,
+        EncounterRunMountedHorseExhaustion: 1,
+        EncounterRunFootHeatIncrease: 2,
+        EncounterRunFootHealthLoss: 5,
+        EncounterBribeCash: 5m,
+        EncounterFightAmmoHealthLoss: 5,
+        EncounterFightUnarmedHealthLoss: 10,
+        EncounterFightHeatIncrease: 1);
 
     public static TravelRulesProfile For(TravelDifficulty difficulty)
         => difficulty switch
@@ -67,7 +83,15 @@ public sealed record TravelRulesProfile(
                 BadLuckTrailCanteenLoss: 0,
                 BadLuckTrailHorseExhaustion: 1,
                 BadLuckTrailHorseThirst: 0,
-                TrailEventHeatIncrease: 1),
+                TrailEventHeatIncrease: 1,
+                EncounterRunMountedHeatIncrease: 0,
+                EncounterRunMountedHorseExhaustion: 1,
+                EncounterRunFootHeatIncrease: 1,
+                EncounterRunFootHealthLoss: 2,
+                EncounterBribeCash: 3m,
+                EncounterFightAmmoHealthLoss: 3,
+                EncounterFightUnarmedHealthLoss: 6,
+                EncounterFightHeatIncrease: 1),
             TravelDifficulty.Hard => new TravelRulesProfile(
                 TravelDifficulty.Hard,
                 CanteenCapacity: 1,
@@ -87,7 +111,15 @@ public sealed record TravelRulesProfile(
                 BadLuckTrailCanteenLoss: 1,
                 BadLuckTrailHorseExhaustion: 2,
                 BadLuckTrailHorseThirst: 1,
-                TrailEventHeatIncrease: 2),
+                TrailEventHeatIncrease: 2,
+                EncounterRunMountedHeatIncrease: 2,
+                EncounterRunMountedHorseExhaustion: 2,
+                EncounterRunFootHeatIncrease: 3,
+                EncounterRunFootHealthLoss: 8,
+                EncounterBribeCash: 8m,
+                EncounterFightAmmoHealthLoss: 7,
+                EncounterFightUnarmedHealthLoss: 12,
+                EncounterFightHeatIncrease: 2),
             _ => Default
         };
 

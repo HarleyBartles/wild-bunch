@@ -254,7 +254,7 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Active, resolved.JourneyStatus);
         Assert.NotNull(resolved.CurrentSession.Journey);
         Assert.Null(resolved.CurrentSession.Journey!.PendingEncounter);
-        Assert.Equal(1, resolved.CurrentSession.Journey.DelayDays);
+        Assert.Equal(0, resolved.CurrentSession.Journey.DelayDays);
 
         var resumeAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -267,7 +267,7 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Active, resumeAdvance.JourneyStatus);
         Assert.NotNull(resumeAdvance.CurrentSession.Journey);
         Assert.Equal(3, resumeAdvance.CurrentSession.Clock.Turn);
-        Assert.Equal(2, resumeAdvance.CurrentSession.Journey!.RemainingDays);
+        Assert.Equal(1, resumeAdvance.CurrentSession.Journey!.RemainingDays);
     }
 
     [Fact]

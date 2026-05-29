@@ -325,6 +325,32 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     private static string PrependHorseLossMessage(string horseLossMessage, string message)
         => horseLossMessage.Length == 0 ? message : $"{horseLossMessage} {message}";
 
+    private string ApplyEncounterHorsePressure(int exhaustionIncrease)
+    {
+        if (exhaustionIncrease <= 0)
+        {
+            return string.Empty;
+        }
+
+        var horseState = Player.Inventory.GetHorseState();
+        if (horseState is null)
+        {
+            return string.Empty;
+        }
+
+        var nextHorseState = horseState.IncreaseExhaustion(exhaustionIncrease);
+        Player.Inventory.SetHorseState(nextHorseState);
+        Journey!.SetHorseState(nextHorseState);
+
+        if (Journey.TravelMode == TravelMode.Mounted && !nextHorseState.CanProvideMountedTravelFor(TravelRules))
+        {
+            Journey.RecalculatePacing(TravelMode.Foot);
+            return DescribeHorseLoss(nextHorseState, TravelRules);
+        }
+
+        return string.Empty;
+    }
+
     private TrailEventApplicationResult ApplyTrailEvent(JourneyTrailEventState trailEvent)
     {
         ArgumentNullException.ThrowIfNull(trailEvent);
@@ -466,35 +492,68 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         switch (choiceId.Trim().ToLowerInvariant())
         {
             case "run":
-                Journey.AddDelayDays(1);
-                PursuitState.IncreaseHeat(1);
-                Journey.ResumeFromEncounter();
-                AddLogEntry(GameLogEntryKind.Travel, "You pull away under a cloud of dust and regain the trail after a delay.");
-                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, "You run the gauntlet and keep riding.", Journey.ToSnapshot(TravelRules));
+            {
+                var isMountedEscape = Journey.TravelMode == TravelMode.Mounted;
+                var heatIncrease = isMountedEscape ? TravelRules.EncounterRunMountedHeatIncrease : TravelRules.EncounterRunFootHeatIncrease;
+                PursuitState.IncreaseHeat(heatIncrease);
 
-            case "fight":
-                if (!TrySpendFirearmAmmo())
+                var horseLossMessage = isMountedEscape
+                    ? ApplyEncounterHorsePressure(TravelRules.EncounterRunMountedHorseExhaustion)
+                    : string.Empty;
+
+                if (!isMountedEscape)
                 {
-                    return JourneyEncounterResolutionResult.Failed("You need firearm ammo to stand and fight.", Journey.Status, Journey.ToSnapshot(TravelRules));
+                    Player.AdjustHealth(-TravelRules.EncounterRunFootHealthLoss);
                 }
 
-                Player.AdjustHealth(-5);
-                PursuitState.IncreaseHeat(1);
                 Journey.ResumeFromEncounter();
-                AddLogEntry(GameLogEntryKind.Travel, "You break the encounter with gun smoke and keep moving.");
-                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, "You fight through the ambush and keep moving.", Journey.ToSnapshot(TravelRules));
+                var runMessage = isMountedEscape
+                    ? "You spur the horse and pull away."
+                    : $"You run on foot and pull away, but it costs you {TravelRules.EncounterRunFootHealthLoss} health.";
+                if (isMountedEscape && horseLossMessage.Length != 0)
+                {
+                    runMessage = $"{runMessage} You continue on foot.";
+                }
+
+                runMessage = PrependHorseLossMessage(horseLossMessage, runMessage);
+                AddLogEntry(GameLogEntryKind.Travel, runMessage);
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, runMessage, Journey.ToSnapshot(TravelRules));
+            }
+
+            case "fight":
+                var hasFirearmAmmo = Player.Inventory.GetQuantity(ItemKind.RevolverAmmo) > 0 || Player.Inventory.GetQuantity(ItemKind.RifleAmmo) > 0;
+                var hasKnife = Player.Inventory.HasItem(ItemKind.Knife);
+                if (!hasFirearmAmmo && !hasKnife)
+                {
+                    return JourneyEncounterResolutionResult.Failed("You need a knife or firearm ammo to stand and fight.", Journey.Status, Journey.ToSnapshot(TravelRules));
+                }
+
+                var usedFirearm = hasFirearmAmmo && TrySpendFirearmAmmo();
+                var fightHealthLoss = usedFirearm
+                    ? TravelRules.EncounterFightAmmoHealthLoss
+                    : TravelRules.EncounterFightUnarmedHealthLoss;
+
+                Player.AdjustHealth(-fightHealthLoss);
+                PursuitState.IncreaseHeat(TravelRules.EncounterFightHeatIncrease);
+                Journey.ResumeFromEncounter();
+                var fightMessage = usedFirearm
+                    ? $"You spend a round and take {fightHealthLoss} health damage before forcing the rider off the trail."
+                    : $"You fight with your knife and take {fightHealthLoss} health damage before forcing the rider off the trail.";
+                AddLogEntry(GameLogEntryKind.Travel, fightMessage);
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, fightMessage, Journey.ToSnapshot(TravelRules));
 
             case "bribe":
-                const decimal bribeAmount = 5m;
+                var bribeAmount = TravelRules.EncounterBribeCash;
                 if (!Player.Wallet.CanAfford(bribeAmount))
                 {
-                    return JourneyEncounterResolutionResult.Failed("You do not have enough cash to bribe your way through.", Journey.Status, Journey.ToSnapshot(TravelRules));
+                    return JourneyEncounterResolutionResult.Failed($"You need ${bribeAmount:0.00} to bribe your way through.", Journey.Status, Journey.ToSnapshot(TravelRules));
                 }
 
                 Player.SetWallet(Player.Wallet.Spend(bribeAmount));
                 Journey.ResumeFromEncounter();
-                AddLogEntry(GameLogEntryKind.Travel, $"You pay ${bribeAmount:0.00} to clear the road and keep riding.");
-                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, $"You bribe the rider with ${bribeAmount:0.00} and continue on.", Journey.ToSnapshot(TravelRules));
+                var bribeMessage = $"You bribe the rider with ${bribeAmount:0.00} and continue on.";
+                AddLogEntry(GameLogEntryKind.Travel, bribeMessage);
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, bribeMessage, Journey.ToSnapshot(TravelRules));
 
             default:
                 return JourneyEncounterResolutionResult.Failed("That choice is not recognized.", Journey.Status, Journey.ToSnapshot(TravelRules));
