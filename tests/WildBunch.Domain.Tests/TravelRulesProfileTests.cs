@@ -36,6 +36,11 @@ public sealed class TravelRulesProfileTests
         Assert.Equal(0.5m, profile.FootRideDayProgress);
         Assert.Equal(1, profile.FirstEncounterDay);
         Assert.Equal(1, profile.FirstTrailEventDay);
+        Assert.Equal(3, profile.LuckyTrailCoinReward);
+        Assert.Equal(1, profile.LuckyTrailFoodReward);
+        Assert.Equal(1, profile.LuckyTrailWaterRecovery);
+        Assert.Equal(1, profile.BadLuckTrailDelayDays);
+        Assert.Equal(1, profile.TrailEventHeatIncrease);
     }
 
     [Fact]
@@ -77,5 +82,8 @@ public sealed class TravelRulesProfileTests
         Assert.Equal(0.75m, preview.Preview.RouteProfile.FootRideDayProgress);
         Assert.Equal(10, preview.Preview.AvailableCanteenCharges);
         Assert.Equal(TravelDifficulty.Easy, session.TravelDifficulty);
+        Assert.Equal(4, easyProfile.LuckyTrailCoinReward);
+        Assert.Equal(2, easyProfile.LuckyTrailFoodReward);
+        Assert.Equal(2, easyProfile.LuckyTrailWaterRecovery);
     }
 }

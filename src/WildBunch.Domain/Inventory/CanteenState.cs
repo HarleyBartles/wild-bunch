@@ -56,4 +56,20 @@ public sealed record CanteenState
 
         return new CanteenState(Charges - charges, Capacity);
     }
+
+    public CanteenState AdjustCharges(int charges)
+    {
+        if (charges == 0)
+        {
+            return this;
+        }
+
+        var nextCharges = Charges + charges;
+        if (nextCharges < 0)
+        {
+            throw new InvalidOperationException("Canteen does not have enough water charges.");
+        }
+
+        return new CanteenState(Math.Min(Capacity, nextCharges), Capacity);
+    }
 }

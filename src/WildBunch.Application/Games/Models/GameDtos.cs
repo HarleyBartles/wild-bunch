@@ -120,7 +120,8 @@ public sealed record GameTurnResultDto(
     string Message,
     GameSessionDto CurrentSession,
     JourneyStatus? JourneyStatus = null,
-    TravelJourneyDto? Journey = null);
+    TravelJourneyDto? Journey = null,
+    JourneyTrailEventDto? TrailEvent = null);
 
 public sealed record TravelPreviewDto(
     string OriginTownId,
@@ -201,6 +202,20 @@ public sealed record JourneyEncounterDto(
 public sealed record JourneyEncounterChoiceDto(
     string Id,
     string Label);
+
+public sealed record JourneyTrailEventDto(
+    JourneyTrailEventId Id,
+    JourneyTrailEventKind Kind,
+    string Title,
+    string Message,
+    decimal WalletDelta,
+    int FoodDelta,
+    int CanteenChargeDelta,
+    int HorseHungerDelta,
+    int HorseThirstDelta,
+    int HorseExhaustionDelta,
+    int DelayDays,
+    int HeatIncrease);
 
 public sealed record GameClockDto(int Day, int Turn);
 

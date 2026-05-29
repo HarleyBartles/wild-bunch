@@ -2,6 +2,7 @@ using WildBunch.Application.Games.Models;
 using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
 using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterChoiceState;
+using DomainJourneyTrailEvent = WildBunch.Domain.Travel.JourneyTrailEventState;
 using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
@@ -108,4 +109,19 @@ public static class TravelMapper
 
     public static JourneyEncounterChoiceDto ToDto(DomainJourneyEncounterChoice choice)
         => new(choice.Id, choice.Label);
+
+    public static JourneyTrailEventDto ToDto(DomainJourneyTrailEvent trailEvent)
+        => new(
+            trailEvent.Id,
+            trailEvent.Kind,
+            trailEvent.Title,
+            trailEvent.Message,
+            trailEvent.WalletDelta,
+            trailEvent.FoodDelta,
+            trailEvent.CanteenChargeDelta,
+            trailEvent.HorseHungerDelta,
+            trailEvent.HorseThirstDelta,
+            trailEvent.HorseExhaustionDelta,
+            trailEvent.DelayDays,
+            trailEvent.HeatIncrease);
 }

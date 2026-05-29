@@ -12,7 +12,16 @@ public sealed record TravelRulesProfile(
     decimal MountedRideDayProgress,
     decimal FootRideDayProgress,
     int FirstEncounterDay,
-    int FirstTrailEventDay)
+    int FirstTrailEventDay,
+    int LuckyTrailCoinReward,
+    int LuckyTrailFoodReward,
+    int LuckyTrailWaterRecovery,
+    int BadLuckTrailDelayDays,
+    int BadLuckTrailFoodLoss,
+    int BadLuckTrailCanteenLoss,
+    int BadLuckTrailHorseExhaustion,
+    int BadLuckTrailHorseThirst,
+    int TrailEventHeatIncrease)
 {
     public static TravelRulesProfile Default { get; } = new(
         TravelDifficulty.Normal,
@@ -24,7 +33,16 @@ public sealed record TravelRulesProfile(
         MountedRideDayProgress: 1m,
         FootRideDayProgress: 0.5m,
         FirstEncounterDay: 1,
-        FirstTrailEventDay: 1);
+        FirstTrailEventDay: 1,
+        LuckyTrailCoinReward: 3,
+        LuckyTrailFoodReward: 1,
+        LuckyTrailWaterRecovery: 1,
+        BadLuckTrailDelayDays: 1,
+        BadLuckTrailFoodLoss: 1,
+        BadLuckTrailCanteenLoss: 1,
+        BadLuckTrailHorseExhaustion: 1,
+        BadLuckTrailHorseThirst: 1,
+        TrailEventHeatIncrease: 1);
 
     public static TravelRulesProfile For(TravelDifficulty difficulty)
         => difficulty switch
@@ -40,7 +58,16 @@ public sealed record TravelRulesProfile(
                 MountedRideDayProgress: 1.5m,
                 FootRideDayProgress: 0.75m,
                 FirstEncounterDay: 1,
-                FirstTrailEventDay: 1),
+                FirstTrailEventDay: 1,
+                LuckyTrailCoinReward: 4,
+                LuckyTrailFoodReward: 2,
+                LuckyTrailWaterRecovery: 2,
+                BadLuckTrailDelayDays: 1,
+                BadLuckTrailFoodLoss: 0,
+                BadLuckTrailCanteenLoss: 0,
+                BadLuckTrailHorseExhaustion: 1,
+                BadLuckTrailHorseThirst: 0,
+                TrailEventHeatIncrease: 1),
             TravelDifficulty.Hard => new TravelRulesProfile(
                 TravelDifficulty.Hard,
                 CanteenCapacity: 1,
@@ -51,7 +78,16 @@ public sealed record TravelRulesProfile(
                 MountedRideDayProgress: 0.75m,
                 FootRideDayProgress: 0.5m,
                 FirstEncounterDay: 1,
-                FirstTrailEventDay: 1),
+                FirstTrailEventDay: 1,
+                LuckyTrailCoinReward: 2,
+                LuckyTrailFoodReward: 1,
+                LuckyTrailWaterRecovery: 1,
+                BadLuckTrailDelayDays: 2,
+                BadLuckTrailFoodLoss: 1,
+                BadLuckTrailCanteenLoss: 1,
+                BadLuckTrailHorseExhaustion: 2,
+                BadLuckTrailHorseThirst: 1,
+                TrailEventHeatIncrease: 2),
             _ => Default
         };
 

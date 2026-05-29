@@ -195,6 +195,9 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(result.Journey);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.LuckyCoinCache, result.TrailEvent.Id);
         Assert.Contains("extra $3.00", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(28m, session.Player.Wallet.Cash);
         Assert.Equal(0, session.Journey!.DelayDays);
@@ -215,11 +218,88 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(result.Journey);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.BadLuckWashout, result.TrailEvent.Id);
         Assert.Contains("delay day", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Journey!.DelayDays);
         Assert.Equal(2, session.Journey.RemainingDays);
         Assert.Equal(1, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayCanTriggerAnAdditionalLuckyFoodCacheEventOnEasyOpenRangeRoutes()
+    {
+        var session = CreateEasyLuckyFoodSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.LuckyFoodCache, result.TrailEvent.Id);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(4, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(0, session.Journey!.DelayDays);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayCanTriggerAnAdditionalLuckyWaterSeepEventOnEasyDryRoutes()
+    {
+        var session = CreateEasyLuckyWaterSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryspring"), session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, result.TrailEvent.Id);
+        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(2, session.Journey!.AvailableCanteenCharges);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayCanTriggerAnAdditionalBadLuckFoodLossEventOnHardBadlandsRoutes()
+    {
+        var session = CreateHardBadLuckSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("hardpan"), session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.BadLuckFoodLoss, result.TrailEvent.Id);
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(0, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(2, session.Journey!.DelayDays);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayCanTriggerAnAdditionalBadLuckSpookedHorseEventOnHardMountedHillsRoutes()
+    {
+        var session = CreateHardMountedHorseSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("ridgeway"), session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent.Id);
+        Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
+        Assert.Contains("horse", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -613,6 +693,102 @@ public sealed class TravelResolverTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateEasyLuckyFoodSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, openpass },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-open"), pinecross.Id, openpass.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy);
+    }
+
+    private static GameSession CreateEasyLuckyWaterSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var dryspring = new Town(new TownId("dryspring"), "Dry Spring", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, dryspring },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-dryspring"), pinecross.Id, dryspring.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(1, 2)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy);
+    }
+
+    private static GameSession CreateHardBadLuckSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var hardpan = new Town(new TownId("hardpan"), "Hardpan", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, hardpan },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-hardpan"), pinecross.Id, hardpan.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(3, 4)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard);
+    }
+
+    private static GameSession CreateHardMountedHorseSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var ridgeway = new Town(new TownId("ridgeway"), "Ridgeway", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, ridgeway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-ridge"), pinecross.Id, ridgeway.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River, 3m)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard);
     }
 
     private static GameSession CreateHighRiskSession(Wallet? wallet = null, int withRevolverAmmo = 2)

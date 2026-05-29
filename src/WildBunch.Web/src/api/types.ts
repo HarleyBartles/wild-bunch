@@ -22,6 +22,8 @@ export type GameLogEntryKind = 0 | 1 | 2;
 export type ItemKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type TrailTerrain = 0 | 1 | 2 | 3;
 export type WaterFeature = 0 | 1 | 2 | 3;
+export type JourneyTrailEventKind = 0 | 1;
+export type JourneyTrailEventId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type StoreVendorType = 0 | 1 | 2;
 export type StoreOfferAvailability = 0 | 1;
 
@@ -195,6 +197,21 @@ export interface GameLogEntryDto {
   turn: number;
 }
 
+export interface JourneyTrailEventDto {
+  id: JourneyTrailEventId;
+  kind: JourneyTrailEventKind;
+  title: string;
+  message: string;
+  walletDelta: number;
+  foodDelta: number;
+  canteenChargeDelta: number;
+  horseHungerDelta: number;
+  horseThirstDelta: number;
+  horseExhaustionDelta: number;
+  delayDays: number;
+  heatIncrease: number;
+}
+
 export interface GameSessionDto {
   id: string;
   status: GameStatus;
@@ -246,4 +263,7 @@ export interface GameTurnResultDto {
   success: boolean;
   message: string;
   currentSession: GameSessionDto;
+  journeyStatus?: JourneyStatus | null;
+  journey?: TravelJourneyDto | null;
+  trailEvent?: JourneyTrailEventDto | null;
 }

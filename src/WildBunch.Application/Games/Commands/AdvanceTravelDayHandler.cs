@@ -32,7 +32,8 @@ public sealed class AdvanceTravelDayHandler
             result.Message,
             GameSessionMapper.ToDto(session),
             result.Status,
-            result.Journey is null ? null : TravelMapper.ToDto(result.Journey));
+            result.Journey is null ? null : TravelMapper.ToDto(result.Journey),
+            result.TrailEvent is null ? null : TravelMapper.ToDto(result.TrailEvent));
     }
 
     private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(

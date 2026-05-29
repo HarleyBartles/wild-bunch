@@ -221,9 +221,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             var trailEvent = Journey.TryCreateTrailEvent(TravelRules);
             if (trailEvent is not null)
             {
-                ApplyTrailEvent(trailEvent);
+                var trailEventApplication = ApplyTrailEvent(trailEvent);
                 var eventSnapshot = Journey.ToSnapshot(TravelRules);
-                var trailEventMessage = PrependHorseLossMessage(horseLostMessage, trailEvent.Message);
+                var trailEventMessage = PrependHorseLossMessage(
+                    CombineHorseLossMessage(horseLostMessage, trailEventApplication.HorseLossMessage),
+                    trailEvent.Message);
                 AddLogEntry(GameLogEntryKind.Travel, trailEventMessage);
 
                 return new TravelJourneyStepResult(
@@ -231,8 +233,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     JourneyStatus.Active,
                     trailEventMessage,
                     trailEventMessage,
-                    Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
-                    eventSnapshot);
+                    Math.Max(1, (int)Journey.Preview.RouteProfile.Risk) + trailEvent.HeatIncrease,
+                    eventSnapshot,
+                    trailEvent);
             }
         }
 
@@ -322,24 +325,110 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     private static string PrependHorseLossMessage(string horseLossMessage, string message)
         => horseLossMessage.Length == 0 ? message : $"{horseLossMessage} {message}";
 
-    private void ApplyTrailEvent(JourneyTrailEventState trailEvent)
+    private TrailEventApplicationResult ApplyTrailEvent(JourneyTrailEventState trailEvent)
     {
         ArgumentNullException.ThrowIfNull(trailEvent);
 
-        switch (trailEvent.Kind)
+        if (trailEvent.WalletDelta != 0m)
         {
-            case JourneyTrailEventKind.Lucky:
-                Player.SetWallet(Player.Wallet.Adjust(3m));
-                break;
-
-            case JourneyTrailEventKind.BadLuck:
-                Journey!.AddDelayDays(1);
-                break;
-
-            default:
-                throw new InvalidOperationException("Unknown trail event kind.");
+            Player.SetWallet(Player.Wallet.Adjust(trailEvent.WalletDelta));
         }
+
+        if (trailEvent.FoodDelta != 0)
+        {
+            if (trailEvent.FoodDelta > 0)
+            {
+                Player.Inventory.AddItem(ItemKind.Food, trailEvent.FoodDelta);
+                Journey!.AdjustFood(trailEvent.FoodDelta);
+            }
+            else
+            {
+                var foodLoss = Math.Abs(trailEvent.FoodDelta);
+                Player.Inventory.RemoveQuantity(ItemKind.Food, foodLoss);
+                Journey!.AdjustFood(trailEvent.FoodDelta);
+            }
+        }
+
+        if (trailEvent.CanteenChargeDelta != 0)
+        {
+            var canteenState = Player.Inventory.GetCanteenState();
+            if (canteenState is not null)
+            {
+                var nextCanteenState = canteenState.AdjustCharges(trailEvent.CanteenChargeDelta);
+                Player.Inventory.SetCanteenState(nextCanteenState);
+                Journey!.SetCanteenCharges(nextCanteenState.Charges);
+            }
+        }
+
+        if (trailEvent.HorseHungerDelta != 0 || trailEvent.HorseThirstDelta != 0 || trailEvent.HorseExhaustionDelta != 0)
+        {
+            var horseState = Player.Inventory.GetHorseState();
+            if (horseState is not null)
+            {
+                horseState = ApplyHorseDelta(horseState, trailEvent);
+                Player.Inventory.SetHorseState(horseState);
+                Journey!.SetHorseState(horseState);
+            }
+        }
+
+        if (trailEvent.DelayDays != 0)
+        {
+            Journey!.AddDelayDays(trailEvent.DelayDays);
+        }
+
+        if (trailEvent.HeatIncrease != 0)
+        {
+            PursuitState.IncreaseHeat(trailEvent.HeatIncrease);
+        }
+
+        var horseLossMessage = string.Empty;
+        if (Journey!.TravelMode == TravelMode.Mounted && Player.Inventory.GetHorseState()?.CanProvideMountedTravelFor(TravelRules) == false)
+        {
+            horseLossMessage = DescribeHorseLoss(Player.Inventory.GetHorseState(), TravelRules);
+            Journey.RecalculatePacing(TravelMode.Foot);
+        }
+
+        return new TrailEventApplicationResult(horseLossMessage);
     }
+
+    private static HorseTravelState ApplyHorseDelta(HorseTravelState horseState, JourneyTrailEventState trailEvent)
+    {
+        var nextHorseState = horseState;
+
+        if (trailEvent.HorseHungerDelta > 0)
+        {
+            nextHorseState = nextHorseState.IncreaseHunger(trailEvent.HorseHungerDelta);
+        }
+        else if (trailEvent.HorseHungerDelta < 0)
+        {
+            nextHorseState = nextHorseState.RecoverHunger(Math.Abs(trailEvent.HorseHungerDelta));
+        }
+
+        if (trailEvent.HorseThirstDelta > 0)
+        {
+            nextHorseState = nextHorseState.IncreaseThirst(trailEvent.HorseThirstDelta);
+        }
+        else if (trailEvent.HorseThirstDelta < 0)
+        {
+            nextHorseState = nextHorseState.RecoverThirst(Math.Abs(trailEvent.HorseThirstDelta));
+        }
+
+        if (trailEvent.HorseExhaustionDelta > 0)
+        {
+            nextHorseState = nextHorseState.IncreaseExhaustion(trailEvent.HorseExhaustionDelta);
+        }
+
+        return nextHorseState;
+    }
+
+    private static string CombineHorseLossMessage(string primaryHorseLossMessage, string secondaryHorseLossMessage)
+        => primaryHorseLossMessage.Length == 0
+            ? secondaryHorseLossMessage
+            : secondaryHorseLossMessage.Length == 0
+                ? primaryHorseLossMessage
+                : $"{primaryHorseLossMessage} {secondaryHorseLossMessage}";
+
+    private sealed record TrailEventApplicationResult(string HorseLossMessage);
 
     public JourneyEncounterResolutionResult ResolveJourneyEncounter(string choiceId)
     {
