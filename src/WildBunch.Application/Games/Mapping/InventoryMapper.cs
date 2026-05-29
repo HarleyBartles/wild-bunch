@@ -1,7 +1,9 @@
 using WildBunch.Application.Games.Models;
+using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainInventoryCapabilities = WildBunch.Domain.Inventory.InventoryCapabilities;
 using DomainInventoryCapabilityResolver = WildBunch.Domain.Inventory.InventoryCapabilityResolver;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using DomainPlayer = WildBunch.Domain.Game.Player;
 
 namespace WildBunch.Application.Games.Mapping;
@@ -17,12 +19,32 @@ public static class InventoryMapper
         return new InventoryDto(
             new WalletDto(player.Wallet.Cash),
             player.Inventory.Items.Select(ToDto).ToArray(),
-            player.Inventory.GetHorseCondition(),
+            ToDto(player.Inventory.GetHorseState()),
+            ToDto(player.Inventory.GetCanteenState()),
             ToDto(CapabilityResolver.Resolve(player.Inventory)));
     }
 
     private static InventoryItemDto ToDto(DomainInventoryItem item)
-        => new(item.Kind, item.Quantity, item.HorseCondition);
+        => new(item.Kind, item.Quantity, ToDto(item.HorseState), ToDto(item.CanteenState));
+
+    private static HorseTravelStateDto? ToDto(DomainHorseTravelState? horseState)
+        => horseState is null
+            ? null
+            : new HorseTravelStateDto(
+                horseState.Hunger,
+                horseState.Thirst,
+                horseState.Exhaustion,
+                horseState.IsLame,
+                horseState.IsDead,
+                horseState.CanProvideMountedTravel);
+
+    private static CanteenStateDto? ToDto(DomainCanteenState? canteenState)
+        => canteenState is null
+            ? null
+            : new CanteenStateDto(
+                canteenState.Charges,
+                canteenState.Capacity,
+                canteenState.HasWater);
 
     private static InventoryCapabilitiesDto ToDto(DomainInventoryCapabilities capabilities)
         => new(

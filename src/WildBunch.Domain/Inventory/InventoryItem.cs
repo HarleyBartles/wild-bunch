@@ -2,7 +2,7 @@ namespace WildBunch.Domain.Inventory;
 
 public sealed record InventoryItem
 {
-    public InventoryItem(ItemKind kind, int quantity, HorseCondition? horseCondition = null)
+    public InventoryItem(ItemKind kind, int quantity, HorseTravelState? horseState = null, CanteenState? canteenState = null)
     {
         if (quantity < 0)
         {
@@ -16,24 +16,39 @@ public sealed record InventoryItem
                 throw new ArgumentOutOfRangeException(nameof(quantity), "Horse items must have a quantity of 1.");
             }
 
-            if (horseCondition is null)
+            if (canteenState is not null)
             {
-                throw new ArgumentNullException(nameof(horseCondition), "Horse items require a condition.");
+                throw new ArgumentException("Horse items cannot carry canteen state.", nameof(canteenState));
             }
         }
-        else if (horseCondition is not null)
+        else if (kind == ItemKind.Canteen)
         {
-            throw new ArgumentException("Only horse items can carry a horse condition.", nameof(horseCondition));
+            if (quantity != 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Canteen items must have a quantity of 1.");
+            }
+
+            if (horseState is not null)
+            {
+                throw new ArgumentException("Canteen items cannot carry horse state.", nameof(horseState));
+            }
+        }
+        else if (horseState is not null || canteenState is not null)
+        {
+            throw new ArgumentException("Only horse or canteen items can carry travel state.");
         }
 
         Kind = kind;
         Quantity = quantity;
-        HorseCondition = horseCondition;
+        HorseState = kind == ItemKind.Horse ? horseState ?? HorseTravelState.Healthy : null;
+        CanteenState = kind == ItemKind.Canteen ? canteenState ?? WildBunch.Domain.Inventory.CanteenState.Full() : null;
     }
 
     public ItemKind Kind { get; }
 
     public int Quantity { get; }
 
-    public HorseCondition? HorseCondition { get; }
+    public HorseTravelState? HorseState { get; }
+
+    public CanteenState? CanteenState { get; }
 }

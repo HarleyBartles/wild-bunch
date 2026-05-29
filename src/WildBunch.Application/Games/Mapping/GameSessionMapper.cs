@@ -93,7 +93,7 @@ public static class GameSessionMapper
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
             snapshot.AvailableHorseFeed,
-            snapshot.HorseCondition,
+            TravelMapper.ToHorseDto(snapshot.HorseState),
             snapshot.DaysTravelled,
             snapshot.DelayDays,
             snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),

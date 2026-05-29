@@ -6,9 +6,8 @@ public sealed class InventoryCapabilityResolver
     {
         ArgumentNullException.ThrowIfNull(inventory);
 
-        var horseCondition = inventory.GetHorseCondition();
-        var hasLivingHorse = horseCondition is HorseCondition.Healthy or HorseCondition.Hungry or HorseCondition.Exhausted or HorseCondition.Lame;
-        var hasHealthyHorse = horseCondition is HorseCondition.Healthy;
+        var horseState = inventory.GetHorseState();
+        var hasLivingHorse = horseState is not null && !horseState.IsDead;
         var hasSaddle = inventory.HasItem(ItemKind.Saddle);
         var hasCanteen = inventory.HasItem(ItemKind.Canteen);
         var hasKnife = inventory.HasItem(ItemKind.Knife);
@@ -16,7 +15,7 @@ public sealed class InventoryCapabilityResolver
         var rifleUsable = inventory.HasItem(ItemKind.Rifle) && inventory.GetQuantity(ItemKind.RifleAmmo) > 0;
 
         return new InventoryCapabilities(
-            MountedTravelAvailable: hasHealthyHorse && hasSaddle,
+            MountedTravelAvailable: hasLivingHorse && !horseState!.IsLame && hasSaddle,
             HorseUpkeepRequired: hasLivingHorse,
             NormalRouteWaterSecure: hasCanteen,
             TrailUtility: hasKnife,

@@ -5,7 +5,8 @@ using WildBunch.Domain.Economy;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
-using DomainHorseCondition = WildBunch.Domain.Inventory.HorseCondition;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
+using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
 using DomainInventoryCapabilityResolver = WildBunch.Domain.Inventory.InventoryCapabilityResolver;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -33,7 +34,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
         Assert.Equal(session.Player.Wallet.Cash, reloaded.Player.Wallet.Cash);
         Assert.Equal(session.Player.Inventory.Items.Count, reloaded.Player.Inventory.Items.Count);
-        Assert.Equal(session.Player.Inventory.GetHorseCondition(), reloaded.Player.Inventory.GetHorseCondition());
+        Assert.Equal(session.Player.Inventory.GetHorseState(), reloaded.Player.Inventory.GetHorseState());
+        Assert.Equal(session.Player.Inventory.GetCanteenState(), reloaded.Player.Inventory.GetCanteenState());
         Assert.Equal(session.Status, reloaded.Status);
         Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
         Assert.Equal(session.CaseFile.OpeningLead.Description, reloaded.CaseFile.OpeningLead.Description);
@@ -179,8 +181,8 @@ public sealed class EfGameSessionRepositoryTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.HorseFeed, 2),
-            new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new DomainCanteenState(1, 2)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.Revolver, 1),
@@ -248,7 +250,7 @@ public sealed class EfGameSessionRepositoryTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.Revolver, 1),

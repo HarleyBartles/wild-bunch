@@ -58,7 +58,7 @@ public sealed record TravelPreview(
     int AvailableFood,
     int RequiredHorseFeed,
     int AvailableHorseFeed,
-    HorseCondition? HorseCondition,
+    HorseTravelState? HorseState,
     IReadOnlyList<string> Warnings)
 {
     public TravelJourney ToJourney()
@@ -83,7 +83,7 @@ public sealed record TravelJourneySnapshot(
     int AvailableFood,
     int RequiredHorseFeed,
     int AvailableHorseFeed,
-    HorseCondition? HorseCondition,
+    HorseTravelState? HorseState,
     int DaysTravelled,
     int DelayDays,
     JourneyEncounterState? PendingEncounter,
@@ -137,7 +137,7 @@ public sealed class TravelJourney
         RemainingDays = preview.RemainingDays;
         FoodRemaining = preview.AvailableFood;
         HorseFeedRemaining = preview.AvailableHorseFeed;
-        HorseCondition = preview.HorseCondition;
+        HorseState = preview.HorseState;
     }
 
     public TravelPreview Preview { get; }
@@ -160,7 +160,7 @@ public sealed class TravelJourney
 
     public int HorseFeedRemaining { get; private set; }
 
-    public HorseCondition? HorseCondition { get; private set; }
+    public HorseTravelState? HorseState { get; private set; }
 
     public static TravelJourney Start(TravelPreview preview)
     {
@@ -189,7 +189,7 @@ public sealed class TravelJourney
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
             snapshot.AvailableHorseFeed,
-            snapshot.HorseCondition,
+            snapshot.HorseState,
             snapshot.Warnings);
 
         var journey = new TravelJourney(preview)
@@ -203,7 +203,7 @@ public sealed class TravelJourney
             PendingEncounter = snapshot.PendingEncounter,
             FoodRemaining = snapshot.AvailableFood,
             HorseFeedRemaining = snapshot.AvailableHorseFeed,
-            HorseCondition = snapshot.HorseCondition
+            HorseState = snapshot.HorseState
         };
 
         return journey;
@@ -303,9 +303,9 @@ public sealed class TravelJourney
         return true;
     }
 
-    public void SetHorseCondition(HorseCondition? horseCondition)
+    public void SetHorseState(HorseTravelState? horseState)
     {
-        HorseCondition = horseCondition;
+        HorseState = horseState;
     }
 
     public TravelJourneySnapshot ToSnapshot()
@@ -317,7 +317,7 @@ public sealed class TravelJourney
             Preview.RouteProfile,
             TravelMode,
             Status,
-            TravelMode == TravelMode.Mounted && HorseCondition == WildBunch.Domain.Inventory.HorseCondition.Healthy,
+            Preview.MountedTravelAvailable && (HorseState?.CanProvideMountedTravel ?? false),
             Preview.WaterSecure,
             Preview.TotalDistance,
             RemainingDistance,
@@ -327,7 +327,7 @@ public sealed class TravelJourney
             FoodRemaining,
             Preview.RequiredHorseFeed,
             HorseFeedRemaining,
-            HorseCondition,
+            HorseState,
             DaysTravelled,
             DelayDays,
             PendingEncounter,
@@ -431,7 +431,7 @@ public sealed class TravelResolver
         var capabilities = CapabilityResolver.Resolve(inventory);
         var mountedTravelAvailable = capabilities.MountedTravelAvailable;
         var travelMode = mountedTravelAvailable ? TravelMode.Mounted : TravelMode.Foot;
-        var horseCondition = inventory.GetHorseCondition();
+        var horseState = inventory.GetHorseState();
         var routeProfile = BuildRouteProfile(trail);
         var totalDistance = routeProfile.TotalDistance;
         var expectedDays = routeProfile.ExpectedDays(travelMode);
@@ -478,7 +478,7 @@ public sealed class TravelResolver
             availableFood,
             requiredHorseFeed,
             availableHorseFeed,
-            horseCondition,
+            horseState,
             warnings);
 
         return new TravelPreviewResult(

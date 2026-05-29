@@ -18,7 +18,7 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(8, session.Player.Inventory.Items.Count);
-        Assert.Equal(HorseCondition.Healthy, session.Player.Inventory.GetHorseCondition());
+        Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
         var capabilities = new InventoryCapabilityResolver().Resolve(session.Player.Inventory);
         Assert.True(capabilities.MountedTravelAvailable);
         Assert.True(capabilities.HorseUpkeepRequired);

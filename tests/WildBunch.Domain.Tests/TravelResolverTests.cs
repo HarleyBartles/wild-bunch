@@ -39,6 +39,7 @@ public sealed class TravelResolverTests
         Assert.Equal(2, result.Preview.RequiredHorseFeed);
         Assert.Equal(TrailTerrain.Hills, result.Preview.RouteProfile.Terrain);
         Assert.Equal(WaterFeature.River, result.Preview.RouteProfile.WaterFeature);
+        Assert.Equal(HorseTravelState.Healthy, result.Preview.HorseState);
         Assert.Contains(result.Preview.Warnings, warning => warning.Contains("rough trail", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -56,6 +57,7 @@ public sealed class TravelResolverTests
         Assert.False(result.Preview.MountedTravelAvailable);
         Assert.Equal(4, result.Preview.ExpectedDays);
         Assert.Equal(0, result.Preview.RequiredHorseFeed);
+        Assert.Null(result.Preview.HorseState);
         Assert.Contains(result.Preview.Warnings, warning => warning.Contains("mounted travel is unavailable", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -76,6 +78,7 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(TravelMode.Mounted, session.Journey!.TravelMode);
         Assert.Equal(2, session.Journey.RemainingDays);
+        Assert.Equal(HorseTravelState.Healthy, session.Journey.HorseState);
     }
 
     [Fact]
@@ -97,7 +100,7 @@ public sealed class TravelResolverTests
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(1, session.Journey!.RemainingDays);
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
-        Assert.Equal(HorseCondition.Healthy, session.Player.Inventory.GetHorseCondition());
+        Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
     }
 
     [Fact]
@@ -141,7 +144,7 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayRecalculatesPacingWhenHorseFeedRunsOut()
+    public void AdvanceJourneyDayKeepsMountedTravelWhenHorseFeedRunsOut()
     {
         var session = CreateMountedSession(withHorseFeed: 0);
         var resolver = new TravelResolver();
@@ -153,8 +156,8 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(session.Journey);
-        Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
-        Assert.Equal(HorseCondition.Hungry, session.Player.Inventory.GetHorseCondition());
+        Assert.Equal(TravelMode.Mounted, session.Journey!.TravelMode);
+        Assert.Equal(new HorseTravelState(1, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
@@ -313,7 +316,7 @@ public sealed class TravelResolverTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.HorseFeed, withHorseFeed)
@@ -372,7 +375,7 @@ public sealed class TravelResolverTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.Revolver, 1),
@@ -398,7 +401,7 @@ public sealed class TravelResolverTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.Revolver, 1),

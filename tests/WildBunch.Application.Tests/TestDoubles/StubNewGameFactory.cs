@@ -63,7 +63,7 @@ public sealed class StubNewGameFactory : INewGameFactory
             new InventoryItem(ItemKind.Food, 3),
             new InventoryItem(ItemKind.HorseFeed, 2),
             new InventoryItem(ItemKind.Canteen, 1),
-            new InventoryItem(ItemKind.Horse, 1, HorseCondition.Healthy),
+            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
             new InventoryItem(ItemKind.Saddle, 1),
             new InventoryItem(ItemKind.Knife, 1),
             new InventoryItem(ItemKind.Revolver, 1),

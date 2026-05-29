@@ -24,7 +24,13 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.Player.CurrentTownId.Value, result.Player.CurrentTownId);
         Assert.Equal(session.Player.Wallet.Cash, result.Inventory.Wallet.Cash);
         Assert.Equal(session.Player.Inventory.Items.Count, result.Inventory.Items.Count);
-        Assert.Equal(session.Player.Inventory.GetHorseCondition(), result.Inventory.HorseCondition);
+        Assert.NotNull(result.Inventory.HorseState);
+        Assert.Equal(session.Player.Inventory.GetHorseState()!.Hunger, result.Inventory.HorseState!.Hunger);
+        Assert.Equal(session.Player.Inventory.GetHorseState()!.Thirst, result.Inventory.HorseState.Thirst);
+        Assert.Equal(session.Player.Inventory.GetHorseState()!.Exhaustion, result.Inventory.HorseState.Exhaustion);
+        Assert.NotNull(result.Inventory.CanteenState);
+        Assert.Equal(session.Player.Inventory.GetCanteenState()!.Charges, result.Inventory.CanteenState!.Charges);
+        Assert.Equal(session.Player.Inventory.GetCanteenState()!.Capacity, result.Inventory.CanteenState.Capacity);
         var capabilityResolver = new InventoryCapabilityResolver();
         var expectedCapabilities = capabilityResolver.Resolve(session.Player.Inventory);
         Assert.Equal(expectedCapabilities.MountedTravelAvailable, result.Inventory.Capabilities.MountedTravelAvailable);

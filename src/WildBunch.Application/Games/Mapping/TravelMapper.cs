@@ -4,6 +4,7 @@ using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterCho
 using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 
 namespace WildBunch.Application.Games.Mapping;
 
@@ -26,7 +27,7 @@ public static class TravelMapper
             preview.AvailableFood,
             preview.RequiredHorseFeed,
             preview.AvailableHorseFeed,
-            preview.HorseCondition,
+            ToHorseDto(preview.HorseState),
             preview.Warnings,
             ToDto(preview.RouteProfile));
 
@@ -48,12 +49,23 @@ public static class TravelMapper
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
             snapshot.AvailableHorseFeed,
-            snapshot.HorseCondition,
+            ToHorseDto(snapshot.HorseState),
             snapshot.DaysTravelled,
             snapshot.DelayDays,
             snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),
             snapshot.Warnings,
             ToDto(snapshot.RouteProfile));
+
+    public static HorseTravelStateDto? ToHorseDto(DomainHorseTravelState? horseState)
+        => horseState is null
+            ? null
+            : new HorseTravelStateDto(
+                horseState.Hunger,
+                horseState.Thirst,
+                horseState.Exhaustion,
+                horseState.IsLame,
+                horseState.IsDead,
+                horseState.CanProvideMountedTravel);
 
     public static TravelRouteProfileDto ToDto(DomainTravelRouteProfile routeProfile)
         => new(

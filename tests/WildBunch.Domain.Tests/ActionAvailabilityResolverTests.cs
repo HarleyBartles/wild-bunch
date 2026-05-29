@@ -161,7 +161,7 @@ public sealed class ActionAvailabilityResolverTests
         {
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Food, 3),
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Canteen, 1),
-            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Horse, 1, WildBunch.Domain.Inventory.HorseCondition.Healthy),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Horse, 1, WildBunch.Domain.Inventory.HorseTravelState.Healthy),
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Saddle, 1),
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Knife, 1),
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Revolver, 1),

@@ -27,7 +27,7 @@ public sealed class Inventory
         }
     }
 
-    public IReadOnlyList<InventoryItem> Items => _items.Select(item => new InventoryItem(item.Kind, item.Quantity, item.HorseCondition)).ToArray();
+    public IReadOnlyList<InventoryItem> Items => _items.Select(item => new InventoryItem(item.Kind, item.Quantity, item.HorseState, item.CanteenState)).ToArray();
 
     public static Inventory Empty() => new();
 
@@ -37,13 +37,16 @@ public sealed class Inventory
     public bool HasItem(ItemKind kind)
         => GetQuantity(kind) > 0;
 
-    public HorseCondition? GetHorseCondition()
+    public HorseTravelState? GetHorseState()
     {
         var horse = _items.FirstOrDefault(item => item.Kind == ItemKind.Horse);
-        return horse?.HorseCondition;
+        return horse?.HorseState;
     }
 
-    public void SetHorseCondition(HorseCondition horseCondition)
+    public HorseTravelState? GetHorseStateOrNull()
+        => GetHorseState();
+
+    public void SetHorseState(HorseTravelState horseState)
     {
         var index = _items.FindIndex(item => item.Kind == ItemKind.Horse);
         if (index < 0)
@@ -52,23 +55,23 @@ public sealed class Inventory
         }
 
         var horse = _items[index];
-        _items[index] = new InventoryItem(ItemKind.Horse, horse.Quantity, horseCondition);
+        _items[index] = new InventoryItem(ItemKind.Horse, horse.Quantity, horseState);
     }
 
     public void AddItem(InventoryItem item)
-        => AddItem(item.Kind, item.Quantity, item.HorseCondition);
+        => AddItem(item.Kind, item.Quantity, item.HorseState, item.CanteenState);
 
-    public void AddItem(ItemKind kind, int quantity, HorseCondition? horseCondition = null)
+    public void AddItem(ItemKind kind, int quantity, HorseTravelState? horseState = null, CanteenState? canteenState = null)
     {
-        ValidateAddItem(kind, quantity, horseCondition);
-        ApplyAddItem(kind, quantity, horseCondition);
+        ValidateAddItem(kind, quantity, horseState, canteenState);
+        ApplyAddItem(kind, quantity, horseState, canteenState);
     }
 
-    public bool CanAddItem(ItemKind kind, int quantity, HorseCondition? horseCondition = null)
+    public bool CanAddItem(ItemKind kind, int quantity, HorseTravelState? horseState = null, CanteenState? canteenState = null)
     {
         try
         {
-            ValidateAddItem(kind, quantity, horseCondition);
+            ValidateAddItem(kind, quantity, horseState, canteenState);
             return true;
         }
         catch
@@ -108,10 +111,41 @@ public sealed class Inventory
             return;
         }
 
-        _items[index] = new InventoryItem(current.Kind, remaining, current.HorseCondition);
+        _items[index] = new InventoryItem(current.Kind, remaining, current.HorseState, current.CanteenState);
     }
 
-    private static void ValidateAddItem(ItemKind kind, int quantity, HorseCondition? horseCondition)
+    public CanteenState? GetCanteenState()
+    {
+        var canteen = _items.FirstOrDefault(item => item.Kind == ItemKind.Canteen);
+        return canteen?.CanteenState;
+    }
+
+    public void SetCanteenState(CanteenState canteenState)
+    {
+        var index = _items.FindIndex(item => item.Kind == ItemKind.Canteen);
+        if (index < 0)
+        {
+            throw new InvalidOperationException("Canteen is not present in inventory.");
+        }
+
+        var canteen = _items[index];
+        _items[index] = new InventoryItem(ItemKind.Canteen, canteen.Quantity, canteenState: canteenState);
+    }
+
+    public HorseTravelState AdvanceHorseState(bool horseFed)
+    {
+        var horseState = GetHorseState();
+        if (horseState is null)
+        {
+            throw new InvalidOperationException("Horse is not present in inventory.");
+        }
+
+        var updatedHorseState = horseState.AdvanceTravelDay(horseFed);
+        SetHorseState(updatedHorseState);
+        return updatedHorseState;
+    }
+
+    private static void ValidateAddItem(ItemKind kind, int quantity, HorseTravelState? horseState, CanteenState? canteenState)
     {
         if (quantity < 0)
         {
@@ -130,17 +164,32 @@ public sealed class Inventory
                 throw new InvalidOperationException("Horse items must have a quantity of 1.");
             }
 
-            if (horseCondition is null)
+            if (canteenState is not null)
             {
-                throw new ArgumentNullException(nameof(horseCondition), "Horse items require a condition.");
+                throw new ArgumentException("Horse items cannot carry canteen state.", nameof(canteenState));
             }
 
             return;
         }
 
-        if (horseCondition is not null)
+        if (kind == ItemKind.Canteen)
         {
-            throw new ArgumentException("Only horse items can carry a horse condition.", nameof(horseCondition));
+            if (quantity != 1)
+            {
+                throw new InvalidOperationException("Canteen items must have a quantity of 1.");
+            }
+
+            if (horseState is not null)
+            {
+                throw new ArgumentException("Canteen items cannot carry horse state.", nameof(horseState));
+            }
+
+            return;
+        }
+
+        if (horseState is not null || canteenState is not null)
+        {
+            throw new ArgumentException("Only horse or canteen items can carry travel state.");
         }
 
         if (!StackableKinds.Contains(kind) && quantity != 1)
@@ -149,7 +198,7 @@ public sealed class Inventory
         }
     }
 
-    private void ApplyAddItem(ItemKind kind, int quantity, HorseCondition? horseCondition)
+    private void ApplyAddItem(ItemKind kind, int quantity, HorseTravelState? horseState, CanteenState? canteenState)
     {
         if (quantity == 0)
         {
@@ -158,7 +207,13 @@ public sealed class Inventory
 
         if (kind == ItemKind.Horse)
         {
-            AddHorse(quantity, horseCondition);
+            AddHorse(quantity, horseState);
+            return;
+        }
+
+        if (kind == ItemKind.Canteen)
+        {
+            AddCanteen(quantity, canteenState);
             return;
         }
 
@@ -181,7 +236,7 @@ public sealed class Inventory
         }
 
         var current = _items[index];
-        _items[index] = new InventoryItem(current.Kind, current.Quantity + quantity, current.HorseCondition);
+        _items[index] = new InventoryItem(current.Kind, current.Quantity + quantity, current.HorseState, current.CanteenState);
     }
 
     private void AddNonStackable(ItemKind kind)
@@ -194,16 +249,11 @@ public sealed class Inventory
         _items.Add(new InventoryItem(kind, 1));
     }
 
-    private void AddHorse(int quantity, HorseCondition? horseCondition)
+    private void AddHorse(int quantity, HorseTravelState? horseState)
     {
         if (quantity != 1)
         {
             throw new InvalidOperationException("Horse items must have a quantity of 1.");
-        }
-
-        if (horseCondition is null)
-        {
-            throw new ArgumentNullException(nameof(horseCondition), "Horse items require a condition.");
         }
 
         if (_items.Any(item => item.Kind == ItemKind.Horse))
@@ -211,6 +261,21 @@ public sealed class Inventory
             throw new InvalidOperationException("Horse already exists in inventory.");
         }
 
-        _items.Add(new InventoryItem(ItemKind.Horse, 1, horseCondition));
+        _items.Add(new InventoryItem(ItemKind.Horse, 1, horseState));
+    }
+
+    private void AddCanteen(int quantity, CanteenState? canteenState)
+    {
+        if (quantity != 1)
+        {
+            throw new InvalidOperationException("Canteen items must have a quantity of 1.");
+        }
+
+        if (_items.Any(item => item.Kind == ItemKind.Canteen))
+        {
+            throw new InvalidOperationException("Canteen already exists in inventory.");
+        }
+
+        _items.Add(new InventoryItem(ItemKind.Canteen, 1, canteenState: canteenState));
     }
 }

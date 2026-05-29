@@ -22,8 +22,7 @@ public sealed record StoreOffer(
     decimal Price,
     StoreVendorType VendorType,
     StoreOfferAvailability Availability,
-    string SourceNote,
-    HorseCondition? HorseCondition = null);
+    string SourceNote);
 
 public sealed record TownStoreCatalog(
     TownId TownId,
@@ -91,7 +90,7 @@ public sealed class TownStoreCatalogResolver
     private static IReadOnlyList<StoreOffer> CreateStableOffers()
         => new[]
         {
-            new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room", HorseCondition.Healthy),
+            new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
             new StoreOffer(ItemKind.Saddle, "Saddle", 20m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
             new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
         };

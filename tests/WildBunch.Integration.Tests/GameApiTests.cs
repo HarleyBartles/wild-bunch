@@ -259,7 +259,7 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Active, resumeAdvance.JourneyStatus);
         Assert.NotNull(resumeAdvance.CurrentSession.Journey);
         Assert.Equal(3, resumeAdvance.CurrentSession.Clock.Turn);
-        Assert.Equal(2, resumeAdvance.CurrentSession.Journey!.RemainingDays);
+        Assert.Equal(3, resumeAdvance.CurrentSession.Journey!.RemainingDays);
     }
 
     [Fact]

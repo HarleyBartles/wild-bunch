@@ -1,7 +1,8 @@
+using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
-using DomainHorseCondition = WildBunch.Domain.Inventory.HorseCondition;
 
 namespace WildBunch.Domain.Tests;
 
@@ -34,18 +35,49 @@ public sealed class InventoryTests
     }
 
     [Fact]
-    public void HorseRemainsUniqueAndCarriesOnlyItsOwnCondition()
+    public void HorseDefaultsToHealthyStateAndCarriesItsOwnTravelState()
     {
         var inventory = new DomainInventory(new[]
         {
-            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseCondition.Healthy)
+            new DomainInventoryItem(DomainItemKind.Horse, 1)
         });
 
         Assert.Single(inventory.Items);
-        Assert.Equal(DomainHorseCondition.Healthy, inventory.GetHorseCondition());
-        Assert.Throws<ArgumentNullException>(() => new DomainInventoryItem(DomainItemKind.Horse, 1));
-        Assert.Throws<ArgumentException>(() => new DomainInventoryItem(DomainItemKind.Canteen, 1, DomainHorseCondition.Healthy));
-        Assert.Throws<InvalidOperationException>(() => inventory.AddItem(DomainItemKind.Horse, 1, DomainHorseCondition.Healthy));
+        Assert.Equal(DomainHorseTravelState.Healthy, inventory.GetHorseState());
+        Assert.Equal(DomainHorseTravelState.Healthy, inventory.Items[0].HorseState);
+    }
+
+    [Fact]
+    public void CanteenDefaultsToFullChargesAndCarriesItsOwnWaterState()
+    {
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Canteen, 1)
+        });
+
+        Assert.Single(inventory.Items);
+        Assert.Equal(new DomainCanteenState(2, 2), inventory.GetCanteenState());
+        Assert.Equal(new DomainCanteenState(2, 2), inventory.Items[0].CanteenState);
+    }
+
+    [Fact]
+    public void HorseAndCanteenStateCanBeExplicitlySeededAndMutated()
+    {
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Horse, 1, new DomainHorseTravelState(1, 0, 2)),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new DomainCanteenState(1, 2))
+        });
+
+        Assert.Equal(new DomainHorseTravelState(1, 0, 2), inventory.GetHorseState());
+        Assert.Equal(new DomainCanteenState(1, 2), inventory.GetCanteenState());
+
+        var nextHorseState = inventory.AdvanceHorseState(horseFed: false);
+        inventory.SetCanteenState(new DomainCanteenState(0, 2));
+
+        Assert.Equal(new DomainHorseTravelState(2, 0, 3), nextHorseState);
+        Assert.Equal(new DomainHorseTravelState(2, 0, 3), inventory.GetHorseState());
+        Assert.Equal(new DomainCanteenState(0, 2), inventory.GetCanteenState());
     }
 
     [Fact]

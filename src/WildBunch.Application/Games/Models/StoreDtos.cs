@@ -16,5 +16,4 @@ public sealed record StoreOfferDto(
     decimal Price,
     StoreVendorType VendorType,
     StoreOfferAvailability Availability,
-    string SourceNote,
-    HorseCondition? HorseCondition);
+    string SourceNote);

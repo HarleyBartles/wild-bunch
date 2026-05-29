@@ -7,7 +7,7 @@ using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
-using DomainHorseCondition = WildBunch.Domain.Inventory.HorseCondition;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 
 namespace WildBunch.Domain.Tests;
 
@@ -45,7 +45,7 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal("Purchased Horse for $60.00.", result.Message);
         Assert.Equal(40m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
-        Assert.Equal(DomainHorseCondition.Healthy, session.Player.Inventory.GetHorseCondition());
+        Assert.Equal(DomainHorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
         Assert.Equal(2, session.LogEntries.Count);
         Assert.Equal(GameLogEntryKind.Purchase, session.LogEntries.Last().Kind);
     }

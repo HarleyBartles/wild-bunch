@@ -172,20 +172,27 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (Journey.TravelMode == TravelMode.Mounted)
         {
-            if (!Journey.TryConsumeHorseFeed())
+            var horseState = Player.Inventory.GetHorseState();
+            if (horseState is null)
             {
-                var nextHorseCondition = AdvanceHorseCondition(Player.Inventory.GetHorseCondition() ?? HorseCondition.Healthy);
-                Player.Inventory.SetHorseCondition(nextHorseCondition);
-                Journey.SetHorseCondition(nextHorseCondition);
-
-                if (nextHorseCondition != HorseCondition.Healthy)
-                {
-                    switchToFootAfterToday = true;
-                }
+                Journey.RecalculatePacing(TravelMode.Foot);
+                switchToFootAfterToday = true;
             }
             else
             {
-                Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, 1);
+                var horseFed = Journey.TryConsumeHorseFeed();
+                if (horseFed)
+                {
+                    Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, 1);
+                }
+
+                var updatedHorseState = Player.Inventory.AdvanceHorseState(horseFed);
+                Journey.SetHorseState(updatedHorseState);
+
+                if (!updatedHorseState.CanProvideMountedTravel)
+                {
+                    switchToFootAfterToday = true;
+                }
             }
         }
 
@@ -372,11 +379,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return StorePurchaseResult.Failed("Quantity must be at least 1.");
         }
 
-        if (offer.ItemKind == ItemKind.Horse && offer.HorseCondition is null)
-        {
-            return StorePurchaseResult.Failed("Horse offers must define a horse condition.");
-        }
-
         if (offer.ItemKind == ItemKind.Horse && quantity != 1)
         {
             return StorePurchaseResult.Failed("Horse items must have a quantity of 1.");
@@ -399,7 +401,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var nextWallet = Player.Wallet.Spend(totalPrice);
-        Player.Inventory.AddItem(offer.ItemKind, quantity, offer.HorseCondition);
+        Player.Inventory.AddItem(offer.ItemKind, quantity);
         Player.SetWallet(nextWallet);
 
         var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
@@ -517,14 +519,4 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return false;
     }
 
-    private static HorseCondition AdvanceHorseCondition(HorseCondition currentHorseCondition)
-        => currentHorseCondition switch
-        {
-            HorseCondition.Healthy => HorseCondition.Hungry,
-            HorseCondition.Hungry => HorseCondition.Exhausted,
-            HorseCondition.Exhausted => HorseCondition.Lame,
-            HorseCondition.Lame => HorseCondition.Dead,
-            HorseCondition.Dead => HorseCondition.Dead,
-            _ => HorseCondition.Hungry
-        };
 }

@@ -3,11 +3,12 @@ using System.Text.Json;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
+using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
+using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using WildBunch.Domain.Travel;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainInventoryItemKind = WildBunch.Domain.Inventory.ItemKind;
-using DomainHorseCondition = WildBunch.Domain.Inventory.HorseCondition;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
@@ -129,13 +130,17 @@ public sealed class GameSessionJsonSerializer
                 : new DomainInventory(snapshot.Items.Select(InventoryItemSnapshot.ToDomain));
     }
 
-    private sealed record InventoryItemSnapshot(DomainInventoryItemKind Kind, int Quantity, DomainHorseCondition? HorseCondition)
+    private sealed record InventoryItemSnapshot(
+        DomainInventoryItemKind Kind,
+        int Quantity,
+        DomainHorseTravelState? HorseState,
+        DomainCanteenState? CanteenState)
     {
         public static InventoryItemSnapshot FromDomain(DomainInventoryItem item)
-            => new(item.Kind, item.Quantity, item.HorseCondition);
+            => new(item.Kind, item.Quantity, item.HorseState, item.CanteenState);
 
         public static DomainInventoryItem ToDomain(InventoryItemSnapshot snapshot)
-            => new(snapshot.Kind, snapshot.Quantity, snapshot.HorseCondition);
+            => new(snapshot.Kind, snapshot.Quantity, snapshot.HorseState, snapshot.CanteenState);
     }
 
     private sealed record WorldSnapshot(IReadOnlyList<TownSnapshot> Towns, IReadOnlyList<TrailSnapshot> Trails)
@@ -319,7 +324,7 @@ public sealed class GameSessionJsonSerializer
         public int AvailableFood { get; set; }
         public int RequiredHorseFeed { get; set; }
         public int AvailableHorseFeed { get; set; }
-        public DomainHorseCondition? HorseCondition { get; set; }
+        public DomainHorseTravelState? HorseState { get; set; }
         public int DaysTravelled { get; set; }
         public int DelayDays { get; set; }
         public JourneyEncounterSnapshot? PendingEncounter { get; set; }
@@ -345,7 +350,7 @@ public sealed class GameSessionJsonSerializer
                 AvailableFood = snapshot.AvailableFood,
                 RequiredHorseFeed = snapshot.RequiredHorseFeed,
                 AvailableHorseFeed = snapshot.AvailableHorseFeed,
-                HorseCondition = snapshot.HorseCondition,
+                HorseState = snapshot.HorseState,
                 DaysTravelled = snapshot.DaysTravelled,
                 DelayDays = snapshot.DelayDays,
                 PendingEncounter = snapshot.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(snapshot.PendingEncounter),
@@ -371,7 +376,7 @@ public sealed class GameSessionJsonSerializer
                 AvailableFood,
                 RequiredHorseFeed,
                 AvailableHorseFeed,
-                HorseCondition,
+                HorseState,
                 DaysTravelled,
                 DelayDays,
                 PendingEncounter?.ToDomain(),

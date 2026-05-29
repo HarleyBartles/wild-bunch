@@ -26,7 +26,8 @@ public sealed record PlayerDto(
 public sealed record InventoryDto(
     WalletDto Wallet,
     IReadOnlyList<InventoryItemDto> Items,
-    HorseCondition? HorseCondition,
+    HorseTravelStateDto? HorseState,
+    CanteenStateDto? CanteenState,
     InventoryCapabilitiesDto Capabilities);
 
 public sealed record WalletDto(decimal Cash);
@@ -34,7 +35,21 @@ public sealed record WalletDto(decimal Cash);
 public sealed record InventoryItemDto(
     ItemKind Kind,
     int Quantity,
-    HorseCondition? HorseCondition);
+    HorseTravelStateDto? HorseState,
+    CanteenStateDto? CanteenState);
+
+public sealed record HorseTravelStateDto(
+    int Hunger,
+    int Thirst,
+    int Exhaustion,
+    bool IsLame,
+    bool IsDead,
+    bool CanProvideMountedTravel);
+
+public sealed record CanteenStateDto(
+    int Charges,
+    int Capacity,
+    bool HasWater);
 
 public sealed record InventoryCapabilitiesDto(
     bool MountedTravelAvailable,
@@ -119,7 +134,7 @@ public sealed record TravelPreviewDto(
     int AvailableFood,
     int RequiredHorseFeed,
     int AvailableHorseFeed,
-    HorseCondition? HorseCondition,
+    HorseTravelStateDto? HorseState,
     IReadOnlyList<string> Warnings,
     TravelRouteProfileDto RouteProfile);
 
@@ -155,7 +170,7 @@ public sealed record TravelJourneyDto(
     int AvailableFood,
     int RequiredHorseFeed,
     int AvailableHorseFeed,
-    HorseCondition? HorseCondition,
+    HorseTravelStateDto? HorseState,
     int DaysTravelled,
     int DelayDays,
     JourneyEncounterDto? PendingEncounter,
