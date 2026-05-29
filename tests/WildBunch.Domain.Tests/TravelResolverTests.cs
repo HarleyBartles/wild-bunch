@@ -143,6 +143,128 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
     }
 
+    [Fact]
+    public void AdvanceJourneyDayCanPauseForAHighRiskFoeEncounter()
+    {
+        var session = CreateHighRiskSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.False(result.Success);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.NotNull(session.Journey);
+        Assert.Equal(JourneyStatus.Interrupted, session.Journey!.Status);
+        Assert.NotNull(session.Journey.PendingEncounter);
+        Assert.Equal("foe", session.Journey.PendingEncounter!.Kind);
+        Assert.Equal(3, session.Journey.PendingEncounter.Choices.Count);
+        Assert.Equal("run", session.Journey.PendingEncounter.Choices[0].Id);
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
+    }
+
+    [Fact]
+    public void AdvanceJourneyDayIsBlockedWhileAnEncounterIsPending()
+    {
+        var session = CreateHighRiskSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.False(result.Success);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal("Resolve the pending encounter before you continue on the trail.", result.Message);
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(1, session.Journey!.DaysTravelled);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterRunAddsDelayAndResumesTheTrail()
+    {
+        var session = CreateHighRiskSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("run");
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.NotNull(session.Journey);
+        Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
+        Assert.Null(session.Journey.PendingEncounter);
+        Assert.Equal(1, session.Journey.DelayDays);
+        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.Equal(1, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterFightConsumesAmmoAndDamagesThePlayer()
+    {
+        var session = CreateHighRiskSession(withRevolverAmmo: 1);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("fight");
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
+        Assert.Equal(95, session.Player.Health);
+        Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
+        Assert.Null(session.Journey.PendingEncounter);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterBribeSpendsCashAndResumesTheTrail()
+    {
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("bribe");
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.Equal(5m, session.Player.Wallet.Cash);
+        Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
+        Assert.Null(session.Journey.PendingEncounter);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterBribeFailsWhenCashIsTooLow()
+    {
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(3m));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("bribe");
+
+        Assert.False(result.Success);
+        Assert.False(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal(3m, session.Player.Wallet.Cash);
+        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
+    }
+
     private static GameSession CreateMountedSession(int withHorseFeed = 2)
     {
         var world = CreateWorld();
@@ -171,6 +293,32 @@ public sealed class TravelResolverTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateHighRiskSession(Wallet? wallet = null, int withRevolverAmmo = 2)
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseCondition.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1),
+            new DomainInventoryItem(DomainItemKind.Revolver, 1),
+            new DomainInventoryItem(DomainItemKind.RevolverAmmo, withRevolverAmmo)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory);
     }
 
     private static DomainWorld CreateWorld()

@@ -1,5 +1,6 @@
 using WildBunch.Application.Games.Models;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
+using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterChoiceState;
 using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
@@ -49,6 +50,7 @@ public static class TravelMapper
             snapshot.AvailableHorseFeed,
             snapshot.HorseCondition,
             snapshot.DaysTravelled,
+            snapshot.DelayDays,
             snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),
             snapshot.Warnings,
             ToDto(snapshot.RouteProfile));
@@ -65,5 +67,8 @@ public static class TravelMapper
             routeProfile.Warnings);
 
     public static JourneyEncounterDto ToDto(DomainJourneyEncounter encounter)
-        => new(encounter.Kind, encounter.Message);
+        => new(encounter.Kind, encounter.Message, encounter.Choices.Select(ToDto).ToArray());
+
+    public static JourneyEncounterChoiceDto ToDto(DomainJourneyEncounterChoice choice)
+        => new(choice.Id, choice.Label);
 }

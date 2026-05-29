@@ -6,6 +6,7 @@ using DomainGameSession = WildBunch.Domain.Game.GameSession;
 using DomainPlayer = WildBunch.Domain.Game.Player;
 using DomainPursuitState = WildBunch.Domain.Game.PursuitState;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
+using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterChoiceState;
 using DomainTravelJourney = WildBunch.Domain.Travel.TravelJourney;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
@@ -94,6 +95,7 @@ public static class GameSessionMapper
             snapshot.AvailableHorseFeed,
             snapshot.HorseCondition,
             snapshot.DaysTravelled,
+            snapshot.DelayDays,
             snapshot.PendingEncounter is null ? null : ToDto(snapshot.PendingEncounter),
             snapshot.Warnings,
             ToDto(snapshot.RouteProfile));
@@ -110,7 +112,10 @@ public static class GameSessionMapper
             routeProfile.Warnings);
 
     private static JourneyEncounterDto ToDto(DomainJourneyEncounter encounter)
-        => new(encounter.Kind, encounter.Message);
+        => new(encounter.Kind, encounter.Message, encounter.Choices.Select(ToDto).ToArray());
+
+    private static JourneyEncounterChoiceDto ToDto(DomainJourneyEncounterChoice choice)
+        => new(choice.Id, choice.Label);
 
     private static CaseFileDto ToDto(DomainCaseFile caseFile)
     {

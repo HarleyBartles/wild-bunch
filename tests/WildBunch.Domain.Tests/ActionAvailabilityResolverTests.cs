@@ -101,6 +101,23 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
     }
 
+    [Fact]
+    public void PendingEncounterReplacesAdvanceTravelDayWithResolveEncounter()
+    {
+        var session = CreateHighRiskSession();
+        var travelResolver = new TravelResolver();
+        var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var resolver = new ActionAvailabilityResolver();
+        var result = resolver.Resolve(session);
+
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.Travel);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.ResolveTravelEncounter);
+    }
+
     private static GameSession CreateSession(TownServices currentTownServices, bool addTrail = true)
     {
         var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
@@ -121,5 +138,36 @@ public sealed class ActionAvailabilityResolverTests
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateHighRiskSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), pinecross.Id, dryfork.Id, TrailRisk.High)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var inventory = new WildBunch.Domain.Inventory.Inventory(new[]
+        {
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Food, 3),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Canteen, 1),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Horse, 1, WildBunch.Domain.Inventory.HorseCondition.Healthy),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Saddle, 1),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Knife, 1),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.Revolver, 1),
+            new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.RevolverAmmo, 2)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, WildBunch.Domain.Economy.Wallet.Starting(25m), inventory);
     }
 }

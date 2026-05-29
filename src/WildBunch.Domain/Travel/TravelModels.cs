@@ -85,23 +85,28 @@ public sealed record TravelJourneySnapshot(
     int AvailableHorseFeed,
     HorseCondition? HorseCondition,
     int DaysTravelled,
+    int DelayDays,
     JourneyEncounterState? PendingEncounter,
     IReadOnlyList<string> Warnings);
 
-public sealed record JourneyEncounterState
+public sealed record JourneyEncounterChoiceState(string Id, string Label);
+
+public sealed record JourneyEncounterState(
+    string Kind,
+    string Message,
+    IReadOnlyList<JourneyEncounterChoiceState> Choices)
 {
-    public JourneyEncounterState(string kind, string message)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
-        ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
-        Kind = kind;
-        Message = message;
-    }
-
-    public string Kind { get; }
-
-    public string Message { get; }
+    public static JourneyEncounterState CreateFoe(string message)
+        => new(
+            "foe",
+            message,
+            new[]
+            {
+                new JourneyEncounterChoiceState("run", "Run"),
+                new JourneyEncounterChoiceState("fight", "Fight"),
+                new JourneyEncounterChoiceState("bribe", "Bribe")
+            });
 }
 
 public sealed class TravelJourney
@@ -129,6 +134,8 @@ public sealed class TravelJourney
     public int RemainingDays { get; private set; }
 
     public int DaysTravelled { get; private set; }
+
+    public int DelayDays { get; private set; }
 
     public JourneyEncounterState? PendingEncounter { get; private set; }
 
@@ -175,6 +182,7 @@ public sealed class TravelJourney
             RemainingDistance = snapshot.RemainingDistance,
             RemainingDays = snapshot.RemainingDays,
             DaysTravelled = snapshot.DaysTravelled,
+            DelayDays = snapshot.DelayDays,
             PendingEncounter = snapshot.PendingEncounter,
             FoodRemaining = snapshot.AvailableFood,
             HorseFeedRemaining = snapshot.AvailableHorseFeed,
@@ -187,7 +195,9 @@ public sealed class TravelJourney
     public void RecalculatePacing(TravelMode travelMode)
     {
         TravelMode = travelMode;
-        RemainingDays = Preview.RouteProfile.CalculateRemainingDays(RemainingDistance, TravelMode);
+        RemainingDays = RemainingDistance == 0
+            ? 0
+            : Preview.RouteProfile.CalculateRemainingDays(RemainingDistance, TravelMode) + DelayDays;
     }
 
     public JourneyProgress AdvanceOneDay()
@@ -205,7 +215,7 @@ public sealed class TravelJourney
         DaysTravelled++;
         RemainingDays = RemainingDistance == 0
             ? 0
-            : Preview.RouteProfile.CalculateRemainingDays(RemainingDistance, TravelMode);
+            : Preview.RouteProfile.CalculateRemainingDays(RemainingDistance, TravelMode) + DelayDays;
 
         return new JourneyProgress(dailyProgress, RemainingDistance == 0);
     }
@@ -225,9 +235,34 @@ public sealed class TravelJourney
         PendingEncounter = encounter;
     }
 
+    public void ResumeFromEncounter()
+    {
+        Status = JourneyStatus.Active;
+        PendingEncounter = null;
+    }
+
     public void MarkFailed()
     {
         Status = JourneyStatus.Failed;
+    }
+
+    public void AddDelayDays(int days)
+    {
+        if (days < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(days), "Delay days cannot be negative.");
+        }
+
+        if (days == 0)
+        {
+            return;
+        }
+
+        DelayDays += days;
+        if (RemainingDistance > 0)
+        {
+            RemainingDays += days;
+        }
     }
 
     public void ConsumeFood()
@@ -277,8 +312,24 @@ public sealed class TravelJourney
             HorseFeedRemaining,
             HorseCondition,
             DaysTravelled,
+            DelayDays,
             PendingEncounter,
             Preview.Warnings);
+
+    public JourneyEncounterState? TryCreateEncounter()
+    {
+        if (Status != JourneyStatus.Active || PendingEncounter is not null)
+        {
+            return null;
+        }
+
+        if (Preview.RouteProfile.Risk == TrailRisk.High && DaysTravelled == 1)
+        {
+            return JourneyEncounterState.CreateFoe("A hard-eyed trail rider steps out from the brush and blocks your way.");
+        }
+
+        return null;
+    }
 }
 
 public sealed record JourneyProgress(int DistanceTravelled, bool Completed);
@@ -293,6 +344,17 @@ public sealed record TravelJourneyStepResult(
 {
     public static TravelJourneyStepResult Failed(string message)
         => new(false, JourneyStatus.Failed, message, message, 0);
+}
+
+public sealed record JourneyEncounterResolutionResult(
+    bool Success,
+    bool SessionChanged,
+    JourneyStatus Status,
+    string Message,
+    TravelJourneySnapshot? Journey = null)
+{
+    public static JourneyEncounterResolutionResult Failed(string message, JourneyStatus status, TravelJourneySnapshot? journey = null)
+        => new(false, false, status, message, journey);
 }
 
 public sealed record TravelPreviewResult(bool Success, string Message, TravelPreview? Preview)

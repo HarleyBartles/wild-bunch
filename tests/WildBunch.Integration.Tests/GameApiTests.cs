@@ -163,6 +163,106 @@ public sealed class GameApiTests
     }
 
     [Fact]
+    public async Task HighRiskTravelCanPauseResolveAndResumeWithoutSkippingTheTrail()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(createdSession);
+
+        var travelToRedMesaResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession!.Id}/travel",
+            new TravelRequest("redmesa"));
+
+        Assert.Equal(HttpStatusCode.OK, travelToRedMesaResponse.StatusCode);
+
+        var redMesaTravel = await travelToRedMesaResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(redMesaTravel);
+        Assert.True(redMesaTravel!.Success);
+        Assert.Equal(JourneyStatus.Active, redMesaTravel.JourneyStatus);
+
+        var completeLowRiskResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, completeLowRiskResponse.StatusCode);
+
+        var completeLowRisk = await completeLowRiskResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(completeLowRisk);
+        Assert.True(completeLowRisk!.Success);
+        Assert.Equal(JourneyStatus.Completed, completeLowRisk.JourneyStatus);
+        Assert.Equal("redmesa", completeLowRisk.CurrentSession.Player.CurrentTownId);
+
+        var travelToDryForkResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/travel",
+            new TravelRequest("dryfork"));
+
+        Assert.Equal(HttpStatusCode.OK, travelToDryForkResponse.StatusCode);
+
+        var dryForkTravel = await travelToDryForkResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(dryForkTravel);
+        Assert.True(dryForkTravel!.Success);
+        Assert.Equal(JourneyStatus.Active, dryForkTravel.JourneyStatus);
+
+        var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
+
+        var firstAdvance = await firstAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(firstAdvance);
+        Assert.False(firstAdvance!.Success);
+        Assert.Equal(JourneyStatus.Interrupted, firstAdvance.JourneyStatus);
+        Assert.NotNull(firstAdvance.Journey);
+        Assert.NotNull(firstAdvance.Journey!.PendingEncounter);
+        Assert.Equal("foe", firstAdvance.Journey.PendingEncounter!.Kind);
+        Assert.Equal(3, firstAdvance.Journey.PendingEncounter.Choices.Count);
+
+        var blockedAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, blockedAdvanceResponse.StatusCode);
+
+        var blockedAdvance = await blockedAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(blockedAdvance);
+        Assert.False(blockedAdvance!.Success);
+        Assert.Equal(JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
+        Assert.Equal(2, blockedAdvance.CurrentSession.Clock.Turn);
+
+        var resolveResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/travel/encounter/resolve",
+            new { ChoiceId = "run" });
+
+        Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
+
+        var resolved = await resolveResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(resolved);
+        Assert.True(resolved!.Success);
+        Assert.Equal(JourneyStatus.Active, resolved.JourneyStatus);
+        Assert.NotNull(resolved.CurrentSession.Journey);
+        Assert.Null(resolved.CurrentSession.Journey!.PendingEncounter);
+        Assert.Equal(1, resolved.CurrentSession.Journey.DelayDays);
+
+        var resumeAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, resumeAdvanceResponse.StatusCode);
+
+        var resumeAdvance = await resumeAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(resumeAdvance);
+        Assert.True(resumeAdvance!.Success);
+        Assert.Equal(JourneyStatus.Active, resumeAdvance.JourneyStatus);
+        Assert.NotNull(resumeAdvance.CurrentSession.Journey);
+        Assert.Equal(3, resumeAdvance.CurrentSession.Clock.Turn);
+        Assert.Equal(2, resumeAdvance.CurrentSession.Journey!.RemainingDays);
+    }
+
+    [Fact]
     public async Task GetMissingGameReturnsNotFound()
     {
         using var factory = new SqliteApiFactory();

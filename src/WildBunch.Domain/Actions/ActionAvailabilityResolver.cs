@@ -42,7 +42,7 @@ public sealed class ActionAvailabilityResolver
             availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
         }
 
-        if (session.Journey is not null && session.Journey.Status == WildBunch.Domain.Travel.JourneyStatus.Active)
+        if (session.Journey is not null)
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.BuySupplies);
@@ -50,7 +50,15 @@ public sealed class ActionAvailabilityResolver
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.VisitDoctor);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.SendTelegram);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
-            availableActions.Add(new AvailableAction(AvailableActionKind.AdvanceTravelDay, "Advance travel day"));
+            if (session.Journey.PendingEncounter is not null)
+            {
+                availableActions.Add(new AvailableAction(AvailableActionKind.ResolveTravelEncounter, "Resolve travel encounter"));
+            }
+            else
+            {
+                availableActions.Add(new AvailableAction(AvailableActionKind.AdvanceTravelDay, "Advance travel day"));
+            }
+
             return availableActions;
         }
 

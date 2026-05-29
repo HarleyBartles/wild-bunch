@@ -157,11 +157,19 @@ public sealed record TravelJourneyDto(
     int AvailableHorseFeed,
     HorseCondition? HorseCondition,
     int DaysTravelled,
+    int DelayDays,
     JourneyEncounterDto? PendingEncounter,
     IReadOnlyList<string> Warnings,
     TravelRouteProfileDto RouteProfile);
 
-public sealed record JourneyEncounterDto(string Kind, string Message);
+public sealed record JourneyEncounterDto(
+    string Kind,
+    string Message,
+    IReadOnlyList<JourneyEncounterChoiceDto> Choices);
+
+public sealed record JourneyEncounterChoiceDto(
+    string Id,
+    string Label);
 
 public sealed record GameClockDto(int Day, int Turn);
 

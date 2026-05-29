@@ -51,6 +51,18 @@ public static class RequestValidation
         return WriteResult(errors, out result);
     }
 
+    public static bool TryValidate(ResolveJourneyEncounterRequest? request, out IResult? result)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (request is null || string.IsNullOrWhiteSpace(request.ChoiceId))
+        {
+            errors["choiceId"] = ["Choice id is required."];
+        }
+
+        return WriteResult(errors, out result);
+    }
+
     private static bool WriteResult(Dictionary<string, string[]> errors, out IResult? result)
     {
         if (errors.Count == 0)

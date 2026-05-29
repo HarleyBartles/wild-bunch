@@ -111,6 +111,20 @@ public sealed class GameApiValidationTests
     }
 
     [Fact]
+    public async Task PostResolveJourneyEncounterWithMissingChoiceReturnsValidationProblem()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/games/{Guid.NewGuid()}/travel/encounter/resolve",
+            new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "choiceId");
+    }
+
+    [Fact]
     public async Task GetMalformedGameIdReturnsNotFound()
     {
         using var factory = new SqliteApiFactory();

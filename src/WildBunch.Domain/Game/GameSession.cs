@@ -97,7 +97,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         ArgumentNullException.ThrowIfNull(preview);
 
-        if (Journey is not null && Journey.Status == JourneyStatus.Active)
+        if (Journey is not null)
         {
             return TravelJourneyStepResult.Failed("You are already on the trail.");
         }
@@ -123,6 +123,20 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return TravelJourneyStepResult.Failed("No active journey is underway.");
         }
 
+        if (Journey.PendingEncounter is not null)
+        {
+            var encounterMessage = Journey.PendingEncounter.Message;
+            AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
+
+            return new TravelJourneyStepResult(
+                false,
+                Journey.Status,
+                "Resolve the pending encounter before you continue on the trail.",
+                encounterMessage,
+                0,
+                Journey.ToSnapshot());
+        }
+
         if (Journey.Status != JourneyStatus.Active)
         {
             return new TravelJourneyStepResult(
@@ -132,15 +146,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 "The journey is not active.",
                 0,
                 Journey.ToSnapshot());
-        }
-
-        if (Journey.PendingEncounter is not null)
-        {
-            Journey.MarkInterrupted(Journey.PendingEncounter);
-            var interruptedSnapshot = Journey.ToSnapshot();
-            var interruptedMessage = Journey.PendingEncounter.Message;
-            AddLogEntry(GameLogEntryKind.Travel, interruptedMessage);
-            return new TravelJourneyStepResult(false, Journey.Status, interruptedMessage, interruptedMessage, 0, interruptedSnapshot);
         }
 
         var capabilities = new InventoryCapabilityResolver().Resolve(Player.Inventory);
@@ -198,6 +203,22 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             AddLogEntry(GameLogEntryKind.Travel, "Your horse can no longer carry you, so you continue on foot.");
         }
 
+        var encounter = Journey.TryCreateEncounter();
+        if (encounter is not null)
+        {
+            Journey.MarkInterrupted(encounter);
+            var interruptedSnapshot = Journey.ToSnapshot();
+            AddLogEntry(GameLogEntryKind.Travel, encounter.Message);
+
+            return new TravelJourneyStepResult(
+                false,
+                JourneyStatus.Interrupted,
+                "Your journey is interrupted by a trail encounter.",
+                encounter.Message,
+                0,
+                interruptedSnapshot);
+        }
+
         if (progress.Completed)
         {
             var destinationTownId = Journey.Preview.DestinationTownId;
@@ -231,6 +252,77 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             ongoingMessage,
             Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
             ongoingSnapshot);
+    }
+
+    public JourneyEncounterResolutionResult ResolveJourneyEncounter(string choiceId)
+    {
+        if (Journey is null)
+        {
+            return JourneyEncounterResolutionResult.Failed("No active journey is underway.", JourneyStatus.Failed);
+        }
+
+        if (Journey.PendingEncounter is null)
+        {
+            return JourneyEncounterResolutionResult.Failed("There is no pending encounter to resolve.", Journey.Status, Journey.ToSnapshot());
+        }
+
+        if (Journey.Status != JourneyStatus.Interrupted)
+        {
+            return JourneyEncounterResolutionResult.Failed("The encounter is not waiting to be resolved.", Journey.Status, Journey.ToSnapshot());
+        }
+
+        if (string.IsNullOrWhiteSpace(choiceId))
+        {
+            return JourneyEncounterResolutionResult.Failed("Choose how you want to answer the encounter.", Journey.Status, Journey.ToSnapshot());
+        }
+
+        var encounter = Journey.PendingEncounter;
+        if (!encounter.Choices.Any(choice => string.Equals(choice.Id, choiceId, StringComparison.OrdinalIgnoreCase)))
+        {
+            return JourneyEncounterResolutionResult.Failed("That is not a lawful way to answer this encounter.", Journey.Status, Journey.ToSnapshot());
+        }
+
+        if (encounter.Kind != "foe")
+        {
+            return JourneyEncounterResolutionResult.Failed("That encounter cannot be resolved yet.", Journey.Status, Journey.ToSnapshot());
+        }
+
+        switch (choiceId.Trim().ToLowerInvariant())
+        {
+            case "run":
+                Journey.AddDelayDays(1);
+                PursuitState.IncreaseHeat(1);
+                Journey.ResumeFromEncounter();
+                AddLogEntry(GameLogEntryKind.Travel, "You pull away under a cloud of dust and regain the trail after a delay.");
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, "You run the gauntlet and keep riding.", Journey.ToSnapshot());
+
+            case "fight":
+                if (!TrySpendFirearmAmmo())
+                {
+                    return JourneyEncounterResolutionResult.Failed("You need firearm ammo to stand and fight.", Journey.Status, Journey.ToSnapshot());
+                }
+
+                Player.AdjustHealth(-5);
+                PursuitState.IncreaseHeat(1);
+                Journey.ResumeFromEncounter();
+                AddLogEntry(GameLogEntryKind.Travel, "You break the encounter with gun smoke and keep moving.");
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, "You fight through the ambush and keep moving.", Journey.ToSnapshot());
+
+            case "bribe":
+                const decimal bribeAmount = 5m;
+                if (!Player.Wallet.CanAfford(bribeAmount))
+                {
+                    return JourneyEncounterResolutionResult.Failed("You do not have enough cash to bribe your way through.", Journey.Status, Journey.ToSnapshot());
+                }
+
+                Player.SetWallet(Player.Wallet.Spend(bribeAmount));
+                Journey.ResumeFromEncounter();
+                AddLogEntry(GameLogEntryKind.Travel, $"You pay ${bribeAmount:0.00} to clear the road and keep riding.");
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, $"You bribe the rider with ${bribeAmount:0.00} and continue on.", Journey.ToSnapshot());
+
+            default:
+                return JourneyEncounterResolutionResult.Failed("That choice is not recognized.", Journey.Status, Journey.ToSnapshot());
+        }
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
@@ -363,6 +455,29 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private static bool IsStackableItemKind(ItemKind kind)
         => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo or ItemKind.RifleAmmo;
+
+    private bool TrySpendFirearmAmmo()
+    {
+        var capabilities = new InventoryCapabilityResolver().Resolve(Player.Inventory);
+        if (!capabilities.GunfightCapable)
+        {
+            return false;
+        }
+
+        if (Player.Inventory.GetQuantity(ItemKind.RevolverAmmo) > 0)
+        {
+            Player.Inventory.RemoveQuantity(ItemKind.RevolverAmmo, 1);
+            return true;
+        }
+
+        if (Player.Inventory.GetQuantity(ItemKind.RifleAmmo) > 0)
+        {
+            Player.Inventory.RemoveQuantity(ItemKind.RifleAmmo, 1);
+            return true;
+        }
+
+        return false;
+    }
 
     private static HorseCondition AdvanceHorseCondition(HorseCondition currentHorseCondition)
         => currentHorseCondition switch

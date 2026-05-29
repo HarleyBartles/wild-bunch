@@ -45,7 +45,7 @@ public sealed class GameSessionJsonSerializer
         CaseFileSnapshot CaseFile,
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
-        TravelJourneySnapshot? Journey,
+        JourneySnapshot? Journey,
         IReadOnlyList<GameLogEntrySnapshot> LogEntries)
     {
         public static GameSessionSnapshot FromDomain(GameSession session)
@@ -57,7 +57,7 @@ public sealed class GameSessionJsonSerializer
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
-                session.Journey?.ToSnapshot(),
+                session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot()),
                 session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray());
 
         public GameSession ToDomain()
@@ -67,7 +67,7 @@ public sealed class GameSessionJsonSerializer
             var player = PlayerSnapshot.ToDomain(Player);
             var pursuitState = PursuitStateSnapshot.ToDomain(PursuitState);
             var clock = GameClockSnapshot.ToDomain(Clock);
-            var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey);
+            var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey.ToDomain());
             var session = GameSessionRehydrator.Create(
                 new GameSessionId(Id),
                 player,
@@ -298,6 +298,157 @@ public sealed class GameSessionJsonSerializer
 
         public static GameLogEntry ToDomain(GameLogEntrySnapshot snapshot)
             => new(snapshot.Kind, snapshot.Message, snapshot.Day, snapshot.Turn);
+    }
+
+    private sealed class JourneySnapshot
+    {
+        public string OriginTownId { get; set; } = string.Empty;
+        public string DestinationTownId { get; set; } = string.Empty;
+        public string OriginTownName { get; set; } = string.Empty;
+        public string DestinationTownName { get; set; } = string.Empty;
+        public TravelRouteProfileSnapshot RouteProfile { get; set; } = new();
+        public TravelMode TravelMode { get; set; }
+        public JourneyStatus Status { get; set; }
+        public bool MountedTravelAvailable { get; set; }
+        public bool WaterSecure { get; set; }
+        public int TotalDistance { get; set; }
+        public int RemainingDistance { get; set; }
+        public int ExpectedDays { get; set; }
+        public int RemainingDays { get; set; }
+        public int RequiredFood { get; set; }
+        public int AvailableFood { get; set; }
+        public int RequiredHorseFeed { get; set; }
+        public int AvailableHorseFeed { get; set; }
+        public DomainHorseCondition? HorseCondition { get; set; }
+        public int DaysTravelled { get; set; }
+        public int DelayDays { get; set; }
+        public JourneyEncounterSnapshot? PendingEncounter { get; set; }
+        public IReadOnlyList<string> Warnings { get; set; } = Array.Empty<string>();
+
+        public static JourneySnapshot FromDomain(TravelJourneySnapshot snapshot)
+            => new()
+            {
+                OriginTownId = snapshot.OriginTownId.Value,
+                DestinationTownId = snapshot.DestinationTownId.Value,
+                OriginTownName = snapshot.OriginTownName,
+                DestinationTownName = snapshot.DestinationTownName,
+                RouteProfile = TravelRouteProfileSnapshot.FromDomain(snapshot.RouteProfile),
+                TravelMode = snapshot.TravelMode,
+                Status = snapshot.Status,
+                MountedTravelAvailable = snapshot.MountedTravelAvailable,
+                WaterSecure = snapshot.WaterSecure,
+                TotalDistance = snapshot.TotalDistance,
+                RemainingDistance = snapshot.RemainingDistance,
+                ExpectedDays = snapshot.ExpectedDays,
+                RemainingDays = snapshot.RemainingDays,
+                RequiredFood = snapshot.RequiredFood,
+                AvailableFood = snapshot.AvailableFood,
+                RequiredHorseFeed = snapshot.RequiredHorseFeed,
+                AvailableHorseFeed = snapshot.AvailableHorseFeed,
+                HorseCondition = snapshot.HorseCondition,
+                DaysTravelled = snapshot.DaysTravelled,
+                DelayDays = snapshot.DelayDays,
+                PendingEncounter = snapshot.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(snapshot.PendingEncounter),
+                Warnings = snapshot.Warnings.ToArray()
+            };
+
+        public TravelJourneySnapshot ToDomain()
+            => new(
+                new TownId(OriginTownId),
+                new TownId(DestinationTownId),
+                OriginTownName,
+                DestinationTownName,
+                RouteProfile.ToDomain(),
+                TravelMode,
+                Status,
+                MountedTravelAvailable,
+                WaterSecure,
+                TotalDistance,
+                RemainingDistance,
+                ExpectedDays,
+                RemainingDays,
+                RequiredFood,
+                AvailableFood,
+                RequiredHorseFeed,
+                AvailableHorseFeed,
+                HorseCondition,
+                DaysTravelled,
+                DelayDays,
+                PendingEncounter?.ToDomain(),
+                Warnings.ToArray());
+    }
+
+    private sealed class JourneyEncounterSnapshot
+    {
+        public string Kind { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public IReadOnlyList<JourneyEncounterChoiceSnapshot> Choices { get; set; } = Array.Empty<JourneyEncounterChoiceSnapshot>();
+
+        public static JourneyEncounterSnapshot FromDomain(JourneyEncounterState encounter)
+            => new()
+            {
+                Kind = encounter.Kind,
+                Message = encounter.Message,
+                Choices = encounter.Choices.Select(JourneyEncounterChoiceSnapshot.FromDomain).ToArray()
+            };
+
+        public JourneyEncounterState ToDomain()
+            => new(
+                Kind,
+                Message,
+                Choices.Select(choice => choice.ToDomain()).ToArray());
+    }
+
+    private sealed class JourneyEncounterChoiceSnapshot
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+
+        public static JourneyEncounterChoiceSnapshot FromDomain(JourneyEncounterChoiceState choice)
+            => new()
+            {
+                Id = choice.Id,
+                Label = choice.Label
+            };
+
+        public JourneyEncounterChoiceState ToDomain()
+            => new(Id, Label);
+    }
+
+    private sealed class TravelRouteProfileSnapshot
+    {
+        public string TrailId { get; set; } = string.Empty;
+        public TrailRisk Risk { get; set; }
+        public TrailTerrain Terrain { get; set; }
+        public WaterFeature WaterFeature { get; set; }
+        public int TotalDistance { get; set; }
+        public int MountedDailyProgress { get; set; }
+        public int FootDailyProgress { get; set; }
+        public IReadOnlyList<string> Warnings { get; set; } = Array.Empty<string>();
+
+        public static TravelRouteProfileSnapshot FromDomain(TravelRouteProfile routeProfile)
+            => new()
+            {
+                TrailId = routeProfile.TrailId,
+                Risk = routeProfile.Risk,
+                Terrain = routeProfile.Terrain,
+                WaterFeature = routeProfile.WaterFeature,
+                TotalDistance = routeProfile.TotalDistance,
+                MountedDailyProgress = routeProfile.MountedDailyProgress,
+                FootDailyProgress = routeProfile.FootDailyProgress,
+                Warnings = routeProfile.Warnings.ToArray()
+            };
+
+        public TravelRouteProfile ToDomain()
+            => new(
+                TrailId,
+                Risk,
+                Terrain,
+                WaterFeature,
+                TotalDistance,
+                MountedDailyProgress,
+                FootDailyProgress,
+                Warnings.ToArray());
     }
 
     private static class GameSessionRehydrator
