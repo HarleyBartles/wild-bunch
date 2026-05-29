@@ -26,18 +26,26 @@ public sealed record TravelRouteProfile(
     TrailRisk Risk,
     TrailTerrain Terrain,
     WaterFeature WaterFeature,
-    int TotalDistance,
-    int MountedDailyProgress,
-    int FootDailyProgress,
+    decimal RideDayDistance,
+    decimal MountedRideDayProgress,
+    decimal FootRideDayProgress,
     IReadOnlyList<string> Warnings)
 {
     public int ExpectedDays(TravelMode mode)
-        => CalculateRemainingDays(TotalDistance, mode);
+        => CalculateRemainingDays(RideDayDistance, mode);
 
-    public int CalculateRemainingDays(int remainingDistance, TravelMode mode)
+    public decimal DailyRideDayProgress(TravelMode mode)
+        => mode == TravelMode.Mounted ? MountedRideDayProgress : FootRideDayProgress;
+
+    public int CalculateRemainingDays(decimal remainingRideDayDistance, TravelMode mode)
     {
-        var dailyProgress = mode == TravelMode.Mounted ? MountedDailyProgress : FootDailyProgress;
-        return Math.Max(1, (int)Math.Ceiling((double)remainingDistance / dailyProgress));
+        if (remainingRideDayDistance <= 0)
+        {
+            return 0;
+        }
+
+        var dailyProgress = DailyRideDayProgress(mode);
+        return Math.Max(1, (int)decimal.Ceiling(remainingRideDayDistance / dailyProgress));
     }
 }
 
@@ -50,10 +58,16 @@ public sealed record TravelPreview(
     TravelMode TravelMode,
     bool MountedTravelAvailable,
     bool WaterSecure,
-    int TotalDistance,
-    int RemainingDistance,
+    decimal RideDayDistance,
+    decimal RemainingRideDayDistance,
     int ExpectedDays,
     int RemainingDays,
+    int CanteenChargesPerDay,
+    int RequiredCanteenCharges,
+    int AvailableCanteenCharges,
+    int CanteenReserveCharges,
+    int DelayMarginDays,
+    bool DelayRisk,
     int RequiredFood,
     int AvailableFood,
     int RequiredHorseFeed,
@@ -75,10 +89,16 @@ public sealed record TravelJourneySnapshot(
     JourneyStatus Status,
     bool MountedTravelAvailable,
     bool WaterSecure,
-    int TotalDistance,
-    int RemainingDistance,
+    decimal RideDayDistance,
+    decimal RemainingRideDayDistance,
     int ExpectedDays,
     int RemainingDays,
+    int CanteenChargesPerDay,
+    int RequiredCanteenCharges,
+    int AvailableCanteenCharges,
+    int CanteenReserveCharges,
+    int DelayMarginDays,
+    bool DelayRisk,
     int RequiredFood,
     int AvailableFood,
     int RequiredHorseFeed,
@@ -221,10 +241,11 @@ public sealed class TravelJourney
         Preview = preview;
         TravelMode = preview.TravelMode;
         Status = JourneyStatus.Active;
-        RemainingDistance = preview.RemainingDistance;
+        RemainingRideDayDistance = preview.RemainingRideDayDistance;
         RemainingDays = preview.RemainingDays;
         FoodRemaining = preview.AvailableFood;
         HorseFeedRemaining = preview.AvailableHorseFeed;
+        AvailableCanteenCharges = preview.AvailableCanteenCharges;
         HorseState = preview.HorseState;
     }
 
@@ -234,7 +255,7 @@ public sealed class TravelJourney
 
     public JourneyStatus Status { get; private set; }
 
-    public int RemainingDistance { get; private set; }
+    public decimal RemainingRideDayDistance { get; private set; }
 
     public int RemainingDays { get; private set; }
 
@@ -247,6 +268,8 @@ public sealed class TravelJourney
     public int FoodRemaining { get; private set; }
 
     public int HorseFeedRemaining { get; private set; }
+
+    public int AvailableCanteenCharges { get; private set; }
 
     public HorseTravelState? HorseState { get; private set; }
 
@@ -269,10 +292,16 @@ public sealed class TravelJourney
             snapshot.TravelMode,
             snapshot.MountedTravelAvailable,
             snapshot.WaterSecure,
-            snapshot.TotalDistance,
-            snapshot.RemainingDistance,
+            snapshot.RideDayDistance,
+            snapshot.RemainingRideDayDistance,
             snapshot.ExpectedDays,
             snapshot.RemainingDays,
+            snapshot.CanteenChargesPerDay,
+            snapshot.RequiredCanteenCharges,
+            snapshot.AvailableCanteenCharges,
+            snapshot.CanteenReserveCharges,
+            snapshot.DelayMarginDays,
+            snapshot.DelayRisk,
             snapshot.RequiredFood,
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
@@ -284,13 +313,14 @@ public sealed class TravelJourney
         {
             TravelMode = snapshot.TravelMode,
             Status = snapshot.Status,
-            RemainingDistance = snapshot.RemainingDistance,
+            RemainingRideDayDistance = snapshot.RemainingRideDayDistance,
             RemainingDays = snapshot.RemainingDays,
             DaysTravelled = snapshot.DaysTravelled,
             DelayDays = snapshot.DelayDays,
             PendingEncounter = snapshot.PendingEncounter,
             FoodRemaining = snapshot.AvailableFood,
             HorseFeedRemaining = snapshot.AvailableHorseFeed,
+            AvailableCanteenCharges = snapshot.AvailableCanteenCharges,
             HorseState = snapshot.HorseState
         };
 
@@ -300,9 +330,9 @@ public sealed class TravelJourney
     public void RecalculatePacing(TravelMode travelMode)
     {
         TravelMode = travelMode;
-        RemainingDays = RemainingDistance == 0
+        RemainingDays = RemainingRideDayDistance == 0
             ? 0
-            : Preview.RouteProfile.CalculateRemainingDays(RemainingDistance, TravelMode) + DelayDays;
+            : Preview.RouteProfile.CalculateRemainingDays(RemainingRideDayDistance, TravelMode) + DelayDays;
     }
 
     public JourneyProgress AdvanceOneDay()
@@ -312,23 +342,21 @@ public sealed class TravelJourney
             throw new InvalidOperationException("Journey is not active.");
         }
 
-        var dailyProgress = TravelMode == TravelMode.Mounted
-            ? Preview.RouteProfile.MountedDailyProgress
-            : Preview.RouteProfile.FootDailyProgress;
+        var dailyProgress = Preview.RouteProfile.DailyRideDayProgress(TravelMode);
 
-        RemainingDistance = Math.Max(0, RemainingDistance - dailyProgress);
+        RemainingRideDayDistance = Math.Max(0, RemainingRideDayDistance - dailyProgress);
         DaysTravelled++;
-        RemainingDays = RemainingDistance == 0
+        RemainingDays = RemainingRideDayDistance == 0
             ? 0
-            : Preview.RouteProfile.CalculateRemainingDays(RemainingDistance, TravelMode) + DelayDays;
+            : Preview.RouteProfile.CalculateRemainingDays(RemainingRideDayDistance, TravelMode) + DelayDays;
 
-        return new JourneyProgress(dailyProgress, RemainingDistance == 0);
+        return new JourneyProgress(dailyProgress, RemainingRideDayDistance == 0);
     }
 
     public void MarkCompleted()
     {
         Status = JourneyStatus.Completed;
-        RemainingDistance = 0;
+        RemainingRideDayDistance = 0;
         RemainingDays = 0;
     }
 
@@ -364,7 +392,7 @@ public sealed class TravelJourney
         }
 
         DelayDays += days;
-        if (RemainingDistance > 0)
+        if (RemainingRideDayDistance > 0)
         {
             RemainingDays += days;
         }
@@ -411,13 +439,33 @@ public sealed class TravelJourney
         HorseFeedRemaining -= quantity;
     }
 
+    public void SetCanteenCharges(int charges)
+    {
+        if (charges < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(charges), "Canteen charges cannot be negative.");
+        }
+
+        AvailableCanteenCharges = charges;
+    }
+
     public void SetHorseState(HorseTravelState? horseState)
     {
         HorseState = horseState;
     }
 
+    private int CanteenChargesPerDay => JourneyUpkeepRules.WaterChargesRequiredPerDay(HorseState);
+
     public TravelJourneySnapshot ToSnapshot()
-        => new(
+    {
+        var requiredCanteenCharges = RemainingRideDayDistance == 0 || JourneyUpkeepRules.HasRouteWater(Preview.RouteProfile.WaterFeature)
+            ? 0
+            : RemainingDays * CanteenChargesPerDay;
+        var waterSecure = JourneyUpkeepRules.HasRouteWater(Preview.RouteProfile.WaterFeature) || AvailableCanteenCharges >= requiredCanteenCharges;
+        var canteenReserveCharges = AvailableCanteenCharges - requiredCanteenCharges;
+        var delayMarginDays = CanteenChargesPerDay == 0 ? 0 : Math.Max(0, canteenReserveCharges / CanteenChargesPerDay);
+
+        return new(
             Preview.OriginTownId,
             Preview.DestinationTownId,
             Preview.OriginTownName,
@@ -426,11 +474,17 @@ public sealed class TravelJourney
             TravelMode,
             Status,
             Preview.MountedTravelAvailable && (HorseState?.CanProvideMountedTravel ?? false),
-            Preview.WaterSecure,
-            Preview.TotalDistance,
-            RemainingDistance,
+            waterSecure,
+            Preview.RideDayDistance,
+            RemainingRideDayDistance,
             Preview.ExpectedDays,
             RemainingDays,
+            CanteenChargesPerDay,
+            requiredCanteenCharges,
+            AvailableCanteenCharges,
+            canteenReserveCharges,
+            delayMarginDays,
+            CanteenChargesPerDay > 0 && canteenReserveCharges <= 0,
             Preview.RequiredFood,
             FoodRemaining,
             Preview.RequiredHorseFeed,
@@ -440,6 +494,7 @@ public sealed class TravelJourney
             DelayDays,
             PendingEncounter,
             Preview.Warnings);
+    }
 
     public JourneyEncounterState? TryCreateEncounter()
     {
@@ -458,7 +513,7 @@ public sealed class TravelJourney
 
     public JourneyTrailEventState? TryCreateTrailEvent()
     {
-        if (Status != JourneyStatus.Active || PendingEncounter is not null || RemainingDistance == 0)
+        if (Status != JourneyStatus.Active || PendingEncounter is not null || RemainingRideDayDistance == 0)
         {
             return null;
         }
@@ -477,7 +532,7 @@ public sealed class TravelJourney
     }
 }
 
-public sealed record JourneyProgress(int DistanceTravelled, bool Completed);
+public sealed record JourneyProgress(decimal RideDayDistanceTravelled, bool Completed);
 
 public sealed record TravelJourneyStepResult(
     bool Success,
@@ -542,7 +597,7 @@ public sealed class TravelResolver
         var horseState = inventory.GetHorseState();
         var canteenState = inventory.GetCanteenState();
         var routeProfile = BuildRouteProfile(trail);
-        var totalDistance = routeProfile.TotalDistance;
+        var rideDayDistance = routeProfile.RideDayDistance;
         var expectedDays = routeProfile.ExpectedDays(travelMode);
         var availableFood = inventory.GetQuantity(ItemKind.Food);
         var availableHorseFeed = inventory.GetQuantity(ItemKind.HorseFeed);
@@ -551,8 +606,12 @@ public sealed class TravelResolver
         var livingHorse = horseState is not null && !horseState.IsDead;
         var requiredFood = expectedDays;
         var requiredHorseFeed = livingHorse && !grazingAvailable ? expectedDays : 0;
-        var requiredCanteenCharges = routeWaterSecure ? 0 : expectedDays * JourneyUpkeepRules.WaterChargesRequiredPerDay(horseState);
+        var canteenChargesPerDay = routeWaterSecure ? 0 : JourneyUpkeepRules.WaterChargesRequiredPerDay(horseState);
+        var requiredCanteenCharges = expectedDays * canteenChargesPerDay;
         var availableCanteenCharges = canteenState?.Charges ?? 0;
+        var canteenReserveCharges = availableCanteenCharges - requiredCanteenCharges;
+        var delayMarginDays = canteenChargesPerDay == 0 ? 0 : Math.Max(0, canteenReserveCharges / canteenChargesPerDay);
+        var delayRisk = canteenChargesPerDay > 0 && canteenReserveCharges <= 0;
         var waterSecure = routeWaterSecure || availableCanteenCharges >= requiredCanteenCharges;
         var warnings = new List<string>(routeProfile.Warnings);
 
@@ -587,7 +646,15 @@ public sealed class TravelResolver
 
         if (availableCanteenCharges < requiredCanteenCharges)
         {
-            warnings.Add("You do not have enough canteen water to cover the whole trail.");
+            warnings.Add($"You are short by {Math.Abs(canteenReserveCharges)} canteen charge(s) for the base trail.");
+        }
+        else if (!routeWaterSecure && canteenReserveCharges == 0)
+        {
+            warnings.Add("Your canteen exactly covers the base trail, so any delay will need more water.");
+        }
+        else if (!routeWaterSecure)
+        {
+            warnings.Add($"Your canteen has {canteenReserveCharges} spare charge(s) and can absorb {delayMarginDays} delay day(s).");
         }
 
         var preview = new TravelPreview(
@@ -599,10 +666,16 @@ public sealed class TravelResolver
             travelMode,
             mountedTravelAvailable,
             waterSecure,
-            totalDistance,
-            totalDistance,
+            rideDayDistance,
+            rideDayDistance,
             expectedDays,
             expectedDays,
+            canteenChargesPerDay,
+            requiredCanteenCharges,
+            availableCanteenCharges,
+            canteenReserveCharges,
+            delayMarginDays,
+            delayRisk,
             requiredFood,
             availableFood,
             requiredHorseFeed,
@@ -618,29 +691,8 @@ public sealed class TravelResolver
 
     private static TravelRouteProfile BuildRouteProfile(Trail trail)
     {
-        var totalDistance = trail.Risk switch
-        {
-            TrailRisk.Low => 12,
-            TrailRisk.Moderate => 18,
-            TrailRisk.High => 24,
-            _ => 18
-        };
-
-        var mountedDailyProgress = trail.Risk switch
-        {
-            TrailRisk.Low => 12,
-            TrailRisk.Moderate => 13,
-            TrailRisk.High => 8,
-            _ => 10
-        };
-
-        var footDailyProgress = trail.Risk switch
-        {
-            TrailRisk.Low => 6,
-            TrailRisk.Moderate => 5,
-            TrailRisk.High => 4,
-            _ => 5
-        };
+        const decimal mountedDailyProgress = 1m;
+        const decimal footDailyProgress = 0.5m;
 
         var warnings = new List<string>();
 
@@ -659,7 +711,7 @@ public sealed class TravelResolver
             trail.Risk,
             trail.Terrain,
             trail.WaterFeature,
-            totalDistance,
+            trail.RideDayDistance,
             mountedDailyProgress,
             footDailyProgress,
             warnings);

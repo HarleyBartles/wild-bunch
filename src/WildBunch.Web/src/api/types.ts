@@ -129,6 +129,7 @@ export interface TrailDto {
   risk: TrailRisk;
   terrain: TrailTerrain;
   waterFeature: WaterFeature;
+  rideDayDistance: number;
 }
 
 export interface WorldDto {

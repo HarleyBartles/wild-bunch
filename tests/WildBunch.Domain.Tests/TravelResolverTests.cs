@@ -35,11 +35,21 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Mounted, result.Preview.TravelMode);
         Assert.True(result.Preview.MountedTravelAvailable);
         Assert.True(result.Preview.WaterSecure);
+        Assert.Equal(2m, result.Preview.RideDayDistance);
         Assert.Equal(2, result.Preview.ExpectedDays);
         Assert.Equal(2, result.Preview.RequiredFood);
         Assert.Equal(0, result.Preview.RequiredHorseFeed);
+        Assert.Equal(0, result.Preview.CanteenChargesPerDay);
+        Assert.Equal(0, result.Preview.RequiredCanteenCharges);
+        Assert.Equal(2, result.Preview.AvailableCanteenCharges);
+        Assert.Equal(2, result.Preview.CanteenReserveCharges);
+        Assert.Equal(0, result.Preview.DelayMarginDays);
+        Assert.False(result.Preview.DelayRisk);
         Assert.Equal(TrailTerrain.Hills, result.Preview.RouteProfile.Terrain);
         Assert.Equal(WaterFeature.River, result.Preview.RouteProfile.WaterFeature);
+        Assert.Equal(2m, result.Preview.RouteProfile.RideDayDistance);
+        Assert.Equal(1m, result.Preview.RouteProfile.MountedRideDayProgress);
+        Assert.Equal(0.5m, result.Preview.RouteProfile.FootRideDayProgress);
         Assert.Equal(HorseTravelState.Healthy, result.Preview.HorseState);
         Assert.Contains(result.Preview.Warnings, warning => warning.Contains("rough trail", StringComparison.OrdinalIgnoreCase));
     }
@@ -57,6 +67,7 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Foot, result.Preview!.TravelMode);
         Assert.False(result.Preview.MountedTravelAvailable);
         Assert.Equal(4, result.Preview.ExpectedDays);
+        Assert.Equal(2m, result.Preview.RideDayDistance);
         Assert.Equal(0, result.Preview.RequiredHorseFeed);
         Assert.Null(result.Preview.HorseState);
         Assert.Contains(result.Preview.Warnings, warning => warning.Contains("mounted travel is unavailable", StringComparison.OrdinalIgnoreCase));
@@ -79,6 +90,7 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(TravelMode.Mounted, session.Journey!.TravelMode);
         Assert.Equal(2, session.Journey.RemainingDays);
+        Assert.Equal(2m, session.Journey.RemainingRideDayDistance);
         Assert.Equal(HorseTravelState.Healthy, session.Journey.HorseState);
     }
 
@@ -100,6 +112,7 @@ public sealed class TravelResolverTests
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(1, session.Journey!.RemainingDays);
+        Assert.Equal(1m, session.Journey.RemainingRideDayDistance);
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
         Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
@@ -248,6 +261,56 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(session.Journey);
         Assert.Equal(1, session.Player.Inventory.GetCanteenState()!.Charges);
+    }
+
+    [Fact]
+    public void PreviewTravelKeepsCanteenParityOnEqualRideDayDistanceAcrossMountedAndFootTravel()
+    {
+        var world = CreateParityWorld();
+        var caseFile = CreateCaseFile();
+        var resolver = new TravelResolver();
+
+        var mountedInventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 10),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(10, 10)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        var mountedSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), mountedInventory);
+        var mountedPreview = resolver.PreviewJourney(mountedSession.World, mountedSession.Player.CurrentTownId, new TownId("dryfork"), mountedSession.Player.Inventory).Preview!;
+
+        Assert.Equal(5m, mountedPreview.RideDayDistance);
+        Assert.Equal(5, mountedPreview.ExpectedDays);
+        Assert.Equal(2, mountedPreview.CanteenChargesPerDay);
+        Assert.Equal(10, mountedPreview.RequiredCanteenCharges);
+        Assert.Equal(10, mountedPreview.AvailableCanteenCharges);
+        Assert.Equal(0, mountedPreview.CanteenReserveCharges);
+        Assert.Equal(0, mountedPreview.DelayMarginDays);
+        Assert.True(mountedPreview.DelayRisk);
+        Assert.Contains(mountedPreview.Warnings, warning => warning.Contains("exactly covers the base trail", StringComparison.OrdinalIgnoreCase));
+
+        var footInventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 10),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(10, 10))
+        });
+
+        var footSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), footInventory);
+        var footPreview = resolver.PreviewJourney(footSession.World, footSession.Player.CurrentTownId, new TownId("dryfork"), footSession.Player.Inventory).Preview!;
+
+        Assert.Equal(5m, footPreview.RideDayDistance);
+        Assert.Equal(TravelMode.Foot, footPreview.TravelMode);
+        Assert.Equal(10, footPreview.ExpectedDays);
+        Assert.Equal(1, footPreview.CanteenChargesPerDay);
+        Assert.Equal(10, footPreview.RequiredCanteenCharges);
+        Assert.Equal(10, footPreview.AvailableCanteenCharges);
+        Assert.Equal(0, footPreview.CanteenReserveCharges);
+        Assert.Equal(0, footPreview.DelayMarginDays);
+        Assert.True(footPreview.DelayRisk);
+        Assert.Contains(footPreview.Warnings, warning => warning.Contains("exactly covers the base trail", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -469,6 +532,19 @@ public sealed class TravelResolverTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static DomainWorld CreateParityWorld()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+
+        return new DomainWorld(
+            new[] { pinecross, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-parity"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 5m)
+            });
     }
 
     private static GameSession CreateDryFootSession()

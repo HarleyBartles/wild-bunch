@@ -171,7 +171,8 @@ public sealed class GameSessionJsonSerializer
         string ToTownId,
         TrailRisk Risk,
         TrailTerrain Terrain,
-        WaterFeature WaterFeature)
+        WaterFeature WaterFeature,
+        decimal RideDayDistance)
     {
         public static TrailSnapshot FromDomain(DomainTrail trail)
             => new(
@@ -180,7 +181,8 @@ public sealed class GameSessionJsonSerializer
                 trail.ToTownId.Value,
                 trail.Risk,
                 trail.Terrain,
-                trail.WaterFeature);
+                trail.WaterFeature,
+                trail.RideDayDistance);
 
         public static DomainTrail ToDomain(TrailSnapshot snapshot)
             => new(
@@ -189,7 +191,8 @@ public sealed class GameSessionJsonSerializer
                 new TownId(snapshot.ToTownId),
                 snapshot.Risk,
                 snapshot.Terrain,
-                snapshot.WaterFeature);
+                snapshot.WaterFeature,
+                snapshot.RideDayDistance);
     }
 
     private sealed record CaseFileSnapshot(
@@ -334,10 +337,16 @@ public sealed class GameSessionJsonSerializer
         public JourneyStatus Status { get; set; }
         public bool MountedTravelAvailable { get; set; }
         public bool WaterSecure { get; set; }
-        public int TotalDistance { get; set; }
-        public int RemainingDistance { get; set; }
+        public decimal TotalDistance { get; set; }
+        public decimal RemainingDistance { get; set; }
         public int ExpectedDays { get; set; }
         public int RemainingDays { get; set; }
+        public int CanteenChargesPerDay { get; set; }
+        public int RequiredCanteenCharges { get; set; }
+        public int AvailableCanteenCharges { get; set; }
+        public int CanteenReserveCharges { get; set; }
+        public int DelayMarginDays { get; set; }
+        public bool DelayRisk { get; set; }
         public int RequiredFood { get; set; }
         public int AvailableFood { get; set; }
         public int RequiredHorseFeed { get; set; }
@@ -360,10 +369,16 @@ public sealed class GameSessionJsonSerializer
                 Status = snapshot.Status,
                 MountedTravelAvailable = snapshot.MountedTravelAvailable,
                 WaterSecure = snapshot.WaterSecure,
-                TotalDistance = snapshot.TotalDistance,
-                RemainingDistance = snapshot.RemainingDistance,
+                TotalDistance = snapshot.RideDayDistance,
+                RemainingDistance = snapshot.RemainingRideDayDistance,
                 ExpectedDays = snapshot.ExpectedDays,
                 RemainingDays = snapshot.RemainingDays,
+                CanteenChargesPerDay = snapshot.CanteenChargesPerDay,
+                RequiredCanteenCharges = snapshot.RequiredCanteenCharges,
+                AvailableCanteenCharges = snapshot.AvailableCanteenCharges,
+                CanteenReserveCharges = snapshot.CanteenReserveCharges,
+                DelayMarginDays = snapshot.DelayMarginDays,
+                DelayRisk = snapshot.DelayRisk,
                 RequiredFood = snapshot.RequiredFood,
                 AvailableFood = snapshot.AvailableFood,
                 RequiredHorseFeed = snapshot.RequiredHorseFeed,
@@ -390,6 +405,12 @@ public sealed class GameSessionJsonSerializer
                 RemainingDistance,
                 ExpectedDays,
                 RemainingDays,
+                CanteenChargesPerDay,
+                RequiredCanteenCharges,
+                AvailableCanteenCharges,
+                CanteenReserveCharges,
+                DelayMarginDays,
+                DelayRisk,
                 RequiredFood,
                 AvailableFood,
                 RequiredHorseFeed,
@@ -444,9 +465,9 @@ public sealed class GameSessionJsonSerializer
         public TrailRisk Risk { get; set; }
         public TrailTerrain Terrain { get; set; }
         public WaterFeature WaterFeature { get; set; }
-        public int TotalDistance { get; set; }
-        public int MountedDailyProgress { get; set; }
-        public int FootDailyProgress { get; set; }
+        public decimal TotalDistance { get; set; }
+        public decimal MountedDailyProgress { get; set; }
+        public decimal FootDailyProgress { get; set; }
         public IReadOnlyList<string> Warnings { get; set; } = Array.Empty<string>();
 
         public static TravelRouteProfileSnapshot FromDomain(TravelRouteProfile routeProfile)
@@ -456,9 +477,9 @@ public sealed class GameSessionJsonSerializer
                 Risk = routeProfile.Risk,
                 Terrain = routeProfile.Terrain,
                 WaterFeature = routeProfile.WaterFeature,
-                TotalDistance = routeProfile.TotalDistance,
-                MountedDailyProgress = routeProfile.MountedDailyProgress,
-                FootDailyProgress = routeProfile.FootDailyProgress,
+                TotalDistance = routeProfile.RideDayDistance,
+                MountedDailyProgress = routeProfile.MountedRideDayProgress,
+                FootDailyProgress = routeProfile.FootRideDayProgress,
                 Warnings = routeProfile.Warnings.ToArray()
             };
 
@@ -509,7 +530,7 @@ public sealed class GameSessionJsonSerializer
                 throw new InvalidOperationException("Unable to locate the GameSession persistence constructor.");
             }
 
-            return (GameSession)Constructor.Invoke(new object[] { id, player, world, caseFile, pursuitState, clock, status, journey });
+            return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey });
         }
 
         public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)

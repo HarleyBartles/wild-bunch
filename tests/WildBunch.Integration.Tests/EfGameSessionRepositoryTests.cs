@@ -36,6 +36,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.Player.Inventory.Items.Count, reloaded.Player.Inventory.Items.Count);
         Assert.Equal(session.Player.Inventory.GetHorseState(), reloaded.Player.Inventory.GetHorseState());
         Assert.Equal(session.Player.Inventory.GetCanteenState(), reloaded.Player.Inventory.GetCanteenState());
+        Assert.Equal(session.World.Trails.First().RideDayDistance, reloaded.World.Trails.First().RideDayDistance);
         Assert.Equal(session.Status, reloaded.Status);
         Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
         Assert.Equal(session.CaseFile.OpeningLead.Description, reloaded.CaseFile.OpeningLead.Description);
@@ -75,6 +76,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(2, reloaded.PursuitState.Heat);
         Assert.NotNull(reloaded.Journey);
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
+        Assert.Equal(1m, reloaded.Journey.RemainingRideDayDistance);
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
@@ -172,6 +174,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(0, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
         Assert.Equal(0, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(1m, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-1")).RideDayDistance);
     }
 
     [Fact]

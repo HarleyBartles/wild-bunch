@@ -100,10 +100,13 @@ public sealed class GameApiTests
         Assert.True(preview!.Success);
         Assert.NotNull(preview.Preview);
         Assert.Equal(TravelMode.Mounted, preview.Preview!.TravelMode);
+        Assert.Equal(2m, preview.Preview.RideDayDistance);
         Assert.Equal(2, preview.Preview.ExpectedDays);
         Assert.True(preview.Preview.MountedTravelAvailable);
         Assert.Equal(0, preview.Preview.RequiredHorseFeed);
         Assert.Equal(2, preview.Preview.RequiredFood);
+        Assert.Equal(0, preview.Preview.RequiredCanteenCharges);
+        Assert.Equal(0, preview.Preview.CanteenChargesPerDay);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
@@ -121,6 +124,7 @@ public sealed class GameApiTests
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.NotNull(turnResult.CurrentSession.Journey);
         Assert.Equal(2, turnResult.CurrentSession.Journey!.RemainingDays);
+        Assert.Equal(2m, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
         Assert.Equal(startingFood, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
         Assert.Equal(2, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);

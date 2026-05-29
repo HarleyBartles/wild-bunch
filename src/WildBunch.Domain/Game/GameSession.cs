@@ -183,6 +183,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if (upkeep.CanteenState is not null)
         {
             Player.Inventory.SetCanteenState(upkeep.CanteenState);
+            Journey.SetCanteenCharges(upkeep.CanteenState.Charges);
+        }
+        else
+        {
+            Journey.SetCanteenCharges(0);
         }
 
         if (upkeep.HorseState is not null)
@@ -264,8 +269,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 JourneyStatus.Completed,
                 completionMessage,
                 horseLostMessage.Length == 0
-                    ? $"You reach {destinationTownName} after {progress.DistanceTravelled} distance units."
-                    : $"{horseLostMessage} You reach {destinationTownName} after {progress.DistanceTravelled} distance units.",
+                    ? $"You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s)."
+                    : $"{horseLostMessage} You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s).",
                 heatIncrease,
                 completedSnapshot);
         }

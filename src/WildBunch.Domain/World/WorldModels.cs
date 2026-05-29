@@ -22,19 +22,54 @@ public enum WaterFeature
     Spring = 3
 }
 
-public sealed record Trail(
-    TrailId Id,
-    TownId FromTownId,
-    TownId ToTownId,
-    TrailRisk Risk,
-    TrailTerrain Terrain = TrailTerrain.OpenRange,
-    WaterFeature WaterFeature = WaterFeature.Creek)
+public sealed record Trail
 {
+    public Trail(
+        TrailId id,
+        TownId fromTownId,
+        TownId toTownId,
+        TrailRisk risk,
+        TrailTerrain terrain = TrailTerrain.OpenRange,
+        WaterFeature waterFeature = WaterFeature.Creek,
+        decimal rideDayDistance = 0m)
+    {
+        Id = id;
+        FromTownId = fromTownId;
+        ToTownId = toTownId;
+        Risk = risk;
+        Terrain = terrain;
+        WaterFeature = waterFeature;
+        RideDayDistance = rideDayDistance > 0 ? rideDayDistance : DefaultRideDayDistance(risk);
+    }
+
+    public TrailId Id { get; }
+
+    public TownId FromTownId { get; }
+
+    public TownId ToTownId { get; }
+
+    public TrailRisk Risk { get; }
+
+    public TrailTerrain Terrain { get; }
+
+    public WaterFeature WaterFeature { get; }
+
+    public decimal RideDayDistance { get; }
+
     public bool Connects(TownId townId) => FromTownId.Equals(townId) || ToTownId.Equals(townId);
 
     public bool Connects(TownId originTownId, TownId destinationTownId)
         => (FromTownId.Equals(originTownId) && ToTownId.Equals(destinationTownId))
             || (FromTownId.Equals(destinationTownId) && ToTownId.Equals(originTownId));
+
+    private static decimal DefaultRideDayDistance(TrailRisk risk)
+        => risk switch
+        {
+            TrailRisk.Low => 1m,
+            TrailRisk.Moderate => 2m,
+            TrailRisk.High => 3m,
+            _ => 2m
+        };
 }
 
 public sealed class World

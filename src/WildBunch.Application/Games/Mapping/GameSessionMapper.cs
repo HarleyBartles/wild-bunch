@@ -72,7 +72,8 @@ public static class GameSessionMapper
             trail.ToTownId.Value,
             trail.Risk,
             trail.Terrain,
-            trail.WaterFeature);
+            trail.WaterFeature,
+            trail.RideDayDistance);
 
     private static TravelJourneyDto ToDto(DomainTravelJourney journey)
         => ToDto(journey.ToSnapshot());
@@ -87,10 +88,16 @@ public static class GameSessionMapper
             snapshot.Status,
             snapshot.MountedTravelAvailable,
             snapshot.WaterSecure,
-            snapshot.TotalDistance,
-            snapshot.RemainingDistance,
+            snapshot.RideDayDistance,
+            snapshot.RemainingRideDayDistance,
             snapshot.ExpectedDays,
             snapshot.RemainingDays,
+            snapshot.CanteenChargesPerDay,
+            snapshot.RequiredCanteenCharges,
+            snapshot.AvailableCanteenCharges,
+            snapshot.CanteenReserveCharges,
+            snapshot.DelayMarginDays,
+            snapshot.DelayRisk,
             snapshot.RequiredFood,
             snapshot.AvailableFood,
             snapshot.RequiredHorseFeed,
@@ -108,9 +115,9 @@ public static class GameSessionMapper
             routeProfile.Risk,
             routeProfile.Terrain,
             routeProfile.WaterFeature,
-            routeProfile.TotalDistance,
-            routeProfile.MountedDailyProgress,
-            routeProfile.FootDailyProgress,
+            routeProfile.RideDayDistance,
+            routeProfile.MountedRideDayProgress,
+            routeProfile.FootRideDayProgress,
             routeProfile.Warnings);
 
     private static JourneyEncounterDto ToDto(DomainJourneyEncounter encounter)
