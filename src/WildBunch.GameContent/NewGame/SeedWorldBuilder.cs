@@ -6,7 +6,7 @@ internal static class SeedWorldBuilder
 {
     public static World CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Supplies | TownServices.Telegraph);
         var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
         var sagewell = new Town(new TownId("sagewell"), "Sagewell", TownServices.Supplies | TownServices.Doctor);

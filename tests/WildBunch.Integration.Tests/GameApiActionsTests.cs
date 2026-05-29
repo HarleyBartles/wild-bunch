@@ -32,6 +32,7 @@ public sealed class GameApiActionsTests
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ViewJournal);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.StayAtLodging);
+        Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.DoesNotContain(actions!, action => action.Kind == AvailableActionKind.VisitDoctor);
         Assert.DoesNotContain(actions!, action => action.Kind == AvailableActionKind.SendTelegram);
     }

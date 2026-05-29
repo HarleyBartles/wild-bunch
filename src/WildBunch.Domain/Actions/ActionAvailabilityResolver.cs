@@ -37,6 +37,11 @@ public sealed class ActionAvailabilityResolver
             availableActions.Add(new AvailableAction(AvailableActionKind.SendTelegram, "Send telegram"));
         }
 
+        if ((currentTown.Services & TownServices.NoticeBoard) != 0)
+        {
+            availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
+        }
+
         if (session.World.ListTrailsFromTown(currentTown.Id).Count == 0)
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);

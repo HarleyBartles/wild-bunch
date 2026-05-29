@@ -21,10 +21,16 @@ internal static class SeedCaseBuilder
             new Clue(new ClueId("clue-3"), ClueKind.Physical, "Boot prints match a narrow-heeled trail rider's boots.")
         };
 
+        var publicClues = new[]
+        {
+            new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A posted notice describes a rider wearing a faded blue scarf.")
+        };
+
         return new CaseFile(
             accusation: new SuspectId("suspect-2"),
             suspects,
             trueCulpritId: new SuspectId("suspect-4"),
-            knownClues: clues);
+            knownClues: clues,
+            publicClues: publicClues);
     }
 }

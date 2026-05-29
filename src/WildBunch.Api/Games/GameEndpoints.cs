@@ -33,6 +33,11 @@ public static class GameEndpoints
             .Produces<JournalDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapPost("{id:guid}/wanted-posters/read", ReadWantedPostersAsync)
+            .WithName("ReadWantedPosters")
+            .Produces<WantedPostersResultDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         games.MapPost("{id:guid}/travel", TravelAsync)
             .WithName("TravelGame")
             .Accepts<TravelRequest>("application/json")
@@ -99,6 +104,22 @@ public static class GameEndpoints
         {
             var journal = await handler.HandleAsync(new GetJournalQuery(id), cancellationToken);
             return Results.Ok(journal);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> ReadWantedPostersAsync(
+        Guid id,
+        ReadWantedPostersHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new ReadWantedPostersCommand(id), cancellationToken);
+            return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)
         {

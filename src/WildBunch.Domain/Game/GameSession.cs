@@ -73,6 +73,16 @@ public sealed class GameSession
         AddLogEntry(GameLogEntryKind.Travel, message);
     }
 
+    public void ApplyCaseUpdate(string message, bool advanceClock = true)
+    {
+        if (advanceClock)
+        {
+            Clock.Advance();
+        }
+
+        AddLogEntry(GameLogEntryKind.CaseUpdate, message);
+    }
+
     public void CompleteCase(string message)
     {
         Status = GameStatus.Completed;

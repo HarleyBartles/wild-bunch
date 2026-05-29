@@ -39,6 +39,28 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
+    public void TownWithNoticeBoardExposesReadWantedPosters()
+    {
+        var session = CreateSession(TownServices.NoticeBoard);
+        var resolver = new ActionAvailabilityResolver();
+
+        var result = resolver.Resolve(session);
+
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+    }
+
+    [Fact]
+    public void TownWithoutNoticeBoardDoesNotExposeReadWantedPosters()
+    {
+        var session = CreateSession(TownServices.Supplies);
+        var resolver = new ActionAvailabilityResolver();
+
+        var result = resolver.Resolve(session);
+
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+    }
+
+    [Fact]
     public void TownWithoutDoctorDoesNotExposeVisitDoctor()
     {
         var session = CreateSession(TownServices.Supplies);

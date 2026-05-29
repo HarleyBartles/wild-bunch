@@ -8,5 +8,6 @@ public enum AvailableActionKind
     BuySupplies = 3,
     StayAtLodging = 4,
     VisitDoctor = 5,
-    SendTelegram = 6
+    SendTelegram = 6,
+    ReadWantedPosters = 7
 }

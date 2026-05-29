@@ -35,8 +35,14 @@ public sealed class CaseFile
 {
     private readonly List<Suspect> _suspects;
     private readonly List<Clue> _knownClues = [];
+    private readonly List<Clue> _publicClues = [];
 
-    public CaseFile(SuspectId? accusation, IEnumerable<Suspect> suspects, SuspectId trueCulpritId, IEnumerable<Clue> knownClues)
+    public CaseFile(
+        SuspectId? accusation,
+        IEnumerable<Suspect> suspects,
+        SuspectId trueCulpritId,
+        IEnumerable<Clue> knownClues,
+        IEnumerable<Clue>? publicClues = null)
     {
         ArgumentNullException.ThrowIfNull(suspects);
         ArgumentNullException.ThrowIfNull(knownClues);
@@ -45,6 +51,7 @@ public sealed class CaseFile
         _suspects = suspects.ToList();
         TrueCulpritId = trueCulpritId;
         _knownClues.AddRange(knownClues.DistinctBy(clue => clue.Id));
+        _publicClues.AddRange((publicClues ?? Array.Empty<Clue>()).DistinctBy(clue => clue.Id));
     }
 
     public SuspectId? Accusation { get; private set; }
@@ -54,6 +61,8 @@ public sealed class CaseFile
     public SuspectId TrueCulpritId { get; }
 
     public IReadOnlyList<Clue> KnownClues => _knownClues;
+
+    public IReadOnlyList<Clue> PublicClues => _publicClues;
 
     public void SetAccusation(SuspectId suspectId)
     {
@@ -68,5 +77,26 @@ public sealed class CaseFile
         }
 
         _knownClues.Add(clue);
+    }
+
+    public Clue? RevealNextPublicClue()
+    {
+        for (var i = 0; i < _publicClues.Count; i++)
+        {
+            var clue = _publicClues[i];
+
+            if (_knownClues.Any(existing => existing.Id.Equals(clue.Id)))
+            {
+                _publicClues.RemoveAt(i);
+                i--;
+                continue;
+            }
+
+            _publicClues.RemoveAt(i);
+            _knownClues.Add(clue);
+            return clue;
+        }
+
+        return null;
     }
 }

@@ -118,14 +118,20 @@ public sealed class GameSessionJsonSerializer
             => new(new TrailId(snapshot.Id), new TownId(snapshot.FromTownId), new TownId(snapshot.ToTownId), snapshot.SupplyCost, snapshot.Risk);
     }
 
-    private sealed record CaseFileSnapshot(string? AccusationId, IReadOnlyList<SuspectSnapshot> Suspects, string TrueCulpritId, IReadOnlyList<ClueSnapshot> KnownClues)
+    private sealed record CaseFileSnapshot(
+        string? AccusationId,
+        IReadOnlyList<SuspectSnapshot> Suspects,
+        string TrueCulpritId,
+        IReadOnlyList<ClueSnapshot> KnownClues,
+        IReadOnlyList<ClueSnapshot>? PublicClues)
     {
         public static CaseFileSnapshot FromDomain(CaseFile caseFile)
             => new(
                 caseFile.Accusation is null ? null : caseFile.Accusation.Value.Value,
                 caseFile.Suspects.Select(SuspectSnapshot.FromDomain).ToArray(),
                 caseFile.TrueCulpritId.Value,
-                caseFile.KnownClues.Select(ClueSnapshot.FromDomain).ToArray());
+                caseFile.KnownClues.Select(ClueSnapshot.FromDomain).ToArray(),
+                caseFile.PublicClues.Select(ClueSnapshot.FromDomain).ToArray());
 
         public static CaseFile ToDomain(CaseFileSnapshot snapshot)
         {
@@ -133,7 +139,8 @@ public sealed class GameSessionJsonSerializer
                 snapshot.AccusationId is null ? null : new SuspectId(snapshot.AccusationId),
                 snapshot.Suspects.Select(SuspectSnapshot.ToDomain),
                 new SuspectId(snapshot.TrueCulpritId),
-                snapshot.KnownClues.Select(ClueSnapshot.ToDomain));
+                snapshot.KnownClues.Select(ClueSnapshot.ToDomain),
+                snapshot.PublicClues?.Select(ClueSnapshot.ToDomain));
 
             return caseFile;
         }

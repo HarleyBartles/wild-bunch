@@ -4,6 +4,7 @@ using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Journal;
+using WildBunch.Domain.WantedPosters;
 using WildBunch.Domain.Travel;
 using WildBunch.Persistence;
 using WildBunch.GameContent;
@@ -19,10 +20,12 @@ public static class DependencyInjection
         services.AddSingleton<TravelResolver>();
         services.AddSingleton<ActionAvailabilityResolver>();
         services.AddSingleton<JournalResolver>();
+        services.AddSingleton<ReadWantedPostersResolver>();
         services.AddScoped<StartNewGameHandler>();
         services.AddScoped<GetGameSessionHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<GetJournalHandler>();
+        services.AddScoped<ReadWantedPostersHandler>();
         services.AddScoped<TravelToTownHandler>();
 
         return services;
