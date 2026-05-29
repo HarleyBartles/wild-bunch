@@ -1,6 +1,10 @@
 @WildBunch.Api_HostAddress = http://localhost:5275
 
-GET {{WildBunch.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+POST {{WildBunch.Api_HostAddress}}/api/games
+Content-Type: application/json
+
+{
+  "playerName": "Ranger Vale"
+}
 
 ###
