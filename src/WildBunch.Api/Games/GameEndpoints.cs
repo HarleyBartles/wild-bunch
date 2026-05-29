@@ -23,6 +23,11 @@ public static class GameEndpoints
             .Produces<GameSessionDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapGet("{id:guid}/actions", GetAvailableActionsAsync)
+            .WithName("GetAvailableActions")
+            .Produces<IReadOnlyList<AvailableActionDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         games.MapPost("{id:guid}/travel", TravelAsync)
             .WithName("TravelGame")
             .Accepts<TravelRequest>("application/json")
@@ -57,6 +62,22 @@ public static class GameEndpoints
         {
             var session = await handler.HandleAsync(new GetGameSessionQuery(id), cancellationToken);
             return Results.Ok(session);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> GetAvailableActionsAsync(
+        Guid id,
+        GetAvailableActionsHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var availableActions = await handler.HandleAsync(new GetAvailableActionsQuery(id), cancellationToken);
+            return Results.Ok(availableActions);
         }
         catch (GameSessionNotFoundException)
         {

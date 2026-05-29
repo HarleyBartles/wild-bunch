@@ -2,6 +2,7 @@ using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Queries;
+using WildBunch.Domain.Actions;
 using WildBunch.Domain.Travel;
 using WildBunch.Persistence;
 using WildBunch.GameContent;
@@ -15,8 +16,10 @@ public static class DependencyInjection
         services.AddPersistence(configuration);
         services.AddGameContent();
         services.AddSingleton<TravelResolver>();
+        services.AddSingleton<ActionAvailabilityResolver>();
         services.AddScoped<StartNewGameHandler>();
         services.AddScoped<GetGameSessionHandler>();
+        services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<TravelToTownHandler>();
 
         return services;
