@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WildBunch.Api/WildBunch.Api.csproj" />
+    <Project Path="src/WildBunch.Application/WildBunch.Application.csproj" />
+    <Project Path="src/WildBunch.Domain/WildBunch.Domain.csproj" />
+    <Project Path="src/WildBunch.GameContent/WildBunch.GameContent.csproj" />
+    <Project Path="src/WildBunch.Persistence/WildBunch.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj" />
+    <Project Path="tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj" />
+    <Project Path="tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj" />
+  </Folder>
+</Solution>
