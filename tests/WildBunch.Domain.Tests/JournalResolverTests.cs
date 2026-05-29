@@ -27,6 +27,10 @@ public sealed class JournalResolverTests
         Assert.Equal(session.Player.CurrentTownId, result.CurrentTownId);
         Assert.Equal("Pinecross", result.CurrentTownName);
         Assert.Equal(session.CaseFile.Accusation?.Value, result.AccusationId);
+        Assert.Equal(session.CaseFile.OpeningLead.Description, result.OpeningLead);
+        Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.KillerReleaseState.IsReleased);
+        Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.KillerReleaseState.Progress);
+        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.KillerReleaseState.RequiredPublicClues);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseSummary);
         Assert.Equal(session.CaseFile.Suspects.Count, result.Suspects.Count);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.KnownClues.Count);
@@ -55,6 +59,7 @@ public sealed class JournalResolverTests
         Assert.Equal(beforeLogCount, session.LogEntries.Count);
         Assert.Equal(beforeSuspectCount, session.CaseFile.Suspects.Count);
         Assert.Equal(beforeClueCount, session.CaseFile.KnownClues.Count);
+        Assert.Equal("A rider with a pale scar across the left cheek.", session.CaseFile.OpeningLead.Description);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
 
@@ -85,6 +90,7 @@ public sealed class JournalResolverTests
             accusation: new SuspectId("suspect-2"),
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A rider with a pale scar across the left cheek."),
             knownClues: clues);
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);

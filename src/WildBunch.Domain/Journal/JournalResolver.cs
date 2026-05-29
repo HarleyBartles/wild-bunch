@@ -18,6 +18,8 @@ public sealed class JournalResolver
             currentTown.Id,
             currentTown.Name,
             session.CaseFile.Accusation.HasValue ? session.CaseFile.Accusation.Value.Value : null,
+            session.CaseFile.OpeningLead.Description,
+            session.CaseFile.KillerReleaseState,
             "Find the culprit before the law closes in.",
             session.CaseFile.Suspects.ToArray(),
             session.CaseFile.KnownClues.ToArray(),

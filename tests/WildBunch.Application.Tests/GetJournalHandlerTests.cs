@@ -32,9 +32,14 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.Player.CurrentTownId.Value, result.CurrentTown.Id);
         Assert.Equal("Pinecross", result.CurrentTown.Name);
         Assert.Equal(session.CaseFile.Accusation?.Value, result.CaseFile.AccusationId);
+        Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
+        Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.CaseFile.KillerReleaseState.RequiredPublicClues);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
         Assert.Equal(session.CaseFile.Suspects.Count, result.CaseFile.Suspects.Count);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
+        Assert.Contains(result.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 || suspect.Profile.IdentifyingFacts.Count > 0);
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
@@ -64,8 +69,22 @@ public sealed class GetJournalHandlerTests
 
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Jonah Pike", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge),
-            new Suspect(new SuspectId("suspect-2"), "Mira Cline", new SuspectTraits(IsLocal: false, IsArmed: false, IsDesperate: false), SuspectStatus.AtLarge)
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Jonah Pike",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("Wears a cracked leather gauntlet on the right hand.") }),
+                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
+                SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-2"),
+                "Mira Cline",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("M.K. Rook", AliasKind.KnownAs) },
+                    new[] { new SuspectIdentityFact("Carries a tin badge clipped to a saddle strap.") }),
+                new SuspectTraits(IsLocal: false, IsArmed: false, IsDesperate: false),
+                SuspectStatus.AtLarge)
         };
 
         var clues = new[]

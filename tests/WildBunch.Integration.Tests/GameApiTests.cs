@@ -28,6 +28,10 @@ public sealed class GameApiTests
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, session.Status);
         Assert.Equal(6, session.World.Towns.Count);
         Assert.Equal(7, session.World.Trails.Count);
+        Assert.Equal("A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
+        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
+        Assert.All(session.CaseFile.Suspects, suspect => Assert.NotEmpty(suspect.Profile.Aliases));
         Assert.NotEmpty(session.LogEntries);
 
         var payload = await response.Content.ReadAsStringAsync();
@@ -55,6 +59,7 @@ public sealed class GameApiTests
         Assert.NotNull(fetchedSession);
         Assert.Equal(createdSession.Id, fetchedSession!.Id);
         Assert.Equal(createdSession.Player.Name, fetchedSession.Player.Name);
+        Assert.Equal(createdSession.CaseFile.OpeningLead, fetchedSession.CaseFile.OpeningLead);
 
         var payload = await getResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -87,6 +92,7 @@ public sealed class GameApiTests
         Assert.Equal(10, turnResult.CurrentSession.Player.Supplies);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(1, turnResult.CurrentSession.PursuitState.Heat);
+        Assert.Equal(0, turnResult.CurrentSession.CaseFile.KillerReleaseState.Progress);
 
         var payload = await travelResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

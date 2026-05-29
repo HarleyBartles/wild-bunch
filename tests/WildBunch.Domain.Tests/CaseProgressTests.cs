@@ -1,0 +1,92 @@
+using WildBunch.Domain.Cases;
+
+namespace WildBunch.Domain.Tests;
+
+public sealed class CaseProgressTests
+{
+    [Fact]
+    public void NewCaseStartsWithOpeningLeadAndLockedRelease()
+    {
+        var caseFile = CreateCaseFile();
+
+        Assert.Equal("A rider bears a pale scar across the left cheek.", caseFile.OpeningLead.Description);
+        Assert.False(caseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(0, caseFile.KillerReleaseState.Progress);
+        Assert.Equal(2, caseFile.KillerReleaseState.RequiredPublicClues);
+    }
+
+    [Fact]
+    public void RevealingNewPublicCluesAdvancesReleaseProgressButDuplicateReadsDoNot()
+    {
+        var caseFile = CreateCaseFile();
+
+        var first = caseFile.RevealNextPublicClue();
+        var second = caseFile.RevealNextPublicClue();
+        var duplicate = caseFile.RevealNextPublicClue();
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Null(duplicate);
+        Assert.Equal(2, caseFile.KillerReleaseState.Progress);
+        Assert.True(caseFile.KillerReleaseState.IsReleased);
+    }
+
+    [Fact]
+    public void SuspectProfilesExposeAliasesAndIdentityFacts()
+    {
+        var suspect = new Suspect(
+            new SuspectId("suspect-1"),
+            "Tessa Wren",
+            new SuspectProfile(
+                new[]
+                {
+                    new SuspectAlias("Red Wren", AliasKind.Nickname)
+                },
+                new[]
+                {
+                    new SuspectIdentityFact("A pale scar cuts across the left cheek.")
+                }),
+            new SuspectTraits(true, true, false),
+            SuspectStatus.AtLarge);
+
+        Assert.Single(suspect.Profile.Aliases);
+        Assert.Single(suspect.Profile.IdentifyingFacts);
+        Assert.Equal("Red Wren", suspect.Profile.Aliases[0].Name);
+        Assert.Equal(AliasKind.Nickname, suspect.Profile.Aliases[0].Kind);
+        Assert.Equal("A pale scar cuts across the left cheek.", suspect.Profile.IdentifyingFacts[0].Description);
+    }
+
+    private static CaseFile CreateCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Jonah Pike",
+                new SuspectProfile(Array.Empty<SuspectAlias>(), Array.Empty<SuspectIdentityFact>()),
+                new SuspectTraits(true, false, true),
+                SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-2"),
+                "Tessa Wren",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Red Wren", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("A pale scar cuts across the left cheek.") }),
+                new SuspectTraits(false, true, false),
+                SuspectStatus.AtLarge)
+        };
+
+        return new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A rider bears a pale scar across the left cheek."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A wanted poster names Red Wren."),
+                new Clue(new ClueId("clue-public-2"), ClueKind.Record, "A notice places Tessa Wren near the river crossing.")
+            },
+            killerReleaseThreshold: 2);
+    }
+}

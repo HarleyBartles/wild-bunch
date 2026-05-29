@@ -9,7 +9,11 @@ using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
 using DomainTrail = WildBunch.Domain.World.Trail;
 using DomainSuspect = WildBunch.Domain.Cases.Suspect;
+using DomainSuspectAlias = WildBunch.Domain.Cases.SuspectAlias;
+using DomainSuspectIdentityFact = WildBunch.Domain.Cases.SuspectIdentityFact;
+using DomainSuspectProfile = WildBunch.Domain.Cases.SuspectProfile;
 using DomainSuspectTraits = WildBunch.Domain.Cases.SuspectTraits;
+using DomainKillerReleaseState = WildBunch.Domain.Cases.KillerReleaseState;
 using TownId = WildBunch.Domain.World.TownId;
 using TrailId = WildBunch.Domain.World.TrailId;
 using SuspectId = WildBunch.Domain.Cases.SuspectId;
@@ -67,6 +71,8 @@ public static class GameSessionMapper
 
         return new CaseFileDto(
             accusationId,
+            caseFile.OpeningLead.Description,
+            ToDto(caseFile.KillerReleaseState),
             caseFile.Suspects.Select(ToDto).ToArray(),
             caseFile.KnownClues.Select(ToDto).ToArray());
     }
@@ -75,11 +81,30 @@ public static class GameSessionMapper
         => new(
             suspect.Id.Value,
             suspect.Name,
+            ToDto(suspect.Profile),
             new SuspectTraitsDto(
                 suspect.Traits.IsLocal,
                 suspect.Traits.IsArmed,
                 suspect.Traits.IsDesperate),
             suspect.Status);
+
+    private static SuspectProfileDto ToDto(DomainSuspectProfile profile)
+        => new(
+            profile.Aliases.Select(ToDto).ToArray(),
+            profile.IdentifyingFacts.Select(ToDto).ToArray());
+
+    private static SuspectAliasDto ToDto(DomainSuspectAlias alias)
+        => new(alias.Name, alias.Kind);
+
+    private static SuspectIdentityFactDto ToDto(DomainSuspectIdentityFact fact)
+        => new(fact.Description);
+
+    private static KillerReleaseStateDto ToDto(DomainKillerReleaseState state)
+        => new(
+            state.IsReleased,
+            state.Progress,
+            state.RequiredPublicClues,
+            state.StatusText);
 
     private static ClueDto ToDto(DomainClue clue)
         => new(

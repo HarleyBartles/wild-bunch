@@ -9,8 +9,15 @@ public sealed record Crime(string Name, string Description);
 public sealed record Suspect(
     SuspectId Id,
     string Name,
+    SuspectProfile Profile,
     SuspectTraits Traits,
-    SuspectStatus Status);
+    SuspectStatus Status)
+{
+    public Suspect(SuspectId id, string name, SuspectTraits traits, SuspectStatus status)
+        : this(id, name, SuspectProfile.Empty, traits, status)
+    {
+    }
+}
 
 public readonly record struct SuspectTraits(bool IsLocal, bool IsArmed, bool IsDesperate);
 
@@ -36,6 +43,7 @@ public sealed class CaseFile
     private readonly List<Suspect> _suspects;
     private readonly List<Clue> _knownClues = [];
     private readonly List<Clue> _publicClues = [];
+    private int _killerReleaseProgress;
 
     public CaseFile(
         SuspectId? accusation,
@@ -43,13 +51,36 @@ public sealed class CaseFile
         SuspectId trueCulpritId,
         IEnumerable<Clue> knownClues,
         IEnumerable<Clue>? publicClues = null)
+        : this(
+            accusation,
+            suspects,
+            trueCulpritId,
+            CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues,
+            publicClues)
+    {
+    }
+
+    public CaseFile(
+        SuspectId? accusation,
+        IEnumerable<Suspect> suspects,
+        SuspectId trueCulpritId,
+        CaseOpeningLead openingLead,
+        IEnumerable<Clue> knownClues,
+        IEnumerable<Clue>? publicClues = null,
+        int killerReleaseThreshold = 2,
+        int killerReleaseProgress = 0)
     {
         ArgumentNullException.ThrowIfNull(suspects);
         ArgumentNullException.ThrowIfNull(knownClues);
+        ArgumentNullException.ThrowIfNull(openingLead);
 
         Accusation = accusation;
         _suspects = suspects.ToList();
         TrueCulpritId = trueCulpritId;
+        OpeningLead = openingLead;
+        KillerReleaseThreshold = Math.Max(1, killerReleaseThreshold);
+        _killerReleaseProgress = Math.Max(0, killerReleaseProgress);
         _knownClues.AddRange(knownClues.DistinctBy(clue => clue.Id));
         _publicClues.AddRange((publicClues ?? Array.Empty<Clue>()).DistinctBy(clue => clue.Id));
     }
@@ -59,6 +90,14 @@ public sealed class CaseFile
     public IReadOnlyList<Suspect> Suspects => _suspects;
 
     public SuspectId TrueCulpritId { get; }
+
+    public CaseOpeningLead OpeningLead { get; }
+
+    public KillerReleaseState KillerReleaseState => new(_killerReleaseProgress, KillerReleaseThreshold);
+
+    public int KillerReleaseThreshold { get; }
+
+    public int KillerReleaseProgress => _killerReleaseProgress;
 
     public IReadOnlyList<Clue> KnownClues => _knownClues;
 
@@ -94,9 +133,15 @@ public sealed class CaseFile
 
             _publicClues.RemoveAt(i);
             _knownClues.Add(clue);
+            AdvanceKillerReleaseProgress();
             return clue;
         }
 
         return null;
+    }
+
+    private void AdvanceKillerReleaseProgress()
+    {
+        _killerReleaseProgress = Math.Min(KillerReleaseThreshold, _killerReleaseProgress + 1);
     }
 }

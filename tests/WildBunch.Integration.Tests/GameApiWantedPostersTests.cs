@@ -31,10 +31,14 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(1, actionResult.CurrentJournal.Clock.Turn);
         Assert.Equal(2, actionResult.CurrentJournal.LogEntries.Count);
         Assert.Single(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Equal(1, actionResult.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.False(actionResult.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Contains(actionResult.CurrentJournal.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0);
 
         var actionPayload = await actionResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", actionPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"trueculpritid\"", actionPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -44,11 +48,34 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(journal);
         Assert.Contains(journal!.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Equal(1, journal.CaseFile.KillerReleaseState.Progress);
+        Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+
+        var secondReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, secondReadResponse.StatusCode);
+
+        var secondRead = await secondReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
+
+        Assert.NotNull(secondRead);
+        Assert.Equal(2, secondRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(5, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Contains(secondRead.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Contains(secondRead.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-2");
+
+        var thirdReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, thirdReadResponse.StatusCode);
+
+        var thirdRead = await thirdReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
+
+        Assert.NotNull(thirdRead);
+        Assert.Equal(2, thirdRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
     }
 
     [Fact]

@@ -39,10 +39,22 @@ public sealed class StubNewGameFactory : INewGameFactory
 
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge)
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Ira Flint",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("Wears a brass buckle with a cracked star engraving.") }),
+                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
+                SuspectStatus.AtLarge)
         };
 
-        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
+            Array.Empty<Clue>());
         return GameSession.StartNew("Ranger Vale", world, caseFile);
     }
 }

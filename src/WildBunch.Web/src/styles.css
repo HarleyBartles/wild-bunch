@@ -315,6 +315,12 @@ h1 {
   color: var(--text);
 }
 
+.case-lead,
+.case-release {
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+
 .tag-row {
   display: flex;
   gap: 8px;

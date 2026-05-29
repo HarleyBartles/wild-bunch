@@ -31,6 +31,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         var payload = JsonSerializer.Serialize(result);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -49,6 +50,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.False(result.Success);
         Assert.Equal(0, repository.SaveCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.Single(result.CurrentJournal.LogEntries);
         var payload = JsonSerializer.Serialize(result);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

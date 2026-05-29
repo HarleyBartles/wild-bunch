@@ -27,6 +27,11 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
         Assert.Equal(session.Status, reloaded.Status);
         Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
+        Assert.Equal(session.CaseFile.OpeningLead.Description, reloaded.CaseFile.OpeningLead.Description);
+        Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, reloaded.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(session.CaseFile.KillerReleaseState.Progress, reloaded.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, reloaded.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(session.CaseFile.Suspects[0].Profile.Aliases.Count, reloaded.CaseFile.Suspects[0].Profile.Aliases.Count);
     }
 
     [Fact]
@@ -75,10 +80,22 @@ public sealed class EfGameSessionRepositoryTests
 
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge)
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Ira Flint",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("Wears a brass buckle with a cracked star engraving.") }),
+                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
+                SuspectStatus.AtLarge)
         };
 
-        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
+            Array.Empty<Clue>());
         return GameSession.StartNew("Ranger Vale", world, caseFile);
     }
 }

@@ -12,6 +12,8 @@ public sealed record JournalSnapshot(
     TownId CurrentTownId,
     string CurrentTownName,
     string? AccusationId,
+    string OpeningLead,
+    KillerReleaseState KillerReleaseState,
     string CaseSummary,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Clue> KnownClues,

@@ -26,6 +26,8 @@ public sealed class ReadWantedPostersResolverTests
         Assert.Equal(2, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
 
@@ -44,6 +46,7 @@ public sealed class ReadWantedPostersResolverTests
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -58,6 +61,7 @@ public sealed class ReadWantedPostersResolverTests
         Assert.False(result.SessionChanged);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Single(session.CaseFile.PublicClues);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Single(session.LogEntries);
     }

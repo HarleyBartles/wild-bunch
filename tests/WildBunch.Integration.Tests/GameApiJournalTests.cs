@@ -34,9 +34,13 @@ public sealed class GameApiJournalTests
         Assert.Equal("pinecross", journal.CurrentTown.Id);
         Assert.Equal("Pinecross", journal.CurrentTown.Name);
         Assert.Equal("Find the culprit before the law closes in.", journal.CaseFile.CaseSummary);
+        Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
+        Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(0, journal.CaseFile.KillerReleaseState.Progress);
         Assert.NotEmpty(journal.LogEntries);
         Assert.NotEmpty(journal.CaseFile.Suspects);
         Assert.NotEmpty(journal.CaseFile.KnownClues);
+        Assert.Contains(journal.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 && suspect.Profile.IdentifyingFacts.Count > 0);
 
         var payload = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -81,6 +85,7 @@ public sealed class GameApiJournalTests
         Assert.Equal("redmesa", journal!.CurrentTown.Id);
         Assert.Equal(1, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
+        Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
 
         var payload = await journalResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

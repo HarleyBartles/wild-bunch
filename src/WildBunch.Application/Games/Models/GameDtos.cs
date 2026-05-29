@@ -39,14 +39,27 @@ public sealed record TrailDto(
 
 public sealed record CaseFileDto(
     string? AccusationId,
+    string OpeningLead,
+    KillerReleaseStateDto KillerReleaseState,
     IReadOnlyList<SuspectDto> Suspects,
     IReadOnlyList<ClueDto> KnownClues);
 
 public sealed record SuspectDto(
     string Id,
     string Name,
+    SuspectProfileDto Profile,
     SuspectTraitsDto Traits,
     SuspectStatus Status);
+
+public sealed record SuspectProfileDto(
+    IReadOnlyList<SuspectAliasDto> Aliases,
+    IReadOnlyList<SuspectIdentityFactDto> IdentifyingFacts);
+
+public sealed record SuspectAliasDto(
+    string Name,
+    AliasKind Kind);
+
+public sealed record SuspectIdentityFactDto(string Description);
 
 public sealed record SuspectTraitsDto(
     bool IsLocal,
@@ -66,6 +79,12 @@ public sealed record GameTurnResultDto(
 public sealed record GameClockDto(int Day, int Turn);
 
 public sealed record PursuitStateDto(int Heat);
+
+public sealed record KillerReleaseStateDto(
+    bool IsReleased,
+    int Progress,
+    int RequiredPublicClues,
+    string StatusText);
 
 public sealed record GameLogEntryDto(
     GameLogEntryKind Kind,

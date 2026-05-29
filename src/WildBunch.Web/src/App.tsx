@@ -120,6 +120,23 @@ function formatLogKind(kind: number) {
   }
 }
 
+function formatAliasKind(kind: number) {
+  switch (kind) {
+    case 0:
+      return "Nickname";
+    case 1:
+      return "Former name";
+    case 2:
+      return "Street name";
+    case 3:
+      return "Known as";
+    case 4:
+      return "Cover identity";
+    default:
+      return `Alias ${kind}`;
+  }
+}
+
 function townById(towns: TownDto[], townId: string) {
   return towns.find((town) => town.id === townId);
 }
@@ -510,6 +527,9 @@ export default function App() {
               <article className="status-card">
                 <h3>Summary</h3>
                 <p className="case-summary">{journal.caseFile.caseSummary}</p>
+                <p className="case-lead">
+                  <strong>Opening lead:</strong> {journal.caseFile.openingLead}
+                </p>
                 <dl className="stat-list">
                   <div>
                     <dt>Status</dt>
@@ -523,7 +543,14 @@ export default function App() {
                     <dt>Accusation</dt>
                     <dd>{journal.caseFile.accusationId ?? "None"}</dd>
                   </div>
+                  <div>
+                    <dt>Release</dt>
+                    <dd>
+                      {journal.caseFile.killerReleaseState.progress}/{journal.caseFile.killerReleaseState.requiredPublicClues}
+                    </dd>
+                  </div>
                 </dl>
+                <p className="case-release">{journal.caseFile.killerReleaseState.statusText}</p>
               </article>
 
               <article className="status-card">
@@ -552,6 +579,20 @@ export default function App() {
                       <strong>{suspect.name}</strong>
                       <p>
                         {suspect.id} - {formatSuspectStatus(suspect.status)}
+                      </p>
+                      <p className="muted">
+                        Aliases:{" "}
+                        {suspect.profile.aliases.length > 0
+                          ? suspect.profile.aliases
+                              .map((alias) => `${alias.name} (${formatAliasKind(alias.kind)})`)
+                              .join(", ")
+                          : "None"}
+                      </p>
+                      <p className="muted">
+                        Identifying facts:{" "}
+                        {suspect.profile.identifyingFacts.length > 0
+                          ? suspect.profile.identifyingFacts.map((fact) => fact.description).join("; ")
+                          : "None"}
                       </p>
                       <span className="tag-row">
                         <span className="tag">{suspect.traits.isLocal ? "Local" : "Not local"}</span>

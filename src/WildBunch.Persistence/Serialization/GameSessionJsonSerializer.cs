@@ -120,6 +120,9 @@ public sealed class GameSessionJsonSerializer
 
     private sealed record CaseFileSnapshot(
         string? AccusationId,
+        string? OpeningLead,
+        int KillerReleaseProgress,
+        int KillerReleaseThreshold,
         IReadOnlyList<SuspectSnapshot> Suspects,
         string TrueCulpritId,
         IReadOnlyList<ClueSnapshot> KnownClues,
@@ -128,6 +131,9 @@ public sealed class GameSessionJsonSerializer
         public static CaseFileSnapshot FromDomain(CaseFile caseFile)
             => new(
                 caseFile.Accusation is null ? null : caseFile.Accusation.Value.Value,
+                caseFile.OpeningLead.Description,
+                caseFile.KillerReleaseProgress,
+                caseFile.KillerReleaseThreshold,
                 caseFile.Suspects.Select(SuspectSnapshot.FromDomain).ToArray(),
                 caseFile.TrueCulpritId.Value,
                 caseFile.KnownClues.Select(ClueSnapshot.FromDomain).ToArray(),
@@ -139,20 +145,54 @@ public sealed class GameSessionJsonSerializer
                 snapshot.AccusationId is null ? null : new SuspectId(snapshot.AccusationId),
                 snapshot.Suspects.Select(SuspectSnapshot.ToDomain),
                 new SuspectId(snapshot.TrueCulpritId),
+                CaseOpeningLead.Create(snapshot.OpeningLead ?? "Follow the public leads and look for a signature mark."),
                 snapshot.KnownClues.Select(ClueSnapshot.ToDomain),
-                snapshot.PublicClues?.Select(ClueSnapshot.ToDomain));
+                snapshot.PublicClues?.Select(ClueSnapshot.ToDomain),
+                snapshot.KillerReleaseThreshold,
+                snapshot.KillerReleaseProgress);
 
             return caseFile;
         }
     }
 
-    private sealed record SuspectSnapshot(string Id, string Name, SuspectTraitsSnapshot Traits, SuspectStatus Status)
+    private sealed record SuspectSnapshot(string Id, string Name, SuspectProfileSnapshot Profile, SuspectTraitsSnapshot Traits, SuspectStatus Status)
     {
         public static SuspectSnapshot FromDomain(Suspect suspect)
-            => new(suspect.Id.Value, suspect.Name, SuspectTraitsSnapshot.FromDomain(suspect.Traits), suspect.Status);
+            => new(suspect.Id.Value, suspect.Name, SuspectProfileSnapshot.FromDomain(suspect.Profile), SuspectTraitsSnapshot.FromDomain(suspect.Traits), suspect.Status);
 
         public static Suspect ToDomain(SuspectSnapshot snapshot)
-            => new(new SuspectId(snapshot.Id), snapshot.Name, SuspectTraitsSnapshot.ToDomain(snapshot.Traits), snapshot.Status);
+            => new(new SuspectId(snapshot.Id), snapshot.Name, SuspectProfileSnapshot.ToDomain(snapshot.Profile), SuspectTraitsSnapshot.ToDomain(snapshot.Traits), snapshot.Status);
+    }
+
+    private sealed record SuspectProfileSnapshot(IReadOnlyList<SuspectAliasSnapshot> Aliases, IReadOnlyList<SuspectIdentityFactSnapshot> IdentifyingFacts)
+    {
+        public static SuspectProfileSnapshot FromDomain(SuspectProfile profile)
+            => new(
+                profile.Aliases.Select(SuspectAliasSnapshot.FromDomain).ToArray(),
+                profile.IdentifyingFacts.Select(SuspectIdentityFactSnapshot.FromDomain).ToArray());
+
+        public static SuspectProfile ToDomain(SuspectProfileSnapshot snapshot)
+            => new(
+                (snapshot.Aliases ?? Array.Empty<SuspectAliasSnapshot>()).Select(SuspectAliasSnapshot.ToDomain),
+                (snapshot.IdentifyingFacts ?? Array.Empty<SuspectIdentityFactSnapshot>()).Select(SuspectIdentityFactSnapshot.ToDomain));
+    }
+
+    private sealed record SuspectAliasSnapshot(string Name, AliasKind Kind)
+    {
+        public static SuspectAliasSnapshot FromDomain(SuspectAlias alias)
+            => new(alias.Name, alias.Kind);
+
+        public static SuspectAlias ToDomain(SuspectAliasSnapshot snapshot)
+            => new(snapshot.Name, snapshot.Kind);
+    }
+
+    private sealed record SuspectIdentityFactSnapshot(string Description)
+    {
+        public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
+            => new(fact.Description);
+
+        public static SuspectIdentityFact ToDomain(SuspectIdentityFactSnapshot snapshot)
+            => new(snapshot.Description);
     }
 
     private sealed record SuspectTraitsSnapshot(bool IsLocal, bool IsArmed, bool IsDesperate)
