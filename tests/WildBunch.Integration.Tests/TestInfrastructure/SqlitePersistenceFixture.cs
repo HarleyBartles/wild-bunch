@@ -12,7 +12,7 @@ public sealed class SqlitePersistenceFixture : IDisposable
         Connection.Open();
 
         using var context = CreateContext();
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
     }
 
     public SqliteConnection Connection { get; }

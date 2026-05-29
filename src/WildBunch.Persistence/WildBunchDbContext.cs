@@ -14,14 +14,6 @@ public sealed class WildBunchDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<GameSessionEntity>(entity =>
-        {
-            entity.ToTable("GameSessions");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.StateJson).IsRequired();
-            entity.Property(e => e.Status).IsRequired().HasMaxLength(32);
-            entity.Property(e => e.CreatedAtUtc).IsRequired();
-            entity.Property(e => e.UpdatedAtUtc).IsRequired();
-        });
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(WildBunchDbContext).Assembly);
     }
 }

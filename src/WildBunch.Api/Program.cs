@@ -8,9 +8,10 @@ builder.Services.AddWildBunchServices(builder.Configuration);
 
 var app = builder.Build();
 
+app.Services.ApplyWildBunchMigrations();
+
 if (app.Environment.IsDevelopment())
 {
-    app.Services.EnsureWildBunchDatabase();
     app.MapOpenApi();
 }
 

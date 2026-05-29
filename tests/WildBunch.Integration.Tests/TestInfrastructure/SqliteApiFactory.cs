@@ -25,7 +25,7 @@ public sealed class SqliteApiFactory : WebApplicationFactory<Program>, IDisposab
             .UseSqlite(_connection)
             .Options);
 
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

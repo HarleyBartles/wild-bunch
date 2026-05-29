@@ -20,11 +20,11 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceProvider EnsureWildBunchDatabase(this IServiceProvider services)
+    public static IServiceProvider ApplyWildBunchMigrations(this IServiceProvider services)
     {
         using var scope = services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
-        dbContext.Database.EnsureCreated();
+        dbContext.Database.Migrate();
         return services;
     }
 }
