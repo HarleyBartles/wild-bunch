@@ -918,6 +918,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 if (!plan.Resolved)
                 {
                     Journey.UpdatePendingEncounter(plan.UpdatedEncounter);
+                    PersistLatestTravelDiaryDay(startingState, dayEntries, Journey.PendingEncounter);
                     return new JourneyEncounterResolutionResult(false, true, Journey.Status, runMessage, Journey.ToSnapshot(TravelRules));
                 }
 
@@ -984,6 +985,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 if (!plan.Resolved)
                 {
                     Journey.UpdatePendingEncounter(plan.UpdatedEncounter);
+                    PersistLatestTravelDiaryDay(startingState, dayEntries, Journey.PendingEncounter);
                     return new JourneyEncounterResolutionResult(false, true, Journey.Status, plan.Message, Journey.ToSnapshot(TravelRules));
                 }
 
@@ -1066,6 +1068,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 if (!plan.Resolved && !retaliated)
                 {
                     Journey.UpdatePendingEncounter(plan.UpdatedEncounter);
+                    PersistLatestTravelDiaryDay(startingState, dayEntries, Journey.PendingEncounter);
                     return new JourneyEncounterResolutionResult(false, true, Journey.Status, plan.Message, Journey.ToSnapshot(TravelRules));
                 }
 
@@ -1122,13 +1125,13 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
                 var pendingSnapshot = Journey.ToSnapshot(TravelRules);
                 var pendingResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
-                UpdateLatestTravelDiaryDay(day => TravelDiaryDayFactory.Create(
-                    pendingSnapshot,
+                PersistLatestTravelDiaryDay(
                     startingState,
-                    pendingResources,
-                    pendingEncounter: pendingEncounter,
-                    encounterResolution: resolution,
-                    entries: dayEntries));
+                    dayEntries,
+                    pendingEncounter,
+                    resolution,
+                    pendingSnapshot,
+                    pendingResources);
 
                 return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Interrupted, pendingMessage, pendingSnapshot);
             }
@@ -1151,13 +1154,13 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         var journeySnapshot = Journey!.ToSnapshot(TravelRules);
         var currentResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
-        UpdateLatestTravelDiaryDay(day => TravelDiaryDayFactory.Create(
-            journeySnapshot,
+        PersistLatestTravelDiaryDay(
             startingState,
-            currentResources,
-            pendingEncounter: resolvedEncounter,
-            encounterResolution: resolution,
-            entries: dayEntries));
+            dayEntries,
+            resolvedEncounter,
+            resolution,
+            journeySnapshot,
+            currentResources);
 
         if (Journey.CurrentDayPlan?.IsComplete == true)
         {
@@ -1180,12 +1183,13 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
             var completedSnapshot = Journey.ToSnapshot(TravelRules);
             currentResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
-            UpdateLatestTravelDiaryDay(day => TravelDiaryDayFactory.Create(
-                completedSnapshot,
+            PersistLatestTravelDiaryDay(
                 startingState,
-                currentResources,
-                encounterResolution: resolution,
-                entries: dayEntries));
+                Array.Empty<string>(),
+                resolvedEncounter,
+                resolution,
+                completedSnapshot,
+                currentResources);
             return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Completed, $"You clear the remaining trail and reach {destinationTownName}.", completedSnapshot);
         }
 
@@ -1422,6 +1426,42 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var lastIndex = _travelDiaryDays.Count - 1;
         _travelDiaryDays[lastIndex] = update(_travelDiaryDays[lastIndex]);
         return true;
+    }
+
+    private bool PersistLatestTravelDiaryDay(
+        TravelDiaryBaselineState startingState,
+        IReadOnlyList<string> newEntries,
+        JourneyEncounterState? pendingEncounter = null,
+        TravelDiaryEncounterResolutionState? encounterResolution = null,
+        TravelJourneySnapshot? journeySnapshot = null,
+        TravelResourceSnapshot? currentResources = null,
+        JourneyTrailEventState? trailEvent = null)
+    {
+        ArgumentNullException.ThrowIfNull(startingState);
+        ArgumentNullException.ThrowIfNull(newEntries);
+
+        if (_travelDiaryDays.Count == 0)
+        {
+            return false;
+        }
+
+        journeySnapshot ??= Journey?.ToSnapshot(TravelRules);
+        if (journeySnapshot is null)
+        {
+            return false;
+        }
+
+        currentResources ??= TravelResourceSnapshotFactory.Capture(Player, PursuitState);
+        var combinedEntries = _travelDiaryDays[^1].Entries.Concat(newEntries).ToArray();
+
+        return UpdateLatestTravelDiaryDay(day => TravelDiaryDayFactory.Create(
+            journeySnapshot,
+            startingState,
+            currentResources,
+            trailEvent: trailEvent,
+            pendingEncounter: pendingEncounter,
+            encounterResolution: encounterResolution,
+            entries: combinedEntries));
     }
 
     public void ReplaceTravelDiaryDays(IReadOnlyList<TravelDiaryDayState> travelDiaryDays)

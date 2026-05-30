@@ -97,6 +97,74 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.Equal(-bribeAmount, resolvedDay.EncounterResolution!.WalletDelta);
     }
 
+    [Fact]
+    public async Task HandleAsyncAppendsUnresolvedBribeAttemptsToTheTravelDiary()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
+        repository.Seed(session);
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository);
+
+        var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
+
+        var bribeAmount = Math.Max(1m, session.Journey!.PendingEncounter!.FoeProfile!.MinimumBribe - 1m);
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "bribe", BribeAmount: bribeAmount, ForcedRoll: 99UL));
+
+        Assert.False(resolveResult.Success);
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, resolveResult.JourneyStatus);
+        var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains($"I offer ${bribeAmount:0.00}, and the rider pockets it without moving aside.", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(20m - bribeAmount, resolvedDay.CurrentWallet);
+        Assert.Equal(-bribeAmount, resolvedDay.WalletDelta);
+    }
+
+    [Fact]
+    public async Task HandleAsyncAppendsUnresolvedRunAttemptsToTheTravelDiary()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateHighRiskSession();
+        repository.Seed(session);
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository);
+
+        var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
+
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "run", ForcedRoll: 99UL));
+
+        Assert.False(resolveResult.Success);
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, resolveResult.JourneyStatus);
+        var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("I tried to outrun the rider, but the horse still had to work for it.", StringComparison.OrdinalIgnoreCase));
+        Assert.True(resolvedDay.HeatIncrease > 0);
+    }
+
+    [Fact]
+    public async Task HandleAsyncAppendsUnresolvedFightAttemptsToTheTravelDiary()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateHighRiskSession();
+        repository.Seed(session);
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository);
+
+        var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
+
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "fight", BulletSpend: 1, ForcedRoll: 99UL));
+
+        Assert.False(resolveResult.Success);
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, resolveResult.JourneyStatus);
+        var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("I spend 1 round(s), but the rider keeps coming.", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, resolvedDay.AmmoSpent);
+    }
+
     private static GameSession CreateHighRiskSession(Wallet? wallet = null)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
