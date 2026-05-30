@@ -235,17 +235,9 @@ export interface WorldDto {
   trails: TrailDto[];
 }
 
-export interface SuspectTraitsDto {
-  isLocal: boolean;
-  isArmed: boolean;
-  isDesperate: boolean;
-}
-
 export interface SuspectDto {
   id: string;
   name: string;
-  profile: SuspectProfileDto;
-  traits: SuspectTraitsDto;
   status: SuspectStatus;
 }
 
@@ -253,20 +245,6 @@ export interface ClueDto {
   id: string;
   kind: ClueKind;
   description: string;
-}
-
-export interface SuspectAliasDto {
-  name: string;
-  kind: AliasKind;
-}
-
-export interface SuspectIdentityFactDto {
-  description: string;
-}
-
-export interface SuspectProfileDto {
-  aliases: SuspectAliasDto[];
-  identifyingFacts: SuspectIdentityFactDto[];
 }
 
 export interface KillerReleaseStateDto {

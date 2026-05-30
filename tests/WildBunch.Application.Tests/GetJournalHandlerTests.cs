@@ -39,7 +39,7 @@ public sealed class GetJournalHandlerTests
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
         Assert.Equal(session.CaseFile.Suspects.Count, result.CaseFile.Suspects.Count);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
-        Assert.Contains(result.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 || suspect.Profile.IdentifyingFacts.Count > 0);
+        Assert.Contains(result.CaseFile.Suspects, suspect => suspect.Name == "Jonah Pike");
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);

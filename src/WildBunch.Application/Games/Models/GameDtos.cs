@@ -91,24 +91,7 @@ public sealed record CaseFileDto(
 public sealed record SuspectDto(
     string Id,
     string Name,
-    SuspectProfileDto Profile,
-    SuspectTraitsDto Traits,
     SuspectStatus Status);
-
-public sealed record SuspectProfileDto(
-    IReadOnlyList<SuspectAliasDto> Aliases,
-    IReadOnlyList<SuspectIdentityFactDto> IdentifyingFacts);
-
-public sealed record SuspectAliasDto(
-    string Name,
-    AliasKind Kind);
-
-public sealed record SuspectIdentityFactDto(string Description);
-
-public sealed record SuspectTraitsDto(
-    bool IsLocal,
-    bool IsArmed,
-    bool IsDesperate);
 
 public sealed record ClueDto(
     string Id,

@@ -30,23 +30,7 @@ public static class JournalMapper
         => new(
             suspect.Id.Value,
             suspect.Name,
-            ToDto(suspect.Profile),
-            new SuspectTraitsDto(
-                suspect.Traits.IsLocal,
-                suspect.Traits.IsArmed,
-                suspect.Traits.IsDesperate),
             suspect.Status);
-
-    private static SuspectProfileDto ToDto(SuspectProfile profile)
-        => new(
-            profile.Aliases.Select(ToDto).ToArray(),
-            profile.IdentifyingFacts.Select(ToDto).ToArray());
-
-    private static SuspectAliasDto ToDto(SuspectAlias alias)
-        => new(alias.Name, alias.Kind);
-
-    private static SuspectIdentityFactDto ToDto(SuspectIdentityFact fact)
-        => new(fact.Description);
 
     private static KillerReleaseStateDto ToDto(KillerReleaseState state)
         => new(

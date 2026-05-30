@@ -11,21 +11,11 @@ using DomainTravelJourney = WildBunch.Domain.Travel.TravelJourney;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
 using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
-using DomainTravelMode = WildBunch.Domain.Travel.TravelMode;
-using DomainJourneyStatus = WildBunch.Domain.Travel.JourneyStatus;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
 using DomainTrail = WildBunch.Domain.World.Trail;
 using DomainSuspect = WildBunch.Domain.Cases.Suspect;
-using DomainSuspectAlias = WildBunch.Domain.Cases.SuspectAlias;
-using DomainSuspectIdentityFact = WildBunch.Domain.Cases.SuspectIdentityFact;
-using DomainSuspectProfile = WildBunch.Domain.Cases.SuspectProfile;
-using DomainSuspectTraits = WildBunch.Domain.Cases.SuspectTraits;
 using DomainKillerReleaseState = WildBunch.Domain.Cases.KillerReleaseState;
-using TownId = WildBunch.Domain.World.TownId;
-using TrailId = WildBunch.Domain.World.TrailId;
-using SuspectId = WildBunch.Domain.Cases.SuspectId;
-using ClueId = WildBunch.Domain.Cases.ClueId;
 
 namespace WildBunch.Application.Games.Mapping;
 
@@ -143,23 +133,7 @@ public static class GameSessionMapper
         => new(
             suspect.Id.Value,
             suspect.Name,
-            ToDto(suspect.Profile),
-            new SuspectTraitsDto(
-                suspect.Traits.IsLocal,
-                suspect.Traits.IsArmed,
-                suspect.Traits.IsDesperate),
             suspect.Status);
-
-    private static SuspectProfileDto ToDto(DomainSuspectProfile profile)
-        => new(
-            profile.Aliases.Select(ToDto).ToArray(),
-            profile.IdentifyingFacts.Select(ToDto).ToArray());
-
-    private static SuspectAliasDto ToDto(DomainSuspectAlias alias)
-        => new(alias.Name, alias.Kind);
-
-    private static SuspectIdentityFactDto ToDto(DomainSuspectIdentityFact fact)
-        => new(fact.Description);
 
     private static KillerReleaseStateDto ToDto(DomainKillerReleaseState state)
         => new(

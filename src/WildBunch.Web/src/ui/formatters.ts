@@ -259,20 +259,3 @@ export function formatLogKind(kind: number) {
       return `Log ${kind}`;
   }
 }
-
-export function formatAliasKind(kind: number) {
-  switch (kind) {
-    case 0:
-      return "Nickname";
-    case 1:
-      return "Former name";
-    case 2:
-      return "Street name";
-    case 3:
-      return "Known as";
-    case 4:
-      return "Cover identity";
-    default:
-      return `Alias ${kind}`;
-  }
-}

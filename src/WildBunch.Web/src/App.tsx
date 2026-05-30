@@ -24,7 +24,6 @@ import { TravelPanel } from "./components/TravelPanel";
 import { StoreOffersPanel } from "./components/StoreOffersPanel";
 import {
   formatActionKind,
-  formatAliasKind,
   formatClueKind,
   formatGameStatus,
   formatLogKind,
@@ -575,25 +574,6 @@ export default function App() {
                       <p>
                         {suspect.id} - {formatSuspectStatus(suspect.status)}
                       </p>
-                      <p className="muted">
-                        Aliases:{" "}
-                        {suspect.profile.aliases.length > 0
-                          ? suspect.profile.aliases
-                              .map((alias) => `${alias.name} (${formatAliasKind(alias.kind)})`)
-                              .join(", ")
-                          : "None"}
-                      </p>
-                      <p className="muted">
-                        Identifying facts:{" "}
-                        {suspect.profile.identifyingFacts.length > 0
-                          ? suspect.profile.identifyingFacts.map((fact) => fact.description).join("; ")
-                          : "None"}
-                      </p>
-                      <span className="tag-row">
-                        <span className="tag">{suspect.traits.isLocal ? "Local" : "Not local"}</span>
-                        <span className="tag">{suspect.traits.isArmed ? "Armed" : "Unarmed"}</span>
-                        <span className="tag">{suspect.traits.isDesperate ? "Desperate" : "Calm"}</span>
-                      </span>
                     </div>
                   ))}
                 </div>

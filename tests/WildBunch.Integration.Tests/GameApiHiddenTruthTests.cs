@@ -21,17 +21,23 @@ public sealed class GameApiHiddenTruthTests
         var createPayload = await createResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"profile\"", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"traits\"", createPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal");
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
 
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"profile\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"traits\"", journalPayload, StringComparison.OrdinalIgnoreCase);
 
         var wantedPostersResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
         var wantedPostersPayload = await wantedPostersResponse.Content.ReadAsStringAsync();
 
         Assert.DoesNotContain("\"trueCulpritId\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"profile\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"traits\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
     }
 }
