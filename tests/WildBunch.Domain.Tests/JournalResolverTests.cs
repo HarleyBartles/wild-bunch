@@ -32,10 +32,25 @@ public sealed class JournalResolverTests
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.KillerReleaseState.Progress);
         Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.KillerReleaseState.RequiredPublicClues);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseSummary);
-        Assert.Equal(session.CaseFile.Suspects.Count, result.Suspects.Count);
+        Assert.Empty(result.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.KnownClues.Count);
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
+    }
+
+    [Fact]
+    public void ResolverReturnsOnlyDiscoveredSuspects()
+    {
+        var session = CreateSession();
+        session.CaseFile.DiscoverSuspect(new SuspectId("suspect-2"));
+        var resolver = new JournalResolver();
+
+        var result = resolver.Resolve(session);
+
+        Assert.Single(result.DiscoveredSuspects);
+        Assert.Equal("suspect-2", result.DiscoveredSuspects[0].Id.Value);
+        Assert.Equal("Mira Cline", result.DiscoveredSuspects[0].Name);
+        Assert.Equal(SuspectStatus.AtLarge, result.DiscoveredSuspects[0].Status);
     }
 
     [Fact]

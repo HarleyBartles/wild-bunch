@@ -19,22 +19,28 @@ public sealed class GameApiHiddenTruthTests
         Assert.NotNull(createdSession);
 
         var createPayload = await createResponse.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("\"suspects\"", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Evan Quill", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Tessa Wren", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal");
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
 
-        Assert.DoesNotContain("\"suspects\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Evan Quill", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Tessa Wren", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
 
         var wantedPostersResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
         var wantedPostersPayload = await wantedPostersResponse.Content.ReadAsStringAsync();
 
-        Assert.DoesNotContain("\"suspects\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"discoveredSuspects\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
     }
 }

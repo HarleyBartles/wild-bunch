@@ -1,6 +1,7 @@
 using WildBunch.Application.Games.Models;
 using DomainCaseFile = WildBunch.Domain.Cases.CaseFile;
 using DomainClue = WildBunch.Domain.Cases.Clue;
+using DomainSuspect = WildBunch.Domain.Cases.Suspect;
 using DomainGameLogEntry = WildBunch.Domain.Game.GameLogEntry;
 using DomainGameSession = WildBunch.Domain.Game.GameSession;
 using DomainPlayer = WildBunch.Domain.Game.Player;
@@ -120,6 +121,7 @@ public static class GameSessionMapper
         => new(
             caseFile.OpeningLead.Description,
             ToDto(caseFile.KillerReleaseState),
+            caseFile.GetDiscoveredSuspects().Select(ToDto).ToArray(),
             caseFile.KnownClues.Select(ToDto).ToArray());
 
     private static KillerReleaseStateDto ToDto(DomainKillerReleaseState state)
@@ -128,6 +130,12 @@ public static class GameSessionMapper
             state.Progress,
             state.RequiredPublicClues,
             state.StatusText);
+
+    private static DiscoveredSuspectDto ToDto(DomainSuspect suspect)
+        => new(
+            suspect.Id.Value,
+            suspect.Name,
+            suspect.Status);
 
     private static ClueDto ToDto(DomainClue clue)
         => new(

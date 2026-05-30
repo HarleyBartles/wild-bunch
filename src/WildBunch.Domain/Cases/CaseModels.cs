@@ -41,6 +41,7 @@ public enum ClueKind
 public sealed class CaseFile
 {
     private readonly List<Suspect> _suspects;
+    private readonly List<SuspectId> _discoveredSuspectIds = [];
     private readonly List<Clue> _knownClues = [];
     private readonly List<Clue> _publicClues = [];
     private int _killerReleaseProgress;
@@ -50,6 +51,7 @@ public sealed class CaseFile
         IEnumerable<Suspect> suspects,
         SuspectId trueCulpritId,
         IEnumerable<Clue> knownClues,
+        IEnumerable<SuspectId>? discoveredSuspectIds = null,
         IEnumerable<Clue>? publicClues = null)
         : this(
             accusation,
@@ -57,6 +59,7 @@ public sealed class CaseFile
             trueCulpritId,
             CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues,
+            discoveredSuspectIds,
             publicClues)
     {
     }
@@ -67,6 +70,7 @@ public sealed class CaseFile
         SuspectId trueCulpritId,
         CaseOpeningLead openingLead,
         IEnumerable<Clue> knownClues,
+        IEnumerable<SuspectId>? discoveredSuspectIds = null,
         IEnumerable<Clue>? publicClues = null,
         int killerReleaseThreshold = 2,
         int killerReleaseProgress = 0)
@@ -81,6 +85,7 @@ public sealed class CaseFile
         OpeningLead = openingLead;
         KillerReleaseThreshold = Math.Max(1, killerReleaseThreshold);
         _killerReleaseProgress = Math.Max(0, killerReleaseProgress);
+        _discoveredSuspectIds.AddRange((discoveredSuspectIds ?? Array.Empty<SuspectId>()).DistinctBy(suspectId => suspectId.Value));
         _knownClues.AddRange(knownClues.DistinctBy(clue => clue.Id));
         _publicClues.AddRange((publicClues ?? Array.Empty<Clue>()).DistinctBy(clue => clue.Id));
     }
@@ -88,6 +93,8 @@ public sealed class CaseFile
     public SuspectId? Accusation { get; private set; }
 
     public IReadOnlyList<Suspect> Suspects => _suspects;
+
+    public IReadOnlyList<SuspectId> DiscoveredSuspectIds => _discoveredSuspectIds;
 
     public SuspectId TrueCulpritId { get; }
 
@@ -102,6 +109,28 @@ public sealed class CaseFile
     public IReadOnlyList<Clue> KnownClues => _knownClues;
 
     public IReadOnlyList<Clue> PublicClues => _publicClues;
+
+    public IReadOnlyList<Suspect> GetDiscoveredSuspects()
+        => _suspects.Where(suspect => _discoveredSuspectIds.Any(discovered => discovered.Equals(suspect.Id))).ToArray();
+
+    public bool IsSuspectDiscovered(SuspectId suspectId)
+        => _discoveredSuspectIds.Any(discovered => discovered.Equals(suspectId));
+
+    public bool DiscoverSuspect(SuspectId suspectId)
+    {
+        if (!_suspects.Any(suspect => suspect.Id.Equals(suspectId)))
+        {
+            throw new ArgumentException("The suspect does not belong to this case.", nameof(suspectId));
+        }
+
+        if (IsSuspectDiscovered(suspectId))
+        {
+            return false;
+        }
+
+        _discoveredSuspectIds.Add(suspectId);
+        return true;
+    }
 
     public void SetAccusation(SuspectId suspectId)
     {
@@ -133,6 +162,7 @@ public sealed class CaseFile
 
             _publicClues.RemoveAt(i);
             _knownClues.Add(clue);
+            DiscoverSuspectsFromClue(clue);
             AdvanceKillerReleaseProgress();
             return clue;
         }
@@ -143,5 +173,26 @@ public sealed class CaseFile
     private void AdvanceKillerReleaseProgress()
     {
         _killerReleaseProgress = Math.Min(KillerReleaseThreshold, _killerReleaseProgress + 1);
+    }
+
+    private void DiscoverSuspectsFromClue(Clue clue)
+    {
+        foreach (var suspect in _suspects)
+        {
+            if (MatchesSuspectReference(clue.Description, suspect))
+            {
+                DiscoverSuspect(suspect.Id);
+            }
+        }
+    }
+
+    private static bool MatchesSuspectReference(string clueDescription, Suspect suspect)
+    {
+        if (clueDescription.Contains(suspect.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return suspect.Profile.Aliases.Any(alias => clueDescription.Contains(alias.Name, StringComparison.OrdinalIgnoreCase));
     }
 }

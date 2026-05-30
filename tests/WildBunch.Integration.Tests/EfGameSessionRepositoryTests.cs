@@ -43,6 +43,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, reloaded.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, reloaded.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, reloaded.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(session.CaseFile.DiscoveredSuspectIds, reloaded.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(session.CaseFile.Suspects[0].Profile.Aliases.Count, reloaded.CaseFile.Suspects[0].Profile.Aliases.Count);
     }
 
@@ -259,6 +260,7 @@ public sealed class EfGameSessionRepositoryTests
             new SuspectId("suspect-1"),
             CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
             Array.Empty<Clue>());
+        caseFile.DiscoverSuspect(new SuspectId("suspect-1"));
 
         var inventory = new DomainInventory(new[]
         {

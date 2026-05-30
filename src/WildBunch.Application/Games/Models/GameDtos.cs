@@ -84,7 +84,13 @@ public sealed record TrailDto(
 public sealed record CaseFileDto(
     string OpeningLead,
     KillerReleaseStateDto KillerReleaseState,
+    IReadOnlyList<DiscoveredSuspectDto> DiscoveredSuspects,
     IReadOnlyList<ClueDto> KnownClues);
+
+public sealed record DiscoveredSuspectDto(
+    string Id,
+    string Name,
+    SuspectStatus Status);
 
 public sealed record ClueDto(
     string Id,

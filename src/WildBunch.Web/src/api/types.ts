@@ -25,6 +25,7 @@ export type TrailRisk = 1 | 2 | 3;
 export type TownServices = number;
 export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3;
+export type SuspectStatus = 0 | 1 | 2;
 export type GameLogEntryKind = 0 | 1 | 2;
 export type ItemKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type TrailTerrain = 0 | 1 | 2 | 3;
@@ -240,6 +241,12 @@ export interface ClueDto {
   description: string;
 }
 
+export interface DiscoveredSuspectDto {
+  id: string;
+  name: string;
+  status: SuspectStatus;
+}
+
 export interface KillerReleaseStateDto {
   isReleased: boolean;
   progress: number;
@@ -251,6 +258,7 @@ export interface CaseFileDto {
   accusationId: string | null;
   openingLead: string;
   killerReleaseState: KillerReleaseStateDto;
+  discoveredSuspects: DiscoveredSuspectDto[];
   knownClues: ClueDto[];
 }
 
@@ -305,6 +313,7 @@ export interface JournalCaseFileDto {
   openingLead: string;
   killerReleaseState: KillerReleaseStateDto;
   caseSummary: string;
+  discoveredSuspects: DiscoveredSuspectDto[];
   knownClues: ClueDto[];
 }
 

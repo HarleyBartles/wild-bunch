@@ -36,15 +36,41 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.CaseFile.KillerReleaseState.RequiredPublicClues);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
+        Assert.Empty(result.CaseFile.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
 
         var payload = System.Text.Json.JsonSerializer.Serialize(result);
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetJournalProjectsOnlyExplicitlyDiscoveredSuspects()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession();
+        session.CaseFile.DiscoverSuspect(new SuspectId("suspect-2"));
+        repository.Seed(session);
+        var handler = new GetJournalHandler(repository, new JournalResolver());
+
+        var result = await handler.HandleAsync(new GetJournalQuery(session.Id.Value));
+
+        Assert.Single(result.CaseFile.DiscoveredSuspects);
+        Assert.Equal("suspect-2", result.CaseFile.DiscoveredSuspects[0].Id);
+        Assert.Equal("Mira Cline", result.CaseFile.DiscoveredSuspects[0].Name);
+        Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
+
+        var payload = System.Text.Json.JsonSerializer.Serialize(result);
+        Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("trueCulpritId", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

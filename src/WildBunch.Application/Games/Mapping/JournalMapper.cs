@@ -20,6 +20,7 @@ public static class JournalMapper
                 snapshot.OpeningLead,
                 ToDto(snapshot.KillerReleaseState),
                 snapshot.CaseSummary,
+                snapshot.DiscoveredSuspects.Select(ToDto).ToArray(),
                 snapshot.KnownClues.Select(ToDto).ToArray()),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
@@ -36,6 +37,12 @@ public static class JournalMapper
             clue.Id.Value,
             clue.Kind,
             clue.Description);
+
+    private static DiscoveredSuspectDto ToDto(Suspect suspect)
+        => new(
+            suspect.Id.Value,
+            suspect.Name,
+            suspect.Status);
 
     private static GameLogEntryDto ToDto(GameLogEntry logEntry)
         => new(

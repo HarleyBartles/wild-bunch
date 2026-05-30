@@ -37,12 +37,18 @@ public sealed class GameApiTests
         Assert.Equal("A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
+        Assert.Empty(session.CaseFile.DiscoveredSuspects);
         Assert.NotEmpty(session.LogEntries);
 
         var payload = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Evan Quill", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Tessa Wren", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"suspect-1\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"suspect-2\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
@@ -69,11 +75,15 @@ public sealed class GameApiTests
         Assert.Equal(createdSession.Player.Name, fetchedSession.Player.Name);
         Assert.Equal(createdSession.Inventory.Wallet.Cash, fetchedSession.Inventory.Wallet.Cash);
         Assert.Equal(createdSession.CaseFile.OpeningLead, fetchedSession.CaseFile.OpeningLead);
+        Assert.Empty(fetchedSession.CaseFile.DiscoveredSuspects);
 
         var payload = await getResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"suspect-1\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"suspect-2\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
@@ -171,7 +181,8 @@ public sealed class GameApiTests
         Assert.Equal(2, secondAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
         var payload = await secondAdvanceResponse.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);

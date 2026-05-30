@@ -21,7 +21,7 @@ public sealed class JournalResolver
             session.CaseFile.OpeningLead.Description,
             session.CaseFile.KillerReleaseState,
             "Find the culprit before the law closes in.",
-            session.CaseFile.Suspects.ToArray(),
+            session.CaseFile.GetDiscoveredSuspects(),
             session.CaseFile.KnownClues.ToArray(),
             session.LogEntries.ToArray());
     }

@@ -3,6 +3,7 @@ using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 
 namespace WildBunch.Application.Tests;
@@ -41,13 +42,39 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.PursuitState.Heat, result.PursuitState.Heat);
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Empty(result.CaseFile.DiscoveredSuspects);
         Assert.Equal(new SuspectId("suspect-1"), session.CaseFile.TrueCulpritId);
 
         var payload = JsonSerializer.Serialize(result);
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Ira Flint", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("At large", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueculpritid\"", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetGameSessionProjectsOnlyExplicitlyDiscoveredSuspects()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSessionWithDiscoveredSuspect();
+        repository.Seed(session);
+        var handler = new GetGameSessionHandler(repository);
+
+        var result = await handler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
+
+        Assert.Single(result.CaseFile.DiscoveredSuspects);
+        Assert.Equal("suspect-1", result.CaseFile.DiscoveredSuspects[0].Id);
+        Assert.Equal("Ira Flint", result.CaseFile.DiscoveredSuspects[0].Name);
+        Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
+        Assert.Single(session.CaseFile.Suspects);
+
+        var payload = JsonSerializer.Serialize(result);
+        Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -59,5 +86,12 @@ public sealed class GetGameSessionHandlerTests
             () => handler.HandleAsync(new GetGameSessionQuery(Guid.NewGuid())));
 
         Assert.Contains("was not found", exception.Message);
+    }
+
+    private static GameSession CreateSessionWithDiscoveredSuspect()
+    {
+        var session = new StubNewGameFactory().CreatedSession;
+        session.CaseFile.DiscoverSuspect(new SuspectId("suspect-1"));
+        return session;
     }
 }

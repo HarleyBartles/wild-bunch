@@ -30,10 +30,12 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         var payload = JsonSerializer.Serialize(result);
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
@@ -51,10 +53,11 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.False(result.Success);
         Assert.Equal(0, repository.SaveCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
         Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.Single(result.CurrentJournal.LogEntries);
         var payload = JsonSerializer.Serialize(result);
-        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
@@ -94,7 +97,7 @@ public sealed class ReadWantedPostersHandlerTests
             knownClues: Array.Empty<Clue>(),
             publicClues: new[]
             {
-                new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A posted notice describes a rider wearing a faded blue scarf.")
+                new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A posted notice names Ira Flint as the rider with a faded blue scarf.")
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

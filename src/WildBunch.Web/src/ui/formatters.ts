@@ -130,6 +130,19 @@ export function formatClueKind(kind: number) {
   }
 }
 
+export function formatSuspectStatus(status: number) {
+  switch (status) {
+    case 0:
+      return "At large";
+    case 1:
+      return "Captured";
+    case 2:
+      return "Exonerated";
+    default:
+      return `Status ${status}`;
+  }
+}
+
 export function formatItemKind(kind: number) {
   switch (kind) {
     case 0:

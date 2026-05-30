@@ -18,4 +18,5 @@ public sealed record JournalCaseFileDto(
     string OpeningLead,
     KillerReleaseStateDto KillerReleaseState,
     string CaseSummary,
+    IReadOnlyList<DiscoveredSuspectDto> DiscoveredSuspects,
     IReadOnlyList<ClueDto> KnownClues);

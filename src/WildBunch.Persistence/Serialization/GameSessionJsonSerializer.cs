@@ -204,6 +204,7 @@ public sealed class GameSessionJsonSerializer
         int KillerReleaseProgress,
         int KillerReleaseThreshold,
         IReadOnlyList<SuspectSnapshot> Suspects,
+        IReadOnlyList<string>? DiscoveredSuspectIds,
         string TrueCulpritId,
         IReadOnlyList<ClueSnapshot> KnownClues,
         IReadOnlyList<ClueSnapshot>? PublicClues)
@@ -215,6 +216,7 @@ public sealed class GameSessionJsonSerializer
                 caseFile.KillerReleaseProgress,
                 caseFile.KillerReleaseThreshold,
                 caseFile.Suspects.Select(SuspectSnapshot.FromDomain).ToArray(),
+                caseFile.DiscoveredSuspectIds.Select(suspectId => suspectId.Value).ToArray(),
                 caseFile.TrueCulpritId.Value,
                 caseFile.KnownClues.Select(ClueSnapshot.FromDomain).ToArray(),
                 caseFile.PublicClues.Select(ClueSnapshot.FromDomain).ToArray());
@@ -227,6 +229,7 @@ public sealed class GameSessionJsonSerializer
                 new SuspectId(snapshot.TrueCulpritId),
                 CaseOpeningLead.Create(snapshot.OpeningLead ?? "Follow the public leads and look for a signature mark."),
                 snapshot.KnownClues.Select(ClueSnapshot.ToDomain),
+                (snapshot.DiscoveredSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
                 snapshot.PublicClues?.Select(ClueSnapshot.ToDomain),
                 snapshot.KillerReleaseThreshold,
                 snapshot.KillerReleaseProgress);
