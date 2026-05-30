@@ -66,6 +66,15 @@
 - No unrelated feature work.
 - If a needed design decision is missing, return `BLOCKED` or `AMBER` rather than inventing broad architecture.
 
+## Coding Discipline
+- Keep slices small and mainline-friendly; if a file is getting bulky, extract the pure helper, factory, or renderer before it becomes a god object.
+- Avoid letting aggregate roots, endpoint files, React panels, and builders accumulate unrelated responsibilities.
+- Do not move gameplay mutation out of `GameSession` just to satisfy SOLID; extract pure helpers around it instead.
+- Prefer one canonical algorithm or formatter over duplicate versions that can drift.
+- When you touch a surface, leave it cleaner or explicitly report why the cleanup is deferred.
+- Backend remains authoritative for gameplay state; React renders server state instead of inventing it.
+- For deterministic seed, world, or travel behavior, prefer characterization tests before refactoring.
+
 ## Worker Environment
 - The worker environment uses PowerShell, so do not use `&&` for command chaining.
 - Run commands separately or use PowerShell-safe sequencing when multiple commands are needed.
