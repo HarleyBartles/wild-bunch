@@ -82,16 +82,9 @@ public sealed record TrailDto(
     decimal RideDayDistance);
 
 public sealed record CaseFileDto(
-    string? AccusationId,
     string OpeningLead,
     KillerReleaseStateDto KillerReleaseState,
-    IReadOnlyList<SuspectDto> Suspects,
     IReadOnlyList<ClueDto> KnownClues);
-
-public sealed record SuspectDto(
-    string Id,
-    string Name,
-    SuspectStatus Status);
 
 public sealed record ClueDto(
     string Id,

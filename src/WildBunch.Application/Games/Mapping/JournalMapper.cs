@@ -17,20 +17,12 @@ public static class JournalMapper
             new GameClockDto(snapshot.Day, snapshot.Turn),
             new JournalTownDto(snapshot.CurrentTownId.Value, snapshot.CurrentTownName),
             new JournalCaseFileDto(
-                snapshot.AccusationId,
                 snapshot.OpeningLead,
                 ToDto(snapshot.KillerReleaseState),
                 snapshot.CaseSummary,
-                snapshot.Suspects.Select(ToDto).ToArray(),
                 snapshot.KnownClues.Select(ToDto).ToArray()),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
-
-    private static SuspectDto ToDto(Suspect suspect)
-        => new(
-            suspect.Id.Value,
-            suspect.Name,
-            suspect.Status);
 
     private static KillerReleaseStateDto ToDto(KillerReleaseState state)
         => new(

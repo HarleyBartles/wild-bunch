@@ -23,7 +23,6 @@ export const AvailableActionKind = {
 
 export type TrailRisk = 1 | 2 | 3;
 export type TownServices = number;
-export type SuspectStatus = 0 | 1 | 2;
 export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3;
 export type GameLogEntryKind = 0 | 1 | 2;
@@ -235,12 +234,6 @@ export interface WorldDto {
   trails: TrailDto[];
 }
 
-export interface SuspectDto {
-  id: string;
-  name: string;
-  status: SuspectStatus;
-}
-
 export interface ClueDto {
   id: string;
   kind: ClueKind;
@@ -258,7 +251,6 @@ export interface CaseFileDto {
   accusationId: string | null;
   openingLead: string;
   killerReleaseState: KillerReleaseStateDto;
-  suspects: SuspectDto[];
   knownClues: ClueDto[];
 }
 
@@ -313,7 +305,6 @@ export interface JournalCaseFileDto {
   openingLead: string;
   killerReleaseState: KillerReleaseStateDto;
   caseSummary: string;
-  suspects: SuspectDto[];
   knownClues: ClueDto[];
 }
 

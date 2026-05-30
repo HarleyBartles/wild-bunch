@@ -29,7 +29,6 @@ import {
   formatLogKind,
   formatRisk,
   formatServices,
-  formatSuspectStatus,
 } from "./ui/formatters";
 
 const storageKey = "wild-bunch.current-game-id";
@@ -565,19 +564,6 @@ export default function App() {
                 </div>
               </article>
 
-              <article className="status-card">
-                <h3>Suspects</h3>
-                <div className="stack">
-                  {journal.caseFile.suspects.map((suspect) => (
-                    <div key={suspect.id} className="compact-item">
-                      <strong>{suspect.name}</strong>
-                      <p>
-                        {suspect.id} - {formatSuspectStatus(suspect.status)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </article>
             </div>
           ) : (
             <p className="muted">Load a game to inspect the case file.</p>

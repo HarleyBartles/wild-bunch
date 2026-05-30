@@ -41,16 +41,13 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.PursuitState.Heat, result.PursuitState.Heat);
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.CaseFile.KillerReleaseState.IsReleased);
-        Assert.Equal(session.CaseFile.Suspects.Count, result.CaseFile.Suspects.Count);
-        Assert.Contains(result.CaseFile.Suspects, suspect => suspect.Name == "Ira Flint");
         Assert.Equal(new SuspectId("suspect-1"), session.CaseFile.TrueCulpritId);
 
         var payload = JsonSerializer.Serialize(result);
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueculpritid\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

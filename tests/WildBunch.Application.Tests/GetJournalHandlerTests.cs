@@ -31,18 +31,20 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
         Assert.Equal(session.Player.CurrentTownId.Value, result.CurrentTown.Id);
         Assert.Equal("Pinecross", result.CurrentTown.Name);
-        Assert.Equal(session.CaseFile.Accusation?.Value, result.CaseFile.AccusationId);
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.CaseFile.KillerReleaseState.RequiredPublicClues);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
-        Assert.Equal(session.CaseFile.Suspects.Count, result.CaseFile.Suspects.Count);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
-        Assert.Contains(result.CaseFile.Suspects, suspect => suspect.Name == "Jonah Pike");
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
+
+        var payload = System.Text.Json.JsonSerializer.Serialize(result);
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

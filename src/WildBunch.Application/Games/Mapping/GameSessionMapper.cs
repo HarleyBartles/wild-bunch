@@ -14,7 +14,6 @@ using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
 using DomainTrail = WildBunch.Domain.World.Trail;
-using DomainSuspect = WildBunch.Domain.Cases.Suspect;
 using DomainKillerReleaseState = WildBunch.Domain.Cases.KillerReleaseState;
 
 namespace WildBunch.Application.Games.Mapping;
@@ -118,22 +117,10 @@ public static class GameSessionMapper
         => new(choice.Id, choice.Label);
 
     private static CaseFileDto ToDto(DomainCaseFile caseFile)
-    {
-        string? accusationId = caseFile.Accusation.HasValue ? caseFile.Accusation.Value.Value : null;
-
-        return new CaseFileDto(
-            accusationId,
+        => new(
             caseFile.OpeningLead.Description,
             ToDto(caseFile.KillerReleaseState),
-            caseFile.Suspects.Select(ToDto).ToArray(),
             caseFile.KnownClues.Select(ToDto).ToArray());
-    }
-
-    private static SuspectDto ToDto(DomainSuspect suspect)
-        => new(
-            suspect.Id.Value,
-            suspect.Name,
-            suspect.Status);
 
     private static KillerReleaseStateDto ToDto(DomainKillerReleaseState state)
         => new(

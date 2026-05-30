@@ -32,12 +32,10 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
-        Assert.Contains(result.CurrentJournal.CaseFile.Suspects, suspect => suspect.Name == "Ira Flint");
         var payload = JsonSerializer.Serialize(result);
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -56,10 +54,9 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.Single(result.CurrentJournal.LogEntries);
         var payload = JsonSerializer.Serialize(result);
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

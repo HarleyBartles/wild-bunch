@@ -15,9 +15,7 @@ public sealed record JournalTownDto(
     string Name);
 
 public sealed record JournalCaseFileDto(
-    string? AccusationId,
     string OpeningLead,
     KillerReleaseStateDto KillerReleaseState,
     string CaseSummary,
-    IReadOnlyList<SuspectDto> Suspects,
     IReadOnlyList<ClueDto> KnownClues);

@@ -38,15 +38,12 @@ public sealed class GameApiJournalTests
         Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, journal.CaseFile.KillerReleaseState.Progress);
         Assert.NotEmpty(journal.LogEntries);
-        Assert.NotEmpty(journal.CaseFile.Suspects);
         Assert.NotEmpty(journal.CaseFile.KnownClues);
-        Assert.Contains(journal.CaseFile.Suspects, suspect => suspect.Name == "Jonah Pike");
 
         var payload = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -94,9 +91,8 @@ public sealed class GameApiJournalTests
         Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
 
         var payload = await journalResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 }

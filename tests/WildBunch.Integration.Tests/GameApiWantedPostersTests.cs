@@ -33,14 +33,12 @@ public sealed class GameApiWantedPostersTests
         Assert.Single(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
         Assert.Equal(1, actionResult.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.False(actionResult.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
-        Assert.Contains(actionResult.CurrentJournal.CaseFile.Suspects, suspect => suspect.Name == "Jonah Pike");
 
         var actionPayload = await actionResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"suspects\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueculpritid\"", actionPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", actionPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", actionPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -55,10 +53,9 @@ public sealed class GameApiWantedPostersTests
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"suspects\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"profile\"", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"traits\"", journalPayload, StringComparison.OrdinalIgnoreCase);
 
         var secondReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
@@ -132,6 +129,7 @@ public sealed class GameApiWantedPostersTests
         Assert.DoesNotContain(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
 
         var payload = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"suspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
     }
