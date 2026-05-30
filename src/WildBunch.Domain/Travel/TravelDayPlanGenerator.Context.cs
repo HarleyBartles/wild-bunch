@@ -10,6 +10,13 @@ internal static partial class TravelDayPlanGenerator
 {
     public const int CurrentVersion = 1;
 
+    private static readonly JourneyEncounterChoiceState[] DefaultEncounterChoices =
+    {
+        new("run", "Run"),
+        new("fight", "Fight"),
+        new("bribe", "Bribe")
+    };
+
     public static TravelDayPlanState Generate(TravelDayGenerationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -63,6 +70,15 @@ internal static partial class TravelDayPlanGenerator
             context.WalletBand,
             string.Join(",", context.RecentTrailEventKinds),
             string.Join(",", context.RecentEncounterCategories));
+
+    private static string ComposeSeed(string seed, string suffix)
+        => $"{seed}|{suffix}";
+
+    private static ulong Roll(string seed, string label)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{seed}|{label}"));
+        return BitConverter.ToUInt64(bytes, 0);
+    }
 
     private static TravelDayEncounterCategory SelectCategory(TravelDayGenerationContext context, ulong roll, bool quietDay)
     {
@@ -330,6 +346,16 @@ internal static partial class TravelDayPlanGenerator
             _ => new TravelDayEncounterState(slotIndex, TravelDayEncounterCategory.Quiet, "Quiet trail", BuildQuietMessage(context, dayNumber, slotIndex, seed), null, null, null)
         };
     }
+
+    private static TravelDayEncounterState CreateChoiceEncounter(int slotIndex, string kind, string message)
+        => new(
+            slotIndex,
+            kind == "npc" ? TravelDayEncounterCategory.Npc : TravelDayEncounterCategory.Foe,
+            kind == "npc" ? "Weathered stranger" : "Hard-eyed rider",
+            message,
+            null,
+            JourneyEncounterState.CreateChoiceEncounter(kind, message, DefaultEncounterChoices),
+            null);
 
     private static TravelDayEncounterState CreateLuckyEncounter(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, int dayNumber, int slotIndex, string seed)
     {
