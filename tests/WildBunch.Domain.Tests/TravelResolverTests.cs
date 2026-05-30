@@ -834,7 +834,7 @@ public sealed class TravelResolverTests
         var secondResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: 0UL);
 
         Assert.False(secondResult.Success);
-        Assert.Contains("pockets it without moving aside", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pocketed it without moving aside", secondResult.Message, StringComparison.OrdinalIgnoreCase);
         Assert.NotNull(session.Journey.PendingEncounter);
         Assert.True(session.Journey.PendingEncounter!.HiddenState!.BribeLockedOut);
         Assert.DoesNotContain(session.Journey.PendingEncounter.Choices, choice => choice.Id == "bribe");

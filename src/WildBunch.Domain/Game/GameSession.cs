@@ -923,8 +923,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 }
 
                 Journey.ResumeFromEncounter();
-                dayEntries.Add("I decided to run for it.");
-                dayEntries.Add(Journey.TravelMode == TravelMode.Foot ? "I got away on foot." : "I got away on the horse.");
                 var resolution = new TravelDiaryEncounterResolutionState(
                     resolvedChoiceId,
                     resolvedChoiceLabel,
@@ -990,10 +988,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 }
 
                 Journey.ResumeFromEncounter();
-                dayEntries.Add("I decided to stand and fight.");
-                dayEntries.Add(plan.AmmoSpent > 0
-                    ? $"I spent {plan.AmmoSpent} round(s) and lost {Math.Abs(plan.HealthDelta)} health before forcing the rider off the trail."
-                    : $"I fought with my knife and lost {Math.Abs(plan.HealthDelta)} health before forcing the rider off the trail.");
                 var resolution = new TravelDiaryEncounterResolutionState(
                     resolvedChoiceId,
                     resolvedChoiceLabel,
@@ -1073,10 +1067,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 }
 
                 Journey.ResumeFromEncounter();
-                dayEntries.Add("I decided to bribe the rider.");
-                dayEntries.Add(plan.Resolved
-                    ? $"I bribe the rider with ${-plan.WalletDelta:0.00} and continue on."
-                    : "I paid for the mistake before moving on.");
                 var resolution = new TravelDiaryEncounterResolutionState(
                     resolvedChoiceId,
                     resolvedChoiceLabel,

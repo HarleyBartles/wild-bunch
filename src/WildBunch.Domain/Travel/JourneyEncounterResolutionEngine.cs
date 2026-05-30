@@ -252,12 +252,12 @@ internal static class JourneyEncounterResolutionEngine
         var message = usingFirearm
             ? success
                 ? bulletSpend >= 4
-                    ? $"I spend {bulletSpend} round(s) and drive the rider off with more lead than sense."
-                    : $"I spend {bulletSpend} round(s) and force the rider off the trail."
-                : $"I spend {bulletSpend} round(s), but the rider keeps coming."
+                    ? $"I spent {bulletSpend} round(s) and drove the rider off with more lead than sense."
+                    : $"I spent {bulletSpend} round(s) and forced the rider off the trail."
+                : $"I spent {bulletSpend} round(s), but the rider kept coming."
             : success
-                ? "I fight with my knife and force the rider off the trail."
-                : "I fight with my knife, but the rider keeps the pressure on.";
+                ? "I fought with my knife and forced the rider off the trail."
+                : "I fought with my knife, but the rider kept the pressure on.";
 
         return new JourneyEncounterResolutionPlan(
             success,
@@ -363,7 +363,7 @@ internal static class JourneyEncounterResolutionEngine
         {
             return new JourneyEncounterResolutionPlan(
                 false,
-                $"I offer ${offer:0.00}, and the rider pockets it without moving aside.",
+                $"I offered ${offer:0.00}, and the rider pocketed it without moving aside.",
                 0,
                 -offer,
                 0,
@@ -385,7 +385,7 @@ internal static class JourneyEncounterResolutionEngine
 
         return new JourneyEncounterResolutionPlan(
             false,
-            $"I offer ${offer:0.00}, and the rider takes it badly.",
+            $"I offered ${offer:0.00}, and the rider took it badly.",
             healthDelta,
             walletDelta - offer,
             0,

@@ -28,8 +28,8 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.True(result.Success);
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I decided to run for it", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I got away", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, diaryDay.Entries.Count(entry => entry.Contains("got away", StringComparison.OrdinalIgnoreCase)));
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I spurred the horse and got away before the rider could close in.", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -49,7 +49,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
 
         Assert.True(resolveResult.Success);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
-        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("I decided to run for it", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("got away", StringComparison.OrdinalIgnoreCase)));
         Assert.DoesNotContain(resolvedDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -74,6 +74,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
             resolveResult.CurrentSession.Inventory.Items.Where(item => item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo).Sum(item => item.Quantity),
             resolvedDay.CurrentAmmo);
         Assert.Equal(2, resolvedDay.EncounterResolution!.AmmoSpent);
+        Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("forced the rider off the trail", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -95,6 +96,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Equal(20m - bribeAmount, resolveResult.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(-bribeAmount, resolvedDay.EncounterResolution!.WalletDelta);
+        Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("let me pass", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -116,7 +118,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, resolveResult.JourneyStatus);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(resolvedDay.Entries, entry => entry.Contains($"I offer ${bribeAmount:0.00}, and the rider pockets it without moving aside.", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("pocketed it without moving aside", StringComparison.OrdinalIgnoreCase)));
         Assert.Equal(20m - bribeAmount, resolvedDay.CurrentWallet);
         Assert.Equal(-bribeAmount, resolvedDay.WalletDelta);
     }
@@ -139,7 +141,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, resolveResult.JourneyStatus);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("I tried to outrun the rider, but the horse still had to work for it.", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("horse still had to work for it", StringComparison.OrdinalIgnoreCase)));
         Assert.True(resolvedDay.HeatIncrease > 0);
     }
 
@@ -161,7 +163,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, resolveResult.JourneyStatus);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("I spend 1 round(s), but the rider keeps coming.", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("spent 1 round(s), but the rider kept coming", StringComparison.OrdinalIgnoreCase)));
         Assert.Equal(1, resolvedDay.AmmoSpent);
     }
 
