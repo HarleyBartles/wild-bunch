@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using WildBunch.Application.Abstractions;
+using WildBunch.GameContent.Abstractions;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent;

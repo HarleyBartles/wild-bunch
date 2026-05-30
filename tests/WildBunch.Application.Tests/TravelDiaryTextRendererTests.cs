@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Mapping;
+using WildBunch.GameContent.Travel;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -20,12 +21,16 @@ public sealed class TravelDiaryTextRendererTests
             horseStateAfter: HorseTravelState.Healthy,
             entries: new[] { "I found a cache of jerky and trail biscuits and picked up 2 food." });
 
-        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+        var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
 
-        Assert.Equal("I cross open range with the horse moving steady under me.", entries[0]);
-        Assert.Equal("I am down to the last stretch of water in the canteen. My horse feed is gone, so I have to watch the horse more closely.", entries[1]);
-        Assert.Contains("I found a cache of jerky and trail biscuits and picked up 2 food.", entries);
-        Assert.Equal("I keep moving and let the trail stretch ahead.", entries[^1]);
+        Assert.NotNull(rendered.JourneyBeat);
+        Assert.NotNull(rendered.ResourceBeat);
+        Assert.Contains(rendered.JourneyBeat, rendered.Entries);
+        Assert.Contains(rendered.ResourceBeat, rendered.Entries);
+        Assert.Contains("I found a cache of jerky and trail biscuits and picked up 2 food.", rendered.Entries);
+        Assert.True(rendered.SelectedFlavourIds.Count >= 2);
+        Assert.All(rendered.SelectedFlavourIds, id => Assert.StartsWith("diary.", id, StringComparison.Ordinal));
+        Assert.Equal(rendered.Entries[^1], TravelDiaryTextRenderer.RenderStatus(day));
     }
 
     [Fact]
@@ -34,13 +39,11 @@ public sealed class TravelDiaryTextRendererTests
         var day = CreateDay(
             pendingEncounter: JourneyEncounterState.CreateChoiceEncounter("foe", "A hard-eyed rider cuts across my path."));
 
-        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+        var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
 
-        Assert.Equal(2, entries.Count);
-        Assert.Contains("A hard-eyed rider cuts across my path.", entries[0], StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("I can run, fight, or bribe.", entries[0], StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("I keep moving and let the trail stretch ahead.", entries[^1]);
-        Assert.DoesNotContain("you ", entries[0], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(rendered.Entries, entry => entry.Contains("A hard-eyed rider cuts across my path.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I can run, fight, or bribe.", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(rendered.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -50,12 +53,12 @@ public sealed class TravelDiaryTextRendererTests
             status: JourneyStatus.Interrupted,
             encounterResolution: new TravelDiaryEncounterResolutionState("run", "Run", -3, 0m, 0, 0, 1, true));
 
-        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+        var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
 
-        Assert.Contains(entries, entry => entry.Contains("I decided to run for it.", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(entries, entry => entry.Contains("I got away on foot, but it cost me 3 health.", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(entries, entry => entry.Contains("My horse came out of it more exhausted.", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I decided to run for it.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I got away on foot, but it cost me 3 health.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(rendered.Entries, entry => entry.Contains("My horse came out of it more exhausted.", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(rendered.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -65,12 +68,12 @@ public sealed class TravelDiaryTextRendererTests
             status: JourneyStatus.Interrupted,
             encounterResolution: new TravelDiaryEncounterResolutionState("bribe", "Bribe", 0, -5m, 0, 0, 0, false));
 
-        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+        var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
 
-        Assert.Contains(entries, entry => entry.Contains("I decided to bribe the rider.", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(entries, entry => entry.Contains("I pay my way through and keep the dust moving.", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(entries, entry => entry.Contains("I paid $5.00 to make the problem go away.", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        Assert.NotEmpty(rendered.SelectedFlavourIds);
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I decided to bribe the rider.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I paid $5.00 to make the problem go away.", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(rendered.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -84,17 +87,38 @@ public sealed class TravelDiaryTextRendererTests
                 "A second distinct note."
             });
 
-        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+        var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
 
-        Assert.Equal(
-            new[]
-            {
-                "I cross open range with the horse moving steady under me.",
-                "A hard mile is a hard mile.",
-                "A second distinct note.",
-                "I keep moving and let the trail stretch ahead."
-            },
-            entries);
+        Assert.Contains("A hard mile is a hard mile.", rendered.Entries);
+        Assert.Contains("A second distinct note.", rendered.Entries);
+        Assert.Equal(rendered.Entries.Count, rendered.Entries.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public void RenderDayAvoidsRepeatingFlavourIdsAcrossDaysWhenHistoryIsCarried()
+    {
+        var seenFlavourIds = new HashSet<string>(StringComparer.Ordinal);
+        var firstDay = CreateDay(
+            terrain: TrailTerrain.OpenRange,
+            routeWaterSecure: true,
+            currentCanteenCharges: 2,
+            currentFood: 3,
+            currentHorseFeed: 2,
+            entries: new[] { "I rode a quiet mile." });
+        var secondDay = CreateDay(
+            terrain: TrailTerrain.OpenRange,
+            routeWaterSecure: true,
+            currentCanteenCharges: 2,
+            currentFood: 3,
+            currentHorseFeed: 2,
+            entries: new[] { "I rode another quiet mile." });
+
+        var firstRendered = TravelDiaryTextRenderer.RenderDay(firstDay, TravelRulesProfile.Default, seenFlavourIds);
+        var secondRendered = TravelDiaryTextRenderer.RenderDay(secondDay, TravelRulesProfile.Default, seenFlavourIds);
+
+        Assert.NotEmpty(firstRendered.SelectedFlavourIds);
+        Assert.NotEmpty(secondRendered.SelectedFlavourIds);
+        Assert.DoesNotContain(firstRendered.SelectedFlavourIds[0], secondRendered.SelectedFlavourIds);
     }
 
     private static TravelDiaryDayState CreateDay(

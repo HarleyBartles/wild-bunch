@@ -1,6 +1,7 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.GameContent.Abstractions;
 
 namespace WildBunch.Application.Games.Commands;
 

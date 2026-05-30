@@ -1,7 +1,7 @@
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 
-namespace WildBunch.Application.Abstractions;
+namespace WildBunch.GameContent.Abstractions;
 
 public interface INewGameFactory
 {

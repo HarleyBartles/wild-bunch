@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WildBunch.Domain\WildBunch.Domain.csproj" />
+    <ProjectReference Include="..\WildBunch.GameContent\WildBunch.GameContent.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

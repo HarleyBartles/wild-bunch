@@ -16,11 +16,18 @@ public static class TravelDiaryMapper
             return null;
         }
 
-        return new TravelDiaryDto(days.Select(day => ToDto(day, travelRulesProfile)).ToArray());
+        var selectedFlavourIds = new HashSet<string>(StringComparer.Ordinal);
+        return new TravelDiaryDto(days.Select(day => ToDto(day, travelRulesProfile, selectedFlavourIds)).ToArray());
     }
 
-    private static TravelDiaryDayDto ToDto(DomainTravelDiaryDayState day, DomainTravelRulesProfile travelRulesProfile)
-        => new(
+    private static TravelDiaryDayDto ToDto(
+        DomainTravelDiaryDayState day,
+        DomainTravelRulesProfile travelRulesProfile,
+        ISet<string> selectedFlavourIds)
+    {
+        var renderedDay = TravelDiaryTextRenderer.RenderDay(day, travelRulesProfile, selectedFlavourIds);
+
+        return new TravelDiaryDayDto(
             day.DayNumber,
             day.OriginTownName,
             day.DestinationTownName,
@@ -37,8 +44,8 @@ public static class TravelDiaryMapper
             day.PendingEncounter is null ? null : TravelMapper.ToDto(day.PendingEncounter),
             day.EncounterResolution is null ? null : ToDto(day.EncounterResolution),
             day.OpeningNarration,
-            TravelDiaryTextRenderer.RenderJourneyBeat(day),
-            TravelDiaryTextRenderer.RenderResourceBeat(day),
+            renderedDay.JourneyBeat,
+            renderedDay.ResourceBeat,
             day.HealthDelta,
             day.WalletDelta,
             day.FoodDelta,
@@ -57,8 +64,9 @@ public static class TravelDiaryMapper
             day.CurrentCanteenCharges,
             day.CurrentAmmo,
             day.CurrentHeat,
-            TravelDiaryTextRenderer.RenderEntries(day, travelRulesProfile),
+            renderedDay.Entries,
             day.Warnings);
+    }
 
     private static TravelDiaryEncounterResolutionDto ToDto(DomainTravelDiaryEncounterResolutionState resolution)
         => new(

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WildBunch.Application\WildBunch.Application.csproj" />
     <ProjectReference Include="..\..\src\WildBunch.Domain\WildBunch.Domain.csproj" />
+    <ProjectReference Include="..\..\src\WildBunch.GameContent\WildBunch.GameContent.csproj" />
   </ItemGroup>
 
 </Project>

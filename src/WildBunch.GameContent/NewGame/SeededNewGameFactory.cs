@@ -1,9 +1,9 @@
-using WildBunch.Application.Abstractions;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.Abstractions;
 
 namespace WildBunch.GameContent.NewGame;
 

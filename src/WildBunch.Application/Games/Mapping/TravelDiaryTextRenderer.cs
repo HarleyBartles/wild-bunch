@@ -1,45 +1,84 @@
+using WildBunch.GameContent.Travel;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
 using DomainJourneyTrailEvent = WildBunch.Domain.Travel.JourneyTrailEventState;
 using DomainTravelDiaryDayState = WildBunch.Domain.Travel.TravelDiaryDayState;
 using DomainTravelDiaryEncounterResolutionState = WildBunch.Domain.Travel.TravelDiaryEncounterResolutionState;
 using DomainTravelRulesProfile = WildBunch.Domain.Travel.TravelRulesProfile;
 using DomainTrailTerrain = WildBunch.Domain.World.TrailTerrain;
+using DomainWaterFeature = WildBunch.Domain.World.WaterFeature;
 
 namespace WildBunch.Application.Games.Mapping;
 
+public sealed record TravelDiaryRenderedDay(
+    string? JourneyBeat,
+    string? ResourceBeat,
+    IReadOnlyList<string> Entries,
+    IReadOnlyList<string> SelectedFlavourIds);
+
 public static class TravelDiaryTextRenderer
 {
-    public static IReadOnlyList<string> RenderEntries(DomainTravelDiaryDayState day, DomainTravelRulesProfile travelRulesProfile)
+    public static TravelDiaryRenderedDay RenderDay(
+        DomainTravelDiaryDayState day,
+        DomainTravelRulesProfile travelRulesProfile,
+        ISet<string>? selectedFlavourIds = null)
     {
-        var entries = new List<string>();
+        ArgumentNullException.ThrowIfNull(day);
+        ArgumentNullException.ThrowIfNull(travelRulesProfile);
 
-        var journeyBeat = RenderJourneyBeat(day);
+        selectedFlavourIds ??= new HashSet<string>(StringComparer.Ordinal);
+        var daySelectedFlavourIds = new List<string>();
+
+        var journeyBeat = RenderJourneyBeat(day, selectedFlavourIds, daySelectedFlavourIds);
+        var resourceBeat = RenderResourceBeat(day, selectedFlavourIds, daySelectedFlavourIds);
+        var bodyEntries = day.Entries.Count > 0
+            ? day.Entries
+            : RenderFallbackBodyEntries(day, travelRulesProfile, selectedFlavourIds, daySelectedFlavourIds);
+        var statusEntry = RenderStatus(day, selectedFlavourIds, daySelectedFlavourIds);
+
+        var entries = new List<string>();
         if (!string.IsNullOrWhiteSpace(journeyBeat))
         {
             entries.Add(journeyBeat);
         }
 
-        var resourceBeat = RenderResourceBeat(day);
         if (!string.IsNullOrWhiteSpace(resourceBeat))
         {
             entries.Add(resourceBeat);
         }
 
-        if (day.Entries.Count > 0)
+        if (bodyEntries.Count > 0)
         {
-            entries.AddRange(day.Entries);
-        }
-        else
-        {
-            entries.AddRange(RenderFallbackBodyEntries(day, travelRulesProfile));
+            entries.AddRange(bodyEntries);
         }
 
-        entries.Add(RenderStatus(day));
+        if (!string.IsNullOrWhiteSpace(statusEntry))
+        {
+            entries.Add(statusEntry);
+        }
 
-        return DeduplicateInOrder(entries);
+        return new TravelDiaryRenderedDay(
+            journeyBeat,
+            resourceBeat,
+            DeduplicateInOrder(entries),
+            daySelectedFlavourIds);
     }
 
+    public static IReadOnlyList<string> RenderEntries(DomainTravelDiaryDayState day, DomainTravelRulesProfile travelRulesProfile)
+        => RenderDay(day, travelRulesProfile).Entries;
+
     public static string RenderJourneyBeat(DomainTravelDiaryDayState day)
+        => RenderJourneyBeat(day, selectedFlavourIds: new HashSet<string>(StringComparer.Ordinal), daySelectedFlavourIds: null);
+
+    public static string? RenderResourceBeat(DomainTravelDiaryDayState day)
+        => RenderResourceBeat(day, selectedFlavourIds: new HashSet<string>(StringComparer.Ordinal), daySelectedFlavourIds: null);
+
+    public static string RenderStatus(DomainTravelDiaryDayState day)
+        => RenderStatus(day, selectedFlavourIds: new HashSet<string>(StringComparer.Ordinal), daySelectedFlavourIds: null);
+
+    private static string RenderJourneyBeat(
+        DomainTravelDiaryDayState day,
+        ISet<string> selectedFlavourIds,
+        ICollection<string>? daySelectedFlavourIds)
     {
         if (day.PendingEncounter is not null && day.EncounterResolution is null)
         {
@@ -48,100 +87,93 @@ public static class TravelDiaryTextRenderer
 
         if (day.EncounterResolution is not null)
         {
-            return day.EncounterResolution.ChoiceId switch
-            {
-                "run" => "I put the bad moment behind me and keep moving.",
-                "fight" => "I answer hard and keep the trail under my boot.",
-                "bribe" => "I pay my way through and keep the dust moving.",
-                _ => $"I answer by choosing to {day.EncounterResolution.ChoiceLabel.ToLowerInvariant()}."
-            };
+            return SelectText(
+                BuildChoiceOutcomeContext(day, day.EncounterResolution.ChoiceId, beatIndex: 0),
+                selectedFlavourIds,
+                daySelectedFlavourIds);
         }
 
         if (day.TrailEvent is not null)
         {
             return day.TrailEvent.Id switch
             {
-                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyCoinCache => "I find a little luck when I need it most.",
-                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyFoodCache => "I catch the smell of good luck and fresh grub on the wind.",
-                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyWaterSeep => "I follow a faint trace of damp earth and find a hidden seep.",
-                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckWashout => "I have to earn every mile when the trail caves in.",
-                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckFoodLoss => "I keep my temper in check while the dust turns mean.",
-                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckSpookedHorse => "My horse flinches at the wrong sound, and I pay for it the rest of the day.",
-                _ => day.TrailEvent.Message
+                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyCoinCache => SelectText(BuildLuckyContext(day, "coin", beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds),
+                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyFoodCache => SelectText(BuildLuckyContext(day, "food", beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds),
+                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyWaterSeep => SelectText(BuildLuckyContext(day, "water", beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds),
+                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckWashout => SelectText(BuildUnluckyContext(day, "weather", beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds),
+                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckFoodLoss => SelectText(BuildUnluckyContext(day, "food", beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds),
+                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckSpookedHorse => SelectText(BuildHorsePressureContext(day, beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds),
+                _ => SelectText(BuildQuietContext(day, beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds)
             };
         }
 
         if (day.DayNumber % 6 == 0)
         {
-            return "I ride through enough quiet that I can hear leather creak and wind move through the brush.";
+            return SelectText(BuildQuietContext(day, beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds);
         }
 
-        return day.Terrain switch
-        {
-            DomainTrailTerrain.OpenRange => day.EndingTravelMode == WildBunch.Domain.Travel.TravelMode.Mounted
-                ? "I cross open range with the horse moving steady under me."
-                : "I walk the open range and let the horizon keep me honest.",
-            DomainTrailTerrain.Hills => day.EndingTravelMode == WildBunch.Domain.Travel.TravelMode.Mounted
-                ? "I make the horse work for every rise, but the miles still move."
-                : "The hills keep asking for another climb, and I keep answering.",
-            DomainTrailTerrain.Badlands => "I keep following the road through hard, dry badlands.",
-            DomainTrailTerrain.Mountains => "I keep picking my way upward as the trail climbs hard.",
-            _ => "I keep moving and let the road tell me what kind of day it is."
-        };
+        return SelectText(BuildOpeningContext(day, beatIndex: 0), selectedFlavourIds, daySelectedFlavourIds);
     }
 
-    public static string? RenderResourceBeat(DomainTravelDiaryDayState day)
+    private static string? RenderResourceBeat(
+        DomainTravelDiaryDayState day,
+        ISet<string> selectedFlavourIds,
+        ICollection<string>? daySelectedFlavourIds)
     {
-        var pieces = new List<string>();
-
         if (day.Status == WildBunch.Domain.Travel.JourneyStatus.Completed && day.CanteenChargeDelta > 0)
         {
-            pieces.Add("Back in town, I refill the canteen to the brim.");
+            return "Back in town, I refill the canteen to the brim.";
         }
-        else if (!day.RouteWaterSecure)
+
+        if (!day.RouteWaterSecure)
         {
             if (day.CurrentCanteenCharges == 0)
             {
-                pieces.Add("My canteen is dry, so every mile starts to matter.");
+                return SelectText(BuildWaterScarcityContext(day, beatIndex: 1), selectedFlavourIds, daySelectedFlavourIds);
             }
-            else if (day.CurrentCanteenCharges <= day.CanteenChargesPerDay)
+
+            if (day.CurrentCanteenCharges <= day.CanteenChargesPerDay)
             {
-                pieces.Add("I am down to the last stretch of water in the canteen.");
+                return SelectText(BuildWaterScarcityContext(day, beatIndex: 1), selectedFlavourIds, daySelectedFlavourIds);
             }
         }
 
-        if (day.CurrentFood == 0)
+        if (day.CurrentFood == 0 || day.CurrentFood == 1)
         {
-            pieces.Add("My food is gone, and the trail has turned mean.");
-        }
-        else if (day.CurrentFood == 1)
-        {
-            pieces.Add("My food is down to the last meal.");
+            return SelectText(BuildResourceScarcityContext(day, beatIndex: 1), selectedFlavourIds, daySelectedFlavourIds);
         }
 
-        if (day.CurrentHorseFeed == 0 && day.HorseStateAfter is not null)
+        if (day.CurrentHorseFeed <= 1 && day.HorseStateAfter is not null)
         {
-            pieces.Add("My horse feed is gone, so I have to watch the horse more closely.");
-        }
-        else if (day.CurrentHorseFeed == 1 && day.HorseStateAfter is not null)
-        {
-            pieces.Add("I am down to the last handful of horse feed.");
+            return SelectText(BuildHorsePressureContext(day, beatIndex: 1), selectedFlavourIds, daySelectedFlavourIds);
         }
 
-        return pieces.Count == 0 ? null : string.Join(" ", pieces);
+        if (day.RouteWaterSecure)
+        {
+            return SelectText(BuildWaterReliefContext(day, beatIndex: 1), selectedFlavourIds, daySelectedFlavourIds);
+        }
+
+        return SelectText(BuildQuietContext(day, beatIndex: 1), selectedFlavourIds, daySelectedFlavourIds);
     }
 
-    public static string RenderStatus(DomainTravelDiaryDayState day)
+    private static string RenderStatus(
+        DomainTravelDiaryDayState day,
+        ISet<string> selectedFlavourIds,
+        ICollection<string>? daySelectedFlavourIds)
         => day.Status switch
         {
+            WildBunch.Domain.Travel.JourneyStatus.Completed => SelectText(BuildArrivalContext(day, beatIndex: 2), selectedFlavourIds, daySelectedFlavourIds),
             WildBunch.Domain.Travel.JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
             WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
-            WildBunch.Domain.Travel.JourneyStatus.Completed => $"I made it to {day.DestinationTownName}.",
             WildBunch.Domain.Travel.JourneyStatus.Failed => "I could not finish the trail before it gave out.",
             _ => "I am still on the trail."
         };
 
-    private static IReadOnlyList<string> RenderFallbackBodyEntries(DomainTravelDiaryDayState day, DomainTravelRulesProfile travelRulesProfile)
+    private static IReadOnlyList<string> RenderFallbackBodyEntries(
+        DomainTravelDiaryDayState day,
+        DomainTravelRulesProfile travelRulesProfile,
+        ISet<string> selectedFlavourIds,
+        ICollection<string>? daySelectedFlavourIds)
     {
         var entries = new List<string>();
 
@@ -166,7 +198,7 @@ public static class TravelDiaryTextRenderer
 
         if (day.EncounterResolution is not null)
         {
-            entries.Add(RenderEncounterDecision(day.EncounterResolution));
+            entries.Add(RenderEncounterDecision(day, selectedFlavourIds, daySelectedFlavourIds));
             var outcomeEntry = RenderEncounterOutcome(day);
             if (outcomeEntry.Length != 0)
             {
@@ -238,13 +270,16 @@ public static class TravelDiaryTextRenderer
         return $"{encounter.Message} {choiceText}";
     }
 
-    private static string RenderEncounterDecision(DomainTravelDiaryEncounterResolutionState resolution)
-        => resolution.ChoiceId switch
+    private static string RenderEncounterDecision(
+        DomainTravelDiaryDayState day,
+        ISet<string> selectedFlavourIds,
+        ICollection<string>? daySelectedFlavourIds)
+        => day.EncounterResolution!.ChoiceId switch
         {
             "run" => "I decided to run for it.",
             "fight" => "I decided to stand and fight.",
             "bribe" => "I decided to bribe the rider.",
-            _ => $"I chose to {resolution.ChoiceLabel.ToLowerInvariant()}."
+            _ => $"I chose to {day.EncounterResolution.ChoiceLabel.ToLowerInvariant()}."
         };
 
     private static string RenderEncounterOutcome(DomainTravelDiaryDayState day)
@@ -287,6 +322,87 @@ public static class TravelDiaryTextRenderer
 
         return string.Join(" ", pieces);
     }
+
+    private static string SelectText(
+        TravelDiaryFlavourContext context,
+        ISet<string> selectedFlavourIds,
+        ICollection<string>? daySelectedFlavourIds)
+    {
+        var beforeCount = selectedFlavourIds.Count;
+        var entry = TravelDiaryFlavourCatalog.Select(context, selectedFlavourIds);
+        if (selectedFlavourIds.Count > beforeCount)
+        {
+            daySelectedFlavourIds?.Add(entry.Id);
+        }
+
+        return entry.TextTemplate;
+    }
+
+    private static TravelDiaryFlavourContext BuildOpeningContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.DayOpening, beatIndex, preferredTags: [DescribeTerrainTag(day.Terrain)]);
+
+    private static TravelDiaryFlavourContext BuildQuietContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.QuietTexture, beatIndex, preferredTags: [DescribeTerrainTag(day.Terrain), "quiet"]);
+
+    private static TravelDiaryFlavourContext BuildLuckyContext(DomainTravelDiaryDayState day, string tag, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.LuckyEvent, beatIndex, preferredTags: [tag, "lucky"]);
+
+    private static TravelDiaryFlavourContext BuildUnluckyContext(DomainTravelDiaryDayState day, string tag, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.UnluckyEvent, beatIndex, preferredTags: [tag, "unlucky"]);
+
+    private static TravelDiaryFlavourContext BuildHorsePressureContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.HorsePressure, beatIndex, preferredTags: ["horse", "pressure"]);
+
+    private static TravelDiaryFlavourContext BuildWaterScarcityContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.WaterScarcity, beatIndex, preferredTags: ["water", "dry"]);
+
+    private static TravelDiaryFlavourContext BuildWaterReliefContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.WaterRelief, beatIndex, preferredTags: ["water", "relief"]);
+
+    private static TravelDiaryFlavourContext BuildResourceScarcityContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.ResourceScarcity, beatIndex, preferredTags: ["resource", "food"]);
+
+    private static TravelDiaryFlavourContext BuildChoiceOutcomeContext(DomainTravelDiaryDayState day, string choiceId, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.ChoiceOutcome, beatIndex, choiceId: choiceId, preferredTags: [choiceId]);
+
+    private static TravelDiaryFlavourContext BuildArrivalContext(DomainTravelDiaryDayState day, int beatIndex)
+        => BuildBaseContext(day, TravelDiaryFlavourCategory.ArrivalCompletion, beatIndex, preferredTags: ["arrival", "completion"]);
+
+    private static TravelDiaryFlavourContext BuildBaseContext(
+        DomainTravelDiaryDayState day,
+        TravelDiaryFlavourCategory category,
+        int beatIndex,
+        string? choiceId = null,
+        IReadOnlyCollection<string>? preferredTags = null)
+        => new(
+            category,
+            JourneyKey: $"{day.OriginTownName}->{day.DestinationTownName}|{day.StartingTravelMode}|{day.StartingRideDayDistance:0.##}|{day.StartingDaysRemaining}",
+            DayNumber: day.DayNumber,
+            BeatIndex: beatIndex,
+            Terrain: day.Terrain,
+            WaterFeature: day.RouteWaterSecure ? DomainWaterFeature.Creek : DomainWaterFeature.None,
+            TravelMode: day.EndingTravelMode,
+            HasHorse: day.HorseStateAfter is not null,
+            RouteWaterSecure: day.RouteWaterSecure,
+            CurrentFood: day.CurrentFood,
+            CurrentHorseFeed: day.CurrentHorseFeed,
+            CurrentCanteenCharges: day.CurrentCanteenCharges,
+            CanteenChargesPerDay: day.CanteenChargesPerDay,
+            TrailEventId: day.TrailEvent?.Id.ToString(),
+            EncounterKind: day.PendingEncounter?.Kind,
+            ChoiceId: choiceId,
+            JourneyStatus: day.Status,
+            PreferredTags: preferredTags);
+
+    private static string DescribeTerrainTag(DomainTrailTerrain terrain)
+        => terrain switch
+        {
+            DomainTrailTerrain.OpenRange => "open-range",
+            DomainTrailTerrain.Hills => "hills",
+            DomainTrailTerrain.Badlands => "badlands",
+            DomainTrailTerrain.Mountains => "mountains",
+            _ => "trail"
+        };
 
     private static IReadOnlyList<string> DeduplicateInOrder(IEnumerable<string> entries)
     {

@@ -59,8 +59,10 @@ public sealed class TravelDiaryMapperTests
 
         Assert.NotNull(dto);
         var mappedDay = Assert.Single(dto!.Days);
-        Assert.Equal("I cross open range with the horse moving steady under me.", mappedDay.JourneyBeat);
-        Assert.Null(mappedDay.ResourceBeat);
-        Assert.Equal(new[] { "I cross open range with the horse moving steady under me.", "I found a cache of jerky and trail biscuits and picked up 2 food.", "I keep moving and let the trail stretch ahead." }, mappedDay.Entries);
+        Assert.NotNull(mappedDay.JourneyBeat);
+        Assert.NotNull(mappedDay.ResourceBeat);
+        Assert.Contains(mappedDay.JourneyBeat, mappedDay.Entries);
+        Assert.Contains(mappedDay.ResourceBeat, mappedDay.Entries);
+        Assert.Contains("I found a cache of jerky and trail biscuits and picked up 2 food.", mappedDay.Entries);
     }
 }
