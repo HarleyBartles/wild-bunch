@@ -281,10 +281,12 @@ public sealed class GameApiTests
         using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = ScenarioSeedCatalog.HighRiskFoeInterruptRoute;
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        scenario.AssertCreatedSession(createdSession!);
 
         var travelToRedMesaResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
@@ -402,6 +404,8 @@ public sealed class GameApiTests
         Assert.Equal("redmesa", resumeAdvance.CurrentSession.Player.CurrentTownId);
         Assert.Equal(redMesaArrivalDay + 2, resumeAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
+
+        scenario.AssertHighRiskFoeInterruptRoute(createdSession!, dryForkTravel!, blockedAdvance!, resolved!, resumeAdvance!);
     }
 
     [Fact]
