@@ -69,6 +69,7 @@ internal static partial class TravelDayPlanGenerator
             context.PursuitHeatBand,
             context.WalletBand,
             string.Join(",", context.RecentTrailEventKinds),
+            string.Join(",", context.RecentTrailEventIds),
             string.Join(",", context.RecentEncounterCategories));
 
     private static string ComposeSeed(string seed, string suffix)
@@ -431,6 +432,7 @@ internal static partial class TravelDayPlanGenerator
 
     private static TravelDayEncounterState CreateUnluckyEncounter(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, int dayNumber, int slotIndex, string seed)
     {
+        var delayEventRecentlyOccurred = context.RecentTrailEventIds.Any(id => id is JourneyTrailEventId.BadLuckWashout or JourneyTrailEventId.BadLuckFoodLoss);
         var choice = context.Risk == TrailRisk.Moderate && context.WaterFeature == WaterFeature.Spring
             ? 0
             : travelRulesProfile.Difficulty == TravelDifficulty.Hard && context.Terrain == TrailTerrain.Badlands && context.WaterFeature == WaterFeature.None && context.Risk != TrailRisk.High
@@ -441,9 +443,9 @@ internal static partial class TravelDayPlanGenerator
                         ? 2
                         : (int)(Roll(seed, "unlucky") % 4);
 
-        return choice switch
+        var options = new List<TravelDayEncounterState>
         {
-            0 => new TravelDayEncounterState(
+            new(
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Washed-out trail",
@@ -456,7 +458,7 @@ internal static partial class TravelDayPlanGenerator
                     heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
                 null,
                 null),
-            1 => new TravelDayEncounterState(
+            new(
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Dust-choked outfit",
@@ -472,7 +474,7 @@ internal static partial class TravelDayPlanGenerator
                     heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
                 null,
                 null),
-            2 => new TravelDayEncounterState(
+            new(
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Spooked horse",
@@ -485,7 +487,7 @@ internal static partial class TravelDayPlanGenerator
                     heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
                 null,
                 null),
-            _ => new TravelDayEncounterState(
+            new(
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Hard miles",
@@ -499,6 +501,15 @@ internal static partial class TravelDayPlanGenerator
                 null,
                 null)
         };
+
+        var allowedOptions = delayEventRecentlyOccurred
+            ? options.Where(option => option.TrailEvent?.DelayDays == 0).ToArray()
+            : options.ToArray();
+        var selectedIndex = allowedOptions.Length == 0
+            ? 0
+            : (int)(Roll(seed, "unlucky") % (ulong)allowedOptions.Length);
+
+        return allowedOptions[selectedIndex];
     }
 
     private static TravelDayEncounterState CreateEnvironmentalEncounter(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, int dayNumber, int slotIndex, string seed)

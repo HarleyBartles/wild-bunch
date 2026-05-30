@@ -143,7 +143,7 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(1, result.Journey.RemainingDays);
-        Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
+        Assert.Equal(new HorseTravelState(1, 0, 3), session.Player.Inventory.GetHorseState());
         Assert.Contains("went lame", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -235,6 +235,23 @@ public sealed class TravelResolverTests
         Assert.True(session.Journey.RemainingDays >= 2);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
+
+        var secondResult = session.AdvanceJourneyDay();
+
+        Assert.True(secondResult.Success);
+        Assert.Equal(JourneyStatus.Active, secondResult.Status);
+        Assert.NotNull(secondResult.Journey);
+        Assert.True(secondResult.TrailEvent is null || secondResult.TrailEvent.DelayDays == 0);
+        Assert.NotEqual(JourneyTrailEventId.BadLuckWashout, secondResult.TrailEvent?.Id);
+
+        var safetyLimit = 8;
+        while (session.Journey is not null && session.Journey.Status == JourneyStatus.Active && safetyLimit-- > 0)
+        {
+            session.AdvanceJourneyDay();
+        }
+
+        Assert.NotNull(session.Journey);
+        Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
     }
 
     [Fact]
@@ -275,7 +292,7 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanTriggerAnAdditionalBadLuckFoodLossEventOnHardBadlandsRoutes()
+    public void AdvanceJourneyDayCanTriggerAnAdditionalBadLuckSpookedHorseEventOnHardBadlandsRoutes()
     {
         var session = CreateHardBadLuckSession();
         var resolver = new TravelResolver();
@@ -287,10 +304,11 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.NotNull(result.TrailEvent);
         Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
-        Assert.Equal(JourneyTrailEventId.BadLuckFoodLoss, result.TrailEvent.Id);
-        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(0, session.Player.Inventory.GetCanteenState()!.Charges);
-        Assert.Equal(2, session.Journey!.DelayDays);
+        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent.Id);
+        Assert.Equal(0, result.TrailEvent.DelayDays);
+        Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(1, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(0, session.Journey!.DelayDays);
     }
 
     [Fact]
@@ -763,7 +781,7 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var firstOffer = 5m;
+        var firstOffer = Math.Max(1m, decimal.Round(session.Journey!.PendingEncounter!.FoeProfile!.MinimumBribe * 0.5m, 0, MidpointRounding.AwayFromZero));
         var secondOffer = session.Journey!.PendingEncounter!.FoeProfile!.MinimumBribe - firstOffer;
 
         var firstResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: firstOffer, forcedRoll: 0UL);

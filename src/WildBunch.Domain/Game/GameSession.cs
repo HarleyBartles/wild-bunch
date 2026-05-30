@@ -581,6 +581,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             .Select(kind => kind!.Value)
             .TakeLast(3)
             .ToArray();
+        var recentTrailEventIds = _travelDiaryDays
+            .Select(day => day.TrailEvent?.Id)
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .TakeLast(3)
+            .ToArray();
         var recentEncounterCategories = _travelDiaryDays
             .Select(day => day.PendingEncounter?.Kind switch
             {
@@ -615,6 +621,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             CreateHeatBand(PursuitState.Heat),
             CreateWalletBand(Player.Wallet.Cash, TravelRules),
             recentTrailEventKinds,
+            recentTrailEventIds,
             recentEncounterCategories);
     }
 

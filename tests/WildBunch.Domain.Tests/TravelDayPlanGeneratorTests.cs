@@ -193,6 +193,37 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
+    public void GenerateKeepsFoeSelectionAheadOfUnluckySelectionOnComparableHighRiskRoutes()
+    {
+        var session = CreateHighRiskEncounterSession();
+        var foeCount = 0;
+        var unluckyCount = 0;
+
+        foreach (var seed in Enumerable.Range(1, 64).Select(index => $"seed-foe-balance-{index}"))
+        {
+            var context = session.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-balance") with
+            {
+                RecentEncounterCategories = new[] { TravelDayEncounterCategory.Npc }
+            };
+
+            var plan = TravelDayPlanGenerator.Generate(context);
+            var category = plan.Encounters[0].Category;
+
+            if (category == TravelDayEncounterCategory.Foe)
+            {
+                foeCount++;
+            }
+
+            if (category == TravelDayEncounterCategory.Unlucky)
+            {
+                unluckyCount++;
+            }
+        }
+
+        Assert.True(foeCount > unluckyCount);
+    }
+
+    [Fact]
     public void GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse()
     {
         var seeds = Enumerable.Range(1, 12).Select(index => $"seed-no-horse-{index}");
@@ -241,6 +272,7 @@ public sealed class TravelDayPlanGeneratorTests
             PursuitHeatBand.Calm,
             WalletBand.Steady,
             Array.Empty<JourneyTrailEventKind>(),
+            Array.Empty<JourneyTrailEventId>(),
             Array.Empty<TravelDayEncounterCategory>());
 
     private static GameSession CreatePressureSession(
