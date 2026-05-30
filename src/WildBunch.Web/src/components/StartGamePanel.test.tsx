@@ -6,6 +6,7 @@ import { StartGamePanel } from "./StartGamePanel";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
 import {
   createCanonicalSeedState,
+  decodeGameSetupSeed,
   encodeGameSetupSeed,
   withDifficulty,
   withLoadoutProfile,
@@ -218,7 +219,7 @@ describe("StartGamePanel", () => {
 
   it("randomizes the seed without losing the selected v1 options", async () => {
     const user = userEvent.setup();
-    renderPanel();
+    const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
     await user.selectOptions(screen.getByLabelText(/difficulty/i), "1");
@@ -235,5 +236,21 @@ describe("StartGamePanel", () => {
       expect(screen.getByLabelText(/start with horse/i)).not.toBeChecked();
       expect(screen.getByLabelText(/loadout profile/i)).toHaveValue("1");
     });
+
+    await user.type(screen.getByLabelText(/player name/i), "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /start new game/i }));
+
+    await waitFor(() => {
+      expect(onStartGame).toHaveBeenCalledTimes(1);
+    });
+
+    const [request] = onStartGame.mock.calls[0];
+    const decoded = await decodeGameSetupSeed(request.seedCode);
+
+    expect(request.seedCode).toBe((seedInput as HTMLInputElement).value);
+    expect(decoded.difficulty).toBe(1);
+    expect(decoded.startWithHorse).toBe(false);
+    expect(decoded.loadoutProfile).toBe(1);
+    expect(decoded.entropy).toBe(1234n);
   });
 });

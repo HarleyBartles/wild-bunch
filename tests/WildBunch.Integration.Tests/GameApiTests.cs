@@ -142,7 +142,8 @@ public sealed class GameApiTests
         Assert.Equal(2, turnResult.Journey.ExpectedDays);
         Assert.Equal(0, turnResult.Journey.DelayDays);
         Assert.Equal("pinecross", turnResult.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
+        Assert.Equal(2, turnResult.CurrentSession.Clock.Day);
+        Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.NotNull(turnResult.CurrentSession.Journey);
         Assert.Equal(1, turnResult.CurrentSession.Journey!.RemainingDays);
         Assert.Equal(1m, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
@@ -164,7 +165,8 @@ public sealed class GameApiTests
         Assert.True(firstAdvance!.Success);
         Assert.Equal(JourneyStatus.Completed, firstAdvance.JourneyStatus);
         Assert.Equal("holloway", firstAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(2, firstAdvance.CurrentSession.Clock.Turn);
+        Assert.Equal(3, firstAdvance.CurrentSession.Clock.Day);
+        Assert.Equal(0, firstAdvance.CurrentSession.Clock.Turn);
         Assert.Null(firstAdvance.CurrentSession.Journey);
         Assert.Equal(startingFood - 2, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
@@ -240,7 +242,8 @@ public sealed class GameApiTests
         Assert.NotNull(blockedAdvance);
         Assert.False(blockedAdvance!.Success);
         Assert.Equal(JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
-        Assert.Equal(3, blockedAdvance.CurrentSession.Clock.Turn);
+        Assert.Equal(4, blockedAdvance.CurrentSession.Clock.Day);
+        Assert.Equal(0, blockedAdvance.CurrentSession.Clock.Turn);
 
         var resolveResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel/encounter/resolve",
@@ -257,6 +260,8 @@ public sealed class GameApiTests
         Assert.Null(resolved.CurrentSession.Journey!.PendingEncounter);
         Assert.Equal(0, resolved.CurrentSession.Journey.DelayDays);
         Assert.Equal(TravelMode.Mounted, resolved.CurrentSession.Journey.TravelMode);
+        Assert.Equal(4, resolved.CurrentSession.Clock.Day);
+        Assert.Equal(0, resolved.CurrentSession.Clock.Turn);
 
         var resumeAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -267,6 +272,8 @@ public sealed class GameApiTests
         Assert.NotNull(resumeAdvance);
         Assert.NotNull(resumeAdvance!.CurrentSession.Journey);
         Assert.Equal("redmesa", resumeAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(5, resumeAdvance.CurrentSession.Clock.Day);
+        Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
     }
 
     [Fact]

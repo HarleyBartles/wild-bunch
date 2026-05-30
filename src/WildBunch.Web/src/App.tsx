@@ -15,20 +15,18 @@ import type {
   GameTurnResultDto,
   JournalDto,
   TownStoreOffersDto,
-  TrailDto,
-  TownDto,
 } from "./api/types";
 import { AvailableActionKind } from "./api/types";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { StartGamePanel } from "./components/StartGamePanel";
 import { TravelPanel } from "./components/TravelPanel";
+import { TravelRoutesPanel } from "./components/TravelRoutesPanel";
 import { StoreOffersPanel } from "./components/StoreOffersPanel";
 import {
   formatActionKind,
   formatClueKind,
   formatGameStatus,
   formatLogKind,
-  formatRisk,
   formatServices,
   formatSuspectStatus,
 } from "./ui/formatters";
@@ -37,43 +35,6 @@ const storageKey = "wild-bunch.current-game-id";
 
 type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "buying";
 type CockpitMode = "home" | "travel";
-
-function townById(towns: TownDto[], townId: string) {
-  return towns.find((town) => town.id === townId);
-}
-
-function connectedDestinations(session: GameSessionDto) {
-  const currentTownId = session.player.currentTownId;
-  const townMap = new Map(session.world.towns.map((town) => [town.id, town]));
-  const destinations = new Map<
-    string,
-    { town: TownDto; trails: TrailDto[] }
-  >();
-
-  for (const trail of session.world.trails) {
-    if (trail.fromTownId !== currentTownId && trail.toTownId !== currentTownId) {
-      continue;
-    }
-
-    const destinationTownId = trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
-    const town = townMap.get(destinationTownId);
-    if (!town) {
-      continue;
-    }
-
-    const entry = destinations.get(destinationTownId);
-    if (entry) {
-      entry.trails.push(trail);
-      continue;
-    }
-
-    destinations.set(destinationTownId, { town, trails: [trail] });
-  }
-
-  return Array.from(destinations.values()).sort((left, right) =>
-    left.town.name.localeCompare(right.town.name),
-  );
-}
 
 function actionIsWantedPosters(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.ReadWantedPosters;
@@ -97,9 +58,8 @@ export default function App() {
       return null;
     }
 
-    return townById(session.world.towns, session.player.currentTownId) ?? null;
+    return session.world.towns.find((town) => town.id === session.player.currentTownId) ?? null;
   }, [session]);
-  const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
 
   useEffect(() => {
@@ -477,36 +437,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="panel">
-          <div className="panel-head">
-            <h2>Travel routes</h2>
-            <span className="panel-subtitle">{destinations.length} connected</span>
-          </div>
-          <div className="stack">
-            {destinations.length > 0 ? (
-              destinations.map(({ town, trails }) => (
-                <button
-                  key={town.id}
-                  type="button"
-                  className="destination-card"
-                  onClick={() => handleTravel(town.id)}
-                  disabled={!gameId || loading}
-                >
-                  <div>
-                    <strong>{town.name}</strong>
-                    <p>{town.id}</p>
-                  </div>
-                  <div className="destination-meta">
-                    <span>{trails.length} trail{trails.length === 1 ? "" : "s"}</span>
-                    <span>{trails.map((trail) => formatRisk(trail.risk)).join(", ")}</span>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <p className="muted">Travel destinations derive from the current town and world trails.</p>
-            )}
-          </div>
-        </section>
+        <TravelRoutesPanel gameId={gameId ?? session?.id ?? null} session={session} busy={loading} onTravel={handleTravel} />
 
         <section className="panel panel--wide">
           <div className="panel-head">

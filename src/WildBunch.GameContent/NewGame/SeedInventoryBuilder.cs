@@ -12,63 +12,53 @@ public static class SeedInventoryBuilder
     {
         travelRulesProfile ??= TravelRulesProfile.Default;
 
-        return new Inventory(new[]
+        return CreateStartingLoadout(travelRulesProfile, GameSetupOptionsV1.Default);
+    }
+
+    internal static Inventory CreateStartingLoadout(TravelRulesProfile travelRulesProfile, GameSetupOptionsV1 options)
+    {
+        ArgumentNullException.ThrowIfNull(travelRulesProfile);
+        ArgumentNullException.ThrowIfNull(options);
+
+        var items = new List<InventoryItem>
         {
-            new InventoryItem(ItemKind.Food, 4),
-            new InventoryItem(ItemKind.HorseFeed, 3),
-            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(travelRulesProfile.CanteenCapacity)),
-            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
-            new InventoryItem(ItemKind.Saddle, 1),
-            new InventoryItem(ItemKind.Knife, 1),
-            new InventoryItem(ItemKind.Revolver, 1),
-            new InventoryItem(ItemKind.RevolverAmmo, 6)
-        });
+            new(ItemKind.Food, options.LoadoutProfile switch
+            {
+                StartingLoadoutProfile.Light => 3,
+                StartingLoadoutProfile.Stocked => 6,
+                _ => 4
+            }),
+            new(ItemKind.HorseFeed, options.LoadoutProfile switch
+            {
+                StartingLoadoutProfile.Light => 2,
+                StartingLoadoutProfile.Stocked => 4,
+                _ => 3
+            }),
+            new(ItemKind.Canteen, 1, canteenState: CanteenState.Full(travelRulesProfile.CanteenCapacity))
+        };
+
+        if (options.StartWithHorse)
+        {
+            items.Add(new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy));
+            items.Add(new InventoryItem(ItemKind.Saddle, 1));
+        }
+
+        items.Add(new InventoryItem(ItemKind.Knife, 1));
+        items.Add(new InventoryItem(ItemKind.Revolver, 1));
+        items.Add(new InventoryItem(ItemKind.RevolverAmmo, options.LoadoutProfile switch
+        {
+            StartingLoadoutProfile.Light => 4,
+            StartingLoadoutProfile.Stocked => 8,
+            _ => 6
+        }));
+
+        return new Inventory(items);
     }
 
     internal static Inventory CreateStartingLoadout(string seedCode, TravelRulesProfile travelRulesProfile, GameSetupOptionsV1 options)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
-        ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        ArgumentNullException.ThrowIfNull(options);
-
-        var horseFeed = options.LoadoutProfile switch
-        {
-            StartingLoadoutProfile.Light => 2,
-            StartingLoadoutProfile.Stocked => 4,
-            _ => 3
-        };
-
-        var food = options.LoadoutProfile switch
-        {
-            StartingLoadoutProfile.Light => 3,
-            StartingLoadoutProfile.Stocked => 6,
-            _ => 4
-        };
-
-        var ammo = options.LoadoutProfile switch
-        {
-            StartingLoadoutProfile.Light => 4,
-            StartingLoadoutProfile.Stocked => 8,
-            _ => 6
-        };
-
-        var items = new List<InventoryItem>
-        {
-            new(ItemKind.Food, food),
-            new(ItemKind.HorseFeed, horseFeed),
-            new(ItemKind.Canteen, 1, canteenState: CanteenState.Full(travelRulesProfile.CanteenCapacity)),
-            new(ItemKind.Knife, 1),
-            new(ItemKind.Revolver, 1),
-            new(ItemKind.RevolverAmmo, ammo)
-        };
-
-        if (options.StartWithHorse)
-        {
-            items.Insert(3, new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy));
-            items.Insert(4, new InventoryItem(ItemKind.Saddle, 1));
-        }
-
-        return new Inventory(items);
+        return CreateStartingLoadout(travelRulesProfile, options);
     }
 
     internal static Wallet CreateStartingWallet(string seedCode, TravelDifficulty difficulty, GameSetupOptionsV1 options)

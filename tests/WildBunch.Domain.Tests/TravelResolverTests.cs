@@ -108,7 +108,8 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(result.Journey);
         Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(1, session.Journey!.RemainingDays);
@@ -200,7 +201,8 @@ public sealed class TravelResolverTests
         Assert.Equal(28m, session.Player.Wallet.Cash);
         Assert.Equal(0, session.Journey!.DelayDays);
         Assert.Equal(1, session.Journey.RemainingDays);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -224,7 +226,8 @@ public sealed class TravelResolverTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.True(session.Journey!.DelayDays >= 1);
         Assert.True(session.Journey.RemainingDays >= 2);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -428,8 +431,8 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Completed, secondDay.Status);
         Assert.Null(session.Journey);
         Assert.Equal(new TownId("holloway"), session.Player.CurrentTownId);
-        Assert.Equal(1, session.Clock.Day);
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(3, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(10, session.Player.Inventory.GetCanteenState()!.Charges);
@@ -454,7 +457,8 @@ public sealed class TravelResolverTests
         Assert.Equal("foe", session.Journey.PendingEncounter!.Kind);
         Assert.Equal(3, session.Journey.PendingEncounter.Choices.Count);
         Assert.Equal("run", session.Journey.PendingEncounter.Choices[0].Id);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
     }
 
@@ -472,7 +476,8 @@ public sealed class TravelResolverTests
         Assert.False(result.Success);
         Assert.Equal(JourneyStatus.Interrupted, result.Status);
         Assert.Equal("Resolve the pending encounter before you continue on the trail.", result.Message);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(1, session.Journey!.DaysTravelled);
     }
 
@@ -500,7 +505,8 @@ public sealed class TravelResolverTests
         Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
         Assert.Equal(100, session.Player.Health);
         Assert.Equal(4, session.PursuitState.Heat);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -522,6 +528,8 @@ public sealed class TravelResolverTests
         Assert.Equal(5, session.PursuitState.Heat);
         Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
         Assert.Equal(100 - session.TravelRules.EncounterRunFootHealthLoss, session.Player.Health);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -544,6 +552,8 @@ public sealed class TravelResolverTests
         Assert.Equal(remainingDaysBeforeRun, session.Journey.RemainingDays);
         Assert.Equal(0, session.Journey.DelayDays);
         Assert.Equal(new HorseTravelState(1, 0, 3), session.Player.Inventory.GetHorseState());
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -565,6 +575,8 @@ public sealed class TravelResolverTests
         Assert.Equal(4, session.PursuitState.Heat);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -585,6 +597,8 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -604,6 +618,8 @@ public sealed class TravelResolverTests
         Assert.Equal(5m, session.Player.Wallet.Cash);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
@@ -624,6 +640,8 @@ public sealed class TravelResolverTests
         Assert.Equal(3m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Journey!.PendingEncounter);
         Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
     }
 
     private static GameSession CreateMountedSession(int withHorseFeed = 2)

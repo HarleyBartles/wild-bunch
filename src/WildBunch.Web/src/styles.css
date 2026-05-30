@@ -273,6 +273,17 @@ h1 {
   color: var(--text);
 }
 
+.destination-card__body {
+  display: grid;
+  gap: 4px;
+}
+
+.destination-route {
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
 .destination-meta {
   display: grid;
   justify-items: end;

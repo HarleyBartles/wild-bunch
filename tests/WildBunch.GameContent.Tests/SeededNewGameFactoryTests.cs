@@ -2,6 +2,7 @@ using WildBunch.GameContent.NewGame;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 
 namespace WildBunch.GameContent.Tests;
 
@@ -47,5 +48,24 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
         Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 && suspect.Profile.IdentifyingFacts.Count > 0);
         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Profile.IdentifyingFacts.Any(fact => fact.Description == session.CaseFile.OpeningLead.Description));
+    }
+
+    [Fact]
+    public void RandomizedNoHorseLightLoadoutSeedCreatesNoHorseOrSaddle()
+    {
+        var options = new GameSetupOptionsV1(false, StartingLoadoutProfile.Light);
+        var seed = GameSetupSeedCodec.GenerateRandom(options, TravelDifficulty.Easy);
+        var seedCode = GameSetupSeedCodec.Encode(seed);
+        var factory = new SeededNewGameFactory();
+
+        var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedCode);
+
+        Assert.Equal(TravelDifficulty.Easy, session.TravelDifficulty);
+        Assert.Null(session.Player.Inventory.GetHorseState());
+        Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
+        Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
+        Assert.Equal(3, session.Player.Inventory.GetQuantity(ItemKind.Food));
+        Assert.Equal(2, session.Player.Inventory.GetQuantity(ItemKind.HorseFeed));
+        Assert.Equal(4, session.Player.Inventory.GetQuantity(ItemKind.RevolverAmmo));
     }
 }

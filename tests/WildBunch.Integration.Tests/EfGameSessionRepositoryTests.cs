@@ -90,7 +90,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(new TownId("dustvale"), reloaded!.Player.CurrentTownId);
         Assert.Equal(25m, reloaded.Player.Wallet.Cash);
         Assert.True(new DomainInventoryCapabilityResolver().Resolve(reloaded.Player.Inventory).MountedTravelAvailable);
-        Assert.Equal(1, reloaded.Clock.Turn);
+        Assert.Equal(2, reloaded.Clock.Day);
+        Assert.Equal(0, reloaded.Clock.Turn);
         Assert.Equal(2, reloaded.PursuitState.Heat);
         Assert.NotNull(reloaded.Journey);
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
@@ -161,7 +162,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded.Journey);
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
         Assert.Equal(0, reloaded.Journey.DelayDays);
-        Assert.Equal(1, reloaded.Clock.Turn);
+        Assert.Equal(2, reloaded.Clock.Day);
+        Assert.Equal(0, reloaded.Clock.Turn);
     }
 
     [Fact]

@@ -642,7 +642,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.RecalculatePacing(TravelMode.Foot);
         }
 
-        Clock.Advance();
+        Clock.AdvanceTravelDay();
         var progress = Journey.AdvanceOneDay();
         PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
 

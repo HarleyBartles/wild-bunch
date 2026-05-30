@@ -8,6 +8,7 @@ import type {
   StartGameRequest,
   TownStoreOffersDto,
   TravelRequest,
+  TravelPreviewResultDto,
   WantedPostersResultDto,
 } from "./types";
 
@@ -99,6 +100,10 @@ export function getJournal(gameId: string) {
 
 export function getTownStoreOffers(gameId: string, townId: string) {
   return requestJson<TownStoreOffersDto>(`/api/games/${gameId}/towns/${townId}/store-offers`);
+}
+
+export function previewTravel(gameId: string, destinationTownId: string) {
+  return requestJson<TravelPreviewResultDto>(`/api/games/${gameId}/travel/preview/${destinationTownId}`);
 }
 
 export function buyStoreItem(gameId: string, townId: string, request: BuyStoreItemRequest) {

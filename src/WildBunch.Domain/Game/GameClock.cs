@@ -16,4 +16,10 @@ public sealed class GameClock
             Turn = 0;
         }
     }
+
+    public void AdvanceTravelDay()
+    {
+        Day++;
+        Turn = 0;
+    }
 }

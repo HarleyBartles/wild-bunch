@@ -28,7 +28,8 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(1, result.CurrentSession.Clock.Turn);
+        Assert.Equal(2, result.CurrentSession.Clock.Day);
+        Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.NotNull(result.Journey);
