@@ -3,6 +3,7 @@ import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
   encodeGameSetupSeed,
+  withRandomEntropy,
   withDifficulty,
   withLoadoutProfile,
   withStartWithHorse,
@@ -40,5 +41,40 @@ describe("gameSetupSeedCodec", () => {
     expect(canonicalCode).not.toBe(hardCode);
     expect(canonicalCode).not.toBe(noHorseCode);
     expect(canonicalCode).not.toBe(stockedCode);
+  });
+
+  it("round-trips canonical entropy boundaries and a representative middle value", async () => {
+    for (const entropy of [0n, 1n, 0x800000000000n, 0xFFFFFFFFFFFFn]) {
+      const seed = { ...createCanonicalSeedState(), entropy };
+      const seedCode = await encodeGameSetupSeed(seed);
+      const decoded = await decodeGameSetupSeed(seedCode);
+
+      expect(decoded.entropy).toBe(entropy);
+      expect(decoded.seedCode).toBe(seedCode);
+    }
+  });
+
+  it("randomizes entropy only within the canonical range", async () => {
+    for (let index = 0; index < 100; index++) {
+      const randomSeed = withRandomEntropy(createCanonicalSeedState());
+
+      expect(randomSeed.entropy).toBeGreaterThanOrEqual(0n);
+      expect(randomSeed.entropy).toBeLessThanOrEqual(0xFFFFFFFFFFFFn);
+
+      const seedCode = await encodeGameSetupSeed(randomSeed);
+      const decoded = await decodeGameSetupSeed(seedCode);
+
+      expect(decoded.entropy).toBe(randomSeed.entropy);
+    }
+  });
+
+  it("rejects malformed or out-of-range entropy values", async () => {
+    await expect(encodeGameSetupSeed({ ...createCanonicalSeedState(), entropy: 0x1000000000000n })).rejects.toThrow(
+      /entropy must be between/i,
+    );
+
+    await expect(decodeGameSetupSeed("WB1-N-03-1000000000000-0000")).rejects.toThrow(/seed entropy is invalid/i);
+    await expect(decodeGameSetupSeed("WB1-N-03-12345Z789ABC-0000")).rejects.toThrow(/seed entropy is invalid/i);
+    await expect(decodeGameSetupSeed("WB1-N-03-123456789AB-0000")).rejects.toThrow(/seed entropy is invalid/i);
   });
 });

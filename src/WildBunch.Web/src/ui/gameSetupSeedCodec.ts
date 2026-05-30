@@ -16,6 +16,8 @@ export interface DecodedGameSetupSeed extends GameSetupSeedState {
 
 const seedPrefix = "WB1";
 const generatorVersion = 1;
+const canonicalEntropyHexDigits = 12;
+const canonicalEntropyMaximum = 0xFFFFFFFFFFFFn;
 
 export function createCanonicalSeedState(): GameSetupSeedState {
   return {
@@ -44,7 +46,11 @@ export function withRandomEntropy(seed: GameSetupSeedState): GameSetupSeedState 
 
 export async function encodeGameSetupSeed(seed: GameSetupSeedState): Promise<string> {
   const optionsCode = packOptions(seed).toString(16).toUpperCase().padStart(2, "0");
-  const entropyCode = seed.entropy.toString(16).toUpperCase().padStart(12, "0");
+  if (seed.entropy < 0n || seed.entropy > canonicalEntropyMaximum) {
+    throw new Error(`Seed entropy must be between 0 and ${canonicalEntropyMaximum.toString(16).toUpperCase().padStart(canonicalEntropyHexDigits, "0")}.`);
+  }
+
+  const entropyCode = seed.entropy.toString(16).toUpperCase().padStart(canonicalEntropyHexDigits, "0");
   const checksum = await computeChecksum(seed.difficulty, optionsCode, entropyCode);
   return `${seedPrefix}-${encodeDifficulty(seed.difficulty)}-${optionsCode}-${entropyCode}-${checksum}`;
 }
@@ -150,12 +156,13 @@ function packOptions(seed: GameSetupSeedState) {
 }
 
 function parseEntropy(part: string): bigint | null {
-  if (!/^[0-9A-Fa-f]+$/.test(part)) {
+  if (part.length !== canonicalEntropyHexDigits || !/^[0-9A-Fa-f]+$/.test(part)) {
     return null;
   }
 
   try {
-    return BigInt(`0x${part}`);
+    const entropy = BigInt(`0x${part}`);
+    return entropy <= canonicalEntropyMaximum ? entropy : null;
   } catch {
     return null;
   }
@@ -185,7 +192,12 @@ function formatDifficultyName(difficulty: TravelDifficulty) {
 }
 
 function generateEntropy() {
-  const buffer = new Uint32Array(2);
+  const buffer = new Uint8Array(6);
   crypto.getRandomValues(buffer);
-  return (BigInt(buffer[0]) << 32n) | BigInt(buffer[1]);
+  let entropy = 0n;
+  for (let index = 0; index < buffer.length; index++) {
+    entropy |= BigInt(buffer[index]) << BigInt(index * 8);
+  }
+
+  return entropy;
 }

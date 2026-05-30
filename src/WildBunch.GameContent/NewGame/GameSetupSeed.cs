@@ -28,9 +28,13 @@ internal sealed record GameSetupSeed(
     GameSetupOptionsV1 Options,
     ulong Entropy)
 {
+    public const ulong CanonicalEntropyMaximum = 0xFFFFFFFFFFFFUL;
+
     public bool IsCanonical => GeneratorVersion == GameSetupSeedCodec.CurrentGeneratorVersion
         && Options == GameSetupOptionsV1.Default
         && Entropy == 0;
+
+    public bool IsCanonicalEntropy => Entropy <= CanonicalEntropyMaximum;
 }
 
 internal sealed record GameSetupSeedDecodeResult(

@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent.Tests;
@@ -38,6 +39,83 @@ public sealed class GameSetupSeedCodecTests
         Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(easySeed));
         Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(noHorseSeed));
         Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(stockedSeed));
+    }
+
+    [Theory]
+    [InlineData(0UL)]
+    [InlineData(1UL)]
+    [InlineData(0x800000000000UL)]
+    [InlineData(GameSetupSeed.CanonicalEntropyMaximum)]
+    public void CanonicalEntropyValuesRoundTripIntoValidPackages(ulong entropy)
+    {
+        var seed = GameSetupSeedCodec.WithOption(
+            GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Normal),
+            GameSetupOption.LoadoutProfile,
+            (int)StartingLoadoutProfile.Standard) with
+        {
+            Entropy = entropy
+        };
+
+        var seedCode = GameSetupSeedCodec.Encode(seed);
+        var decoded = GameSetupSeedCodec.Decode(seedCode);
+
+        Assert.True(decoded.Success);
+        Assert.NotNull(decoded.Seed);
+        Assert.Equal(entropy, decoded.Seed!.Entropy);
+
+        var package = new GameSetupPackageBuilder().Build(seed);
+        Assert.Equal(entropy, package.Seed.Entropy);
+        Assert.NotNull(package.World);
+        Assert.NotEmpty(package.World.Towns);
+        Assert.NotEmpty(package.World.Trails);
+        Assert.NotEmpty(package.StartingInventory.Items);
+        Assert.NotNull(package.CaseFile.OpeningLead);
+    }
+
+    [Fact]
+    public void RandomSeedGenerationStaysWithinTheCanonicalEntropyRange()
+    {
+        for (var index = 0; index < 200; index++)
+        {
+            var seed = GameSetupSeedCodec.GenerateRandom(GameSetupOptionsV1.Default, TravelDifficulty.Normal);
+
+            Assert.InRange(seed.Entropy, 0UL, GameSetupSeed.CanonicalEntropyMaximum);
+
+            var encoded = GameSetupSeedCodec.Encode(seed);
+            var decoded = GameSetupSeedCodec.Decode(encoded);
+
+            Assert.True(decoded.Success);
+            Assert.NotNull(decoded.Seed);
+            Assert.Equal(seed.Entropy, decoded.Seed!.Entropy);
+        }
+    }
+
+    [Fact]
+    public void OutOfRangeEntropyIsRejectedRatherThanSilentlyNormalized()
+    {
+        var invalidSeed = new GameSetupSeed(
+            GameSetupSeedCodec.CurrentGeneratorVersion,
+            TravelDifficulty.Normal,
+            GameSetupOptionsV1.Default,
+            GameSetupSeed.CanonicalEntropyMaximum + 1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => GameSetupSeedCodec.Encode(invalidSeed));
+
+        var decodeResult = GameSetupSeedCodec.Decode("WB1-N-03-1000000000000-0000");
+        Assert.False(decodeResult.Success);
+        Assert.Equal("Seed entropy is invalid.", decodeResult.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("WB1-N-03-12345Z789ABC-0000")]
+    [InlineData("WB1-N-03-123456789AB-0000")]
+    [InlineData("WB1-N-03-123456789ABCD-0000")]
+    public void MalformedEntropySeedStringsFailDecode(string seedCode)
+    {
+        var decoded = GameSetupSeedCodec.Decode(seedCode);
+
+        Assert.False(decoded.Success);
+        Assert.Equal("Seed entropy is invalid.", decoded.ErrorMessage);
     }
 
     [Fact]

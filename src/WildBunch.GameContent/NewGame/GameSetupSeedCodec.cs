@@ -17,15 +17,26 @@ internal static class GameSetupSeedCodec
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        Span<byte> buffer = stackalloc byte[8];
+        Span<byte> buffer = stackalloc byte[6];
         RandomNumberGenerator.Fill(buffer);
-        return new GameSetupSeed(CurrentGeneratorVersion, difficulty, options, BitConverter.ToUInt64(buffer));
+        var entropy = (ulong)buffer[0]
+            | ((ulong)buffer[1] << 8)
+            | ((ulong)buffer[2] << 16)
+            | ((ulong)buffer[3] << 24)
+            | ((ulong)buffer[4] << 32)
+            | ((ulong)buffer[5] << 40);
+
+        return new GameSetupSeed(CurrentGeneratorVersion, difficulty, options, entropy);
     }
 
     public static string Encode(GameSetupSeed seed)
     {
         ArgumentNullException.ThrowIfNull(seed);
         ValidateVersion(seed.GeneratorVersion);
+        if (!seed.IsCanonicalEntropy)
+        {
+            throw new ArgumentOutOfRangeException(nameof(seed.Entropy), seed.Entropy, $"Entropy must be between 0 and {GameSetupSeed.CanonicalEntropyMaximum}.");
+        }
 
         var difficultyCode = EncodeDifficulty(seed.Difficulty);
         var optionsCode = PackOptions(seed.Options).ToString("X2", CultureInfo.InvariantCulture);
@@ -57,9 +68,14 @@ internal static class GameSetupSeedCodec
             return GameSetupSeedDecodeResult.Failed("Seed options are invalid.");
         }
 
-        if (!ulong.TryParse(parts[3], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var entropy))
+        if (parts[3].Length != 12 || !ulong.TryParse(parts[3], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var entropy))
         {
             return GameSetupSeedDecodeResult.Failed("Seed entropy is invalid.");
+        }
+
+        if (entropy > GameSetupSeed.CanonicalEntropyMaximum)
+        {
+            return GameSetupSeedDecodeResult.Failed("Seed entropy is out of range.");
         }
 
         if (!ushort.TryParse(parts[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var checksum))
