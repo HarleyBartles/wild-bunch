@@ -434,6 +434,7 @@ internal static partial class TravelDayPlanGenerator
     private static TravelDayEncounterState CreateUnluckyEncounter(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, int dayNumber, int slotIndex, string seed)
     {
         var delayEventRecentlyOccurred = context.RecentTrailEventIds.Any(id => id is JourneyTrailEventId.BadLuckWashout or JourneyTrailEventId.BadLuckFoodLoss);
+        var recentTrailEventIds = context.RecentTrailEventIds.ToHashSet();
         var options = new[]
         {
             new UnluckyEncounterCandidate(
@@ -506,7 +507,7 @@ internal static partial class TravelDayPlanGenerator
         };
 
         var allowedOptions = options
-            .Where(option => (!option.RequiresHorse || context.HasHorse) && (!option.IsDelayEvent || !delayEventRecentlyOccurred))
+            .Where(option => (!option.RequiresHorse || context.HasHorse) && (!option.IsDelayEvent || !delayEventRecentlyOccurred) && !recentTrailEventIds.Contains(option.Encounter.TrailEvent!.Id))
             .Select(option => option.Encounter)
             .ToArray();
         var selectedIndex = allowedOptions.Length == 0

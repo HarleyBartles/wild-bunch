@@ -231,6 +231,55 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
+    public void GenerateDoesNotRepeatHardMilesOnConsecutiveTrailDays()
+    {
+        var session = CreateNoHorseBadLuckSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var firstContext = session.CreateTravelDayGenerationContext(gameSeed: "seed-hard-miles", scenarioProfileId: "profile-hard-miles");
+        var firstPlan = FindPlanWithTrailEvent(firstContext, JourneyTrailEventId.BadLuckDustStorm);
+
+        Assert.Equal(TravelDayEncounterCategory.Unlucky, firstPlan.Encounters[0].Category);
+        Assert.Equal(JourneyTrailEventId.BadLuckDustStorm, firstPlan.Encounters[0].TrailEvent?.Id);
+
+        var secondContext = firstContext with
+        {
+            DayNumber = firstContext.DayNumber + 1,
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
+            RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckDustStorm }
+        };
+        var secondPlan = TravelDayPlanGenerator.Generate(secondContext);
+
+        Assert.NotEqual(JourneyTrailEventId.BadLuckDustStorm, secondPlan.Encounters[0].TrailEvent?.Id);
+    }
+
+    [Fact]
+    public void GenerateFallsBackToQuietWhenNoUnluckyCandidateRemains()
+    {
+        var session = CreateNoHorseBadLuckSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "seed-no-unlucky", scenarioProfileId: "profile-no-unlucky") with
+        {
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
+            RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckWashout, JourneyTrailEventId.BadLuckDustStorm }
+        };
+
+        var plan = TravelDayPlanGenerator.Generate(context);
+
+        Assert.All(plan.Encounters, encounter =>
+        {
+            Assert.Equal(TravelDayEncounterCategory.Quiet, encounter.Category);
+            Assert.Null(encounter.TrailEvent);
+            Assert.DoesNotContain("horse", encounter.Message, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
     public void GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse()
     {
         var seeds = Enumerable.Range(1, 12).Select(index => $"seed-no-horse-{index}");
@@ -282,6 +331,24 @@ public sealed class TravelDayPlanGeneratorTests
             Array.Empty<JourneyTrailEventId>(),
             Array.Empty<TravelDayEncounterCategory>(),
             HasHorse: horseConditionBand != HorseConditionBand.None);
+
+    private static TravelDayPlanState FindPlanWithTrailEvent(TravelDayGenerationContext context, JourneyTrailEventId trailEventId)
+    {
+        for (var seedSuffix = 1; seedSuffix <= 128; seedSuffix++)
+        {
+            var plan = TravelDayPlanGenerator.Generate(context with
+            {
+                GameSeed = $"{context.GameSeed}-seed-{seedSuffix}"
+            });
+
+            if (plan.Encounters[0].TrailEvent?.Id == trailEventId)
+            {
+                return plan;
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"Did not find a plan with trail event {trailEventId}.");
+    }
 
     private static GameSession CreateNoHorseBadLuckSession()
     {
