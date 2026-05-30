@@ -15,10 +15,12 @@ public sealed class GameApiActionsTests
         using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        await scenario.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.GetAsync($"/api/games/{createdSession!.Id}/actions");
 

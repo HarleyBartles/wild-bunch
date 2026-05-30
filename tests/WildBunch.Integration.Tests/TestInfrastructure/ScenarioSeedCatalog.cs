@@ -1,7 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http.Json;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Actions;
+using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -16,37 +20,21 @@ internal static class ScenarioSeedCatalog
         Name: "CanonicalMountedNormal",
         SeedCode: "WB1-N-01-000000000000-C438",
         TravelDifficulty: TravelDifficulty.Normal,
+        AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedNormal", session),
+        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedNormal", session, destinationTownId, preview));
+
+    public static readonly ScenarioSeedFixture CanonicalPinecrossServices = new(
+        Name: "CanonicalPinecrossServices",
+        SeedCode: CanonicalMountedNormal.SeedCode,
+        TravelDifficulty: TravelDifficulty.Normal,
         AssertCreatedSessionContract: session =>
         {
-            RequireEqual("CanonicalMountedNormal", "start-game.travelDifficulty", TravelDifficulty.Normal, session.TravelDifficulty);
-            RequireEqual("CanonicalMountedNormal", "start-game.currentTownId", "pinecross", session.Player.CurrentTownId);
-            RequireEqual("CanonicalMountedNormal", "start-game.health", 1000, session.Player.Health);
-            RequireEqual("CanonicalMountedNormal", "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
-            RequireEqual("CanonicalMountedNormal", "start-game.world.towns", 6, session.World.Towns.Count);
-            RequireEqual("CanonicalMountedNormal", "start-game.world.trails", 7, session.World.Trails.Count);
-            RequireEqual("CanonicalMountedNormal", "start-game.caseFile.openingLead", "A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
-            RequireEqual("CanonicalMountedNormal", "start-game.caseFile.killerReleaseState.isReleased", false, session.CaseFile.KillerReleaseState.IsReleased);
-            RequireEqual("CanonicalMountedNormal", "start-game.caseFile.killerReleaseState.progress", 0, session.CaseFile.KillerReleaseState.Progress);
-            RequireEqual("CanonicalMountedNormal", "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);
-            RequireEqual("CanonicalMountedNormal", "start-game.inventory.items.count", 8, session.Inventory.Items.Count);
-            Require("CanonicalMountedNormal", "start-game.inventory.horseState", session.Inventory.HorseState is not null, "expected the player to start mounted.");
-            Require("CanonicalMountedNormal", "start-game.capabilities.mountedTravelAvailable", session.Inventory.Capabilities.MountedTravelAvailable, "expected mounted travel to be available.");
-            Require("CanonicalMountedNormal", "start-game.capabilities.gunfightCapable", session.Inventory.Capabilities.GunfightCapable, "expected gunfight capability to be available.");
-            Require("CanonicalMountedNormal", "start-game.capabilities.rifleUsable", !session.Inventory.Capabilities.RifleUsable, "expected rifles to stay unusable at start.");
-            Require("CanonicalMountedNormal", "start-game.logEntries", session.LogEntries.Count > 0, "expected the new game log to be populated.");
+            AssertCanonicalMountedStartState("CanonicalPinecrossServices", session);
+
+            RequireEqual("CanonicalPinecrossServices", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalPinecrossServices", session, ItemKind.Food).Quantity);
+            RequireEqual("CanonicalPinecrossServices", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalPinecrossServices", session, ItemKind.HorseFeed).Quantity);
         },
-        AssertTravelPreviewContract: (session, destinationTownId, preview) =>
-        {
-            RequireEqual("CanonicalMountedNormal", "travel-preview.success", true, preview.Success);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.destinationTownId", destinationTownId, preview.Preview?.DestinationTownId);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.baselineRideDays", 2, preview.Preview?.BaselineRideDays);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.expectedDays", 2, preview.Preview?.ExpectedDays);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.routeProfile.risk", TrailRisk.Moderate, preview.Preview?.RouteProfile.Risk);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.routeProfile.terrain", TrailTerrain.OpenRange, preview.Preview?.RouteProfile.Terrain);
-            RequireEqual("CanonicalMountedNormal", "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
-        });
+        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalPinecrossServices", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture NoHorseLightEasy = new(
         Name: "NoHorseLightEasy",
@@ -84,6 +72,28 @@ internal static class ScenarioSeedCatalog
             Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("without a horse", StringComparison.OrdinalIgnoreCase), "expected the narration to mention traveling without a horse.");
         });
 
+    public static async Task AssertPinecrossServices(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
+    {
+        RequireEqual("CanonicalPinecrossServices", "scenario.name", "CanonicalPinecrossServices", fixture.Name);
+
+        fixture.AssertCreatedSession(session);
+        AssertPinecrossConnectedTownAssumptions(session);
+
+        var actionsResponse = await client.GetAsync($"/api/games/{gameId}/actions");
+        RequireEqual("CanonicalPinecrossServices", "actions.statusCode", HttpStatusCode.OK, actionsResponse.StatusCode);
+
+        var actions = await actionsResponse.Content.ReadFromJsonAsync<AvailableActionDto[]>();
+        Require("CanonicalPinecrossServices", "actions.payload", actions is not null, "expected available actions to deserialize.");
+        AssertPinecrossActionAvailability(actions!);
+
+        var storeOffersResponse = await client.GetAsync($"/api/games/{gameId}/towns/pinecross/store-offers");
+        RequireEqual("CanonicalPinecrossServices", "store-offers.statusCode", HttpStatusCode.OK, storeOffersResponse.StatusCode);
+
+        var storeOffers = await storeOffersResponse.Content.ReadFromJsonAsync<TownStoreOffersDto>();
+        Require("CanonicalPinecrossServices", "store-offers.payload", storeOffers is not null, "expected town store offers to deserialize.");
+        AssertPinecrossStoreAvailability(storeOffers!);
+    }
+
     public static StartGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)
         => new(playerName, fixture.TravelDifficulty, fixture.SeedCode);
 
@@ -117,6 +127,79 @@ internal static class ScenarioSeedCatalog
         Action<GameSessionDto> AssertCreatedSessionContract,
         Action<GameSessionDto, string, TravelPreviewResultDto>? AssertTravelPreviewContract = null,
         Action<GameSessionDto, string, TravelPreviewResultDto, GameTurnResultDto>? AssertTravelTurnContract = null);
+
+    private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
+    {
+        RequireEqual(scenarioName, "start-game.travelDifficulty", TravelDifficulty.Normal, session.TravelDifficulty);
+        RequireEqual(scenarioName, "start-game.currentTownId", "pinecross", session.Player.CurrentTownId);
+        RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
+        RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
+        RequireEqual(scenarioName, "start-game.world.towns", 6, session.World.Towns.Count);
+        RequireEqual(scenarioName, "start-game.world.trails", 7, session.World.Trails.Count);
+        RequireEqual(scenarioName, "start-game.caseFile.openingLead", "A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
+        RequireEqual(scenarioName, "start-game.caseFile.killerReleaseState.isReleased", false, session.CaseFile.KillerReleaseState.IsReleased);
+        RequireEqual(scenarioName, "start-game.caseFile.killerReleaseState.progress", 0, session.CaseFile.KillerReleaseState.Progress);
+        RequireEqual(scenarioName, "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);
+        RequireEqual(scenarioName, "start-game.inventory.items.count", 8, session.Inventory.Items.Count);
+        Require(scenarioName, "start-game.inventory.horseState", session.Inventory.HorseState is not null, "expected the player to start mounted.");
+        Require(scenarioName, "start-game.capabilities.mountedTravelAvailable", session.Inventory.Capabilities.MountedTravelAvailable, "expected mounted travel to be available.");
+        Require(scenarioName, "start-game.capabilities.gunfightCapable", session.Inventory.Capabilities.GunfightCapable, "expected gunfight capability to be available.");
+        Require(scenarioName, "start-game.capabilities.rifleUsable", !session.Inventory.Capabilities.RifleUsable, "expected rifles to stay unusable at start.");
+        Require(scenarioName, "start-game.logEntries", session.LogEntries.Count > 0, "expected the new game log to be populated.");
+    }
+
+    private static void AssertCanonicalMountedTravelPreview(string scenarioName, GameSessionDto session, string destinationTownId, TravelPreviewResultDto preview)
+    {
+        RequireEqual(scenarioName, "travel-preview.success", true, preview.Success);
+        RequireEqual(scenarioName, "travel-preview.destinationTownId", destinationTownId, preview.Preview?.DestinationTownId);
+        RequireEqual(scenarioName, "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
+        RequireEqual(scenarioName, "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
+        RequireEqual(scenarioName, "travel-preview.baselineRideDays", 2, preview.Preview?.BaselineRideDays);
+        RequireEqual(scenarioName, "travel-preview.expectedDays", 2, preview.Preview?.ExpectedDays);
+        RequireEqual(scenarioName, "travel-preview.routeProfile.risk", TrailRisk.Moderate, preview.Preview?.RouteProfile.Risk);
+        RequireEqual(scenarioName, "travel-preview.routeProfile.terrain", TrailTerrain.OpenRange, preview.Preview?.RouteProfile.Terrain);
+        RequireEqual(scenarioName, "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
+    }
+
+    private static void AssertPinecrossConnectedTownAssumptions(GameSessionDto session)
+    {
+        var connectedTownIds = session.World.Trails
+            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .ToArray();
+
+        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.redmesa", connectedTownIds.Contains("redmesa"), "expected Pinecross to connect to Red Mesa.");
+        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.holloway", connectedTownIds.Contains("holloway"), "expected Pinecross to connect to Holloway.");
+    }
+
+    private static void AssertPinecrossActionAvailability(AvailableActionDto[] actions)
+    {
+        Require("CanonicalPinecrossServices", "actions.travel", actions.Any(action => action.Kind == AvailableActionKind.Travel), "expected Travel to be available.");
+        Require("CanonicalPinecrossServices", "actions.viewMap", actions.Any(action => action.Kind == AvailableActionKind.ViewMap), "expected ViewMap to be available.");
+        Require("CanonicalPinecrossServices", "actions.viewJournal", actions.Any(action => action.Kind == AvailableActionKind.ViewJournal), "expected ViewJournal to be available.");
+        Require("CanonicalPinecrossServices", "actions.buySupplies", actions.Any(action => action.Kind == AvailableActionKind.BuySupplies), "expected BuySupplies to be available.");
+        Require("CanonicalPinecrossServices", "actions.stayAtLodging", actions.Any(action => action.Kind == AvailableActionKind.StayAtLodging), "expected StayAtLodging to be available.");
+        Require("CanonicalPinecrossServices", "actions.readWantedPosters", actions.Any(action => action.Kind == AvailableActionKind.ReadWantedPosters), "expected ReadWantedPosters to be available.");
+        Require("CanonicalPinecrossServices", "actions.visitDoctor", !actions.Any(action => action.Kind == AvailableActionKind.VisitDoctor), "expected VisitDoctor to stay unavailable at the start.");
+        Require("CanonicalPinecrossServices", "actions.sendTelegram", !actions.Any(action => action.Kind == AvailableActionKind.SendTelegram), "expected SendTelegram to stay unavailable at the start.");
+    }
+
+    private static void AssertPinecrossStoreAvailability(TownStoreOffersDto storeOffers)
+    {
+        RequireEqual("CanonicalPinecrossServices", "store-offers.available", true, storeOffers.Available);
+        RequireEqual("CanonicalPinecrossServices", "store-offers.townId", "pinecross", storeOffers.TownId);
+        RequireEqual("CanonicalPinecrossServices", "store-offers.townName", "Pinecross", storeOffers.TownName);
+        Require("CanonicalPinecrossServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected Pinecross to expose a general store.");
+        Require("CanonicalPinecrossServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected Pinecross to expose a stable.");
+    }
+
+    private static dynamic RequireItem(string scenarioName, GameSessionDto session, ItemKind kind)
+    {
+        var item = session.Inventory.Items.SingleOrDefault(entry => entry.Kind == kind);
+        Require(scenarioName, $"start-game.inventory.{kind.ToString().ToLowerInvariant()}", item is not null, $"expected the starting inventory to include {kind}.");
+        return item!;
+    }
 
     private static void Require(string scenarioName, string contractName, bool condition, string detail)
         => Assert.True(condition, $"Scenario '{scenarioName}' violated contract '{contractName}': {detail}");
