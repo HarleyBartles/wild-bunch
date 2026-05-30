@@ -1354,8 +1354,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private static string BuildJourneyOpeningNarration(TravelPreview preview)
     {
+        var baselineRidePhrase = $"{preview.BaselineRideDays}-day {DescribeTerrain(preview.RouteProfile.Terrain)} ride";
         var travelMode = DescribeTravelMode(preview.TravelMode);
-        var terrain = DescribeTerrain(preview.RouteProfile.Terrain);
         var risk = DescribeRisk(preview.RouteProfile.Risk);
         var waterPressure = preview.WaterSecure
             ? $"I have enough water for the base trail, though the canteen still needs watching on a {preview.ExpectedDays}-day run."
@@ -1369,7 +1369,13 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 ? "The horse is fit enough to carry me for now."
                 : "The horse is not fit for mounted travel, so I will need to mind the pace.";
 
-        return $"I set out for {preview.DestinationTownName} on a {preview.ExpectedDays}-day {terrain} trail {travelMode}. {risk} {waterPressure} {foodPressure} {horsePressure}";
+        var openingSentence = preview.TravelMode == TravelMode.Foot
+            ? preview.ExpectedDays != preview.BaselineRideDays
+                ? $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase}, but without a horse it will take {preview.ExpectedDays} days on foot."
+                : $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase} on foot."
+            : $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase} {travelMode}.";
+
+        return $"{openingSentence} {risk} {waterPressure} {foodPressure} {horsePressure}";
     }
 
     private static string BuildJourneyBeat(

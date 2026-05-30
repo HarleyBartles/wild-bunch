@@ -182,6 +182,9 @@ public sealed class GameApiTests
         var openingDay = Assert.Single(turnResult.TravelDiary!.Days);
         Assert.NotNull(openingDay.OpeningNarration);
         Assert.Contains("I set out for Holloway", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"{preview.Preview.BaselineRideDays}-day", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("by mounted travel", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("without a horse", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
 
         var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -271,8 +274,11 @@ public sealed class GameApiTests
         Assert.NotNull(onFootTurn.TravelDiary);
         var onFootOpeningDay = Assert.Single(onFootTurn.TravelDiary!.Days);
         Assert.NotNull(onFootOpeningDay.OpeningNarration);
-        Assert.Contains($"{previewResult.Preview.ExpectedDays}-day", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"{previewResult.Preview.BaselineRideDays}-day", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ride", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"{previewResult.Preview.ExpectedDays} days on foot", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("on foot", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("without a horse", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(onFootOpeningDay.Entries, entry => entry == onFootOpeningDay.OpeningNarration);
     }
 
