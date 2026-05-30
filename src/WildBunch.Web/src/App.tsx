@@ -35,6 +35,7 @@ import {
 const storageKey = "wild-bunch.current-game-id";
 
 type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "buying";
+type CockpitMode = "home" | "travel";
 
 function townById(towns: TownDto[], townId: string) {
   return towns.find((town) => town.id === townId);
@@ -84,7 +85,7 @@ export default function App() {
   const [actions, setActions] = useState<AvailableActionDto[]>([]);
   const [storeOffers, setStoreOffers] = useState<TownStoreOffersDto | null>(null);
   const [storeOffersLoading, setStoreOffersLoading] = useState(false);
-  const [lastTravelResult, setLastTravelResult] = useState<GameTurnResultDto | null>(null);
+  const [cockpitMode, setCockpitMode] = useState<CockpitMode>("home");
   const [busyMode, setBusyMode] = useState<BusyMode>("booting");
   const [notice, setNotice] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -99,6 +100,10 @@ export default function App() {
   }, [session]);
   const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
+
+  useEffect(() => {
+    setCockpitMode(session?.journey ? "travel" : "home");
+  }, [session?.journey]);
 
   async function loadTownStoreOffers(activeGameId: string, activeTownId: string) {
     setStoreOffersLoading(true);
@@ -163,7 +168,6 @@ export default function App() {
     setError("");
     setStoreOffers(null);
     setStoreOffersLoading(false);
-    setLastTravelResult(null);
 
     try {
       const [sessionResult, actionsResult, journalResult] = await Promise.all([
@@ -182,6 +186,7 @@ export default function App() {
       setSession(null);
       setJournal(null);
       setActions([]);
+      setCockpitMode("home");
       setError(exception instanceof Error ? exception.message : "Unable to load the saved game.");
     } finally {
       setBusyMode("idle");
@@ -200,7 +205,6 @@ export default function App() {
     setError("");
     setStoreOffers(null);
     setStoreOffersLoading(false);
-    setLastTravelResult(null);
 
     try {
       const createdSession = await createGame(trimmedName);
@@ -213,6 +217,17 @@ export default function App() {
       setError(exception instanceof Error ? exception.message : "Unable to start a new game.");
     } finally {
       setBusyMode("idle");
+    }
+  }
+
+  async function handleTravelTurnResult(result: GameTurnResultDto) {
+    setSession(result.currentSession);
+
+    try {
+      await reloadCurrentGame(result.currentSession.id);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to refresh the current hunt.");
     }
   }
 
@@ -234,10 +249,7 @@ export default function App() {
 
     try {
       const result = await travel(gameId, destinationTownId);
-      setSession(result.currentSession);
-      setLastTravelResult(result);
-      await reloadCurrentGame(gameId);
-      setNotice(result.message);
+      await handleTravelTurnResult(result);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : "Unable to travel.");
     } finally {
@@ -307,10 +319,10 @@ export default function App() {
     setActions([]);
     setStoreOffers(null);
     setStoreOffersLoading(false);
-    setLastTravelResult(null);
     setNotice("");
     setError("");
     setBusyMode("idle");
+    setCockpitMode("home");
     setPlayerName("");
   }
 
@@ -333,13 +345,15 @@ export default function App() {
             <small>Player</small>
           </span>
           <span className="metric">
-            <strong>{session ? formatGameStatus(session.status) : "Idle"}</strong>
+            <strong>
+              {session ? formatGameStatus(session.status) : "Idle"} {session ? `| ${cockpitMode === "travel" ? "Travel diary" : "Cockpit"}` : ""}
+            </strong>
             <small>Status</small>
           </span>
-            <span className="metric">
-              <strong>{session ? `Day ${session.clock.day}, Turn ${session.clock.turn}` : "-"}</strong>
-              <small>Clock</small>
-            </span>
+          <span className="metric">
+            <strong>{session ? `Day ${session.clock.day}, Turn ${session.clock.turn}` : "-"}</strong>
+            <small>Clock</small>
+          </span>
         </div>
       </header>
 
@@ -443,7 +457,14 @@ export default function App() {
                 busy={loading}
                 onBuyOffer={handleBuyOffer}
               />
-              <TravelPanel journey={session.journey} travelDiary={session.travelDiary} latestTravelResult={lastTravelResult} />
+              {session?.journey ? (
+                <TravelPanel
+                  gameId={gameId ?? session.id}
+                  session={session}
+                  busy={loading}
+                  onTurnResult={handleTravelTurnResult}
+                />
+              ) : null}
             </div>
           ) : null}
         </section>

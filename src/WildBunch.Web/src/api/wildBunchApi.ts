@@ -4,6 +4,7 @@ import type {
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
+  ResolveJourneyEncounterRequest,
   TravelDifficulty,
   TownStoreOffersDto,
   StartGameRequest,
@@ -112,6 +113,19 @@ export function travel(gameId: string, destinationTownId: string) {
   return requestJson<GameTurnResultDto>(`/api/games/${gameId}/travel`, {
     method: "POST",
     body: JSON.stringify({ destinationTownId } satisfies TravelRequest),
+  });
+}
+
+export function advanceTravelDay(gameId: string) {
+  return requestJson<GameTurnResultDto>(`/api/games/${gameId}/travel/advance`, {
+    method: "POST",
+  });
+}
+
+export function resolveTravelEncounter(gameId: string, choiceId: string) {
+  return requestJson<GameTurnResultDto>(`/api/games/${gameId}/travel/encounter/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ choiceId } satisfies ResolveJourneyEncounterRequest),
   });
 }
 

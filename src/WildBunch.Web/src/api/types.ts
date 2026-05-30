@@ -44,6 +44,10 @@ export interface TravelRequest {
   destinationTownId: string;
 }
 
+export interface ResolveJourneyEncounterRequest {
+  choiceId: string;
+}
+
 export interface GameClockDto {
   day: number;
   turn: number;
