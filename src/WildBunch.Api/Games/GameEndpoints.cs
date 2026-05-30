@@ -89,7 +89,7 @@ public static class GameEndpoints
 
         var validatedRequest = request!;
         var session = await handler.HandleAsync(
-            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.TravelDifficulty, validatedRequest.SetupSeedCode),
+            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.TravelDifficulty, validatedRequest.SeedCode),
             cancellationToken);
         return Results.Created($"/api/games/{session.Id}", session);
     }

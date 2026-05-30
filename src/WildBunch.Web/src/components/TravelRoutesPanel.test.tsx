@@ -30,6 +30,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       towns: [
         { id: "pinecross", name: "Pinecross", services: 0 },
         { id: "holloway", name: "Holloway", services: 0 },
+        { id: "dryfork", name: "Dry Fork", services: 0 },
       ],
       trails: [
         {
@@ -40,6 +41,15 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
           terrain: 1,
           waterFeature: 2,
           rideDayDistance: 6,
+        },
+        {
+          id: "trail-2",
+          fromTownId: "pinecross",
+          toTownId: "dryfork",
+          risk: 3,
+          terrain: 2,
+          waterFeature: 0,
+          rideDayDistance: 2,
         },
       ],
     },
@@ -87,44 +97,88 @@ describe("TravelRoutesPanel", () => {
     const session = createSession();
     const onTravel = vi.fn().mockResolvedValue(undefined);
 
-    mockedPreviewTravel.mockResolvedValue({
-      success: true,
-      message: "Preview ready.",
-      preview: {
-        originTownId: "pinecross",
-        originTownName: "Pinecross",
-        destinationTownId: "holloway",
-        destinationTownName: "Holloway",
-        travelMode: 0,
-        mountedTravelAvailable: true,
-        waterSecure: true,
-        rideDayDistance: 6,
-        remainingRideDayDistance: 6,
-        expectedDays: 4,
-        remainingDays: 4,
-        canteenChargesPerDay: 0,
-        requiredCanteenCharges: 0,
-        availableCanteenCharges: 10,
-        canteenReserveCharges: 10,
-        delayMarginDays: 0,
-        delayRisk: false,
-        requiredFood: 4,
-        availableFood: 4,
-        requiredHorseFeed: 0,
-        availableHorseFeed: 0,
-        horseState: null,
-        warnings: ["Route water is secure."],
-        routeProfile: {
-          trailId: "trail-1",
-          risk: 2,
-          terrain: 1,
-          waterFeature: 2,
-          rideDayDistance: 6,
-          mountedRideDayProgress: 1.5,
-          footRideDayProgress: 0.75,
-          warnings: ["Rough trail conditions may stress the horse."],
+    mockedPreviewTravel.mockImplementation(async (_gameId, destinationTownId) => {
+      if (destinationTownId === "holloway") {
+        return {
+          success: true,
+          message: "Preview ready.",
+          preview: {
+            originTownId: "pinecross",
+            originTownName: "Pinecross",
+            destinationTownId: "holloway",
+            destinationTownName: "Holloway",
+            travelMode: 1,
+            mountedTravelAvailable: false,
+            waterSecure: true,
+            rideDayDistance: 5,
+            remainingRideDayDistance: 5,
+            expectedDays: 6,
+            remainingDays: 6,
+            canteenChargesPerDay: 0,
+            requiredCanteenCharges: 0,
+            availableCanteenCharges: 10,
+            canteenReserveCharges: 10,
+            delayMarginDays: 0,
+            delayRisk: false,
+            requiredFood: 6,
+            availableFood: 6,
+            requiredHorseFeed: 0,
+            availableHorseFeed: 0,
+            horseState: null,
+            warnings: ["Route water is secure."],
+            routeProfile: {
+              trailId: "trail-1",
+              risk: 1,
+              terrain: 0,
+              waterFeature: 1,
+              rideDayDistance: 5,
+              mountedRideDayProgress: 1.5,
+              footRideDayProgress: 0.75,
+              warnings: ["Open range and creek water keep this route manageable."],
+            },
+          },
+        };
+      }
+
+      return {
+        success: true,
+        message: "Preview ready.",
+        preview: {
+          originTownId: "pinecross",
+          originTownName: "Pinecross",
+          destinationTownId: "dryfork",
+          destinationTownName: "Dry Fork",
+          travelMode: 1,
+          mountedTravelAvailable: false,
+          waterSecure: false,
+          rideDayDistance: 2,
+          remainingRideDayDistance: 2,
+          expectedDays: 2,
+          remainingDays: 2,
+          canteenChargesPerDay: 1,
+          requiredCanteenCharges: 2,
+          availableCanteenCharges: 2,
+          canteenReserveCharges: 0,
+          delayMarginDays: 0,
+          delayRisk: true,
+          requiredFood: 2,
+          availableFood: 2,
+          requiredHorseFeed: 0,
+          availableHorseFeed: 0,
+          horseState: null,
+          warnings: ["Water is sparse along this trail."],
+          routeProfile: {
+            trailId: "trail-2",
+            risk: 3,
+            terrain: 2,
+            waterFeature: 0,
+            rideDayDistance: 2,
+            mountedRideDayProgress: 1.5,
+            footRideDayProgress: 0.75,
+            warnings: ["Rough trail conditions may stress the horse.", "Water is sparse along this trail."],
+          },
         },
-      },
+      };
     });
 
     render(
@@ -138,14 +192,12 @@ describe("TravelRoutesPanel", () => {
 
     await waitFor(() => {
       expect(mockedPreviewTravel).toHaveBeenCalledWith("game-1", "holloway");
+      expect(mockedPreviewTravel).toHaveBeenCalledWith("game-1", "dryfork");
     });
 
     expect(await screen.findByRole("button", { name: /holloway/i })).toBeInTheDocument();
-    expect(screen.getByText(/4 days/i)).toBeInTheDocument();
-    expect(screen.getByText(/hills/i)).toBeInTheDocument();
-    expect(screen.getByText(/river/i)).toBeInTheDocument();
-    expect(screen.getByText(/moderate risk/i)).toBeInTheDocument();
-    expect(screen.getByText(/6\.00 ride-day units/i)).toBeInTheDocument();
+    expect(screen.getByText(/6 days \| Open range \| Creek \| Low risk \| 5\.00 ride-day units/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 days \| Badlands \| None \| High risk \| 2\.00 ride-day units/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /holloway/i }));
     expect(onTravel).toHaveBeenCalledWith("holloway");

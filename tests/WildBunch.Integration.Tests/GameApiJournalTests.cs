@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
@@ -78,9 +79,7 @@ public sealed class GameApiJournalTests
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
-        var advanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, advanceResponse.StatusCode);
+        await AdvanceUntilTownAsync(client, createdSession.Id, "redmesa");
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -90,7 +89,7 @@ public sealed class GameApiJournalTests
 
         Assert.NotNull(journal);
         Assert.Equal("redmesa", journal!.CurrentTown.Id);
-        Assert.Equal(3, journal.Clock.Day);
+        Assert.Equal(5, journal.Clock.Day);
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
@@ -102,5 +101,41 @@ public sealed class GameApiJournalTests
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task AdvanceUntilTownAsync(HttpClient client, Guid gameId, string destinationTownId)
+    {
+        for (var step = 0; step < 12; step++)
+        {
+            var advanceResponse = await client.PostAsync($"/api/games/{gameId}/travel/advance", content: null);
+
+            Assert.Equal(HttpStatusCode.OK, advanceResponse.StatusCode);
+
+            var advanceResult = await advanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+            Assert.NotNull(advanceResult);
+
+            if (!advanceResult!.Success && advanceResult.JourneyStatus == JourneyStatus.Interrupted)
+            {
+                var resolveResponse = await client.PostAsJsonAsync(
+                    $"/api/games/{gameId}/travel/encounter/resolve",
+                    new { ChoiceId = "run" });
+
+                Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
+
+                var resolved = await resolveResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+                Assert.NotNull(resolved);
+                Assert.True(resolved!.Success);
+                Assert.Equal(JourneyStatus.Active, resolved.JourneyStatus);
+                continue;
+            }
+
+            Assert.True(advanceResult.Success);
+            if (advanceResult.JourneyStatus == JourneyStatus.Completed && advanceResult.CurrentSession.Player.CurrentTownId == destinationTownId)
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException($"Travel to {destinationTownId} did not complete.");
     }
 }

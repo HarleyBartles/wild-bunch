@@ -72,13 +72,14 @@ public sealed class TravelToTownHandlerTests
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
-        Assert.False(result.Success);
-        Assert.Contains("food runs out", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(result.Success);
         Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(2, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
-        Assert.Null(result.CurrentSession.Journey);
+        Assert.NotNull(result.CurrentSession.Journey);
     }
 
     private static GameSession CreateSession(bool emptyInventory = false)

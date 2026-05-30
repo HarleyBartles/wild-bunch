@@ -28,10 +28,10 @@ public sealed class GameApiValidationTests
         using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SetupSeedCode: "WB1-N-03-000000000000-0000"));
+        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SeedCode: "WB1-N-03-000000000000-0000"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        await AssertValidationProblemAsync(response, "setupSeedCode");
+        await AssertValidationProblemAsync(response, "seedCode");
     }
 
     [Fact]

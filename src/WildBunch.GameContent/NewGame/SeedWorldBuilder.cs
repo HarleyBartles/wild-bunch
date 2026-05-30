@@ -22,13 +22,13 @@ internal static class SeedWorldBuilder
             new[] { pinecross, redmesa, holloway, sagewell, dryfork, emberfall },
             new[]
             {
-                new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low),
+                new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low, rideDayDistance: 4m),
                 new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate),
-                new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low),
-                new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High),
-                new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low),
-                new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate),
-                new Trail(new TrailId("trail-red-ember"), redmesa.Id, emberfall.Id, TrailRisk.High)
+                new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low, rideDayDistance: 3m),
+                new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High, rideDayDistance: 5m),
+                new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low, rideDayDistance: 3m),
+                new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate, rideDayDistance: 5m),
+                new Trail(new TrailId("trail-red-ember"), redmesa.Id, emberfall.Id, TrailRisk.High, rideDayDistance: 5m)
             });
 
         return new SeedWorldSetup(world, pinecross.Id);
@@ -58,13 +58,13 @@ internal static class SeedWorldBuilder
             new[] { pinecross, redmesa, holloway, sagewell, dryfork, emberfall },
             new[]
             {
-                new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low),
-                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate),
-                new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low),
-                new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High),
-                new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low),
-                new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate),
-                new Trail(new TrailId("trail-hollow-ember"), holloway.Id, emberfall.Id, TrailRisk.High)
+                new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
+                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring, 2m),
+                new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Creek, 3m),
+                new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m),
+                new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River, 3m),
+                new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate, TrailTerrain.Mountains, WaterFeature.Spring, 5m),
+                new Trail(new TrailId("trail-hollow-ember"), holloway.Id, emberfall.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m)
             });
 
         return new SeedWorldSetup(world, PickStartingTown(seedCode, world, options));
@@ -83,13 +83,13 @@ internal static class SeedWorldBuilder
             new[] { pinecross, redmesa, holloway, sagewell, dryfork, emberfall },
             new[]
             {
-                new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek),
-                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring),
-                new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Creek),
-                new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None),
-                new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River),
-                new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate, TrailTerrain.Mountains, WaterFeature.Spring),
-                new Trail(new TrailId("trail-hollow-ember"), holloway.Id, emberfall.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None)
+                new Trail(new TrailId("trail-pine-red"), pinecross.Id, redmesa.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
+                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring, 2m),
+                new Trail(new TrailId("trail-red-sage"), redmesa.Id, sagewell.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Creek, 3m),
+                new Trail(new TrailId("trail-red-dry"), redmesa.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m),
+                new Trail(new TrailId("trail-hollow-sage"), holloway.Id, sagewell.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River, 3m),
+                new Trail(new TrailId("trail-sage-ember"), sagewell.Id, emberfall.Id, TrailRisk.Moderate, TrailTerrain.Mountains, WaterFeature.Spring, 5m),
+                new Trail(new TrailId("trail-hollow-ember"), holloway.Id, emberfall.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m)
             });
 
         return new SeedWorldSetup(world, PickStartingTown(seedCode, world, options));

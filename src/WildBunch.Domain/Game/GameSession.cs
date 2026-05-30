@@ -576,34 +576,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.RecalculatePacing(TravelMode.Foot);
         }
 
-        if (Player.Inventory.GetQuantity(ItemKind.Food) < 1)
+        if (Player.Inventory.GetQuantity(ItemKind.Food) > 0)
         {
-            Journey.MarkFailed();
-            var message = "The trail grinds to a halt when your food runs out.";
-            AddLogEntry(GameLogEntryKind.Travel, message);
-            var failedSnapshot = Journey.ToSnapshot(TravelRules);
-            AppendTravelDiaryDay(CreateTravelDiaryDay(
-                failedSnapshot,
-                startingTravelMode,
-                startingRideDayDistance,
-                startingDaysRemaining,
-                startingHorseState,
-                startingWallet,
-                startingFood,
-                startingHorseFeed,
-                startingCanteenCharges,
-                startingHealth,
-                startingHorseHunger,
-                startingHorseThirst,
-                startingHorseExhaustion,
-                startingDelayDays,
-                startingHeat));
-            Journey = null;
-            return new TravelJourneyStepResult(false, JourneyStatus.Failed, message, message, 0, failedSnapshot);
+            Player.Inventory.RemoveQuantity(ItemKind.Food, 1);
+            Journey.ConsumeFood();
         }
-
-        Player.Inventory.RemoveQuantity(ItemKind.Food, 1);
-        Journey.ConsumeFood();
+        else
+        {
+            AddLogEntry(GameLogEntryKind.Travel, "My food is gone, but the trail keeps moving.");
+        }
 
         var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
             Journey.Preview.RouteProfile.Terrain,

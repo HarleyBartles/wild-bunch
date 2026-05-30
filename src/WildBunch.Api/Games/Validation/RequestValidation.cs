@@ -15,11 +15,11 @@ public static class RequestValidation
             errors["playerName"] = ["Player name is required."];
         }
 
-        if (!string.IsNullOrWhiteSpace(request?.SetupSeedCode))
+        if (!string.IsNullOrWhiteSpace(request?.SeedCode))
         {
-            if (!GameSetupSeedCodeValidator.TryValidate(request.SetupSeedCode, out var errorMessage))
+            if (!GameSetupSeedCodeValidator.TryValidate(request.SeedCode, out var errorMessage))
             {
-                errors["setupSeedCode"] = [errorMessage ?? "Seed code is invalid."];
+                errors["seedCode"] = [errorMessage ?? "Seed code is invalid."];
             }
         }
 
