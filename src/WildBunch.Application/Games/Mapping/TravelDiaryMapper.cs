@@ -37,8 +37,8 @@ public static class TravelDiaryMapper
             day.PendingEncounter is null ? null : TravelMapper.ToDto(day.PendingEncounter),
             day.EncounterResolution is null ? null : ToDto(day.EncounterResolution),
             day.OpeningNarration,
-            day.JourneyBeat,
-            day.ResourceBeat,
+            TravelDiaryTextRenderer.RenderJourneyBeat(day),
+            TravelDiaryTextRenderer.RenderResourceBeat(day),
             day.HealthDelta,
             day.WalletDelta,
             day.FoodDelta,
@@ -57,7 +57,7 @@ public static class TravelDiaryMapper
             day.CurrentCanteenCharges,
             day.CurrentAmmo,
             day.CurrentHeat,
-            day.Entries.Count == 0 ? TravelDiaryTextRenderer.RenderEntries(day, travelRulesProfile) : day.Entries,
+            TravelDiaryTextRenderer.RenderEntries(day, travelRulesProfile),
             day.Warnings);
 
     private static TravelDiaryEncounterResolutionDto ToDto(DomainTravelDiaryEncounterResolutionState resolution)

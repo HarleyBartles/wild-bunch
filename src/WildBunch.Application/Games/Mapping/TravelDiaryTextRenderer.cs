@@ -3,6 +3,7 @@ using DomainJourneyTrailEvent = WildBunch.Domain.Travel.JourneyTrailEventState;
 using DomainTravelDiaryDayState = WildBunch.Domain.Travel.TravelDiaryDayState;
 using DomainTravelDiaryEncounterResolutionState = WildBunch.Domain.Travel.TravelDiaryEncounterResolutionState;
 using DomainTravelRulesProfile = WildBunch.Domain.Travel.TravelRulesProfile;
+using DomainTrailTerrain = WildBunch.Domain.World.TrailTerrain;
 
 namespace WildBunch.Application.Games.Mapping;
 
@@ -12,15 +13,136 @@ public static class TravelDiaryTextRenderer
     {
         var entries = new List<string>();
 
-        if (day.PendingEncounter is null)
+        var journeyBeat = RenderJourneyBeat(day);
+        if (!string.IsNullOrWhiteSpace(journeyBeat))
         {
-            entries.Add(RenderJourneyBeat(day));
+            entries.Add(journeyBeat);
         }
 
-        if (!string.IsNullOrWhiteSpace(day.ResourceBeat))
+        var resourceBeat = RenderResourceBeat(day);
+        if (!string.IsNullOrWhiteSpace(resourceBeat))
         {
-            entries.Add(day.ResourceBeat!);
+            entries.Add(resourceBeat);
         }
+
+        if (day.Entries.Count > 0)
+        {
+            entries.AddRange(day.Entries);
+        }
+        else
+        {
+            entries.AddRange(RenderFallbackBodyEntries(day, travelRulesProfile));
+        }
+
+        entries.Add(RenderStatus(day));
+        return entries;
+    }
+
+    public static string RenderJourneyBeat(DomainTravelDiaryDayState day)
+    {
+        if (day.PendingEncounter is not null && day.EncounterResolution is null)
+        {
+            return string.Empty;
+        }
+
+        if (day.EncounterResolution is not null)
+        {
+            return day.EncounterResolution.ChoiceId switch
+            {
+                "run" => "I put the bad moment behind me and keep moving.",
+                "fight" => "I answer hard and keep the trail under my boot.",
+                "bribe" => "I pay my way through and keep the dust moving.",
+                _ => $"I answer by choosing to {day.EncounterResolution.ChoiceLabel.ToLowerInvariant()}."
+            };
+        }
+
+        if (day.TrailEvent is not null)
+        {
+            return day.TrailEvent.Id switch
+            {
+                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyCoinCache => "I find a little luck when I need it most.",
+                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyFoodCache => "I catch the smell of good luck and fresh grub on the wind.",
+                WildBunch.Domain.Travel.JourneyTrailEventId.LuckyWaterSeep => "I follow a faint trace of damp earth and find a hidden seep.",
+                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckWashout => "I have to earn every mile when the trail caves in.",
+                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckFoodLoss => "I keep my temper in check while the dust turns mean.",
+                WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckSpookedHorse => "My horse flinches at the wrong sound, and I pay for it the rest of the day.",
+                _ => day.TrailEvent.Message
+            };
+        }
+
+        if (day.DayNumber % 6 == 0)
+        {
+            return "I ride through enough quiet that I can hear leather creak and wind move through the brush.";
+        }
+
+        return day.Terrain switch
+        {
+            DomainTrailTerrain.OpenRange => day.EndingTravelMode == WildBunch.Domain.Travel.TravelMode.Mounted
+                ? "I cross open range with the horse moving steady under me."
+                : "I walk the open range and let the horizon keep me honest.",
+            DomainTrailTerrain.Hills => day.EndingTravelMode == WildBunch.Domain.Travel.TravelMode.Mounted
+                ? "I make the horse work for every rise, but the miles still move."
+                : "The hills keep asking for another climb, and I keep answering.",
+            DomainTrailTerrain.Badlands => "I keep following the road through hard, dry badlands.",
+            DomainTrailTerrain.Mountains => "I keep picking my way upward as the trail climbs hard.",
+            _ => "I keep moving and let the road tell me what kind of day it is."
+        };
+    }
+
+    public static string? RenderResourceBeat(DomainTravelDiaryDayState day)
+    {
+        var pieces = new List<string>();
+
+        if (day.Status == WildBunch.Domain.Travel.JourneyStatus.Completed && day.CanteenChargeDelta > 0)
+        {
+            pieces.Add("Back in town, I refill the canteen to the brim.");
+        }
+        else if (!day.RouteWaterSecure)
+        {
+            if (day.CurrentCanteenCharges == 0)
+            {
+                pieces.Add("My canteen is dry, so every mile starts to matter.");
+            }
+            else if (day.CurrentCanteenCharges <= day.CanteenChargesPerDay)
+            {
+                pieces.Add("I am down to the last stretch of water in the canteen.");
+            }
+        }
+
+        if (day.CurrentFood == 0)
+        {
+            pieces.Add("My food is gone, and the trail has turned mean.");
+        }
+        else if (day.CurrentFood == 1)
+        {
+            pieces.Add("My food is down to the last meal.");
+        }
+
+        if (day.CurrentHorseFeed == 0 && day.HorseStateAfter is not null)
+        {
+            pieces.Add("My horse feed is gone, so I have to watch the horse more closely.");
+        }
+        else if (day.CurrentHorseFeed == 1 && day.HorseStateAfter is not null)
+        {
+            pieces.Add("I am down to the last handful of horse feed.");
+        }
+
+        return pieces.Count == 0 ? null : string.Join(" ", pieces);
+    }
+
+    public static string RenderStatus(DomainTravelDiaryDayState day)
+        => day.Status switch
+        {
+            WildBunch.Domain.Travel.JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
+            WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
+            WildBunch.Domain.Travel.JourneyStatus.Completed => $"I made it to {day.DestinationTownName}.",
+            WildBunch.Domain.Travel.JourneyStatus.Failed => "I could not finish the trail before it gave out.",
+            _ => "I am still on the trail."
+        };
+
+    private static IReadOnlyList<string> RenderFallbackBodyEntries(DomainTravelDiaryDayState day, DomainTravelRulesProfile travelRulesProfile)
+    {
+        var entries = new List<string>();
 
         if (day.TrailEvent is not null)
         {
@@ -39,7 +161,6 @@ public static class TravelDiaryTextRenderer
         if (day.PendingEncounter is not null && day.EncounterResolution is null)
         {
             entries.Add(RenderPendingEncounter(day.PendingEncounter));
-            return entries;
         }
 
         if (day.EncounterResolution is not null)
@@ -52,14 +173,8 @@ public static class TravelDiaryTextRenderer
             }
         }
 
-        entries.Add(RenderStatus(day));
         return entries;
     }
-
-    private static string RenderJourneyBeat(DomainTravelDiaryDayState day)
-        => string.IsNullOrWhiteSpace(day.JourneyBeat)
-            ? "I keep moving and let the road tell me what kind of day it is."
-            : day.JourneyBeat;
 
     private static string RenderTrailEvent(DomainJourneyTrailEvent trailEvent)
         => trailEvent.Id switch
@@ -171,14 +286,4 @@ public static class TravelDiaryTextRenderer
 
         return string.Join(" ", pieces);
     }
-
-    private static string RenderStatus(DomainTravelDiaryDayState day)
-        => day.Status switch
-        {
-            WildBunch.Domain.Travel.JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
-            WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
-            WildBunch.Domain.Travel.JourneyStatus.Completed => $"I made it to {day.DestinationTownName}.",
-            WildBunch.Domain.Travel.JourneyStatus.Failed => "I could not finish the trail before it gave out.",
-            _ => "I am still on the trail."
-        };
 }

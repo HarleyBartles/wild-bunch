@@ -1,11 +1,33 @@
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Tests;
 
 public sealed class TravelDiaryTextRendererTests
 {
+    [Fact]
+    public void RenderEntriesWrapsRawEntriesWithStructuredDiaryProse()
+    {
+        var day = CreateDay(
+            terrain: TrailTerrain.OpenRange,
+            routeWaterSecure: false,
+            canteenChargesPerDay: 2,
+            currentCanteenCharges: 1,
+            currentFood: 2,
+            currentHorseFeed: 0,
+            horseStateAfter: HorseTravelState.Healthy,
+            entries: new[] { "I found a cache of jerky and trail biscuits and picked up 2 food." });
+
+        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+
+        Assert.Equal("I cross open range with the horse moving steady under me.", entries[0]);
+        Assert.Equal("I am down to the last stretch of water in the canteen. My horse feed is gone, so I have to watch the horse more closely.", entries[1]);
+        Assert.Contains("I found a cache of jerky and trail biscuits and picked up 2 food.", entries);
+        Assert.Equal("I keep moving and let the trail stretch ahead.", entries[^1]);
+    }
+
     [Fact]
     public void RenderEntriesReturnsFirstPersonChoiceTextForPendingEncounter()
     {
@@ -14,9 +36,10 @@ public sealed class TravelDiaryTextRendererTests
 
         var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
 
-        Assert.Single(entries);
+        Assert.Equal(2, entries.Count);
         Assert.Contains("A hard-eyed rider cuts across my path.", entries[0], StringComparison.OrdinalIgnoreCase);
         Assert.Contains("I can run, fight, or bribe.", entries[0], StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("I keep moving and let the trail stretch ahead.", entries[^1]);
         Assert.DoesNotContain("you ", entries[0], StringComparison.OrdinalIgnoreCase);
     }
 
@@ -39,7 +62,16 @@ public sealed class TravelDiaryTextRendererTests
         JourneyStatus status = JourneyStatus.Active,
         JourneyEncounterState? pendingEncounter = null,
         TravelDiaryEncounterResolutionState? encounterResolution = null,
-        JourneyTrailEventState? trailEvent = null)
+        JourneyTrailEventState? trailEvent = null,
+        HorseTravelState? horseStateBefore = null,
+        HorseTravelState? horseStateAfter = null,
+        TrailTerrain terrain = TrailTerrain.OpenRange,
+        bool routeWaterSecure = true,
+        int canteenChargesPerDay = 0,
+        int currentCanteenCharges = 2,
+        int currentFood = 3,
+        int currentHorseFeed = 0,
+        IReadOnlyList<string>? entries = null)
         => new(
             1,
             "Pinecross",
@@ -51,15 +83,15 @@ public sealed class TravelDiaryTextRendererTests
             3m,
             4,
             4,
-            null,
-            null,
+            horseStateBefore,
+            horseStateAfter,
             trailEvent,
             pendingEncounter,
             encounterResolution,
             null,
             null,
             null,
-            Entries: Array.Empty<string>(),
+            Entries: entries ?? Array.Empty<string>(),
             HealthDelta: 0,
             WalletDelta: 0m,
             FoodDelta: 0,
@@ -73,10 +105,15 @@ public sealed class TravelDiaryTextRendererTests
             HeatIncrease: 0,
             CurrentHealth: 1000,
             CurrentWallet: 25m,
-            CurrentFood: 3,
-            CurrentHorseFeed: 0,
-            CurrentCanteenCharges: 2,
+            CurrentFood: currentFood,
+            CurrentHorseFeed: currentHorseFeed,
+            CurrentCanteenCharges: currentCanteenCharges,
             CurrentAmmo: 0,
             CurrentHeat: 0,
-            Warnings: Array.Empty<string>());
+            Warnings: Array.Empty<string>())
+        {
+            Terrain = terrain,
+            RouteWaterSecure = routeWaterSecure,
+            CanteenChargesPerDay = canteenChargesPerDay
+        };
 }

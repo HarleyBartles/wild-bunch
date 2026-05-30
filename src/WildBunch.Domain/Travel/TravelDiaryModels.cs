@@ -1,4 +1,5 @@
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Travel;
 
@@ -40,7 +41,14 @@ public sealed record TravelDiaryDayState(
     int CurrentCanteenCharges,
     int CurrentAmmo,
     int CurrentHeat,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings)
+{
+    internal TrailTerrain Terrain { get; init; }
+
+    internal bool RouteWaterSecure { get; init; }
+
+    internal int CanteenChargesPerDay { get; init; }
+}
 
 public sealed record TravelDiaryEncounterResolutionState(
     string ChoiceId,
