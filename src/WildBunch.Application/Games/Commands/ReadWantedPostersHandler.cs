@@ -1,5 +1,5 @@
 using WildBunch.Application.Abstractions;
-using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Journal;
@@ -26,7 +26,7 @@ public sealed class ReadWantedPostersHandler
         ArgumentNullException.ThrowIfNull(command);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
 
         var actionResult = session.ReadWantedPosters();
 
@@ -39,14 +39,5 @@ public sealed class ReadWantedPostersHandler
             actionResult.Success,
             actionResult.Message,
             JournalMapper.ToDto(_journalResolver.Resolve(session)));
-    }
-
-    private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(
-        WildBunch.Domain.Game.GameSessionId sessionId,
-        CancellationToken cancellationToken)
-    {
-        var session = await _gameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        return session ?? throw new GameSessionNotFoundException(sessionId);
     }
 }

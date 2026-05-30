@@ -1,4 +1,5 @@
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
@@ -27,7 +28,7 @@ public sealed class PurchaseStoreItemHandler
         ArgumentNullException.ThrowIfNull(command);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
 
         var townId = new TownId(command.TownId);
         if (!session.World.TryGetTown(townId, out var town))
@@ -72,18 +73,9 @@ public sealed class PurchaseStoreItemHandler
             await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
         }
 
-        return new GameTurnResultDto(
+        return GameTurnResultFactory.Create(
             purchaseResult.Success,
             purchaseResult.Message,
-            GameSessionMapper.ToDto(session));
-    }
-
-    private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(
-        WildBunch.Domain.Game.GameSessionId sessionId,
-        CancellationToken cancellationToken)
-    {
-        var session = await _gameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        return session ?? throw new GameSessionNotFoundException(sessionId);
+            session);
     }
 }

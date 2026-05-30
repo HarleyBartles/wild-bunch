@@ -1,5 +1,5 @@
 using WildBunch.Application.Abstractions;
-using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Travel;
@@ -23,7 +23,7 @@ public sealed class TravelToTownHandler
         ArgumentNullException.ThrowIfNull(command);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var destinationTownId = new TownId(command.DestinationTownId);
         var previewResult = _travelResolver.PreviewJourney(
             session.World,
@@ -36,30 +36,20 @@ public sealed class TravelToTownHandler
         {
             session.StartJourney(previewResult.Preview);
             var travelResult = session.AdvanceJourneyDay();
+
             await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
 
-            return new GameTurnResultDto(
+            return GameTurnResultFactory.Create(
                 travelResult.Success,
                 travelResult.Message,
-                GameSessionMapper.ToDto(session),
+                session,
                 travelResult.Status,
-                travelResult.Journey is null ? null : TravelMapper.ToDto(travelResult.Journey),
-                null,
-                TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules));
+                travelResult.Journey);
         }
 
-        return new GameTurnResultDto(
+        return GameTurnResultFactory.Create(
             previewResult.Success,
             previewResult.Message,
-            GameSessionMapper.ToDto(session));
-    }
-
-    private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(
-        WildBunch.Domain.Game.GameSessionId sessionId,
-        CancellationToken cancellationToken)
-    {
-        var session = await _gameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        return session ?? throw new GameSessionNotFoundException(sessionId);
+            session);
     }
 }

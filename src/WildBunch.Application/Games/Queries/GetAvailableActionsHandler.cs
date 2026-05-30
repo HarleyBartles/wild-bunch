@@ -1,5 +1,5 @@
 using WildBunch.Application.Abstractions;
-using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Actions;
@@ -26,12 +26,7 @@ public sealed class GetAvailableActionsHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
-        var session = await _gameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        if (session is null)
-        {
-            throw new GameSessionNotFoundException(sessionId);
-        }
+        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
 
         var availableActions = _actionAvailabilityResolver.Resolve(session);
         return AvailableActionMapper.ToDto(availableActions);

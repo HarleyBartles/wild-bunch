@@ -1,5 +1,5 @@
 using WildBunch.Application.Abstractions;
-using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 
@@ -19,30 +19,16 @@ public sealed class ResolveJourneyEncounterHandler
         ArgumentNullException.ThrowIfNull(command);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await LoadSessionAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var result = session.ResolveJourneyEncounter(command.ChoiceId);
 
-        if (result.SessionChanged)
-        {
-            await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
-        }
+        await _gameSessionRepository.SaveIfAsync(session, result.SessionChanged, cancellationToken).ConfigureAwait(false);
 
-        return new GameTurnResultDto(
+        return GameTurnResultFactory.Create(
             result.Success,
             result.Message,
-            GameSessionMapper.ToDto(session),
+            session,
             result.Status,
-            result.Journey is null ? null : TravelMapper.ToDto(result.Journey),
-            null,
-            TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules));
-    }
-
-    private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(
-        WildBunch.Domain.Game.GameSessionId sessionId,
-        CancellationToken cancellationToken)
-    {
-        var session = await _gameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        return session ?? throw new GameSessionNotFoundException(sessionId);
+            result.Journey);
     }
 }
