@@ -21,6 +21,11 @@
 - Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api` when persistence may be affected, or as standing validation unless clearly irrelevant.
 - Report warnings separately from failures.
 
+## Testing Posture
+- New or updated real application behavior should normally include test coverage in the same slice.
+- If coverage is skipped, state the reason explicitly and keep the gap narrow and deliberate.
+- Debug-only or temporary prototype surfaces, including the current cockpit/debug shell, may use lighter-weight coverage while they remain debug-only.
+
 ## GREEN Standard
 - `GREEN` requires implementation, validation, publication to `main`, remote head proof, a clean worktree, and issue-goal conformance.
 - Passing tests alone is not `GREEN`.
