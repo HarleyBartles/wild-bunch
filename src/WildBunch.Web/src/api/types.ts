@@ -38,6 +38,7 @@ export type StoreOfferAvailability = 0 | 1;
 export interface StartGameRequest {
   playerName: string;
   travelDifficulty: TravelDifficulty;
+  seedCode?: string | null;
 }
 
 export interface TravelRequest {

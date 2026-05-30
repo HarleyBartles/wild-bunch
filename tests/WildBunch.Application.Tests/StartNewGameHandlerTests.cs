@@ -37,4 +37,16 @@ public sealed class StartNewGameHandlerTests
 
         Assert.Equal(WildBunch.Domain.Travel.TravelDifficulty.Easy, factory.RequestedTravelDifficulties.Single());
     }
+
+    [Fact]
+    public async Task StartNewGameForwardsSetupSeedCode()
+    {
+        var factory = new StubNewGameFactory();
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new StartNewGameHandler(factory, repository);
+
+        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", SetupSeedCode: "WB1-N-03-000000000000-0000"));
+
+        Assert.Equal("WB1-N-03-000000000000-0000", factory.RequestedSetupSeedCodes.Single());
+    }
 }

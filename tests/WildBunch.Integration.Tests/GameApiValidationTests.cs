@@ -23,6 +23,18 @@ public sealed class GameApiValidationTests
     }
 
     [Fact]
+    public async Task PostGamesWithInvalidSeedCodeReturnsValidationProblem()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SetupSeedCode: "WB1-N-03-000000000000-0000"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "setupSeedCode");
+    }
+
+    [Fact]
     public async Task PostGamesWithMissingPlayerNameReturnsValidationProblem()
     {
         using var factory = new SqliteApiFactory();

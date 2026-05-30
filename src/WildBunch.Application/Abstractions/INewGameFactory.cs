@@ -5,5 +5,5 @@ namespace WildBunch.Application.Abstractions;
 
 public interface INewGameFactory
 {
-    GameSession Create(string playerName, TravelDifficulty travelDifficulty = TravelDifficulty.Normal);
+    GameSession Create(string playerName, TravelDifficulty travelDifficulty = TravelDifficulty.Normal, string? setupSeedCode = null);
 }

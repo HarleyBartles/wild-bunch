@@ -79,10 +79,10 @@ function extractErrorMessage(body: unknown) {
   return "";
 }
 
-export function createGame(playerName: string, travelDifficulty: TravelDifficulty = 0) {
+export function createGame(playerName: string, travelDifficulty: TravelDifficulty = 0, seedCode?: string | null) {
   return requestJson<GameSessionDto>("/api/games", {
     method: "POST",
-    body: JSON.stringify({ playerName, travelDifficulty } satisfies StartGameRequest),
+    body: JSON.stringify({ playerName, travelDifficulty, seedCode } satisfies StartGameRequest),
   });
 }
 

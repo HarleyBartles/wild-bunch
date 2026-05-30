@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using WildBunch.Api.Games;
+using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.Api.Games.Validation;
 
@@ -12,6 +13,14 @@ public static class RequestValidation
         if (request is null || string.IsNullOrWhiteSpace(request.PlayerName))
         {
             errors["playerName"] = ["Player name is required."];
+        }
+
+        if (!string.IsNullOrWhiteSpace(request?.SetupSeedCode))
+        {
+            if (!GameSetupSeedCodeValidator.TryValidate(request.SetupSeedCode, out var errorMessage))
+            {
+                errors["setupSeedCode"] = [errorMessage ?? "Seed code is invalid."];
+            }
         }
 
         return WriteResult(errors, out result);

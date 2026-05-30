@@ -19,7 +19,7 @@ public sealed class StartNewGameHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var session = _newGameFactory.Create(command.PlayerName, command.TravelDifficulty);
+        var session = _newGameFactory.Create(command.PlayerName, command.TravelDifficulty, command.SetupSeedCode);
         await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
 
         return GameSessionMapper.ToDto(session);
