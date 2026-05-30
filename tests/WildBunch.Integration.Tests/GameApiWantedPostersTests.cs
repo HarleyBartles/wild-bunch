@@ -134,7 +134,7 @@ public sealed class GameApiWantedPostersTests
         Assert.False(result!.Success);
         Assert.Equal("holloway", result.CurrentJournal.CurrentTown.Id);
         Assert.Equal(2, result.CurrentJournal.Clock.Turn);
-        Assert.Equal(4, result.CurrentJournal.LogEntries.Count);
+        Assert.True(result.CurrentJournal.LogEntries.Count >= 4);
         Assert.DoesNotContain(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
 

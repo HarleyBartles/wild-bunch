@@ -131,6 +131,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult AdvanceJourneyDay()
     {
+        return AdvanceJourneyDayDeterministic();
+
         if (Journey is null)
         {
             return TravelJourneyStepResult.Failed("No active journey is underway.");
@@ -677,7 +679,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         JourneyTrailEventState? trailEvent = null,
         JourneyEncounterState? pendingEncounter = null,
         TravelDiaryEncounterResolutionState? encounterResolution = null,
-        int ammoSpent = 0)
+        int ammoSpent = 0,
+        IReadOnlyList<string>? entries = null)
     {
         var horseStateAfter = journeySnapshot.HorseState;
         var currentHorseState = Player.Inventory.GetHorseState();
@@ -685,16 +688,30 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var currentHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
         var currentCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
         var openingNarration = startingDaysRemaining == journeySnapshot.ExpectedDays ? Journey?.OpeningNarration : null;
-        var journeyBeat = BuildJourneyBeat(journeySnapshot, trailEvent, pendingEncounter ?? journeySnapshot.PendingEncounter, encounterResolution);
+        var extraEntriesProvided = entries is not null && entries.Count > 0;
+        var effectiveTrailEvent = extraEntriesProvided ? null : trailEvent;
+        var effectivePendingEncounter = extraEntriesProvided ? null : pendingEncounter ?? journeySnapshot.PendingEncounter;
+        var effectiveEncounterResolution = extraEntriesProvided ? null : encounterResolution;
+        var journeyBeat = BuildJourneyBeat(journeySnapshot, effectiveTrailEvent, effectivePendingEncounter, effectiveEncounterResolution);
         var resourceBeat = BuildResourceBeat(
             journeySnapshot,
             currentFood,
             currentHorseFeed,
             startingCanteenCharges,
             currentCanteenCharges,
-            trailEvent,
-            pendingEncounter ?? journeySnapshot.PendingEncounter,
-            encounterResolution);
+            effectiveTrailEvent,
+            effectivePendingEncounter,
+            effectiveEncounterResolution);
+
+        var diaryEntries = BuildDefaultDiaryEntries(journeySnapshot, openingNarration, journeyBeat, resourceBeat, effectiveTrailEvent, effectivePendingEncounter, effectiveEncounterResolution);
+        if (startingTravelMode == TravelMode.Mounted && journeySnapshot.TravelMode == TravelMode.Foot)
+        {
+            diaryEntries = diaryEntries.Append("I had to finish the trail on foot after the horse went lame.").ToArray();
+        }
+        if (entries is not null && entries.Count > 0)
+        {
+            diaryEntries = diaryEntries.Concat(entries).ToArray();
+        }
 
         return new TravelDiaryDayState(
             journeySnapshot.DaysTravelled,
@@ -715,6 +732,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             openingNarration,
             journeyBeat,
             resourceBeat,
+            diaryEntries,
             Player.Health - startingHealth,
             Player.Wallet.Cash - startingWallet,
             Player.Inventory.GetQuantity(ItemKind.Food) - startingFood,
@@ -727,6 +745,702 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             journeySnapshot.DelayDays - startingDelayDays,
             PursuitState.Heat - startingHeat,
             journeySnapshot.Warnings);
+    }
+
+    private static IReadOnlyList<string> BuildDefaultDiaryEntries(
+        TravelJourneySnapshot journeySnapshot,
+        string? openingNarration,
+        string? journeyBeat,
+        string? resourceBeat,
+        JourneyTrailEventState? trailEvent,
+        JourneyEncounterState? pendingEncounter,
+        TravelDiaryEncounterResolutionState? encounterResolution)
+    {
+        var entries = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(openingNarration))
+        {
+            entries.Add(openingNarration!);
+        }
+
+        if (!string.IsNullOrWhiteSpace(journeyBeat))
+        {
+            entries.Add(journeyBeat!);
+        }
+
+        if (trailEvent is not null)
+        {
+            entries.Add(trailEvent.Message);
+        }
+
+        if (pendingEncounter is not null && encounterResolution is null)
+        {
+            entries.Add(pendingEncounter.Message);
+        }
+
+        if (encounterResolution is not null)
+        {
+            entries.Add(encounterResolution.ChoiceId switch
+            {
+                "run" => "I decided to run for it.",
+                "fight" => "I decided to stand and fight.",
+                "bribe" => "I decided to bribe my way through.",
+                _ => $"I chose to {encounterResolution.ChoiceLabel.ToLowerInvariant()}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(resourceBeat))
+        {
+            entries.Add(resourceBeat!);
+        }
+
+        entries.Add(journeySnapshot.Status switch
+        {
+            JourneyStatus.Active => "The trail keeps stretching ahead.",
+            JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
+            JourneyStatus.Completed => $"I made it to {journeySnapshot.DestinationTownName}.",
+            JourneyStatus.Failed => "The trail gave out before I could finish it.",
+            _ => "I am still on the trail."
+        });
+
+        return entries;
+    }
+
+    private TravelJourneyStepResult AdvanceJourneyDayDeterministic()
+    {
+        if (Journey is null)
+        {
+            return TravelJourneyStepResult.Failed("No active journey is underway.");
+        }
+
+        if (Journey.PendingEncounter is not null)
+        {
+            var encounterMessage = Journey.PendingEncounter.Message;
+            AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
+            return new TravelJourneyStepResult(
+                false,
+                Journey.Status,
+                "Resolve the pending encounter before you continue on the trail.",
+                encounterMessage,
+                0,
+                Journey.ToSnapshot(TravelRules));
+        }
+
+        if (Journey.Status != JourneyStatus.Active)
+        {
+            return new TravelJourneyStepResult(
+                false,
+                Journey.Status,
+                "The journey is not active.",
+                "The journey is not active.",
+                0,
+                Journey.ToSnapshot(TravelRules));
+        }
+
+        var startingTravelMode = Journey.TravelMode;
+        var startingRideDayDistance = Journey.RemainingRideDayDistance;
+        var startingDaysRemaining = Journey.RemainingDays;
+        var startingHorseState = Player.Inventory.GetHorseState();
+        var startingWallet = Player.Wallet.Cash;
+        var startingFood = Player.Inventory.GetQuantity(ItemKind.Food);
+        var startingHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
+        var startingCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
+        var startingHealth = Player.Health;
+        var startingHorseHunger = startingHorseState?.Hunger ?? 0;
+        var startingHorseThirst = startingHorseState?.Thirst ?? 0;
+        var startingHorseExhaustion = startingHorseState?.Exhaustion ?? 0;
+        var startingDelayDays = Journey.DelayDays;
+        var startingHeat = PursuitState.Heat;
+
+        var capabilities = new InventoryCapabilityResolver().Resolve(Player.Inventory, TravelRules);
+        if (Journey.TravelMode == TravelMode.Mounted && !capabilities.MountedTravelAvailable)
+        {
+            Journey.RecalculatePacing(TravelMode.Foot);
+        }
+
+        if (Player.Inventory.GetQuantity(ItemKind.Food) < 1)
+        {
+            Journey.MarkFailed();
+            var message = "The trail grinds to a halt when your food runs out.";
+            AddLogEntry(GameLogEntryKind.Travel, message);
+            var failedSnapshot = Journey.ToSnapshot(TravelRules);
+            AppendTravelDiaryDay(CreateTravelDiaryDay(
+                failedSnapshot,
+                startingTravelMode,
+                startingRideDayDistance,
+                startingDaysRemaining,
+                startingHorseState,
+                startingWallet,
+                startingFood,
+                startingHorseFeed,
+                startingCanteenCharges,
+                startingHealth,
+                startingHorseHunger,
+                startingHorseThirst,
+                startingHorseExhaustion,
+                startingDelayDays,
+                startingHeat));
+            Journey = null;
+            return new TravelJourneyStepResult(false, JourneyStatus.Failed, message, message, 0, failedSnapshot);
+        }
+
+        Player.Inventory.RemoveQuantity(ItemKind.Food, 1);
+        Journey.ConsumeFood();
+
+        var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
+            Journey.Preview.RouteProfile.Terrain,
+            Journey.Preview.RouteProfile.WaterFeature,
+            Player.Inventory.GetHorseState(),
+            Player.Inventory.GetCanteenState(),
+            Player.Inventory.GetQuantity(ItemKind.HorseFeed),
+            TravelRules);
+
+        if (upkeep.HorseFeedConsumed > 0)
+        {
+            Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, upkeep.HorseFeedConsumed);
+            Journey.ConsumeHorseFeed(upkeep.HorseFeedConsumed);
+        }
+
+        if (upkeep.CanteenState is not null)
+        {
+            Player.Inventory.SetCanteenState(upkeep.CanteenState);
+            Journey.SetCanteenCharges(upkeep.CanteenState.Charges);
+        }
+        else
+        {
+            Journey.SetCanteenCharges(0);
+        }
+
+        if (upkeep.HorseState is not null)
+        {
+            Player.Inventory.SetHorseState(upkeep.HorseState);
+            Journey.SetHorseState(upkeep.HorseState);
+        }
+
+        var horseLostMessage = string.Empty;
+        if (upkeep.MountedTravelLost && Journey.TravelMode == TravelMode.Mounted)
+        {
+            horseLostMessage = DescribeHorseLoss(upkeep.HorseState, TravelRules);
+            Journey.RecalculatePacing(TravelMode.Foot);
+        }
+
+        Clock.Advance();
+        var progress = Journey.AdvanceOneDay();
+        PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
+
+        var plan = TravelDayPlanGenerator.Generate(Journey, TravelRules);
+        Journey.SetCurrentDayPlan(plan);
+
+        var dayEntries = new List<string>();
+        JourneyTrailEventState? lastTrailEvent = null;
+
+        while (Journey.CurrentDayPlan is not null && !Journey.CurrentDayPlan.IsComplete)
+        {
+            var currentEncounter = Journey.CurrentDayPlan.CurrentEncounter;
+            if (currentEncounter is null)
+            {
+                break;
+            }
+
+            if (currentEncounter.RequiresChoice)
+            {
+                var pendingEncounter = currentEncounter.PendingEncounter!;
+                Journey.MarkInterrupted(pendingEncounter);
+                var encounterMessage = PrependHorseLossMessage(horseLostMessage, pendingEncounter.Message);
+                dayEntries.Add(encounterMessage);
+                dayEntries.Add("I can run, fight, or bribe my way through.");
+                AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
+
+                var interruptedSnapshot = Journey.ToSnapshot(TravelRules);
+                AppendTravelDiaryDay(CreateTravelDiaryDay(
+                    interruptedSnapshot,
+                    startingTravelMode,
+                    startingRideDayDistance,
+                    startingDaysRemaining,
+                    startingHorseState,
+                    startingWallet,
+                    startingFood,
+                    startingHorseFeed,
+                    startingCanteenCharges,
+                    startingHealth,
+                    startingHorseHunger,
+                    startingHorseThirst,
+                    startingHorseExhaustion,
+                    startingDelayDays,
+                    startingHeat,
+                    pendingEncounter: pendingEncounter,
+                    entries: dayEntries));
+
+                return new TravelJourneyStepResult(
+                    false,
+                    JourneyStatus.Interrupted,
+                    horseLostMessage.Length == 0
+                        ? "Your journey is interrupted by a trail encounter."
+                        : $"Your journey is interrupted by a trail encounter. {horseLostMessage}",
+                    encounterMessage,
+                    0,
+                    interruptedSnapshot,
+                    lastTrailEvent);
+            }
+
+            if (currentEncounter.TrailEvent is not null)
+            {
+                var trailEventApplication = ApplyTrailEvent(currentEncounter.TrailEvent);
+                var trailEventMessage = PrependHorseLossMessage(
+                    CombineHorseLossMessage(horseLostMessage, trailEventApplication.HorseLossMessage),
+                    currentEncounter.Message);
+                dayEntries.Add(trailEventMessage);
+                AddLogEntry(GameLogEntryKind.Travel, trailEventMessage);
+                lastTrailEvent = currentEncounter.TrailEvent;
+            }
+            else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
+            {
+                dayEntries.Add(currentEncounter.Message);
+                AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
+            }
+
+            Journey.AdvanceCurrentDayPlan();
+        }
+
+        var journeySnapshot = Journey.ToSnapshot(TravelRules);
+        var diaryEntries = dayEntries.Count == 0 ? null : dayEntries;
+
+        if (progress.Completed)
+        {
+            var destinationTownId = Journey.Preview.DestinationTownId;
+            var destinationTownName = Journey.Preview.DestinationTownName;
+            var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
+            Journey.MarkCompleted();
+            Player.TravelTo(destinationTownId);
+            var canteenState = Player.Inventory.GetCanteenState();
+            if (canteenState is not null && canteenState.Charges < canteenState.Capacity)
+            {
+                var refilledCanteen = CanteenState.Full(canteenState.Capacity);
+                Player.Inventory.SetCanteenState(refilledCanteen);
+                Journey.SetCanteenCharges(refilledCanteen.Charges);
+            }
+
+            var completedSnapshot = Journey.ToSnapshot(TravelRules);
+            var completionMessage = horseLostMessage.Length == 0
+                ? $"You reach {destinationTownName}."
+                : $"{horseLostMessage} You reach {destinationTownName}.";
+            AddLogEntry(
+                GameLogEntryKind.Travel,
+                horseLostMessage.Length == 0
+                    ? $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s)."
+                    : $"{horseLostMessage} You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
+            AppendTravelDiaryDay(CreateTravelDiaryDay(
+                completedSnapshot,
+                startingTravelMode,
+                startingRideDayDistance,
+                startingDaysRemaining,
+                startingHorseState,
+                startingWallet,
+                startingFood,
+                startingHorseFeed,
+                startingCanteenCharges,
+                startingHealth,
+                startingHorseHunger,
+                startingHorseThirst,
+                startingHorseExhaustion,
+                startingDelayDays,
+                startingHeat,
+                trailEvent: lastTrailEvent,
+                entries: diaryEntries));
+            Journey.SetCurrentDayPlan(null);
+            Journey = null;
+
+            return new TravelJourneyStepResult(
+                true,
+                JourneyStatus.Completed,
+                completionMessage,
+                horseLostMessage.Length == 0
+                    ? $"You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s)."
+                    : $"{horseLostMessage} You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s).",
+                heatIncrease,
+                completedSnapshot,
+                lastTrailEvent);
+        }
+
+        var ongoingMessage = horseLostMessage.Length == 0
+            ? $"One trail day passes. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}."
+            : $"{horseLostMessage} One trail day passes on foot. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}.";
+        AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
+        AppendTravelDiaryDay(CreateTravelDiaryDay(
+            journeySnapshot,
+            startingTravelMode,
+            startingRideDayDistance,
+            startingDaysRemaining,
+            startingHorseState,
+            startingWallet,
+            startingFood,
+            startingHorseFeed,
+            startingCanteenCharges,
+            startingHealth,
+            startingHorseHunger,
+            startingHorseThirst,
+            startingHorseExhaustion,
+            startingDelayDays,
+            startingHeat,
+            trailEvent: lastTrailEvent,
+            entries: diaryEntries));
+        Journey.SetCurrentDayPlan(null);
+
+        return new TravelJourneyStepResult(
+            true,
+            JourneyStatus.Active,
+            ongoingMessage,
+            ongoingMessage,
+            Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
+            journeySnapshot,
+            lastTrailEvent);
+    }
+
+    private JourneyEncounterResolutionResult ResolveJourneyEncounterDeterministic(string choiceId)
+    {
+        if (Journey is null)
+        {
+            return JourneyEncounterResolutionResult.Failed("No active journey is underway.", JourneyStatus.Failed);
+        }
+
+        if (Journey.PendingEncounter is null)
+        {
+            return JourneyEncounterResolutionResult.Failed("There is no pending encounter to resolve.", Journey.Status, Journey.ToSnapshot(TravelRules));
+        }
+
+        if (Journey.Status != JourneyStatus.Interrupted)
+        {
+            return JourneyEncounterResolutionResult.Failed("The encounter is not waiting to be resolved.", Journey.Status, Journey.ToSnapshot(TravelRules));
+        }
+
+        if (string.IsNullOrWhiteSpace(choiceId))
+        {
+            return JourneyEncounterResolutionResult.Failed("Choose how you want to answer the encounter.", Journey.Status, Journey.ToSnapshot(TravelRules));
+        }
+
+        var encounter = Journey.PendingEncounter;
+        if (!encounter.Choices.Any(choice => string.Equals(choice.Id, choiceId, StringComparison.OrdinalIgnoreCase)))
+        {
+            return JourneyEncounterResolutionResult.Failed("That is not a lawful way to answer this encounter.", Journey.Status, Journey.ToSnapshot(TravelRules));
+        }
+
+        var startingTravelMode = Journey.TravelMode;
+        var startingRideDayDistance = Journey.RemainingRideDayDistance;
+        var startingDaysRemaining = Journey.RemainingDays;
+        var startingHorseState = Player.Inventory.GetHorseState();
+        var startingWallet = Player.Wallet.Cash;
+        var startingFood = Player.Inventory.GetQuantity(ItemKind.Food);
+        var startingHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
+        var startingCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
+        var startingHealth = Player.Health;
+        var startingHorseHunger = startingHorseState?.Hunger ?? 0;
+        var startingHorseThirst = startingHorseState?.Thirst ?? 0;
+        var startingHorseExhaustion = startingHorseState?.Exhaustion ?? 0;
+        var startingDelayDays = Journey.DelayDays;
+        var startingHeat = PursuitState.Heat;
+        var resolvedChoiceId = choiceId.Trim().ToLowerInvariant();
+        var resolvedChoiceLabel = encounter.Choices.First(choice => string.Equals(choice.Id, resolvedChoiceId, StringComparison.OrdinalIgnoreCase)).Label;
+        var dayEntries = new List<string>();
+
+        switch (resolvedChoiceId)
+        {
+            case "run":
+            {
+                var isMountedEscape = Journey.TravelMode == TravelMode.Mounted;
+                var heatIncrease = isMountedEscape ? TravelRules.EncounterRunMountedHeatIncrease : TravelRules.EncounterRunFootHeatIncrease;
+                PursuitState.IncreaseHeat(heatIncrease);
+
+                var horseLossMessage = isMountedEscape
+                    ? ApplyEncounterHorsePressure(TravelRules.EncounterRunMountedHorseExhaustion)
+                    : string.Empty;
+
+                if (!isMountedEscape)
+                {
+                    Player.AdjustHealth(-TravelRules.EncounterRunFootHealthLoss);
+                }
+
+                Journey.ResumeFromEncounter();
+                var runMessage = isMountedEscape
+                    ? "You spur the horse and pull away."
+                    : $"You run on foot and pull away, but it costs you {TravelRules.EncounterRunFootHealthLoss} health.";
+                if (isMountedEscape && horseLossMessage.Length != 0)
+                {
+                    runMessage = $"{runMessage} You continue on foot.";
+                }
+
+                runMessage = PrependHorseLossMessage(horseLossMessage, runMessage);
+                AddLogEntry(GameLogEntryKind.Travel, runMessage);
+                dayEntries.Add("I decided to run for it.");
+                dayEntries.Add(isMountedEscape ? "I got away on the horse." : "I got away on foot.");
+                var resolution = new TravelDiaryEncounterResolutionState(
+                    resolvedChoiceId,
+                    resolvedChoiceLabel,
+                    isMountedEscape ? 0 : -TravelRules.EncounterRunFootHealthLoss,
+                    0m,
+                    0,
+                    heatIncrease,
+                    isMountedEscape ? TravelRules.EncounterRunMountedHorseExhaustion : 0,
+                    Journey.TravelMode == TravelMode.Foot);
+                Journey.RecordCurrentDayEncounterResolution(resolution);
+                Journey.AdvanceCurrentDayPlan();
+                var continueResult = ContinueCurrentDayAfterEncounterResolution(
+                    startingTravelMode,
+                    startingRideDayDistance,
+                    startingDaysRemaining,
+                    startingHorseState,
+                    startingWallet,
+                    startingFood,
+                    startingHorseFeed,
+                    startingCanteenCharges,
+                    startingHealth,
+                    startingHorseHunger,
+                    startingHorseThirst,
+                    startingHorseExhaustion,
+                    startingDelayDays,
+                    startingHeat,
+                    dayEntries,
+                    resolution);
+                return continueResult;
+            }
+
+            case "fight":
+            {
+                var hasFirearmAmmo = Player.Inventory.GetQuantity(ItemKind.RevolverAmmo) > 0 || Player.Inventory.GetQuantity(ItemKind.RifleAmmo) > 0;
+                var hasKnife = Player.Inventory.HasItem(ItemKind.Knife);
+                if (!hasFirearmAmmo && !hasKnife)
+                {
+                    return JourneyEncounterResolutionResult.Failed("You need a knife or firearm ammo to stand and fight.", Journey.Status, Journey.ToSnapshot(TravelRules));
+                }
+
+                var usedFirearm = hasFirearmAmmo && TrySpendFirearmAmmo();
+                var fightHealthLoss = usedFirearm
+                    ? TravelRules.EncounterFightAmmoHealthLoss
+                    : TravelRules.EncounterFightUnarmedHealthLoss;
+
+                Player.AdjustHealth(-fightHealthLoss);
+                PursuitState.IncreaseHeat(TravelRules.EncounterFightHeatIncrease);
+                Journey.ResumeFromEncounter();
+                var fightMessage = usedFirearm
+                    ? $"You spend a round and take {fightHealthLoss} health damage before forcing the rider off the trail."
+                    : $"You fight with your knife and take {fightHealthLoss} health damage before forcing the rider off the trail.";
+                AddLogEntry(GameLogEntryKind.Travel, fightMessage);
+                dayEntries.Add(fightMessage);
+                var resolution = new TravelDiaryEncounterResolutionState(
+                    resolvedChoiceId,
+                    resolvedChoiceLabel,
+                    -fightHealthLoss,
+                    0m,
+                    usedFirearm ? 1 : 0,
+                    TravelRules.EncounterFightHeatIncrease,
+                    0,
+                    Journey.TravelMode == TravelMode.Foot);
+                Journey.RecordCurrentDayEncounterResolution(resolution);
+                Journey.AdvanceCurrentDayPlan();
+                return ContinueCurrentDayAfterEncounterResolution(
+                    startingTravelMode,
+                    startingRideDayDistance,
+                    startingDaysRemaining,
+                    startingHorseState,
+                    startingWallet,
+                    startingFood,
+                    startingHorseFeed,
+                    startingCanteenCharges,
+                    startingHealth,
+                    startingHorseHunger,
+                    startingHorseThirst,
+                    startingHorseExhaustion,
+                    startingDelayDays,
+                    startingHeat,
+                    dayEntries,
+                    resolution);
+            }
+
+            case "bribe":
+            {
+                var bribeAmount = TravelRules.EncounterBribeCash;
+                if (!Player.Wallet.CanAfford(bribeAmount))
+                {
+                    return JourneyEncounterResolutionResult.Failed($"You need ${bribeAmount:0.00} to bribe your way through.", Journey.Status, Journey.ToSnapshot(TravelRules));
+                }
+
+                Player.SetWallet(Player.Wallet.Spend(bribeAmount));
+                Journey.ResumeFromEncounter();
+                var bribeMessage = $"You bribe the rider with ${bribeAmount:0.00} and continue on.";
+                AddLogEntry(GameLogEntryKind.Travel, bribeMessage);
+                dayEntries.Add(bribeMessage);
+                var resolution = new TravelDiaryEncounterResolutionState(
+                    resolvedChoiceId,
+                    resolvedChoiceLabel,
+                    0,
+                    -bribeAmount,
+                    0,
+                    0,
+                    0,
+                    Journey.TravelMode == TravelMode.Foot);
+                Journey.RecordCurrentDayEncounterResolution(resolution);
+                Journey.AdvanceCurrentDayPlan();
+                return ContinueCurrentDayAfterEncounterResolution(
+                    startingTravelMode,
+                    startingRideDayDistance,
+                    startingDaysRemaining,
+                    startingHorseState,
+                    startingWallet,
+                    startingFood,
+                    startingHorseFeed,
+                    startingCanteenCharges,
+                    startingHealth,
+                    startingHorseHunger,
+                    startingHorseThirst,
+                    startingHorseExhaustion,
+                    startingDelayDays,
+                    startingHeat,
+                    dayEntries,
+                    resolution);
+            }
+
+            default:
+                return JourneyEncounterResolutionResult.Failed("That choice is not available for this encounter.", Journey.Status, Journey.ToSnapshot(TravelRules));
+        }
+    }
+
+    private JourneyEncounterResolutionResult ContinueCurrentDayAfterEncounterResolution(
+        TravelMode startingTravelMode,
+        decimal startingRideDayDistance,
+        int startingDaysRemaining,
+        HorseTravelState? startingHorseState,
+        decimal startingWallet,
+        int startingFood,
+        int startingHorseFeed,
+        int startingCanteenCharges,
+        int startingHealth,
+        int startingHorseHunger,
+        int startingHorseThirst,
+        int startingHorseExhaustion,
+        int startingDelayDays,
+        int startingHeat,
+        List<string> dayEntries,
+        TravelDiaryEncounterResolutionState resolution)
+    {
+        while (Journey is not null && Journey.CurrentDayPlan is not null && !Journey.CurrentDayPlan.IsComplete)
+        {
+            var currentEncounter = Journey.CurrentDayPlan.CurrentEncounter;
+            if (currentEncounter is null)
+            {
+                break;
+            }
+
+            if (currentEncounter.RequiresChoice)
+            {
+                var pendingEncounter = currentEncounter.PendingEncounter!;
+                Journey.MarkInterrupted(pendingEncounter);
+                var pendingMessage = pendingEncounter.Message;
+                AddLogEntry(GameLogEntryKind.Travel, pendingMessage);
+                dayEntries.Add(pendingMessage);
+
+                var pendingSnapshot = Journey.ToSnapshot(TravelRules);
+                UpdateLatestTravelDiaryDay(day => CreateTravelDiaryDay(
+                    pendingSnapshot,
+                    startingTravelMode,
+                    startingRideDayDistance,
+                    startingDaysRemaining,
+                    startingHorseState,
+                    startingWallet,
+                    startingFood,
+                    startingHorseFeed,
+                    startingCanteenCharges,
+                    startingHealth,
+                    startingHorseHunger,
+                    startingHorseThirst,
+                    startingHorseExhaustion,
+                    startingDelayDays,
+                    startingHeat,
+                    pendingEncounter: pendingEncounter,
+                    encounterResolution: resolution,
+                    entries: dayEntries));
+
+                return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Interrupted, pendingMessage, pendingSnapshot);
+            }
+
+            if (currentEncounter.TrailEvent is not null)
+            {
+                var trailEventApplication = ApplyTrailEvent(currentEncounter.TrailEvent);
+                var encounterMessage = PrependHorseLossMessage(trailEventApplication.HorseLossMessage, currentEncounter.Message);
+                AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
+                dayEntries.Add(encounterMessage);
+            }
+            else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
+            {
+                AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
+                dayEntries.Add(currentEncounter.Message);
+            }
+
+            Journey.AdvanceCurrentDayPlan();
+        }
+
+        var journeySnapshot = Journey!.ToSnapshot(TravelRules);
+        UpdateLatestTravelDiaryDay(day => CreateTravelDiaryDay(
+            journeySnapshot,
+            startingTravelMode,
+            startingRideDayDistance,
+            startingDaysRemaining,
+            startingHorseState,
+            startingWallet,
+            startingFood,
+            startingHorseFeed,
+            startingCanteenCharges,
+            startingHealth,
+            startingHorseHunger,
+            startingHorseThirst,
+            startingHorseExhaustion,
+            startingDelayDays,
+            startingHeat,
+            encounterResolution: resolution,
+            entries: dayEntries));
+
+        if (Journey.CurrentDayPlan?.IsComplete == true)
+        {
+            Journey.SetCurrentDayPlan(null);
+        }
+
+        if (Journey.RemainingDays == 0 && Journey.RemainingRideDayDistance == 0)
+        {
+            var destinationTownId = Journey.Preview.DestinationTownId;
+            var destinationTownName = Journey.Preview.DestinationTownName;
+            Journey.MarkCompleted();
+            Player.TravelTo(destinationTownId);
+            var canteenState = Player.Inventory.GetCanteenState();
+            if (canteenState is not null && canteenState.Charges < canteenState.Capacity)
+            {
+                var refilledCanteen = CanteenState.Full(canteenState.Capacity);
+                Player.Inventory.SetCanteenState(refilledCanteen);
+                Journey.SetCanteenCharges(refilledCanteen.Charges);
+            }
+
+            var completedSnapshot = Journey.ToSnapshot(TravelRules);
+            UpdateLatestTravelDiaryDay(day => CreateTravelDiaryDay(
+                completedSnapshot,
+                startingTravelMode,
+                startingRideDayDistance,
+                startingDaysRemaining,
+                startingHorseState,
+                startingWallet,
+                startingFood,
+                startingHorseFeed,
+                startingCanteenCharges,
+                startingHealth,
+                startingHorseHunger,
+                startingHorseThirst,
+                startingHorseExhaustion,
+                startingDelayDays,
+                startingHeat,
+                encounterResolution: resolution,
+                entries: dayEntries));
+            Journey = null;
+            return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Completed, $"You clear the remaining trail and reach {destinationTownName}.", completedSnapshot);
+        }
+
+        Journey.ResumeFromEncounter();
+        return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Active, "You push the rider behind you and keep moving.", journeySnapshot);
     }
 
     private static string BuildJourneyOpeningNarration(TravelPreview preview)
@@ -866,6 +1580,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     public JourneyEncounterResolutionResult ResolveJourneyEncounter(string choiceId)
     {
+        return ResolveJourneyEncounterDeterministic(choiceId);
+
         if (Journey is null)
         {
             return JourneyEncounterResolutionResult.Failed("No active journey is underway.", JourneyStatus.Failed);

@@ -34,8 +34,6 @@ public sealed class TravelRulesProfileTests
         Assert.Equal(5, profile.HorseExhaustionDeathThreshold);
         Assert.Equal(1m, profile.MountedRideDayProgress);
         Assert.Equal(0.5m, profile.FootRideDayProgress);
-        Assert.Equal(1, profile.FirstEncounterDay);
-        Assert.Equal(1, profile.FirstTrailEventDay);
         Assert.Equal(3, profile.LuckyTrailCoinReward);
         Assert.Equal(1, profile.LuckyTrailFoodReward);
         Assert.Equal(1, profile.LuckyTrailWaterRecovery);

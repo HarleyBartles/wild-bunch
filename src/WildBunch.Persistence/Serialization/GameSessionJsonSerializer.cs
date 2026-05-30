@@ -385,6 +385,7 @@ public sealed class GameSessionJsonSerializer
         public string? OpeningNarration { get; set; }
         public int DaysTravelled { get; set; }
         public int DelayDays { get; set; }
+        public TravelDayPlanSnapshot? CurrentDayPlan { get; set; }
         public JourneyEncounterSnapshot? PendingEncounter { get; set; }
         public IReadOnlyList<string> Warnings { get; set; } = Array.Empty<string>();
 
@@ -418,6 +419,7 @@ public sealed class GameSessionJsonSerializer
                 OpeningNarration = snapshot.OpeningNarration,
                 DaysTravelled = snapshot.DaysTravelled,
                 DelayDays = snapshot.DelayDays,
+                CurrentDayPlan = snapshot.CurrentDayPlan is null ? null : TravelDayPlanSnapshot.FromDomain(snapshot.CurrentDayPlan),
                 PendingEncounter = snapshot.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(snapshot.PendingEncounter),
                 Warnings = snapshot.Warnings.ToArray()
             };
@@ -451,8 +453,66 @@ public sealed class GameSessionJsonSerializer
                 OpeningNarration,
                 DaysTravelled,
                 DelayDays,
+                CurrentDayPlan?.ToDomain(),
                 PendingEncounter?.ToDomain(),
                 Warnings.ToArray());
+    }
+
+    private sealed class TravelDayPlanSnapshot
+    {
+        public int DayNumber { get; set; }
+        public IReadOnlyList<TravelDayEncounterSnapshot> Encounters { get; set; } = Array.Empty<TravelDayEncounterSnapshot>();
+        public int CurrentEncounterIndex { get; set; }
+        public bool IsComplete { get; set; }
+
+        public static TravelDayPlanSnapshot FromDomain(TravelDayPlanState dayPlan)
+            => new()
+            {
+                DayNumber = dayPlan.DayNumber,
+                Encounters = dayPlan.Encounters.Select(TravelDayEncounterSnapshot.FromDomain).ToArray(),
+                CurrentEncounterIndex = dayPlan.CurrentEncounterIndex,
+                IsComplete = dayPlan.IsComplete
+            };
+
+        public TravelDayPlanState ToDomain()
+            => new(
+                DayNumber,
+                Encounters.Select(encounter => encounter.ToDomain()).ToArray(),
+                CurrentEncounterIndex,
+                IsComplete);
+    }
+
+    private sealed class TravelDayEncounterSnapshot
+    {
+        public int EncounterIndex { get; set; }
+        public TravelDayEncounterCategory Category { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public JourneyTrailEventSnapshot? TrailEvent { get; set; }
+        public JourneyEncounterSnapshot? PendingEncounter { get; set; }
+        public TravelDiaryEncounterResolutionSnapshot? Resolution { get; set; }
+
+        public static TravelDayEncounterSnapshot FromDomain(TravelDayEncounterState encounter)
+            => new()
+            {
+                EncounterIndex = encounter.EncounterIndex,
+                Category = encounter.Category,
+                Title = encounter.Title,
+                Message = encounter.Message,
+                TrailEvent = encounter.TrailEvent is null ? null : JourneyTrailEventSnapshot.FromDomain(encounter.TrailEvent),
+                PendingEncounter = encounter.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(encounter.PendingEncounter),
+                Resolution = encounter.Resolution is null ? null : TravelDiaryEncounterResolutionSnapshot.FromDomain(encounter.Resolution)
+            };
+
+        public TravelDayEncounterState ToDomain()
+            => new(
+                EncounterIndex,
+                Category,
+                Title,
+                Message,
+                TrailEvent?.ToDomain(),
+                PendingEncounter?.ToDomain(),
+                Resolution?.ToDomain());
     }
 
     private sealed class JourneyEncounterSnapshot
@@ -474,6 +534,90 @@ public sealed class GameSessionJsonSerializer
                 Kind,
                 Message,
                 Choices.Select(choice => choice.ToDomain()).ToArray());
+    }
+
+    private sealed class JourneyTrailEventSnapshot
+    {
+        public JourneyTrailEventId Id { get; set; }
+        public JourneyTrailEventKind Kind { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public decimal WalletDelta { get; set; }
+        public int FoodDelta { get; set; }
+        public int CanteenChargeDelta { get; set; }
+        public int HorseHungerDelta { get; set; }
+        public int HorseThirstDelta { get; set; }
+        public int HorseExhaustionDelta { get; set; }
+        public int DelayDays { get; set; }
+        public int HeatIncrease { get; set; }
+
+        public static JourneyTrailEventSnapshot FromDomain(JourneyTrailEventState trailEvent)
+            => new()
+            {
+                Id = trailEvent.Id,
+                Kind = trailEvent.Kind,
+                Title = trailEvent.Title,
+                Message = trailEvent.Message,
+                WalletDelta = trailEvent.WalletDelta,
+                FoodDelta = trailEvent.FoodDelta,
+                CanteenChargeDelta = trailEvent.CanteenChargeDelta,
+                HorseHungerDelta = trailEvent.HorseHungerDelta,
+                HorseThirstDelta = trailEvent.HorseThirstDelta,
+                HorseExhaustionDelta = trailEvent.HorseExhaustionDelta,
+                DelayDays = trailEvent.DelayDays,
+                HeatIncrease = trailEvent.HeatIncrease
+            };
+
+        public JourneyTrailEventState ToDomain()
+            => new(
+                Id,
+                Kind,
+                Title,
+                Message,
+                WalletDelta,
+                FoodDelta,
+                CanteenChargeDelta,
+                HorseHungerDelta,
+                HorseThirstDelta,
+                HorseExhaustionDelta,
+                DelayDays,
+                HeatIncrease);
+    }
+
+    private sealed class TravelDiaryEncounterResolutionSnapshot
+    {
+        public string ChoiceId { get; set; } = string.Empty;
+        public string ChoiceLabel { get; set; } = string.Empty;
+        public int HealthDelta { get; set; }
+        public decimal WalletDelta { get; set; }
+        public int AmmoSpent { get; set; }
+        public int HeatIncrease { get; set; }
+        public int HorseExhaustionDelta { get; set; }
+        public bool ContinuedOnFoot { get; set; }
+
+        public static TravelDiaryEncounterResolutionSnapshot FromDomain(TravelDiaryEncounterResolutionState resolution)
+            => new()
+            {
+                ChoiceId = resolution.ChoiceId,
+                ChoiceLabel = resolution.ChoiceLabel,
+                HealthDelta = resolution.HealthDelta,
+                WalletDelta = resolution.WalletDelta,
+                AmmoSpent = resolution.AmmoSpent,
+                HeatIncrease = resolution.HeatIncrease,
+                HorseExhaustionDelta = resolution.HorseExhaustionDelta,
+                ContinuedOnFoot = resolution.ContinuedOnFoot
+            };
+
+        public TravelDiaryEncounterResolutionState ToDomain()
+            => new(
+                ChoiceId,
+                ChoiceLabel,
+                HealthDelta,
+                WalletDelta,
+                AmmoSpent,
+                HeatIncrease,
+                HorseExhaustionDelta,
+                ContinuedOnFoot);
     }
 
     private sealed class JourneyEncounterChoiceSnapshot

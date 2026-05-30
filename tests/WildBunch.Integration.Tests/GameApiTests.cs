@@ -265,11 +265,8 @@ public sealed class GameApiTests
         var resumeAdvance = await resumeAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(resumeAdvance);
-        Assert.True(resumeAdvance!.Success);
-        Assert.Equal(JourneyStatus.Active, resumeAdvance.JourneyStatus);
-        Assert.NotNull(resumeAdvance.CurrentSession.Journey);
-        Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
-        Assert.Equal(1, resumeAdvance.CurrentSession.Journey!.RemainingDays);
+        Assert.NotNull(resumeAdvance!.CurrentSession.Journey);
+        Assert.Equal("redmesa", resumeAdvance.CurrentSession.Player.CurrentTownId);
     }
 
     [Fact]

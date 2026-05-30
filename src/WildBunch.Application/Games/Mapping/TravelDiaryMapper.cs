@@ -53,7 +53,7 @@ public static class TravelDiaryMapper
             day.HorseExhaustionDelta,
             day.DelayDays,
             day.HeatIncrease,
-            RenderEntries(day, travelRulesProfile),
+            day.Entries.Count == 0 ? RenderEntries(day, travelRulesProfile) : day.Entries,
             day.Warnings);
 
     private static TravelDiaryEncounterResolutionDto ToDto(DomainTravelDiaryEncounterResolutionState resolution)
