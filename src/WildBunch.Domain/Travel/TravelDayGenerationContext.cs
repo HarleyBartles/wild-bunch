@@ -1,0 +1,69 @@
+using TownId = WildBunch.Domain.World.TownId;
+using TrailRisk = WildBunch.Domain.World.TrailRisk;
+using TrailTerrain = WildBunch.Domain.World.TrailTerrain;
+using WaterFeature = WildBunch.Domain.World.WaterFeature;
+
+namespace WildBunch.Domain.Travel;
+
+public enum TravelPressureBand
+{
+    None = 0,
+    Low = 1,
+    Moderate = 2,
+    High = 3,
+    Critical = 4
+}
+
+public enum HorseConditionBand
+{
+    None = 0,
+    Sound = 1,
+    Worn = 2,
+    Lame = 3,
+    Critical = 4
+}
+
+public enum PursuitHeatBand
+{
+    Calm = 0,
+    Wary = 1,
+    Hot = 2,
+    Hunted = 3
+}
+
+public enum WalletBand
+{
+    Broke = 0,
+    Tight = 1,
+    Steady = 2,
+    Comfortable = 3,
+    Flush = 4
+}
+
+public sealed record TravelDayGenerationContext(
+    int GeneratorVersion,
+    string? GameSeed,
+    string? ScenarioProfileId,
+    string TrailId,
+    TownId OriginTownId,
+    TownId DestinationTownId,
+    int DayNumber,
+    TravelMode TravelMode,
+    TrailRisk Risk,
+    TrailTerrain Terrain,
+    WaterFeature WaterFeature,
+    TravelDifficulty Difficulty,
+    int RemainingDays,
+    decimal RemainingRideDayDistance,
+    TravelPressureBand FoodPressure,
+    TravelPressureBand CanteenPressure,
+    TravelPressureBand HorseFeedPressure,
+    HorseConditionBand HorseConditionBand,
+    PursuitHeatBand PursuitHeatBand,
+    WalletBand WalletBand,
+    IReadOnlyList<JourneyTrailEventKind> RecentTrailEventKinds)
+{
+    public bool WaterSecure => WaterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
+
+    public bool IsMounted => TravelMode == TravelMode.Mounted;
+}

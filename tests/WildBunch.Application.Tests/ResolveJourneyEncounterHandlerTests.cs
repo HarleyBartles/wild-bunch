@@ -33,6 +33,26 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task HandleAsyncKeepsTheTravelDiaryOnOneFrozenDayWhenResolvingTheEncounter()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateHighRiskSession();
+        repository.Seed(session);
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository);
+
+        var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.Single(advanceResult.TravelDiary!.Days);
+
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "run"));
+
+        Assert.True(resolveResult.Success);
+        var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
+        Assert.Contains(resolvedDay.Entries, entry => entry.Contains("I decided to run for it", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(resolvedDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static GameSession CreateHighRiskSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);

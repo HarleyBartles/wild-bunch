@@ -646,7 +646,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var progress = Journey.AdvanceOneDay();
         PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
 
-        var plan = TravelDayPlanGenerator.Generate(Journey, TravelRules);
+        var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
+        var plan = TravelDayPlanGenerator.Generate(generationContext);
         Journey.SetCurrentDayPlan(plan);
 
         var dayEntries = new List<string>();
@@ -812,6 +813,220 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
             journeySnapshot,
             lastTrailEvent);
+    }
+
+    internal TravelDayGenerationContext CreateTravelDayGenerationContext(
+        int generatorVersion = TravelDayPlanGenerator.CurrentVersion,
+        string? gameSeed = null,
+        string? scenarioProfileId = null)
+    {
+        if (Journey is null)
+        {
+            throw new InvalidOperationException("No active journey is underway.");
+        }
+
+        var routeProfile = Journey.Preview.RouteProfile;
+        var horseState = Player.Inventory.GetHorseState();
+        var recentTrailEventKinds = _travelDiaryDays
+            .Select(day => day.TrailEvent?.Kind)
+            .Where(kind => kind is not null)
+            .Select(kind => kind!.Value)
+            .TakeLast(3)
+            .ToArray();
+
+        return new TravelDayGenerationContext(
+            generatorVersion,
+            gameSeed,
+            scenarioProfileId,
+            routeProfile.TrailId,
+            Journey.Preview.OriginTownId,
+            Journey.Preview.DestinationTownId,
+            Journey.DaysTravelled,
+            Journey.TravelMode,
+            routeProfile.Risk,
+            routeProfile.Terrain,
+            routeProfile.WaterFeature,
+            TravelRules.Difficulty,
+            Journey.RemainingDays,
+            Journey.RemainingRideDayDistance,
+            CreateFoodPressureBand(Journey.FoodRemaining, Journey.RemainingDays),
+            CreateCanteenPressureBand(Journey.AvailableCanteenCharges, Journey.RemainingDays, Journey.Preview.RouteProfile.WaterFeature, horseState, TravelRules),
+            CreateHorseFeedPressureBand(Journey.HorseFeedRemaining, Journey.RemainingDays, Journey.Preview.RouteProfile.Terrain, horseState),
+            CreateHorseConditionBand(horseState, TravelRules),
+            CreateHeatBand(PursuitState.Heat),
+            CreateWalletBand(Player.Wallet.Cash, TravelRules),
+            recentTrailEventKinds);
+    }
+
+    private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)
+    {
+        if (foodRemaining <= 0)
+        {
+            return TravelPressureBand.Critical;
+        }
+
+        if (foodRemaining == 1)
+        {
+            return TravelPressureBand.High;
+        }
+
+        if (foodRemaining <= remainingDays)
+        {
+            return TravelPressureBand.Moderate;
+        }
+
+        if (foodRemaining <= remainingDays + 1)
+        {
+            return TravelPressureBand.Low;
+        }
+
+        return TravelPressureBand.None;
+    }
+
+    private static TravelPressureBand CreateCanteenPressureBand(
+        int availableCanteenCharges,
+        int remainingDays,
+        WaterFeature waterFeature,
+        HorseTravelState? horseState,
+        TravelRulesProfile travelRulesProfile)
+    {
+        if (JourneyUpkeepRules.HasRouteWater(waterFeature))
+        {
+            return TravelPressureBand.None;
+        }
+
+        var chargesPerDay = JourneyUpkeepRules.WaterChargesRequiredPerDay(horseState, travelRulesProfile);
+        var requiredCharges = remainingDays * chargesPerDay;
+        var reserveCharges = availableCanteenCharges - requiredCharges;
+
+        if (reserveCharges < 0)
+        {
+            return TravelPressureBand.Critical;
+        }
+
+        if (reserveCharges == 0)
+        {
+            return TravelPressureBand.High;
+        }
+
+        if (reserveCharges <= chargesPerDay)
+        {
+            return TravelPressureBand.Moderate;
+        }
+
+        if (reserveCharges <= chargesPerDay * 2)
+        {
+            return TravelPressureBand.Low;
+        }
+
+        return TravelPressureBand.None;
+    }
+
+    private static TravelPressureBand CreateHorseFeedPressureBand(
+        int horseFeedRemaining,
+        int remainingDays,
+        TrailTerrain terrain,
+        HorseTravelState? horseState)
+    {
+        if (horseState is null || JourneyUpkeepRules.HasGrazing(terrain))
+        {
+            return TravelPressureBand.None;
+        }
+
+        if (horseFeedRemaining <= 0)
+        {
+            return TravelPressureBand.Critical;
+        }
+
+        if (horseFeedRemaining == 1)
+        {
+            return TravelPressureBand.High;
+        }
+
+        if (horseFeedRemaining <= remainingDays)
+        {
+            return TravelPressureBand.Moderate;
+        }
+
+        if (horseFeedRemaining <= remainingDays + 1)
+        {
+            return TravelPressureBand.Low;
+        }
+
+        return TravelPressureBand.None;
+    }
+
+    private static HorseConditionBand CreateHorseConditionBand(HorseTravelState? horseState)
+        => CreateHorseConditionBand(horseState, TravelRulesProfile.Default);
+
+    private static HorseConditionBand CreateHorseConditionBand(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
+    {
+        if (horseState is null)
+        {
+            return HorseConditionBand.None;
+        }
+
+        if (horseState.IsDeadFor(travelRulesProfile))
+        {
+            return HorseConditionBand.Critical;
+        }
+
+        if (horseState.IsLameFor(travelRulesProfile))
+        {
+            return HorseConditionBand.Lame;
+        }
+
+        if (horseState.Exhaustion >= 2 || horseState.Hunger >= 2 || horseState.Thirst >= 1)
+        {
+            return HorseConditionBand.Worn;
+        }
+
+        return HorseConditionBand.Sound;
+    }
+
+    private static PursuitHeatBand CreateHeatBand(int heat)
+    {
+        if (heat <= 0)
+        {
+            return PursuitHeatBand.Calm;
+        }
+
+        if (heat <= 2)
+        {
+            return PursuitHeatBand.Wary;
+        }
+
+        if (heat <= 4)
+        {
+            return PursuitHeatBand.Hot;
+        }
+
+        return PursuitHeatBand.Hunted;
+    }
+
+    private static WalletBand CreateWalletBand(decimal cash, TravelRulesProfile travelRulesProfile)
+    {
+        if (cash <= 0m)
+        {
+            return WalletBand.Broke;
+        }
+
+        if (cash < travelRulesProfile.EncounterBribeCash)
+        {
+            return WalletBand.Tight;
+        }
+
+        if (cash < travelRulesProfile.EncounterBribeCash * 2)
+        {
+            return WalletBand.Steady;
+        }
+
+        if (cash < travelRulesProfile.EncounterBribeCash * 4)
+        {
+            return WalletBand.Comfortable;
+        }
+
+        return WalletBand.Flush;
     }
 
     private JourneyEncounterResolutionResult ResolveJourneyEncounterDeterministic(string choiceId)

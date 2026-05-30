@@ -318,7 +318,7 @@ public static class JourneyUpkeepRules
     }
 }
 
-internal static class TravelDayPlanGenerator
+internal static partial class TravelDayPlanGenerator
 {
     private static readonly JourneyEncounterChoiceState[] DefaultEncounterChoices =
     {
