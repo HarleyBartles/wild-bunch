@@ -198,7 +198,10 @@ public sealed class GameApiTests
         Assert.Equal("holloway", firstAdvance.CurrentSession.Player.CurrentTownId);
         Assert.Equal(3, firstAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, firstAdvance.CurrentSession.Clock.Turn);
-        Assert.Null(firstAdvance.CurrentSession.Journey);
+        Assert.NotNull(firstAdvance.CurrentSession.Journey);
+        Assert.Equal(JourneyStatus.Completed, firstAdvance.CurrentSession.Journey!.Status);
+        Assert.Equal(2, firstAdvance.TravelDiary!.Days.Count);
+        Assert.Equal(JourneyStatus.Completed, firstAdvance.TravelDiary.Days[^1].Status);
         Assert.Equal(startingFood - 2, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
         Assert.Equal(10, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
@@ -308,8 +311,20 @@ public sealed class GameApiTests
         var completeLowRisk = await AdvanceUntilTownAsync(client, createdSession.Id, "redmesa");
 
         Assert.Equal(JourneyStatus.Completed, completeLowRisk.JourneyStatus);
+        Assert.NotNull(completeLowRisk.CurrentSession.Journey);
         Assert.Equal("redmesa", completeLowRisk.CurrentSession.Player.CurrentTownId);
         var redMesaArrivalDay = completeLowRisk.CurrentSession.Clock.Day;
+
+        var acknowledgeResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/arrival/acknowledge", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, acknowledgeResponse.StatusCode);
+
+        var acknowledged = await acknowledgeResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(acknowledged);
+        Assert.True(acknowledged!.Success);
+        Assert.Null(acknowledged.CurrentSession.Journey);
+        Assert.Equal("redmesa", acknowledged.CurrentSession.Player.CurrentTownId);
 
         var foodPurchaseResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/towns/redmesa/store/buy",
@@ -433,6 +448,11 @@ public sealed class GameApiTests
                 var resolved = await resolveResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
                 Assert.NotNull(resolved);
                 Assert.True(resolved!.Success);
+                if (resolved.JourneyStatus == JourneyStatus.Completed && resolved.CurrentSession.Player.CurrentTownId == destinationTownId)
+                {
+                    return resolved;
+                }
+
                 Assert.Equal(JourneyStatus.Active, resolved.JourneyStatus);
                 continue;
             }

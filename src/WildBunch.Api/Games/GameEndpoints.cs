@@ -67,6 +67,11 @@ public static class GameEndpoints
             .Produces<GameTurnResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapPost("{id:guid}/travel/arrival/acknowledge", AcknowledgeJourneyArrivalAsync)
+            .WithName("AcknowledgeJourneyArrival")
+            .Produces<GameTurnResultDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         games.MapPost("{id:guid}/travel/encounter/resolve", ResolveTravelEncounterAsync)
             .WithName("ResolveTravelEncounter")
             .Accepts<ResolveJourneyEncounterRequest>("application/json")
@@ -263,6 +268,22 @@ public static class GameEndpoints
         try
         {
             var result = await handler.HandleAsync(new AdvanceTravelDayCommand(id), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> AcknowledgeJourneyArrivalAsync(
+        Guid id,
+        AcknowledgeJourneyArrivalHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new AcknowledgeJourneyArrivalCommand(id), cancellationToken);
             return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)

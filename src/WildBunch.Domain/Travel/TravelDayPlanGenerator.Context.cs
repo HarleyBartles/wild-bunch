@@ -65,27 +65,30 @@ internal static partial class TravelDayPlanGenerator
 
     private static TravelDayEncounterCategory SelectCategory(TravelDayGenerationContext context, ulong roll, bool quietDay)
     {
+        var luckyCooldownActive = context.RecentTrailEventKinds.Contains(JourneyTrailEventKind.Lucky);
+        var luckyGate = !luckyCooldownActive;
+
         if (context.Risk == TrailRisk.High)
         {
             return TravelDayEncounterCategory.Foe;
         }
 
-        if (context.Risk == TrailRisk.Low && context.WaterFeature == WaterFeature.Creek)
+        if (luckyGate && context.Risk == TrailRisk.Low && context.WaterFeature == WaterFeature.Creek)
         {
             return TravelDayEncounterCategory.Lucky;
         }
 
-        if (context.Difficulty == TravelDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
+        if (luckyGate && context.Difficulty == TravelDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
         {
             return TravelDayEncounterCategory.Lucky;
         }
 
-        if (context.Difficulty == TravelDifficulty.Easy && context.WaterFeature == WaterFeature.None && context.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
+        if (luckyGate && context.Difficulty == TravelDifficulty.Easy && context.WaterFeature == WaterFeature.None && context.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
         {
             return TravelDayEncounterCategory.Lucky;
         }
 
-        if (context.Difficulty == TravelDifficulty.Normal && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
+        if (luckyGate && context.Difficulty == TravelDifficulty.Normal && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
         {
             return TravelDayEncounterCategory.Lucky;
         }
@@ -154,9 +157,10 @@ internal static partial class TravelDayPlanGenerator
 
     private static IReadOnlyList<(TravelDayEncounterCategory Category, int Weight)> BuildCategoryWeights(TravelDayGenerationContext context)
     {
+        var luckyCooldownActive = context.RecentTrailEventKinds.Contains(JourneyTrailEventKind.Lucky);
         var weights = new List<(TravelDayEncounterCategory Category, int Weight)>
         {
-            (TravelDayEncounterCategory.Lucky, context.Risk == TrailRisk.Low ? 4 : 2),
+            (TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : context.Risk == TrailRisk.Low ? 4 : 2),
             (TravelDayEncounterCategory.Unlucky, context.Risk == TrailRisk.High ? 4 : 2),
             (TravelDayEncounterCategory.Foe, context.Risk == TrailRisk.High ? 5 : context.Risk == TrailRisk.Moderate ? 3 : 1),
             (TravelDayEncounterCategory.Npc, 3),
@@ -175,7 +179,7 @@ internal static partial class TravelDayPlanGenerator
         if (context.FoodPressure is TravelPressureBand.Moderate or TravelPressureBand.High or TravelPressureBand.Critical)
         {
             AddWeight(weights, TravelDayEncounterCategory.Resource, 1 + (int)context.FoodPressure - 1);
-            AddWeight(weights, TravelDayEncounterCategory.Lucky, context.FoodPressure >= TravelPressureBand.High ? 1 : 0);
+            AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : context.FoodPressure >= TravelPressureBand.High ? 1 : 0);
         }
 
         if (context.CanteenPressure is TravelPressureBand.Moderate or TravelPressureBand.High or TravelPressureBand.Critical)
@@ -192,7 +196,7 @@ internal static partial class TravelDayPlanGenerator
 
         if (context.WalletBand is WalletBand.Broke or WalletBand.Tight)
         {
-            AddWeight(weights, TravelDayEncounterCategory.Lucky, 1);
+            AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 1);
             AddWeight(weights, TravelDayEncounterCategory.Resource, 1);
         }
         else if (context.WalletBand is WalletBand.Comfortable or WalletBand.Flush)
@@ -230,18 +234,25 @@ internal static partial class TravelDayPlanGenerator
                 break;
             case WaterFeature.Creek:
             case WaterFeature.Spring:
-                AddWeight(weights, TravelDayEncounterCategory.Lucky, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 1);
                 AddWeight(weights, TravelDayEncounterCategory.Resource, 1);
                 break;
             case WaterFeature.River:
-                AddWeight(weights, TravelDayEncounterCategory.Lucky, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 1);
                 AddWeight(weights, TravelDayEncounterCategory.Environmental, 1);
                 break;
         }
 
         var badLuckCount = context.RecentTrailEventKinds.Count(kind => kind == JourneyTrailEventKind.BadLuck);
         var luckyCount = context.RecentTrailEventKinds.Count(kind => kind == JourneyTrailEventKind.Lucky);
-        if (badLuckCount > luckyCount)
+        if (luckyCooldownActive)
+        {
+            if (luckyCount > badLuckCount)
+            {
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, 1);
+            }
+        }
+        else if (badLuckCount > luckyCount)
         {
             AddWeight(weights, TravelDayEncounterCategory.Lucky, 1);
         }

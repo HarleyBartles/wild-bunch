@@ -126,6 +126,12 @@ export function advanceTravelDay(gameId: string) {
   });
 }
 
+export function acknowledgeTravelArrival(gameId: string) {
+  return requestJson<GameTurnResultDto>(`/api/games/${gameId}/travel/arrival/acknowledge`, {
+    method: "POST",
+  });
+}
+
 export function resolveTravelEncounter(gameId: string, choiceId: string) {
   return requestJson<GameTurnResultDto>(`/api/games/${gameId}/travel/encounter/resolve`, {
     method: "POST",

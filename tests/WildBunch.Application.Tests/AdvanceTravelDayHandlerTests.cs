@@ -86,6 +86,78 @@ public sealed class AdvanceTravelDayHandlerTests
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task HandleAsyncKeepsCompletedJourneyUntilArrivalIsAcknowledged()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateEasyLuckyFoodSession();
+        repository.Seed(session);
+
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository);
+
+        var firstAdvance = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.True(firstAdvance.Success);
+        Assert.Equal(JourneyStatus.Active, firstAdvance.JourneyStatus);
+        Assert.NotNull(firstAdvance.CurrentSession.Journey);
+        Assert.Equal(JourneyStatus.Active, firstAdvance.CurrentSession.Journey!.Status);
+
+        var secondAdvance = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.True(secondAdvance.Success);
+        Assert.Equal(JourneyStatus.Completed, secondAdvance.JourneyStatus);
+        Assert.NotNull(secondAdvance.CurrentSession.Journey);
+        Assert.Equal(JourneyStatus.Completed, secondAdvance.CurrentSession.Journey!.Status);
+        Assert.Equal(2, secondAdvance.TravelDiary!.Days.Count);
+        Assert.Equal(JourneyStatus.Completed, secondAdvance.TravelDiary.Days[^1].Status);
+
+        var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
+
+        Assert.True(acknowledged.Success);
+        Assert.Null(acknowledged.CurrentSession.Journey);
+        Assert.Equal("openpass", acknowledged.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(2, acknowledged.TravelDiary!.Days.Count);
+    }
+
+    [Fact]
+    public async Task HandleAsyncCompletesSixFullTrailDaysBeforeArrival()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSixDayQuietSession();
+        repository.Seed(session);
+
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository);
+
+        GameTurnResultDto? result = null;
+        for (var day = 1; day <= 6; day++)
+        {
+            result = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+
+            Assert.True(result.Success);
+            Assert.NotNull(result.CurrentSession.Journey);
+
+            if (day < 6)
+            {
+                Assert.Equal(JourneyStatus.Active, result.JourneyStatus);
+                Assert.Equal(day, result.TravelDiary!.Days.Count);
+                Assert.Equal(JourneyStatus.Active, result.TravelDiary.Days[^1].Status);
+                continue;
+            }
+
+            Assert.Equal(JourneyStatus.Completed, result.JourneyStatus);
+            Assert.Equal(6, result.TravelDiary!.Days.Count);
+            Assert.Equal(JourneyStatus.Completed, result.TravelDiary.Days[^1].Status);
+            Assert.Equal("sixmile", result.CurrentSession.Player.CurrentTownId);
+            Assert.Equal(7, result.CurrentSession.Clock.Day);
+        }
+
+        var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
+
+        Assert.True(acknowledged.Success);
+        Assert.Null(acknowledged.CurrentSession.Journey);
+        Assert.Equal(6, acknowledged.TravelDiary!.Days.Count);
+    }
+
     private static GameSession CreateEasyLuckyFoodSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
@@ -140,6 +212,32 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+        return session;
+    }
+
+    private static GameSession CreateSixDayQuietSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var sixmile = new Town(new TownId("sixmile"), "Six Mile", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, sixmile },
+            new[]
+            {
+                new Trail(new TrailId("trail-six-mile"), pinecross.Id, sixmile.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+            });
+
+        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var inventory = new Inventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 8),
+            new InventoryItem(ItemKind.Canteen, 1, canteenState: new CanteenState(6, 10)),
+            new InventoryItem(ItemKind.Knife, 1)
+        });
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Normal);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, sixmile.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }

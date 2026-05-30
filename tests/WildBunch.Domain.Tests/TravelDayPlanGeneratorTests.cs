@@ -96,6 +96,27 @@ public sealed class TravelDayPlanGeneratorTests
         Assert.True(foundDifference);
     }
 
+    [Fact]
+    public void GenerateAvoidsRepeatingLuckyTrailEventsOnConsecutiveDays()
+    {
+        var session = CreateLuckyCooldownSession();
+        var firstContext = session.CreateTravelDayGenerationContext(gameSeed: "seed-lucky", scenarioProfileId: "profile-lucky");
+        var firstPlan = TravelDayPlanGenerator.Generate(firstContext);
+
+        Assert.Single(firstPlan.Encounters);
+        Assert.Equal(TravelDayEncounterCategory.Lucky, firstPlan.Encounters[0].Category);
+
+        var secondContext = firstContext with
+        {
+            DayNumber = firstContext.DayNumber + 1,
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.Lucky }
+        };
+        var secondPlan = TravelDayPlanGenerator.Generate(secondContext);
+
+        Assert.Single(secondPlan.Encounters);
+        Assert.NotEqual(TravelDayEncounterCategory.Lucky, secondPlan.Encounters[0].Category);
+    }
+
     private static GameSession CreatePressureSession(
         HorseTravelState horseState,
         int food = 1,
@@ -178,6 +199,34 @@ public sealed class TravelDayPlanGeneratorTests
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+        return session;
+    }
+
+    private static GameSession CreateLuckyCooldownSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var creekside = new Town(new TownId("creekside"), "Creekside", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, creekside },
+            new[]
+            {
+                new Trail(new TrailId("trail-lucky"), pinecross.Id, creekside.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m)
+            });
+
+        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var items = new List<DomainInventoryItem>
+        {
+            new(DomainItemKind.Food, 4),
+            new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(3, 4)),
+            new(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new(DomainItemKind.Saddle, 1),
+            new(DomainItemKind.Knife, 1)
+        };
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), TravelDifficulty.Easy);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, creekside.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }

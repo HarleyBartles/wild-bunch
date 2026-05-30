@@ -125,6 +125,11 @@ public sealed class GameApiJournalTests
                 var resolved = await resolveResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
                 Assert.NotNull(resolved);
                 Assert.True(resolved!.Success);
+                if (resolved.JourneyStatus == JourneyStatus.Completed && resolved.CurrentSession.Player.CurrentTownId == destinationTownId)
+                {
+                    return;
+                }
+
                 Assert.Equal(JourneyStatus.Active, resolved.JourneyStatus);
                 continue;
             }

@@ -3,15 +3,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TravelPanel } from "./TravelPanel";
-import { advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
+import { acknowledgeTravelArrival, advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
 import type { GameSessionDto, GameTurnResultDto } from "../api/types";
 
 vi.mock("../api/wildBunchApi", () => ({
+  acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
   getGame: vi.fn(),
   resolveTravelEncounter: vi.fn(),
 }));
 
+const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
 const mockedGetGame = vi.mocked(getGame);
 const mockedAdvanceTravelDay = vi.mocked(advanceTravelDay);
 const mockedResolveTravelEncounter = vi.mocked(resolveTravelEncounter);
@@ -169,6 +171,36 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
   };
 }
 
+function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
+  const session = createSession();
+
+  return {
+    ...session,
+    inventory: {
+      ...session.inventory,
+      horseState: null,
+    },
+    journey: {
+      ...session.journey!,
+      horseState: null,
+    },
+    travelDiary: {
+      days: [
+        {
+          ...session.travelDiary!.days[0],
+          horseStateBefore: null,
+          horseStateAfter: null,
+          horseFeedDelta: 0,
+          horseHungerDelta: 0,
+          horseThirstDelta: 0,
+          horseExhaustionDelta: 0,
+        },
+      ],
+    },
+    ...overrides,
+  };
+}
+
 function renderTravelPanel(session: GameSessionDto, busy = false, onTurnResult = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -207,11 +239,55 @@ describe("TravelPanel", () => {
     renderTravelPanel(session);
 
     expect(await screen.findByRole("heading", { name: /travel diary/i })).toBeInTheDocument();
+    expect(screen.getByText(/^horse$/i)).toBeInTheDocument();
     expect(screen.getAllByText("I set out for Dust Fork on a 3-day badlands trail by mounted travel.")).toHaveLength(1);
     expect(screen.getByText("The first light caught the dust behind us, and the road stayed open.")).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /advance travel day/i })).toBeEnabled();
     });
+  });
+
+  it("hides horse-only travel diary fields when the journey has no horse", async () => {
+    const session = createNoHorseSession({
+      travelDiary: {
+        days: [
+          {
+            ...createSession().travelDiary!.days[0],
+            horseStateBefore: null,
+            horseStateAfter: null,
+            trailEvent: {
+              id: 0,
+              kind: 0,
+              title: "Coin cache",
+              message: "A little trail luck turns up a hidden cache.",
+              walletDelta: 4,
+              foodDelta: 0,
+              canteenChargeDelta: 0,
+              horseHungerDelta: 0,
+              horseThirstDelta: 0,
+              horseExhaustionDelta: 0,
+              delayDays: 0,
+              heatIncrease: 0,
+            },
+            horseFeedDelta: 0,
+            horseHungerDelta: 0,
+            horseThirstDelta: 0,
+            horseExhaustionDelta: 0,
+          },
+        ],
+      },
+    });
+
+    mockedGetGame.mockResolvedValue(session);
+
+    renderTravelPanel(session);
+
+    await screen.findByRole("heading", { name: /travel diary/i });
+    expect(screen.queryByText(/^horse$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/horse hunger/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/horse thirst/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/horse exhaustion/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/horse feed/i)).not.toBeInTheDocument();
   });
 
   it("shows pending encounter choices as buttons and resolves the selected choice", async () => {
@@ -280,6 +356,46 @@ describe("TravelPanel", () => {
 
     await waitFor(() => {
       expect(mockedAdvanceTravelDay).toHaveBeenCalledWith("game-1");
+      expect(onTurnResult).toHaveBeenCalledWith(result);
+    });
+  });
+
+  it("shows an arrival acknowledgement button when the journey is completed", async () => {
+    const user = userEvent.setup();
+    const onTurnResult = vi.fn().mockResolvedValue(undefined);
+    const session = createSession({
+      journey: {
+        ...createSession().journey!,
+        status: 2,
+        pendingEncounter: null,
+      },
+    });
+    const result: GameTurnResultDto = {
+      success: true,
+      message: "Arrival acknowledged.",
+      currentSession: {
+        ...session,
+        journey: null,
+      },
+      journeyStatus: null,
+      journey: null,
+      travelDiary: session.travelDiary,
+    };
+
+    mockedGetGame.mockResolvedValue(session);
+    mockedAcknowledgeTravelArrival.mockResolvedValue(result);
+
+    renderTravelPanel(session, false, onTurnResult);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /enter town/i })).toBeEnabled();
+    });
+    expect(screen.queryByRole("button", { name: /advance travel day/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /enter town/i }));
+
+    await waitFor(() => {
+      expect(mockedAcknowledgeTravelArrival).toHaveBeenCalledWith("game-1");
       expect(onTurnResult).toHaveBeenCalledWith(result);
     });
   });

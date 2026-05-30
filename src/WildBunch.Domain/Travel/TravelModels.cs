@@ -390,6 +390,7 @@ internal static partial class TravelDayPlanGenerator
     private static TravelDayEncounterCategory SelectCategory(TravelJourney journey, TravelRulesProfile travelRulesProfile, ulong roll, int slotIndex, bool quietDay)
     {
         var routeProfile = journey.Preview.RouteProfile;
+        var luckyGate = roll % 5 == 0;
 
         if (routeProfile.Risk == TrailRisk.High)
         {
@@ -416,22 +417,22 @@ internal static partial class TravelDayPlanGenerator
             return TravelDayEncounterCategory.Quiet;
         }
 
-        if (routeProfile.Risk == TrailRisk.Low && routeProfile.WaterFeature == WaterFeature.Creek)
+        if (luckyGate && routeProfile.Risk == TrailRisk.Low && routeProfile.WaterFeature == WaterFeature.Creek)
         {
             return TravelDayEncounterCategory.Lucky;
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
+        if (luckyGate && travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
         {
             return TravelDayEncounterCategory.Lucky;
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Normal && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
+        if (luckyGate && travelRulesProfile.Difficulty == TravelDifficulty.Normal && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
         {
             return TravelDayEncounterCategory.Lucky;
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
+        if (luckyGate && travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
         {
             return TravelDayEncounterCategory.Lucky;
         }
@@ -1164,6 +1165,15 @@ public sealed record JourneyEncounterResolutionResult(
 {
     public static JourneyEncounterResolutionResult Failed(string message, JourneyStatus status, TravelJourneySnapshot? journey = null)
         => new(false, false, status, message, journey);
+}
+
+public sealed record JourneyArrivalAcknowledgementResult(
+    bool Success,
+    string Message,
+    TravelJourneySnapshot? Journey = null)
+{
+    public static JourneyArrivalAcknowledgementResult Failed(string message, TravelJourneySnapshot? journey = null)
+        => new(false, message, journey);
 }
 
 public sealed record TravelPreviewResult(bool Success, string Message, TravelPreview? Preview)

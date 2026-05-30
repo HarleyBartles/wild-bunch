@@ -431,7 +431,8 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Active, firstDay.Status);
         Assert.True(secondDay.Success);
         Assert.Equal(JourneyStatus.Completed, secondDay.Status);
-        Assert.Null(session.Journey);
+        Assert.NotNull(session.Journey);
+        Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
         Assert.Equal(new TownId("holloway"), session.Player.CurrentTownId);
         Assert.Equal(3, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);

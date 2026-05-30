@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
-import { advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
+import { acknowledgeTravelArrival, advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
 import type {
   GameSessionDto,
   GameTurnResultDto,
@@ -9,6 +9,7 @@ import type {
   JourneyEncounterDto,
   TravelDiaryDayDto,
 } from "../api/types";
+import { JourneyStatus } from "../api/types";
 import {
   formatHorseTravelState,
   formatJourneyStatus,
@@ -31,6 +32,7 @@ interface TravelUiContextValue {
   refreshing: boolean;
   actionError: string | null;
   advanceTravelDay: () => Promise<void>;
+  acknowledgeTravelArrival: () => Promise<void>;
   resolveTravelEncounter: (choiceId: string) => Promise<void>;
 }
 
@@ -121,10 +123,12 @@ function TravelSummary() {
           <dt>Remaining distance</dt>
           <dd>{journey.remainingRideDayDistance.toFixed(2)}</dd>
         </SummaryItem>
-        <SummaryItem>
-          <dt>Horse</dt>
-          <dd>{formatHorseTravelState(journey.horseState)}</dd>
-        </SummaryItem>
+        {journey.horseState ? (
+          <SummaryItem>
+            <dt>Horse</dt>
+            <dd>{formatHorseTravelState(journey.horseState)}</dd>
+          </SummaryItem>
+        ) : null}
         <SummaryItem>
           <dt>Water pressure</dt>
           <dd>{journey.waterSecure ? "Secure" : "Drying out"}</dd>
@@ -174,7 +178,7 @@ function TravelSummary() {
 }
 
 function TravelActions() {
-  const { actionError, advanceTravelDay, busy, refreshing, session } = useTravelUi();
+  const { actionError, acknowledgeTravelArrival, advanceTravelDay, busy, refreshing, session } = useTravelUi();
   const journey = session.journey;
 
   if (!journey) {
@@ -183,19 +187,27 @@ function TravelActions() {
 
   const disabled = busy || refreshing;
   const pendingEncounter = journey.pendingEncounter;
-  const canAdvance = journey.status === 0 && !pendingEncounter;
+  const arrivalPending = journey.status === JourneyStatus.Completed;
+  const canAdvance = journey.status === JourneyStatus.Active && !pendingEncounter;
 
   return (
     <ActionCard>
       <SectionHeader>
         <strong>Trail action</strong>
-        <span>{pendingEncounter ? "Encounter waiting" : "Ready to ride"}</span>
+        <span>{pendingEncounter ? "Encounter waiting" : arrivalPending ? "Arrival pending" : "Ready to ride"}</span>
       </SectionHeader>
 
       {actionError ? <InlineError>{actionError}</InlineError> : null}
 
       {pendingEncounter ? (
         <JourneyDecision encounter={pendingEncounter} />
+      ) : arrivalPending ? (
+        <>
+          <ActionCopy>The trail pages are still open. Acknowledge the arrival when you are ready to step into town.</ActionCopy>
+          <PrimaryButton type="button" onClick={() => void acknowledgeTravelArrival()} disabled={disabled}>
+            {busy ? "Entering town..." : "Enter town"}
+          </PrimaryButton>
+        </>
       ) : canAdvance ? (
         <>
           <ActionCopy>
@@ -213,20 +225,26 @@ function TravelActions() {
 }
 
 function DayFooter({ day }: { day: TravelDiaryDayDto }) {
+  const hasHorseState = day.horseStateBefore !== null || day.horseStateAfter !== null;
   const pieces = [
     `Health ${formatSignedNumber(day.healthDelta)}`,
     `Wallet ${formatSignedNumber(day.walletDelta, 2)}`,
     `Food ${formatSignedNumber(day.foodDelta)}`,
-    `Horse feed ${formatSignedNumber(day.horseFeedDelta)}`,
     `Canteen ${formatSignedNumber(day.canteenChargeDelta)}`,
     `Ammo ${formatSignedNumber(-day.ammoSpent)}`,
     `Heat ${formatSignedNumber(day.heatIncrease)}`,
   ];
 
+  if (hasHorseState) {
+    pieces.splice(3, 0, `Horse feed ${formatSignedNumber(day.horseFeedDelta)}`);
+  }
+
   return <DayMeta>{pieces.join(" | ")}</DayMeta>;
 }
 
 function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
+  const hasHorseState = day.horseStateBefore !== null || day.horseStateAfter !== null;
+
   return (
     <DiaryDayCard>
       <DiaryDayHeader>
@@ -257,11 +275,11 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
             <span>Wallet {formatSignedNumber(day.trailEvent.walletDelta, 2)}</span>
             <span>Food {formatSignedNumber(day.trailEvent.foodDelta)}</span>
             <span>Canteen {formatSignedNumber(day.trailEvent.canteenChargeDelta)}</span>
-            <span>Horse hunger {formatSignedNumber(day.trailEvent.horseHungerDelta)}</span>
-            <span>Horse thirst {formatSignedNumber(day.trailEvent.horseThirstDelta)}</span>
-            <span>Horse exhaustion {formatSignedNumber(day.trailEvent.horseExhaustionDelta)}</span>
             <span>Delay {formatSignedNumber(day.trailEvent.delayDays)}</span>
             <span>Heat {formatSignedNumber(day.trailEvent.heatIncrease)}</span>
+            {hasHorseState ? <span>Horse hunger {formatSignedNumber(day.trailEvent.horseHungerDelta)}</span> : null}
+            {hasHorseState ? <span>Horse thirst {formatSignedNumber(day.trailEvent.horseThirstDelta)}</span> : null}
+            {hasHorseState ? <span>Horse exhaustion {formatSignedNumber(day.trailEvent.horseExhaustionDelta)}</span> : null}
           </TrailNoteMeta>
         </TrailNote>
       ) : null}
@@ -272,8 +290,8 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
           <p>
             Choice {day.encounterResolution.choiceId} shifted the day by health {formatSignedNumber(day.encounterResolution.healthDelta)}
             , wallet {formatSignedNumber(day.encounterResolution.walletDelta, 2)}, ammo spent {day.encounterResolution.ammoSpent}, heat{" "}
-            {formatSignedNumber(day.encounterResolution.heatIncrease)}, horse exhaustion{" "}
-            {formatSignedNumber(day.encounterResolution.horseExhaustionDelta)}.
+            {formatSignedNumber(day.encounterResolution.heatIncrease)}
+            {hasHorseState ? `, horse exhaustion ${formatSignedNumber(day.encounterResolution.horseExhaustionDelta)}` : ""}.
           </p>
         </ResolutionNote>
       ) : null}
@@ -336,6 +354,14 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
     },
   });
 
+  const acknowledgeMutation = useMutation({
+    mutationFn: () => acknowledgeTravelArrival(gameId),
+    onSuccess: async (result) => {
+      await onTurnResult(result);
+      await queryClient.invalidateQueries({ queryKey: ["travel-session", gameId] });
+    },
+  });
+
   const resolveMutation = useMutation({
     mutationFn: (choiceId: string) => resolveTravelEncounter(gameId, choiceId),
     onSuccess: async (result) => {
@@ -346,16 +372,20 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
 
   const actionError =
     getErrorMessage(advanceMutation.error) ||
+    getErrorMessage(acknowledgeMutation.error) ||
     getErrorMessage(resolveMutation.error) ||
     getErrorMessage(travelSessionQuery.error);
 
   const travelUi: TravelUiContextValue = {
     session: travelSession,
-    busy: busy || advanceMutation.isPending || resolveMutation.isPending,
+    busy: busy || advanceMutation.isPending || acknowledgeMutation.isPending || resolveMutation.isPending,
     refreshing: travelSessionQuery.isFetching,
     actionError: actionError || null,
     advanceTravelDay: async () => {
       await advanceMutation.mutateAsync();
+    },
+    acknowledgeTravelArrival: async () => {
+      await acknowledgeMutation.mutateAsync();
     },
     resolveTravelEncounter: async (choiceId: string) => {
       await resolveMutation.mutateAsync(choiceId);

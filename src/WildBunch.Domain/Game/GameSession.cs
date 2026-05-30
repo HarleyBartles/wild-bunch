@@ -407,9 +407,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var currentCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
         var openingNarration = startingDaysRemaining == journeySnapshot.ExpectedDays ? Journey?.OpeningNarration : null;
         var extraEntriesProvided = entries is not null && entries.Count > 0;
-        var effectiveTrailEvent = extraEntriesProvided ? null : trailEvent;
-        var effectivePendingEncounter = extraEntriesProvided ? null : pendingEncounter ?? journeySnapshot.PendingEncounter;
-        var effectiveEncounterResolution = extraEntriesProvided ? null : encounterResolution;
+        var effectiveTrailEvent = trailEvent;
+        var effectivePendingEncounter = pendingEncounter ?? journeySnapshot.PendingEncounter;
+        var effectiveEncounterResolution = encounterResolution;
         var journeyBeat = BuildJourneyBeat(journeySnapshot, effectiveTrailEvent, effectivePendingEncounter, effectiveEncounterResolution);
         var resourceBeat = BuildResourceBeat(
             journeySnapshot,
@@ -421,7 +421,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             effectivePendingEncounter,
             effectiveEncounterResolution);
 
-        var diaryEntries = BuildDefaultDiaryEntries(journeySnapshot, openingNarration, journeyBeat, resourceBeat, effectiveTrailEvent, effectivePendingEncounter, effectiveEncounterResolution);
+        var diaryEntries = BuildDefaultDiaryEntries(
+            journeySnapshot,
+            openingNarration,
+            journeyBeat,
+            resourceBeat,
+            extraEntriesProvided ? null : effectiveTrailEvent,
+            extraEntriesProvided ? null : effectivePendingEncounter,
+            extraEntriesProvided ? null : effectiveEncounterResolution);
         if (startingTravelMode == TravelMode.Mounted && journeySnapshot.TravelMode == TravelMode.Foot)
         {
             diaryEntries = diaryEntries.Append("I had to finish the trail on foot after the horse went lame.").ToArray();
@@ -743,7 +750,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 trailEvent: lastTrailEvent,
                 entries: diaryEntries));
             Journey.SetCurrentDayPlan(null);
-            Journey = null;
 
             return new TravelJourneyStepResult(
                 true,
@@ -789,6 +795,27 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
             journeySnapshot,
             lastTrailEvent);
+    }
+
+    public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
+    {
+        if (Journey is null)
+        {
+            return JourneyArrivalAcknowledgementResult.Failed("No completed journey is waiting to be acknowledged.");
+        }
+
+        if (Journey.Status != JourneyStatus.Completed)
+        {
+            return JourneyArrivalAcknowledgementResult.Failed("The journey is not ready to be acknowledged.", Journey.ToSnapshot(TravelRules));
+        }
+
+        var completedSnapshot = Journey.ToSnapshot(TravelRules);
+        Journey = null;
+
+        return new JourneyArrivalAcknowledgementResult(
+            true,
+            $"You step into {completedSnapshot.DestinationTownName} and put the trail behind you.",
+            completedSnapshot);
     }
 
     internal TravelDayGenerationContext CreateTravelDayGenerationContext(
@@ -1344,7 +1371,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 startingHeat,
                 encounterResolution: resolution,
                 entries: dayEntries));
-            Journey = null;
             return new JourneyEncounterResolutionResult(true, true, JourneyStatus.Completed, $"You clear the remaining trail and reach {destinationTownName}.", completedSnapshot);
         }
 
