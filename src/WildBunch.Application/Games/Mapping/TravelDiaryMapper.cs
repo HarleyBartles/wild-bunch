@@ -53,6 +53,13 @@ public static class TravelDiaryMapper
             day.HorseExhaustionDelta,
             day.DelayDays,
             day.HeatIncrease,
+            day.CurrentHealth,
+            day.CurrentWallet,
+            day.CurrentFood,
+            day.CurrentHorseFeed,
+            day.CurrentCanteenCharges,
+            day.CurrentAmmo,
+            day.CurrentHeat,
             day.Entries.Count == 0 ? RenderEntries(day, travelRulesProfile) : day.Entries,
             day.Warnings);
 
@@ -69,10 +76,12 @@ public static class TravelDiaryMapper
 
     private static IReadOnlyList<string> RenderEntries(DomainTravelDiaryDayState day, DomainTravelRulesProfile travelRulesProfile)
     {
-        var entries = new List<string>
+        var entries = new List<string>();
+
+        if (day.PendingEncounter is null)
         {
-            RenderJourneyBeat(day)
-        };
+            entries.Add(RenderJourneyBeat(day));
+        }
 
         if (!string.IsNullOrWhiteSpace(day.ResourceBeat))
         {
@@ -176,7 +185,7 @@ public static class TravelDiaryMapper
                 : choices.Length == 2
                     ? $"I can {choices[0]} or {choices[1]}."
                     : $"I can {string.Join(", ", choices.Take(choices.Length - 1))}, or {choices[^1]}.";
-        return $"I stop cold when a hard-eyed trail rider steps out from the brush. {choiceText}";
+        return $"{encounter.Message} {choiceText}";
     }
 
     private static string RenderEncounterDecision(DomainTravelDiaryEncounterResolutionState resolution)

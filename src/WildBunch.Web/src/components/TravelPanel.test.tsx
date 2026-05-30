@@ -158,6 +158,13 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
           horseExhaustionDelta: 0,
           delayDays: 0,
           heatIncrease: 0,
+          currentHealth: 9,
+          currentWallet: 14,
+          currentFood: 2,
+          currentHorseFeed: 1,
+          currentCanteenCharges: 2,
+          currentAmmo: 0,
+          currentHeat: 1,
           openingNarration: "I set out for Dust Fork on a 3-day badlands trail by mounted travel.",
           journeyBeat: "I cross the open range with the horse moving steady under me.",
           resourceBeat: null,
@@ -194,6 +201,7 @@ function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSess
           horseHungerDelta: 0,
           horseThirstDelta: 0,
           horseExhaustionDelta: 0,
+          currentHorseFeed: 0,
         },
       ],
     },
@@ -242,11 +250,38 @@ describe("TravelPanel", () => {
     expect(screen.getByText(/^horse$/i)).toBeInTheDocument();
     expect(screen.getAllByText("I set out for Dust Fork on a 3-day badlands trail by mounted travel.")).toHaveLength(1);
     expect(screen.getByText("The first light caught the dust behind us, and the road stayed open.")).toBeInTheDocument();
+    expect(screen.getByText(/Health 9 \(0\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Wallet 14\.00 \(0\.00\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ammo 0 \(0\)/i)).toBeInTheDocument();
     const advanceButton = await screen.findByRole("button", { name: /advance travel day/i });
     expect(diaryHeading.compareDocumentPosition(advanceButton) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     await waitFor(() => {
       expect(advanceButton).toBeEnabled();
     });
+  });
+
+  it("keeps route warnings in the ledger instead of repeating them on the diary day", async () => {
+    const session = createSession({
+      journey: {
+        ...createSession().journey!,
+        warnings: ["Keep an eye on the ridge line."],
+      },
+      travelDiary: {
+        days: [
+          {
+            ...createSession().travelDiary!.days[0],
+            warnings: ["Keep an eye on the ridge line."],
+          },
+        ],
+      },
+    });
+    mockedGetGame.mockResolvedValue(session);
+
+    renderTravelPanel(session);
+
+    await screen.findByRole("heading", { name: /travel diary/i });
+    expect(screen.getByText(/urgent warnings/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Keep an eye on the ridge line.")).toHaveLength(1);
   });
 
   it("hides horse-only travel diary fields when the journey has no horse", async () => {

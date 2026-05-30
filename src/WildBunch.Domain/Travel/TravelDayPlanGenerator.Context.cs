@@ -61,21 +61,22 @@ internal static partial class TravelDayPlanGenerator
             context.HorseConditionBand,
             context.PursuitHeatBand,
             context.WalletBand,
-            string.Join(",", context.RecentTrailEventKinds));
+            string.Join(",", context.RecentTrailEventKinds),
+            string.Join(",", context.RecentEncounterCategories));
 
     private static TravelDayEncounterCategory SelectCategory(TravelDayGenerationContext context, ulong roll, bool quietDay)
     {
         var luckyCooldownActive = context.RecentTrailEventKinds.Contains(JourneyTrailEventKind.Lucky);
         var luckyGate = !luckyCooldownActive;
 
-        if (context.Risk == TrailRisk.High)
-        {
-            return TravelDayEncounterCategory.Foe;
-        }
-
         if (luckyGate && context.Risk == TrailRisk.Low && context.WaterFeature == WaterFeature.Creek)
         {
             return TravelDayEncounterCategory.Lucky;
+        }
+
+        if (context.Risk == TrailRisk.High && context.RecentEncounterCategories.Count == 0)
+        {
+            return TravelDayEncounterCategory.Foe;
         }
 
         if (luckyGate && context.Difficulty == TravelDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
@@ -158,11 +159,12 @@ internal static partial class TravelDayPlanGenerator
     private static IReadOnlyList<(TravelDayEncounterCategory Category, int Weight)> BuildCategoryWeights(TravelDayGenerationContext context)
     {
         var luckyCooldownActive = context.RecentTrailEventKinds.Contains(JourneyTrailEventKind.Lucky);
+        var recentFoeCount = context.RecentEncounterCategories.Count(category => category == TravelDayEncounterCategory.Foe);
         var weights = new List<(TravelDayEncounterCategory Category, int Weight)>
         {
             (TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : context.Risk == TrailRisk.Low ? 4 : 2),
             (TravelDayEncounterCategory.Unlucky, context.Risk == TrailRisk.High ? 4 : 2),
-            (TravelDayEncounterCategory.Foe, context.Risk == TrailRisk.High ? 5 : context.Risk == TrailRisk.Moderate ? 3 : 1),
+            (TravelDayEncounterCategory.Foe, context.Risk == TrailRisk.High ? 6 : context.Risk == TrailRisk.Moderate ? 3 : 1),
             (TravelDayEncounterCategory.Npc, 3),
             (TravelDayEncounterCategory.Environmental, context.WaterFeature == WaterFeature.None ? 4 : 2),
             (TravelDayEncounterCategory.Resource, 2),
@@ -175,6 +177,24 @@ internal static partial class TravelDayPlanGenerator
                 _ => 0
             })
         };
+
+        if (recentFoeCount > 0)
+        {
+            var foeCooldown = context.Risk == TrailRisk.High
+                ? Math.Min(5, recentFoeCount * 3)
+                : Math.Min(4, recentFoeCount * 2);
+
+            AddWeight(weights, TravelDayEncounterCategory.Foe, -foeCooldown);
+            AddWeight(weights, TravelDayEncounterCategory.Npc, -Math.Min(1, recentFoeCount));
+            AddWeight(weights, TravelDayEncounterCategory.Environmental, -Math.Min(1, recentFoeCount));
+            AddWeight(weights, TravelDayEncounterCategory.Resource, -Math.Min(1, recentFoeCount));
+
+            if (context.Risk == TrailRisk.High)
+            {
+                AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Environmental, 1);
+            }
+        }
 
         if (context.FoodPressure is TravelPressureBand.Moderate or TravelPressureBand.High or TravelPressureBand.Critical)
         {
@@ -223,6 +243,10 @@ internal static partial class TravelDayPlanGenerator
             case TrailTerrain.Mountains:
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 1);
                 AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.IsMounted ? 2 : 1);
+                if (context.Difficulty == TravelDifficulty.Hard && context.IsMounted)
+                {
+                    AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, 2);
+                }
                 break;
         }
 
@@ -266,7 +290,7 @@ internal static partial class TravelDayPlanGenerator
 
     private static void AddWeight(List<(TravelDayEncounterCategory Category, int Weight)> weights, TravelDayEncounterCategory category, int amount)
     {
-        if (amount <= 0)
+        if (amount == 0)
         {
             return;
         }
@@ -275,12 +299,15 @@ internal static partial class TravelDayPlanGenerator
         {
             if (weights[index].Category == category)
             {
-                weights[index] = (category, weights[index].Weight + amount);
+                weights[index] = (category, Math.Max(0, weights[index].Weight + amount));
                 return;
             }
         }
 
-        weights.Add((category, amount));
+        if (amount > 0)
+        {
+            weights.Add((category, amount));
+        }
     }
 
     private static TravelDayEncounterState CreateEncounter(

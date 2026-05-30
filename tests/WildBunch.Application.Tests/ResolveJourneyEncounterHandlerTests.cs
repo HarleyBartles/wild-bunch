@@ -53,6 +53,29 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.DoesNotContain(resolvedDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task HandleAsyncPersistsAmmoTotalsIntoTheResolvedTravelDiary()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateHighRiskSession();
+        repository.Seed(session);
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository);
+
+        var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
+
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "fight"));
+
+        Assert.True(resolveResult.Success);
+        var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
+        Assert.Equal(resolveResult.CurrentSession.Player.Health, resolvedDay.CurrentHealth);
+        Assert.Equal(
+            resolveResult.CurrentSession.Inventory.Items.Where(item => item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo).Sum(item => item.Quantity),
+            resolvedDay.CurrentAmmo);
+        Assert.Equal(1, resolvedDay.EncounterResolution!.AmmoSpent);
+    }
+
     private static GameSession CreateHighRiskSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);

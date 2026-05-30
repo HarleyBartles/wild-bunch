@@ -225,7 +225,7 @@ function TravelActions() {
 }
 
 function DayFooter({ day }: { day: TravelDiaryDayDto }) {
-  const hasHorseState = day.horseStateBefore !== null || day.horseStateAfter !== null;
+  const hasHorseState = day.horseStateAfter !== null;
   const pieces = [
     `Health Δ ${formatSignedNumber(day.healthDelta)}`,
     `Wallet Δ ${formatSignedNumber(day.walletDelta, 2)}`,
@@ -237,6 +237,25 @@ function DayFooter({ day }: { day: TravelDiaryDayDto }) {
 
   if (hasHorseState) {
     pieces.splice(3, 0, `Horse feed Δ ${formatSignedNumber(day.horseFeedDelta)}`);
+  }
+
+  return <DayMeta>{pieces.join(" | ")}</DayMeta>;
+}
+
+function DayFooterCurrent({ day }: { day: TravelDiaryDayDto }) {
+  const hasHorseState = day.horseStateAfter !== null;
+  const pieces = [
+    `Health ${day.currentHealth} (${formatSignedNumber(day.healthDelta)})`,
+    `Wallet ${day.currentWallet.toFixed(2)} (${formatSignedNumber(day.walletDelta, 2)})`,
+    `Food ${day.currentFood} (${formatSignedNumber(day.foodDelta)})`,
+    `Canteen ${day.currentCanteenCharges} (${formatSignedNumber(day.canteenChargeDelta)})`,
+    `Ammo ${day.currentAmmo} (${formatSignedNumber(-day.ammoSpent)})`,
+    `Heat ${day.currentHeat} (${formatSignedNumber(day.heatIncrease)})`,
+  ];
+
+  if (hasHorseState) {
+    pieces.splice(3, 0, `Horse ${formatHorseTravelState(day.horseStateAfter)}`);
+    pieces.splice(4, 0, `Horse feed ${day.currentHorseFeed} (${formatSignedNumber(day.horseFeedDelta)})`);
   }
 
   return <DayMeta>{pieces.join(" | ")}</DayMeta>;
@@ -336,15 +355,7 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
         </ResolutionNote>
       ) : null}
 
-      {day.warnings.length > 0 ? (
-        <DayWarnings>
-          {day.warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </DayWarnings>
-      ) : null}
-
-      <DayFooter day={day} />
+      <DayFooterCurrent day={day} />
     </DiaryDayCard>
   );
 }
@@ -836,12 +847,6 @@ const ResolutionNote = styled.div`
     margin: 0;
     color: rgba(242, 239, 232, 0.82);
   }
-`;
-
-const DayWarnings = styled.ul`
-  margin: 0;
-  padding-left: 18px;
-  color: rgba(242, 239, 232, 0.74);
 `;
 
 const DayMeta = styled.p`

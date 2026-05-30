@@ -413,6 +413,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var currentFood = Player.Inventory.GetQuantity(ItemKind.Food);
         var currentHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
         var currentCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
+        var currentAmmo = GetCurrentFirearmAmmo();
+        var currentHealth = Player.Health;
+        var currentWallet = Player.Wallet.Cash;
+        var currentHeat = PursuitState.Heat;
         var openingNarration = startingDaysRemaining == journeySnapshot.ExpectedDays ? Journey?.OpeningNarration : null;
         var effectiveTrailEvent = trailEvent;
         var effectivePendingEncounter = pendingEncounter ?? journeySnapshot.PendingEncounter;
@@ -493,19 +497,26 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             openingNarration,
             journeyBeat,
             resourceBeat,
-            diaryEntries,
-            Player.Health - startingHealth,
-            Player.Wallet.Cash - startingWallet,
-            Player.Inventory.GetQuantity(ItemKind.Food) - startingFood,
-            Player.Inventory.GetQuantity(ItemKind.HorseFeed) - startingHorseFeed,
-            currentCanteenCharges - startingCanteenCharges,
-            ammoSpent,
-            (currentHorseState?.Hunger ?? 0) - (startingHorseState?.Hunger ?? 0),
-            (currentHorseState?.Thirst ?? 0) - (startingHorseState?.Thirst ?? 0),
-            (currentHorseState?.Exhaustion ?? 0) - (startingHorseState?.Exhaustion ?? 0),
-            journeySnapshot.DelayDays - startingDelayDays,
-            PursuitState.Heat - startingHeat,
-            journeySnapshot.Warnings);
+            CurrentHealth: currentHealth,
+            CurrentWallet: currentWallet,
+            CurrentFood: currentFood,
+            CurrentHorseFeed: currentHorseFeed,
+            CurrentCanteenCharges: currentCanteenCharges,
+            CurrentAmmo: currentAmmo,
+            CurrentHeat: currentHeat,
+            Entries: diaryEntries,
+            HealthDelta: currentHealth - startingHealth,
+            WalletDelta: currentWallet - startingWallet,
+            FoodDelta: currentFood - startingFood,
+            HorseFeedDelta: currentHorseFeed - startingHorseFeed,
+            CanteenChargeDelta: currentCanteenCharges - startingCanteenCharges,
+            AmmoSpent: ammoSpent,
+            HorseHungerDelta: (currentHorseState?.Hunger ?? 0) - (startingHorseState?.Hunger ?? 0),
+            HorseThirstDelta: (currentHorseState?.Thirst ?? 0) - (startingHorseState?.Thirst ?? 0),
+            HorseExhaustionDelta: (currentHorseState?.Exhaustion ?? 0) - (startingHorseState?.Exhaustion ?? 0),
+            DelayDays: journeySnapshot.DelayDays - startingDelayDays,
+            HeatIncrease: currentHeat - startingHeat,
+            Warnings: journeySnapshot.Warnings);
     }
 
     private static IReadOnlyList<string> BuildDefaultDiaryEntries(
@@ -882,6 +893,17 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             .Select(kind => kind!.Value)
             .TakeLast(3)
             .ToArray();
+        var recentEncounterCategories = _travelDiaryDays
+            .Select(day => day.PendingEncounter?.Kind switch
+            {
+                "foe" => TravelDayEncounterCategory.Foe,
+                "npc" => TravelDayEncounterCategory.Npc,
+                _ => (TravelDayEncounterCategory?)null
+            })
+            .Where(category => category is not null)
+            .Select(category => category!.Value)
+            .TakeLast(3)
+            .ToArray();
 
         return new TravelDayGenerationContext(
             generatorVersion,
@@ -904,7 +926,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             CreateHorseConditionBand(horseState, TravelRules),
             CreateHeatBand(PursuitState.Heat),
             CreateWalletBand(Player.Wallet.Cash, TravelRules),
-            recentTrailEventKinds);
+            recentTrailEventKinds,
+            recentEncounterCategories);
     }
 
     private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)
@@ -1166,6 +1189,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 Journey.RecordCurrentDayEncounterResolution(resolution);
                 Journey.AdvanceCurrentDayPlan();
                 var continueResult = ContinueCurrentDayAfterEncounterResolution(
+                    encounter,
                     startingTravelMode,
                     startingRideDayDistance,
                     startingDaysRemaining,
@@ -1219,6 +1243,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 Journey.RecordCurrentDayEncounterResolution(resolution);
                 Journey.AdvanceCurrentDayPlan();
                 return ContinueCurrentDayAfterEncounterResolution(
+                    encounter,
                     startingTravelMode,
                     startingRideDayDistance,
                     startingDaysRemaining,
@@ -1262,6 +1287,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 Journey.RecordCurrentDayEncounterResolution(resolution);
                 Journey.AdvanceCurrentDayPlan();
                 return ContinueCurrentDayAfterEncounterResolution(
+                    encounter,
                     startingTravelMode,
                     startingRideDayDistance,
                     startingDaysRemaining,
@@ -1286,6 +1312,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     private JourneyEncounterResolutionResult ContinueCurrentDayAfterEncounterResolution(
+        JourneyEncounterState resolvedEncounter,
         TravelMode startingTravelMode,
         decimal startingRideDayDistance,
         int startingDaysRemaining,
@@ -1376,6 +1403,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             startingHorseExhaustion,
             startingDelayDays,
             startingHeat,
+            pendingEncounter: resolvedEncounter,
             encounterResolution: resolution,
             entries: dayEntries));
 
@@ -1458,11 +1486,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         if (pendingEncounter is not null && encounterResolution is null)
         {
-            return pendingEncounter.Kind switch
-            {
-                "foe" => "I stop cold when a hard-eyed rider steps out from the brush.",
-                _ => "Something on the trail makes me stop and square up."
-            };
+            return string.Empty;
         }
 
         if (encounterResolution is not null)
@@ -1555,11 +1579,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             pieces.Add("I am down to the last handful of horse feed.");
         }
 
-        if (pendingEncounter is not null && encounterResolution is null && journeySnapshot.Warnings.Count > 0)
-        {
-            pieces.Add("The route warnings stay in my head while I deal with the rider.");
-        }
-
         return pieces.Count == 0 ? null : string.Join(" ", pieces);
     }
 
@@ -1605,6 +1624,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         return $"The canteen is short by {Math.Abs(canteenReserveCharges)} charge(s) for the base trail";
     }
+
+    private int GetCurrentFirearmAmmo()
+        => Player.Inventory.GetQuantity(ItemKind.RevolverAmmo) + Player.Inventory.GetQuantity(ItemKind.RifleAmmo);
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
     {

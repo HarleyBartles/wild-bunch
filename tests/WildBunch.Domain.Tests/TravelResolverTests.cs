@@ -143,7 +143,7 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(1, result.Journey.RemainingDays);
-        Assert.Equal(new HorseTravelState(1, 0, 4), session.Player.Inventory.GetHorseState());
+        Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
         Assert.Contains("goes lame", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
     }

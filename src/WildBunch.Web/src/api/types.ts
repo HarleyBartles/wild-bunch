@@ -230,6 +230,13 @@ export interface TravelDiaryDayDto {
   horseExhaustionDelta: number;
   delayDays: number;
   heatIncrease: number;
+  currentHealth: number;
+  currentWallet: number;
+  currentFood: number;
+  currentHorseFeed: number;
+  currentCanteenCharges: number;
+  currentAmmo: number;
+  currentHeat: number;
   openingNarration: string | null;
   journeyBeat: string | null;
   resourceBeat: string | null;

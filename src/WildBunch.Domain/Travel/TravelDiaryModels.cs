@@ -33,6 +33,13 @@ public sealed record TravelDiaryDayState(
     int HorseExhaustionDelta,
     int DelayDays,
     int HeatIncrease,
+    int CurrentHealth,
+    decimal CurrentWallet,
+    int CurrentFood,
+    int CurrentHorseFeed,
+    int CurrentCanteenCharges,
+    int CurrentAmmo,
+    int CurrentHeat,
     IReadOnlyList<string> Warnings);
 
 public sealed record TravelDiaryEncounterResolutionState(

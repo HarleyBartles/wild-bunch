@@ -35,6 +35,7 @@ public sealed class TravelDayPlanGeneratorTests
         Assert.True(context.IsMounted);
         Assert.False(context.WaterSecure);
         Assert.Empty(context.RecentTrailEventKinds);
+        Assert.Empty(context.RecentEncounterCategories);
     }
 
     [Fact]
@@ -115,6 +116,80 @@ public sealed class TravelDayPlanGeneratorTests
 
         Assert.Single(secondPlan.Encounters);
         Assert.NotEqual(TravelDayEncounterCategory.Lucky, secondPlan.Encounters[0].Category);
+    }
+
+    [Fact]
+    public void GenerateReducesImmediateFoeRepetitionOnHighRiskRoutes()
+    {
+        var highRiskSession = CreateHighRiskEncounterSession();
+        var lowRiskSession = CreateLowRiskEncounterSession();
+        var seed = "seed-high-route";
+        var highRiskFoes = 0;
+        var lowRiskFoes = 0;
+        var recentHighRiskEncounters = Array.Empty<TravelDayEncounterCategory>();
+
+        for (var day = 1; day <= 8; day++)
+        {
+            var highRiskContext = highRiskSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-high") with
+            {
+                DayNumber = day,
+                RecentEncounterCategories = recentHighRiskEncounters
+            };
+
+            var highRiskPlan = TravelDayPlanGenerator.Generate(highRiskContext);
+            var lowRiskPlan = TravelDayPlanGenerator.Generate(lowRiskSession.CreateTravelDayGenerationContext(gameSeed: $"{seed}-low-{day}", scenarioProfileId: "profile-low"));
+
+            if (highRiskPlan.Encounters[0].Category == TravelDayEncounterCategory.Foe)
+            {
+                highRiskFoes++;
+            }
+
+            if (lowRiskPlan.Encounters[0].Category == TravelDayEncounterCategory.Foe)
+            {
+                lowRiskFoes++;
+            }
+
+            recentHighRiskEncounters = recentHighRiskEncounters
+                .Append(highRiskPlan.Encounters[0].Category)
+                .TakeLast(3)
+                .ToArray();
+        }
+
+        Assert.True(highRiskFoes > lowRiskFoes);
+        Assert.True(highRiskFoes < 8);
+    }
+
+    [Fact]
+    public void GenerateUsesRecentFoeHistoryToBreakUpBackToBackRiderDays()
+    {
+        var session = CreateHighRiskEncounterSession();
+        var seeds = Enumerable.Range(1, 48).Select(index => $"seed-repeat-{index}").ToArray();
+        var foundReducedFoeSelection = false;
+
+        foreach (var seed in seeds)
+        {
+            var baseContext = session.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-repeat");
+            var basePlan = TravelDayPlanGenerator.Generate(baseContext);
+            if (basePlan.Encounters[0].Category != TravelDayEncounterCategory.Foe)
+            {
+                continue;
+            }
+
+            var cooledContext = baseContext with
+            {
+                DayNumber = baseContext.DayNumber + 1,
+                RecentEncounterCategories = new[] { TravelDayEncounterCategory.Foe }
+            };
+            var cooledPlan = TravelDayPlanGenerator.Generate(cooledContext);
+
+            if (cooledPlan.Encounters[0].Category != TravelDayEncounterCategory.Foe)
+            {
+                foundReducedFoeSelection = true;
+                break;
+            }
+        }
+
+        Assert.True(foundReducedFoeSelection);
     }
 
     private static GameSession CreatePressureSession(
@@ -219,6 +294,62 @@ public sealed class TravelDayPlanGeneratorTests
         {
             new(DomainItemKind.Food, 4),
             new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(3, 4)),
+            new(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new(DomainItemKind.Saddle, 1),
+            new(DomainItemKind.Knife, 1)
+        };
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), TravelDifficulty.Easy);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, creekside.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+        return session;
+    }
+
+    private static GameSession CreateHighRiskEncounterSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-high"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 3m)
+            });
+
+        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var items = new List<DomainInventoryItem>
+        {
+            new(DomainItemKind.Food, 4),
+            new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(4, 4)),
+            new(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new(DomainItemKind.Saddle, 1),
+            new(DomainItemKind.Knife, 1)
+        };
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        session.StartJourney(preview);
+        return session;
+    }
+
+    private static GameSession CreateLowRiskEncounterSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var creekside = new Town(new TownId("creekside"), "Creekside", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, creekside },
+            new[]
+            {
+                new Trail(new TrailId("trail-low"), pinecross.Id, creekside.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m)
+            });
+
+        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var items = new List<DomainInventoryItem>
+        {
+            new(DomainItemKind.Food, 4),
+            new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(4, 4)),
             new(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
             new(DomainItemKind.Saddle, 1),
             new(DomainItemKind.Knife, 1)

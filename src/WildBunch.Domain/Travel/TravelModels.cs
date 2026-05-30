@@ -400,14 +400,14 @@ internal static partial class TravelDayPlanGenerator
         var routeProfile = journey.Preview.RouteProfile;
         var luckyGate = roll % 5 == 0;
 
-        if (routeProfile.Risk == TrailRisk.High)
-        {
-            return TravelDayEncounterCategory.Foe;
-        }
-
         if (routeProfile.Risk == TrailRisk.Moderate && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
         {
             return TravelDayEncounterCategory.Quiet;
+        }
+
+        if (routeProfile.Risk == TrailRisk.High && journey.DaysTravelled == 0)
+        {
+            return TravelDayEncounterCategory.Foe;
         }
 
         if (routeProfile.Risk == TrailRisk.Moderate && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.Creek)
@@ -494,12 +494,22 @@ internal static partial class TravelDayPlanGenerator
         {
             (TravelDayEncounterCategory.Lucky, routeProfile.Risk == TrailRisk.Low ? 4 : 2),
             (TravelDayEncounterCategory.Unlucky, routeProfile.Risk == TrailRisk.High ? 4 : 2),
-            (TravelDayEncounterCategory.Foe, routeProfile.Risk == TrailRisk.High ? 5 : routeProfile.Risk == TrailRisk.Moderate ? 3 : 1),
+            (TravelDayEncounterCategory.Foe, routeProfile.Risk == TrailRisk.High ? 6 : routeProfile.Risk == TrailRisk.Moderate ? 3 : 1),
             (TravelDayEncounterCategory.Npc, 3),
             (TravelDayEncounterCategory.Environmental, routeProfile.WaterFeature == WaterFeature.None ? 4 : 2),
             (TravelDayEncounterCategory.Resource, journey.FoodRemaining <= 2 || journey.AvailableCanteenCharges <= 2 ? 4 : 2),
             (TravelDayEncounterCategory.HorseTrouble, journey.HorseState is null ? 1 : journey.HorseState.Exhaustion >= travelRulesProfile.HorseExhaustionLameThreshold - 1 ? 4 : 2)
         };
+
+        if (routeProfile.Risk == TrailRisk.High && journey.DaysTravelled > 0)
+        {
+            weights[2] = (TravelDayEncounterCategory.Foe, Math.Max(1, weights[2].Item2 - 3));
+        }
+
+        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Mountains && journey.TravelMode == TravelMode.Mounted)
+        {
+            weights[6] = (TravelDayEncounterCategory.HorseTrouble, weights[6].Item2 + 2);
+        }
 
         return weights;
     }
