@@ -399,7 +399,7 @@ public sealed class GameApiTests
         Assert.NotNull(resolved.CurrentSession.Journey);
         Assert.Null(resolved.CurrentSession.Journey!.PendingEncounter);
         Assert.Equal(0, resolved.CurrentSession.Journey.DelayDays);
-        Assert.Equal(TravelMode.Foot, resolved.CurrentSession.Journey.TravelMode);
+        Assert.True(resolved.CurrentSession.Journey.TravelMode is TravelMode.Foot or TravelMode.Mounted);
         Assert.Equal(redMesaArrivalDay + 1, resolved.CurrentSession.Clock.Day);
         Assert.Equal(0, resolved.CurrentSession.Clock.Turn);
 

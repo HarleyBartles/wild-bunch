@@ -109,6 +109,7 @@ public sealed class ActionAvailabilityResolverTests
         var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
+        session.Journey!.MarkInterrupted(CreateFoeEncounter());
 
         var resolver = new ActionAvailabilityResolver();
         var result = resolver.Resolve(session);
@@ -117,6 +118,11 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ResolveTravelEncounter);
     }
+
+    private static JourneyEncounterState CreateFoeEncounter()
+        => JourneyEncounterState.CreateFoe(
+            "A hard-eyed rider cuts across my path.",
+            new JourneyFoeProfile(5, 5, 8m));
 
     private static GameSession CreateSession(TownServices currentTownServices, bool addTrail = true)
     {
