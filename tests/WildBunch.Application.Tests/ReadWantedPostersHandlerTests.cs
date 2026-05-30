@@ -38,6 +38,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -60,6 +61,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -97,7 +99,11 @@ public sealed class ReadWantedPostersHandlerTests
             knownClues: Array.Empty<Clue>(),
             publicClues: new[]
             {
-                new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A posted notice names Ira Flint as the rider with a faded blue scarf.")
+                new Clue(
+                    new ClueId("clue-public-1"),
+                    ClueKind.Witness,
+                    "A posted notice names a rider with a faded blue scarf.",
+                    new[] { new SuspectId("suspect-1") })
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

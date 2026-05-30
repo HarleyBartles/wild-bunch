@@ -287,13 +287,34 @@ public sealed class GameSessionJsonSerializer
             => new(snapshot.IsLocal, snapshot.IsArmed, snapshot.IsDesperate);
     }
 
-    private sealed record ClueSnapshot(string Id, ClueKind Kind, string Description)
+    private sealed record ClueSnapshot
     {
+        public ClueSnapshot(string id, ClueKind kind, string description, IReadOnlyList<string>? linkedSuspectIds = null)
+        {
+            Id = id;
+            Kind = kind;
+            Description = description;
+            LinkedSuspectIds = linkedSuspectIds;
+        }
+
+        public string Id { get; init; }
+        public ClueKind Kind { get; init; }
+        public string Description { get; init; }
+        public IReadOnlyList<string>? LinkedSuspectIds { get; init; }
+
         public static ClueSnapshot FromDomain(Clue clue)
-            => new(clue.Id.Value, clue.Kind, clue.Description);
+            => new(
+                clue.Id.Value,
+                clue.Kind,
+                clue.Description,
+                clue.LinkedSuspectIds.Select(suspectId => suspectId.Value).ToArray());
 
         public static Clue ToDomain(ClueSnapshot snapshot)
-            => new(new ClueId(snapshot.Id), snapshot.Kind, snapshot.Description);
+            => new(
+                new ClueId(snapshot.Id),
+                snapshot.Kind,
+                snapshot.Description,
+                (snapshot.LinkedSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)));
     }
 
     private sealed record PursuitStateSnapshot(int Heat)

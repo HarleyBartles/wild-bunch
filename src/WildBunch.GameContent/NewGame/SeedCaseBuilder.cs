@@ -82,8 +82,16 @@ internal static class SeedCaseBuilder
 
         var publicClues = new[]
         {
-            new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A poster names the rider called Grey Jay as Jonah Pike."),
-            new Clue(new ClueId("clue-public-2"), ClueKind.Physical, "A public notice says M.K. Rook carries a tin badge clipped to a saddle strap.")
+            new Clue(
+                new ClueId("clue-public-1"),
+                ClueKind.Witness,
+                "A poster shows a rider marked by a faded blue scarf and a grey jay emblem.",
+                new[] { new SuspectId("suspect-1") }),
+            new Clue(
+                new ClueId("clue-public-2"),
+                ClueKind.Physical,
+                "A public notice describes a tin badge clipped to a saddle strap.",
+                new[] { new SuspectId("suspect-2") })
         };
 
         return new CaseFile(

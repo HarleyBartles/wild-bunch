@@ -41,6 +41,8 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(2, session.CaseFile.KillerReleaseState.RequiredPublicClues);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
+        Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
+        Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
         Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 && suspect.Profile.IdentifyingFacts.Count > 0);

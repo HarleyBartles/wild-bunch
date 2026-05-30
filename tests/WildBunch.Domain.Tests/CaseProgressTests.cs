@@ -84,8 +84,12 @@ public sealed class CaseProgressTests
             knownClues: Array.Empty<Clue>(),
             publicClues: new[]
             {
-                new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A wanted poster names Red Wren."),
-                new Clue(new ClueId("clue-public-2"), ClueKind.Record, "A notice places Tessa Wren near the river crossing.")
+                new Clue(
+                    new ClueId("clue-public-1"),
+                    ClueKind.Witness,
+                    "A wanted poster shows a rider with a red feather pin.",
+                    new[] { new SuspectId("suspect-2") }),
+                new Clue(new ClueId("clue-public-2"), ClueKind.Record, "A notice records a rider near the river crossing.")
             },
             killerReleaseThreshold: 2);
     }

@@ -25,6 +25,8 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(2, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Single(session.CaseFile.DiscoveredSuspectIds);
+        Assert.Contains(new SuspectId("suspect-1"), session.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
@@ -44,6 +46,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Single(session.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
     }
 
@@ -87,7 +90,11 @@ public sealed class GameSessionWantedPostersTests
             knownClues: Array.Empty<Clue>(),
             publicClues: new[]
             {
-                new Clue(new ClueId("clue-public-1"), ClueKind.Witness, "A posted notice describes a rider wearing a faded blue scarf.")
+                new Clue(
+                    new ClueId("clue-public-1"),
+                    ClueKind.Witness,
+                    "A posted notice describes a rider wearing a faded blue scarf.",
+                    new[] { new SuspectId("suspect-1") })
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

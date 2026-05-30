@@ -41,6 +41,7 @@ public sealed class GameApiWantedPostersTests
         Assert.DoesNotContain("\"trueCulpritId\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueculpritid\"", actionPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", actionPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -60,6 +61,7 @@ public sealed class GameApiWantedPostersTests
         Assert.Contains("suspect-1", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", journalPayload, StringComparison.OrdinalIgnoreCase);
 
         var secondReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
@@ -140,5 +142,6 @@ public sealed class GameApiWantedPostersTests
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 }

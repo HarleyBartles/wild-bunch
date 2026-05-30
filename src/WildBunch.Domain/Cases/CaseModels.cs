@@ -28,7 +28,33 @@ public enum SuspectStatus
     Exonerated = 2
 }
 
-public sealed record Clue(ClueId Id, ClueKind Kind, string Description);
+public sealed record Clue
+{
+    public Clue(ClueId id, ClueKind kind, string description)
+        : this(id, kind, description, Array.Empty<SuspectId>())
+    {
+    }
+
+    public Clue(ClueId id, ClueKind kind, string description, IEnumerable<SuspectId>? linkedSuspectIds)
+    {
+        ArgumentNullException.ThrowIfNull(description);
+
+        Id = id;
+        Kind = kind;
+        Description = description;
+        LinkedSuspectIds = (linkedSuspectIds ?? Array.Empty<SuspectId>())
+            .DistinctBy(suspectId => suspectId.Value)
+            .ToArray();
+    }
+
+    public ClueId Id { get; }
+
+    public ClueKind Kind { get; }
+
+    public string Description { get; }
+
+    public IReadOnlyList<SuspectId> LinkedSuspectIds { get; }
+}
 
 public enum ClueKind
 {
@@ -177,22 +203,12 @@ public sealed class CaseFile
 
     private void DiscoverSuspectsFromClue(Clue clue)
     {
-        foreach (var suspect in _suspects)
+        foreach (var suspectId in clue.LinkedSuspectIds)
         {
-            if (MatchesSuspectReference(clue.Description, suspect))
+            if (_suspects.Any(suspect => suspect.Id.Equals(suspectId)))
             {
-                DiscoverSuspect(suspect.Id);
+                DiscoverSuspect(suspectId);
             }
         }
-    }
-
-    private static bool MatchesSuspectReference(string clueDescription, Suspect suspect)
-    {
-        if (clueDescription.Contains(suspect.Name, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return suspect.Profile.Aliases.Any(alias => clueDescription.Contains(alias.Name, StringComparison.OrdinalIgnoreCase));
     }
 }

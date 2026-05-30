@@ -52,6 +52,8 @@ public sealed class GetGameSessionHandlerTests
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueculpritid\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -75,6 +77,7 @@ public sealed class GetGameSessionHandlerTests
         Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
