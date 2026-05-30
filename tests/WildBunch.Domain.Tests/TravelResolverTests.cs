@@ -639,25 +639,27 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void ResolveJourneyEncounterBribeSpendsCashAndResumesTheTrail()
+    public void ResolveJourneyEncounterBribeCanSucceedWithCumulativePayment()
     {
-        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("bribe", null, null, 0UL);
+        var minimumBribe = session.Journey!.PendingEncounter!.FoeProfile!.MinimumBribe;
+        var result = session.ResolveJourneyEncounter("bribe", null, minimumBribe, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.Equal(5m, session.Player.Wallet.Cash);
+        Assert.Equal(20m - minimumBribe, session.Player.Wallet.Cash);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
-        Assert.Contains(session.TravelDiaryDays[^1].Entries, entry => entry == "I bribe the rider with $5.00 and continue on.");
+        Assert.Contains(session.TravelDiaryDays[^1].Entries, entry => entry.Contains("rider", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(session.TravelDiaryDays[^1].Entries, entry => entry.Contains("let me pass", StringComparison.OrdinalIgnoreCase) || entry.Contains("grudgingly", StringComparison.OrdinalIgnoreCase) || entry.Contains("grinned", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(session.TravelDiaryDays[^1].Entries, entry => entry.StartsWith("You ", StringComparison.Ordinal));
     }
 
@@ -728,7 +730,7 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void ResolveJourneyEncounterBribeLowOfferCanFailWithoutSpendingCash()
+    public void ResolveJourneyEncounterBribeLowOfferIsPocketedAndLeavesTheEncounterPending()
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
         var resolver = new TravelResolver();
@@ -736,14 +738,77 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: FindBribeOutcomeRoll(session, 1m, retaliates: false));
+        var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 5m, forcedRoll: 0UL);
 
         Assert.False(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Interrupted, result.Status);
-        Assert.Equal(10m, session.Player.Wallet.Cash);
+        Assert.Equal(5m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Journey!.PendingEncounter);
         Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
+        Assert.Equal(1, session.Journey.PendingEncounter!.HiddenState!.BribeOffersMade);
+        Assert.Equal(5m, session.Journey.PendingEncounter.HiddenState.CumulativeBribePaid);
+        Assert.False(session.Journey.PendingEncounter.HiddenState.BribeLockedOut);
+        Assert.Contains(session.Journey.PendingEncounter.Choices, choice => choice.Id == "bribe");
+        Assert.DoesNotContain("still wants more", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("close", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterBribeSecondOfferCanSucceedAfterPocketingTheFirst()
+    {
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var firstOffer = 5m;
+        var secondOffer = session.Journey!.PendingEncounter!.FoeProfile!.MinimumBribe - firstOffer;
+
+        var firstResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: firstOffer, forcedRoll: 0UL);
+        Assert.False(firstResult.Success);
+        Assert.Equal(20m - firstOffer, session.Player.Wallet.Cash);
+        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.Contains(session.Journey.PendingEncounter.Choices, choice => choice.Id == "bribe");
+
+        var secondResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: secondOffer, forcedRoll: 0UL);
+
+        Assert.True(secondResult.Success);
+        Assert.Equal(20m - firstOffer - secondOffer, session.Player.Wallet.Cash);
+        Assert.Null(session.Journey!.PendingEncounter);
+        Assert.DoesNotContain("close", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterBribeLocksOutAfterTwoFailedOffers()
+    {
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var firstResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 5m, forcedRoll: 0UL);
+        Assert.False(firstResult.Success);
+        Assert.NotNull(session.Journey!.PendingEncounter);
+
+        var secondResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: 0UL);
+
+        Assert.False(secondResult.Success);
+        Assert.Contains("pockets it without moving aside", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(session.Journey.PendingEncounter);
+        Assert.True(session.Journey.PendingEncounter!.HiddenState!.BribeLockedOut);
+        Assert.DoesNotContain(session.Journey.PendingEncounter.Choices, choice => choice.Id == "bribe");
+        Assert.Equal(4m, session.Player.Wallet.Cash);
+
+        var thirdResult = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: 0UL);
+
+        Assert.False(thirdResult.Success);
+        Assert.Equal("The rider will not take any more money.", thirdResult.Message);
+        Assert.Equal(4m, session.Player.Wallet.Cash);
+        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.DoesNotContain(session.Journey.PendingEncounter.Choices, choice => choice.Id == "bribe");
     }
 
     [Fact]
@@ -763,10 +828,109 @@ public sealed class TravelResolverTests
 
         Assert.False(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
         Assert.True(session.Player.Wallet.Cash < startingCash || session.Player.Inventory.GetQuantity(DomainItemKind.Food) < startingFood);
-        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.Null(session.Journey!.PendingEncounter);
+        Assert.Equal(JourneyStatus.Active, session.Journey.Status);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterRunRepeatedFailuresCanImproveLaterOdds()
+    {
+        var session = CreateHighRiskSession(withHorse: false);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var encounter = session.Journey!.PendingEncounter!;
+        var roll = FindRunImprovementRoll(encounter, session.TravelRules, session.Player.Health);
+        Assert.NotEqual(ulong.MaxValue, roll);
+
+        var firstPlan = JourneyEncounterResolutionEngine.ResolveRun(
+            encounter,
+            TravelMode.Foot,
+            null,
+            1000,
+            session.TravelRules,
+            roll);
+        var secondPlan = JourneyEncounterResolutionEngine.ResolveRun(
+            firstPlan.UpdatedEncounter,
+            TravelMode.Foot,
+            null,
+            1000,
+            session.TravelRules,
+            roll);
+
+        Assert.False(firstPlan.Resolved);
+        Assert.True(secondPlan.Resolved);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterRunAnnoyanceCanOffsetLaterFatigue()
+    {
+        var fatigueOnlyEncounter = JourneyEncounterState.CreateFoe(
+            "A hard-eyed rider cuts across my path.",
+            new JourneyFoeProfile(8, 5, 8m))
+            .WithHiddenState(new JourneyEncounterHiddenState(ChaseFatigue: 1));
+        var annoyedEncounter = fatigueOnlyEncounter.WithHiddenState(new JourneyEncounterHiddenState(ChaseFatigue: 1, Annoyance: 2));
+
+        var roll = FindRunAnnoyancePenaltyRoll(fatigueOnlyEncounter, annoyedEncounter, TravelRulesProfile.Default, TravelMode.Foot, 1000);
+        Assert.NotEqual(ulong.MaxValue, roll);
+
+        var fatigueOnlyPlan = JourneyEncounterResolutionEngine.ResolveRun(
+            fatigueOnlyEncounter,
+            TravelMode.Foot,
+            null,
+            1000,
+            TravelRulesProfile.Default,
+            roll);
+        var annoyedPlan = JourneyEncounterResolutionEngine.ResolveRun(
+            annoyedEncounter,
+            TravelMode.Foot,
+            null,
+            1000,
+            TravelRulesProfile.Default,
+            roll);
+
+        Assert.True(fatigueOnlyPlan.Resolved);
+        Assert.False(annoyedPlan.Resolved);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterFightMoreBulletsCanReduceHealthLossWithoutGuaranteeingVictory()
+    {
+        var encounter = JourneyEncounterState.CreateFoe(
+            "A hard-eyed rider cuts across my path.",
+            new JourneyFoeProfile(6, 4, 8m));
+
+        var roll = FindFightComparisonRoll(encounter, TravelRulesProfile.Default, playerHealth: 1000, hasKnife: true, availableAmmo: 6);
+        Assert.NotEqual(ulong.MaxValue, roll);
+
+        var lowBulletPlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, 1000, TravelRulesProfile.Default, 6, true, 1, roll);
+        var highBulletPlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, 1000, TravelRulesProfile.Default, 6, true, 6, roll);
+
+        Assert.True(Math.Abs(highBulletPlan.HealthDelta) < Math.Abs(lowBulletPlan.HealthDelta));
+
+        var cappedFailurePlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, 1000, TravelRulesProfile.Default, 6, true, 6, 99UL);
+        Assert.False(cappedFailurePlan.Resolved);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterFightWeakPressureCanAnnoyAndCrediblePressureCanShake()
+    {
+        var encounter = JourneyEncounterState.CreateFoe(
+            "A hard-eyed rider cuts across my path.",
+            new JourneyFoeProfile(6, 6, 8m));
+
+        var annoyedPlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, 1000, TravelRulesProfile.Default, 6, true, 1, 99UL);
+        Assert.False(annoyedPlan.Resolved);
+        Assert.True(annoyedPlan.UpdatedEncounter.HiddenState!.Annoyance > 0);
+
+        var shakenPlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, 1000, TravelRulesProfile.Default, 6, true, 4, 0UL);
+        Assert.True(shakenPlan.Resolved);
+        Assert.True(shakenPlan.UpdatedEncounter.HiddenState!.Shaken);
     }
 
     private static GameSession CreateMountedSession(int withHorseFeed = 2)
@@ -1125,7 +1289,7 @@ public sealed class TravelResolverTests
                 availableRifleAmmo,
                 roll);
 
-            var sawRetaliation = !plan.Resolved && (plan.HealthDelta < 0 || plan.WalletDelta < 0m || plan.StolenItemKind is not null);
+            var sawRetaliation = !plan.Resolved && (plan.HealthDelta < 0 || plan.StolenItemKind is not null || plan.WalletDelta < -bribeAmount);
             var isSimpleFailure = !plan.Resolved && !sawRetaliation;
             if (retaliates ? sawRetaliation : isSimpleFailure)
             {
@@ -1134,5 +1298,64 @@ public sealed class TravelResolverTests
         }
 
         throw new InvalidOperationException("Could not find a bribe outcome roll for the requested branch.");
+    }
+
+    private static ulong FindRunImprovementRoll(JourneyEncounterState encounter, TravelRulesProfile travelRulesProfile, int playerHealth)
+    {
+        for (ulong roll = 0; roll < 1_000; roll++)
+        {
+            var firstPlan = JourneyEncounterResolutionEngine.ResolveRun(encounter, TravelMode.Foot, null, playerHealth, travelRulesProfile, roll);
+            var secondEncounter = firstPlan.UpdatedEncounter;
+            var secondPlan = JourneyEncounterResolutionEngine.ResolveRun(secondEncounter, TravelMode.Foot, null, playerHealth, travelRulesProfile, roll);
+
+            if (!firstPlan.Resolved && secondPlan.Resolved)
+            {
+                return roll;
+            }
+        }
+
+        return ulong.MaxValue;
+    }
+
+    private static ulong FindRunAnnoyancePenaltyRoll(
+        JourneyEncounterState fatigueOnlyEncounter,
+        JourneyEncounterState annoyedEncounter,
+        TravelRulesProfile travelRulesProfile,
+        TravelMode travelMode,
+        int playerHealth)
+    {
+        for (ulong roll = 0; roll < 1_000; roll++)
+        {
+            var fatiguePlan = JourneyEncounterResolutionEngine.ResolveRun(fatigueOnlyEncounter, travelMode, null, playerHealth, travelRulesProfile, roll);
+            var annoyedPlan = JourneyEncounterResolutionEngine.ResolveRun(annoyedEncounter, travelMode, null, playerHealth, travelRulesProfile, roll);
+
+            if (fatiguePlan.Resolved && !annoyedPlan.Resolved)
+            {
+                return roll;
+            }
+        }
+
+        return ulong.MaxValue;
+    }
+
+    private static ulong FindFightComparisonRoll(
+        JourneyEncounterState encounter,
+        TravelRulesProfile travelRulesProfile,
+        int playerHealth,
+        bool hasKnife,
+        int availableAmmo)
+    {
+        for (ulong roll = 0; roll < 100; roll++)
+        {
+            var lowBulletPlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, playerHealth, travelRulesProfile, availableAmmo, hasKnife, 1, roll);
+            var highBulletPlan = JourneyEncounterResolutionEngine.ResolveFight(encounter, playerHealth, travelRulesProfile, availableAmmo, hasKnife, 6, roll);
+
+            if (lowBulletPlan.Resolved && highBulletPlan.Resolved)
+            {
+                return roll;
+            }
+        }
+
+        return ulong.MaxValue;
     }
 }

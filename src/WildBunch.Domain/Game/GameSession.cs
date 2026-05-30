@@ -843,17 +843,30 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.UpdatePendingEncounter(encounter);
         }
 
+        var resolvedChoiceId = choiceId.Trim().ToLowerInvariant();
+        if (resolvedChoiceId == "bribe" && encounter.HiddenState?.BribeLockedOut == true)
+        {
+            return JourneyEncounterResolutionResult.Failed("The rider will not take any more money.", Journey.Status, Journey.ToSnapshot(TravelRules));
+        }
+
         if (!encounter.Choices.Any(choice => string.Equals(choice.Id, choiceId, StringComparison.OrdinalIgnoreCase)))
         {
             return JourneyEncounterResolutionResult.Failed("That is not a lawful way to answer this encounter.", Journey.Status, Journey.ToSnapshot(TravelRules));
         }
 
-        var resolvedChoiceId = choiceId.Trim().ToLowerInvariant();
         var resolvedChoiceLabel = encounter.Choices.First(choice => string.Equals(choice.Id, resolvedChoiceId, StringComparison.OrdinalIgnoreCase)).Label;
+        var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
+        var resolutionAttemptIndex = resolvedChoiceId switch
+        {
+            "bribe" => hiddenState.BribeOffersMade + 1,
+            "run" => hiddenState.ChaseFatigue + 1,
+            "fight" => 1 + hiddenState.Annoyance + (hiddenState.Shaken ? 1 : 0),
+            _ => encounter.ResolutionAttempts + 1
+        };
         var rollSeed = JourneyEncounterResolutionEngine.ComposeRollSeed(
             encounter,
             resolvedChoiceId,
-            encounter.ResolutionAttempts + 1,
+            resolutionAttemptIndex,
             string.Join(
                 "|",
                 Journey.TravelMode,
@@ -914,11 +927,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     Journey.TravelMode == TravelMode.Foot);
                 Journey.RecordCurrentDayEncounterResolution(resolution);
                 Journey.AdvanceCurrentDayPlan();
-                return ContinueCurrentDayAfterEncounterResolution(
+                var resolutionResult = ContinueCurrentDayAfterEncounterResolution(
                     encounter,
                     startingState,
                     dayEntries,
                     resolution);
+                return resolutionResult;
             }
 
             case "fight":
@@ -981,11 +995,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     plan.ContinuedOnFoot);
                 Journey.RecordCurrentDayEncounterResolution(resolution);
                 Journey.AdvanceCurrentDayPlan();
-                return ContinueCurrentDayAfterEncounterResolution(
+                var resolutionResult = ContinueCurrentDayAfterEncounterResolution(
                     encounter,
                     startingState,
                     dayEntries,
                     resolution);
+                return resolutionResult;
             }
 
             case "bribe":
@@ -1039,7 +1054,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 AddLogEntry(GameLogEntryKind.Travel, plan.Message);
                 dayEntries.Add(plan.Message);
 
-                if (!plan.Resolved)
+                var retaliated = !plan.Resolved && (plan.HealthDelta < 0 || plan.StolenItemKind is not null || plan.WalletDelta < -bribeOffer);
+                if (!plan.Resolved && !retaliated)
                 {
                     Journey.UpdatePendingEncounter(plan.UpdatedEncounter);
                     return new JourneyEncounterResolutionResult(false, true, Journey.Status, plan.Message, Journey.ToSnapshot(TravelRules));
@@ -1047,23 +1063,26 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
                 Journey.ResumeFromEncounter();
                 dayEntries.Add("I decided to bribe the rider.");
-                dayEntries.Add($"I bribe the rider with ${-plan.WalletDelta:0.00} and continue on.");
+                dayEntries.Add(plan.Resolved
+                    ? $"I bribe the rider with ${-plan.WalletDelta:0.00} and continue on."
+                    : "I paid for the mistake before moving on.");
                 var resolution = new TravelDiaryEncounterResolutionState(
                     resolvedChoiceId,
                     resolvedChoiceLabel,
-                    0,
+                    plan.HealthDelta,
                     plan.WalletDelta,
                     0,
                     plan.HeatIncrease,
-                    0,
+                    plan.HorseExhaustionDelta,
                     Journey.TravelMode == TravelMode.Foot);
                 Journey.RecordCurrentDayEncounterResolution(resolution);
                 Journey.AdvanceCurrentDayPlan();
-                return ContinueCurrentDayAfterEncounterResolution(
+                var resolutionResult = ContinueCurrentDayAfterEncounterResolution(
                     encounter,
                     startingState,
                     dayEntries,
                     resolution);
+                return retaliated ? resolutionResult with { Success = false } : resolutionResult;
             }
 
             default:

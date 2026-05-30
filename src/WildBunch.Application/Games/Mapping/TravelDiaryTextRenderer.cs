@@ -311,7 +311,14 @@ public static class TravelDiaryTextRenderer
                 break;
 
             case "bribe":
-                pieces.Add($"I paid ${Math.Abs(resolution.WalletDelta):0.00} to make the problem go away.");
+                if (resolution.HealthDelta < 0)
+                {
+                    pieces.Add("I tried to bribe the rider, but he took it badly and made me pay for it.");
+                }
+                else
+                {
+                    pieces.Add($"I paid ${Math.Abs(resolution.WalletDelta):0.00} to make the problem go away.");
+                }
                 break;
         }
 

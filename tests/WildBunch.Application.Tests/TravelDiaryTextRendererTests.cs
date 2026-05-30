@@ -77,6 +77,19 @@ public sealed class TravelDiaryTextRendererTests
     }
 
     [Fact]
+    public void RenderEntriesTreatsRetaliatoryBribesAsABadOutcome()
+    {
+        var day = CreateDay(
+            status: JourneyStatus.Active,
+            encounterResolution: new TravelDiaryEncounterResolutionState("bribe", "Bribe", -5, -2m, 0, 0, 0, false));
+
+        var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
+
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I tried to bribe the rider, but he took it badly", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(rendered.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void RenderedDiaryEntriesAvoidCommonPresentTenseFirstPersonOpenings()
     {
         var days = new[]

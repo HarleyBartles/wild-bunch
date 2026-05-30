@@ -365,6 +365,12 @@ public sealed class GameApiTests
         Assert.DoesNotContain("minimumBribe", dryForkPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("fightStrength", dryForkPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("resolutionAttempts", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("bribeOffersMade", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("cumulativeBribePaid", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("bribeLockedOut", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("chaseFatigue", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("annoyance", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("shaken", dryForkPayload, StringComparison.OrdinalIgnoreCase);
 
         var blockedAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -378,9 +384,10 @@ public sealed class GameApiTests
         Assert.Equal(redMesaArrivalDay + 1, blockedAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, blockedAdvance.CurrentSession.Clock.Turn);
 
+        var bribeAmount = blockedAdvance.CurrentSession.Inventory.Wallet.Cash;
         var resolveResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel/encounter/resolve",
-            new { ChoiceId = "run", BulletSpend = 3, BribeAmount = 7m });
+            new { ChoiceId = "bribe", BribeAmount = bribeAmount });
 
         Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
 

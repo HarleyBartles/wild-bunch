@@ -522,6 +522,7 @@ public sealed class GameSessionJsonSerializer
         public IReadOnlyList<JourneyEncounterChoiceSnapshot> Choices { get; set; } = Array.Empty<JourneyEncounterChoiceSnapshot>();
         public JourneyFoeProfileSnapshot? FoeProfile { get; set; }
         public int ResolutionAttempts { get; set; }
+        public JourneyEncounterHiddenStateSnapshot? HiddenState { get; set; }
 
         public static JourneyEncounterSnapshot FromDomain(JourneyEncounterState encounter)
             => new()
@@ -530,7 +531,8 @@ public sealed class GameSessionJsonSerializer
                 Message = encounter.Message,
                 Choices = encounter.Choices.Select(JourneyEncounterChoiceSnapshot.FromDomain).ToArray(),
                 FoeProfile = encounter.FoeProfile is null ? null : JourneyFoeProfileSnapshot.FromDomain(encounter.FoeProfile),
-                ResolutionAttempts = encounter.ResolutionAttempts
+                ResolutionAttempts = encounter.ResolutionAttempts,
+                HiddenState = encounter.HiddenState is null ? null : JourneyEncounterHiddenStateSnapshot.FromDomain(encounter.HiddenState)
             };
 
         public JourneyEncounterState ToDomain()
@@ -539,7 +541,8 @@ public sealed class GameSessionJsonSerializer
                 Message,
                 Choices.Select(choice => choice.ToDomain()).ToArray(),
                 FoeProfile?.ToDomain(),
-                ResolutionAttempts);
+                ResolutionAttempts,
+                HiddenState?.ToDomain());
     }
 
     public sealed class JourneyFoeProfileSnapshot
@@ -558,6 +561,36 @@ public sealed class GameSessionJsonSerializer
 
         public JourneyFoeProfile ToDomain()
             => new(Speed, FightStrength, MinimumBribe);
+    }
+
+    private sealed class JourneyEncounterHiddenStateSnapshot
+    {
+        public int BribeOffersMade { get; set; }
+        public decimal CumulativeBribePaid { get; set; }
+        public bool BribeLockedOut { get; set; }
+        public int ChaseFatigue { get; set; }
+        public int Annoyance { get; set; }
+        public bool Shaken { get; set; }
+
+        public static JourneyEncounterHiddenStateSnapshot FromDomain(JourneyEncounterHiddenState hiddenState)
+            => new()
+            {
+                BribeOffersMade = hiddenState.BribeOffersMade,
+                CumulativeBribePaid = hiddenState.CumulativeBribePaid,
+                BribeLockedOut = hiddenState.BribeLockedOut,
+                ChaseFatigue = hiddenState.ChaseFatigue,
+                Annoyance = hiddenState.Annoyance,
+                Shaken = hiddenState.Shaken
+            };
+
+        public JourneyEncounterHiddenState ToDomain()
+            => new(
+                BribeOffersMade,
+                CumulativeBribePaid,
+                BribeLockedOut,
+                ChaseFatigue,
+                Annoyance,
+                Shaken);
     }
 
     private sealed class JourneyTrailEventSnapshot

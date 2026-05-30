@@ -135,7 +135,57 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(3, reloaded.Journey.PendingEncounter.Choices.Count);
         Assert.NotNull(reloaded.Journey.PendingEncounter.FoeProfile);
         Assert.Equal(0, reloaded.Journey.PendingEncounter.ResolutionAttempts);
-        Assert.Equal(loaded.Journey.PendingEncounter!.FoeProfile, reloaded.Journey.PendingEncounter.FoeProfile);
+        Assert.NotNull(reloaded.Journey.PendingEncounter.HiddenState);
+        Assert.Equal(0, reloaded.Journey.PendingEncounter.HiddenState!.BribeOffersMade);
+        Assert.Equal(0m, reloaded.Journey.PendingEncounter.HiddenState.CumulativeBribePaid);
+        Assert.False(reloaded.Journey.PendingEncounter.HiddenState.BribeLockedOut);
+        Assert.Equal(0, reloaded.Journey.PendingEncounter.HiddenState.ChaseFatigue);
+        Assert.Equal(0, reloaded.Journey.PendingEncounter.HiddenState.Annoyance);
+        Assert.False(reloaded.Journey.PendingEncounter.HiddenState.Shaken);
+        var loadedJourney = loaded.Journey!;
+        var loadedEncounter = loadedJourney.PendingEncounter!;
+        var reloadedEncounter = reloaded.Journey.PendingEncounter!;
+        Assert.Equal(loadedEncounter.FoeProfile, reloadedEncounter.FoeProfile);
+    }
+
+    [Fact]
+    public async Task SaveAfterPendingFoeEncounterWithHiddenPressureRoundTripsTheHiddenState()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var resolver = new TravelResolver();
+        var session = CreateHighRiskSession();
+
+        await repository.SaveAsync(session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryfork"), loaded.Player.Inventory);
+
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
+
+        var pendingEncounter = loaded.Journey!.PendingEncounter!;
+        var mutatedEncounter = pendingEncounter.WithHiddenState(new JourneyEncounterHiddenState(BribeOffersMade: 1, CumulativeBribePaid: 5m, ChaseFatigue: 2, Annoyance: 1, Shaken: true));
+        loaded.Journey.UpdatePendingEncounter(mutatedEncounter);
+
+        Assert.NotNull(loaded.Journey.PendingEncounter);
+        Assert.Equal(1, loaded.Journey.PendingEncounter!.HiddenState!.BribeOffersMade);
+        Assert.Equal(5m, loaded.Journey.PendingEncounter.HiddenState.CumulativeBribePaid);
+        Assert.True(loaded.Journey.PendingEncounter.HiddenState.Shaken);
+
+        await repository.SaveAsync(loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.NotNull(reloaded!.Journey!.PendingEncounter);
+        Assert.Equal(1, reloaded.Journey.PendingEncounter!.HiddenState!.BribeOffersMade);
+        Assert.Equal(5m, reloaded.Journey.PendingEncounter.HiddenState.CumulativeBribePaid);
+        Assert.Equal(1, reloaded.Journey.PendingEncounter.HiddenState.Annoyance);
+        Assert.Equal(2, reloaded.Journey.PendingEncounter.HiddenState.ChaseFatigue);
+        Assert.True(reloaded.Journey.PendingEncounter.HiddenState.Shaken);
     }
 
     [Fact]

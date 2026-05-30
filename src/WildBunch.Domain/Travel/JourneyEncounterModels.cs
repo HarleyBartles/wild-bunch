@@ -2,6 +2,36 @@ namespace WildBunch.Domain.Travel;
 
 public sealed record JourneyEncounterChoiceState(string Id, string Label);
 
+public sealed record JourneyEncounterHiddenState(
+    int BribeOffersMade = 0,
+    decimal CumulativeBribePaid = 0m,
+    bool BribeLockedOut = false,
+    int ChaseFatigue = 0,
+    int Annoyance = 0,
+    bool Shaken = false)
+{
+    public JourneyEncounterHiddenState RecordBribeOffer(decimal cumulativeBribePaid, bool bribeLockedOut)
+        => this with
+        {
+            BribeOffersMade = BribeOffersMade + 1,
+            CumulativeBribePaid = cumulativeBribePaid,
+            BribeLockedOut = bribeLockedOut
+        };
+
+    public JourneyEncounterHiddenState RecordFailedRun()
+        => this with
+        {
+            ChaseFatigue = Math.Min(3, ChaseFatigue + 1)
+        };
+
+    public JourneyEncounterHiddenState RecordFightPressure(bool shookTheFoe, bool annoyedTheFoe)
+        => this with
+        {
+            Shaken = Shaken || shookTheFoe,
+            Annoyance = annoyedTheFoe ? Math.Min(3, Annoyance + 1) : Annoyance
+        };
+}
+
 public sealed record JourneyFoeProfile(
     int Speed,
     int FightStrength,
@@ -43,7 +73,8 @@ public sealed record JourneyEncounterState(
     string Message,
     IReadOnlyList<JourneyEncounterChoiceState> Choices,
     JourneyFoeProfile? FoeProfile = null,
-    int ResolutionAttempts = 0)
+    int ResolutionAttempts = 0,
+    JourneyEncounterHiddenState? HiddenState = null)
 {
     public static JourneyEncounterState CreateFoe(string message, JourneyFoeProfile foeProfile)
         => new(
@@ -55,7 +86,8 @@ public sealed record JourneyEncounterState(
                 new JourneyEncounterChoiceState("fight", "Fight"),
                 new JourneyEncounterChoiceState("bribe", "Bribe")
             },
-            foeProfile);
+            foeProfile,
+            HiddenState: new JourneyEncounterHiddenState());
 
     public static JourneyEncounterState CreateChoiceEncounter(
         string kind,
@@ -75,4 +107,21 @@ public sealed record JourneyEncounterState(
 
     public JourneyEncounterState IncrementResolutionAttempts()
         => this with { ResolutionAttempts = ResolutionAttempts + 1 };
+
+    public JourneyEncounterState WithHiddenState(JourneyEncounterHiddenState hiddenState)
+        => this with { HiddenState = hiddenState };
+
+    public JourneyEncounterState WithoutChoice(string choiceId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(choiceId);
+
+        var filteredChoices = Choices
+            .Where(choice => !string.Equals(choice.Id, choiceId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        return filteredChoices.Length == Choices.Count ? this : this with { Choices = filteredChoices };
+    }
+
+    public bool HasChoice(string choiceId)
+        => Choices.Any(choice => string.Equals(choice.Id, choiceId, StringComparison.OrdinalIgnoreCase));
 }

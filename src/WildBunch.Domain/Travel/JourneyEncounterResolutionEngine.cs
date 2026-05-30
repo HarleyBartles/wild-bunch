@@ -8,6 +8,8 @@ namespace WildBunch.Domain.Travel;
 
 internal static class JourneyEncounterResolutionEngine
 {
+    private const int MaxBribeOffers = 2;
+
     internal sealed record JourneyEncounterResolutionPlan(
         bool Resolved,
         string Message,
@@ -137,12 +139,15 @@ internal static class JourneyEncounterResolutionEngine
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
         var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
-        var attempts = encounter.ResolutionAttempts + 1;
+        var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
         var escapeBand = travelMode == TravelMode.Mounted && horseState is not null && !horseState.IsDeadFor(travelRulesProfile) && !horseState.IsLameFor(travelRulesProfile)
             ? 6 + Math.Max(0, 3 - horseState.Exhaustion)
             : 3 + Math.Max(0, playerHealth / 250);
 
-        var chance = ClampChance(42 + (escapeBand - foeProfile.Speed) * 11 + Math.Min(16, (attempts - 1) * 5));
+        var fatigueBonus = Math.Min(12, hiddenState.ChaseFatigue * 4);
+        var annoyancePenalty = Math.Min(18, hiddenState.Annoyance * 6);
+        var shakenBonus = hiddenState.Shaken ? 8 : 0;
+        var chance = ClampChance(42 + (escapeBand - foeProfile.Speed) * 11 + fatigueBonus + shakenBonus - annoyancePenalty);
         var success = RollPercent(roll) < chance;
 
         if (success)
@@ -190,7 +195,7 @@ internal static class JourneyEncounterResolutionEngine
             travelMode == TravelMode.Foot,
             null,
             0,
-            encounter.IncrementResolutionAttempts());
+            encounter.WithHiddenState(hiddenState.RecordFailedRun()).IncrementResolutionAttempts());
     }
 
     public static JourneyEncounterResolutionPlan ResolveFight(
@@ -205,6 +210,7 @@ internal static class JourneyEncounterResolutionEngine
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
         var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
 
         var bulletSpend = availableAmmo <= 0
             ? 0
@@ -229,26 +235,33 @@ internal static class JourneyEncounterResolutionEngine
                 encounter);
         }
 
-        var fightBand = Math.Max(1, playerHealth / 250) + (hasKnife ? 1 : 0) + (usingFirearm ? 2 + bulletSpend : 0);
-        var chance = ClampChance(34 + (fightBand - foeProfile.FightStrength) * 9 + (usingFirearm ? bulletSpend * 4 : 0));
+        var fightBand = Math.Max(1, playerHealth / 250) + (hasKnife ? 1 : 0) + (usingFirearm ? 2 + bulletSpend * 2 : 0);
+        var chance = ClampChance(30 + (fightBand - foeProfile.FightStrength) * 8 + (usingFirearm ? bulletSpend * 3 : 0) + (hiddenState.Shaken ? 6 : 0) - Math.Min(12, hiddenState.Annoyance * 4));
         var success = RollPercent(roll) < chance;
 
         var healthLoss = usingFirearm
             ? travelRulesProfile.EncounterFightAmmoHealthLoss
             : travelRulesProfile.EncounterFightUnarmedHealthLoss;
         healthLoss = success
-            ? Math.Max(1, healthLoss - Math.Min(3, foeProfile.FightStrength / 2))
-            : healthLoss + foeProfile.FightStrength;
+            ? Math.Max(1, healthLoss - Math.Min(4, foeProfile.FightStrength / 2 + bulletSpend))
+            : healthLoss + Math.Max(1, foeProfile.FightStrength - bulletSpend);
+
+        var annoyedTheFoe = !usingFirearm || bulletSpend <= 2 || !success;
+        var shookTheFoe = success && usingFirearm && bulletSpend >= 3;
+        var updatedEncounter = encounter.WithHiddenState(hiddenState.RecordFightPressure(shookTheFoe, annoyedTheFoe));
+        var message = usingFirearm
+            ? success
+                ? bulletSpend >= 4
+                    ? $"I spend {bulletSpend} round(s) and drive the rider off with more lead than sense."
+                    : $"I spend {bulletSpend} round(s) and force the rider off the trail."
+                : $"I spend {bulletSpend} round(s), but the rider keeps coming."
+            : success
+                ? "I fight with my knife and force the rider off the trail."
+                : "I fight with my knife, but the rider keeps the pressure on.";
 
         return new JourneyEncounterResolutionPlan(
             success,
-            usingFirearm
-                ? success
-                    ? $"I spend {bulletSpend} round(s) and force the rider off the trail."
-                    : $"I spend {bulletSpend} round(s), but the rider keeps coming."
-                : success
-                    ? "I fight with my knife and force the rider off the trail."
-                    : "I fight with my knife, but the rider keeps the pressure on.",
+            message,
             -healthLoss,
             0m,
             bulletSpend,
@@ -257,7 +270,7 @@ internal static class JourneyEncounterResolutionEngine
             false,
             null,
             0,
-            success ? encounter : encounter.IncrementResolutionAttempts());
+            success ? updatedEncounter : updatedEncounter.IncrementResolutionAttempts());
     }
 
     public static JourneyEncounterResolutionPlan ResolveBribe(
@@ -274,6 +287,7 @@ internal static class JourneyEncounterResolutionEngine
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
         var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
 
         var offer = requestedBribe ?? travelRulesProfile.EncounterBribeCash;
         if (offer < 0m)
@@ -297,14 +311,40 @@ internal static class JourneyEncounterResolutionEngine
                 encounter);
         }
 
-        var attempts = encounter.ResolutionAttempts + 1;
-        var chance = ClampChance(24 + (int)Math.Round((offer / Math.Max(1m, foeProfile.MinimumBribe)) * 52m, MidpointRounding.AwayFromZero) + Math.Min(12, (attempts - 1) * 4));
-        var success = RollPercent(roll) < chance;
-        if (success)
+        if (hiddenState.BribeLockedOut || hiddenState.BribeOffersMade >= MaxBribeOffers)
         {
             return new JourneyEncounterResolutionPlan(
+                false,
+                "The rider will not take any more money.",
+                0,
+                0m,
+                0,
+                0,
+                0,
+                false,
+                null,
+                0,
+                encounter.WithHiddenState(hiddenState with { BribeLockedOut = true }).WithoutChoice("bribe"));
+        }
+
+        var cumulativeBribePaid = hiddenState.CumulativeBribePaid + offer;
+        var offersMade = hiddenState.BribeOffersMade + 1;
+        var lockout = offersMade >= MaxBribeOffers && cumulativeBribePaid < foeProfile.MinimumBribe;
+        var updatedHiddenState = hiddenState.RecordBribeOffer(cumulativeBribePaid, lockout);
+        var updatedEncounter = encounter.WithHiddenState(updatedHiddenState);
+        var success = cumulativeBribePaid >= foeProfile.MinimumBribe;
+        if (success)
+        {
+            var overpay = cumulativeBribePaid - foeProfile.MinimumBribe;
+            var message = overpay <= 0.5m
+                ? $"I finally got the rider to take ${cumulativeBribePaid:0.00} and let me pass."
+                : cumulativeBribePaid >= foeProfile.MinimumBribe * 1.5m
+                    ? $"I paid ${cumulativeBribePaid:0.00}, and the rider grinned at how richly he was paid."
+                    : $"I paid ${cumulativeBribePaid:0.00}, and the rider grudgingly let me by.";
+
+            return new JourneyEncounterResolutionPlan(
                 true,
-                $"I bribe the rider with ${offer:0.00} and continue on.",
+                message,
                 0,
                 -offer,
                 0,
@@ -313,47 +353,50 @@ internal static class JourneyEncounterResolutionEngine
                 false,
                 null,
                 0,
-                encounter);
+                updatedEncounter);
         }
 
         var insultThreshold = foeProfile.MinimumBribe * 0.35m;
-        var retaliates = offer <= insultThreshold && RollPercent(Roll($"{roll}", "retaliate")) < 70;
+        var insulting = cumulativeBribePaid <= insultThreshold;
+        var retaliates = insulting && RollPercent(Roll($"{roll}", "retaliate")) < (updatedHiddenState.Shaken ? 40 : 70);
         if (!retaliates)
         {
             return new JourneyEncounterResolutionPlan(
                 false,
-                offer <= insultThreshold
-                    ? $"I offer ${offer:0.00}, but the rider is not impressed."
-                    : $"I offer ${offer:0.00}, but the rider still wants more.",
+                $"I offer ${offer:0.00}, and the rider pockets it without moving aside.",
                 0,
-                0m,
+                -offer,
                 0,
                 1,
                 0,
                 false,
                 null,
                 0,
-                encounter.IncrementResolutionAttempts());
+                lockout
+                    ? updatedEncounter.WithHiddenState(updatedHiddenState).WithoutChoice("bribe")
+                    : updatedEncounter.WithHiddenState(updatedHiddenState));
         }
 
         var stolenItem = SelectTheftItem(availableFood, availableHorseFeed, availableRevolverAmmo, availableRifleAmmo);
         var healthDelta = -Math.Max(2, foeProfile.FightStrength * 2);
         var walletDelta = stolenItem is null
-            ? -Math.Min(playerCash, Math.Max(1m, Math.Round(foeProfile.MinimumBribe / 2m, 0, MidpointRounding.AwayFromZero)))
+            ? -Math.Min(playerCash - offer, Math.Max(1m, Math.Round(foeProfile.MinimumBribe / 2m, 0, MidpointRounding.AwayFromZero)))
             : 0m;
 
         return new JourneyEncounterResolutionPlan(
             false,
-            $"I offer ${offer:0.00}, and the rider takes it as an insult.",
+            $"I offer ${offer:0.00}, and the rider takes it badly.",
             healthDelta,
-            walletDelta,
+            walletDelta - offer,
             0,
             1,
             0,
             false,
             stolenItem,
             stolenItem is null ? 0 : 1,
-            encounter.IncrementResolutionAttempts());
+            lockout
+                ? updatedEncounter.WithHiddenState(updatedHiddenState).WithoutChoice("bribe")
+                : updatedEncounter.WithHiddenState(updatedHiddenState));
     }
 
     private static JourneyFoeProfile GetFoeProfile(JourneyEncounterState encounter, TravelRulesProfile travelRulesProfile)
@@ -393,6 +436,12 @@ internal static class JourneyEncounterResolutionEngine
             encounter.FoeProfile?.Speed ?? 0,
             encounter.FoeProfile?.FightStrength ?? 0,
             encounter.FoeProfile?.MinimumBribe ?? 0m,
+            encounter.HiddenState?.BribeOffersMade ?? 0,
+            encounter.HiddenState?.CumulativeBribePaid ?? 0m,
+            encounter.HiddenState?.BribeLockedOut ?? false,
+            encounter.HiddenState?.ChaseFatigue ?? 0,
+            encounter.HiddenState?.Annoyance ?? 0,
+            encounter.HiddenState?.Shaken ?? false,
             choiceId,
             attempts,
             context);

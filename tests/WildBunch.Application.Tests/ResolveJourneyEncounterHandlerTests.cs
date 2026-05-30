@@ -80,7 +80,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
     public async Task HandleAsyncPersistsBribeAmountsIntoTheResolvedTravelDiary()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
         repository.Seed(session);
         var advanceHandler = new AdvanceTravelDayHandler(repository);
         var resolveHandler = new ResolveJourneyEncounterHandler(repository);
@@ -88,12 +88,13 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
 
-        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "bribe", BribeAmount: 7m, ForcedRoll: 0UL));
+        var bribeAmount = session.Journey!.PendingEncounter!.FoeProfile!.MinimumBribe;
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "bribe", BribeAmount: bribeAmount, ForcedRoll: 0UL));
 
         Assert.True(resolveResult.Success);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
-        Assert.Equal(3m, resolveResult.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(-7m, resolvedDay.EncounterResolution!.WalletDelta);
+        Assert.Equal(20m - bribeAmount, resolveResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(-bribeAmount, resolvedDay.EncounterResolution!.WalletDelta);
     }
 
     private static GameSession CreateHighRiskSession(Wallet? wallet = null)

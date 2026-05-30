@@ -464,6 +464,11 @@ public sealed class TravelDayPlanGeneratorTests
             return false;
         }
 
+        if (!HiddenStatesAreEquivalent(left.HiddenState, right.HiddenState))
+        {
+            return false;
+        }
+
         for (var index = 0; index < left.Choices.Count; index++)
         {
             if (left.Choices[index].Id != right.Choices[index].Id || left.Choices[index].Label != right.Choices[index].Label)
@@ -474,6 +479,17 @@ public sealed class TravelDayPlanGeneratorTests
 
         return true;
     }
+
+    private static bool HiddenStatesAreEquivalent(JourneyEncounterHiddenState? left, JourneyEncounterHiddenState? right)
+        => left is null
+            ? right is null
+            : right is not null
+              && left.BribeOffersMade == right.BribeOffersMade
+              && left.CumulativeBribePaid == right.CumulativeBribePaid
+              && left.BribeLockedOut == right.BribeLockedOut
+              && left.ChaseFatigue == right.ChaseFatigue
+              && left.Annoyance == right.Annoyance
+              && left.Shaken == right.Shaken;
 
     private static bool EncounterResolutionsAreEquivalent(TravelDiaryEncounterResolutionState? left, TravelDiaryEncounterResolutionState? right)
         => left is null
