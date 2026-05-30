@@ -125,7 +125,7 @@ internal static partial class TravelDayPlanGenerator
             return TravelDayEncounterCategory.Unlucky;
         }
 
-        if (context.Difficulty == TravelDifficulty.Hard && context.IsMounted && context.Terrain == TrailTerrain.Hills && context.WaterFeature == WaterFeature.River)
+        if (context.Difficulty == TravelDifficulty.Hard && context.IsMounted && context.HorseConditionBand != HorseConditionBand.None && context.Terrain == TrailTerrain.Hills && context.WaterFeature == WaterFeature.River)
         {
             return TravelDayEncounterCategory.HorseTrouble;
         }
@@ -573,15 +573,13 @@ internal static partial class TravelDayPlanGenerator
 
     private static TravelDayEncounterState CreateHorseTroubleEncounter(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, int dayNumber, int slotIndex, string seed)
     {
-        var message = context.HorseConditionBand == HorseConditionBand.None
-            ? "The horse trouble never really starts because I am traveling without a horse."
-            : context.Terrain switch
-            {
-                TrailTerrain.Badlands => "The horse picks a poor line through the bad ground and comes out more exhausted.",
-                TrailTerrain.Hills => "The horse labors up the slope and pays for it in exhaustion.",
-                TrailTerrain.Mountains => "The horse struggles on the climb and needs a steadier pace.",
-                _ => "The horse takes a hard moment on the trail and I have to mind its pace."
-            };
+        var message = context.Terrain switch
+        {
+            TrailTerrain.Badlands => "The horse picks a poor line through the bad ground and comes out more exhausted.",
+            TrailTerrain.Hills => "The horse labors up the slope and pays for it in exhaustion.",
+            TrailTerrain.Mountains => "The horse struggles on the climb and needs a steadier pace.",
+            _ => "The horse takes a hard moment on the trail and I have to mind its pace."
+        };
 
         return new TravelDayEncounterState(
             slotIndex,
@@ -592,7 +590,7 @@ internal static partial class TravelDayPlanGenerator
                 JourneyTrailEventId.BadLuckSpookedHorse,
                 "Horse trouble",
                 message,
-                horseExhaustionDelta: context.HorseConditionBand == HorseConditionBand.None ? 0 : Math.Max(1, travelRulesProfile.BadLuckTrailHorseExhaustion - 1),
+                horseExhaustionDelta: Math.Max(1, travelRulesProfile.BadLuckTrailHorseExhaustion - 1),
                 heatIncrease: 0),
             null,
             null);

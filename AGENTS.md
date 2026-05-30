@@ -74,6 +74,8 @@
 - When you touch a surface, leave it cleaner or explicitly report why the cleanup is deferred.
 - Backend remains authoritative for gameplay state; React renders server state instead of inventing it.
 - For deterministic seed, world, or travel behavior, prefer characterization tests before refactoring.
+- Current cockpit/debug shell UI sections are temporary scaffolding; do not over-refactor them for their own sake while they remain temporary.
+- Real replacement UI/screens should follow the decomposition rules from the cleanup track: focused hooks, small components, backend-authoritative mutation paths, clear command/state boundaries, and reducers only when coupled command-legality state truly warrants them.
 
 ## Worker Environment
 - The worker environment uses PowerShell, so do not use `&&` for command chaining.

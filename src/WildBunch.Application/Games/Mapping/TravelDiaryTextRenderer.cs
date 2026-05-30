@@ -35,7 +35,8 @@ public static class TravelDiaryTextRenderer
         }
 
         entries.Add(RenderStatus(day));
-        return entries;
+
+        return DeduplicateInOrder(entries);
     }
 
     public static string RenderJourneyBeat(DomainTravelDiaryDayState day)
@@ -285,5 +286,21 @@ public static class TravelDiaryTextRenderer
         }
 
         return string.Join(" ", pieces);
+    }
+
+    private static IReadOnlyList<string> DeduplicateInOrder(IEnumerable<string> entries)
+    {
+        var deduplicated = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var entry in entries)
+        {
+            if (seen.Add(entry))
+            {
+                deduplicated.Add(entry);
+            }
+        }
+
+        return deduplicated;
     }
 }

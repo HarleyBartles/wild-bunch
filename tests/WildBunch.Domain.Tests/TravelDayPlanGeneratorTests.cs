@@ -192,6 +192,57 @@ public sealed class TravelDayPlanGeneratorTests
         Assert.True(foundReducedFoeSelection);
     }
 
+    [Fact]
+    public void GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse()
+    {
+        var seeds = Enumerable.Range(1, 12).Select(index => $"seed-no-horse-{index}");
+
+        foreach (var seed in seeds)
+        {
+            var context = CreateHorseTroubleContext(seed, HorseConditionBand.None, TravelMode.Foot);
+            var plan = TravelDayPlanGenerator.Generate(context);
+
+            Assert.DoesNotContain(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble);
+            Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
+        }
+    }
+
+    [Fact]
+    public void GenerateCanStillSelectHorseOnlyEventsWhenAHorseIsPresent()
+    {
+        var context = CreateHorseTroubleContext("seed-horse-present", HorseConditionBand.Sound, TravelMode.Mounted);
+        var plan = TravelDayPlanGenerator.Generate(context);
+
+        Assert.Single(plan.Encounters);
+        Assert.Equal(TravelDayEncounterCategory.HorseTrouble, plan.Encounters[0].Category);
+        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, plan.Encounters[0].TrailEvent?.Id);
+    }
+
+    private static TravelDayGenerationContext CreateHorseTroubleContext(string seed, HorseConditionBand horseConditionBand, TravelMode travelMode)
+        => new(
+            TravelDayPlanGenerator.CurrentVersion,
+            seed,
+            "profile-horse-trouble",
+            "trail-horse-trouble",
+            new TownId("pinecross"),
+            new TownId("ridgeway"),
+            1,
+            travelMode,
+            TrailRisk.Low,
+            TrailTerrain.Hills,
+            WaterFeature.River,
+            TravelDifficulty.Hard,
+            3,
+            3m,
+            TravelPressureBand.None,
+            TravelPressureBand.None,
+            TravelPressureBand.None,
+            horseConditionBand,
+            PursuitHeatBand.Calm,
+            WalletBand.Steady,
+            Array.Empty<JourneyTrailEventKind>(),
+            Array.Empty<TravelDayEncounterCategory>());
+
     private static GameSession CreatePressureSession(
         HorseTravelState horseState,
         int food = 1,
@@ -327,7 +378,7 @@ public sealed class TravelDayPlanGeneratorTests
             new(DomainItemKind.Knife, 1)
         };
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items));
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), TravelDifficulty.Hard);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);

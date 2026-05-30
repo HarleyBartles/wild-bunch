@@ -58,6 +58,45 @@ public sealed class TravelDiaryTextRendererTests
         Assert.DoesNotContain(entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void RenderEntriesKeepsBribeResolutionVoiceInFirstPerson()
+    {
+        var day = CreateDay(
+            status: JourneyStatus.Interrupted,
+            encounterResolution: new TravelDiaryEncounterResolutionState("bribe", "Bribe", 0, -5m, 0, 0, 0, false));
+
+        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+
+        Assert.Contains(entries, entry => entry.Contains("I decided to bribe the rider.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Contains("I pay my way through and keep the dust moving.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Contains("I paid $5.00 to make the problem go away.", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RenderEntriesDeduplicatesExactStringsWithinADayAndPreservesOrder()
+    {
+        var day = CreateDay(
+            entries: new[]
+            {
+                "A hard mile is a hard mile.",
+                "A hard mile is a hard mile.",
+                "A second distinct note."
+            });
+
+        var entries = TravelDiaryTextRenderer.RenderEntries(day, TravelRulesProfile.Default);
+
+        Assert.Equal(
+            new[]
+            {
+                "I cross open range with the horse moving steady under me.",
+                "A hard mile is a hard mile.",
+                "A second distinct note.",
+                "I keep moving and let the trail stretch ahead."
+            },
+            entries);
+    }
+
     private static TravelDiaryDayState CreateDay(
         JourneyStatus status = JourneyStatus.Active,
         JourneyEncounterState? pendingEncounter = null,

@@ -657,6 +657,8 @@ public sealed class TravelResolverTests
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
+        Assert.Contains(session.TravelDiaryDays[^1].Entries, entry => entry == "I bribe the rider with $5.00 and continue on.");
+        Assert.DoesNotContain(session.TravelDiaryDays[^1].Entries, entry => entry.StartsWith("You ", StringComparison.Ordinal));
     }
 
     [Fact]

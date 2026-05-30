@@ -61,7 +61,7 @@ internal static class TrailEventCatalog
                 heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
+        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && journey.HorseState is not null && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
         {
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckSpookedHorse,

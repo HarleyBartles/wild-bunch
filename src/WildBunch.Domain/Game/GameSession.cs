@@ -926,7 +926,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
                 Player.SetWallet(Player.Wallet.Spend(bribeAmount));
                 Journey.ResumeFromEncounter();
-                var bribeMessage = $"You bribe the rider with ${bribeAmount:0.00} and continue on.";
+                var bribeMessage = $"I bribe the rider with ${bribeAmount:0.00} and continue on.";
                 AddLogEntry(GameLogEntryKind.Travel, bribeMessage);
                 dayEntries.Add(bribeMessage);
                 var resolution = new TravelDiaryEncounterResolutionState(
