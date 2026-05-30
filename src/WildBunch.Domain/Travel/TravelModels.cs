@@ -1,5 +1,4 @@
 using WildBunch.Domain.Inventory;
-using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Travel;
 
@@ -401,77 +400,4 @@ public sealed record JourneyArrivalAcknowledgementResult(
 public sealed record TravelPreviewResult(bool Success, string Message, TravelPreview? Preview)
 {
     public static TravelPreviewResult Failed(string message) => new(false, message, null);
-}
-
-internal static class TrailEventCatalog
-{
-    public static JourneyTrailEventState? TryCreate(TravelJourney journey, TravelRulesProfile travelRulesProfile)
-    {
-        ArgumentNullException.ThrowIfNull(journey);
-        ArgumentNullException.ThrowIfNull(travelRulesProfile);
-
-        var routeProfile = journey.Preview.RouteProfile;
-
-        if (routeProfile.Risk == TrailRisk.Low && routeProfile.WaterFeature == WaterFeature.Creek)
-        {
-            return JourneyTrailEventState.CreateLucky(
-                JourneyTrailEventId.LuckyCoinCache,
-                "Hidden coin cache",
-                $"I spot a hidden cache of trail coins and pocket an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
-                walletDelta: travelRulesProfile.LuckyTrailCoinReward);
-        }
-
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
-        {
-            return JourneyTrailEventState.CreateLucky(
-                JourneyTrailEventId.LuckyFoodCache,
-                "Trail grub cache",
-                $"I find a cache of jerky and trail biscuits and gain {travelRulesProfile.LuckyTrailFoodReward} food.",
-                foodDelta: travelRulesProfile.LuckyTrailFoodReward);
-        }
-
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
-        {
-            return JourneyTrailEventState.CreateLucky(
-                JourneyTrailEventId.LuckyWaterSeep,
-                "Hidden water seep",
-                $"I find a seep under the rocks and top off my canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
-                canteenChargeDelta: travelRulesProfile.LuckyTrailWaterRecovery);
-        }
-
-        if (routeProfile.Risk == TrailRisk.Moderate && routeProfile.WaterFeature == WaterFeature.Spring)
-        {
-            return JourneyTrailEventState.CreateBadLuck(
-                JourneyTrailEventId.BadLuckWashout,
-                "Washed-out trail",
-                $"A washout forces a detour and costs me {travelRulesProfile.BadLuckTrailDelayDays} extra delay day(s).",
-                delayDays: travelRulesProfile.BadLuckTrailDelayDays,
-                heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
-        }
-
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
-        {
-            return JourneyTrailEventState.CreateBadLuck(
-                JourneyTrailEventId.BadLuckFoodLoss,
-                "Dust-choked outfit",
-                $"A dust storm strips away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
-                foodDelta: -travelRulesProfile.BadLuckTrailFoodLoss,
-                canteenChargeDelta: -travelRulesProfile.BadLuckTrailCanteenLoss,
-                horseThirstDelta: travelRulesProfile.BadLuckTrailHorseThirst,
-                delayDays: travelRulesProfile.BadLuckTrailDelayDays,
-                heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
-        }
-
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
-        {
-            return JourneyTrailEventState.CreateBadLuck(
-                JourneyTrailEventId.BadLuckSpookedHorse,
-                "Spooked horse",
-                "A sudden canyon echo spooks the horse and leaves it more exhausted.",
-                horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion,
-                heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
-        }
-
-        return null;
-    }
 }
