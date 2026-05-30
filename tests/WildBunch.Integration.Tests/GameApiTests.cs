@@ -16,30 +16,17 @@ public sealed class GameApiTests
         using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = ScenarioSeedCatalog.CanonicalMountedNormal;
+        var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(session);
+        scenario.AssertCreatedSession(session!);
         Assert.NotEqual(Guid.Empty, session!.Id);
-        Assert.Equal("Ranger Vale", session.Player.Name);
-        Assert.Equal("pinecross", session.Player.CurrentTownId);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, session.Status);
-        Assert.Equal(25m, session.Inventory.Wallet.Cash);
-        Assert.Equal(8, session.Inventory.Items.Count);
-        Assert.True(session.Inventory.Capabilities.MountedTravelAvailable);
-        Assert.True(session.Inventory.Capabilities.GunfightCapable);
-        Assert.False(session.Inventory.Capabilities.RifleUsable);
-        Assert.Equal(6, session.World.Towns.Count);
-        Assert.Equal(7, session.World.Trails.Count);
-        Assert.Equal("A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
-        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
-        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
-        Assert.Empty(session.CaseFile.DiscoveredSuspects);
-        Assert.Equal(1000, session.Player.Health);
-        Assert.NotEmpty(session.LogEntries);
 
         var connectedTownIds = session.World.Trails
             .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
@@ -222,25 +209,16 @@ public sealed class GameApiTests
         using var factory = new SqliteApiFactory();
         using var client = factory.CreateClient();
 
-        const string seedCode = "WB1-E-02-0000000004D2-9B4A";
+        var scenario = ScenarioSeedCatalog.NoHorseLightEasy;
 
-        var response = await client.PostAsJsonAsync("/api/games", new
-        {
-            playerName = "Ranger Vale",
-            travelDifficulty = WildBunch.Domain.Travel.TravelDifficulty.Easy,
-            seedCode
-        });
+        var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         var createdSession = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
-        Assert.Equal(WildBunch.Domain.Travel.TravelDifficulty.Easy, createdSession!.TravelDifficulty);
-        Assert.Equal(1250, createdSession.Player.Health);
-        Assert.Null(createdSession.Inventory.HorseState);
-        Assert.DoesNotContain(createdSession.Inventory.Items, item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Horse);
-        Assert.DoesNotContain(createdSession.Inventory.Items, item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Saddle);
+        scenario.AssertCreatedSession(createdSession!);
 
         var connectedTownIds = createdSession.World.Trails
             .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
@@ -256,10 +234,7 @@ public sealed class GameApiTests
 
         var previewResult = await previewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
         Assert.NotNull(previewResult);
-        Assert.True(previewResult!.Success);
-        Assert.NotNull(previewResult.Preview);
-        Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, previewResult.Preview!.TravelMode);
-        Assert.True(previewResult.Preview.ExpectedDays > previewResult.Preview.BaselineRideDays);
+        scenario.AssertTravelPreview(createdSession!, destinationTownId, previewResult!);
 
         var onFootTravelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
@@ -270,21 +245,7 @@ public sealed class GameApiTests
         var onFootTurn = await onFootTravelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(onFootTurn);
-        Assert.True(onFootTurn!.Success);
-        Assert.Equal(JourneyStatus.Active, onFootTurn.JourneyStatus);
-        Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, onFootTurn.CurrentSession.Journey!.TravelMode);
-        Assert.Equal(previewResult.Preview.BaselineRideDays, onFootTurn.CurrentSession.Journey.BaselineRideDays);
-        Assert.Equal(previewResult.Preview.ExpectedDays, onFootTurn.CurrentSession.Journey.ExpectedDays);
-        Assert.True(onFootTurn.CurrentSession.Journey.ExpectedDays > onFootTurn.CurrentSession.Journey.BaselineRideDays);
-        Assert.NotNull(onFootTurn.TravelDiary);
-        var onFootOpeningDay = Assert.Single(onFootTurn.TravelDiary!.Days);
-        Assert.NotNull(onFootOpeningDay.OpeningNarration);
-        Assert.Contains($"{previewResult.Preview.BaselineRideDays}-day", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("ride", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{previewResult.Preview.ExpectedDays} days on foot", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("on foot", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("without a horse", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(onFootOpeningDay.Entries, entry => entry == onFootOpeningDay.OpeningNarration);
+        scenario.AssertTravelTurn(createdSession!, destinationTownId, onFootTurn!, previewResult!);
     }
 
     [Fact]
