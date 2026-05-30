@@ -41,8 +41,8 @@ public sealed class TravelResolverTests
         Assert.Equal(0, result.Preview.RequiredHorseFeed);
         Assert.Equal(0, result.Preview.CanteenChargesPerDay);
         Assert.Equal(0, result.Preview.RequiredCanteenCharges);
-        Assert.Equal(2, result.Preview.AvailableCanteenCharges);
-        Assert.Equal(2, result.Preview.CanteenReserveCharges);
+        Assert.Equal(10, result.Preview.AvailableCanteenCharges);
+        Assert.Equal(10, result.Preview.CanteenReserveCharges);
         Assert.Equal(0, result.Preview.DelayMarginDays);
         Assert.False(result.Preview.DelayRisk);
         Assert.Equal(TrailTerrain.Hills, result.Preview.RouteProfile.Terrain);
@@ -115,7 +115,7 @@ public sealed class TravelResolverTests
         Assert.Equal(1m, session.Journey.RemainingRideDayDistance);
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
         Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
-        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(10, session.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -155,8 +155,8 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.Journey);
         Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
-        Assert.Equal(3, session.Journey.RemainingDays);
-        Assert.Equal(3, result.Journey.RemainingDays);
+        Assert.Equal(1, session.Journey.RemainingDays);
+        Assert.Equal(1, result.Journey.RemainingDays);
         Assert.Equal(new HorseTravelState(2, 2, 1), session.Player.Inventory.GetHorseState());
         Assert.Contains("dies", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
@@ -309,7 +309,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         Assert.True(preview.WaterSecure);
-        Assert.Equal(1, preview.RequiredHorseFeed);
+        Assert.Equal(2, preview.RequiredHorseFeed);
         Assert.Contains(preview.Warnings, warning => warning.Contains("poor grazing", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(preview.Warnings, warning => warning.Contains("two canteen charges per day", StringComparison.OrdinalIgnoreCase));
         session.StartJourney(preview);
@@ -317,12 +317,12 @@ public sealed class TravelResolverTests
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success);
-        Assert.Equal(JourneyStatus.Completed, result.Status);
-        Assert.Null(session.Journey);
-        Assert.Equal(new TownId("dryfork"), session.Player.CurrentTownId);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(session.Journey);
+        Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
         Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
-        Assert.Equal(0, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(8, session.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Equal(1, result.Journey!.DaysTravelled);
         Assert.Equal(TravelMode.Mounted, result.Journey.TravelMode);
     }
@@ -340,7 +340,7 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.NotNull(session.Journey);
-        Assert.Equal(1, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(9, session.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -370,7 +370,7 @@ public sealed class TravelResolverTests
         Assert.Equal(0, mountedPreview.CanteenReserveCharges);
         Assert.Equal(0, mountedPreview.DelayMarginDays);
         Assert.True(mountedPreview.DelayRisk);
-        Assert.Contains(mountedPreview.Warnings, warning => warning.Contains("exactly covers the base trail", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mountedPreview.Warnings, warning => warning.Contains("two canteen charges per day", StringComparison.OrdinalIgnoreCase));
 
         var footInventory = new DomainInventory(new[]
         {
@@ -383,14 +383,14 @@ public sealed class TravelResolverTests
 
         Assert.Equal(5m, footPreview.RideDayDistance);
         Assert.Equal(TravelMode.Foot, footPreview.TravelMode);
-        Assert.Equal(10, footPreview.ExpectedDays);
+        Assert.Equal(6, footPreview.ExpectedDays);
         Assert.Equal(1, footPreview.CanteenChargesPerDay);
-        Assert.Equal(10, footPreview.RequiredCanteenCharges);
+        Assert.Equal(6, footPreview.RequiredCanteenCharges);
         Assert.Equal(10, footPreview.AvailableCanteenCharges);
-        Assert.Equal(0, footPreview.CanteenReserveCharges);
-        Assert.Equal(0, footPreview.DelayMarginDays);
-        Assert.True(footPreview.DelayRisk);
-        Assert.Contains(footPreview.Warnings, warning => warning.Contains("exactly covers the base trail", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(4, footPreview.CanteenReserveCharges);
+        Assert.Equal(4, footPreview.DelayMarginDays);
+        Assert.False(footPreview.DelayRisk);
+        Assert.Contains(footPreview.Warnings, warning => warning.Contains("spare charge(s)", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -434,7 +434,7 @@ public sealed class TravelResolverTests
         Assert.Equal(2, session.Clock.Turn);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
-        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(10, session.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -545,7 +545,7 @@ public sealed class TravelResolverTests
         Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
-        Assert.True(session.Journey.RemainingDays > remainingDaysBeforeRun);
+        Assert.Equal(remainingDaysBeforeRun, session.Journey.RemainingDays);
         Assert.Equal(0, session.Journey.DelayDays);
         Assert.Equal(new HorseTravelState(1, 0, 3), session.Player.Inventory.GetHorseState());
     }

@@ -142,13 +142,17 @@ public sealed class GameApiTests
         Assert.Equal(2, turnResult.Journey.ExpectedDays);
         Assert.Equal(0, turnResult.Journey.DelayDays);
         Assert.Equal("pinecross", turnResult.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
+        Assert.Equal(1, turnResult.CurrentSession.Clock.Turn);
         Assert.NotNull(turnResult.CurrentSession.Journey);
-        Assert.Equal(2, turnResult.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(2m, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
-        Assert.Equal(startingFood, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
+        Assert.Equal(1, turnResult.CurrentSession.Journey!.RemainingDays);
+        Assert.Equal(1m, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
+        Assert.Equal(startingFood - 1, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
-        Assert.Equal(2, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.Equal(10, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.NotNull(turnResult.TravelDiary);
+        var openingDay = Assert.Single(turnResult.TravelDiary!.Days);
+        Assert.NotNull(openingDay.OpeningNarration);
+        Assert.Contains("I set out for Holloway", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
 
         var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -158,32 +162,15 @@ public sealed class GameApiTests
 
         Assert.NotNull(firstAdvance);
         Assert.True(firstAdvance!.Success);
-        Assert.Equal(JourneyStatus.Active, firstAdvance.JourneyStatus);
-        Assert.Equal("pinecross", firstAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(1, firstAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(firstAdvance.CurrentSession.Journey);
-        Assert.Equal(1, firstAdvance.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(startingFood - 1, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
+        Assert.Equal(JourneyStatus.Completed, firstAdvance.JourneyStatus);
+        Assert.Equal("holloway", firstAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(2, firstAdvance.CurrentSession.Clock.Turn);
+        Assert.Null(firstAdvance.CurrentSession.Journey);
+        Assert.Equal(startingFood - 2, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
-        Assert.Equal(2, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.Equal(10, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
-        var secondAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, secondAdvanceResponse.StatusCode);
-
-        var secondAdvance = await secondAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
-
-        Assert.NotNull(secondAdvance);
-        Assert.True(secondAdvance!.Success);
-        Assert.Equal(JourneyStatus.Completed, secondAdvance.JourneyStatus);
-        Assert.Equal("holloway", secondAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(2, secondAdvance.CurrentSession.Clock.Turn);
-        Assert.Null(secondAdvance.CurrentSession.Journey);
-        Assert.Equal(startingFood - 2, secondAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
-        Assert.Equal(startingHorseFeed, secondAdvance.CurrentSession.Inventory.Items.Where(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Sum(item => item.Quantity));
-        Assert.Equal(2, secondAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
-
-        var payload = await secondAdvanceResponse.Content.ReadAsStringAsync();
+        var payload = await firstAdvanceResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -235,24 +222,14 @@ public sealed class GameApiTests
         var dryForkTravel = await travelToDryForkResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(dryForkTravel);
-        Assert.True(dryForkTravel!.Success);
-        Assert.Equal(JourneyStatus.Active, dryForkTravel.JourneyStatus);
-
-        var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
-
-        var firstAdvance = await firstAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
-
-        Assert.NotNull(firstAdvance);
-        Assert.False(firstAdvance!.Success);
-        Assert.Equal(JourneyStatus.Interrupted, firstAdvance.JourneyStatus);
-        Assert.NotNull(firstAdvance.Journey);
-        Assert.NotNull(firstAdvance.Journey!.PendingEncounter);
-        Assert.Equal("foe", firstAdvance.Journey.PendingEncounter!.Kind);
-        Assert.Equal(3, firstAdvance.Journey.PendingEncounter.Choices.Count);
-        Assert.Equal(new[] { "run", "fight", "bribe" }, firstAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
-        Assert.Equal(2, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.False(dryForkTravel!.Success);
+        Assert.Equal(JourneyStatus.Interrupted, dryForkTravel.JourneyStatus);
+        Assert.NotNull(dryForkTravel.Journey);
+        Assert.NotNull(dryForkTravel.Journey!.PendingEncounter);
+        Assert.Equal("foe", dryForkTravel.Journey.PendingEncounter!.Kind);
+        Assert.Equal(3, dryForkTravel.Journey.PendingEncounter.Choices.Count);
+        Assert.Equal(new[] { "run", "fight", "bribe" }, dryForkTravel.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
+        Assert.Equal(10, dryForkTravel.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
         var blockedAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -263,7 +240,7 @@ public sealed class GameApiTests
         Assert.NotNull(blockedAdvance);
         Assert.False(blockedAdvance!.Success);
         Assert.Equal(JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
-        Assert.Equal(2, blockedAdvance.CurrentSession.Clock.Turn);
+        Assert.Equal(3, blockedAdvance.CurrentSession.Clock.Turn);
 
         var resolveResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel/encounter/resolve",
@@ -291,7 +268,7 @@ public sealed class GameApiTests
         Assert.True(resumeAdvance!.Success);
         Assert.Equal(JourneyStatus.Active, resumeAdvance.JourneyStatus);
         Assert.NotNull(resumeAdvance.CurrentSession.Journey);
-        Assert.Equal(3, resumeAdvance.CurrentSession.Clock.Turn);
+        Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
         Assert.Equal(1, resumeAdvance.CurrentSession.Journey!.RemainingDays);
     }
 

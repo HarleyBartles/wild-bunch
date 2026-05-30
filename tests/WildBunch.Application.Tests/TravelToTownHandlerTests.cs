@@ -24,12 +24,11 @@ public sealed class TravelToTownHandlerTests
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
         Assert.True(result.Success);
-        Assert.Contains("You set out from Dustvale toward Silver Creek", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("ride-day unit(s)", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("trail", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(0, result.CurrentSession.Clock.Turn);
+        Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(1, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.NotNull(result.Journey);
@@ -37,6 +36,10 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal("silvercreek", result.Journey.DestinationTownId);
         Assert.Equal(result.CurrentSession.Journey!.TravelMode, result.Journey.TravelMode);
         Assert.Equal(result.CurrentSession.Journey.RouteProfile.TrailId, result.Journey.RouteProfile.TrailId);
+        Assert.Equal(1, result.CurrentSession.Journey.RemainingDays);
+        Assert.NotNull(result.TravelDiary);
+        var diaryDay = Assert.Single(result.TravelDiary!.Days);
+        Assert.NotNull(diaryDay.OpeningNarration);
     }
 
     [Fact]
@@ -68,14 +71,13 @@ public sealed class TravelToTownHandlerTests
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
-        Assert.True(result.Success);
-        Assert.Contains("You set out from Dustvale toward Silver Creek", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("ride-day unit(s)", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(result.Success);
+        Assert.Contains("food runs out", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, repository.SaveCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
-        Assert.NotNull(result.CurrentSession.Journey);
+        Assert.Null(result.CurrentSession.Journey);
     }
 
     private static GameSession CreateSession(bool emptyInventory = false)

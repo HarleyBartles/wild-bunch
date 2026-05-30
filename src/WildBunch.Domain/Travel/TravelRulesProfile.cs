@@ -33,7 +33,7 @@ public sealed record TravelRulesProfile(
 {
     public static TravelRulesProfile Default { get; } = new(
         TravelDifficulty.Normal,
-        CanteenCapacity: 2,
+        CanteenCapacity: 10,
         HorseHungerDeathThreshold: 3,
         HorseThirstDeathThreshold: 2,
         HorseExhaustionLameThreshold: 3,

@@ -382,6 +382,7 @@ public sealed class GameSessionJsonSerializer
         public int RequiredHorseFeed { get; set; }
         public int AvailableHorseFeed { get; set; }
         public DomainHorseTravelState? HorseState { get; set; }
+        public string? OpeningNarration { get; set; }
         public int DaysTravelled { get; set; }
         public int DelayDays { get; set; }
         public JourneyEncounterSnapshot? PendingEncounter { get; set; }
@@ -414,6 +415,7 @@ public sealed class GameSessionJsonSerializer
                 RequiredHorseFeed = snapshot.RequiredHorseFeed,
                 AvailableHorseFeed = snapshot.AvailableHorseFeed,
                 HorseState = snapshot.HorseState,
+                OpeningNarration = snapshot.OpeningNarration,
                 DaysTravelled = snapshot.DaysTravelled,
                 DelayDays = snapshot.DelayDays,
                 PendingEncounter = snapshot.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(snapshot.PendingEncounter),
@@ -446,6 +448,7 @@ public sealed class GameSessionJsonSerializer
                 RequiredHorseFeed,
                 AvailableHorseFeed,
                 HorseState,
+                OpeningNarration,
                 DaysTravelled,
                 DelayDays,
                 PendingEncounter?.ToDomain(),

@@ -56,8 +56,8 @@ public sealed class InventoryTests
         });
 
         Assert.Single(inventory.Items);
-        Assert.Equal(new DomainCanteenState(2, 2), inventory.GetCanteenState());
-        Assert.Equal(new DomainCanteenState(2, 2), inventory.Items[0].CanteenState);
+        Assert.Equal(new DomainCanteenState(10, 10), inventory.GetCanteenState());
+        Assert.Equal(new DomainCanteenState(10, 10), inventory.Items[0].CanteenState);
     }
 
     [Fact]

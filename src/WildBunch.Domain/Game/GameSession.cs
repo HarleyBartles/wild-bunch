@@ -113,7 +113,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return TravelJourneyStepResult.Failed("You are already on the trail.");
         }
 
-        Journey = TravelJourney.Start(preview);
+        Journey = TravelJourney.Start(preview, BuildJourneyOpeningNarration(preview));
         _travelDiaryDays.Clear();
         var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
         AddLogEntry(
@@ -334,8 +334,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             var destinationTownName = Journey.Preview.DestinationTownName;
             var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
             Journey.MarkCompleted();
-            var completedSnapshot = Journey.ToSnapshot(TravelRules);
             Player.TravelTo(destinationTownId);
+            var canteenState = Player.Inventory.GetCanteenState();
+            if (canteenState is not null && canteenState.Charges < canteenState.Capacity)
+            {
+                var refilledCanteen = CanteenState.Full(canteenState.Capacity);
+                Player.Inventory.SetCanteenState(refilledCanteen);
+                Journey.SetCanteenCharges(refilledCanteen.Charges);
+            }
+
+            var completedSnapshot = Journey.ToSnapshot(TravelRules);
             var completionMessage = horseLostMessage.Length == 0
                 ? $"You reach {destinationTownName}."
                 : $"{horseLostMessage} You reach {destinationTownName}.";
@@ -423,6 +431,25 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         return "Your horse can no longer carry you.";
     }
+
+    private static string DescribeTerrain(TrailTerrain terrain)
+        => terrain switch
+        {
+            TrailTerrain.OpenRange => "open-range",
+            TrailTerrain.Hills => "hill country",
+            TrailTerrain.Badlands => "badlands",
+            TrailTerrain.Mountains => "mountain",
+            _ => "trail"
+        };
+
+    private static string DescribeRisk(TrailRisk risk)
+        => risk switch
+        {
+            TrailRisk.Low => "The route looks steady enough for now.",
+            TrailRisk.Moderate => "The route has some teeth, so I will keep my eyes open.",
+            TrailRisk.High => "The route looks rough enough to demand respect.",
+            _ => "The route is hard to read."
+        };
 
     private static string PrependHorseLossMessage(string horseLossMessage, string message)
         => horseLossMessage.Length == 0 ? message : $"{horseLossMessage} {message}";
@@ -654,7 +681,20 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         var horseStateAfter = journeySnapshot.HorseState;
         var currentHorseState = Player.Inventory.GetHorseState();
+        var currentFood = Player.Inventory.GetQuantity(ItemKind.Food);
+        var currentHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
         var currentCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
+        var openingNarration = startingDaysRemaining == journeySnapshot.ExpectedDays ? Journey?.OpeningNarration : null;
+        var journeyBeat = BuildJourneyBeat(journeySnapshot, trailEvent, pendingEncounter ?? journeySnapshot.PendingEncounter, encounterResolution);
+        var resourceBeat = BuildResourceBeat(
+            journeySnapshot,
+            currentFood,
+            currentHorseFeed,
+            startingCanteenCharges,
+            currentCanteenCharges,
+            trailEvent,
+            pendingEncounter ?? journeySnapshot.PendingEncounter,
+            encounterResolution);
 
         return new TravelDiaryDayState(
             journeySnapshot.DaysTravelled,
@@ -672,6 +712,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             trailEvent,
             pendingEncounter ?? journeySnapshot.PendingEncounter,
             encounterResolution,
+            openingNarration,
+            journeyBeat,
+            resourceBeat,
             Player.Health - startingHealth,
             Player.Wallet.Cash - startingWallet,
             Player.Inventory.GetQuantity(ItemKind.Food) - startingFood,
@@ -684,6 +727,139 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             journeySnapshot.DelayDays - startingDelayDays,
             PursuitState.Heat - startingHeat,
             journeySnapshot.Warnings);
+    }
+
+    private static string BuildJourneyOpeningNarration(TravelPreview preview)
+    {
+        var travelMode = DescribeTravelMode(preview.TravelMode);
+        var terrain = DescribeTerrain(preview.RouteProfile.Terrain);
+        var risk = DescribeRisk(preview.RouteProfile.Risk);
+        var waterPressure = preview.WaterSecure
+            ? $"I have enough water for the base trail, though the canteen still needs watching on a {preview.ExpectedDays}-day run."
+            : $"This dry trail will ask for {preview.CanteenChargesPerDay} canteen charge(s) a day, and I do not have much slack.";
+        var foodPressure = preview.AvailableFood <= preview.ExpectedDays
+            ? "My food is tight enough that I will notice every meal."
+            : "My food should hold if the trail behaves itself.";
+        var horsePressure = preview.HorseState is null
+            ? "I am traveling without a horse, so the road will have to be enough."
+            : preview.MountedTravelAvailable
+                ? "The horse is fit enough to carry me for now."
+                : "The horse is not fit for mounted travel, so I will need to mind the pace.";
+
+        return $"I set out for {preview.DestinationTownName} on a {preview.ExpectedDays}-day {terrain} trail {travelMode}. {risk} {waterPressure} {foodPressure} {horsePressure}";
+    }
+
+    private static string BuildJourneyBeat(
+        TravelJourneySnapshot journeySnapshot,
+        JourneyTrailEventState? trailEvent,
+        JourneyEncounterState? pendingEncounter,
+        TravelDiaryEncounterResolutionState? encounterResolution)
+    {
+        if (pendingEncounter is not null && encounterResolution is null)
+        {
+            return pendingEncounter.Kind switch
+            {
+                "foe" => "A hard-eyed rider steps out from the brush and stops the day cold.",
+                _ => "Something on the trail makes me stop and square up."
+            };
+        }
+
+        if (encounterResolution is not null)
+        {
+            return encounterResolution.ChoiceId switch
+            {
+                "run" => "I put the bad moment behind me and keep moving.",
+                "fight" => "I answer hard and keep the trail under my boot.",
+                "bribe" => "I pay my way through and keep the dust moving.",
+                _ => $"I answer by choosing to {encounterResolution.ChoiceLabel.ToLowerInvariant()}."
+            };
+        }
+
+        if (trailEvent is not null)
+        {
+            return trailEvent.Id switch
+            {
+                JourneyTrailEventId.LuckyCoinCache => "The trail offers a little luck when I need it most.",
+                JourneyTrailEventId.LuckyFoodCache => "I catch the smell of good luck and fresh grub on the wind.",
+                JourneyTrailEventId.LuckyWaterSeep => "I follow a faint trace of damp earth and find a hidden seep.",
+                JourneyTrailEventId.BadLuckWashout => "The trail caves in and makes me earn every mile.",
+                JourneyTrailEventId.BadLuckFoodLoss => "The dust turns mean and I have to keep my temper in check.",
+                JourneyTrailEventId.BadLuckSpookedHorse => "The horse flinches at the wrong sound and the day goes sideways.",
+                _ => trailEvent.Message
+            };
+        }
+
+        if (journeySnapshot.DaysTravelled % 6 == 0)
+        {
+            return "The trail goes quiet enough that I can hear leather creak and wind move through the brush.";
+        }
+
+        return journeySnapshot.RouteProfile.Terrain switch
+        {
+            TrailTerrain.OpenRange => journeySnapshot.TravelMode == TravelMode.Mounted
+                ? "I cross open range with the horse moving steady under me."
+                : "I walk the open range and let the horizon keep me honest.",
+            TrailTerrain.Hills => journeySnapshot.TravelMode == TravelMode.Mounted
+                ? "The hills make the horse work for every rise, but the miles still move."
+                : "The hills keep asking for another climb, and I keep answering.",
+            TrailTerrain.Badlands => "The badlands stay hard and dry, but the road still has to be followed.",
+            TrailTerrain.Mountains => "The trail climbs hard, and I keep picking my way upward.",
+            _ => "I keep moving and let the road tell me what kind of day it is."
+        };
+    }
+
+    private static string? BuildResourceBeat(
+        TravelJourneySnapshot journeySnapshot,
+        int currentFood,
+        int currentHorseFeed,
+        int startingCanteenCharges,
+        int currentCanteenCharges,
+        JourneyTrailEventState? trailEvent,
+        JourneyEncounterState? pendingEncounter,
+        TravelDiaryEncounterResolutionState? encounterResolution)
+    {
+        var pieces = new List<string>();
+
+        if (journeySnapshot.Status == JourneyStatus.Completed && currentCanteenCharges > startingCanteenCharges)
+        {
+            pieces.Add("Back in town, I refill the canteen to the brim.");
+        }
+        else if (!JourneyUpkeepRules.HasRouteWater(journeySnapshot.RouteProfile.WaterFeature))
+        {
+            if (currentCanteenCharges == 0)
+            {
+                pieces.Add("The canteen is dry, so every mile starts to matter.");
+            }
+            else if (currentCanteenCharges <= journeySnapshot.CanteenChargesPerDay)
+            {
+                pieces.Add("I am down to the last stretch of water in the canteen.");
+            }
+        }
+
+        if (currentFood == 0)
+        {
+            pieces.Add("My food is gone, and the trail has turned mean.");
+        }
+        else if (currentFood == 1)
+        {
+            pieces.Add("My food is down to the last meal.");
+        }
+
+        if (currentHorseFeed == 0 && journeySnapshot.HorseState is not null)
+        {
+            pieces.Add("The horse feed is gone, so I have to watch the horse more closely.");
+        }
+        else if (currentHorseFeed == 1 && journeySnapshot.HorseState is not null)
+        {
+            pieces.Add("The horse feed is down to the last handful.");
+        }
+
+        if (pendingEncounter is not null && encounterResolution is null && journeySnapshot.Warnings.Count > 0)
+        {
+            pieces.Add("The route warnings stay in my head while I deal with the rider.");
+        }
+
+        return pieces.Count == 0 ? null : string.Join(" ", pieces);
     }
 
     private sealed record TrailEventApplicationResult(string HorseLossMessage);

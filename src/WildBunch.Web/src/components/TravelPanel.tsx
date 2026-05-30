@@ -237,10 +237,13 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
             {formatTravelMode(day.endingTravelMode)} | {day.status === 0 ? "In motion" : formatJourneyStatus(day.status)}
           </DaySubhead>
         </div>
-        <DayBadge>{day.pendingEncounter ? "Interrupted" : day.trailEvent ? "Eventful" : "Quiet trail"}</DayBadge>
+        <DayBadge>
+          {day.pendingEncounter ? "Interrupted" : day.openingNarration ? "Departure" : day.trailEvent ? "Eventful" : "Quiet trail"}
+        </DayBadge>
       </DiaryDayHeader>
 
       <DiaryBody>
+        {day.openingNarration ? <OpeningNote>{day.openingNarration}</OpeningNote> : null}
         {day.entries.map((entry, index) => (
           <DiaryParagraph key={`${day.dayNumber}-${index}`}>{entry}</DiaryParagraph>
         ))}
@@ -687,6 +690,15 @@ const DiaryBody = styled.div`
   font-family: "Iowan Old Style", Georgia, serif;
   font-size: 1.02rem;
   line-height: 1.65;
+`;
+
+const OpeningNote = styled.p`
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid rgba(239, 195, 126, 0.72);
+  border-radius: 12px;
+  background: rgba(239, 195, 126, 0.08);
+  color: rgba(247, 243, 234, 0.94);
 `;
 
 const DiaryParagraph = styled.p`

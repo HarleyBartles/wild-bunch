@@ -217,11 +217,11 @@ public sealed class EfGameSessionRepositoryTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(new TownId("dryridge"), reloaded!.Player.CurrentTownId);
+        Assert.Equal(new TownId("dustvale"), reloaded!.Player.CurrentTownId);
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(0, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
-        Assert.Equal(0, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(8, reloaded.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Equal(1m, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-1")).RideDayDistance);
     }
 

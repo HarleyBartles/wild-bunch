@@ -32,7 +32,7 @@ public sealed record TravelRouteProfile(
     IReadOnlyList<string> Warnings)
 {
     public int ExpectedDays(TravelMode mode)
-        => CalculateRemainingDays(RideDayDistance, mode);
+        => Math.Clamp(CalculateRemainingDays(RideDayDistance, mode), 2, 6);
 
     public decimal DailyRideDayProgress(TravelMode mode)
         => mode == TravelMode.Mounted ? MountedRideDayProgress : FootRideDayProgress;
@@ -104,6 +104,7 @@ public sealed record TravelJourneySnapshot(
     int RequiredHorseFeed,
     int AvailableHorseFeed,
     HorseTravelState? HorseState,
+    string? OpeningNarration,
     int DaysTravelled,
     int DelayDays,
     JourneyEncounterState? PendingEncounter,
@@ -302,7 +303,7 @@ public static class JourneyUpkeepRules
 
 public sealed class TravelJourney
 {
-    internal TravelJourney(TravelPreview preview)
+    internal TravelJourney(TravelPreview preview, string? openingNarration = null)
     {
         Preview = preview;
         TravelMode = preview.TravelMode;
@@ -313,6 +314,7 @@ public sealed class TravelJourney
         HorseFeedRemaining = preview.AvailableHorseFeed;
         AvailableCanteenCharges = preview.AvailableCanteenCharges;
         HorseState = preview.HorseState;
+        OpeningNarration = openingNarration;
     }
 
     public TravelPreview Preview { get; }
@@ -339,10 +341,18 @@ public sealed class TravelJourney
 
     public HorseTravelState? HorseState { get; private set; }
 
+    public string? OpeningNarration { get; private set; }
+
     public static TravelJourney Start(TravelPreview preview)
     {
         ArgumentNullException.ThrowIfNull(preview);
         return new TravelJourney(preview);
+    }
+
+    public static TravelJourney Start(TravelPreview preview, string? openingNarration)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+        return new TravelJourney(preview, openingNarration);
     }
 
     public static TravelJourney FromSnapshot(TravelJourneySnapshot snapshot)
@@ -387,7 +397,8 @@ public sealed class TravelJourney
             FoodRemaining = snapshot.AvailableFood,
             HorseFeedRemaining = snapshot.AvailableHorseFeed,
             AvailableCanteenCharges = snapshot.AvailableCanteenCharges,
-            HorseState = snapshot.HorseState
+            HorseState = snapshot.HorseState,
+            OpeningNarration = snapshot.OpeningNarration
         };
 
         return journey;
@@ -396,9 +407,6 @@ public sealed class TravelJourney
     public void RecalculatePacing(TravelMode travelMode)
     {
         TravelMode = travelMode;
-        RemainingDays = RemainingRideDayDistance == 0
-            ? 0
-            : Preview.RouteProfile.CalculateRemainingDays(RemainingRideDayDistance, TravelMode) + DelayDays;
     }
 
     public JourneyProgress AdvanceOneDay()
@@ -412,11 +420,9 @@ public sealed class TravelJourney
 
         RemainingRideDayDistance = Math.Max(0, RemainingRideDayDistance - dailyProgress);
         DaysTravelled++;
-        RemainingDays = RemainingRideDayDistance == 0
-            ? 0
-            : Preview.RouteProfile.CalculateRemainingDays(RemainingRideDayDistance, TravelMode) + DelayDays;
+        RemainingDays = Math.Max(0, RemainingDays - 1);
 
-        return new JourneyProgress(dailyProgress, RemainingRideDayDistance == 0);
+        return new JourneyProgress(dailyProgress, RemainingDays == 0);
     }
 
     public void MarkCompleted()
@@ -569,6 +575,7 @@ public sealed class TravelJourney
             Preview.RequiredHorseFeed,
             HorseFeedRemaining,
             HorseState,
+            OpeningNarration,
             DaysTravelled,
             DelayDays,
             PendingEncounter,
@@ -597,11 +604,6 @@ public sealed class TravelJourney
         travelRulesProfile ??= TravelRulesProfile.Default;
 
         if (Status != JourneyStatus.Active || PendingEncounter is not null || RemainingRideDayDistance == 0)
-        {
-            return null;
-        }
-
-        if (DaysTravelled != travelRulesProfile.FirstTrailEventDay)
         {
             return null;
         }
@@ -687,7 +689,7 @@ internal static class TrailEventCatalog
                 heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
+        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
         {
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckFoodLoss,

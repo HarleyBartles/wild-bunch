@@ -39,6 +39,9 @@ public static class TravelDiaryMapper
             day.TrailEvent is null ? null : TravelMapper.ToDto(day.TrailEvent),
             day.PendingEncounter is null ? null : TravelMapper.ToDto(day.PendingEncounter),
             day.EncounterResolution is null ? null : ToDto(day.EncounterResolution),
+            day.OpeningNarration,
+            day.JourneyBeat,
+            day.ResourceBeat,
             day.HealthDelta,
             day.WalletDelta,
             day.FoodDelta,
@@ -68,7 +71,7 @@ public static class TravelDiaryMapper
     {
         var entries = new List<string>
         {
-            RenderOverview(day)
+            RenderJourneyBeat(day)
         };
 
         if (day.TrailEvent is not null)
@@ -85,10 +88,9 @@ public static class TravelDiaryMapper
             }
         }
 
-        var resourceEntry = RenderResourceChanges(day);
-        if (resourceEntry.Length != 0)
+        if (!string.IsNullOrWhiteSpace(day.ResourceBeat))
         {
-            entries.Add(resourceEntry);
+            entries.Add(day.ResourceBeat!);
         }
 
         if (day.PendingEncounter is not null && day.EncounterResolution is null)
@@ -111,15 +113,10 @@ public static class TravelDiaryMapper
         return entries;
     }
 
-    private static string RenderOverview(DomainTravelDiaryDayState day)
-    {
-        if (day.Status == WildBunch.Domain.Travel.JourneyStatus.Completed)
-        {
-            return $"I reached {day.DestinationTownName}.";
-        }
-
-        return $"I spent another day on the trail between {day.OriginTownName} and {day.DestinationTownName}.";
-    }
+    private static string RenderJourneyBeat(DomainTravelDiaryDayState day)
+        => string.IsNullOrWhiteSpace(day.JourneyBeat)
+            ? "I keep moving and let the road tell me what kind of day it is."
+            : day.JourneyBeat;
 
     private static string RenderTrailEvent(DomainJourneyTrailEvent trailEvent)
         => trailEvent.Id switch
@@ -167,53 +164,6 @@ public static class TravelDiaryMapper
         }
 
         return "My horse took the strain and came out of the day worse for it.";
-    }
-
-    private static string RenderResourceChanges(DomainTravelDiaryDayState day)
-    {
-        var parts = new List<string>();
-
-        if (day.HealthDelta != 0)
-        {
-            parts.Add(day.HealthDelta > 0
-                ? $"I got back {day.HealthDelta} health."
-                : $"I lost {Math.Abs(day.HealthDelta)} health.");
-        }
-
-        if (day.WalletDelta != 0m)
-        {
-            parts.Add(day.WalletDelta > 0m
-                ? $"I picked up ${day.WalletDelta:0.00}."
-                : $"I spent ${Math.Abs(day.WalletDelta):0.00}.");
-        }
-
-        if (day.FoodDelta != 0)
-        {
-            parts.Add(day.FoodDelta > 0
-                ? $"I found {day.FoodDelta} food."
-                : $"I used {Math.Abs(day.FoodDelta)} food.");
-        }
-
-        if (day.HorseFeedDelta != 0)
-        {
-            parts.Add(day.HorseFeedDelta > 0
-                ? $"I found {day.HorseFeedDelta} horse feed."
-                : $"I fed the horse {Math.Abs(day.HorseFeedDelta)} horse feed.");
-        }
-
-        if (day.CanteenChargeDelta != 0)
-        {
-            parts.Add(day.CanteenChargeDelta > 0
-                ? $"I topped off my canteen by {day.CanteenChargeDelta} charge(s)."
-                : $"I burned {Math.Abs(day.CanteenChargeDelta)} canteen charge(s).");
-        }
-
-        if (day.AmmoSpent != 0)
-        {
-            parts.Add($"I spent {day.AmmoSpent} round(s).");
-        }
-
-        return parts.Count == 0 ? string.Empty : string.Join(" ", parts);
     }
 
     private static string RenderPendingEncounter(DomainJourneyEncounter encounter)
@@ -286,7 +236,7 @@ public static class TravelDiaryMapper
     private static string RenderStatus(DomainTravelDiaryDayState day)
         => day.Status switch
         {
-            WildBunch.Domain.Travel.JourneyStatus.Active => $"I have {day.RemainingRideDayDistance:0.##} ride-day unit(s) left and {day.RemainingDays} day(s) left on the route.",
+            WildBunch.Domain.Travel.JourneyStatus.Active => "The trail keeps stretching ahead.",
             WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
             WildBunch.Domain.Travel.JourneyStatus.Completed => $"I made it to {day.DestinationTownName}.",
             WildBunch.Domain.Travel.JourneyStatus.Failed => "The trail gave out before I could finish it.",

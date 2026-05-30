@@ -90,7 +90,7 @@ public sealed class GameApiJournalTests
 
         Assert.NotNull(journal);
         Assert.Equal("redmesa", journal!.CurrentTown.Id);
-        Assert.Equal(1, journal.Clock.Turn);
+        Assert.Equal(2, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
         Assert.Empty(journal.CaseFile.DiscoveredSuspects);

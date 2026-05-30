@@ -34,7 +34,8 @@ public sealed class TravelToTownHandler
 
         if (previewResult.Success && previewResult.Preview is not null)
         {
-            var travelResult = session.StartJourney(previewResult.Preview);
+            session.StartJourney(previewResult.Preview);
+            var travelResult = session.AdvanceJourneyDay();
             await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
 
             return new GameTurnResultDto(

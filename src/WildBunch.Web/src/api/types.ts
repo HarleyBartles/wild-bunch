@@ -227,6 +227,9 @@ export interface TravelDiaryDayDto {
   horseExhaustionDelta: number;
   delayDays: number;
   heatIncrease: number;
+  openingNarration: string | null;
+  journeyBeat: string | null;
+  resourceBeat: string | null;
   entries: string[];
   warnings: string[];
 }
