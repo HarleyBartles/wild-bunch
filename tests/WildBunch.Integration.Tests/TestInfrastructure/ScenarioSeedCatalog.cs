@@ -94,6 +94,40 @@ internal static class ScenarioSeedCatalog
         AssertPinecrossStoreAvailability(storeOffers!);
     }
 
+    public static void AssertDryFootRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, TravelPreviewResultDto preview)
+    {
+        RequireEqual("NoHorseLightEasy", "scenario.name", "NoHorseLightEasy", fixture.Name);
+
+        fixture.AssertTravelPreview(session, destinationTownId, preview);
+
+        RequireEqual("NoHorseLightEasy", "travel-preview.travelMode", TravelMode.Foot, preview.Preview?.TravelMode);
+        RequireEqual("NoHorseLightEasy", "travel-preview.mountedTravelAvailable", false, preview.Preview?.MountedTravelAvailable);
+        RequireEqual("NoHorseLightEasy", "travel-preview.requiredHorseFeed", 0, preview.Preview?.RequiredHorseFeed);
+        RequireEqual("NoHorseLightEasy", "travel-preview.waterSecure", true, preview.Preview?.WaterSecure);
+        RequireEqual("NoHorseLightEasy", "travel-preview.routeProfile.waterFeature", WaterFeature.None, preview.Preview?.RouteProfile.WaterFeature);
+        Require("NoHorseLightEasy", "travel-preview.canteenChargesPerDay", preview.Preview is not null && preview.Preview.CanteenChargesPerDay > 0, "expected the dry trail to require water planning.");
+        Require("NoHorseLightEasy", "travel-preview.routeProfile.warnings.water", preview.Preview is not null && preview.Preview.RouteProfile.Warnings.Any(warning => warning.Contains("water", StringComparison.OrdinalIgnoreCase)), "expected the dry trail profile to warn about sparse water.");
+        Require("NoHorseLightEasy", "travel-preview.warnings.noHorse", preview.Preview is not null && preview.Preview.Warnings.All(warning => !warning.Contains("horse", StringComparison.OrdinalIgnoreCase)), "expected the foot-travel warning filter to strip horse-specific warnings.");
+    }
+
+    public static void AssertDryFootRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, GameTurnResultDto turn, TravelPreviewResultDto preview)
+    {
+        RequireEqual("NoHorseLightEasy", "scenario.name", "NoHorseLightEasy", fixture.Name);
+
+        fixture.AssertTravelTurn(session, destinationTownId, turn, preview);
+
+        RequireEqual("NoHorseLightEasy", "travel-turn.travelMode", TravelMode.Foot, turn.CurrentSession.Journey?.TravelMode);
+        RequireEqual("NoHorseLightEasy", "travel-turn.routeProfile.waterFeature", WaterFeature.None, turn.CurrentSession.Journey?.RouteProfile.WaterFeature);
+        RequireEqual("NoHorseLightEasy", "travel-turn.waterSecure", true, turn.CurrentSession.Journey?.WaterSecure);
+        Require("NoHorseLightEasy", "travel-turn.openingNarration", turn.TravelDiary is not null && turn.TravelDiary.Days.Count == 1, "expected a single opening travel day.");
+
+        var openingNarration = turn.TravelDiary!.Days[0].OpeningNarration;
+        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("on foot", StringComparison.OrdinalIgnoreCase), "expected the narration to describe foot travel.");
+        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("without a horse", StringComparison.OrdinalIgnoreCase), "expected the narration to mention traveling without a horse.");
+        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("I had enough water", StringComparison.OrdinalIgnoreCase), "expected the narration to reflect the water-secure dry route.");
+        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && !openingNarration.Contains("mounted travel", StringComparison.OrdinalIgnoreCase), "expected the dry route narration to stay on foot.");
+    }
+
     public static StartGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)
         => new(playerName, fixture.TravelDifficulty, fixture.SeedCode);
 

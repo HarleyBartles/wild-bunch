@@ -226,16 +226,43 @@ public sealed class GameApiTests
             .Distinct()
             .ToArray();
 
-        Assert.NotEmpty(connectedTownIds);
+        Assert.Contains(connectedTownIds, townId => townId == "redmesa");
+        Assert.Contains(connectedTownIds, townId => townId == "holloway");
 
-        var destinationTownId = connectedTownIds[0];
-        var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/{destinationTownId}");
-        Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
+        var redMesaPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/redmesa");
+        Assert.Equal(HttpStatusCode.OK, redMesaPreviewResponse.StatusCode);
 
-        var previewResult = await previewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
-        Assert.NotNull(previewResult);
-        scenario.AssertTravelPreview(createdSession!, destinationTownId, previewResult!);
+        var redMesaPreviewResult = await redMesaPreviewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
+        Assert.NotNull(redMesaPreviewResult);
+        scenario.AssertTravelPreview(createdSession!, "redmesa", redMesaPreviewResult!);
 
+        var travelToRedMesaResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/travel",
+            new TravelRequest("redmesa"));
+
+        Assert.Equal(HttpStatusCode.OK, travelToRedMesaResponse.StatusCode);
+
+        var redMesaTurn = await travelToRedMesaResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(redMesaTurn);
+        scenario.AssertTravelTurn(createdSession!, "redmesa", redMesaTurn!, redMesaPreviewResult!);
+
+        var arrivedRedMesa = await AdvanceUntilTownAsync(client, createdSession.Id, "redmesa");
+
+        Assert.Equal("redmesa", arrivedRedMesa.CurrentSession.Player.CurrentTownId);
+
+        var acknowledgeRedMesaResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/arrival/acknowledge", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, acknowledgeRedMesaResponse.StatusCode);
+
+        var dryForkPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/dryfork");
+        Assert.Equal(HttpStatusCode.OK, dryForkPreviewResponse.StatusCode);
+
+        var dryForkPreviewResult = await dryForkPreviewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
+        Assert.NotNull(dryForkPreviewResult);
+        scenario.AssertDryFootRoute(createdSession!, "dryfork", dryForkPreviewResult!);
+
+        var destinationTownId = "dryfork";
         var onFootTravelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
             new TravelRequest(destinationTownId));
@@ -245,7 +272,7 @@ public sealed class GameApiTests
         var onFootTurn = await onFootTravelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(onFootTurn);
-        scenario.AssertTravelTurn(createdSession!, destinationTownId, onFootTurn!, previewResult!);
+        scenario.AssertDryFootRoute(createdSession!, destinationTownId, onFootTurn!, dryForkPreviewResult!);
     }
 
     [Fact]
