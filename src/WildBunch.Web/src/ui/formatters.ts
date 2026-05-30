@@ -13,6 +13,19 @@ export function formatGameStatus(status: number) {
   }
 }
 
+export function formatTravelDifficulty(difficulty: number) {
+  switch (difficulty) {
+    case 0:
+      return "Normal";
+    case 1:
+      return "Easy";
+    case 2:
+      return "Hard";
+    default:
+      return `Difficulty ${difficulty}`;
+  }
+}
+
 export function formatActionKind(kind: number) {
   switch (kind) {
     case 0:
@@ -167,6 +180,19 @@ export function formatItemKind(kind: number) {
       return "Rifle ammo";
     default:
       return `Item ${kind}`;
+  }
+}
+
+export function formatLoadoutProfile(profile: number) {
+  switch (profile) {
+    case 0:
+      return "Standard";
+    case 1:
+      return "Light";
+    case 2:
+      return "Stocked";
+    default:
+      return `Loadout ${profile}`;
   }
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   buyStoreItem,
   createGame,
@@ -20,6 +20,7 @@ import type {
 } from "./api/types";
 import { AvailableActionKind } from "./api/types";
 import { InventoryPanel } from "./components/InventoryPanel";
+import { StartGamePanel } from "./components/StartGamePanel";
 import { TravelPanel } from "./components/TravelPanel";
 import { StoreOffersPanel } from "./components/StoreOffersPanel";
 import {
@@ -79,7 +80,6 @@ function actionIsWantedPosters(action: AvailableActionDto) {
 }
 
 export default function App() {
-  const [playerName, setPlayerName] = useState("");
   const [session, setSession] = useState<GameSessionDto | null>(null);
   const [journal, setJournal] = useState<JournalDto | null>(null);
   const [actions, setActions] = useState<AvailableActionDto[]>([]);
@@ -89,6 +89,7 @@ export default function App() {
   const [busyMode, setBusyMode] = useState<BusyMode>("booting");
   const [notice, setNotice] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [resetToken, setResetToken] = useState(0);
 
   const gameId = session?.id ?? journal?.id ?? null;
   const currentTown = useMemo(() => {
@@ -178,7 +179,6 @@ export default function App() {
       setSession(sessionResult);
       setActions(actionsResult);
       setJournal(journalResult);
-      setPlayerName(sessionResult.player.name);
       setNotice("");
       window.localStorage.setItem(storageKey, activeGameId);
     } catch (exception) {
@@ -193,26 +193,18 @@ export default function App() {
     }
   }
 
-  async function startNewGame(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedName = playerName.trim();
-    if (!trimmedName) {
-      setError("Enter a player name to start.");
-      return;
-    }
-
+  async function startNewGame(request: Parameters<typeof createGame>[0]) {
     setBusyMode("starting");
     setError("");
     setStoreOffers(null);
     setStoreOffersLoading(false);
 
     try {
-      const createdSession = await createGame(trimmedName);
+      const createdSession = await createGame(request);
       setSession(createdSession);
-      setPlayerName(createdSession.player.name);
       window.localStorage.setItem(storageKey, createdSession.id);
       await hydrateGame(createdSession.id);
-      setNotice(`New game started for ${trimmedName}.`);
+      setNotice(`New game started for ${createdSession.player.name}.`);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : "Unable to start a new game.");
     } finally {
@@ -323,7 +315,7 @@ export default function App() {
     setError("");
     setBusyMode("idle");
     setCockpitMode("home");
-    setPlayerName("");
+    setResetToken((current) => current + 1);
   }
 
   const loading = busyMode !== "idle";
@@ -368,31 +360,16 @@ export default function App() {
             </div>
           </div>
 
-          <form className="start-form" onSubmit={startNewGame}>
-            <label className="field">
-              <span>Player name</span>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(event) => setPlayerName(event.target.value)}
-                placeholder="Enter a rider name"
-                autoComplete="off"
-              />
-            </label>
-            <div className="button-row">
-              <button type="submit" className="button" disabled={loading}>
-                {busyMode === "starting" ? "Starting..." : "Start new game"}
-              </button>
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={() => reloadCurrentGame()}
-                disabled={!gameId || loading}
-              >
-                {busyMode === "refreshing" ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
-          </form>
+          <StartGamePanel
+            session={session}
+            busy={loading}
+            gameId={gameId}
+            resetToken={resetToken}
+            onStartGame={startNewGame}
+            onRefresh={async () => {
+              await reloadCurrentGame();
+            }}
+          />
 
           {notice ? <div className="notice">{notice}</div> : null}
           {error ? <div className="error">{error}</div> : null}

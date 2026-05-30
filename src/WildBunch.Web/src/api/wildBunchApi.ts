@@ -5,9 +5,8 @@ import type {
   GameTurnResultDto,
   JournalDto,
   ResolveJourneyEncounterRequest,
-  TravelDifficulty,
-  TownStoreOffersDto,
   StartGameRequest,
+  TownStoreOffersDto,
   TravelRequest,
   WantedPostersResultDto,
 } from "./types";
@@ -79,10 +78,10 @@ function extractErrorMessage(body: unknown) {
   return "";
 }
 
-export function createGame(playerName: string, travelDifficulty: TravelDifficulty = 0, seedCode?: string | null) {
+export function createGame(request: StartGameRequest) {
   return requestJson<GameSessionDto>("/api/games", {
     method: "POST",
-    body: JSON.stringify({ playerName, travelDifficulty, seedCode } satisfies StartGameRequest),
+    body: JSON.stringify(request satisfies StartGameRequest),
   });
 }
 
