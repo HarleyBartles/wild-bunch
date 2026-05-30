@@ -185,6 +185,52 @@ export interface TravelJourneyDto {
   routeProfile: TravelRouteProfileDto;
 }
 
+export interface TravelDiaryEncounterResolutionDto {
+  choiceId: string;
+  choiceLabel: string;
+  healthDelta: number;
+  walletDelta: number;
+  ammoSpent: number;
+  heatIncrease: number;
+  horseExhaustionDelta: number;
+  continuedOnFoot: boolean;
+}
+
+export interface TravelDiaryDayDto {
+  dayNumber: number;
+  originTownName: string;
+  destinationTownName: string;
+  startingTravelMode: TravelMode;
+  endingTravelMode: TravelMode;
+  status: JourneyStatus;
+  startingRideDayDistance: number;
+  remainingRideDayDistance: number;
+  startingDaysRemaining: number;
+  remainingDays: number;
+  horseStateBefore: HorseTravelStateDto | null;
+  horseStateAfter: HorseTravelStateDto | null;
+  trailEvent: JourneyTrailEventDto | null;
+  pendingEncounter: JourneyEncounterDto | null;
+  encounterResolution: TravelDiaryEncounterResolutionDto | null;
+  healthDelta: number;
+  walletDelta: number;
+  foodDelta: number;
+  horseFeedDelta: number;
+  canteenChargeDelta: number;
+  ammoSpent: number;
+  horseHungerDelta: number;
+  horseThirstDelta: number;
+  horseExhaustionDelta: number;
+  delayDays: number;
+  heatIncrease: number;
+  entries: string[];
+  warnings: string[];
+}
+
+export interface TravelDiaryDto {
+  days: TravelDiaryDayDto[];
+}
+
 export interface PlayerDto {
   name: string;
   currentTownId: string;
@@ -295,6 +341,7 @@ export interface GameSessionDto {
   clock: GameClockDto;
   pursuitState: PursuitStateDto;
   journey: TravelJourneyDto | null;
+  travelDiary: TravelDiaryDto | null;
   logEntries: GameLogEntryDto[];
 }
 
@@ -339,4 +386,5 @@ export interface GameTurnResultDto {
   journeyStatus?: JourneyStatus | null;
   journey?: TravelJourneyDto | null;
   trailEvent?: JourneyTrailEventDto | null;
+  travelDiary?: TravelDiaryDto | null;
 }

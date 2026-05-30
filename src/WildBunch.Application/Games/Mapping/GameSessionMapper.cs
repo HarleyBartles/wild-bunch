@@ -36,6 +36,7 @@ public static class GameSessionMapper
             new GameClockDto(session.Clock.Day, session.Clock.Turn),
             new PursuitStateDto(session.PursuitState.Heat),
             session.Journey is null ? null : ToDto(session.Journey, session.TravelRules),
+            TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules),
             session.LogEntries.Select(ToDto).ToArray());
     }
 

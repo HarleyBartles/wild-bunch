@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
@@ -161,6 +162,36 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
         Assert.Equal(0, reloaded.Journey.DelayDays);
         Assert.Equal(1, reloaded.Clock.Turn);
+    }
+
+    [Fact]
+    public async Task SaveAndLoadTravelDiaryRoundTripsStructuredDiaryState()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var resolver = new TravelResolver();
+        var session = CreateDiarySession();
+
+        await repository.SaveAsync(session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("openpass"), loaded.Player.Inventory, loaded.TravelRules);
+
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
+
+        await repository.SaveAsync(loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        var dto = GameSessionMapper.ToDto(reloaded!);
+        Assert.NotNull(dto.TravelDiary);
+        var diaryDay = Assert.Single(dto.TravelDiary!.Days);
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I found a cache of jerky", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -407,6 +438,30 @@ public sealed class EfGameSessionRepositoryTests
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateDiarySession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
+        var world = new WildBunch.Domain.World.World(
+            new[] { pinecross, openpass },
+            new[]
+            {
+                new Trail(new TrailId("trail-diary"), pinecross.Id, openpass.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy);
     }
 
     private static CaseFile CreateCaseFile()

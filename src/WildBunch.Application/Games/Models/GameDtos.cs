@@ -17,6 +17,7 @@ public sealed record GameSessionDto(
     GameClockDto Clock,
     PursuitStateDto PursuitState,
     TravelJourneyDto? Journey,
+    TravelDiaryDto? TravelDiary,
     IReadOnlyList<GameLogEntryDto> LogEntries);
 
 public sealed record PlayerDto(
@@ -103,7 +104,8 @@ public sealed record GameTurnResultDto(
     GameSessionDto CurrentSession,
     JourneyStatus? JourneyStatus = null,
     TravelJourneyDto? Journey = null,
-    JourneyTrailEventDto? TrailEvent = null);
+    JourneyTrailEventDto? TrailEvent = null,
+    TravelDiaryDto? TravelDiary = null);
 
 public sealed record TravelPreviewDto(
     string OriginTownId,
@@ -198,6 +200,49 @@ public sealed record JourneyTrailEventDto(
     int HorseExhaustionDelta,
     int DelayDays,
     int HeatIncrease);
+
+public sealed record TravelDiaryDto(
+    IReadOnlyList<TravelDiaryDayDto> Days);
+
+public sealed record TravelDiaryDayDto(
+    int DayNumber,
+    string OriginTownName,
+    string DestinationTownName,
+    TravelMode StartingTravelMode,
+    TravelMode EndingTravelMode,
+    JourneyStatus Status,
+    decimal StartingRideDayDistance,
+    decimal RemainingRideDayDistance,
+    int StartingDaysRemaining,
+    int RemainingDays,
+    HorseTravelStateDto? HorseStateBefore,
+    HorseTravelStateDto? HorseStateAfter,
+    JourneyTrailEventDto? TrailEvent,
+    JourneyEncounterDto? PendingEncounter,
+    TravelDiaryEncounterResolutionDto? EncounterResolution,
+    int HealthDelta,
+    decimal WalletDelta,
+    int FoodDelta,
+    int HorseFeedDelta,
+    int CanteenChargeDelta,
+    int AmmoSpent,
+    int HorseHungerDelta,
+    int HorseThirstDelta,
+    int HorseExhaustionDelta,
+    int DelayDays,
+    int HeatIncrease,
+    IReadOnlyList<string> Entries,
+    IReadOnlyList<string> Warnings);
+
+public sealed record TravelDiaryEncounterResolutionDto(
+    string ChoiceId,
+    string ChoiceLabel,
+    int HealthDelta,
+    decimal WalletDelta,
+    int AmmoSpent,
+    int HeatIncrease,
+    int HorseExhaustionDelta,
+    bool ContinuedOnFoot);
 
 public sealed record GameClockDto(int Day, int Turn);
 

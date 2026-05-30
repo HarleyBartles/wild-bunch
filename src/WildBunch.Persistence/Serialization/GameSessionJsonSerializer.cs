@@ -48,6 +48,7 @@ public sealed class GameSessionJsonSerializer
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
         JourneySnapshot? Journey,
+        IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         IReadOnlyList<GameLogEntrySnapshot> LogEntries)
     {
         public static GameSessionSnapshot FromDomain(GameSession session)
@@ -61,6 +62,7 @@ public sealed class GameSessionJsonSerializer
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
                 session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot(session.TravelRules)),
+                session.TravelDiaryDays.ToArray(),
                 session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray());
 
         public GameSession ToDomain()
@@ -82,6 +84,7 @@ public sealed class GameSessionJsonSerializer
                 journey,
                 TravelDifficulty);
 
+            GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             return session;
         }
@@ -542,6 +545,7 @@ public sealed class GameSessionJsonSerializer
             modifiers: null);
 
         private static readonly FieldInfo? LogEntriesField = typeof(GameSession).GetField("_logEntries", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo? TravelDiaryDaysField = typeof(GameSession).GetField("_travelDiaryDays", BindingFlags.Instance | BindingFlags.NonPublic);
 
         public static GameSession Create(
             GameSessionId id,
@@ -571,6 +575,17 @@ public sealed class GameSessionJsonSerializer
 
             entries.Clear();
             entries.AddRange(logEntries);
+        }
+
+        public static void ReplaceTravelDiaryDays(GameSession session, IReadOnlyList<TravelDiaryDayState> travelDiaryDays)
+        {
+            if (TravelDiaryDaysField?.GetValue(session) is not List<TravelDiaryDayState> entries)
+            {
+                throw new InvalidOperationException("Unable to access travel diary entries for rehydration.");
+            }
+
+            entries.Clear();
+            entries.AddRange(travelDiaryDays);
         }
 
         public static void SetBackingField<T>(object target, string fieldName, T value)

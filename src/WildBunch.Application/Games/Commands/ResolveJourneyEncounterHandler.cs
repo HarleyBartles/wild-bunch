@@ -32,7 +32,9 @@ public sealed class ResolveJourneyEncounterHandler
             result.Message,
             GameSessionMapper.ToDto(session),
             result.Status,
-            result.Journey is null ? null : TravelMapper.ToDto(result.Journey));
+            result.Journey is null ? null : TravelMapper.ToDto(result.Journey),
+            null,
+            TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules));
     }
 
     private async Task<WildBunch.Domain.Game.GameSession> LoadSessionAsync(

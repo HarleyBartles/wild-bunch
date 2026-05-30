@@ -49,7 +49,10 @@
 - Runtime session persistence is JSON snapshot-oriented today.
 - Do not normalize runtime session state into many DB tables unless explicitly directed.
 - Persistence adapters may map the domain to JSON now and tables later without forcing domain refactors.
-- In this greenfield repo, do not preserve compatibility shims for obsolete internal models unless Harley explicitly asks for one.
+- In this greenfield repo, current mainline model correctness wins over old-save or legacy internal compatibility.
+- Dev database drop/recreate is allowed when a current snapshot or schema shape changes and a reset is the cleanest path.
+- Do not add compatibility shims for obsolete old saves or internal models unless Harley explicitly asks for one.
+- Serializer optionality should exist only for current-domain reasons, not as a default legacy-save support layer.
 - When a task calls for replacement, fully replace the old internal model instead of layering a compatibility adapter over it.
 
 ## Scope Discipline

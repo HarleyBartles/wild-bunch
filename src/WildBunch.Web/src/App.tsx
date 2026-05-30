@@ -443,7 +443,7 @@ export default function App() {
                 busy={loading}
                 onBuyOffer={handleBuyOffer}
               />
-              <TravelPanel journey={session.journey} latestTravelResult={lastTravelResult} />
+              <TravelPanel journey={session.journey} travelDiary={session.travelDiary} latestTravelResult={lastTravelResult} />
             </div>
           ) : null}
         </section>

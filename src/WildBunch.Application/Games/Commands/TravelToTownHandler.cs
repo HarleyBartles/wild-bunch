@@ -42,7 +42,9 @@ public sealed class TravelToTownHandler
                 travelResult.Message,
                 GameSessionMapper.ToDto(session),
                 travelResult.Status,
-                travelResult.Journey is null ? null : TravelMapper.ToDto(travelResult.Journey));
+                travelResult.Journey is null ? null : TravelMapper.ToDto(travelResult.Journey),
+                null,
+                TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules));
         }
 
         return new GameTurnResultDto(

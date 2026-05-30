@@ -1,4 +1,11 @@
-import type { GameTurnResultDto, JourneyEncounterDto, JourneyTrailEventDto, TravelJourneyDto } from "../api/types";
+import type {
+  GameTurnResultDto,
+  JourneyEncounterDto,
+  JourneyTrailEventDto,
+  TravelDiaryDayDto,
+  TravelDiaryDto,
+  TravelJourneyDto,
+} from "../api/types";
 import {
   formatHorseTravelState,
   formatJourneyStatus,
@@ -10,6 +17,7 @@ import {
 
 interface TravelPanelProps {
   journey: TravelJourneyDto | null;
+  travelDiary: TravelDiaryDto | null;
   latestTravelResult: GameTurnResultDto | null;
 }
 
@@ -57,10 +65,28 @@ function TrailEventCard({ trailEvent }: { trailEvent: JourneyTrailEventDto }) {
   );
 }
 
-export function TravelPanel({ journey, latestTravelResult }: TravelPanelProps) {
+function DiaryDayCard({ day }: { day: TravelDiaryDayDto }) {
+  return (
+    <article className="compact-item">
+      <strong>Day {day.dayNumber}</strong>
+      <p>
+        {day.originTownName} to {day.destinationTownName} | {day.startingTravelMode === 0 ? "mounted" : "foot"} to{" "}
+        {day.endingTravelMode === 0 ? "mounted" : "foot"} | {day.status === 0 ? "Active" : day.status === 1 ? "Interrupted" : day.status === 2 ? "Completed" : "Failed"}
+      </p>
+      <div className="stack">
+        {day.entries.map((entry, index) => (
+          <p key={`${day.dayNumber}-${index}`}>{entry}</p>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+export function TravelPanel({ journey, travelDiary, latestTravelResult }: TravelPanelProps) {
   const activeJourney = journey ?? latestTravelResult?.journey ?? null;
   const trailEvent = latestTravelResult?.trailEvent ?? null;
   const latestJourneyStatus = latestTravelResult?.journeyStatus ?? null;
+  const activeTravelDiary = latestTravelResult?.travelDiary ?? travelDiary;
 
   return (
     <article className="status-card">
@@ -120,6 +146,15 @@ export function TravelPanel({ journey, latestTravelResult }: TravelPanelProps) {
               Status: {latestJourneyStatus === null ? "Unknown" : formatJourneyStatus(latestJourneyStatus)}
             </p>
           </div>
+        </div>
+      ) : null}
+
+      {activeTravelDiary && activeTravelDiary.days.length > 0 ? (
+        <div className="stack">
+          <h4>Travel diary</h4>
+          {activeTravelDiary.days.map((day) => (
+            <DiaryDayCard key={day.dayNumber} day={day} />
+          ))}
         </div>
       ) : null}
     </article>
