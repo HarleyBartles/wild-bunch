@@ -56,8 +56,9 @@ public sealed record TravelDiaryFlavourSelection(
     string Text,
     IReadOnlyList<string> SelectedFlavourIds);
 
-public static class TravelDiaryFlavourCatalog
+public static partial class TravelDiaryFlavourCatalog
 {
+#if false
     private static readonly TravelDiaryFlavourEntry[] Entries =
     [
         Entry("diary.day-opening.open-range-1", TravelDiaryFlavourCategory.DayOpening, "I start the day with the open range spread out in front of me.", tags: ["opening", "open-range"], terrain: TrailTerrain.OpenRange),
@@ -118,6 +119,8 @@ public static class TravelDiaryFlavourCatalog
         Entry("diary.arrival.completion-3", TravelDiaryFlavourCategory.ArrivalCompletion, "I roll into town with the journey finally out of my hands.", tags: ["arrival", "completion"]),
         Entry("diary.arrival.completion-4", TravelDiaryFlavourCategory.ArrivalCompletion, "I finish the road and let the town lights take over from here.", tags: ["arrival", "completion"])
     ];
+#endif
+    private static readonly TravelDiaryFlavourEntry[] Entries = BuildEntries();
 
     public static IReadOnlyList<TravelDiaryFlavourEntry> All => Entries;
 

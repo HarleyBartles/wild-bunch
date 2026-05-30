@@ -16,6 +16,49 @@ public sealed class TravelDiaryFlavourCatalogTests
     }
 
     [Fact]
+    public void CatalogMaintainsRichCategoryDepthAndLivingWorldCoverage()
+    {
+        var entries = TravelDiaryFlavourCatalog.All.ToArray();
+        var counts = entries
+            .GroupBy(entry => entry.Category)
+            .ToDictionary(group => group.Key, group => group.Count());
+
+        Assert.True(counts[TravelDiaryFlavourCategory.DayOpening] >= 8);
+        Assert.True(counts[TravelDiaryFlavourCategory.QuietTexture] >= 12);
+        Assert.True(counts[TravelDiaryFlavourCategory.LuckyEvent] >= 12);
+        Assert.True(counts[TravelDiaryFlavourCategory.UnluckyEvent] >= 12);
+        Assert.True(counts[TravelDiaryFlavourCategory.FoeEncounterIntro] >= 16);
+        Assert.True(counts[TravelDiaryFlavourCategory.ResourceScarcity] >= 10);
+        Assert.True(counts[TravelDiaryFlavourCategory.WaterScarcity] >= 6);
+        Assert.True(counts[TravelDiaryFlavourCategory.WaterRelief] >= 6);
+        Assert.True(counts[TravelDiaryFlavourCategory.HorsePressure] >= 10);
+        Assert.True(counts[TravelDiaryFlavourCategory.ChoiceOutcome] >= 24);
+        Assert.True(counts[TravelDiaryFlavourCategory.ArrivalCompletion] >= 10);
+
+        var quietTerrains = entries
+            .Where(entry => entry.Category == TravelDiaryFlavourCategory.QuietTexture && entry.Terrain is not null)
+            .Select(entry => entry.Terrain!.Value)
+            .Distinct()
+            .ToArray();
+
+        Assert.Contains(TrailTerrain.OpenRange, quietTerrains);
+        Assert.Contains(TrailTerrain.Hills, quietTerrains);
+        Assert.Contains(TrailTerrain.Badlands, quietTerrains);
+        Assert.Contains(TrailTerrain.Mountains, quietTerrains);
+
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.QuietTexture && entry.Tags.Contains("peddler", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.QuietTexture && entry.Tags.Contains("ranch", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.QuietTexture && entry.Tags.Contains("smoke", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.LuckyEvent && entry.Tags.Contains("trader", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.UnluckyEvent && entry.Tags.Contains("wagon", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.UnluckyEvent && entry.Tags.Contains("vultures", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.FoeEncounterIntro && entry.Tags.Contains("road-agent", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.FoeEncounterIntro && entry.Tags.Contains("crooked-deputy", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.FoeEncounterIntro && entry.Tags.Contains("claim-jumper", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(entries, entry => entry.Category == TravelDiaryFlavourCategory.FoeEncounterIntro && entry.Tags.Contains("hired-gun", StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void SelectionIsDeterministicForTheSameContext()
     {
         var context = CreateContext(TravelDiaryFlavourCategory.QuietTexture, dayNumber: 3, beatIndex: 1, terrain: TrailTerrain.Mountains, preferredTags: ["mountains"]);
@@ -38,7 +81,8 @@ public sealed class TravelDiaryFlavourCatalogTests
         var third = TravelDiaryFlavourCatalog.Select(context, seen);
 
         Assert.NotEqual(first.Id, second.Id);
-        Assert.Contains(third.Id, new[] { first.Id, second.Id });
+        Assert.NotEqual(first.Id, third.Id);
+        Assert.NotEqual(second.Id, third.Id);
     }
 
     [Fact]
@@ -89,6 +133,22 @@ public sealed class TravelDiaryFlavourCatalogTests
 
         Assert.NotEqual("diary.day-opening.mountains-1", selected.Id);
         Assert.Equal(TravelDiaryFlavourCategory.DayOpening, selected.Category);
+    }
+
+    [Fact]
+    public void FoeEncounterIntroPoolRotatesAcrossTheFullCastBeforeRepeating()
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var context = CreateContext(TravelDiaryFlavourCategory.FoeEncounterIntro, dayNumber: 6, beatIndex: 1, preferredTags: ["foe"]);
+
+        var selectedIds = new List<string>();
+        for (var i = 0; i < 16; i++)
+        {
+            selectedIds.Add(TravelDiaryFlavourCatalog.Select(context, seen).Id);
+        }
+
+        Assert.Equal(16, selectedIds.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(selectedIds, id => Assert.StartsWith("diary.foe.intro-", id, StringComparison.Ordinal));
     }
 
     [Fact]
