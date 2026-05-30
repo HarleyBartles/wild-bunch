@@ -458,6 +458,29 @@ describe("TravelPanel", () => {
     });
   });
 
+  it("renders the hydrated travel session from react query when the backend returns fresher data", async () => {
+    const travelSession = createSession();
+    const refreshedSession = createSession({
+      journey: {
+        ...createSession().journey!,
+        destinationTownName: "Red Mesa",
+      },
+    });
+    const loading = deferred<GameSessionDto>();
+
+    mockedGetGame.mockReturnValue(loading.promise);
+
+    renderTravelPanel(travelSession);
+
+    expect(screen.getByText("Dust Fork")).toBeInTheDocument();
+
+    loading.resolve(refreshedSession);
+
+    await waitFor(() => {
+      expect(screen.getByText("Red Mesa")).toBeInTheDocument();
+    });
+  });
+
   it("renders encounter resolution prose without debug wording", async () => {
     const session = createSession({
       travelDiary: {
