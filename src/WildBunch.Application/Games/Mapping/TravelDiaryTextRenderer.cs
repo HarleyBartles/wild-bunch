@@ -163,10 +163,10 @@ public static class TravelDiaryTextRenderer
         => day.Status switch
         {
             WildBunch.Domain.Travel.JourneyStatus.Completed => SelectText(BuildArrivalContext(day, beatIndex: 2), selectedFlavourIds, daySelectedFlavourIds),
-            WildBunch.Domain.Travel.JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
-            WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
+            WildBunch.Domain.Travel.JourneyStatus.Active => "I kept moving and let the trail stretch ahead.",
+            WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I was stuck until I decided how to answer the rider.",
             WildBunch.Domain.Travel.JourneyStatus.Failed => "I could not finish the trail before it gave out.",
-            _ => "I am still on the trail."
+            _ => "I was still on the trail."
         };
 
     private static IReadOnlyList<string> RenderFallbackBodyEntries(
@@ -234,7 +234,7 @@ public static class TravelDiaryTextRenderer
 
         if (horseAfter.IsDeadFor(travelRulesProfile))
         {
-            return "My horse died. Hunger most likely, horses don't eat rocks.";
+            return "My horse died. Hunger most likely, horses do not eat rocks.";
         }
 
         if (horseAfter.IsLameFor(travelRulesProfile))
@@ -261,12 +261,12 @@ public static class TravelDiaryTextRenderer
     {
         var choices = encounter.Choices.Select(choice => choice.Label.ToLowerInvariant()).ToArray();
         var choiceText = choices.Length == 0
-            ? "I have no way out yet."
+            ? "I had no way out yet."
             : choices.Length == 1
-                ? $"I can {choices[0]}."
+                ? $"I could {choices[0]}."
                 : choices.Length == 2
-                    ? $"I can {choices[0]} or {choices[1]}."
-                    : $"I can {string.Join(", ", choices.Take(choices.Length - 1))}, or {choices[^1]}.";
+                    ? $"I could {choices[0]} or {choices[1]}."
+                    : $"I could {string.Join(", ", choices.Take(choices.Length - 1))}, or {choices[^1]}.";
         return $"{encounter.Message} {choiceText}";
     }
 

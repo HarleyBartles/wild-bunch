@@ -68,7 +68,7 @@ public sealed class AdvanceTravelDayHandlerTests
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
         Assert.Single(diaryDay.Entries, entry => entry.Contains("A hard-eyed rider", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I can run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -89,8 +89,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("goes lame", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I keep moving", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("went lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I kept moving", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(diaryDay.Entries, entry => entry.Contains("lame", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }

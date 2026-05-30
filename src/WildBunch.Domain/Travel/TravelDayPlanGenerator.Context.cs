@@ -379,11 +379,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Lucky,
                 "Hidden coin cache",
-                $"I found a hidden cache of trail coins and pocketed an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
+                $"I spotted a hidden cache of trail coins and pocketed an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
                 JourneyTrailEventState.CreateLucky(
                     JourneyTrailEventId.LuckyCoinCache,
                     "Hidden coin cache",
-                    $"I found a hidden cache of trail coins and pocketed an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
+                    $"I spotted a hidden cache of trail coins and pocketed an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
                     walletDelta: travelRulesProfile.LuckyTrailCoinReward),
                 null,
                 null),
@@ -432,11 +432,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Washed-out trail",
-                $"A washout forces a detour and costs me {travelRulesProfile.BadLuckTrailDelayDays} extra day(s).",
+                $"A washout forced a detour and cost me {travelRulesProfile.BadLuckTrailDelayDays} extra day(s).",
                 JourneyTrailEventState.CreateBadLuck(
                     JourneyTrailEventId.BadLuckWashout,
                     "Washed-out trail",
-                    $"A washout forces a detour and costs me {travelRulesProfile.BadLuckTrailDelayDays} extra day(s).",
+                    $"A washout forced a detour and cost me {travelRulesProfile.BadLuckTrailDelayDays} extra day(s).",
                     delayDays: travelRulesProfile.BadLuckTrailDelayDays,
                     heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
                 null,
@@ -445,11 +445,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Dust-choked outfit",
-                $"A dust storm strips away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
+                $"A dust storm stripped away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
                 JourneyTrailEventState.CreateBadLuck(
                     JourneyTrailEventId.BadLuckFoodLoss,
                     "Dust-choked outfit",
-                    $"A dust storm strips away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
+                    $"A dust storm stripped away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
                     foodDelta: -travelRulesProfile.BadLuckTrailFoodLoss,
                     canteenChargeDelta: -travelRulesProfile.BadLuckTrailCanteenLoss,
                     horseThirstDelta: travelRulesProfile.BadLuckTrailHorseThirst,
@@ -461,11 +461,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Unlucky,
                 "Spooked horse",
-                "A sudden canyon echo spooks the horse and leaves it more exhausted.",
+                "A sudden canyon echo spooked the horse and left it more exhausted.",
                 JourneyTrailEventState.CreateBadLuck(
                     JourneyTrailEventId.BadLuckSpookedHorse,
                     "Spooked horse",
-                    "A sudden canyon echo spooks the horse and leaves it more exhausted.",
+                    "A sudden canyon echo spooked the horse and left it more exhausted.",
                     horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion,
                     heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
                 null,
@@ -536,11 +536,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Resource,
                 "Trail grub",
-                $"I find a little extra food and pick up {travelRulesProfile.LuckyTrailFoodReward} meal(s).",
+                $"I found a little extra food and picked up {travelRulesProfile.LuckyTrailFoodReward} meal(s).",
                 JourneyTrailEventState.CreateLucky(
                     JourneyTrailEventId.LuckyFoodCache,
                     "Trail grub",
-                    $"I find a little extra food and pick up {travelRulesProfile.LuckyTrailFoodReward} meal(s).",
+                    $"I found a little extra food and picked up {travelRulesProfile.LuckyTrailFoodReward} meal(s).",
                     foodDelta: travelRulesProfile.LuckyTrailFoodReward),
                 null,
                 null),
@@ -548,11 +548,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Resource,
                 "Water seep",
-                $"I catch a seep in the rocks and top off the canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
+                $"I caught a seep in the rocks and topped off the canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
                 JourneyTrailEventState.CreateLucky(
                     JourneyTrailEventId.LuckyWaterSeep,
                     "Water seep",
-                    $"I catch a seep in the rocks and top off the canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
+                    $"I caught a seep in the rocks and topped off the canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
                     canteenChargeDelta: travelRulesProfile.LuckyTrailWaterRecovery),
                 null,
                 null),
@@ -560,11 +560,11 @@ internal static partial class TravelDayPlanGenerator
                 slotIndex,
                 TravelDayEncounterCategory.Resource,
                 "Coin cache",
-                $"I uncover a hidden cache of trail coins and pocket ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
+                $"I uncovered a hidden cache of trail coins and pocketed ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
                 JourneyTrailEventState.CreateLucky(
                     JourneyTrailEventId.LuckyCoinCache,
                     "Coin cache",
-                    $"I uncover a hidden cache of trail coins and pocket ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
+                    $"I uncovered a hidden cache of trail coins and pocketed ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
                     walletDelta: travelRulesProfile.LuckyTrailCoinReward),
                 null,
                 null)
@@ -575,10 +575,10 @@ internal static partial class TravelDayPlanGenerator
     {
         var message = context.Terrain switch
         {
-            TrailTerrain.Badlands => "The horse picks a poor line through the bad ground and comes out more exhausted.",
-            TrailTerrain.Hills => "The horse labors up the slope and pays for it in exhaustion.",
-            TrailTerrain.Mountains => "The horse struggles on the climb and needs a steadier pace.",
-            _ => "The horse takes a hard moment on the trail and I have to mind its pace."
+            TrailTerrain.Badlands => "The horse picked a poor line through the bad ground and came out more exhausted.",
+            TrailTerrain.Hills => "The horse labored up the slope and paid for it in exhaustion.",
+            TrailTerrain.Mountains => "The horse struggled on the climb and needed a steadier pace.",
+            _ => "The horse took a hard moment on the trail and I had to mind its pace."
         };
 
         return new TravelDayEncounterState(
@@ -607,19 +607,19 @@ internal static partial class TravelDayPlanGenerator
     private static string BuildNpcMessage(TravelDayGenerationContext context, int dayNumber, int slotIndex, string seed)
         => context.WaterFeature switch
         {
-            WaterFeature.None => "A weathered stranger crosses the trail and asks how the road looks ahead.",
-            WaterFeature.Creek or WaterFeature.Spring => "A weathered stranger shares the water side of the trail and swaps a few words.",
-            WaterFeature.River => "A weathered stranger rests near the river and nods me onward.",
-            _ => "A weathered stranger gives me a nod and keeps moving."
+            WaterFeature.None => "A weathered stranger crossed the trail and asked how the road looked ahead.",
+            WaterFeature.Creek or WaterFeature.Spring => "A weathered stranger shared the water side of the trail and swapped a few words.",
+            WaterFeature.River => "A weathered stranger rested near the river and nodded me onward.",
+            _ => "A weathered stranger gave me a nod and kept moving."
         };
 
     private static string BuildQuietMessage(TravelDayGenerationContext context, int dayNumber, int slotIndex, string seed)
         => context.Terrain switch
         {
-            TrailTerrain.OpenRange => "The trail stays quiet and the wind handles the talking.",
-            TrailTerrain.Hills => "The trail stays quiet, broken only by the horse and the climb.",
-            TrailTerrain.Badlands => "The trail goes quiet and the dust hangs still.",
-            TrailTerrain.Mountains => "The trail goes quiet in the high places.",
-            _ => "The trail stays quiet."
+            TrailTerrain.OpenRange => "The trail stayed quiet and the wind handled the talking.",
+            TrailTerrain.Hills => "The trail stayed quiet, broken only by the horse and the climb.",
+            TrailTerrain.Badlands => "The trail went quiet and the dust hung still.",
+            TrailTerrain.Mountains => "The trail went quiet in the high places.",
+            _ => "The trail stayed quiet."
         };
 }

@@ -59,6 +59,35 @@ public sealed class TravelDiaryFlavourCatalogTests
     }
 
     [Fact]
+    public void CatalogTemplatesAvoidObviousPresentTenseDiaryOpeners()
+    {
+        var bannedFragments = new[]
+        {
+            "I am ",
+            "I do ",
+            "I go ",
+            "I see ",
+            "I meet ",
+            "I find ",
+            "I start ",
+            "I ride ",
+            "I reach ",
+            "I get ",
+            "I pass ",
+            "I come ",
+            "I keep "
+        };
+
+        foreach (var entry in TravelDiaryFlavourCatalog.All)
+        {
+            foreach (var fragment in bannedFragments)
+            {
+                Assert.DoesNotContain(fragment, entry.TextTemplate, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
+
+    [Fact]
     public void SelectionIsDeterministicForTheSameContext()
     {
         var context = CreateContext(TravelDiaryFlavourCategory.QuietTexture, dayNumber: 3, beatIndex: 1, terrain: TrailTerrain.Mountains, preferredTags: ["mountains"]);

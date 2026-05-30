@@ -42,7 +42,7 @@ public sealed class TravelDiaryTextRendererTests
         var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
 
         Assert.Contains(rendered.Entries, entry => entry.Contains("A hard-eyed rider cuts across my path.", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(rendered.Entries, entry => entry.Contains("I can run, fight, or bribe.", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(rendered.Entries, entry => entry.Contains("I could run, fight, or bribe.", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(rendered.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -74,6 +74,74 @@ public sealed class TravelDiaryTextRendererTests
         Assert.Contains(rendered.Entries, entry => entry.Contains("I decided to bribe the rider.", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(rendered.Entries, entry => entry.Contains("I paid $5.00 to make the problem go away.", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(rendered.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RenderedDiaryEntriesAvoidCommonPresentTenseFirstPersonOpenings()
+    {
+        var days = new[]
+        {
+            CreateDay(
+                terrain: TrailTerrain.OpenRange,
+                routeWaterSecure: true,
+                currentCanteenCharges: 2,
+                currentFood: 3,
+                currentHorseFeed: 2,
+                entries: new[] { "I found a cache of jerky and trail biscuits and picked up 2 food." }),
+            CreateDay(
+                terrain: TrailTerrain.Badlands,
+                routeWaterSecure: false,
+                currentCanteenCharges: 0,
+                currentFood: 1,
+                currentHorseFeed: 1,
+                horseStateBefore: HorseTravelState.Healthy,
+                horseStateAfter: HorseTravelState.Healthy,
+                trailEvent: JourneyTrailEventState.CreateBadLuck(
+                    JourneyTrailEventId.BadLuckWashout,
+                    "Washed-out trail",
+                    "A washout forced a detour and cost me 2 extra delay day(s).",
+                    delayDays: 2)),
+            CreateDay(
+                status: JourneyStatus.Interrupted,
+                pendingEncounter: JourneyEncounterState.CreateChoiceEncounter("foe", "A hard-eyed rider cut across my path.")),
+            CreateDay(
+                status: JourneyStatus.Interrupted,
+                encounterResolution: new TravelDiaryEncounterResolutionState("run", "Run", -3, 0m, 0, 0, 1, true)),
+            CreateDay(
+                status: JourneyStatus.Interrupted,
+                encounterResolution: new TravelDiaryEncounterResolutionState("bribe", "Bribe", 0, -5m, 0, 0, 0, false)),
+            CreateDay(
+                status: JourneyStatus.Completed,
+                routeWaterSecure: true,
+                currentCanteenCharges: 2,
+                currentFood: 3,
+                currentHorseFeed: 2,
+                entries: new[] { "I found a cache of trail coins and pocketed an extra $3.00." })
+        };
+
+        var bannedFragments = new[]
+        {
+            "I am ",
+            "I do ",
+            "I go ",
+            "I see ",
+            "I meet ",
+            "I find ",
+            "I start ",
+            "I ride ",
+            "I reach ",
+            "I get ",
+            "I pass ",
+            "I come ",
+            "I keep "
+        };
+
+        foreach (var day in days)
+        {
+            var rendered = TravelDiaryTextRenderer.RenderDay(day, TravelRulesProfile.Default);
+            var combined = string.Join(' ', rendered.Entries);
+            Assert.DoesNotContain(bannedFragments, fragment => combined.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+        }
     }
 
     [Fact]

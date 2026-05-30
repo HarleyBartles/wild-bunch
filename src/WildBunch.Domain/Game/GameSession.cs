@@ -144,20 +144,20 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         if (horseState is null)
         {
-            return "Your horse can no longer carry you.";
+            return "Your horse could no longer carry you.";
         }
 
         if (horseState.IsDeadFor(travelRulesProfile))
         {
-            return "Your horse dies on the trail.";
+            return "Your horse died on the trail.";
         }
 
         if (horseState.IsLameFor(travelRulesProfile))
         {
-            return "Your horse goes lame and can no longer carry you.";
+            return "Your horse went lame and could no longer carry you.";
         }
 
-        return "Your horse can no longer carry you.";
+        return "Your horse could no longer carry you.";
     }
 
     private static string DescribeTerrain(TrailTerrain terrain)
@@ -428,7 +428,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 Journey.MarkInterrupted(pendingEncounter);
                 var encounterMessage = PrependHorseLossMessage(horseLostMessage, pendingEncounter.Message);
                 dayEntries.Add(encounterMessage);
-                dayEntries.Add("I can run, fight, or bribe my way through.");
+                dayEntries.Add("I could run, fight, or bribe my way through.");
                 AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
 
                 var interruptedSnapshot = Journey.ToSnapshot(TravelRules);
@@ -1053,20 +1053,20 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var travelMode = DescribeTravelMode(preview.TravelMode);
         var risk = DescribeRisk(preview.RouteProfile.Risk);
         var waterPressure = preview.WaterSecure
-            ? $"I have enough water for the base trail, though the canteen still needs watching on a {preview.ExpectedDays}-day run."
-            : $"This dry trail will ask for {preview.CanteenChargesPerDay} canteen charge(s) a day, and I do not have much slack.";
+            ? $"I had enough water for the base trail, though the canteen still needed watching on a {preview.ExpectedDays}-day run."
+            : $"This dry trail asked for {preview.CanteenChargesPerDay} canteen charge(s) a day, and I did not have much slack.";
         var foodPressure = preview.AvailableFood <= preview.ExpectedDays
-            ? "My food is tight enough that I will notice every meal."
-            : "My food should hold if the trail behaves itself.";
+            ? "My food was tight enough that I noticed every meal."
+            : "My food should have held if the trail behaved itself.";
         var horsePressure = preview.HorseState is null
-            ? "I am traveling without a horse, so the road will have to be enough."
+            ? "I was traveling without a horse, so the road had to be enough."
             : preview.MountedTravelAvailable
-                ? "My horse is fit enough to carry me for now."
-                : "My horse is not fit for mounted travel, so I will need to mind the pace.";
+                ? "My horse was fit enough to carry me for now."
+                : "My horse was not fit for mounted travel, so I needed to mind the pace.";
 
         var openingSentence = preview.TravelMode == TravelMode.Foot
             ? preview.ExpectedDays != preview.BaselineRideDays
-                ? $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase}, but without a horse it will take {preview.ExpectedDays} days on foot."
+                ? $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase}, but without a horse it would take {preview.ExpectedDays} days on foot."
                 : $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase} on foot."
             : $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase} {travelMode}.";
 

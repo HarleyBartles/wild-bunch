@@ -144,7 +144,7 @@ public sealed class TravelResolverTests
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(1, result.Journey.RemainingDays);
         Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
-        Assert.Contains("goes lame", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("went lame", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -204,7 +204,7 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.TrailEvent);
         Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent!.Kind);
         Assert.Equal(JourneyTrailEventId.LuckyCoinCache, result.TrailEvent.Id);
-        Assert.Equal("I found a hidden cache of trail coins and pocketed an extra $3.00.", result.TrailEvent.Message);
+        Assert.Equal("I spotted a hidden cache of trail coins and pocketed an extra $3.00.", result.TrailEvent.Message);
         Assert.Equal(28m, session.Player.Wallet.Cash);
         Assert.Equal(0, session.Journey!.DelayDays);
         Assert.Equal(1, session.Journey.RemainingDays);

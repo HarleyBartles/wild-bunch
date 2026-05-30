@@ -16,7 +16,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyCoinCache,
                 "Hidden coin cache",
-                $"I spot a hidden cache of trail coins and pocket an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
+                $"I spotted a hidden cache of trail coins and pocketed an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
                 walletDelta: travelRulesProfile.LuckyTrailCoinReward);
         }
 
@@ -25,7 +25,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyFoodCache,
                 "Trail grub cache",
-                $"I find a cache of jerky and trail biscuits and gain {travelRulesProfile.LuckyTrailFoodReward} food.",
+                $"I found a cache of jerky and trail biscuits and gained {travelRulesProfile.LuckyTrailFoodReward} food.",
                 foodDelta: travelRulesProfile.LuckyTrailFoodReward);
         }
 
@@ -34,7 +34,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyWaterSeep,
                 "Hidden water seep",
-                $"I find a seep under the rocks and top off my canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
+                $"I found a seep under the rocks and topped off my canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
                 canteenChargeDelta: travelRulesProfile.LuckyTrailWaterRecovery);
         }
 
@@ -43,7 +43,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckWashout,
                 "Washed-out trail",
-                $"A washout forces a detour and costs me {travelRulesProfile.BadLuckTrailDelayDays} extra delay day(s).",
+                $"A washout forced a detour and cost me {travelRulesProfile.BadLuckTrailDelayDays} extra delay day(s).",
                 delayDays: travelRulesProfile.BadLuckTrailDelayDays,
                 heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
         }
@@ -53,7 +53,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckFoodLoss,
                 "Dust-choked outfit",
-                $"A dust storm strips away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
+                $"A dust storm stripped away {travelRulesProfile.BadLuckTrailFoodLoss} food and {travelRulesProfile.BadLuckTrailCanteenLoss} canteen charge(s).",
                 foodDelta: -travelRulesProfile.BadLuckTrailFoodLoss,
                 canteenChargeDelta: -travelRulesProfile.BadLuckTrailCanteenLoss,
                 horseThirstDelta: travelRulesProfile.BadLuckTrailHorseThirst,
@@ -66,7 +66,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckSpookedHorse,
                 "Spooked horse",
-                "A sudden canyon echo spooks the horse and leaves it more exhausted.",
+                "A sudden canyon echo spooked the horse and left it more exhausted.",
                 horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion,
                 heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
         }

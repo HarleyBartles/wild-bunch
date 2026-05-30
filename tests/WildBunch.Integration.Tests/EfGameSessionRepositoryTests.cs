@@ -254,7 +254,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, reloaded.Journey!.TravelMode);
         Assert.Equal(1, reloaded.Journey.RemainingDays);
         Assert.Equal(new DomainHorseTravelState(0, 0, 2), reloaded.Player.Inventory.GetHorseState());
-        Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("goes lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("went lame", StringComparison.OrdinalIgnoreCase));
     }
 
     private static EfGameSessionRepository CreateRepository(SqlitePersistenceFixture fixture)
