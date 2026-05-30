@@ -45,11 +45,10 @@ function connectedDestinations(session: GameSessionDto) {
 
 function formatPreviewSummary(preview: TravelPreviewDto) {
   return [
-    `${preview.expectedDays} day${preview.expectedDays === 1 ? "" : "s"}`,
+    `${preview.baselineRideDays} day${preview.baselineRideDays === 1 ? "" : "s"} ride`,
     formatTrailTerrain(preview.routeProfile.terrain),
     formatWaterFeature(preview.routeProfile.waterFeature),
     `${formatRisk(preview.routeProfile.risk)} risk`,
-    `${preview.routeProfile.rideDayDistance.toFixed(2)} ride-day units`,
   ].join(" | ");
 }
 

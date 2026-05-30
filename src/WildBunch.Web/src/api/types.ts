@@ -125,6 +125,7 @@ export interface TravelPreviewDto {
   waterSecure: boolean;
   rideDayDistance: number;
   remainingRideDayDistance: number;
+  baselineRideDays: number;
   expectedDays: number;
   remainingDays: number;
   canteenChargesPerDay: number;
@@ -170,6 +171,7 @@ export interface TravelJourneyDto {
   waterSecure: boolean;
   rideDayDistance: number;
   remainingRideDayDistance: number;
+  baselineRideDays: number;
   expectedDays: number;
   remainingDays: number;
   canteenChargesPerDay: number;

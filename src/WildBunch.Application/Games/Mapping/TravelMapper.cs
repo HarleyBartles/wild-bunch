@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Travel;
 using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
 using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterChoiceState;
@@ -26,6 +27,7 @@ public static class TravelMapper
             preview.WaterSecure,
             preview.RideDayDistance,
             preview.RemainingRideDayDistance,
+            preview.BaselineRideDays,
             preview.ExpectedDays,
             preview.RemainingDays,
             preview.CanteenChargesPerDay,
@@ -58,6 +60,7 @@ public static class TravelMapper
             snapshot.WaterSecure,
             snapshot.RideDayDistance,
             snapshot.RemainingRideDayDistance,
+            snapshot.RouteProfile.ExpectedDays(TravelMode.Mounted),
             snapshot.ExpectedDays,
             snapshot.RemainingDays,
             snapshot.CanteenChargesPerDay,

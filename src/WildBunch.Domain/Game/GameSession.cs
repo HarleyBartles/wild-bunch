@@ -476,11 +476,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         var entries = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(openingNarration))
-        {
-            entries.Add(openingNarration!);
-        }
-
         if (!string.IsNullOrWhiteSpace(journeyBeat))
         {
             entries.Add(journeyBeat!);

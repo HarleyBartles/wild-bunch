@@ -36,6 +36,7 @@ public sealed class TravelResolverTests
         Assert.True(result.Preview.MountedTravelAvailable);
         Assert.True(result.Preview.WaterSecure);
         Assert.Equal(2m, result.Preview.RideDayDistance);
+        Assert.Equal(2, result.Preview.BaselineRideDays);
         Assert.Equal(2, result.Preview.ExpectedDays);
         Assert.Equal(2, result.Preview.RequiredFood);
         Assert.Equal(0, result.Preview.RequiredHorseFeed);
@@ -66,6 +67,7 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.Preview);
         Assert.Equal(TravelMode.Foot, result.Preview!.TravelMode);
         Assert.False(result.Preview.MountedTravelAvailable);
+        Assert.Equal(2, result.Preview.BaselineRideDays);
         Assert.Equal(4, result.Preview.ExpectedDays);
         Assert.Equal(2m, result.Preview.RideDayDistance);
         Assert.Equal(0, result.Preview.RequiredHorseFeed);

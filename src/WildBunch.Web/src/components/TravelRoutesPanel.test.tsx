@@ -40,7 +40,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
           risk: 2,
           terrain: 1,
           waterFeature: 2,
-          rideDayDistance: 6,
+          rideDayDistance: 4,
         },
         {
           id: "trail-2",
@@ -110,8 +110,9 @@ describe("TravelRoutesPanel", () => {
             travelMode: 1,
             mountedTravelAvailable: false,
             waterSecure: true,
-            rideDayDistance: 5,
-            remainingRideDayDistance: 5,
+            rideDayDistance: 4,
+            remainingRideDayDistance: 4,
+            baselineRideDays: 3,
             expectedDays: 6,
             remainingDays: 6,
             canteenChargesPerDay: 0,
@@ -131,7 +132,7 @@ describe("TravelRoutesPanel", () => {
               risk: 1,
               terrain: 0,
               waterFeature: 1,
-              rideDayDistance: 5,
+              rideDayDistance: 4,
               mountedRideDayProgress: 1.5,
               footRideDayProgress: 0.75,
               warnings: ["Open range and creek water keep this route manageable."],
@@ -153,6 +154,7 @@ describe("TravelRoutesPanel", () => {
           waterSecure: false,
           rideDayDistance: 2,
           remainingRideDayDistance: 2,
+          baselineRideDays: 2,
           expectedDays: 2,
           remainingDays: 2,
           canteenChargesPerDay: 1,
@@ -196,8 +198,9 @@ describe("TravelRoutesPanel", () => {
     });
 
     expect(await screen.findByRole("button", { name: /holloway/i })).toBeInTheDocument();
-    expect(screen.getByText(/6 days \| Open range \| Creek \| Low risk \| 5\.00 ride-day units/i)).toBeInTheDocument();
-    expect(screen.getByText(/2 days \| Badlands \| None \| High risk \| 2\.00 ride-day units/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 days ride \| Open range \| Creek \| Low risk/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 days ride \| Badlands \| None \| High risk/i)).toBeInTheDocument();
+    expect(screen.queryByText(/ride-day units/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /holloway/i }));
     expect(onTravel).toHaveBeenCalledWith("holloway");

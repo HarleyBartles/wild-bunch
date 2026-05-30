@@ -40,6 +40,15 @@ public sealed class GameApiTests
         Assert.Empty(session.CaseFile.DiscoveredSuspects);
         Assert.NotEmpty(session.LogEntries);
 
+        var connectedTownIds = session.World.Trails
+            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .ToArray();
+
+        Assert.Contains(connectedTownIds, townId => townId == "redmesa");
+        Assert.Contains(connectedTownIds, townId => townId == "holloway");
+
         var payload = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -53,6 +62,21 @@ public sealed class GameApiTests
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
+
+        var previewResults = new List<TravelPreviewDto>();
+        foreach (var destinationTownId in connectedTownIds)
+        {
+            var previewResponse = await client.GetAsync($"/api/games/{session.Id}/travel/preview/{destinationTownId}");
+            Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
+
+            var previewResult = await previewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
+            Assert.NotNull(previewResult);
+            Assert.True(previewResult!.Success);
+            Assert.NotNull(previewResult.Preview);
+            previewResults.Add(previewResult.Preview!);
+        }
+
+        Assert.True(previewResults.Select(preview => preview.BaselineRideDays).Distinct().Count() > 1);
     }
 
     [Fact]
@@ -115,6 +139,7 @@ public sealed class GameApiTests
         Assert.NotNull(preview.Preview);
         Assert.Equal(TravelMode.Mounted, preview.Preview!.TravelMode);
         Assert.Equal(2m, preview.Preview.RideDayDistance);
+        Assert.Equal(2, preview.Preview.BaselineRideDays);
         Assert.Equal(2, preview.Preview.ExpectedDays);
         Assert.True(preview.Preview.MountedTravelAvailable);
         Assert.Equal(0, preview.Preview.RequiredHorseFeed);
@@ -217,20 +242,38 @@ public sealed class GameApiTests
 
         Assert.NotEmpty(connectedTownIds);
 
-        var previewResults = new List<TravelPreviewDto>();
-        foreach (var destinationTownId in connectedTownIds)
-        {
-            var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/{destinationTownId}");
-            Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
+        var destinationTownId = connectedTownIds[0];
+        var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/{destinationTownId}");
+        Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
 
-            var previewResult = await previewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
-            Assert.NotNull(previewResult);
-            Assert.True(previewResult!.Success);
-            Assert.NotNull(previewResult.Preview);
-            previewResults.Add(previewResult.Preview!);
-        }
+        var previewResult = await previewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
+        Assert.NotNull(previewResult);
+        Assert.True(previewResult!.Success);
+        Assert.NotNull(previewResult.Preview);
+        Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, previewResult.Preview!.TravelMode);
+        Assert.True(previewResult.Preview.ExpectedDays > previewResult.Preview.BaselineRideDays);
 
-        Assert.Contains(previewResults, preview => preview.ExpectedDays == 6);
+        var onFootTravelResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/travel",
+            new TravelRequest(destinationTownId));
+
+        Assert.Equal(HttpStatusCode.OK, onFootTravelResponse.StatusCode);
+
+        var onFootTurn = await onFootTravelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+        Assert.NotNull(onFootTurn);
+        Assert.True(onFootTurn!.Success);
+        Assert.Equal(JourneyStatus.Active, onFootTurn.JourneyStatus);
+        Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, onFootTurn.CurrentSession.Journey!.TravelMode);
+        Assert.Equal(previewResult.Preview.BaselineRideDays, onFootTurn.CurrentSession.Journey.BaselineRideDays);
+        Assert.Equal(previewResult.Preview.ExpectedDays, onFootTurn.CurrentSession.Journey.ExpectedDays);
+        Assert.True(onFootTurn.CurrentSession.Journey.ExpectedDays > onFootTurn.CurrentSession.Journey.BaselineRideDays);
+        Assert.NotNull(onFootTurn.TravelDiary);
+        var onFootOpeningDay = Assert.Single(onFootTurn.TravelDiary!.Days);
+        Assert.NotNull(onFootOpeningDay.OpeningNarration);
+        Assert.Contains($"{previewResult.Preview.ExpectedDays}-day", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("on foot", onFootOpeningDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(onFootOpeningDay.Entries, entry => entry == onFootOpeningDay.OpeningNarration);
     }
 
     [Fact]

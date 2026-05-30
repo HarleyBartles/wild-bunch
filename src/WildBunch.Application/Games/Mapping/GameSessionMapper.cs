@@ -82,6 +82,7 @@ public static class GameSessionMapper
             snapshot.WaterSecure,
             snapshot.RideDayDistance,
             snapshot.RemainingRideDayDistance,
+            snapshot.RouteProfile.ExpectedDays(WildBunch.Domain.Travel.TravelMode.Mounted),
             snapshot.ExpectedDays,
             snapshot.RemainingDays,
             snapshot.CanteenChargesPerDay,

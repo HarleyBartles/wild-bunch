@@ -41,11 +41,11 @@ internal static class SeedWorldBuilder
         ArgumentNullException.ThrowIfNull(options);
 
         return Roll(seedCode, "world-variant") % 2 == 0
-            ? CreateFrontierVariant(seedCode, options)
-            : CreateRailVariant(seedCode, options);
+            ? CreateFrontierVariant(seedCode, travelRulesProfile, options)
+            : CreateRailVariant(seedCode, travelRulesProfile, options);
     }
 
-    private static SeedWorldSetup CreateFrontierVariant(string seedCode, GameSetupOptionsV1 options)
+    private static SeedWorldSetup CreateFrontierVariant(string seedCode, TravelRulesProfile travelRulesProfile, GameSetupOptionsV1 options)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Supplies | TownServices.Telegraph);
@@ -70,7 +70,7 @@ internal static class SeedWorldBuilder
         return new SeedWorldSetup(world, PickStartingTown(seedCode, world, options));
     }
 
-    private static SeedWorldSetup CreateRailVariant(string seedCode, GameSetupOptionsV1 options)
+    private static SeedWorldSetup CreateRailVariant(string seedCode, TravelRulesProfile travelRulesProfile, GameSetupOptionsV1 options)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
         var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Supplies | TownServices.Telegraph | TownServices.NoticeBoard);

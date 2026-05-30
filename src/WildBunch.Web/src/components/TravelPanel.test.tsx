@@ -91,6 +91,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       waterSecure: true,
       rideDayDistance: 14,
       remainingRideDayDistance: 10,
+      baselineRideDays: 3,
       expectedDays: 2,
       remainingDays: 2,
       canteenChargesPerDay: 1,
@@ -206,6 +207,7 @@ describe("TravelPanel", () => {
     renderTravelPanel(session);
 
     expect(await screen.findByRole("heading", { name: /travel diary/i })).toBeInTheDocument();
+    expect(screen.getAllByText("I set out for Dust Fork on a 3-day badlands trail by mounted travel.")).toHaveLength(1);
     expect(screen.getByText("The first light caught the dust behind us, and the road stayed open.")).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /advance travel day/i })).toBeEnabled();

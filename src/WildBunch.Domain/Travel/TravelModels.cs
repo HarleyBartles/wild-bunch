@@ -62,6 +62,7 @@ public sealed record TravelPreview(
     bool WaterSecure,
     decimal RideDayDistance,
     decimal RemainingRideDayDistance,
+    int BaselineRideDays,
     int ExpectedDays,
     int RemainingDays,
     int CanteenChargesPerDay,
@@ -853,6 +854,7 @@ public sealed class TravelJourney
             snapshot.WaterSecure,
             snapshot.RideDayDistance,
             snapshot.RemainingRideDayDistance,
+            snapshot.RouteProfile.ExpectedDays(TravelMode.Mounted),
             snapshot.ExpectedDays,
             snapshot.RemainingDays,
             snapshot.CanteenChargesPerDay,
@@ -1280,6 +1282,7 @@ public sealed class TravelResolver
         var canteenState = inventory.GetCanteenState();
         var routeProfile = BuildRouteProfile(trail, travelRulesProfile);
         var rideDayDistance = routeProfile.RideDayDistance;
+        var baselineRideDays = routeProfile.ExpectedDays(TravelMode.Mounted);
         var expectedDays = routeProfile.ExpectedDays(travelMode);
         var availableFood = inventory.GetQuantity(ItemKind.Food);
         var availableHorseFeed = inventory.GetQuantity(ItemKind.HorseFeed);
@@ -1350,6 +1353,7 @@ public sealed class TravelResolver
             waterSecure,
             rideDayDistance,
             rideDayDistance,
+            baselineRideDays,
             expectedDays,
             expectedDays,
             canteenChargesPerDay,
@@ -1367,7 +1371,7 @@ public sealed class TravelResolver
 
         return new TravelPreviewResult(
             true,
-            $"Previewed {travelMode.ToString().ToLowerInvariant()} travel from {originTown.Name} to {destinationTown.Name}: {rideDayDistance:0.##} ride-day unit(s), {expectedDays} day(s); {DescribeCanteenCoverage(routeProfile.WaterFeature, canteenChargesPerDay, canteenReserveCharges, delayMarginDays)}",
+            $"Previewed {travelMode.ToString().ToLowerInvariant()} travel from {originTown.Name} to {destinationTown.Name}: {baselineRideDays} day ride estimate, {expectedDays} day(s) on the trail; {DescribeCanteenCoverage(routeProfile.WaterFeature, canteenChargesPerDay, canteenReserveCharges, delayMarginDays)}",
             preview);
     }
 
