@@ -55,39 +55,43 @@ public static class SeedInventoryBuilder
         return new Inventory(items);
     }
 
-    internal static Inventory CreateStartingLoadout(string seedCode, TravelRulesProfile travelRulesProfile, GameSetupOptionsV1 options)
+    internal static Inventory CreateStartingLoadout(GameSetupGenerationPlan plan)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
-        return CreateStartingLoadout(travelRulesProfile, options);
+        ArgumentNullException.ThrowIfNull(plan);
+
+        if (plan.IsCanonical)
+        {
+            return CreateCanonicalLoadout(plan.TravelRulesProfile);
+        }
+
+        return CreateStartingLoadout(plan.TravelRulesProfile, plan.Seed.Options);
     }
 
-    internal static Wallet CreateStartingWallet(string seedCode, TravelDifficulty difficulty, GameSetupOptionsV1 options)
+    internal static Wallet CreateStartingWallet(GameSetupGenerationPlan plan)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(plan);
 
-        var baseCash = difficulty switch
+        if (plan.IsCanonical)
+        {
+            return Wallet.Starting(25m);
+        }
+
+        var baseCash = plan.Seed.Difficulty switch
         {
             TravelDifficulty.Easy => 30m,
             TravelDifficulty.Hard => 20m,
             _ => 25m
         };
 
-        var profileBonus = options.LoadoutProfile switch
+        var profileBonus = plan.Seed.Options.LoadoutProfile switch
         {
             StartingLoadoutProfile.Light => -5m,
             StartingLoadoutProfile.Stocked => 5m,
             _ => 0m
         };
 
-        var entropyBonus = PickIndex(seedCode, "wallet-bonus", 6);
-        var horseBonus = options.StartWithHorse ? 2m : 0m;
+        var entropyBonus = plan.Source.PickIndex(GameSetupDeterministicLabels.PlayerWalletStarting, 6);
+        var horseBonus = plan.Seed.Options.StartWithHorse ? 2m : 0m;
         return Wallet.Starting(Math.Max(10m, baseCash + profileBonus + horseBonus + entropyBonus));
-    }
-
-    private static int PickIndex(string seedCode, string label, int count)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{seedCode}|{label}"));
-        return (int)(BitConverter.ToUInt64(bytes, 0) % (ulong)count);
     }
 }

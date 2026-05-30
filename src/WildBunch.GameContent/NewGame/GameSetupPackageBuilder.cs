@@ -11,43 +11,19 @@ internal sealed class GameSetupPackageBuilder
     {
         ArgumentNullException.ThrowIfNull(seed);
 
-        if (seed.IsCanonical)
-        {
-            return BuildCanonical(seed);
-        }
-
-        var seedCode = GameSetupSeedCodec.GetStableKey(seed);
-        var travelRulesProfile = TravelRulesProfile.For(seed.Difficulty);
-        var worldSetup = SeedWorldBuilder.CreateWorld(seedCode, travelRulesProfile, seed.Options);
-        var caseFile = SeedCaseBuilder.CreateCaseFile(seedCode);
-        var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(seedCode, travelRulesProfile, seed.Options);
-        var startingWallet = SeedInventoryBuilder.CreateStartingWallet(seedCode, seed.Difficulty, seed.Options);
+        var plan = GameSetupGenerationPlan.Create(seed);
+        var worldSetup = SeedWorldBuilder.CreateWorld(plan);
+        var caseFile = SeedCaseBuilder.CreateCaseFile(plan);
+        var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(plan);
+        var startingWallet = SeedInventoryBuilder.CreateStartingWallet(plan);
 
         return new GameSetupPackage(
             seed,
             seed.Difficulty,
-            travelRulesProfile,
+            plan.TravelRulesProfile,
             worldSetup.World,
             worldSetup.StartingTownId,
             startingWallet,
-            startingInventory,
-            caseFile);
-    }
-
-    private static GameSetupPackage BuildCanonical(GameSetupSeed seed)
-    {
-        var travelRulesProfile = TravelRulesProfile.For(seed.Difficulty);
-        var worldSetup = SeedWorldBuilder.CreateCanonicalWorld();
-        var caseFile = SeedCaseBuilder.CreateCanonicalCaseFile();
-        var startingInventory = SeedInventoryBuilder.CreateCanonicalLoadout(travelRulesProfile);
-
-        return new GameSetupPackage(
-            seed,
-            seed.Difficulty,
-            travelRulesProfile,
-            worldSetup.World,
-            worldSetup.StartingTownId,
-            Wallet.Starting(25m),
             startingInventory,
             caseFile);
     }

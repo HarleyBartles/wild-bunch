@@ -98,6 +98,37 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
+    public void GenerateChangesWhenLiveStateChangesBeforeTheJourneyAdvances()
+    {
+        var baselineSession = CreateSeedSensitiveSession();
+        var stressedSession = CreateSeedSensitiveSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(baselineSession.World, baselineSession.Player.CurrentTownId, new TownId("dryfork"), baselineSession.Player.Inventory, baselineSession.TravelRules).Preview!;
+
+        baselineSession.StartJourney(preview);
+        stressedSession.StartJourney(preview);
+        stressedSession.Player.Inventory.RemoveQuantity(DomainItemKind.Horse, 1);
+        stressedSession.Player.Inventory.RemoveQuantity(DomainItemKind.Saddle, 1);
+
+        var seeds = Enumerable.Range(1, 24).Select(index => $"seed-live-{index}");
+        var foundDifference = false;
+
+        foreach (var seed in seeds)
+        {
+            var baselinePlan = TravelDayPlanGenerator.Generate(baselineSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-live"));
+            var stressedPlan = TravelDayPlanGenerator.Generate(stressedSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-live"));
+
+            if (!PlansAreEquivalent(baselinePlan, stressedPlan))
+            {
+                foundDifference = true;
+                break;
+            }
+        }
+
+        Assert.True(foundDifference);
+    }
+
+    [Fact]
     public void GenerateAvoidsRepeatingLuckyTrailEventsOnConsecutiveDays()
     {
         var session = CreateLuckyCooldownSession();

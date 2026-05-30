@@ -15,21 +15,20 @@ internal static class SeedWorldBuilder
         return new SeedWorldSetup(world, SeedWorldCatalog.PinecrossId);
     }
 
-    public static SeedWorldSetup CreateWorld(string seedCode, TravelRulesProfile travelRulesProfile, GameSetupOptionsV1 options)
+    public static SeedWorldSetup CreateWorld(GameSetupGenerationPlan plan)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
-        ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(plan);
 
-        var variant = Roll(seedCode, "world-variant") % 2 == 0
-            ? SeedWorldVariant.Frontier
-            : SeedWorldVariant.Rail;
-        var world = SeedWorldCatalog.CreateWorld(variant);
+        if (plan.IsCanonical)
+        {
+            return CreateCanonicalWorld();
+        }
 
-        return new SeedWorldSetup(world, PickStartingTown(seedCode, world, options));
+        var world = SeedWorldCatalog.CreateWorld(plan.WorldVariant);
+        return new SeedWorldSetup(world, PickStartingTown(plan, world));
     }
 
-    private static TownId PickStartingTown(string seedCode, World world, GameSetupOptionsV1 options)
+    private static TownId PickStartingTown(GameSetupGenerationPlan plan, World world)
     {
         var candidates = world.Towns
             .Where(town => (town.Services & TownServices.Supplies) != 0 || (town.Services & TownServices.NoticeBoard) != 0)
@@ -41,14 +40,10 @@ internal static class SeedWorldBuilder
             return world.Towns.First().Id;
         }
 
-        var label = options.StartWithHorse ? "starting-town-horse" : "starting-town-foot";
-        var index = (int)(Roll(seedCode, label) % (ulong)candidates.Length);
+        var label = plan.Seed.Options.StartWithHorse
+            ? GameSetupDeterministicLabels.WorldStartingTownHorse
+            : GameSetupDeterministicLabels.WorldStartingTownFoot;
+        var index = plan.Source.PickIndex(label, candidates.Length);
         return candidates[index].Id;
-    }
-
-    private static ulong Roll(string seedCode, string label)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{seedCode}|{label}"));
-        return BitConverter.ToUInt64(bytes, 0);
     }
 }

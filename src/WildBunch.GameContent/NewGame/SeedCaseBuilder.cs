@@ -40,29 +40,34 @@ internal static class SeedCaseBuilder
             killerReleaseThreshold: 2);
     }
 
-    public static CaseFile CreateCaseFile(string seedCode)
+    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
+        ArgumentNullException.ThrowIfNull(plan);
+
+        if (plan.IsCanonical)
+        {
+            return CreateCanonicalCaseFile();
+        }
 
         var suspects = CreateSuspects();
-        var culpritIndex = PickIndex(seedCode, "culprit", suspects.Count);
+        var culpritIndex = plan.Source.PickIndex(GameSetupDeterministicLabels.CaseCulprit, suspects.Count);
         var culpritId = suspects[culpritIndex].Id;
-        var accusationId = suspects[PickIndex(seedCode, "accusation", suspects.Count)].Id;
+        var accusationId = suspects[plan.Source.PickIndex(GameSetupDeterministicLabels.CaseAccusation, suspects.Count)].Id;
 
         var knownClues = new[]
         {
-            CreateClue(seedCode, "known-1", ClueKind.Witness, "A rider with a split-finger glove was seen crossing the red ridge at dusk.", culpritId, suspects[(culpritIndex + 1) % suspects.Count].Id),
-            CreateClue(seedCode, "known-2", ClueKind.Record, "The telegraph ledger shows a coded payment routed through Sagewell.", suspects[(culpritIndex + 2) % suspects.Count].Id),
-            CreateClue(seedCode, "known-3", ClueKind.Physical, "Boot prints match a narrow-heeled trail rider's boots.", culpritId)
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.Witness, "A rider with a split-finger glove was seen crossing the red ridge at dusk.", culpritId, suspects[(culpritIndex + 1) % suspects.Count].Id),
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.Record, "The telegraph ledger shows a coded payment routed through Sagewell.", suspects[(culpritIndex + 2) % suspects.Count].Id),
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Physical, "Boot prints match a narrow-heeled trail rider's boots.", culpritId)
         };
 
         var publicClues = new[]
         {
-            CreateClue(seedCode, "public-1", ClueKind.Witness, "A wanted poster mentions a faded blue sash and a cracked leather gauntlet.", suspects[0].Id),
-            CreateClue(seedCode, "public-2", ClueKind.Physical, "A notice board sketch shows a sand-colored hat with a stitched brim.", suspects[1].Id)
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Witness, "A wanted poster mentions a faded blue sash and a cracked leather gauntlet.", suspects[0].Id),
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Physical, "A notice board sketch shows a sand-colored hat with a stitched brim.", suspects[1].Id)
         };
 
-        var openingLead = CaseOpeningLead.Create(culpritIndex switch
+        var openingLead = CaseOpeningLead.Create(plan.Source.PickIndex(GameSetupDeterministicLabels.CaseOpeningLead, 4) switch
         {
             0 => "A cracked leather gauntlet turned up in the dust at dusk.",
             1 => "A tin badge was found clipped to a saddle strap.",
@@ -148,16 +153,10 @@ internal static class SeedCaseBuilder
                 SuspectStatus.AtLarge)
         };
 
-    private static Clue CreateClue(string seedCode, string clueKey, ClueKind kind, string description, params SuspectId[] linkedSuspectIds)
+    private static Clue CreateClue(GameSetupDeterministicSource source, string label, int clueIndex, ClueKind kind, string description, params SuspectId[] linkedSuspectIds)
         => new(
-            new ClueId($"{clueKey}-{PickIndex(seedCode, clueKey, 97):00}"),
+            new ClueId($"{label}-{clueIndex:00}-{source.PickIndex($"{label}.{clueIndex}", 97):00}"),
             kind,
             description,
             linkedSuspectIds);
-
-    private static int PickIndex(string seedCode, string label, int count)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{seedCode}|{label}"));
-        return (int)(BitConverter.ToUInt64(bytes, 0) % (ulong)count);
-    }
 }

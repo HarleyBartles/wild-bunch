@@ -169,8 +169,7 @@ public sealed class SeedWorldBuilderTests
             TravelDifficulty.Normal,
             new GameSetupOptionsV1(startWithHorse, StartingLoadoutProfile.Standard),
             entropy);
-        var seedCode = GameSetupSeedCodec.Encode(seed);
-        return SeedWorldBuilder.CreateWorld(seedCode, TravelRulesProfile.For(seed.Difficulty), seed.Options);
+        return SeedWorldBuilder.CreateWorld(GameSetupGenerationPlan.Create(seed));
     }
 
     private static SeedWorldVariant? GetVariant(World world)
