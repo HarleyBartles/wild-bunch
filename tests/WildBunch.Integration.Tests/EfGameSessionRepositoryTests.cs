@@ -224,7 +224,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(0, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
         Assert.Equal(8, reloaded.Player.Inventory.GetCanteenState()!.Charges);
-        Assert.Equal(1m, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-1")).RideDayDistance);
+        Assert.Equal(5m, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-1")).RideDayDistance);
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded!.Journey);
         Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, reloaded.Journey!.TravelMode);
         Assert.Equal(1, reloaded.Journey.RemainingDays);
-        Assert.Equal(new DomainHorseTravelState(0, 0, 3), reloaded.Player.Inventory.GetHorseState());
+        Assert.Equal(new DomainHorseTravelState(0, 0, 2), reloaded.Player.Inventory.GetHorseState());
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("goes lame", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -395,7 +395,7 @@ public sealed class EfGameSessionRepositoryTests
             new[] { dustvale, dryridge },
             new[]
             {
-                new Trail(new TrailId("trail-1"), dustvale.Id, dryridge.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None)
+                new Trail(new TrailId("trail-1"), dustvale.Id, dryridge.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 5m)
             });
 
         var suspects = new[]
@@ -426,7 +426,7 @@ public sealed class EfGameSessionRepositoryTests
             new[] { pinecross, midway },
             new[]
             {
-                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River)
+                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.River, 2m)
             });
 
         var caseFile = CreateCaseFile();
@@ -434,12 +434,12 @@ public sealed class EfGameSessionRepositoryTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, new DomainHorseTravelState(0, 0, 2)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, new DomainHorseTravelState(0, 0, 1)),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard);
     }
 
     private static GameSession CreateDiarySession()

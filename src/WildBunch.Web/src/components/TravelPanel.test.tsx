@@ -238,12 +238,14 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session);
 
-    expect(await screen.findByRole("heading", { name: /travel diary/i })).toBeInTheDocument();
+    const diaryHeading = await screen.findByRole("heading", { name: /travel diary/i });
     expect(screen.getByText(/^horse$/i)).toBeInTheDocument();
     expect(screen.getAllByText("I set out for Dust Fork on a 3-day badlands trail by mounted travel.")).toHaveLength(1);
     expect(screen.getByText("The first light caught the dust behind us, and the road stayed open.")).toBeInTheDocument();
+    const advanceButton = await screen.findByRole("button", { name: /advance travel day/i });
+    expect(diaryHeading.compareDocumentPosition(advanceButton) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /advance travel day/i })).toBeEnabled();
+      expect(advanceButton).toBeEnabled();
     });
   });
 
@@ -320,11 +322,13 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session, false, onTurnResult);
 
+    const diaryParagraph = await screen.findByText("The first light caught the dust behind us, and the road stayed open.");
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Wait it out" })).toBeEnabled();
       expect(screen.getByRole("button", { name: "Press on" })).toBeEnabled();
     });
     expect(screen.queryByRole("button", { name: /advance travel day/i })).not.toBeInTheDocument();
+    expect(diaryParagraph.compareDocumentPosition(screen.getByRole("button", { name: "Wait it out" })) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
 
     await user.click(screen.getByRole("button", { name: "Press on" }));
 
@@ -387,10 +391,12 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session, false, onTurnResult);
 
+    const diaryParagraph = await screen.findByText("The first light caught the dust behind us, and the road stayed open.");
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /enter town/i })).toBeEnabled();
     });
     expect(screen.queryByRole("button", { name: /advance travel day/i })).not.toBeInTheDocument();
+    expect(diaryParagraph.compareDocumentPosition(screen.getByRole("button", { name: /enter town/i })) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
 
     await user.click(screen.getByRole("button", { name: /enter town/i }));
 
@@ -415,5 +421,34 @@ describe("TravelPanel", () => {
     await waitFor(() => {
       expect(screen.queryByText(/refreshing trail pages from the backend/i)).not.toBeInTheDocument();
     });
+  });
+
+  it("renders encounter resolution prose without debug wording", async () => {
+    const session = createSession({
+      travelDiary: {
+        days: [
+          {
+            ...createSession().travelDiary!.days[0],
+            encounterResolution: {
+              choiceId: "fight",
+              choiceLabel: "Fight",
+              healthDelta: -5,
+              walletDelta: 0,
+              ammoSpent: 1,
+              heatIncrease: 1,
+              horseExhaustionDelta: 0,
+              continuedOnFoot: false,
+            },
+          },
+        ],
+      },
+    });
+
+    mockedGetGame.mockResolvedValue(session);
+
+    renderTravelPanel(session);
+
+    expect(await screen.findByText(/I stand and fight/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Choice .* shifted/i)).not.toBeInTheDocument();
   });
 });

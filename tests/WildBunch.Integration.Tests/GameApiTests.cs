@@ -38,6 +38,7 @@ public sealed class GameApiTests
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Empty(session.CaseFile.DiscoveredSuspects);
+        Assert.Equal(1000, session.Player.Health);
         Assert.NotEmpty(session.LogEntries);
 
         var connectedTownIds = session.World.Trails
@@ -236,6 +237,7 @@ public sealed class GameApiTests
 
         Assert.NotNull(createdSession);
         Assert.Equal(WildBunch.Domain.Travel.TravelDifficulty.Easy, createdSession!.TravelDifficulty);
+        Assert.Equal(1250, createdSession.Player.Health);
         Assert.Null(createdSession.Inventory.HorseState);
         Assert.DoesNotContain(createdSession.Inventory.Items, item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Horse);
         Assert.DoesNotContain(createdSession.Inventory.Items, item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Saddle);

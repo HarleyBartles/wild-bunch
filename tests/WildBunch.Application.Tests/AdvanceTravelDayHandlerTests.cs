@@ -73,7 +73,12 @@ public sealed class AdvanceTravelDayHandlerTests
     public async Task HandleAsyncReturnsFirstPersonDiaryForHorseLamenessAndFootFallback()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateProgressionSession(new HorseTravelState(0, 0, 2), TrailTerrain.Hills, WaterFeature.River);
+        var session = CreateProgressionSession(
+            HorseTravelState.Healthy,
+            TrailTerrain.Mountains,
+            WaterFeature.None,
+            trailRisk: TrailRisk.Moderate,
+            travelDifficulty: TravelDifficulty.Hard);
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository);
 
@@ -81,7 +86,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I had to finish the trail on foot", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("goes lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I keep moving", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(diaryDay.Entries, entry => entry.Contains("lame", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }
@@ -248,7 +254,8 @@ public sealed class AdvanceTravelDayHandlerTests
         WaterFeature waterFeature,
         bool withSaddle = true,
         int canteenCharges = 2,
-        TrailRisk trailRisk = TrailRisk.Low)
+        TrailRisk trailRisk = TrailRisk.Low,
+        TravelDifficulty travelDifficulty = TravelDifficulty.Normal)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
@@ -273,7 +280,7 @@ public sealed class AdvanceTravelDayHandlerTests
             items.Add(new InventoryItem(ItemKind.Saddle, 1));
         }
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new Inventory(items));
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new Inventory(items), travelDifficulty);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, midway.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);

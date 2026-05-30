@@ -227,23 +227,62 @@ function TravelActions() {
 function DayFooter({ day }: { day: TravelDiaryDayDto }) {
   const hasHorseState = day.horseStateBefore !== null || day.horseStateAfter !== null;
   const pieces = [
-    `Health ${formatSignedNumber(day.healthDelta)}`,
-    `Wallet ${formatSignedNumber(day.walletDelta, 2)}`,
-    `Food ${formatSignedNumber(day.foodDelta)}`,
-    `Canteen ${formatSignedNumber(day.canteenChargeDelta)}`,
-    `Ammo ${formatSignedNumber(-day.ammoSpent)}`,
-    `Heat ${formatSignedNumber(day.heatIncrease)}`,
+    `Health Δ ${formatSignedNumber(day.healthDelta)}`,
+    `Wallet Δ ${formatSignedNumber(day.walletDelta, 2)}`,
+    `Food Δ ${formatSignedNumber(day.foodDelta)}`,
+    `Canteen Δ ${formatSignedNumber(day.canteenChargeDelta)}`,
+    `Ammo Δ ${formatSignedNumber(-day.ammoSpent)}`,
+    `Heat Δ ${formatSignedNumber(day.heatIncrease)}`,
   ];
 
   if (hasHorseState) {
-    pieces.splice(3, 0, `Horse feed ${formatSignedNumber(day.horseFeedDelta)}`);
+    pieces.splice(3, 0, `Horse feed Δ ${formatSignedNumber(day.horseFeedDelta)}`);
   }
 
   return <DayMeta>{pieces.join(" | ")}</DayMeta>;
 }
 
+function renderResolutionSummary(resolution: NonNullable<TravelDiaryDayDto["encounterResolution"]>) {
+  switch (resolution.choiceId) {
+    case "run":
+      return "I run for it and keep the trail moving.";
+    case "fight":
+      return resolution.ammoSpent > 0
+        ? "I stand and fight, spending one round to force the rider off the trail."
+        : "I stand and fight with my knife and force the rider off the trail.";
+    case "bribe":
+      return "I pay my way through and keep moving.";
+    default:
+      return `I choose to ${resolution.choiceLabel.toLowerCase()}.`;
+  }
+}
+
 function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
   const hasHorseState = day.horseStateBefore !== null || day.horseStateAfter !== null;
+  const badgeState =
+    day.status === JourneyStatus.Completed
+      ? "arrival"
+      : day.status === JourneyStatus.Interrupted
+        ? "interrupted"
+        : day.encounterResolution
+          ? "resolved"
+          : day.trailEvent
+            ? "eventful"
+            : day.openingNarration
+              ? "departure"
+              : "quiet";
+  const badgeLabel =
+    badgeState === "arrival"
+      ? "Arrival"
+      : badgeState === "interrupted"
+        ? "Interrupted"
+        : badgeState === "resolved"
+          ? "Encounter resolved"
+          : badgeState === "eventful"
+            ? "Eventful"
+            : badgeState === "departure"
+              ? "Departure"
+              : "Quiet trail";
 
   return (
     <DiaryDayCard>
@@ -255,9 +294,7 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
             {formatTravelMode(day.endingTravelMode)} | {day.status === 0 ? "In motion" : formatJourneyStatus(day.status)}
           </DaySubhead>
         </div>
-        <DayBadge>
-          {day.pendingEncounter ? "Interrupted" : day.openingNarration ? "Departure" : day.trailEvent ? "Eventful" : "Quiet trail"}
-        </DayBadge>
+        <DayBadge data-state={badgeState}>{badgeLabel}</DayBadge>
       </DiaryDayHeader>
 
       <DiaryBody>
@@ -270,16 +307,15 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
       {day.trailEvent ? (
         <TrailNote>
           <strong>{day.trailEvent.title}</strong>
-          <p>{day.trailEvent.message}</p>
           <TrailNoteMeta>
-            <span>Wallet {formatSignedNumber(day.trailEvent.walletDelta, 2)}</span>
-            <span>Food {formatSignedNumber(day.trailEvent.foodDelta)}</span>
-            <span>Canteen {formatSignedNumber(day.trailEvent.canteenChargeDelta)}</span>
-            <span>Delay {formatSignedNumber(day.trailEvent.delayDays)}</span>
-            <span>Heat {formatSignedNumber(day.trailEvent.heatIncrease)}</span>
-            {hasHorseState ? <span>Horse hunger {formatSignedNumber(day.trailEvent.horseHungerDelta)}</span> : null}
-            {hasHorseState ? <span>Horse thirst {formatSignedNumber(day.trailEvent.horseThirstDelta)}</span> : null}
-            {hasHorseState ? <span>Horse exhaustion {formatSignedNumber(day.trailEvent.horseExhaustionDelta)}</span> : null}
+            <span>Wallet Δ {formatSignedNumber(day.trailEvent.walletDelta, 2)}</span>
+            <span>Food Δ {formatSignedNumber(day.trailEvent.foodDelta)}</span>
+            <span>Canteen Δ {formatSignedNumber(day.trailEvent.canteenChargeDelta)}</span>
+            <span>Delay Δ {formatSignedNumber(day.trailEvent.delayDays)}</span>
+            <span>Heat Δ {formatSignedNumber(day.trailEvent.heatIncrease)}</span>
+            {hasHorseState ? <span>Horse hunger Δ {formatSignedNumber(day.trailEvent.horseHungerDelta)}</span> : null}
+            {hasHorseState ? <span>Horse thirst Δ {formatSignedNumber(day.trailEvent.horseThirstDelta)}</span> : null}
+            {hasHorseState ? <span>Horse exhaustion Δ {formatSignedNumber(day.trailEvent.horseExhaustionDelta)}</span> : null}
           </TrailNoteMeta>
         </TrailNote>
       ) : null}
@@ -288,11 +324,15 @@ function DiaryDay({ day }: { day: TravelDiaryDayDto }) {
         <ResolutionNote>
           <strong>{day.encounterResolution.choiceLabel}</strong>
           <p>
-            Choice {day.encounterResolution.choiceId} shifted the day by health {formatSignedNumber(day.encounterResolution.healthDelta)}
-            , wallet {formatSignedNumber(day.encounterResolution.walletDelta, 2)}, ammo spent {day.encounterResolution.ammoSpent}, heat{" "}
-            {formatSignedNumber(day.encounterResolution.heatIncrease)}
-            {hasHorseState ? `, horse exhaustion ${formatSignedNumber(day.encounterResolution.horseExhaustionDelta)}` : ""}.
+            {renderResolutionSummary(day.encounterResolution)}
           </p>
+          <TrailNoteMeta>
+            <span>Health Δ {formatSignedNumber(day.encounterResolution.healthDelta)}</span>
+            <span>Wallet Δ {formatSignedNumber(day.encounterResolution.walletDelta, 2)}</span>
+            <span>Ammo Δ {formatSignedNumber(-day.encounterResolution.ammoSpent)}</span>
+            <span>Heat Δ {formatSignedNumber(day.encounterResolution.heatIncrease)}</span>
+            {hasHorseState ? <span>Horse exhaustion Δ {formatSignedNumber(day.encounterResolution.horseExhaustionDelta)}</span> : null}
+          </TrailNoteMeta>
         </ResolutionNote>
       ) : null}
 
@@ -400,7 +440,7 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
             <Eyebrow>Trail notebook</Eyebrow>
             <Title>Travel diary</Title>
             <Lead>
-              A player-facing trail log that keeps the road in first person, with the next action sitting beside the pages.
+              A player-facing trail log that keeps the road in first person, with the next action sitting below the pages.
             </Lead>
           </div>
           <HeaderMeta>
@@ -420,8 +460,8 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
 
         <TravelGrid>
           <TravelSummary />
-          <TravelActions />
           <TravelDiaryNotebook />
+          <TravelActions />
         </TravelGrid>
       </TravelStage>
     </TravelUiContext.Provider>
@@ -510,7 +550,9 @@ const SummaryCard = styled(Card)`
   grid-column: 1 / -1;
 `;
 
-const ActionCard = styled(Card)``;
+const ActionCard = styled(Card)`
+  grid-column: 1 / -1;
+`;
 
 const NotebookCard = styled(Card)`
   grid-column: 1 / -1;
@@ -712,6 +754,31 @@ const DayBadge = styled.span`
   background: rgba(255, 255, 255, 0.04);
   font-size: 0.78rem;
   white-space: nowrap;
+
+  &[data-state="arrival"] {
+    color: #1b1308;
+    background: linear-gradient(180deg, #f0d39b, #c8843d);
+    border-color: rgba(240, 211, 155, 0.58);
+  }
+
+  &[data-state="interrupted"] {
+    color: #ffe8e3;
+    background: rgba(240, 126, 110, 0.14);
+    border-color: rgba(240, 126, 110, 0.24);
+  }
+
+  &[data-state="resolved"] {
+    color: #def3e0;
+    background: rgba(95, 159, 111, 0.14);
+    border-color: rgba(95, 159, 111, 0.24);
+  }
+
+  &[data-state="eventful"],
+  &[data-state="departure"] {
+    color: #1b1308;
+    background: linear-gradient(180deg, #efc37e, #b87634);
+    border-color: rgba(239, 195, 126, 0.42);
+  }
 `;
 
 const DiaryBody = styled.div`

@@ -34,7 +34,7 @@ public sealed record TravelRouteProfile(
     IReadOnlyList<string> Warnings)
 {
     public int ExpectedDays(TravelMode mode)
-        => Math.Clamp(CalculateRemainingDays(RideDayDistance, mode), 2, 6);
+        => CalculateRemainingDays(RideDayDistance, mode);
 
     public decimal DailyRideDayProgress(TravelMode mode)
         => mode == TravelMode.Mounted ? MountedRideDayProgress : FootRideDayProgress;
@@ -113,6 +113,14 @@ public sealed record TravelJourneySnapshot(
     TravelDayPlanState? CurrentDayPlan,
     JourneyEncounterState? PendingEncounter,
     IReadOnlyList<string> Warnings);
+
+internal static class TravelWarningFilter
+{
+    public static IReadOnlyList<string> Filter(IReadOnlyList<string> warnings, bool mountedTravelAvailable)
+        => mountedTravelAvailable
+            ? warnings
+            : warnings.Where(warning => !warning.Contains("horse", StringComparison.OrdinalIgnoreCase)).ToArray();
+}
 
 public sealed record JourneyEncounterChoiceState(string Id, string Label);
 
@@ -1094,6 +1102,9 @@ public sealed class TravelJourney
         var waterSecure = JourneyUpkeepRules.HasRouteWater(Preview.RouteProfile.WaterFeature) || AvailableCanteenCharges >= requiredCanteenCharges;
         var canteenReserveCharges = AvailableCanteenCharges - requiredCanteenCharges;
         var delayMarginDays = canteenChargesPerDay == 0 ? 0 : Math.Max(0, canteenReserveCharges / canteenChargesPerDay);
+        var warnings = TravelWarningFilter.Filter(
+            Preview.Warnings,
+            Preview.MountedTravelAvailable && (HorseState?.CanProvideMountedTravelFor(travelRulesProfile) ?? false));
 
         return new(
             Preview.OriginTownId,
@@ -1125,7 +1136,7 @@ public sealed class TravelJourney
             DelayDays,
             CurrentDayPlan,
             PendingEncounter,
-            Preview.Warnings);
+            warnings);
     }
 
     public JourneyEncounterState? TryCreateEncounter(TravelRulesProfile? travelRulesProfile = null)
@@ -1195,7 +1206,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyCoinCache,
                 "Hidden coin cache",
-                $"You spot a hidden cache of trail coins and pocket an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
+                $"I spot a hidden cache of trail coins and pocket an extra ${travelRulesProfile.LuckyTrailCoinReward:0.00}.",
                 walletDelta: travelRulesProfile.LuckyTrailCoinReward);
         }
 
@@ -1204,7 +1215,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyFoodCache,
                 "Trail grub cache",
-                $"You find a cache of jerky and trail biscuits and gain {travelRulesProfile.LuckyTrailFoodReward} food.",
+                $"I find a cache of jerky and trail biscuits and gain {travelRulesProfile.LuckyTrailFoodReward} food.",
                 foodDelta: travelRulesProfile.LuckyTrailFoodReward);
         }
 
@@ -1213,7 +1224,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyWaterSeep,
                 "Hidden water seep",
-                $"You find a seep under the rocks and top off your canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
+                $"I find a seep under the rocks and top off my canteen by {travelRulesProfile.LuckyTrailWaterRecovery} charge(s).",
                 canteenChargeDelta: travelRulesProfile.LuckyTrailWaterRecovery);
         }
 
@@ -1222,7 +1233,7 @@ internal static class TrailEventCatalog
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckWashout,
                 "Washed-out trail",
-                $"A washout forces a detour and costs you {travelRulesProfile.BadLuckTrailDelayDays} extra delay day(s).",
+                $"A washout forces a detour and costs me {travelRulesProfile.BadLuckTrailDelayDays} extra delay day(s).",
                 delayDays: travelRulesProfile.BadLuckTrailDelayDays,
                 heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
         }
@@ -1351,6 +1362,8 @@ public sealed class TravelResolver
         {
             warnings.Add($"Your canteen has {canteenReserveCharges} spare charge(s) and can absorb {delayMarginDays} delay day(s).");
         }
+
+        warnings = new List<string>(TravelWarningFilter.Filter(warnings, mountedTravelAvailable));
 
         var preview = new TravelPreview(
             currentTownId,

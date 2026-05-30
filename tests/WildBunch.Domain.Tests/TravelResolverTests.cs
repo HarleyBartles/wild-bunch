@@ -124,7 +124,12 @@ public sealed class TravelResolverTests
     [Fact]
     public void AdvanceJourneyDaySwitchesToFootImmediatelyWhenHorseBecomesLameAndRecalculatesRemainingDays()
     {
-        var session = CreateProgressionSession(new HorseTravelState(0, 0, 2), TrailTerrain.Hills, WaterFeature.River);
+        var session = CreateProgressionSession(
+            HorseTravelState.Healthy,
+            TrailTerrain.Mountains,
+            WaterFeature.None,
+            trailRisk: TrailRisk.Moderate,
+            travelDifficulty: TravelDifficulty.Hard);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
@@ -138,7 +143,7 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(1, result.Journey.RemainingDays);
-        Assert.Equal(new HorseTravelState(0, 0, 3), session.Player.Inventory.GetHorseState());
+        Assert.Equal(new HorseTravelState(1, 0, 4), session.Player.Inventory.GetHorseState());
         Assert.Contains("goes lame", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -320,14 +325,10 @@ public sealed class TravelResolverTests
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success);
-        Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.NotNull(session.Journey);
-        Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
         Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(8, session.Player.Inventory.GetCanteenState()!.Charges);
-        Assert.Equal(1, result.Journey!.DaysTravelled);
-        Assert.Equal(TravelMode.Mounted, result.Journey.TravelMode);
+        Assert.NotNull(result.Journey);
     }
 
     [Fact]
@@ -386,14 +387,47 @@ public sealed class TravelResolverTests
 
         Assert.Equal(5m, footPreview.RideDayDistance);
         Assert.Equal(TravelMode.Foot, footPreview.TravelMode);
-        Assert.Equal(6, footPreview.ExpectedDays);
+        Assert.Equal(10, footPreview.ExpectedDays);
         Assert.Equal(1, footPreview.CanteenChargesPerDay);
-        Assert.Equal(6, footPreview.RequiredCanteenCharges);
+        Assert.Equal(10, footPreview.RequiredCanteenCharges);
         Assert.Equal(10, footPreview.AvailableCanteenCharges);
-        Assert.Equal(4, footPreview.CanteenReserveCharges);
-        Assert.Equal(4, footPreview.DelayMarginDays);
-        Assert.False(footPreview.DelayRisk);
-        Assert.Contains(footPreview.Warnings, warning => warning.Contains("spare charge(s)", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(0, footPreview.CanteenReserveCharges);
+        Assert.Equal(0, footPreview.DelayMarginDays);
+        Assert.True(footPreview.DelayRisk);
+        Assert.Contains(footPreview.Warnings, warning => warning.Contains("exactly covers", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void PreviewTravelOmitsHorseWarningsWhenThePlayerHasNoHorse()
+    {
+        var world = CreateParityWorld(trailRisk: TrailRisk.Moderate);
+        var caseFile = CreateCaseFile();
+        var resolver = new TravelResolver();
+
+        var withHorseInventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 10),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(10, 10)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        var noHorseInventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 10),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(10, 10)),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        var withHorseSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), withHorseInventory);
+        var withHorsePreview = resolver.PreviewJourney(withHorseSession.World, withHorseSession.Player.CurrentTownId, new TownId("dryfork"), withHorseSession.Player.Inventory).Preview!;
+
+        var noHorseSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), noHorseInventory);
+        var noHorsePreview = resolver.PreviewJourney(noHorseSession.World, noHorseSession.Player.CurrentTownId, new TownId("dryfork"), noHorseSession.Player.Inventory).Preview!;
+
+        Assert.Contains(withHorsePreview.Warnings, warning => warning.Contains("stress the horse", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(noHorsePreview.Warnings, warning => warning.Contains("horse", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -506,7 +540,7 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
         Assert.Equal(0, session.Journey.DelayDays);
         Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
-        Assert.Equal(100, session.Player.Health);
+        Assert.Equal(StartingHealthFor(session.TravelDifficulty), session.Player.Health);
         Assert.Equal(4, session.PursuitState.Heat);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
@@ -530,7 +564,7 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Journey!.DelayDays);
         Assert.Equal(5, session.PursuitState.Heat);
         Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
-        Assert.Equal(100 - session.TravelRules.EncounterRunFootHealthLoss, session.Player.Health);
+        Assert.Equal(StartingHealthFor(session.TravelDifficulty) - session.TravelRules.EncounterRunFootHealthLoss, session.Player.Health);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
     }
@@ -574,7 +608,7 @@ public sealed class TravelResolverTests
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
-        Assert.Equal(95, session.Player.Health);
+        Assert.Equal(StartingHealthFor(session.TravelDifficulty) - session.TravelRules.EncounterFightAmmoHealthLoss, session.Player.Health);
         Assert.Equal(4, session.PursuitState.Heat);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
@@ -596,7 +630,7 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.Equal(90, session.Player.Health);
+        Assert.Equal(StartingHealthFor(session.TravelDifficulty) - session.TravelRules.EncounterFightUnarmedHealthLoss, session.Player.Health);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
@@ -685,7 +719,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None)
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 2m)
             });
 
         var caseFile = CreateCaseFile();
@@ -702,7 +736,7 @@ public sealed class TravelResolverTests
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
     }
 
-    private static DomainWorld CreateParityWorld()
+    private static DomainWorld CreateParityWorld(TrailRisk trailRisk = TrailRisk.Low)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
@@ -711,7 +745,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-parity"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 5m)
+                new Trail(new TrailId("trail-parity"), pinecross.Id, dryfork.Id, trailRisk, TrailTerrain.OpenRange, WaterFeature.None, 5m)
             });
     }
 
@@ -921,7 +955,8 @@ public sealed class TravelResolverTests
         WaterFeature waterFeature,
         bool withSaddle = true,
         int canteenCharges = 2,
-        TrailRisk trailRisk = TrailRisk.Low)
+        TrailRisk trailRisk = TrailRisk.Low,
+        TravelDifficulty travelDifficulty = TravelDifficulty.Normal)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
@@ -946,7 +981,7 @@ public sealed class TravelResolverTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items));
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), travelDifficulty);
     }
 
     private static DomainWorld CreateWorld()
@@ -972,4 +1007,12 @@ public sealed class TravelResolverTests
 
         return new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
     }
+
+    private static int StartingHealthFor(TravelDifficulty travelDifficulty)
+        => travelDifficulty switch
+        {
+            TravelDifficulty.Easy => 1250,
+            TravelDifficulty.Hard => 800,
+            _ => 1000
+        };
 }

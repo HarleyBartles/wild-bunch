@@ -86,7 +86,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var player = new Player(
             playerName,
             startingTown.Id,
-            health: 100,
+            health: StartingHealthFor(travelDifficulty),
             wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m),
             inventory ?? DomainInventory.Empty());
         var session = new GameSession(
@@ -103,6 +103,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
     }
+
+    private static int StartingHealthFor(TravelDifficulty travelDifficulty)
+        => travelDifficulty switch
+        {
+            TravelDifficulty.Easy => 1250,
+            TravelDifficulty.Hard => 800,
+            _ => 1000
+        };
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
@@ -406,7 +414,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var currentHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
         var currentCanteenCharges = Player.Inventory.GetCanteenState()?.Charges ?? 0;
         var openingNarration = startingDaysRemaining == journeySnapshot.ExpectedDays ? Journey?.OpeningNarration : null;
-        var extraEntriesProvided = entries is not null && entries.Count > 0;
         var effectiveTrailEvent = trailEvent;
         var effectivePendingEncounter = pendingEncounter ?? journeySnapshot.PendingEncounter;
         var effectiveEncounterResolution = encounterResolution;
@@ -421,22 +428,51 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             effectivePendingEncounter,
             effectiveEncounterResolution);
 
-        var diaryEntries = BuildDefaultDiaryEntries(
-            journeySnapshot,
-            openingNarration,
-            journeyBeat,
-            resourceBeat,
-            extraEntriesProvided ? null : effectiveTrailEvent,
-            extraEntriesProvided ? null : effectivePendingEncounter,
-            extraEntriesProvided ? null : effectiveEncounterResolution);
-        if (startingTravelMode == TravelMode.Mounted && journeySnapshot.TravelMode == TravelMode.Foot)
+        var diaryEntries = new List<string>();
+        if (!string.IsNullOrWhiteSpace(journeyBeat))
         {
-            diaryEntries = diaryEntries.Append("I had to finish the trail on foot after the horse went lame.").ToArray();
+            diaryEntries.Add(journeyBeat!);
         }
+
+        if (!string.IsNullOrWhiteSpace(resourceBeat))
+        {
+            diaryEntries.Add(resourceBeat!);
+        }
+
         if (entries is not null && entries.Count > 0)
         {
-            diaryEntries = diaryEntries.Concat(entries).ToArray();
+            diaryEntries.AddRange(entries);
         }
+        else
+        {
+            if (effectiveTrailEvent is not null)
+            {
+                diaryEntries.Add(effectiveTrailEvent.Message);
+            }
+
+            if (startingTravelMode == TravelMode.Mounted && journeySnapshot.TravelMode == TravelMode.Foot)
+            {
+                diaryEntries.Add("I had to finish the trail on foot after the horse went lame.");
+            }
+
+            if (effectivePendingEncounter is not null && effectiveEncounterResolution is null)
+            {
+                diaryEntries.Add(effectivePendingEncounter.Message);
+            }
+
+            if (effectiveEncounterResolution is not null)
+            {
+                diaryEntries.Add(effectiveEncounterResolution.ChoiceId switch
+                {
+                    "run" => "I decided to run for it.",
+                    "fight" => "I decided to stand and fight.",
+                    "bribe" => "I decided to bribe my way through.",
+                    _ => $"I chose to {effectiveEncounterResolution.ChoiceLabel.ToLowerInvariant()}."
+                });
+            }
+        }
+
+        diaryEntries.Add(RenderStatus(journeySnapshot));
 
         return new TravelDiaryDayState(
             journeySnapshot.DaysTravelled,
@@ -516,15 +552,25 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         entries.Add(journeySnapshot.Status switch
         {
-            JourneyStatus.Active => "The trail keeps stretching ahead.",
+            JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
             JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
             JourneyStatus.Completed => $"I made it to {journeySnapshot.DestinationTownName}.",
-            JourneyStatus.Failed => "The trail gave out before I could finish it.",
+            JourneyStatus.Failed => "I could not finish the trail before it gave out.",
             _ => "I am still on the trail."
         });
 
         return entries;
     }
+
+    private static string RenderStatus(TravelJourneySnapshot journeySnapshot)
+        => journeySnapshot.Status switch
+        {
+            JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
+            JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
+            JourneyStatus.Completed => $"I made it to {journeySnapshot.DestinationTownName}.",
+            JourneyStatus.Failed => "I could not finish the trail before it gave out.",
+            _ => "I am still on the trail."
+        };
 
     private TravelJourneyStepResult AdvanceJourneyDayDeterministic()
     {
@@ -1157,8 +1203,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 PursuitState.IncreaseHeat(TravelRules.EncounterFightHeatIncrease);
                 Journey.ResumeFromEncounter();
                 var fightMessage = usedFirearm
-                    ? $"You spend a round and take {fightHealthLoss} health damage before forcing the rider off the trail."
-                    : $"You fight with your knife and take {fightHealthLoss} health damage before forcing the rider off the trail.";
+                    ? $"I spend a round and lose {fightHealthLoss} health before forcing the rider off the trail."
+                    : $"I fight with my knife and lose {fightHealthLoss} health before forcing the rider off the trail.";
                 AddLogEntry(GameLogEntryKind.Travel, fightMessage);
                 dayEntries.Add(fightMessage);
                 var resolution = new TravelDiaryEncounterResolutionState(
@@ -1392,8 +1438,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var horsePressure = preview.HorseState is null
             ? "I am traveling without a horse, so the road will have to be enough."
             : preview.MountedTravelAvailable
-                ? "The horse is fit enough to carry me for now."
-                : "The horse is not fit for mounted travel, so I will need to mind the pace.";
+                ? "My horse is fit enough to carry me for now."
+                : "My horse is not fit for mounted travel, so I will need to mind the pace.";
 
         var openingSentence = preview.TravelMode == TravelMode.Foot
             ? preview.ExpectedDays != preview.BaselineRideDays
@@ -1414,7 +1460,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return pendingEncounter.Kind switch
             {
-                "foe" => "A hard-eyed rider steps out from the brush and stops the day cold.",
+                "foe" => "I stop cold when a hard-eyed rider steps out from the brush.",
                 _ => "Something on the trail makes me stop and square up."
             };
         }
@@ -1434,19 +1480,19 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return trailEvent.Id switch
             {
-                JourneyTrailEventId.LuckyCoinCache => "The trail offers a little luck when I need it most.",
+                JourneyTrailEventId.LuckyCoinCache => "I find a little luck when I need it most.",
                 JourneyTrailEventId.LuckyFoodCache => "I catch the smell of good luck and fresh grub on the wind.",
                 JourneyTrailEventId.LuckyWaterSeep => "I follow a faint trace of damp earth and find a hidden seep.",
-                JourneyTrailEventId.BadLuckWashout => "The trail caves in and makes me earn every mile.",
-                JourneyTrailEventId.BadLuckFoodLoss => "The dust turns mean and I have to keep my temper in check.",
-                JourneyTrailEventId.BadLuckSpookedHorse => "The horse flinches at the wrong sound and the day goes sideways.",
+                JourneyTrailEventId.BadLuckWashout => "I have to earn every mile when the trail caves in.",
+                JourneyTrailEventId.BadLuckFoodLoss => "I keep my temper in check while the dust turns mean.",
+                JourneyTrailEventId.BadLuckSpookedHorse => "My horse flinches at the wrong sound, and I pay for it the rest of the day.",
                 _ => trailEvent.Message
             };
         }
 
         if (journeySnapshot.DaysTravelled % 6 == 0)
         {
-            return "The trail goes quiet enough that I can hear leather creak and wind move through the brush.";
+            return "I ride through enough quiet that I can hear leather creak and wind move through the brush.";
         }
 
         return journeySnapshot.RouteProfile.Terrain switch
@@ -1455,10 +1501,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 ? "I cross open range with the horse moving steady under me."
                 : "I walk the open range and let the horizon keep me honest.",
             TrailTerrain.Hills => journeySnapshot.TravelMode == TravelMode.Mounted
-                ? "The hills make the horse work for every rise, but the miles still move."
+                ? "I make the horse work for every rise, but the miles still move."
                 : "The hills keep asking for another climb, and I keep answering.",
-            TrailTerrain.Badlands => "The badlands stay hard and dry, but the road still has to be followed.",
-            TrailTerrain.Mountains => "The trail climbs hard, and I keep picking my way upward.",
+            TrailTerrain.Badlands => "I keep following the road through hard, dry badlands.",
+            TrailTerrain.Mountains => "I keep picking my way upward as the trail climbs hard.",
             _ => "I keep moving and let the road tell me what kind of day it is."
         };
     }
@@ -1483,7 +1529,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         {
             if (currentCanteenCharges == 0)
             {
-                pieces.Add("The canteen is dry, so every mile starts to matter.");
+                pieces.Add("My canteen is dry, so every mile starts to matter.");
             }
             else if (currentCanteenCharges <= journeySnapshot.CanteenChargesPerDay)
             {
@@ -1502,11 +1548,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (currentHorseFeed == 0 && journeySnapshot.HorseState is not null)
         {
-            pieces.Add("The horse feed is gone, so I have to watch the horse more closely.");
+            pieces.Add("My horse feed is gone, so I have to watch the horse more closely.");
         }
         else if (currentHorseFeed == 1 && journeySnapshot.HorseState is not null)
         {
-            pieces.Add("The horse feed is down to the last handful.");
+            pieces.Add("I am down to the last handful of horse feed.");
         }
 
         if (pendingEncounter is not null && encounterResolution is null && journeySnapshot.Warnings.Count > 0)

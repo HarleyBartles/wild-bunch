@@ -74,6 +74,11 @@ public static class TravelDiaryMapper
             RenderJourneyBeat(day)
         };
 
+        if (!string.IsNullOrWhiteSpace(day.ResourceBeat))
+        {
+            entries.Add(day.ResourceBeat!);
+        }
+
         if (day.TrailEvent is not null)
         {
             entries.Add(RenderTrailEvent(day.TrailEvent));
@@ -86,11 +91,6 @@ public static class TravelDiaryMapper
             {
                 entries.Add(horseEntry);
             }
-        }
-
-        if (!string.IsNullOrWhiteSpace(day.ResourceBeat))
-        {
-            entries.Add(day.ResourceBeat!);
         }
 
         if (day.PendingEncounter is not null && day.EncounterResolution is null)
@@ -124,9 +124,9 @@ public static class TravelDiaryMapper
             WildBunch.Domain.Travel.JourneyTrailEventId.LuckyCoinCache => $"I found a hidden cache of trail coins and pocketed ${trailEvent.WalletDelta:0.00}.",
             WildBunch.Domain.Travel.JourneyTrailEventId.LuckyFoodCache => $"I found a cache of jerky and trail biscuits and picked up {trailEvent.FoodDelta} food.",
             WildBunch.Domain.Travel.JourneyTrailEventId.LuckyWaterSeep => $"I found a seep under the rocks and topped off my canteen by {trailEvent.CanteenChargeDelta} charge(s).",
-            WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckWashout => $"A washout forced a detour and cost me {trailEvent.DelayDays} extra day(s).",
-            WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckFoodLoss => $"A dust storm stripped away {Math.Abs(trailEvent.FoodDelta)} food and {Math.Abs(trailEvent.CanteenChargeDelta)} canteen charge(s).",
-            WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckSpookedHorse => "A canyon echo spooked my horse and left him more exhausted.",
+            WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckWashout => $"I lost {trailEvent.DelayDays} extra day(s) to a washout detour.",
+            WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckFoodLoss => $"I lost {Math.Abs(trailEvent.FoodDelta)} food and {Math.Abs(trailEvent.CanteenChargeDelta)} canteen charge(s) to a dust storm.",
+            WildBunch.Domain.Travel.JourneyTrailEventId.BadLuckSpookedHorse => "My horse got spooked by a canyon echo and came out more exhausted.",
             _ => trailEvent.Message
         };
 
@@ -176,7 +176,7 @@ public static class TravelDiaryMapper
                 : choices.Length == 2
                     ? $"I can {choices[0]} or {choices[1]}."
                     : $"I can {string.Join(", ", choices.Take(choices.Length - 1))}, or {choices[^1]}.";
-        return $"A hard-eyed trail rider stepped out from the brush and blocked my way. {choiceText}";
+        return $"I stop cold when a hard-eyed trail rider steps out from the brush. {choiceText}";
     }
 
     private static string RenderEncounterDecision(DomainTravelDiaryEncounterResolutionState resolution)
@@ -184,7 +184,7 @@ public static class TravelDiaryMapper
         {
             "run" => "I decided to run for it.",
             "fight" => "I decided to stand and fight.",
-            "bribe" => "I decided to bribe him.",
+            "bribe" => "I decided to bribe the rider.",
             _ => $"I chose to {resolution.ChoiceLabel.ToLowerInvariant()}."
         };
 
@@ -212,12 +212,8 @@ public static class TravelDiaryMapper
 
             case "fight":
                 pieces.Add(resolution.AmmoSpent > 0
-                    ? $"I spent {resolution.AmmoSpent} round(s) and forced the rider off the trail."
-                    : "I fought with my knife and forced the rider off the trail.");
-                if (resolution.HealthDelta < 0)
-                {
-                    pieces.Add($"It cost me {Math.Abs(resolution.HealthDelta)} health.");
-                }
+                    ? $"I spent {resolution.AmmoSpent} round(s) and lost {Math.Abs(resolution.HealthDelta)} health before forcing the rider off the trail."
+                    : $"I fought with my knife and lost {Math.Abs(resolution.HealthDelta)} health before forcing the rider off the trail.");
                 break;
 
             case "bribe":
@@ -236,10 +232,10 @@ public static class TravelDiaryMapper
     private static string RenderStatus(DomainTravelDiaryDayState day)
         => day.Status switch
         {
-            WildBunch.Domain.Travel.JourneyStatus.Active => "The trail keeps stretching ahead.",
+            WildBunch.Domain.Travel.JourneyStatus.Active => "I keep moving and let the trail stretch ahead.",
             WildBunch.Domain.Travel.JourneyStatus.Interrupted => "I am stuck until I decide how to answer the rider.",
             WildBunch.Domain.Travel.JourneyStatus.Completed => $"I made it to {day.DestinationTownName}.",
-            WildBunch.Domain.Travel.JourneyStatus.Failed => "The trail gave out before I could finish it.",
+            WildBunch.Domain.Travel.JourneyStatus.Failed => "I could not finish the trail before it gave out.",
             _ => "I am still on the trail."
         };
 }

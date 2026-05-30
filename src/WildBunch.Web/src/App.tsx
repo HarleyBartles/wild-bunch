@@ -348,8 +348,8 @@ export default function App() {
                     <dd>{currentTown ? `${currentTown.name} (${currentTown.id})` : session.player.currentTownId}</dd>
                   </div>
                   <div>
-                    <dt>Health</dt>
-                    <dd>{session.player.health}</dd>
+                    <dt>Current health</dt>
+                    <dd>{session.player.health.toLocaleString()}</dd>
                   </div>
                   <div>
                     <dt>Heat</dt>
