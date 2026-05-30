@@ -133,6 +133,9 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded.Journey.PendingEncounter);
         Assert.Equal("foe", reloaded.Journey.PendingEncounter!.Kind);
         Assert.Equal(3, reloaded.Journey.PendingEncounter.Choices.Count);
+        Assert.NotNull(reloaded.Journey.PendingEncounter.FoeProfile);
+        Assert.Equal(0, reloaded.Journey.PendingEncounter.ResolutionAttempts);
+        Assert.Equal(loaded.Journey.PendingEncounter!.FoeProfile, reloaded.Journey.PendingEncounter.FoeProfile);
     }
 
     [Fact]

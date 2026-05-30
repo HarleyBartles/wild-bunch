@@ -17,7 +17,13 @@ interface TravelPanelState {
   actionError: string | null;
   advanceTravelDay: () => Promise<void>;
   acknowledgeTravelArrival: () => Promise<void>;
-  resolveTravelEncounter: (choiceId: string) => Promise<void>;
+  resolveTravelEncounter: (
+    choiceId: string,
+    options?: {
+      bulletSpend?: number | null;
+      bribeAmount?: number | null;
+    },
+  ) => Promise<void>;
 }
 
 function useTravelMutationState(gameId: string, onTurnResult: UseTravelPanelStateArgs["onTurnResult"]) {
@@ -40,7 +46,11 @@ function useTravelMutationState(gameId: string, onTurnResult: UseTravelPanelStat
   });
 
   const resolveMutation = useMutation({
-    mutationFn: (choiceId: string) => resolveTravelEncounter(gameId, choiceId),
+    mutationFn: (payload: { choiceId: string; bulletSpend?: number | null; bribeAmount?: number | null }) =>
+      resolveTravelEncounter(gameId, payload.choiceId, {
+        bulletSpend: payload.bulletSpend,
+        bribeAmount: payload.bribeAmount,
+      }),
     onSuccess: async (result) => {
       await onTurnResult(result);
       await queryClient.invalidateQueries({ queryKey: ["travel-session", gameId] });
@@ -78,8 +88,18 @@ export function useTravelPanelState({ gameId, session, busy, onTurnResult }: Use
     acknowledgeTravelArrival: async () => {
       await acknowledgeMutation.mutateAsync();
     },
-    resolveTravelEncounter: async (choiceId: string) => {
-      await resolveMutation.mutateAsync(choiceId);
+    resolveTravelEncounter: async (
+      choiceId: string,
+      options?: {
+        bulletSpend?: number | null;
+        bribeAmount?: number | null;
+      },
+    ) => {
+      await resolveMutation.mutateAsync({
+        choiceId,
+        bulletSpend: options?.bulletSpend ?? null,
+        bribeAmount: options?.bribeAmount ?? null,
+      });
     },
   };
 }

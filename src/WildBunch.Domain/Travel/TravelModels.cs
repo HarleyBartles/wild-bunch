@@ -145,6 +145,31 @@ public sealed class TravelJourney
         PendingEncounter = encounter;
     }
 
+    public void UpdatePendingEncounter(JourneyEncounterState encounter)
+    {
+        ArgumentNullException.ThrowIfNull(encounter);
+
+        PendingEncounter = encounter;
+
+        if (CurrentDayPlan is null)
+        {
+            Status = JourneyStatus.Interrupted;
+            return;
+        }
+
+        var updatedEncounters = CurrentDayPlan.Encounters
+            .Select((dayEncounter, index) => index == CurrentDayPlan.CurrentEncounterIndex
+                ? dayEncounter with { PendingEncounter = encounter }
+                : dayEncounter)
+            .ToArray();
+
+        CurrentDayPlan = CurrentDayPlan with
+        {
+            Encounters = updatedEncounters
+        };
+        Status = JourneyStatus.Interrupted;
+    }
+
     public void ResumeFromEncounter()
     {
         Status = JourneyStatus.Active;

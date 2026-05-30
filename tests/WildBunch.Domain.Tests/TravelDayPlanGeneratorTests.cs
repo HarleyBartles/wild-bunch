@@ -459,6 +459,11 @@ public sealed class TravelDayPlanGeneratorTests
             return false;
         }
 
+        if (!Equals(left.FoeProfile, right.FoeProfile) || left.ResolutionAttempts != right.ResolutionAttempts)
+        {
+            return false;
+        }
+
         for (var index = 0; index < left.Choices.Count; index++)
         {
             if (left.Choices[index].Id != right.Choices[index].Id || left.Choices[index].Label != right.Choices[index].Label)

@@ -129,7 +129,7 @@ public static class TravelEndpoints
         try
         {
             var result = await handler.HandleAsync(
-                new ResolveJourneyEncounterCommand(id, validatedRequest.ChoiceId),
+                new ResolveJourneyEncounterCommand(id, validatedRequest.ChoiceId, validatedRequest.BulletSpend, validatedRequest.BribeAmount),
                 cancellationToken);
             return Results.Ok(result);
         }

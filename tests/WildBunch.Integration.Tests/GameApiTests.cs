@@ -360,6 +360,11 @@ public sealed class GameApiTests
         Assert.Equal(3, dryForkTravel.Journey.PendingEncounter.Choices.Count);
         Assert.Equal(new[] { "run", "fight", "bribe" }, dryForkTravel.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
         Assert.Equal(10, dryForkTravel.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        var dryForkPayload = await travelToDryForkResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("foeProfile", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("minimumBribe", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("fightStrength", dryForkPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("resolutionAttempts", dryForkPayload, StringComparison.OrdinalIgnoreCase);
 
         var blockedAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -375,7 +380,7 @@ public sealed class GameApiTests
 
         var resolveResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel/encounter/resolve",
-            new { ChoiceId = "run" });
+            new { ChoiceId = "run", BulletSpend = 3, BribeAmount = 7m });
 
         Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
 

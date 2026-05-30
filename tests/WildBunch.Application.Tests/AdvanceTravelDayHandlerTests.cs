@@ -67,7 +67,7 @@ public sealed class AdvanceTravelDayHandlerTests
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, result.JourneyStatus);
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Single(diaryDay.Entries, entry => entry.Contains("A hard-eyed rider", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(diaryDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(diaryDay.Entries, entry => entry.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
     }

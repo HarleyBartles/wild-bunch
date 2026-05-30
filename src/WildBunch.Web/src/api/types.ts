@@ -47,6 +47,8 @@ export interface TravelRequest {
 
 export interface ResolveJourneyEncounterRequest {
   choiceId: string;
+  bulletSpend?: number | null;
+  bribeAmount?: number | null;
 }
 
 export interface GameClockDto {

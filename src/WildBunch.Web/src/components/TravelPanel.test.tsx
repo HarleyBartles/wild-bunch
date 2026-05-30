@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TravelPanel } from "./TravelPanel";
 import { acknowledgeTravelArrival, advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
@@ -327,18 +327,23 @@ describe("TravelPanel", () => {
     expect(screen.queryByText(/horse feed/i)).not.toBeInTheDocument();
   });
 
-  it("shows pending encounter choices as buttons and resolves the selected choice", async () => {
+  it("submits a chosen bullet spend when resolving a fight encounter", async () => {
     const user = userEvent.setup();
     const onTurnResult = vi.fn().mockResolvedValue(undefined);
     const session = createSession({
+      inventory: {
+        ...createSession().inventory,
+        items: [{ kind: 7, quantity: 4, horseState: null, canteenState: null }],
+      },
       journey: {
         ...createSession().journey!,
         pendingEncounter: {
           kind: "Dust storm",
           message: "The canyon mouth is blocked by swirling grit.",
           choices: [
-            { id: "wait-it-out", label: "Wait it out" },
-            { id: "press-on", label: "Press on" },
+            { id: "run", label: "Run" },
+            { id: "fight", label: "Fight" },
+            { id: "bribe", label: "Bribe" },
           ],
         },
       },
@@ -357,18 +362,55 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session, false, onTurnResult);
 
-    const diaryParagraph = await screen.findByText("The first light caught the dust behind us, and the road stayed open.");
+    const fightBullets = await screen.findByLabelText(/fight bullets/i);
+    fireEvent.change(fightBullets, { target: { value: "3" } });
+
+    await user.click(screen.getByRole("button", { name: "Fight" }));
+
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Wait it out" })).toBeEnabled();
-      expect(screen.getByRole("button", { name: "Press on" })).toBeEnabled();
+      expect(mockedResolveTravelEncounter).toHaveBeenCalledWith("game-1", "fight", { bulletSpend: 3, bribeAmount: null });
+      expect(onTurnResult).toHaveBeenCalledWith(result);
     });
-    expect(screen.queryByRole("button", { name: /advance travel day/i })).not.toBeInTheDocument();
-    expect(diaryParagraph.compareDocumentPosition(screen.getByRole("button", { name: "Wait it out" })) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  });
 
-    await user.click(screen.getByRole("button", { name: "Press on" }));
+  it("submits a chosen bribe amount when resolving a bribe encounter", async () => {
+    const user = userEvent.setup();
+    const onTurnResult = vi.fn().mockResolvedValue(undefined);
+    const session = createSession({
+      journey: {
+        ...createSession().journey!,
+        pendingEncounter: {
+          kind: "Dust storm",
+          message: "The canyon mouth is blocked by swirling grit.",
+          choices: [
+            { id: "run", label: "Run" },
+            { id: "fight", label: "Fight" },
+            { id: "bribe", label: "Bribe" },
+          ],
+        },
+      },
+    });
+    const result: GameTurnResultDto = {
+      success: true,
+      message: "Encounter resolved.",
+      currentSession: session,
+      journeyStatus: 0,
+      journey: session.journey,
+      travelDiary: session.travelDiary,
+    };
+
+    mockedGetGame.mockResolvedValue(session);
+    mockedResolveTravelEncounter.mockResolvedValue(result);
+
+    renderTravelPanel(session, false, onTurnResult);
+
+    const bribeAmount = await screen.findByLabelText(/bribe amount/i);
+    fireEvent.change(bribeAmount, { target: { value: "7.25" } });
+
+    await user.click(screen.getByRole("button", { name: "Bribe" }));
 
     await waitFor(() => {
-      expect(mockedResolveTravelEncounter).toHaveBeenCalledWith("game-1", "press-on");
+      expect(mockedResolveTravelEncounter).toHaveBeenCalledWith("game-1", "bribe", { bulletSpend: null, bribeAmount: 7.25 });
       expect(onTurnResult).toHaveBeenCalledWith(result);
     });
   });

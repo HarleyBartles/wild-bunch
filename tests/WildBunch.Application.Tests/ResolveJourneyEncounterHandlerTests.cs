@@ -23,7 +23,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
 
-        var result = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "run"));
+        var result = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "run", ForcedRoll: 0UL));
 
         Assert.True(result.Success);
         Assert.NotNull(result.TravelDiary);
@@ -45,7 +45,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Single(advanceResult.TravelDiary!.Days);
 
-        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "run"));
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "run", ForcedRoll: 0UL));
 
         Assert.True(resolveResult.Success);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
@@ -65,7 +65,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
 
-        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "fight"));
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "fight", BulletSpend: 2, ForcedRoll: 0UL));
 
         Assert.True(resolveResult.Success);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
@@ -73,10 +73,30 @@ public sealed class ResolveJourneyEncounterHandlerTests
         Assert.Equal(
             resolveResult.CurrentSession.Inventory.Items.Where(item => item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo).Sum(item => item.Quantity),
             resolvedDay.CurrentAmmo);
-        Assert.Equal(1, resolvedDay.EncounterResolution!.AmmoSpent);
+        Assert.Equal(2, resolvedDay.EncounterResolution!.AmmoSpent);
     }
 
-    private static GameSession CreateHighRiskSession()
+    [Fact]
+    public async Task HandleAsyncPersistsBribeAmountsIntoTheResolvedTravelDiary()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        repository.Seed(session);
+        var advanceHandler = new AdvanceTravelDayHandler(repository);
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository);
+
+        var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
+
+        var resolveResult = await resolveHandler.HandleAsync(new ResolveJourneyEncounterCommand(session.Id.Value, "bribe", BribeAmount: 7m, ForcedRoll: 0UL));
+
+        Assert.True(resolveResult.Success);
+        var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
+        Assert.Equal(3m, resolveResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(-7m, resolvedDay.EncounterResolution!.WalletDelta);
+    }
+
+    private static GameSession CreateHighRiskSession(Wallet? wallet = null)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
@@ -99,7 +119,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
             new InventoryItem(ItemKind.RevolverAmmo, 2)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);

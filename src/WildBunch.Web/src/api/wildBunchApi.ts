@@ -132,10 +132,21 @@ export function acknowledgeTravelArrival(gameId: string) {
   });
 }
 
-export function resolveTravelEncounter(gameId: string, choiceId: string) {
+export function resolveTravelEncounter(
+  gameId: string,
+  choiceId: string,
+  options?: {
+    bulletSpend?: number | null;
+    bribeAmount?: number | null;
+  },
+) {
   return requestJson<GameTurnResultDto>(`/api/games/${gameId}/travel/encounter/resolve`, {
     method: "POST",
-    body: JSON.stringify({ choiceId } satisfies ResolveJourneyEncounterRequest),
+    body: JSON.stringify({
+      choiceId,
+      bulletSpend: options?.bulletSpend ?? null,
+      bribeAmount: options?.bribeAmount ?? null,
+    } satisfies ResolveJourneyEncounterRequest),
   });
 }
 

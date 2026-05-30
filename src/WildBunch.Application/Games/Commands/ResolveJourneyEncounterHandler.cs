@@ -20,7 +20,7 @@ public sealed class ResolveJourneyEncounterHandler
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var result = session.ResolveJourneyEncounter(command.ChoiceId);
+        var result = session.ResolveJourneyEncounter(command.ChoiceId, command.BulletSpend, command.BribeAmount, command.ForcedRoll);
 
         await _gameSessionRepository.SaveIfAsync(session, result.SessionChanged, cancellationToken).ConfigureAwait(false);
 

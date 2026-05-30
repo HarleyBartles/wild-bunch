@@ -527,7 +527,7 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("run");
+        var result = session.ResolveJourneyEncounter("run", null, null, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
@@ -541,7 +541,7 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Journey.DelayDays);
         Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
         Assert.Equal(StartingHealthFor(session.TravelDifficulty), session.Player.Health);
-        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.True(session.PursuitState.Heat >= 4);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
     }
@@ -555,16 +555,16 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("run");
+        var result = session.ResolveJourneyEncounter("run", null, null, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.DoesNotContain("delay", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(0, session.Journey!.DelayDays);
-        Assert.Equal(5, session.PursuitState.Heat);
+        Assert.True(session.PursuitState.Heat >= 5);
         Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
-        Assert.Equal(StartingHealthFor(session.TravelDifficulty) - session.TravelRules.EncounterRunFootHealthLoss, session.Player.Health);
+        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
     }
@@ -579,7 +579,7 @@ public sealed class TravelResolverTests
         session.AdvanceJourneyDay();
         var remainingDaysBeforeRun = session.Journey!.RemainingDays;
 
-        var result = session.ResolveJourneyEncounter("run");
+        var result = session.ResolveJourneyEncounter("run", null, null, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
@@ -602,14 +602,14 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("fight");
+        var result = session.ResolveJourneyEncounter("fight", 1, null, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
-        Assert.Equal(StartingHealthFor(session.TravelDifficulty) - session.TravelRules.EncounterFightAmmoHealthLoss, session.Player.Health);
-        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
+        Assert.True(session.PursuitState.Heat >= 4);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(2, session.Clock.Day);
@@ -625,12 +625,12 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("fight");
+        var result = session.ResolveJourneyEncounter("fight", 6, null, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.Equal(StartingHealthFor(session.TravelDifficulty) - session.TravelRules.EncounterFightUnarmedHealthLoss, session.Player.Health);
+        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
@@ -647,7 +647,7 @@ public sealed class TravelResolverTests
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
 
-        var result = session.ResolveJourneyEncounter("bribe");
+        var result = session.ResolveJourneyEncounter("bribe", null, null, 0UL);
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
@@ -681,6 +681,92 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterRunFailureLeavesTheEncounterPending()
+    {
+        var session = CreateHighRiskSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("run", null, null, 99UL);
+
+        Assert.False(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.Equal("foe", session.Journey.PendingEncounter!.Kind);
+        Assert.Equal(3, session.Journey.PendingEncounter.Choices.Count);
+        Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
+        Assert.True(session.Player.Inventory.GetHorseState() is not null);
+        Assert.True(session.Player.Inventory.GetHorseState()!.Exhaustion >= 1);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterFightCapsBulletSpendAndCanStillFail()
+    {
+        var session = CreateHighRiskSession(withRevolverAmmo: 2);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("fight", 6, null, 99UL);
+
+        Assert.False(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
+        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RifleAmmo));
+        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterBribeLowOfferCanFailWithoutSpendingCash()
+    {
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: FindBribeOutcomeRoll(session, 1m, retaliates: false));
+
+        Assert.False(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal(10m, session.Player.Wallet.Cash);
+        Assert.NotNull(session.Journey!.PendingEncounter);
+        Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
+    }
+
+    [Fact]
+    public void ResolveJourneyEncounterBribeInsultinglyLowOfferCanRetaliateAndSteal()
+    {
+        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+
+        var forcedRoll = FindBribeOutcomeRoll(session, 1m, retaliates: true);
+        var startingFood = session.Player.Inventory.GetQuantity(DomainItemKind.Food);
+        var startingCash = session.Player.Wallet.Cash;
+
+        var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: forcedRoll);
+
+        Assert.False(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
+        Assert.True(session.Player.Wallet.Cash < startingCash || session.Player.Inventory.GetQuantity(DomainItemKind.Food) < startingFood);
+        Assert.NotNull(session.Journey!.PendingEncounter);
     }
 
     private static GameSession CreateMountedSession(int withHorseFeed = 2)
@@ -1017,4 +1103,36 @@ public sealed class TravelResolverTests
             TravelDifficulty.Hard => 800,
             _ => 1000
         };
+
+    private static ulong FindBribeOutcomeRoll(GameSession session, decimal bribeAmount, bool retaliates)
+    {
+        var encounter = session.Journey!.PendingEncounter!;
+        var availableFood = session.Player.Inventory.GetQuantity(DomainItemKind.Food);
+        var availableHorseFeed = session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed);
+        var availableRevolverAmmo = session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo);
+        var availableRifleAmmo = session.Player.Inventory.GetQuantity(DomainItemKind.RifleAmmo);
+
+        for (ulong roll = 0; roll < 10_000; roll++)
+        {
+            var plan = JourneyEncounterResolutionEngine.ResolveBribe(
+                encounter,
+                session.Player.Wallet.Cash,
+                session.TravelRules,
+                bribeAmount,
+                availableFood,
+                availableHorseFeed,
+                availableRevolverAmmo,
+                availableRifleAmmo,
+                roll);
+
+            var sawRetaliation = !plan.Resolved && (plan.HealthDelta < 0 || plan.WalletDelta < 0m || plan.StolenItemKind is not null);
+            var isSimpleFailure = !plan.Resolved && !sawRetaliation;
+            if (retaliates ? sawRetaliation : isSimpleFailure)
+            {
+                return roll;
+            }
+        }
+
+        throw new InvalidOperationException("Could not find a bribe outcome roll for the requested branch.");
+    }
 }

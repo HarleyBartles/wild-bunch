@@ -520,20 +520,44 @@ public sealed class GameSessionJsonSerializer
         public string Kind { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
         public IReadOnlyList<JourneyEncounterChoiceSnapshot> Choices { get; set; } = Array.Empty<JourneyEncounterChoiceSnapshot>();
+        public JourneyFoeProfileSnapshot? FoeProfile { get; set; }
+        public int ResolutionAttempts { get; set; }
 
         public static JourneyEncounterSnapshot FromDomain(JourneyEncounterState encounter)
             => new()
             {
                 Kind = encounter.Kind,
                 Message = encounter.Message,
-                Choices = encounter.Choices.Select(JourneyEncounterChoiceSnapshot.FromDomain).ToArray()
+                Choices = encounter.Choices.Select(JourneyEncounterChoiceSnapshot.FromDomain).ToArray(),
+                FoeProfile = encounter.FoeProfile is null ? null : JourneyFoeProfileSnapshot.FromDomain(encounter.FoeProfile),
+                ResolutionAttempts = encounter.ResolutionAttempts
             };
 
         public JourneyEncounterState ToDomain()
             => new(
                 Kind,
                 Message,
-                Choices.Select(choice => choice.ToDomain()).ToArray());
+                Choices.Select(choice => choice.ToDomain()).ToArray(),
+                FoeProfile?.ToDomain(),
+                ResolutionAttempts);
+    }
+
+    public sealed class JourneyFoeProfileSnapshot
+    {
+        public int Speed { get; set; }
+        public int FightStrength { get; set; }
+        public decimal MinimumBribe { get; set; }
+
+        public static JourneyFoeProfileSnapshot FromDomain(JourneyFoeProfile foeProfile)
+            => new()
+            {
+                Speed = foeProfile.Speed,
+                FightStrength = foeProfile.FightStrength,
+                MinimumBribe = foeProfile.MinimumBribe
+            };
+
+        public JourneyFoeProfile ToDomain()
+            => new(Speed, FightStrength, MinimumBribe);
     }
 
     private sealed class JourneyTrailEventSnapshot

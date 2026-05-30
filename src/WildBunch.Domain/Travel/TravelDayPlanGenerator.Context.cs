@@ -338,7 +338,7 @@ internal static partial class TravelDayPlanGenerator
         {
             TravelDayEncounterCategory.Lucky => CreateLuckyEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             TravelDayEncounterCategory.Unlucky => CreateUnluckyEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
-            TravelDayEncounterCategory.Foe => CreateChoiceEncounter(slotIndex, "foe", BuildFoeMessage(context, dayNumber, slotIndex, seed)),
+            TravelDayEncounterCategory.Foe => CreateFoeEncounter(slotIndex, seed, context, travelRulesProfile),
             TravelDayEncounterCategory.Npc => CreateChoiceEncounter(slotIndex, "npc", BuildNpcMessage(context, dayNumber, slotIndex, seed)),
             TravelDayEncounterCategory.Environmental => CreateEnvironmentalEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             TravelDayEncounterCategory.Resource => CreateResourceEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
@@ -356,6 +356,21 @@ internal static partial class TravelDayPlanGenerator
             null,
             JourneyEncounterState.CreateChoiceEncounter(kind, message, DefaultEncounterChoices),
             null);
+
+    private static TravelDayEncounterState CreateFoeEncounter(int slotIndex, string seed, TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile)
+    {
+        var foeProfile = JourneyEncounterResolutionEngine.CreateFoeProfile(context, travelRulesProfile, seed);
+        var message = JourneyEncounterResolutionEngine.BuildFoeMessage(context, foeProfile, seed);
+
+        return new TravelDayEncounterState(
+            slotIndex,
+            TravelDayEncounterCategory.Foe,
+            "Hard-eyed rider",
+            message,
+            null,
+            JourneyEncounterState.CreateFoe(message, foeProfile),
+            null);
+    }
 
     private static TravelDayEncounterState CreateLuckyEncounter(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, int dayNumber, int slotIndex, string seed)
     {
@@ -595,14 +610,6 @@ internal static partial class TravelDayPlanGenerator
             null,
             null);
     }
-
-    private static string BuildFoeMessage(TravelDayGenerationContext context, int dayNumber, int slotIndex, string seed)
-        => context.Risk switch
-        {
-            TrailRisk.High => "A hard-eyed rider steps out from the brush and blocks my way.",
-            TrailRisk.Moderate => "A wary trail rider cuts across my path and waits to see what I will do.",
-            _ => "A rough rider keeps a hand near his gun and watches me cross the trail."
-        };
 
     private static string BuildNpcMessage(TravelDayGenerationContext context, int dayNumber, int slotIndex, string seed)
         => context.WaterFeature switch

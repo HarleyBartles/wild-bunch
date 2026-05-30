@@ -4,6 +4,9 @@ import { Card, ButtonBase } from "./travelShared";
 import { JourneyDecision } from "./JourneyDecision";
 import styled from "styled-components";
 
+const revolverAmmoKind = 7;
+const rifleAmmoKind = 9;
+
 interface TravelActionsProps {
   session: GameSessionDto;
   busy: boolean;
@@ -11,7 +14,13 @@ interface TravelActionsProps {
   actionError: string | null;
   onAdvanceTravelDay: () => Promise<void>;
   onAcknowledgeTravelArrival: () => Promise<void>;
-  onResolveEncounter: (choiceId: string) => Promise<void>;
+  onResolveEncounter: (
+    choiceId: string,
+    options?: {
+      bulletSpend?: number | null;
+      bribeAmount?: number | null;
+    },
+  ) => Promise<void>;
 }
 
 export function TravelActions({
@@ -24,6 +33,9 @@ export function TravelActions({
   onResolveEncounter,
 }: TravelActionsProps) {
   const journey = session.journey;
+  const firearmAmmo = session.inventory.items
+    .filter((item) => item.kind === revolverAmmoKind || item.kind === rifleAmmoKind)
+    .reduce((total, item) => total + item.quantity, 0);
 
   if (!journey) {
     return null;
@@ -44,7 +56,14 @@ export function TravelActions({
       {actionError ? <InlineError>{actionError}</InlineError> : null}
 
       {pendingEncounter ? (
-        <JourneyDecision encounter={pendingEncounter} busy={busy} refreshing={refreshing} onResolveEncounter={onResolveEncounter} />
+        <JourneyDecision
+          encounter={pendingEncounter}
+          busy={busy}
+          refreshing={refreshing}
+          ammo={firearmAmmo}
+          cash={session.inventory.wallet.cash}
+          onResolveEncounter={onResolveEncounter}
+        />
       ) : arrivalPending ? (
         <>
           <ActionCopy>The trail pages are still open. Acknowledge the arrival when you are ready to step into town.</ActionCopy>
