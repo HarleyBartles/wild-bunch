@@ -622,7 +622,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             CreateWalletBand(Player.Wallet.Cash, TravelRules),
             recentTrailEventKinds,
             recentTrailEventIds,
-            recentEncounterCategories);
+            recentEncounterCategories,
+            HasHorse: horseState is not null && !horseState.IsDeadFor(TravelRules));
     }
 
     private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)

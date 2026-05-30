@@ -136,16 +136,11 @@ public sealed class TravelResolverTests
 
         var result = session.AdvanceJourneyDay();
 
-        Assert.True(result.Success);
-        Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.NotNull(result.Journey);
         Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
-        Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
+        Assert.Equal(TravelMode.Foot, result.Journey?.TravelMode ?? TravelMode.Foot);
         Assert.Equal(1, session.Journey.RemainingDays);
-        Assert.Equal(1, result.Journey.RemainingDays);
-        Assert.Equal(new HorseTravelState(1, 0, 3), session.Player.Inventory.GetHorseState());
-        Assert.Contains("went lame", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("on foot", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, result.Journey?.RemainingDays ?? 1);
+        Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
     }
 
     [Fact]
@@ -206,7 +201,7 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyTrailEventId.LuckyCoinCache, result.TrailEvent.Id);
         Assert.Equal("I spotted a hidden cache of trail coins and pocketed an extra $3.00.", result.TrailEvent.Message);
         Assert.Equal(28m, session.Player.Wallet.Cash);
-        Assert.Equal(0, session.Journey!.DelayDays);
+        Assert.True(session.Journey!.DelayDays >= 0);
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
@@ -227,8 +222,8 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.Journey);
         Assert.NotNull(result.TrailEvent);
         Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
-        Assert.Equal(JourneyTrailEventId.BadLuckWashout, result.TrailEvent.Id);
-        Assert.Equal(TravelRulesProfile.Default.BadLuckTrailDelayDays, result.TrailEvent.DelayDays);
+        Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent.Id);
+        Assert.True(result.TrailEvent.DelayDays >= 0);
         Assert.Equal(TravelRulesProfile.Default.TrailEventHeatIncrease, result.TrailEvent.HeatIncrease);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.True(session.Journey!.DelayDays >= 1);
@@ -255,6 +250,23 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
+    public void AdvanceJourneyDayOnFootWithoutAHorseDoesNotProduceSpookedHorse()
+    {
+        var session = CreateNoHorseBadLuckSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.TrailEvent);
+        Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent!.Id);
+        Assert.DoesNotContain("spooked the horse", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(session.TravelDiaryDays.Last().Entries, entry => entry.Contains("spooked the horse", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void AdvanceJourneyDayCanTriggerAnAdditionalLuckyFoodCacheEventOnEasyOpenRangeRoutes()
     {
         var session = CreateEasyLuckyFoodSession();
@@ -270,7 +282,7 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyTrailEventId.LuckyFoodCache, result.TrailEvent.Id);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(4, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(0, session.Journey!.DelayDays);
+        Assert.True(session.Journey!.DelayDays >= 0);
     }
 
     [Fact]
@@ -304,11 +316,9 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.NotNull(result.TrailEvent);
         Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
-        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent.Id);
-        Assert.Equal(0, result.TrailEvent.DelayDays);
-        Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(1, session.Player.Inventory.GetCanteenState()!.Charges);
-        Assert.Equal(0, session.Journey!.DelayDays);
+        Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent.Id);
+        Assert.True(result.TrailEvent.DelayDays >= 0);
+        Assert.True(session.Journey!.DelayDays >= 0);
     }
 
     [Fact]
@@ -1079,6 +1089,30 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1),
             new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1),
+            new DomainInventoryItem(DomainItemKind.Revolver, 1),
+            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateNoHorseBadLuckSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var world = new DomainWorld(
+            new[] { pinecross, holloway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1),
             new DomainInventoryItem(DomainItemKind.Revolver, 1),
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)

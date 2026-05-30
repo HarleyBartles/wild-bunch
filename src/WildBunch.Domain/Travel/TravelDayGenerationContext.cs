@@ -63,7 +63,8 @@ public sealed record TravelDayGenerationContext(
     WalletBand WalletBand,
     IReadOnlyList<JourneyTrailEventKind> RecentTrailEventKinds,
     IReadOnlyList<JourneyTrailEventId> RecentTrailEventIds,
-    IReadOnlyList<TravelDayEncounterCategory> RecentEncounterCategories)
+    IReadOnlyList<TravelDayEncounterCategory> RecentEncounterCategories,
+    bool HasHorse)
 {
     public bool WaterSecure => WaterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
 

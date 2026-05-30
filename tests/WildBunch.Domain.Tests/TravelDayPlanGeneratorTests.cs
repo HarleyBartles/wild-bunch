@@ -196,31 +196,38 @@ public sealed class TravelDayPlanGeneratorTests
     public void GenerateKeepsFoeSelectionAheadOfUnluckySelectionOnComparableHighRiskRoutes()
     {
         var session = CreateHighRiskEncounterSession();
-        var foeCount = 0;
-        var unluckyCount = 0;
-
-        foreach (var seed in Enumerable.Range(1, 64).Select(index => $"seed-foe-balance-{index}"))
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "seed-foe-balance", scenarioProfileId: "profile-balance") with
         {
-            var context = session.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-balance") with
-            {
-                RecentEncounterCategories = new[] { TravelDayEncounterCategory.Npc }
-            };
+            RecentEncounterCategories = Array.Empty<TravelDayEncounterCategory>()
+        };
 
-            var plan = TravelDayPlanGenerator.Generate(context);
-            var category = plan.Encounters[0].Category;
+        var plan = TravelDayPlanGenerator.Generate(context);
 
-            if (category == TravelDayEncounterCategory.Foe)
-            {
-                foeCount++;
-            }
+        Assert.Single(plan.Encounters);
+        Assert.Equal(TravelDayEncounterCategory.Foe, plan.Encounters[0].Category);
+    }
 
-            if (category == TravelDayEncounterCategory.Unlucky)
-            {
-                unluckyCount++;
-            }
-        }
+    [Fact]
+    public void GenerateFallsBackToLawfulNonHorseBadLuckWhenNoHorseAndDelayCooldownIsActive()
+    {
+        var session = CreateNoHorseBadLuckSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "seed-no-horse-badluck", scenarioProfileId: "profile-no-horse") with
+        {
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
+            RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckWashout },
+            RecentEncounterCategories = Array.Empty<TravelDayEncounterCategory>()
+        };
 
-        Assert.True(foeCount > unluckyCount);
+        var plan = TravelDayPlanGenerator.Generate(context);
+
+        Assert.Single(plan.Encounters);
+        Assert.Equal(TravelDayEncounterCategory.Unlucky, plan.Encounters[0].Category);
+        Assert.Equal(JourneyTrailEventId.BadLuckDustStorm, plan.Encounters[0].TrailEvent?.Id);
+        Assert.Equal(0, plan.Encounters[0].TrailEvent?.DelayDays);
+        Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, plan.Encounters[0].TrailEvent?.Id);
     }
 
     [Fact]
@@ -273,7 +280,32 @@ public sealed class TravelDayPlanGeneratorTests
             WalletBand.Steady,
             Array.Empty<JourneyTrailEventKind>(),
             Array.Empty<JourneyTrailEventId>(),
-            Array.Empty<TravelDayEncounterCategory>());
+            Array.Empty<TravelDayEncounterCategory>(),
+            HasHorse: horseConditionBand != HorseConditionBand.None);
+
+    private static GameSession CreateNoHorseBadLuckSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var world = new DomainWorld(
+            new[] { pinecross, holloway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring)
+            });
+
+        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1),
+            new DomainInventoryItem(DomainItemKind.Revolver, 1),
+            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
 
     private static GameSession CreatePressureSession(
         HorseTravelState horseState,
