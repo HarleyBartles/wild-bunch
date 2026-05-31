@@ -52,6 +52,11 @@ state. The persistent local development app database is a separate concern; see
 When this lane is intentional, name it clearly so it is obvious that the test is
 about provider fidelity rather than ordinary gameplay behavior.
 
+Local app launch is separate from this lane: the committed API launch profile
+supplies the repo-local development connection string so F5 and `dotnet run`
+work without manually exporting `ConnectionStrings__WildBunchPostgresDb` each
+time.
+
 ## Repo Placement
 
 - Unit tests live in the domain/application/game-content test projects.

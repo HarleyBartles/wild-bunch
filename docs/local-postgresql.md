@@ -40,10 +40,15 @@ Initialize or start the persistent local development cluster and database:
 .\scripts\postgres-dev.ps1 setup
 ```
 
-After setup, point the app at the persistent local database by setting:
+Then launch Wild Bunch Api through Visual Studio/F5 or `dotnet run`.
+The committed launch profile supplies the repo-local connection string for the
+`http` and `https` profiles, so you do not need to set it manually for the
+normal local launch path.
+
+If you want to confirm the connection string shape explicitly, it is:
 
 ```powershell
-$env:ConnectionStrings__WildBunchPostgresDb = 'Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres'
+Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres
 ```
 
 ## Status
@@ -65,3 +70,16 @@ only:
 
 Use reset only when you intend to recreate the persistent local app database.
 It does not touch temporary integration-test databases.
+
+## Local Launch Flow
+
+1. `.\scripts\postgres-dev.ps1 install-tools`
+2. `.\scripts\postgres-dev.ps1 setup`
+3. Launch `WildBunch.Api` via Visual Studio/F5 or:
+
+```powershell
+dotnet run --project src/WildBunch.Api --launch-profile http
+```
+
+The app should start against `wildbunch_dev` on `localhost:5434` without
+manually setting `ConnectionStrings__WildBunchPostgresDb` first.
