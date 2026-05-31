@@ -37,6 +37,8 @@ public static class DependencyInjection
         services.AddScoped<GetTownStoreOffersHandler>();
         services.AddScoped<PurchaseStoreItemHandler>();
         services.AddScoped<ReadWantedPostersHandler>();
+        services.AddScoped<InspectNoticeBoardHandler>();
+        services.AddScoped<CheckSheriffRecordsHandler>();
         services.AddScoped<PreviewTravelHandler>();
         services.AddScoped<TravelToTownHandler>();
         services.AddScoped<AdvanceTravelDayHandler>();

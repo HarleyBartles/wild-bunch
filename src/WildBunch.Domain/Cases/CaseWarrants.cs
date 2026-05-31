@@ -27,7 +27,8 @@ public sealed record WarrantTerms
         string issuingSource,
         InvestigationTargetKind targetKind,
         IEnumerable<OutlawGangId> gangAffiliations,
-        OutlawGangId? advancesGangPressureFor)
+        OutlawGangId? advancesGangPressureFor,
+        InvestigationSourceKind? sourceKind = null)
     {
         ArgumentNullException.ThrowIfNull(knownAliases);
         ArgumentNullException.ThrowIfNull(knownFeatures);
@@ -42,6 +43,7 @@ public sealed record WarrantTerms
         TargetKind = targetKind;
         GangAffiliations = gangAffiliations.DistinctBy(gang => gang.Value).ToArray();
         AdvancesGangPressureFor = advancesGangPressureFor;
+        SourceKind = sourceKind;
     }
 
     public WarrantDisposition Disposition { get; }
@@ -59,6 +61,8 @@ public sealed record WarrantTerms
     public IReadOnlyList<OutlawGangId> GangAffiliations { get; }
 
     public OutlawGangId? AdvancesGangPressureFor { get; }
+
+    public InvestigationSourceKind? SourceKind { get; }
 }
 
 public sealed record Warrant

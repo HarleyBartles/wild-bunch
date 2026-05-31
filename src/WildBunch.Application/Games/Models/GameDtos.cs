@@ -98,6 +98,13 @@ public sealed record ClueDto(
     ClueKind Kind,
     string Description);
 
+public sealed record WarrantDto(
+    string TargetName,
+    string Summary,
+    string IssuingSource,
+    WarrantDisposition Disposition,
+    decimal BountyAmount);
+
 public sealed record GameTurnResultDto(
     bool Success,
     string Message,

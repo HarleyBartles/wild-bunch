@@ -188,11 +188,16 @@ public sealed class CaseFile
         return true;
     }
 
-    public Clue? RevealNextPublicClue()
+    public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null, bool advanceKillerReleaseProgress = true)
     {
         for (var i = 0; i < _publicClues.Count; i++)
         {
             var clue = _publicClues[i];
+
+            if (sourceKind.HasValue && clue.SourceKind != sourceKind)
+            {
+                continue;
+            }
 
             if (_knownClues.Any(existing => existing.Id.Equals(clue.Id)))
             {
@@ -202,7 +207,7 @@ public sealed class CaseFile
             }
 
             _publicClues.RemoveAt(i);
-            if (DiscoverClue(clue, advanceKillerReleaseProgress: true))
+            if (DiscoverClue(clue, advanceKillerReleaseProgress))
             {
                 return clue;
             }
@@ -211,11 +216,16 @@ public sealed class CaseFile
         return null;
     }
 
-    public Warrant? RevealNextPublicWarrant()
+    public Warrant? RevealNextPublicWarrant(InvestigationSourceKind? sourceKind = null)
     {
         for (var i = 0; i < _publicWarrants.Count; i++)
         {
             var warrant = _publicWarrants[i];
+
+            if (sourceKind.HasValue && warrant.Terms.SourceKind != sourceKind)
+            {
+                continue;
+            }
 
             if (_knownWarrants.Any(existing => existing.Id.Equals(warrant.Id)))
             {

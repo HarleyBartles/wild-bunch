@@ -4,11 +4,13 @@ import App from "./App";
 import { AvailableActionKind, JourneyStatus, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "./api/types";
 import {
   buyStoreItem,
+  checkSheriffRecords,
   createGame,
   getAvailableActions,
   getGame,
   getJournal,
   getTownStoreOffers,
+  inspectNoticeBoard,
   readWantedPosters,
   travel,
 } from "./api/wildBunchApi";
@@ -20,6 +22,8 @@ vi.mock("./api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
+  checkSheriffRecords: vi.fn(),
+  inspectNoticeBoard: vi.fn(),
   readWantedPosters: vi.fn(),
   travel: vi.fn(),
 }));
@@ -30,6 +34,8 @@ const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedCreateGame = vi.mocked(createGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
+const mockedCheckSheriffRecords = vi.mocked(checkSheriffRecords);
+const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedTravel = vi.mocked(travel);
 
@@ -111,6 +117,7 @@ function createJournal(): JournalDto {
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
       knownClues: [],
+      knownWarrants: [],
     },
     logEntries: [{ kind: 0, message: "Booted", day: 1, turn: 0 }],
   };
@@ -140,6 +147,8 @@ describe("App", () => {
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
       { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+      { kind: AvailableActionKind.InspectNoticeBoard, label: "Inspect notice board" },
+      { kind: AvailableActionKind.CheckSheriffRecords, label: "Check sheriff records" },
     ]);
     mockedGetJournal.mockResolvedValue(createJournal());
     mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -156,6 +165,16 @@ describe("App", () => {
     mockedReadWantedPosters.mockResolvedValue({
       success: true,
       message: "Read wanted posters",
+      currentJournal: createJournal(),
+    });
+    mockedInspectNoticeBoard.mockResolvedValue({
+      success: true,
+      message: "Inspect notice board",
+      currentJournal: createJournal(),
+    });
+    mockedCheckSheriffRecords.mockResolvedValue({
+      success: true,
+      message: "Check sheriff records",
       currentJournal: createJournal(),
     });
     mockedTravel.mockResolvedValue({

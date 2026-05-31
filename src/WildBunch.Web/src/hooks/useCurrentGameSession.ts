@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createGame,
+  checkSheriffRecords,
   getAvailableActions,
   getGame,
   getJournal,
+  inspectNoticeBoard,
   readWantedPosters,
   travel,
 } from "../api/wildBunchApi";
@@ -12,11 +14,19 @@ import type { AvailableActionDto, GameSessionDto, GameTurnResultDto, JournalDto,
 
 const storageKey = "wild-bunch.current-game-id";
 
-type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading";
+type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
 type CockpitMode = "home" | "travel";
 
 function actionIsWantedPosters(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.ReadWantedPosters;
+}
+
+function actionIsInspectNoticeBoard(action: AvailableActionDto) {
+  return action.kind === AvailableActionKind.InspectNoticeBoard;
+}
+
+function actionIsCheckSheriffRecords(action: AvailableActionDto) {
+  return action.kind === AvailableActionKind.CheckSheriffRecords;
 }
 
 export function useCurrentGameSession() {
@@ -153,6 +163,46 @@ export function useCurrentGameSession() {
     }
   }
 
+  async function handleInspectNoticeBoard() {
+    if (!gameId || !canInspectNoticeBoard) {
+      return;
+    }
+
+    setBusyMode("investigating");
+    setError("");
+
+    try {
+      const result = await inspectNoticeBoard(gameId);
+      setJournal(result.currentJournal);
+      await reloadCurrentGame(gameId);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to inspect the notice board.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
+  async function handleCheckSheriffRecords() {
+    if (!gameId || !canCheckSheriffRecords) {
+      return;
+    }
+
+    setBusyMode("investigating");
+    setError("");
+
+    try {
+      const result = await checkSheriffRecords(gameId);
+      setJournal(result.currentJournal);
+      await reloadCurrentGame(gameId);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to check sheriff records.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
   function handleReset() {
     window.localStorage.removeItem(storageKey);
     setSession(null);
@@ -167,6 +217,8 @@ export function useCurrentGameSession() {
 
   const loading = busyMode !== "idle";
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
+  const canInspectNoticeBoard = actions.some(actionIsInspectNoticeBoard);
+  const canCheckSheriffRecords = actions.some(actionIsCheckSheriffRecords);
 
   return {
     session,
@@ -181,11 +233,15 @@ export function useCurrentGameSession() {
     error,
     resetToken,
     canReadWantedPosters,
+    canInspectNoticeBoard,
+    canCheckSheriffRecords,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
     handleTravel,
     handleReadWantedPosters,
+    handleInspectNoticeBoard,
+    handleCheckSheriffRecords,
     handleReset,
     setSession,
     setNotice,

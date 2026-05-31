@@ -42,6 +42,14 @@ public sealed class ActionAvailabilityResolver
             availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
         }
 
+        foreach (var source in InvestigationSources.All)
+        {
+            if ((currentTown.Services & source.RequiredServices) != 0)
+            {
+                availableActions.Add(new AvailableAction(source.ActionKind, source.Label));
+            }
+        }
+
         if (session.Journey is not null)
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);
@@ -50,6 +58,8 @@ public sealed class ActionAvailabilityResolver
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.VisitDoctor);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.SendTelegram);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
+            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.CheckSheriffRecords);
             if (session.Journey.PendingEncounter is not null)
             {
                 availableActions.Add(new AvailableAction(AvailableActionKind.ResolveTravelEncounter, "Resolve travel encounter"));

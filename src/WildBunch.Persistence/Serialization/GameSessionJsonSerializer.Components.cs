@@ -334,6 +334,7 @@ public sealed partial class GameSessionJsonSerializer
             string description,
             IReadOnlyList<string>? linkedSuspectIds = null,
             InvestigationTargetKind targetKind = InvestigationTargetKind.Unknown,
+            InvestigationSourceKind? sourceKind = null,
             string? source = null,
             string? context = null)
         {
@@ -342,6 +343,7 @@ public sealed partial class GameSessionJsonSerializer
             Description = description;
             LinkedSuspectIds = linkedSuspectIds;
             TargetKind = targetKind;
+            SourceKind = sourceKind;
             Source = source;
             Context = context;
         }
@@ -351,6 +353,7 @@ public sealed partial class GameSessionJsonSerializer
         public string Description { get; init; }
         public IReadOnlyList<string>? LinkedSuspectIds { get; init; }
         public InvestigationTargetKind TargetKind { get; init; }
+        public InvestigationSourceKind? SourceKind { get; init; }
         public string? Source { get; init; }
         public string? Context { get; init; }
 
@@ -361,6 +364,7 @@ public sealed partial class GameSessionJsonSerializer
                 clue.Description,
                 clue.LinkedSuspectIds.Select(suspectId => suspectId.Value).ToArray(),
                 clue.TargetKind,
+                clue.SourceKind,
                 clue.Source,
                 clue.Context);
 
@@ -371,6 +375,7 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.Description,
                 (snapshot.LinkedSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
                 snapshot.TargetKind,
+                snapshot.SourceKind,
                 snapshot.Source,
                 snapshot.Context);
     }
@@ -405,6 +410,7 @@ public sealed partial class GameSessionJsonSerializer
         InvestigationTargetKind TargetKind,
         IReadOnlyList<OutlawGangId>? GangAffiliations,
         OutlawGangId? AdvancesGangPressureFor,
+        InvestigationSourceKind? SourceKind,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? IsGangRelevant,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? AdvancesGangPressure)
     {
@@ -418,6 +424,7 @@ public sealed partial class GameSessionJsonSerializer
                 terms.TargetKind,
                 terms.GangAffiliations.ToArray(),
                 terms.AdvancesGangPressureFor,
+                terms.SourceKind,
                 null,
                 null);
 
@@ -430,7 +437,8 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.IssuingSource,
                 snapshot.TargetKind,
                 snapshot.GangAffiliations ?? ((snapshot.IsGangRelevant == true || snapshot.AdvancesGangPressure == true) ? [OutlawGangIds.WildBunch] : []),
-                snapshot.AdvancesGangPressureFor ?? (snapshot.AdvancesGangPressure == true ? OutlawGangIds.WildBunch : null));
+                snapshot.AdvancesGangPressureFor ?? (snapshot.AdvancesGangPressure == true ? OutlawGangIds.WildBunch : null),
+                snapshot.SourceKind);
     }
 
     private sealed record PursuitStateSnapshot(int Heat)

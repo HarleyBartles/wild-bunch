@@ -21,7 +21,8 @@ public static class JournalMapper
                 ToDto(snapshot.KillerReleaseState),
                 snapshot.CaseSummary,
                 snapshot.DiscoveredSuspects.Select(ToDto).ToArray(),
-                snapshot.KnownClues.Select(ToDto).ToArray()),
+                snapshot.KnownClues.Select(ToDto).ToArray(),
+                snapshot.KnownWarrants.Select(ToDto).ToArray()),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
 
@@ -43,6 +44,14 @@ public static class JournalMapper
             suspect.Id.Value,
             suspect.Name,
             suspect.Status);
+
+    private static WarrantDto ToDto(Warrant warrant)
+        => new(
+            warrant.TargetName,
+            warrant.Summary,
+            warrant.Terms.IssuingSource,
+            warrant.Terms.Disposition,
+            warrant.Terms.BountyAmount);
 
     private static GameLogEntryDto ToDto(GameLogEntry logEntry)
         => new(

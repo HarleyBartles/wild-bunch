@@ -1494,6 +1494,58 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
+    public CaseInvestigationResult InspectNoticeBoard()
+    {
+        if (IsJourneyModal())
+        {
+            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
+        }
+
+        var currentTown = World.GetTown(Player.CurrentTownId);
+
+        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
+        {
+            return CaseInvestigationResult.Failed("There is no notice board here.");
+        }
+
+        var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.NoticeBoard);
+
+        if (warrant is null)
+        {
+            RecordCaseUpdate("You inspect the notice board, but find nothing new.");
+            return CaseInvestigationResult.Succeeded("You inspect the notice board, but find nothing new.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate($"You inspect the notice board and copy down a wanted notice for {warrant.TargetName}.");
+        return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a wanted notice.", sessionChanged: true);
+    }
+
+    public CaseInvestigationResult CheckSheriffRecords()
+    {
+        if (IsJourneyModal())
+        {
+            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
+        }
+
+        var currentTown = World.GetTown(Player.CurrentTownId);
+
+        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
+        {
+            return CaseInvestigationResult.Failed("There are no sheriff records here.");
+        }
+
+        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.SheriffRecords);
+
+        if (clue is null)
+        {
+            RecordCaseUpdate("You check the sheriff records, but find nothing new.");
+            return CaseInvestigationResult.Succeeded("You check the sheriff records, but find nothing new.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate($"You check the sheriff records and uncover a public lead: {clue.Description}.");
+        return CaseInvestigationResult.Succeeded("You check the sheriff records and uncover a public lead.", sessionChanged: true);
+    }
+
     public void RecordCaseUpdate(string message, bool advanceClock = true)
     {
         if (advanceClock)

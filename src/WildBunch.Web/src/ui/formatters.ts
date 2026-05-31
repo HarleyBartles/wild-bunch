@@ -44,6 +44,14 @@ export function formatActionKind(kind: number) {
       return "Send telegram";
     case 7:
       return "Read wanted posters";
+    case 8:
+      return "Advance travel day";
+    case 9:
+      return "Resolve travel encounter";
+    case 10:
+      return "Inspect notice board";
+    case 11:
+      return "Check sheriff records";
     default:
       return `Action ${kind}`;
   }

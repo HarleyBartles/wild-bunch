@@ -23,11 +23,15 @@ export default function App() {
     error,
     resetToken,
     canReadWantedPosters,
+    canInspectNoticeBoard,
+    canCheckSheriffRecords,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
     handleTravel,
     handleReadWantedPosters,
+    handleInspectNoticeBoard,
+    handleCheckSheriffRecords,
     handleReset,
     setSession,
     setNotice,
@@ -157,8 +161,26 @@ export default function App() {
                       className="button"
                       onClick={handleReadWantedPosters}
                       disabled={!gameId || loading || !canReadWantedPosters}
-                    >
+                      >
                       {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
+                    </button>
+                  ) : action.kind === AvailableActionKind.InspectNoticeBoard ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={handleInspectNoticeBoard}
+                      disabled={!gameId || loading || !canInspectNoticeBoard}
+                    >
+                      {busyMode === "investigating" ? "Inspecting..." : "Inspect notice board"}
+                    </button>
+                  ) : action.kind === AvailableActionKind.CheckSheriffRecords ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={handleCheckSheriffRecords}
+                      disabled={!gameId || loading || !canCheckSheriffRecords}
+                    >
+                      {busyMode === "investigating" ? "Checking..." : "Check sheriff records"}
                     </button>
                   ) : null}
                 </div>

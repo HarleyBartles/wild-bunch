@@ -107,6 +107,44 @@ public sealed class CaseFileTests
     }
 
     [Fact]
+    public void RevealingPublicClueBySourceSkipsMismatchedSources()
+    {
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+            },
+            trueCulpritId: new SuspectId("suspect-1"),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(
+                    new ClueId("clue-public-1"),
+                    ClueKind.Alias,
+                    "A posted notice describes a rider wearing a faded blue scarf.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.GangMember,
+                    InvestigationSourceKind.NoticeBoard),
+                new Clue(
+                    new ClueId("clue-public-2"),
+                    ClueKind.Record,
+                    "A sheriff note ties the rider to a rail ledger.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.SheriffRecords)
+            });
+
+        var revealed = caseFile.RevealNextPublicClue(InvestigationSourceKind.SheriffRecords);
+
+        Assert.NotNull(revealed);
+        Assert.Equal("A sheriff note ties the rider to a rail ledger.", revealed!.Description);
+        Assert.Single(caseFile.KnownClues);
+        Assert.Single(caseFile.PublicClues);
+        Assert.Equal(InvestigationSourceKind.NoticeBoard, caseFile.PublicClues[0].SourceKind);
+    }
+
+    [Fact]
     public void DiscoveringSameWarrantTwiceOnlyStoresItOnce()
     {
         var warrant = new Warrant(
@@ -175,6 +213,57 @@ public sealed class CaseFileTests
         Assert.Equal(warrant.Id, revealed!.Id);
         Assert.Single(caseFile.KnownWarrants);
         Assert.Empty(caseFile.PublicWarrants);
+    }
+
+    [Fact]
+    public void RevealingPublicWarrantBySourceSkipsMismatchedSources()
+    {
+        var noticeBoardWarrant = new Warrant(
+            new WarrantId("warrant-public-1"),
+            "Reno Pike",
+            new WarrantTerms(
+                WarrantDisposition.AliveOnly,
+                300m,
+                new[] { "The Magpie" },
+                new[] { "Mismatched spurs" },
+                "Silver Creek Sheriff",
+                InvestigationTargetKind.UnrelatedWantedCriminal,
+                Array.Empty<OutlawGangId>(),
+                null,
+                InvestigationSourceKind.NoticeBoard));
+
+        var sheriffWarrant = new Warrant(
+            new WarrantId("warrant-public-2"),
+            "Mira Cline",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                2500m,
+                new[] { "Red Wren", "Aunt Tess" },
+                new[] { "Pale scar across the left cheek" },
+                "Dodge City Marshal",
+                InvestigationTargetKind.TrueCulprit,
+                [OutlawGangIds.WildBunch],
+                OutlawGangIds.WildBunch,
+                InvestigationSourceKind.SheriffRecords));
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
+            },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            publicWarrants: new[] { noticeBoardWarrant, sheriffWarrant });
+
+        var revealed = caseFile.RevealNextPublicWarrant(InvestigationSourceKind.SheriffRecords);
+
+        Assert.NotNull(revealed);
+        Assert.Equal(sheriffWarrant.Id, revealed!.Id);
+        Assert.Single(caseFile.KnownWarrants);
+        Assert.Single(caseFile.PublicWarrants);
+        Assert.Equal(InvestigationSourceKind.NoticeBoard, caseFile.PublicWarrants[0].Terms.SourceKind);
     }
 
     [Fact]

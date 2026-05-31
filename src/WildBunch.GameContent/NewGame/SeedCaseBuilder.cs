@@ -89,8 +89,8 @@ internal static class SeedCaseBuilder
         var accusationId = suspects[accusationIndex].Id;
         var publicWarrants = new[]
         {
-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings."),
-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.")
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings.", InvestigationSourceKind.NoticeBoard),
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.", InvestigationSourceKind.SheriffRecords)
         };
 
         return new CaseFile(
@@ -116,16 +116,16 @@ internal static class SeedCaseBuilder
     private static IReadOnlyList<Clue> CreateKnownClues(GameSetupDeterministicSource source, CaseSuspectFeatureProfile culpritFeature)
         => new[]
         {
-            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature), TrueCulpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead"),
-            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, $"A witness tied the rider to {culpritFeature.Description}.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "telegraph ledger", "Identity match"),
-            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead")
+            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature), TrueCulpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead", InvestigationSourceKind.TelegraphLead),
+            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, $"A witness tied the rider to {culpritFeature.Description}.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "telegraph ledger", "Identity match", InvestigationSourceKind.TelegraphLead),
+            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead", InvestigationSourceKind.LocalGossip)
         };
 
     private static IReadOnlyList<Clue> CreatePublicClues(GameSetupDeterministicSource source, IReadOnlyList<Suspect> suspects, IReadOnlyList<CaseSuspectFeatureAssignment> features)
         => new[]
         {
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster"),
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice")
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster", InvestigationSourceKind.NoticeBoard),
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice", InvestigationSourceKind.SheriffRecords)
         };
 
     private static IReadOnlyList<SuspectTurfAssignment> SelectSuspectTurfAssignments(
@@ -155,7 +155,7 @@ internal static class SeedCaseBuilder
             .ToArray();
     }
 
-    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "")
+    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "", InvestigationSourceKind? sourceKind = null)
     {
         ArgumentNullException.ThrowIfNull(profile);
 
@@ -174,7 +174,8 @@ internal static class SeedCaseBuilder
                 profile.IssuingSource,
                 profile.TargetKind,
                 profile.GangAffiliations,
-                profile.AdvancesGangPressureFor),
+                profile.AdvancesGangPressureFor,
+                sourceKind),
             summary);
     }
 
@@ -187,13 +188,15 @@ internal static class SeedCaseBuilder
         SuspectId linkedSuspectId,
         InvestigationTargetKind targetKind,
         string sourceNote,
-        string context)
+        string context,
+        InvestigationSourceKind? sourceKind = null)
         => new(
             new ClueId($"{label}-{clueIndex:00}-{source.PickIndex($"{label}.{clueIndex}", 97):00}"),
             kind,
             description,
             new[] { linkedSuspectId },
             targetKind,
+            sourceKind,
             sourceNote,
             context);
 }

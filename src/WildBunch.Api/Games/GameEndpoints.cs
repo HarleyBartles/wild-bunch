@@ -8,6 +8,7 @@ public static class GameEndpoints
 
         games.MapGameSessionEndpoints();
         games.MapActionEndpoints();
+        games.MapInvestigationEndpoints();
         games.MapJournalEndpoints();
         games.MapTownStoreEndpoints();
         games.MapWantedPosterEndpoints();

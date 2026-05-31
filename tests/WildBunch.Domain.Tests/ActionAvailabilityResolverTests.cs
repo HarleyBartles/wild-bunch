@@ -49,6 +49,8 @@ public sealed class ActionAvailabilityResolverTests
         var result = resolver.Resolve(session);
 
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
 
     [Fact]
@@ -60,6 +62,8 @@ public sealed class ActionAvailabilityResolverTests
         var result = resolver.Resolve(session);
 
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
 
     [Fact]
@@ -101,6 +105,8 @@ public sealed class ActionAvailabilityResolverTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
 
     [Fact]
@@ -120,6 +126,8 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ResolveTravelEncounter);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
 
     private static JourneyEncounterState CreateFoeEncounter()

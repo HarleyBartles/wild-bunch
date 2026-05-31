@@ -17,4 +17,5 @@ public sealed record JournalSnapshot(
     string CaseSummary,
     IReadOnlyList<Suspect> DiscoveredSuspects,
     IReadOnlyList<Clue> KnownClues,
+    IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyList<GameLogEntry> LogEntries);

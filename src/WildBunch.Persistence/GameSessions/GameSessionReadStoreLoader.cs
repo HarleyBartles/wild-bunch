@@ -75,6 +75,7 @@ internal static class GameSessionReadStoreLoader
             "Find the culprit before the law closes in.",
             caseFile.GetDiscoveredSuspects(),
             caseFile.KnownClues.ToArray(),
+            caseFile.KnownWarrants.ToArray(),
             logEntries);
     }
 

@@ -11,5 +11,7 @@ public enum AvailableActionKind
     SendTelegram = 6,
     ReadWantedPosters = 7,
     AdvanceTravelDay = 8,
-    ResolveTravelEncounter = 9
+    ResolveTravelEncounter = 9,
+    InspectNoticeBoard = 10,
+    CheckSheriffRecords = 11
 }

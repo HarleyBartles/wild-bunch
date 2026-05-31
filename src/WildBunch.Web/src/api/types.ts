@@ -9,7 +9,7 @@ export const JourneyStatus = {
 } as const;
 export type TravelMode = 0 | 1;
 
-export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export const AvailableActionKind = {
   Travel: 0,
   ViewMap: 1,
@@ -19,6 +19,10 @@ export const AvailableActionKind = {
   VisitDoctor: 5,
   SendTelegram: 6,
   ReadWantedPosters: 7,
+  AdvanceTravelDay: 8,
+  ResolveTravelEncounter: 9,
+  InspectNoticeBoard: 10,
+  CheckSheriffRecords: 11,
 } as const;
 
 export type TrailRisk = 1 | 2 | 3;
@@ -306,6 +310,14 @@ export interface ClueDto {
   description: string;
 }
 
+export interface WarrantDto {
+  targetName: string;
+  summary: string;
+  issuingSource: string;
+  disposition: number;
+  bountyAmount: number;
+}
+
 export interface DiscoveredSuspectDto {
   id: string;
   name: string;
@@ -381,6 +393,7 @@ export interface JournalCaseFileDto {
   caseSummary: string;
   discoveredSuspects: DiscoveredSuspectDto[];
   knownClues: ClueDto[];
+  knownWarrants: WarrantDto[];
 }
 
 export interface JournalDto {
@@ -393,6 +406,12 @@ export interface JournalDto {
 }
 
 export interface WantedPostersResultDto {
+  success: boolean;
+  message: string;
+  currentJournal: JournalDto;
+}
+
+export interface InvestigationActionResultDto {
   success: boolean;
   message: string;
   currentJournal: JournalDto;

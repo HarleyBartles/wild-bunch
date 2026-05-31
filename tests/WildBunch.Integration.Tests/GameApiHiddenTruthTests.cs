@@ -45,5 +45,19 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"isTrueCulprit\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"discoveredSuspects\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+
+        var noticeBoardResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/notice-board/inspect", content: null);
+        var noticeBoardPayload = await noticeBoardResponse.Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("\"trueCulpritId\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
+
+        var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/sheriff-records/check", content: null);
+        var sheriffRecordsPayload = await sheriffRecordsResponse.Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("\"trueCulpritId\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
     }
 }

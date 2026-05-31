@@ -1,6 +1,7 @@
 import type {
   AvailableActionDto,
   BuyStoreItemRequest,
+  InvestigationActionResultDto,
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
@@ -152,6 +153,18 @@ export function resolveTravelEncounter(
 
 export function readWantedPosters(gameId: string) {
   return requestJson<WantedPostersResultDto>(`/api/games/${gameId}/wanted-posters/read`, {
+    method: "POST",
+  });
+}
+
+export function inspectNoticeBoard(gameId: string) {
+  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/notice-board/inspect`, {
+    method: "POST",
+  });
+}
+
+export function checkSheriffRecords(gameId: string) {
+  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/sheriff-records/check`, {
     method: "POST",
   });
 }

@@ -23,6 +23,7 @@ public sealed class JournalResolver
             "Find the culprit before the law closes in.",
             session.CaseFile.GetDiscoveredSuspects(),
             session.CaseFile.KnownClues.ToArray(),
+            session.CaseFile.KnownWarrants.ToArray(),
             session.LogEntries.ToArray());
     }
 }

@@ -105,6 +105,7 @@ public sealed record Clue
         string description,
         IEnumerable<SuspectId>? linkedSuspectIds,
         InvestigationTargetKind targetKind,
+        InvestigationSourceKind? sourceKind = null,
         string? source = null,
         string? context = null)
     {
@@ -114,6 +115,7 @@ public sealed record Clue
         Kind = kind;
         Description = description;
         TargetKind = targetKind;
+        SourceKind = sourceKind;
         Source = source;
         Context = context;
         LinkedSuspectIds = (linkedSuspectIds ?? Array.Empty<SuspectId>())
@@ -128,6 +130,8 @@ public sealed record Clue
     public string Description { get; }
 
     public InvestigationTargetKind TargetKind { get; }
+
+    public InvestigationSourceKind? SourceKind { get; }
 
     public string? Source { get; }
 
