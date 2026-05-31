@@ -36,11 +36,12 @@ public sealed class GameApiJournalTests
         Assert.Equal("Pinecross", journal.CurrentTown.Name);
         Assert.Equal("Find the culprit before the law closes in.", journal.CaseFile.CaseSummary);
         Assert.Equal("The culprit has a scar on his left cheek.", journal.CaseFile.OpeningLead);
-        Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
-        Assert.Equal(0, journal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
         Assert.Empty(journal.CaseFile.DiscoveredSuspects);
         Assert.NotEmpty(journal.LogEntries);
         Assert.NotEmpty(journal.CaseFile.KnownClues);
+        Assert.Contains(journal.CaseFile.KnownClues, clue => clue.SourceLabel is not null);
+        Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Anchors.Subjects.Count > 0 || clue.Anchors.Locations.Count > 0 || clue.Anchors.Times.Count > 0 || clue.Anchors.Directions.Count > 0);
 
         var payload = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
@@ -48,6 +49,7 @@ public sealed class GameApiJournalTests
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -93,6 +95,7 @@ public sealed class GameApiJournalTests
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal("The culprit has a scar on his left cheek.", journal.CaseFile.OpeningLead);
+        Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
         Assert.Empty(journal.CaseFile.DiscoveredSuspects);
 
         var payload = await journalResponse.Content.ReadAsStringAsync();
@@ -101,6 +104,7 @@ public sealed class GameApiJournalTests
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

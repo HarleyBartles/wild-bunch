@@ -26,6 +26,7 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", createPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal");
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
@@ -37,6 +38,7 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", journalPayload, StringComparison.OrdinalIgnoreCase);
 
         var wantedPostersResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
         var wantedPostersPayload = await wantedPostersResponse.Content.ReadAsStringAsync();
@@ -44,6 +46,7 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"trueCulpritId\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"discoveredSuspects\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
 
         var noticeBoardResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/notice-board/inspect", content: null);
@@ -52,6 +55,7 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"trueCulpritId\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
 
         var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/sheriff-records/check", content: null);
         var sheriffRecordsPayload = await sheriffRecordsResponse.Content.ReadAsStringAsync();
@@ -59,5 +63,6 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"trueCulpritId\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
     }
 }

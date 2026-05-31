@@ -33,13 +33,14 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -56,13 +57,14 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(0, repository.SaveCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Single(result.CurrentJournal.LogEntries);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

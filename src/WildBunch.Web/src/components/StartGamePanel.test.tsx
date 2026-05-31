@@ -47,10 +47,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     caseFile: {
       accusationId: null,
       openingLead: "",
-      killerReleaseState: {
-        isReleased: false,
-        progress: 0,
-        requiredPublicClues: 3,
+      caseState: {
         statusText: "",
       },
       discoveredSuspects: [],

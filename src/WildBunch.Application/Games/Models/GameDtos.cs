@@ -84,7 +84,7 @@ public sealed record TrailDto(
 
 public sealed record CaseFileDto(
     string OpeningLead,
-    KillerReleaseStateDto KillerReleaseState,
+    CaseStateDto CaseState,
     IReadOnlyList<DiscoveredSuspectDto> DiscoveredSuspects,
     IReadOnlyList<ClueDto> KnownClues);
 
@@ -96,7 +96,10 @@ public sealed record DiscoveredSuspectDto(
 public sealed record ClueDto(
     string Id,
     ClueKind Kind,
-    string Description);
+    string Description,
+    string? SourceLabel,
+    string? Context,
+    ClueAnchorsDto Anchors);
 
 public sealed record WarrantDto(
     string TargetName,
@@ -266,12 +269,6 @@ public sealed record TravelDiaryEncounterResolutionDto(
 public sealed record GameClockDto(int Day, int Turn);
 
 public sealed record PursuitStateDto(int Heat);
-
-public sealed record KillerReleaseStateDto(
-    bool IsReleased,
-    int Progress,
-    int RequiredPublicClues,
-    string StatusText);
 
 public sealed record GameLogEntryDto(
     GameLogEntryKind Kind,

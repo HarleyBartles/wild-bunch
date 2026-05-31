@@ -32,11 +32,13 @@ public sealed class InspectNoticeBoardHandlerTests
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants, warrant => warrant.TargetName == "Mira Cline");
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -53,7 +55,7 @@ public sealed class InspectNoticeBoardHandlerTests
         Assert.Equal(0, repository.SaveCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 
     [Fact]

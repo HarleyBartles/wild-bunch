@@ -71,10 +71,7 @@ function createSession(): GameSessionDto {
     caseFile: {
       accusationId: null,
       openingLead: "The trail went cold outside town.",
-      killerReleaseState: {
-        isReleased: false,
-        progress: 0,
-        requiredPublicClues: 3,
+      caseState: {
         statusText: "Still chasing leads.",
       },
       discoveredSuspects: [],
@@ -114,10 +111,7 @@ function createJournal(): JournalDto {
     caseFile: {
       accusationId: null,
       openingLead: "The trail went cold outside town.",
-      killerReleaseState: {
-        isReleased: false,
-        progress: 0,
-        requiredPublicClues: 3,
+      caseState: {
         statusText: "Still chasing leads.",
       },
       caseSummary: "Find the culprit before the law closes in.",

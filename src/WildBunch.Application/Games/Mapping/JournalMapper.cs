@@ -18,26 +18,13 @@ public static class JournalMapper
             new JournalTownDto(snapshot.CurrentTownId.Value, snapshot.CurrentTownName),
             new JournalCaseFileDto(
                 snapshot.OpeningLead,
-                ToDto(snapshot.KillerReleaseState),
+                CaseReadMapper.ToDto(snapshot.KillerReleaseState),
                 snapshot.CaseSummary,
                 snapshot.DiscoveredSuspects.Select(ToDto).ToArray(),
-                snapshot.KnownClues.Select(ToDto).ToArray(),
+                snapshot.KnownClues.Select(CaseReadMapper.ToDto).ToArray(),
                 snapshot.KnownWarrants.Select(ToDto).ToArray()),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
-
-    private static KillerReleaseStateDto ToDto(KillerReleaseState state)
-        => new(
-            state.IsReleased,
-            state.Progress,
-            state.RequiredPublicClues,
-            state.StatusText);
-
-    private static ClueDto ToDto(Clue clue)
-        => new(
-            clue.Id.Value,
-            clue.Kind,
-            clue.Description);
 
     private static DiscoveredSuspectDto ToDto(Suspect suspect)
         => new(

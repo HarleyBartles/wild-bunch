@@ -36,8 +36,8 @@ public sealed class GameApiWantedPostersTests
         Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Equal(4, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
-        Assert.Equal(0, actionResult.CurrentJournal.CaseFile.KillerReleaseState.Progress);
-        Assert.False(actionResult.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal("The Wild Bunch trail is quiet.", actionResult.CurrentJournal.CaseFile.CaseState.StatusText);
+        Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.SourceLabel is not null);
 
         var actionPayload = await actionResponse.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", actionPayload, StringComparison.OrdinalIgnoreCase);
@@ -46,6 +46,7 @@ public sealed class GameApiWantedPostersTests
         Assert.DoesNotContain("\"isTrueCulprit\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueculpritid\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", actionPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", actionPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -56,8 +57,7 @@ public sealed class GameApiWantedPostersTests
         Assert.NotNull(journal);
         Assert.Equal(4, journal!.CaseFile.KnownClues.Count);
         Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
-        Assert.Equal(0, journal.CaseFile.KillerReleaseState.Progress);
-        Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
         Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
@@ -67,6 +67,7 @@ public sealed class GameApiWantedPostersTests
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", journalPayload, StringComparison.OrdinalIgnoreCase);
 
         var secondReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
@@ -75,7 +76,7 @@ public sealed class GameApiWantedPostersTests
         var secondRead = await secondReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
 
         Assert.NotNull(secondRead);
-        Assert.Equal(0, secondRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", secondRead!.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Equal(4, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Single(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects);
         Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
@@ -89,7 +90,7 @@ public sealed class GameApiWantedPostersTests
         var thirdRead = await thirdReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
 
         Assert.NotNull(thirdRead);
-        Assert.Equal(0, thirdRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", thirdRead!.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Equal(4, thirdRead.CurrentJournal.CaseFile.KnownClues.Count);
     }
 

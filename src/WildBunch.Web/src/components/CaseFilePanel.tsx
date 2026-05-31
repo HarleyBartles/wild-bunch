@@ -5,7 +5,48 @@ interface CaseFilePanelProps {
   journal: JournalDto | null;
 }
 
+function formatClueRecency(recency: number) {
+  switch (recency) {
+    case 1:
+      return "recent";
+    case 2:
+      return "yesterday";
+    case 3:
+      return "today";
+    case 4:
+      return "old";
+    default:
+      return "unknown";
+  }
+}
+
 export function CaseFilePanel({ journal }: CaseFilePanelProps) {
+  const renderAnchorSummary = (label: string, items: { label: string; alias: string | null; feature: string | null; fact: string | null }[] | { label: string; place: string | null; route: string | null }[] | { label: string; movement: string | null; route: string | null }[] | { recency: number; day: number | null; turn: number | null }[]) =>
+    items.length > 0 ? (
+      <p className="case-anchor">
+        <strong>{label}:</strong>{" "}
+        {items
+          .map((item) => {
+            if ("recency" in item) {
+              const parts = [formatClueRecency(item.recency)];
+              if (item.day !== null) parts.push(`day ${item.day}`);
+              if (item.turn !== null) parts.push(`turn ${item.turn}`);
+              return parts.join(", ");
+            }
+
+            const parts = [item.label];
+            if ("alias" in item && item.alias) parts.push(`alias ${item.alias}`);
+            if ("feature" in item && item.feature) parts.push(item.feature);
+            if ("fact" in item && item.fact) parts.push(item.fact);
+            if ("place" in item && item.place) parts.push(item.place);
+            if ("route" in item && item.route) parts.push(item.route);
+            if ("movement" in item && item.movement) parts.push(item.movement);
+            return parts.join(" - ");
+          })
+          .join(" | ")}
+      </p>
+    ) : null;
+
   return (
     <section className="panel panel--wide">
       <div className="panel-head">
@@ -35,13 +76,11 @@ export function CaseFilePanel({ journal }: CaseFilePanelProps) {
                 <dd>{journal.caseFile.accusationId ?? "None"}</dd>
               </div>
               <div>
-                <dt>Release</dt>
-                <dd>
-                  {journal.caseFile.killerReleaseState.progress}/{journal.caseFile.killerReleaseState.requiredPublicClues}
-                </dd>
+                <dt>Case state</dt>
+                <dd>{journal.caseFile.caseState.statusText}</dd>
               </div>
             </dl>
-            <p className="case-release">{journal.caseFile.killerReleaseState.statusText}</p>
+            <p className="case-release">{journal.caseFile.caseState.statusText}</p>
           </article>
 
           <article className="status-card">
@@ -72,6 +111,16 @@ export function CaseFilePanel({ journal }: CaseFilePanelProps) {
                     <p>
                       {clue.id} - {formatClueKind(clue.kind)}
                     </p>
+                    {clue.sourceLabel ? (
+                      <p>
+                        <strong>Source:</strong> {clue.sourceLabel}
+                        {clue.context ? ` - ${clue.context}` : ""}
+                      </p>
+                    ) : null}
+                    {renderAnchorSummary("Subjects", clue.anchors.subjects)}
+                    {renderAnchorSummary("Locations", clue.anchors.locations)}
+                    {renderAnchorSummary("Times", clue.anchors.times)}
+                    {renderAnchorSummary("Directions", clue.anchors.directions)}
                   </div>
                 ))
               ) : (

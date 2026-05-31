@@ -31,12 +31,13 @@ public sealed class InvestigationSourceHandlerTests
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("telegraph clerk", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -53,7 +54,7 @@ public sealed class InvestigationSourceHandlerTests
         Assert.Equal(0, repository.SaveCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 
     [Fact]
@@ -71,12 +72,13 @@ public sealed class InvestigationSourceHandlerTests
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("local gossip", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -93,7 +95,7 @@ public sealed class InvestigationSourceHandlerTests
         Assert.Equal(0, repository.SaveCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 
     private static GameSession CreateSession(TownServices currentTownServices)

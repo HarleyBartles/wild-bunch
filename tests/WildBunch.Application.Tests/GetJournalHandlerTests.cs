@@ -32,9 +32,7 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.Player.CurrentTownId.Value, result.CurrentTown.Id);
         Assert.Equal("Pinecross", result.CurrentTown.Name);
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
-        Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.CaseFile.KillerReleaseState.IsReleased);
-        Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.CaseFile.KillerReleaseState.Progress);
-        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
         Assert.Empty(result.CaseFile.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
@@ -50,6 +48,7 @@ public sealed class GetJournalHandlerTests
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(typeof(WildBunch.Application.Games.Models.JournalCaseFileDto).GetProperties(), property => property.Name.Contains("culprit", StringComparison.OrdinalIgnoreCase));
     }
@@ -69,12 +68,14 @@ public sealed class GetJournalHandlerTests
         Assert.Equal("suspect-2", result.CaseFile.DiscoveredSuspects[0].Id);
         Assert.Equal("Mira Cline", result.CaseFile.DiscoveredSuspects[0].Name);
         Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
+        Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
 
         var payload = System.Text.Json.JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("trueCulpritId", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

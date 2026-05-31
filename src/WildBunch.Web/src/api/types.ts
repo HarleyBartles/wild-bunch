@@ -36,6 +36,7 @@ export type GameLogEntryKind = 0 | 1 | 2;
 export type ItemKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type TrailTerrain = 0 | 1 | 2 | 3;
 export type WaterFeature = 0 | 1 | 2 | 3;
+export type ClueRecency = 0 | 1 | 2 | 3 | 4;
 export type JourneyTrailEventKind = 0 | 1;
 export type JourneyTrailEventId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type StoreVendorType = 0 | 1 | 2;
@@ -310,6 +311,9 @@ export interface ClueDto {
   id: string;
   kind: ClueKind;
   description: string;
+  sourceLabel: string | null;
+  context: string | null;
+  anchors: ClueAnchorsDto;
 }
 
 export interface WarrantDto {
@@ -326,17 +330,46 @@ export interface DiscoveredSuspectDto {
   status: SuspectStatus;
 }
 
-export interface KillerReleaseStateDto {
-  isReleased: boolean;
-  progress: number;
-  requiredPublicClues: number;
+export interface CaseStateDto {
   statusText: string;
+}
+
+export interface ClueAnchorsDto {
+  subjects: ClueSubjectAnchorDto[];
+  locations: ClueLocationAnchorDto[];
+  times: ClueTimeAnchorDto[];
+  directions: ClueDirectionAnchorDto[];
+}
+
+export interface ClueSubjectAnchorDto {
+  label: string;
+  alias: string | null;
+  feature: string | null;
+  fact: string | null;
+}
+
+export interface ClueLocationAnchorDto {
+  label: string;
+  place: string | null;
+  route: string | null;
+}
+
+export interface ClueTimeAnchorDto {
+  recency: ClueRecency;
+  day: number | null;
+  turn: number | null;
+}
+
+export interface ClueDirectionAnchorDto {
+  label: string;
+  movement: string | null;
+  route: string | null;
 }
 
 export interface CaseFileDto {
   accusationId: string | null;
   openingLead: string;
-  killerReleaseState: KillerReleaseStateDto;
+  caseState: CaseStateDto;
   discoveredSuspects: DiscoveredSuspectDto[];
   knownClues: ClueDto[];
 }
@@ -391,7 +424,7 @@ export interface JournalTownDto {
 export interface JournalCaseFileDto {
   accusationId: string | null;
   openingLead: string;
-  killerReleaseState: KillerReleaseStateDto;
+  caseState: CaseStateDto;
   caseSummary: string;
   discoveredSuspects: DiscoveredSuspectDto[];
   knownClues: ClueDto[];

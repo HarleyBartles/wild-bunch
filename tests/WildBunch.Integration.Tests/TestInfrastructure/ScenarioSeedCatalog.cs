@@ -232,8 +232,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual(scenarioName, "start-game.world.towns", 6, session.World.Towns.Count);
         RequireEqual(scenarioName, "start-game.world.trails", 7, session.World.Trails.Count);
         RequireEqual(scenarioName, "start-game.caseFile.openingLead", "The culprit has a scar on his left cheek.", session.CaseFile.OpeningLead);
-        RequireEqual(scenarioName, "start-game.caseFile.killerReleaseState.isReleased", false, session.CaseFile.KillerReleaseState.IsReleased);
-        RequireEqual(scenarioName, "start-game.caseFile.killerReleaseState.progress", 0, session.CaseFile.KillerReleaseState.Progress);
+        RequireEqual(scenarioName, "start-game.caseFile.caseState.statusText", "The Wild Bunch trail is quiet.", session.CaseFile.CaseState.StatusText);
         RequireEqual(scenarioName, "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);
         RequireEqual(scenarioName, "start-game.inventory.items.count", 8, session.Inventory.Items.Count);
         Require(scenarioName, "start-game.inventory.horseState", session.Inventory.HorseState is not null, "expected the player to start mounted.");
