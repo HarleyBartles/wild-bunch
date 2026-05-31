@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
@@ -33,7 +34,8 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(1, actionResult.CurrentJournal.Clock.Turn);
         Assert.Equal(2, actionResult.CurrentJournal.LogEntries.Count);
         Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
-        Assert.Single(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Equal(4, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal(1, actionResult.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.False(actionResult.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
 
@@ -52,7 +54,8 @@ public sealed class GameApiWantedPostersTests
         var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
 
         Assert.NotNull(journal);
-        Assert.Contains(journal!.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Equal(4, journal!.CaseFile.KnownClues.Count);
+        Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal(1, journal.CaseFile.KillerReleaseState.Progress);
         Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
@@ -77,8 +80,8 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(2, secondRead.CurrentJournal.CaseFile.DiscoveredSuspects.Count);
         Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-2");
-        Assert.Contains(secondRead.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
-        Assert.Contains(secondRead.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-2");
+        Assert.Equal(5, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, secondRead.CurrentJournal.CaseFile.KnownClues.Count(clue => clue.Kind is ClueKind.Alias or ClueKind.Record));
 
         var thirdReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
@@ -140,7 +143,8 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(3, result.CurrentJournal.Clock.Day);
         Assert.Equal(0, result.CurrentJournal.Clock.Turn);
         Assert.True(result.CurrentJournal.LogEntries.Count >= 4);
-        Assert.DoesNotContain(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Equal(3, result.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.DoesNotContain(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
 
         var payload = await response.Content.ReadAsStringAsync();

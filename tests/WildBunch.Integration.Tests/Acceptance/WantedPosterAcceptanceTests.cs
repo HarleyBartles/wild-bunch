@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using WildBunch.Domain.Cases;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
 using WildBunch.Integration.Tests.TestInfrastructure;
@@ -26,7 +27,8 @@ public sealed class WantedPosterAcceptanceTests
         Assert.True(result!.Success);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
-        Assert.Contains(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Id == "clue-public-1");
+        Assert.Equal(4, result.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Contains(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.False(result.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Contains(result.CurrentJournal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);

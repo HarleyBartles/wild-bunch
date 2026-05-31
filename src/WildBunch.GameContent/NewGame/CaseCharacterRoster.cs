@@ -14,7 +14,6 @@ internal sealed record CaseCharacterProfile(
     string DisplayName,
     IReadOnlyList<string> SourceAliases,
     IReadOnlyList<SuspectAlias> GameAliases,
-    IReadOnlyList<string> IdentifyingFacts,
     IReadOnlyList<string> TerritoryTags,
     IReadOnlyList<string> CrimeTags,
     IReadOnlyList<string> ClueSourceTags,
@@ -54,12 +53,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | founder / source identity",
             [],
             [new SuspectAlias("Grey Jay", AliasKind.Nickname), new SuspectAlias("J. Pike", AliasKind.FormerName)],
-            [
-                "Wears a cracked leather gauntlet on the right hand.",
-                "Keeps a brass spur tied to a faded blue sash.",
-                "A pale scar cuts across the left cheek.",
-                "Wears a raven-feather pin on a dark coat."
-            ],
             ["Indian Territory", "Wyoming"],
             ["train robbery", "bank robbery"],
             ["trail witness", "telegraph ledger"],
@@ -74,10 +67,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | close companion from the source pool",
             [],
             [new SuspectAlias("M.K. Rook", AliasKind.KnownAs)],
-            [
-                "Carries a tin badge clipped to a saddle strap.",
-                "Prefers a sand-colored hat with the brim stitched flat."
-            ],
             ["Wyoming", "Patagonia"],
             ["train robbery", "stagecoach robbery"],
             ["notice board", "sheriff record"],
@@ -92,12 +81,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed outlaw companion",
             ["Lay"],
             [new SuspectAlias("Inkshot", AliasKind.Nickname), new SuspectAlias("E. Quill", AliasKind.FormerName)],
-            [
-                "Has a black-stained cuff on the left sleeve.",
-                "Keeps a split-finger glove tucked into a coat pocket.",
-                "A pale scar cuts across the left cheek.",
-                "Wears a raven-feather pin on a dark coat."
-            ],
             ["Wyoming", "New Mexico"],
             ["train robbery", "horse theft"],
             ["waystation clerk", "rail ledger"],
@@ -112,11 +95,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed violent rider",
             ["George Curry", "Flat-Nose Curry"],
             [new SuspectAlias("Red Wren", AliasKind.Nickname), new SuspectAlias("Aunt Tess", AliasKind.KnownAs)],
-            [
-                "A pale scar cuts across the left cheek.",
-                "Wears a raven-feather pin on a dark coat.",
-                "Keeps a brass spur tied to a faded blue sash."
-            ],
             ["Wyoming", "Tennessee"],
             ["train robbery", "lawman killing"],
             ["trail witness", "poster sketch"],
@@ -131,10 +109,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed gang associate",
             [],
             [new SuspectAlias("Hollow Boone", AliasKind.Nickname)],
-            [
-                "Keeps iron-rim spectacles tucked into a coat pocket.",
-                "Wears a long dust-colored duster with a frayed hem."
-            ],
             ["Browns Park", "Tennessee"],
             ["theft", "fraud"],
             ["station clerk", "ledger note"],
@@ -149,10 +123,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed gang member",
             ["Will Carver", "News Carver"],
             [new SuspectAlias("Cedar Vale", AliasKind.Nickname)],
-            [
-                "Keeps a copper ribbon tied in her hair.",
-                "Leaves tobacco-stained glove prints on ledgers and rail notices."
-            ],
             ["Wyoming", "New Mexico"],
             ["train robbery", "bank robbery"],
             ["notice board", "telegraph ledger"],
@@ -167,10 +137,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed gang member",
             ["Deaf Charley Hanks", "Camillo \"Deaf Charley\" Hanks"],
             [new SuspectAlias("O. Nash", AliasKind.FormerName)],
-            [
-                "Has a silver tooth that catches the light when he smiles.",
-                "Carries a rope-burn scar on the left wrist."
-            ],
             ["Hole-in-the-Wall", "Wyoming"],
             ["train robbery", "store robbery"],
             ["waystation clerk", "sheriff record"],
@@ -185,12 +151,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed gang member",
             ["Flat-Nose Curry", "Kid Curry"],
             [new SuspectAlias("The Magpie", AliasKind.Nickname), new SuspectAlias("R. Pike", AliasKind.FormerName)],
-            [
-                "Wears a black felt hat with a stitched brim.",
-                "Keeps a brass spur in a coat pocket.",
-                "A pale scar cuts across the left cheek.",
-                "Wears a raven-feather pin on a dark coat."
-            ],
             ["Wyoming", "Colorado"],
             ["train robbery", "lawman killing"],
             ["notice board", "marshal report"],
@@ -205,10 +165,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed gang member",
             [],
             [new SuspectAlias("Aunt Tess", AliasKind.KnownAs)],
-            [
-                "Wears a faded blue scarf over a dark vest.",
-                "Keeps saddle tools wrapped in oilcloth."
-            ],
             ["Hole-in-the-Wall", "Patagonia"],
             ["robbery", "horse theft"],
             ["trail witness", "rail ledger"],
@@ -223,12 +179,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed gang leader",
             [],
             [new SuspectAlias("Grey Jay", AliasKind.Nickname), new SuspectAlias("J. Pike", AliasKind.FormerName)],
-            [
-                "Wears a cracked leather gauntlet on the right hand.",
-                "Keeps a brass spur tied to a faded blue sash.",
-                "A pale scar cuts across the left cheek.",
-                "Wears a raven-feather pin on a dark coat."
-            ],
             ["Indian Territory", "Oklahoma Territory"],
             ["train robbery", "bank robbery"],
             ["trail witness", "telegraph ledger"],
@@ -243,10 +193,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed gang founder",
             ["William Marion Dalton"],
             [new SuspectAlias("M.K. Rook", AliasKind.KnownAs)],
-            [
-                "Carries a tin badge clipped to a saddle strap.",
-                "Prefers a sand-colored hat with the brim stitched flat."
-            ],
             ["Texas", "Indian Territory"],
             ["train robbery", "bank robbery"],
             ["notice board", "sheriff record"],
@@ -261,10 +207,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed gang member",
             ["Dynamite Dick Clifton"],
             [new SuspectAlias("Inkshot", AliasKind.Nickname), new SuspectAlias("E. Quill", AliasKind.FormerName)],
-            [
-                "Has a black-stained cuff on the left sleeve.",
-                "Keeps a split-finger glove tucked into a coat pocket."
-            ],
             ["Oklahoma Territory", "Kansas"],
             ["train robbery", "store robbery"],
             ["waystation clerk", "rail ledger"],
@@ -279,11 +221,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed gang member",
             ["Arkansas Tom Jones"],
             [new SuspectAlias("Red Wren", AliasKind.Nickname), new SuspectAlias("Aunt Tess", AliasKind.KnownAs)],
-            [
-                "A pale scar cuts across the left cheek.",
-                "Wears a raven-feather pin on a dark coat.",
-                "Keeps a brass spur tied to a faded blue sash."
-            ],
             ["Oklahoma Territory", "Missouri"],
             ["train robbery", "lawman killing"],
             ["trail witness", "poster sketch"],
@@ -298,10 +235,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed gang member",
             ["Bitter Creek", "Slaughter Kid"],
             [new SuspectAlias("Hollow Boone", AliasKind.Nickname)],
-            [
-                "Keeps iron-rim spectacles tucked into a coat pocket.",
-                "Wears a long dust-colored duster with a frayed hem."
-            ],
             ["Oklahoma Territory", "Kansas"],
             ["bank robbery", "train robbery"],
             ["station clerk", "ledger note"],
@@ -316,10 +249,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed gang member",
             [],
             [new SuspectAlias("Cedar Vale", AliasKind.Nickname)],
-            [
-                "Keeps a copper ribbon tied in her hair.",
-                "Leaves tobacco-stained glove prints on ledgers and rail notices."
-            ],
             ["Oklahoma Territory", "Arkansas"],
             ["store robbery", "horse theft"],
             ["notice board", "telegraph ledger"],
@@ -338,10 +267,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed allied rancher",
             ["Bassett"],
             [new SuspectAlias("Ann Bassett", AliasKind.KnownAs)],
-            [
-                "Runs a ranch that can supply fresh horses and beef.",
-                "Keeps ranch ledgers wrapped in oilcloth."
-            ],
             ["Browns Park"],
             ["rancher", "fence contact"],
             ["ranch ledger", "trail witness"],
@@ -353,10 +278,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed allied rancher",
             ["Bassett"],
             [new SuspectAlias("Josie Bassett", AliasKind.KnownAs)],
-            [
-                "Keeps a saddle blanket stitched with the initials J.B.",
-                "Knows every water stop between Browns Park and Robbers Roost."
-            ],
             ["Browns Park", "Robbers Roost"],
             ["rancher", "fence contact"],
             ["ranch ledger", "trail witness"],
@@ -368,10 +289,6 @@ internal static class CaseCharacterRoster
             $"{ButchCassidyWildBunchUrl} | source-listed companion",
             [],
             [new SuspectAlias("Etta Place", AliasKind.KnownAs)],
-            [
-                "Often travels under a neat, plain hat.",
-                "Keeps her papers folded inside a book cover."
-            ],
             ["Patagonia", "San Francisco"],
             ["traveler", "companion"],
             ["station clerk", "hotel register"],
@@ -383,10 +300,6 @@ internal static class CaseCharacterRoster
             $"{WildBunchUrl} | source-listed marshal",
             [],
             [new SuspectAlias("E.D. Nix", AliasKind.KnownAs)],
-            [
-                "Carries a marshal's badge and a stack of warrants.",
-                "Keeps a careful hand for town notices."
-            ],
             ["Oklahoma Territory"],
             ["marshal", "lawman"],
             ["sheriff record", "notice board"],
@@ -589,7 +502,6 @@ internal static class CaseCharacterRoster
         string sourceNote,
         IReadOnlyList<string> sourceAliases,
         IReadOnlyList<SuspectAlias> aliases,
-        IReadOnlyList<string> identifyingFacts,
         IReadOnlyList<string> territoryTags,
         IReadOnlyList<string> crimeTags,
         IReadOnlyList<string> clueSourceTags,
@@ -602,7 +514,6 @@ internal static class CaseCharacterRoster
             displayName,
             sourceAliases,
             aliases,
-            identifyingFacts,
             territoryTags,
             crimeTags,
             clueSourceTags,
@@ -620,7 +531,6 @@ internal static class CaseCharacterRoster
         string sourceNote,
         IReadOnlyList<string> sourceAliases,
         IReadOnlyList<SuspectAlias> aliases,
-        IReadOnlyList<string> identifyingFacts,
         IReadOnlyList<string> territoryTags,
         IReadOnlyList<string> crimeTags,
         IReadOnlyList<string> clueSourceTags,
@@ -630,7 +540,6 @@ internal static class CaseCharacterRoster
             displayName,
             sourceAliases,
             aliases,
-            identifyingFacts,
             territoryTags,
             crimeTags,
             clueSourceTags,

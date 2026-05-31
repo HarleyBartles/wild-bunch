@@ -53,13 +53,14 @@ public sealed class SeededNewGameFactoryTests
             "Roy Daugherty"
         }, session.CaseFile.Suspects.Select(suspect => suspect.Name).ToArray());
         Assert.Contains(session.CaseFile.Suspects[0].Profile.Aliases, alias => alias.Name == "Grey Jay");
-        Assert.Contains(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => fact.Description.Contains("scar", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => fact.Description.Contains("raven-feather", StringComparison.OrdinalIgnoreCase));
+        Assert.NotEmpty(session.CaseFile.Suspects[3].Profile.IdentifyingFacts);
+        var culpritOpeningFeature = Assert.Single(CaseSuspectFeaturePool.FeaturePool, feature => feature.OpeningLeadText == session.CaseFile.OpeningLead.Description);
+        Assert.Equal(culpritOpeningFeature.Description, session.CaseFile.Suspects[3].Profile.IdentifyingFacts[0].Description);
+        Assert.All(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Description == fact.Description));
         Assert.Contains(session.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
-            && clue.Description.Contains("scar", StringComparison.OrdinalIgnoreCase)
-            && clue.Description.Contains("left cheek", StringComparison.OrdinalIgnoreCase));
+            && clue.Description == session.CaseFile.OpeningLead.Description);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
