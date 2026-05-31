@@ -23,6 +23,7 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - `GameSession` remains the live-play aggregate root.
 - Do not move gameplay mutation out of `GameSession` just to satisfy abstraction goals.
 - Session-owned travel topology work belongs to a separate source-backed decision, not this issue. In particular, the `TravelJourney` aggregate-root direction is tracked separately and should not be reintroduced here.
+- Travel, Player, and similar session-owned domains may be cohesive internal aggregates under `GameSession`, but they are not separate aggregate roots by default.
 
 ## CQRS and Repository Boundaries
 
@@ -61,6 +62,13 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Read-only verification must stay read-only.
 - Do not use mutation routes such as `create_tree`, `create_commit`, or other create/update/delete/add/remove primitives as inspection tools.
 - If a read route is missing, use an approved read path instead of switching to a mutation primitive.
+
+## Worker Issue-Closure Boundary
+
+- Workers do not close GitHub issues.
+- Workers return source-backed closeout evidence and recommendations only.
+- Harley or GPT performs closure only after explicit latest-turn authorization.
+- A worker dispatch can assess closeout readiness, but it cannot mutate issue state.
 
 ## False-Green Checks
 

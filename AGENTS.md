@@ -4,7 +4,7 @@
 - Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - This repo is mainline-only.
 - Docs index: `docs/INDEX.md`
-- Required working knowledge for architecture-sensitive work: `docs/architecture-hygiene.md`
+- Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`
 
 ## Mainline-only Rule
 - Final accepted work must be on `main`.
@@ -22,6 +22,7 @@
 - Do not call GitHub mutation tools while inspecting repo state, reassessing an issue, or preparing a dispatch.
 - Treat tools named `create_*`, `update_*`, `delete_*`, `add_*`, `remove_*`, `lock_*`, `unlock_*`, or low-level Git primitives such as `create_tree` / `create_commit` as mutation routes.
 - `create_tree` is not a repo-listing tool. If a tree/listing read route is unavailable, use `fetch_file`, `fetch`, `search`, `compare_commits`, issue readers, and commit/status readers instead.
+- Workers do not close GitHub issues; they only return source-backed closeout evidence and recommendations.
 
 ## Validation
 - Run `dotnet build`.
