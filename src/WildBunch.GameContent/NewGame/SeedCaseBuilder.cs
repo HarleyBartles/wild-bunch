@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using WildBunch.Domain.Cases;
 
 namespace WildBunch.GameContent.NewGame;
@@ -11,8 +9,89 @@ internal static class SeedCaseBuilder
 
     public static CaseFile CreateCanonicalCaseFile()
     {
-        var suspects = CreateSuspects();
-        var clues = new[]
+        var suspects = CreateSuspects(CaseCharacterRoster.SelectCanonicalGangRoster());
+        var knownClues = CreateCanonicalKnownClues();
+        var publicClues = CreateCanonicalPublicClues(suspects);
+        var publicWarrants = new[]
+        {
+            CreateWarrant("warrant", 1, CaseCharacterRoster.CreateCanonicalTrueCulpritWarrant(), source: null, "Wanted for a Wild Bunch robbery and related killings."),
+            CreateWarrant("warrant", 2, CaseCharacterRoster.CreateCanonicalUnrelatedWarrant(), source: null, "Wanted for cattle theft and forging livery tags.")
+        };
+
+        return new CaseFile(
+            accusation: new SuspectId("suspect-2"),
+            suspects,
+            trueCulpritId: TrueCulpritId,
+            openingLead: CaseOpeningLead.Create("The culprit has a scar on his left cheek."),
+            knownClues,
+            publicClues: publicClues,
+            killerReleaseThreshold: NormalReleaseThreshold,
+            publicWarrants: publicWarrants);
+    }
+
+    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+
+        if (plan.IsCanonical)
+        {
+            return CreateCanonicalCaseFile();
+        }
+
+        var roster = CaseCharacterRoster.SelectGangRoster(plan.Source);
+        var suspects = CreateSuspects(roster);
+        var accusationId = suspects[plan.Source.PickIndex(GameSetupDeterministicLabels.CaseAccusation, suspects.Count)].Id;
+        var culprit = suspects.Single(suspect => suspect.Id.Equals(TrueCulpritId));
+
+        var knownClues = CreateKnownClues(plan.Source);
+        var publicClues = CreatePublicClues(plan.Source, suspects);
+        var publicWarrants = new[]
+        {
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, CaseCharacterRoster.CreateTrueCulpritWarrant(roster[3]), plan.Source, "Wanted for a Wild Bunch robbery and related killings."),
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, CaseCharacterRoster.SelectUnrelatedWarrant(plan.Source), plan.Source, "Wanted for cattle theft and forging livery tags.")
+        };
+
+        return new CaseFile(
+            accusationId,
+            suspects,
+            culprit.Id,
+            CaseOpeningLead.Create("The culprit has a scar on his left cheek."),
+            knownClues,
+            publicClues: publicClues,
+            killerReleaseThreshold: NormalReleaseThreshold,
+            publicWarrants: publicWarrants);
+    }
+
+    private static IReadOnlyList<Suspect> CreateSuspects(IReadOnlyList<CaseCharacterProfile> roster)
+    {
+        ArgumentNullException.ThrowIfNull(roster);
+        if (roster.Count != 7)
+        {
+            throw new InvalidOperationException("Seed case rosters must contain exactly seven gang suspects.");
+        }
+
+        return new[]
+        {
+            CreateSuspect(new SuspectId("suspect-1"), roster[0]),
+            CreateSuspect(new SuspectId("suspect-2"), roster[1]),
+            CreateSuspect(new SuspectId("suspect-3"), roster[2]),
+            CreateSuspect(TrueCulpritId, roster[3]),
+            CreateSuspect(new SuspectId("suspect-5"), roster[4]),
+            CreateSuspect(new SuspectId("suspect-6"), roster[5]),
+            CreateSuspect(new SuspectId("suspect-7"), roster[6])
+        };
+    }
+
+    private static Suspect CreateSuspect(SuspectId id, CaseCharacterProfile profile)
+        => new(
+            id,
+            profile.DisplayName,
+            new SuspectProfile(profile.GameAliases, profile.IdentifyingFacts.Select(fact => new SuspectIdentityFact(fact))),
+            profile.Traits,
+            SuspectStatus.AtLarge);
+
+    private static IReadOnlyList<Clue> CreateCanonicalKnownClues()
+        => new[]
         {
             new Clue(
                 new ClueId("clue-1"),
@@ -40,13 +119,26 @@ internal static class SeedCaseBuilder
                 context: "Route lead")
         };
 
-        var publicClues = new[]
+    private static IReadOnlyList<Clue> CreateKnownClues(GameSetupDeterministicSource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        return new[]
         {
-                new Clue(
-                    new ClueId("clue-public-1"),
-                    ClueKind.Alias,
-                    "A poster shows a rider marked by a faded blue scarf and the nickname Grey Jay.",
-                    new[] { new SuspectId("suspect-1") },
+            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, "The culprit has a scar on his left cheek.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead"),
+            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, "A rider answered to the name Red Wren and wore a raven-feather pin.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "telegraph ledger", "Identity match"),
+            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead")
+        };
+    }
+
+    private static IReadOnlyList<Clue> CreateCanonicalPublicClues(IReadOnlyList<Suspect> suspects)
+        => new[]
+        {
+            new Clue(
+                new ClueId("clue-public-1"),
+                ClueKind.Alias,
+                "A poster shows a rider marked by a faded blue scarf and the nickname Grey Jay.",
+                new[] { suspects[0].Id },
                 InvestigationTargetKind.GangMember,
                 source: "notice board",
                 context: "Public wanted poster"),
@@ -54,210 +146,46 @@ internal static class SeedCaseBuilder
                 new ClueId("clue-public-2"),
                 ClueKind.Record,
                 "A public notice describes a tin badge clipped to a saddle strap.",
-                new[] { new SuspectId("suspect-2") },
+                new[] { suspects[1].Id },
                 InvestigationTargetKind.Suspected,
                 source: "sheriff record",
                 context: "Public notice")
         };
 
-        var publicWarrants = new[]
-        {
-            new Warrant(
-                new WarrantId("warrant-1"),
-                "Tessa Wren",
-                new WarrantTerms(
-                    WarrantDisposition.DeadOrAlive,
-                    2500m,
-                    new[] { "Red Wren", "Aunt Tess" },
-                    new[] { "Pale scar across the left cheek", "Raven-feather pin" },
-                    "Dodge City Marshal",
-                    InvestigationTargetKind.TrueCulprit,
-                    isGangRelevant: true,
-                    advancesGangPressure: true),
-                "Wanted for a Wild Bunch robbery and related killings."),
-            new Warrant(
-                new WarrantId("warrant-2"),
-                "Reno Pike",
-                new WarrantTerms(
-                    WarrantDisposition.AliveOnly,
-                    300m,
-                    new[] { "The Magpie", "R. Pike" },
-                    new[] { "Mismatched spurs", "Black felt hat" },
-                    "Silver Creek Sheriff",
-                    InvestigationTargetKind.UnrelatedWantedCriminal,
-                    isGangRelevant: false,
-                    advancesGangPressure: false),
-                "Wanted for cattle theft and forging livery tags.")
-        };
-
-        return new CaseFile(
-            accusation: new SuspectId("suspect-2"),
-            suspects,
-            trueCulpritId: TrueCulpritId,
-            openingLead: CaseOpeningLead.Create("The culprit has a scar on his left cheek."),
-            knownClues: clues,
-            publicClues: publicClues,
-            killerReleaseThreshold: NormalReleaseThreshold,
-            publicWarrants: publicWarrants);
-    }
-
-    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan)
+    private static IReadOnlyList<Clue> CreatePublicClues(GameSetupDeterministicSource source, IReadOnlyList<Suspect> suspects)
     {
-        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(suspects);
 
-        if (plan.IsCanonical)
+        return new[]
         {
-            return CreateCanonicalCaseFile();
-        }
-
-        var suspects = CreateSuspects();
-        var culpritId = TrueCulpritId;
-        var accusationId = suspects[plan.Source.PickIndex(GameSetupDeterministicLabels.CaseAccusation, suspects.Count)].Id;
-
-        var knownClues = new[]
-        {
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, "The culprit has a scar on his left cheek.", culpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead"),
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, "A rider answered to the name Red Wren and wore a raven-feather pin.", culpritId, InvestigationTargetKind.TrueCulprit, "telegraph ledger", "Identity match"),
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", culpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead")
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, "A wanted poster mentions a faded blue sash and the nickname Grey Jay.", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster"),
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, "A notice board sketch shows a sand-colored hat with a stitched brim.", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice")
         };
-
-        var publicClues = new[]
-        {
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, "A wanted poster mentions a faded blue sash and the nickname Grey Jay.", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster"),
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, "A notice board sketch shows a sand-colored hat with a stitched brim.", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice")
-        };
-
-        var publicWarrants = new[]
-        {
-            CreateWarrant(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 1, "Tessa Wren", WarrantDisposition.DeadOrAlive, 2500m, new[] { "Red Wren", "Aunt Tess" }, new[] { "Pale scar across the left cheek", "Raven-feather pin" }, "Dodge City Marshal", InvestigationTargetKind.TrueCulprit, true, true, "Wanted for a Wild Bunch robbery and related killings."),
-            CreateWarrant(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 2, "Reno Pike", WarrantDisposition.AliveOnly, 300m, new[] { "The Magpie", "R. Pike" }, new[] { "Mismatched spurs", "Black felt hat" }, "Silver Creek Sheriff", InvestigationTargetKind.UnrelatedWantedCriminal, false, false, "Wanted for cattle theft and forging livery tags.")
-        };
-
-        var openingLead = CaseOpeningLead.Create("The culprit has a scar on his left cheek.");
-
-        return new CaseFile(
-            accusationId,
-            suspects,
-            culpritId,
-            openingLead,
-            knownClues,
-            publicClues: publicClues,
-            killerReleaseThreshold: NormalReleaseThreshold,
-            publicWarrants: publicWarrants);
     }
 
-    private static IReadOnlyList<Suspect> CreateSuspects()
-        => new[]
-        {
-            new Suspect(
-                new SuspectId("suspect-1"),
-                "Jonah Pike",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("Grey Jay", AliasKind.Nickname),
-                        new SuspectAlias("J. Pike", AliasKind.FormerName)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("Wears a cracked leather gauntlet on the right hand."),
-                        new SuspectIdentityFact("Keeps a brass spur tied to a faded blue sash.")
-                    }),
-                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
-                SuspectStatus.AtLarge),
-            new Suspect(
-                new SuspectId("suspect-2"),
-                "Mira Cline",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("M.K. Rook", AliasKind.KnownAs)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("Carries a tin badge clipped to a saddle strap."),
-                        new SuspectIdentityFact("Prefers a sand-colored hat with the brim stitched flat.")
-                    }),
-                new SuspectTraits(IsLocal: false, IsArmed: false, IsDesperate: false),
-                SuspectStatus.AtLarge),
-            new Suspect(
-                new SuspectId("suspect-3"),
-                "Evan Quill",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("Inkshot", AliasKind.Nickname),
-                        new SuspectAlias("E. Quill", AliasKind.FormerName)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("Has a black-stained cuff on the left sleeve."),
-                        new SuspectIdentityFact("Keeps a split-finger glove tucked into a coat pocket.")
-                    }),
-                new SuspectTraits(IsLocal: true, IsArmed: true, IsDesperate: false),
-                SuspectStatus.AtLarge),
-            new Suspect(
-                new SuspectId("suspect-4"),
-                "Tessa Wren",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("Red Wren", AliasKind.Nickname),
-                        new SuspectAlias("Aunt Tess", AliasKind.KnownAs)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("A pale scar cuts across the left cheek."),
-                        new SuspectIdentityFact("Wears a raven-feather pin on a dark coat.")
-                    }),
-                new SuspectTraits(IsLocal: false, IsArmed: true, IsDesperate: true),
-                SuspectStatus.AtLarge),
-            new Suspect(
-                new SuspectId("suspect-5"),
-                "Silas Boone",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("Hollow Boone", AliasKind.Nickname)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("Keeps iron-rim spectacles tucked into a coat pocket."),
-                        new SuspectIdentityFact("Wears a long dust-colored duster with a frayed hem.")
-                    }),
-                new SuspectTraits(IsLocal: true, IsArmed: true, IsDesperate: false),
-                SuspectStatus.AtLarge),
-            new Suspect(
-                new SuspectId("suspect-6"),
-                "Clara Vale",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("Cedar Vale", AliasKind.Nickname)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("Keeps a copper ribbon tied in her hair."),
-                        new SuspectIdentityFact("Leaves tobacco-stained glove prints on ledgers and rail notices.")
-                    }),
-                new SuspectTraits(IsLocal: false, IsArmed: false, IsDesperate: true),
-                SuspectStatus.AtLarge),
-            new Suspect(
-                new SuspectId("suspect-7"),
-                "Orin Nash",
-                new SuspectProfile(
-                    new[]
-                    {
-                        new SuspectAlias("O. Nash", AliasKind.FormerName)
-                    },
-                    new[]
-                    {
-                        new SuspectIdentityFact("Has a silver tooth that catches the light when he smiles."),
-                        new SuspectIdentityFact("Carries a rope-burn scar on the left wrist.")
-                    }),
-                new SuspectTraits(IsLocal: true, IsArmed: true, IsDesperate: true),
-                SuspectStatus.AtLarge)
-        };
+    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "")
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+
+        var warrantId = source is null
+            ? new WarrantId($"{label}-{warrantIndex:00}")
+            : new WarrantId($"{label}-{warrantIndex:00}-{source.PickIndex($"{label}.{warrantIndex}", 97):00}");
+
+        return new Warrant(
+            warrantId,
+            profile.TargetName,
+            new WarrantTerms(
+                profile.Disposition,
+                profile.BountyAmount,
+                profile.KnownAliases,
+                profile.KnownFeatures,
+                profile.IssuingSource,
+                profile.TargetKind,
+                profile.IsGangRelevant,
+                profile.AdvancesGangPressure),
+            summary);
+    }
 
     private static Clue CreateClue(
         GameSetupDeterministicSource source,
@@ -277,32 +205,4 @@ internal static class SeedCaseBuilder
             targetKind,
             sourceNote,
             context);
-
-    private static Warrant CreateWarrant(
-        GameSetupDeterministicSource source,
-        string label,
-        int warrantIndex,
-        string targetName,
-        WarrantDisposition disposition,
-        decimal bountyAmount,
-        IReadOnlyList<string> knownAliases,
-        IReadOnlyList<string> knownFeatures,
-        string issuingSource,
-        InvestigationTargetKind targetKind,
-        bool isGangRelevant,
-        bool advancesGangPressure,
-        string summary)
-        => new(
-            new WarrantId($"{label}-{warrantIndex:00}-{source.PickIndex($"{label}.{warrantIndex}", 97):00}"),
-            targetName,
-            new WarrantTerms(
-                disposition,
-                bountyAmount,
-                knownAliases,
-                knownFeatures,
-                issuingSource,
-                targetKind,
-                isGangRelevant,
-                advancesGangPressure),
-            summary);
 }

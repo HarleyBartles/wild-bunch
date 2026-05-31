@@ -42,6 +42,19 @@ public sealed class SeededNewGameFactoryTests
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(5, session.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(new[]
+        {
+            "Butch Cassidy",
+            "Sundance Kid",
+            "Elzy Lay",
+            "Kid Curry",
+            "Laura Bullion",
+            "Bill Doolin",
+            "Roy Daugherty"
+        }, session.CaseFile.Suspects.Select(suspect => suspect.Name).ToArray());
+        Assert.Contains(session.CaseFile.Suspects[0].Profile.Aliases, alias => alias.Name == "Grey Jay");
+        Assert.Contains(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => fact.Description.Contains("scar", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => fact.Description.Contains("raven-feather", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(session.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
@@ -52,7 +65,7 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
-        Assert.Equal("Tessa Wren", session.CaseFile.PublicWarrants[0].TargetName);
+        Assert.Equal("Kid Curry", session.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(WarrantDisposition.DeadOrAlive, session.CaseFile.PublicWarrants[0].Terms.Disposition);
         Assert.Equal(2500m, session.CaseFile.PublicWarrants[0].Terms.BountyAmount);
         Assert.Contains("Red Wren", session.CaseFile.PublicWarrants[0].Terms.KnownAliases);
@@ -62,11 +75,28 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(WarrantDisposition.AliveOnly, session.CaseFile.PublicWarrants[1].Terms.Disposition);
         Assert.False(session.CaseFile.PublicWarrants[1].Terms.IsGangRelevant);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
-        Assert.Contains(session.CaseFile.Suspects, suspect =>
-            suspect.Id.Equals(session.CaseFile.TrueCulpritId)
-            && suspect.Profile.IdentifyingFacts.Any(fact => fact.Description.Contains("scar", StringComparison.OrdinalIgnoreCase))
-            && suspect.Profile.IdentifyingFacts.Any(fact => fact.Description.Contains("left cheek", StringComparison.OrdinalIgnoreCase)));
         Assert.All(session.CaseFile.PublicClues, clue => Assert.DoesNotContain(session.CaseFile.TrueCulpritId, clue.LinkedSuspectIds));
+    }
+
+    [Fact]
+    public void SameSeedKeepsTheRosterStableWhileDifferentEntropyCanChangeIt()
+    {
+        var factory = new SeededNewGameFactory();
+
+        var seedA = CreateSeedCode(11);
+        var seedASame = CreateSeedCode(11);
+        var seedB = FindVaryingSeed(seedA, factory);
+
+        var first = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedA);
+        var firstAgain = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedASame);
+        var second = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedB);
+
+        Assert.Equal(RosterSignature(first), RosterSignature(firstAgain));
+        Assert.Equal(WarrantSignature(first), WarrantSignature(firstAgain));
+        Assert.True(
+            RosterSignature(first) != RosterSignature(second)
+            || WarrantSignature(first) != WarrantSignature(second),
+            "Different entropy should change at least one roster or warrant surface.");
     }
 
     [Fact]
@@ -113,4 +143,38 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(TravelRandomnessMode.Deterministic, deterministicSecond.TravelRandomness.Mode);
         Assert.Equal(deterministicFirst.TravelRandomness.Salt, deterministicSecond.TravelRandomness.Salt);
     }
+
+    private static string CreateSeedCode(ulong entropy)
+        => GameSetupSeedCodec.Encode(
+            new GameSetupSeed(
+                GameSetupSeedCodec.CurrentGeneratorVersion,
+                TravelDifficulty.Normal,
+                GameSetupOptionsV1.Default,
+                entropy));
+
+    private static string FindVaryingSeed(string baselineSeedCode, SeededNewGameFactory factory)
+    {
+        var baseline = factory.Create("Ranger Vale", TravelDifficulty.Normal, baselineSeedCode);
+        var baselineRoster = RosterSignature(baseline);
+        var baselineWarrants = WarrantSignature(baseline);
+
+        for (ulong entropy = 12; entropy < 200; entropy++)
+        {
+            var candidateSeed = CreateSeedCode(entropy);
+            var candidate = factory.Create("Ranger Vale", TravelDifficulty.Normal, candidateSeed);
+
+            if (RosterSignature(candidate) != baselineRoster || WarrantSignature(candidate) != baselineWarrants)
+            {
+                return candidateSeed;
+            }
+        }
+
+        throw new InvalidOperationException("Could not find a noncanonical seed that changed the roster or warrant selection.");
+    }
+
+    private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
+        => string.Join("|", session.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}"));
+
+    private static string WarrantSignature(WildBunch.Domain.Game.GameSession session)
+        => string.Join("|", session.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.TargetKind}:{warrant.Terms.IsGangRelevant}:{warrant.Terms.AdvancesGangPressure}"));
 }

@@ -19,10 +19,10 @@ public sealed class GameApiHiddenTruthTests
         Assert.NotNull(createdSession);
 
         var createPayload = await createResponse.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("Jonah Pike", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Mira Cline", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Evan Quill", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Tessa Wren", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Butch Cassidy", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Sundance Kid", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Elzy Lay", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Kid Curry", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", createPayload, StringComparison.OrdinalIgnoreCase);
@@ -30,10 +30,10 @@ public sealed class GameApiHiddenTruthTests
         var journalResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal");
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
 
-        Assert.DoesNotContain("Jonah Pike", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Mira Cline", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Evan Quill", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Tessa Wren", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Butch Cassidy", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Sundance Kid", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Elzy Lay", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Kid Curry", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", journalPayload, StringComparison.OrdinalIgnoreCase);

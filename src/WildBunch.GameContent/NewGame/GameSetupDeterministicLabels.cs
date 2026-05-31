@@ -9,6 +9,7 @@ internal static class GameSetupDeterministicLabels
     public const string CaseAccusation = "case.accusation";
     public const string CaseKnownClues = "case.clues.known";
     public const string CasePublicClues = "case.clues.public";
+    public const string CasePublicWarrants = "case.warrants.public";
     public const string CaseOpeningLead = "case.openingLead";
     public const string PlayerInventoryStarting = "player.inventory.starting";
     public const string PlayerWalletStarting = "player.wallet.starting";
