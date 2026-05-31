@@ -6,6 +6,7 @@ This page turns issue #31 into a staged persistence migration plan that matches 
 
 - SQLite remains the local and development default.
 - PostgreSQL should be added as an additional provider path first, not used to replace SQLite immediately.
+- `Persistence:Provider` now selects `Sqlite` or `PostgreSql`, while the default remains SQLite.
 - `GameSession` remains the command-side aggregate root.
 - `IGameSessionRepository` remains the command persistence boundary.
 - Read repositories stay query-only.
@@ -14,6 +15,7 @@ This page turns issue #31 into a staged persistence migration plan that matches 
 This matches the current source shape:
 
 - `WildBunch.Persistence.DependencyInjection` wires `UseSqlite(...)` directly today.
+- `WildBunch.Persistence.DependencyInjection` now routes through a small provider-selection seam in `WildBunch.Persistence`.
 - `WildBunch.Api` applies migrations on startup through the persistence service provider.
 - The current composed session store uses `GameSessions`, `GameSessionComponents`, `GameSessionLogEntries`, and `GameSessionTravelDiaryDays`.
 - Component payloads are already serialized as JSON strings, so PostgreSQL `jsonb` is a natural later fit for cohesive runtime components.
@@ -93,6 +95,7 @@ If a provider-selection seam is added later, it should be small and configuratio
 - Keep the SQLite path intact.
 - Introduce provider-specific EF configuration only where the provider truly differs.
 - Preserve the current migration lineage and schema versioning.
+- Use `ConnectionStrings:WildBunchPostgresDb` for the opt-in PostgreSQL lane when a dedicated test or host database is available.
 
 ### Stage 2: JSONB Adoption
 
@@ -122,6 +125,7 @@ Validate each layer separately so false-green results are harder to miss.
 - `dotnet build WildBunch.sln`
 - `dotnet test WildBunch.sln`
 - `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`
+- PostgreSQL lane smoke tests can be run by setting `ConnectionStrings__WildBunchPostgresDb` to a dedicated test database connection string.
 
 When PostgreSQL provider work starts, add provider-specific integration coverage for:
 
@@ -149,6 +153,7 @@ Do not let the PostgreSQL provider become a shortcut around the aggregate.
 - Normalizing runtime state into many gameplay tables is not acceptable.
 - Letting command handlers mutate component rows directly around `GameSession` is not acceptable.
 - Letting read repositories mutate gameplay state is not acceptable.
+- Treating `ConnectionStrings__WildBunchPostgresDb` as required for normal local builds is not acceptable.
 - Treating this planning slice as completion of #31 is not acceptable.
 
 ## What This Issue Is Now

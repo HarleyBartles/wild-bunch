@@ -5,6 +5,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
     <ProjectReference Include="..\WildBunch.Application\WildBunch.Application.csproj" />
     <ProjectReference Include="..\WildBunch.Domain\WildBunch.Domain.csproj" />

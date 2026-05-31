@@ -11,10 +11,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = SqliteConnectionStringResolver.Resolve(configuration.GetConnectionString("WildBunchDb"));
-
         services.AddSingleton<GameSessionJsonSerializer>();
-        services.AddDbContext<WildBunchDbContext>(options => options.UseSqlite(connectionString));
+        services.AddDbContext<WildBunchDbContext>((_, options) => PersistenceDbContextOptions.Configure(options, configuration));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionReadRepository, EfGameSessionReadRepository>();
         services.AddScoped<IGameJournalReadRepository, EfGameJournalReadRepository>();
