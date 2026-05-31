@@ -31,7 +31,7 @@ public sealed class CheckSheriffRecordsHandlerTests
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

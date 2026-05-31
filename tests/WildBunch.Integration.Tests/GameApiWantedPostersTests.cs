@@ -36,7 +36,7 @@ public sealed class GameApiWantedPostersTests
         Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Equal(4, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
-        Assert.Equal(1, actionResult.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, actionResult.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.False(actionResult.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
 
         var actionPayload = await actionResponse.Content.ReadAsStringAsync();
@@ -56,7 +56,7 @@ public sealed class GameApiWantedPostersTests
         Assert.NotNull(journal);
         Assert.Equal(4, journal!.CaseFile.KnownClues.Count);
         Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
-        Assert.Equal(1, journal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, journal.CaseFile.KillerReleaseState.Progress);
         Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
@@ -75,7 +75,7 @@ public sealed class GameApiWantedPostersTests
         var secondRead = await secondReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
 
         Assert.NotNull(secondRead);
-        Assert.Equal(1, secondRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, secondRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(4, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Single(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects);
         Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
@@ -89,7 +89,7 @@ public sealed class GameApiWantedPostersTests
         var thirdRead = await thirdReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
 
         Assert.NotNull(thirdRead);
-        Assert.Equal(1, thirdRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, thirdRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(4, thirdRead.CurrentJournal.CaseFile.KnownClues.Count);
     }
 

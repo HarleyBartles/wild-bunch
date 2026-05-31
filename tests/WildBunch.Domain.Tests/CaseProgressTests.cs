@@ -16,7 +16,7 @@ public sealed class CaseProgressTests
     }
 
     [Fact]
-    public void RevealingNewPublicCluesAdvancesReleaseProgressButDuplicateReadsDoNot()
+    public void RevealingNewPublicCluesUpdatesKnowledgeButNotReleaseProgress()
     {
         var caseFile = CreateCaseFile();
 
@@ -27,8 +27,8 @@ public sealed class CaseProgressTests
         Assert.NotNull(first);
         Assert.NotNull(second);
         Assert.Null(duplicate);
-        Assert.Equal(2, caseFile.KillerReleaseState.Progress);
-        Assert.True(caseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(0, caseFile.KillerReleaseState.Progress);
+        Assert.False(caseFile.KillerReleaseState.IsReleased);
     }
 
     [Fact]

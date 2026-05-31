@@ -33,7 +33,7 @@ public sealed class GameSessionInvestigationActionsTests
     }
 
     [Fact]
-    public void CheckSheriffRecordsRevealsSourceTaggedClueAndAdvancesProgressOnce()
+    public void CheckSheriffRecordsRevealsSourceTaggedClueWithoutAdvancingProgress()
     {
         var session = CreateSession();
 
@@ -46,7 +46,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-1");
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-telegraph-2");
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
 
         TravelToTown(session, new TownId("connected"));
         TravelToTown(session, new TownId("current"));
@@ -131,7 +131,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-1");
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-2");
         Assert.Empty(session.CaseFile.PublicClues);
-        Assert.Equal(2, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(session.CurrentTownVisit.WantedPostersSpent);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-notice-1");
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-record-2");
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
 
         TravelToTown(session, new TownId("connected"));
         TravelToTown(session, new TownId("current"));
@@ -163,7 +163,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-notice-1");
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-2");
         Assert.Empty(session.CaseFile.PublicClues);
-        Assert.Equal(2, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     private static GameSession CreateSession()
@@ -330,7 +330,8 @@ public sealed class GameSessionInvestigationActionsTests
             currentTown.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy);
+            TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 
     private static GameSession CreateWantedPosterRefreshableSession()
@@ -393,7 +394,8 @@ public sealed class GameSessionInvestigationActionsTests
             currentTown.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy);
+            TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 
     private static void TravelToTown(GameSession session, TownId destinationTownId)

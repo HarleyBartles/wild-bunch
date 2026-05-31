@@ -29,7 +29,7 @@ public sealed class WantedPosterAcceptanceTests
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Equal(4, result.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
-        Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         Assert.False(result.CurrentJournal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Contains(result.CurrentJournal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
@@ -40,7 +40,7 @@ public sealed class WantedPosterAcceptanceTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
 
         var persistedSession = await factory.LoadSessionAsync(createdSession.Id);
-        Assert.Equal(1, persistedSession.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, persistedSession.CaseFile.KillerReleaseState.Progress);
         Assert.Single(persistedSession.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Contains(persistedSession.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
     }

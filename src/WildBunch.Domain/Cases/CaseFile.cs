@@ -188,7 +188,7 @@ public sealed class CaseFile
         return true;
     }
 
-    public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null, bool advanceKillerReleaseProgress = true)
+    public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null, bool advanceKillerReleaseProgress = false)
     {
         for (var i = 0; i < _publicClues.Count; i++)
         {
@@ -216,7 +216,7 @@ public sealed class CaseFile
         return null;
     }
 
-    public Clue? RevealNextPublicClue(Func<Clue, bool> canReveal, bool advanceKillerReleaseProgress = true)
+    public Clue? RevealNextPublicClue(Func<Clue, bool> canReveal, bool advanceKillerReleaseProgress = false)
     {
         ArgumentNullException.ThrowIfNull(canReveal);
 

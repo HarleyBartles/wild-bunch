@@ -29,7 +29,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Single(session.CaseFile.DiscoveredSuspectIds);
         Assert.Contains(new SuspectId("suspect-1"), session.CaseFile.DiscoveredSuspectIds);
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
@@ -50,7 +50,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Single(session.CaseFile.DiscoveredSuspectIds);
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
-        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]

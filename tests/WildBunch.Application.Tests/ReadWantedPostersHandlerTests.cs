@@ -33,7 +33,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Equal(1, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(0, result.CurrentJournal.CaseFile.KillerReleaseState.Progress);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);

@@ -107,6 +107,44 @@ public sealed class CaseFileTests
     }
 
     [Fact]
+    public void RevealingPublicCluesDoesNotAdvanceReleaseProgress()
+    {
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+            },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(
+                    new ClueId("clue-public-1"),
+                    ClueKind.Alias,
+                    "A posted notice describes a rider wearing a faded blue scarf.",
+                    new[] { new SuspectId("suspect-1") }),
+                new Clue(
+                    new ClueId("clue-public-2"),
+                    ClueKind.Record,
+                    "A sheriff note ties the rider to a rail ledger.",
+                    new[] { new SuspectId("suspect-1") })
+            },
+            killerReleaseThreshold: 2);
+
+        var first = caseFile.RevealNextPublicClue();
+        var second = caseFile.RevealNextPublicClue();
+        var duplicate = caseFile.RevealNextPublicClue();
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Null(duplicate);
+        Assert.Equal(0, caseFile.KillerReleaseProgress);
+        Assert.False(caseFile.KillerReleaseState.IsReleased);
+    }
+
+    [Fact]
     public void RevealingPublicClueBySourceSkipsMismatchedSources()
     {
         var caseFile = new CaseFile(
