@@ -159,6 +159,7 @@ public sealed class GameSetupSeedCodecTests
         var session = factory.Create("Ranger Vale", setupSeedCode: seedCode);
 
         Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Id.Equals(session.CaseFile.TrueCulpritId));
+        Assert.All(session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
         foreach (var clue in session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues))
         {
             foreach (var linkedSuspectId in clue.LinkedSuspectIds)
@@ -179,8 +180,19 @@ public sealed class GameSetupSeedCodecTests
             string.Join(",", session.Player.Inventory.Items.Select(item => $"{item.Kind}:{item.Quantity}:{item.HorseState?.Hunger ?? -1}:{item.HorseState?.Thirst ?? -1}:{item.HorseState?.Exhaustion ?? -1}:{item.CanteenState?.Charges ?? -1}:{item.CanteenState?.Capacity ?? -1}")),
             string.Join(",", session.CaseFile.Suspects.Select(suspect => suspect.Id.Value)),
             session.CaseFile.TrueCulpritId.Value,
-            string.Join(",", session.CaseFile.KnownClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
-            string.Join(",", session.CaseFile.PublicClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
+            string.Join(",", session.CaseFile.KnownClues.Select(DescribeClue)),
+            string.Join(",", session.CaseFile.PublicClues.Select(DescribeClue)),
             string.Join(",", session.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.Disposition}:{warrant.Terms.BountyAmount}:{string.Join("/", warrant.Terms.KnownAliases)}:{string.Join("/", warrant.Terms.KnownFeatures)}:{warrant.Terms.IssuingSource}:{warrant.Terms.TargetKind}:{string.Join("/", warrant.Terms.GangAffiliations.Select(gang => gang.Value))}:{warrant.Terms.AdvancesGangPressureFor?.Value ?? string.Empty}:{warrant.Summary}")),
             string.Join(",", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}")));
+
+    private static string DescribeClue(Clue clue)
+        => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}:{DescribeAnchors(clue.Anchors)}";
+
+    private static string DescribeAnchors(ClueAnchors anchors)
+        => string.Join(
+            "|",
+            $"subjects={string.Join("/", anchors.Subjects.Select(subject => $"{subject.Label}:{subject.Alias ?? string.Empty}:{subject.Feature ?? string.Empty}:{subject.Fact ?? string.Empty}"))}",
+            $"locations={string.Join("/", anchors.Locations.Select(location => $"{location.Label}:{location.TownId?.Value ?? string.Empty}:{location.Place ?? string.Empty}:{location.Route ?? string.Empty}"))}",
+            $"times={string.Join("/", anchors.Times.Select(time => $"{time.Recency}:{time.Day?.ToString() ?? string.Empty}:{time.Turn?.ToString() ?? string.Empty}"))}",
+            $"directions={string.Join("/", anchors.Directions.Select(direction => $"{direction.Label}:{direction.Movement ?? string.Empty}:{direction.DestinationTownId?.Value ?? string.Empty}:{direction.Route ?? string.Empty}"))}");
 }

@@ -116,9 +116,74 @@ internal static class SeedCaseBuilder
     private static IReadOnlyList<Clue> CreateKnownClues(GameSetupDeterministicSource source, CaseSuspectFeatureProfile culpritFeature)
         => new[]
         {
-            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature), TrueCulpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead", InvestigationSourceKind.TelegraphLead),
-            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, $"A witness tied the rider to {culpritFeature.Description}.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "telegraph ledger", "Identity match", InvestigationSourceKind.TelegraphLead),
-            CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead", InvestigationSourceKind.LocalGossip)
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CaseKnownClues,
+                1,
+                ClueKind.CulpritTrail,
+                CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature),
+                TrueCulpritId,
+                InvestigationTargetKind.TrueCulprit,
+                "trail witness",
+                "Opening lead",
+                InvestigationSourceKind.TelegraphLead,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(culpritFeature.Description, Feature: culpritFeature.Description, Fact: "opening lead"),
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CaseKnownClues,
+                2,
+                ClueKind.IdentityFact,
+                $"A witness tied the rider to {culpritFeature.Description}.",
+                TrueCulpritId,
+                InvestigationTargetKind.TrueCulprit,
+                "telegraph ledger",
+                "Identity match",
+                InvestigationSourceKind.TelegraphLead,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(culpritFeature.Description, Feature: culpritFeature.Description, Fact: "identity match")
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CaseKnownClues,
+                3,
+                ClueKind.Whereabouts,
+                "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.",
+                TrueCulpritId,
+                InvestigationTargetKind.TrueCulprit,
+                "waystation clerk",
+                "Route lead",
+                InvestigationSourceKind.LocalGossip,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor("Red Mesa rider", Feature: culpritFeature.Description)
+                    },
+                    locations: new[]
+                    {
+                        new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "Red Mesa road")
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    },
+                    directions: new[]
+                    {
+                        new ClueDirectionAnchor("after dusk", Movement: "heading along the Red Mesa road", Route: "Red Mesa road")
+                    }))
         };
 
     private static IReadOnlyList<Clue> CreatePublicClues(
@@ -129,10 +194,82 @@ internal static class SeedCaseBuilder
         IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments)
         => new[]
         {
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster", InvestigationSourceKind.NoticeBoard),
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice", InvestigationSourceKind.SheriffRecords),
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 3, ClueKind.IdentityFact, $"A telegraph clerk filed {DescribePrimaryAlias(suspects[2])} alongside a note about {features[2].PrimaryFeature.Description.ToLowerInvariant()}.", suspects[2].Id, InvestigationTargetKind.Suspected, "telegraph clerk", "Telegraph lead", InvestigationSourceKind.TelegraphLead),
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 4, ClueKind.Whereabouts, $"Local gossip out of {world.GetTown(suspectTurfAssignments[4].TurfTownId).Name} says the rider kept to the rail spur after dark.", suspects[4].Id, InvestigationTargetKind.GangMember, "saloon talk", "Town gossip", InvestigationSourceKind.LocalGossip)
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                1,
+                ClueKind.Alias,
+                $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}",
+                suspects[0].Id,
+                InvestigationTargetKind.GangMember,
+                "notice board",
+                "Public wanted poster",
+                InvestigationSourceKind.NoticeBoard,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[0]), Alias: DescribePrimaryAlias(suspects[0]), Feature: features[0].PrimaryFeature.Description)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                2,
+                ClueKind.Record,
+                $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}",
+                suspects[1].Id,
+                InvestigationTargetKind.Suspected,
+                "sheriff record",
+                "Public notice",
+                InvestigationSourceKind.SheriffRecords,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(features[1].PrimaryFeature.Description, Feature: features[1].PrimaryFeature.Description)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                3,
+                ClueKind.IdentityFact,
+                $"A telegraph clerk filed {DescribePrimaryAlias(suspects[2])} alongside a note about {features[2].PrimaryFeature.Description.ToLowerInvariant()}.",
+                suspects[2].Id,
+                InvestigationTargetKind.Suspected,
+                "telegraph clerk",
+                "Telegraph lead",
+                InvestigationSourceKind.TelegraphLead,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[2]), Alias: DescribePrimaryAlias(suspects[2]), Fact: features[2].PrimaryFeature.Description)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                4,
+                ClueKind.Whereabouts,
+                $"Local gossip out of {world.GetTown(suspectTurfAssignments[4].TurfTownId).Name} says the rider kept to the rail spur after dark.",
+                suspects[4].Id,
+                InvestigationTargetKind.GangMember,
+                "saloon talk",
+                "Town gossip",
+                InvestigationSourceKind.LocalGossip,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(features[4].PrimaryFeature.Description, Feature: features[4].PrimaryFeature.Description)
+                    },
+                    locations: new[]
+                    {
+                        new ClueLocationAnchor(world.GetTown(suspectTurfAssignments[4].TurfTownId).Name, TownId: suspectTurfAssignments[4].TurfTownId, Place: world.GetTown(suspectTurfAssignments[4].TurfTownId).Name, Route: "rail spur")
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    },
+                    directions: new[]
+                    {
+                        new ClueDirectionAnchor("kept to the rail spur after dark", Movement: "kept to the rail spur after dark", Route: "rail spur", DestinationTownId: suspectTurfAssignments[4].TurfTownId)
+                    }))
         };
 
     private static string DescribePrimaryAlias(Suspect suspect)
@@ -201,7 +338,8 @@ internal static class SeedCaseBuilder
         InvestigationTargetKind targetKind,
         string sourceNote,
         string context,
-        InvestigationSourceKind? sourceKind = null)
+        InvestigationSourceKind? sourceKind = null,
+        ClueAnchors? anchors = null)
         => new(
             new ClueId($"{label}-{clueIndex:00}-{source.PickIndex($"{label}.{clueIndex}", 97):00}"),
             kind,
@@ -210,5 +348,6 @@ internal static class SeedCaseBuilder
             targetKind,
             sourceKind,
             sourceNote,
-            context);
+            context,
+            anchors);
 }

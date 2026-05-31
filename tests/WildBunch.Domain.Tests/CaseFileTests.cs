@@ -107,6 +107,49 @@ public sealed class CaseFileTests
     }
 
     [Fact]
+    public void ClueAnchorsCaptureSubjectLocationTimeAndDirection()
+    {
+        var clue = new Clue(
+            new ClueId("clue-anchored"),
+            ClueKind.Whereabouts,
+            "Local gossip out of Red Mesa says the rider kept to the rail spur after dark.",
+            new[] { new SuspectId("suspect-1") },
+            InvestigationTargetKind.Suspected,
+            InvestigationSourceKind.LocalGossip,
+            source: "saloon talk",
+            context: "Town gossip",
+            anchors: new ClueAnchors(
+                subjects: new[]
+                {
+                    new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay", Feature: "red neckerchief")
+                },
+                locations: new[]
+                {
+                    new ClueLocationAnchor("Red Mesa", TownId: new TownId("redmesa"), Place: "Red Mesa", Route: "rail spur")
+                },
+                times: new[]
+                {
+                    new ClueTimeAnchor(ClueRecency.Recent)
+                },
+                directions: new[]
+                {
+                    new ClueDirectionAnchor("heading north", Movement: "heading north", Route: "rail spur", DestinationTownId: new TownId("redmesa"))
+                }));
+
+        Assert.True(clue.Anchors.HasAnchors);
+        Assert.Single(clue.Anchors.Subjects);
+        Assert.Equal("Grey Jay", clue.Anchors.Subjects[0].Label);
+        Assert.Equal("red neckerchief", clue.Anchors.Subjects[0].Feature);
+        Assert.Single(clue.Anchors.Locations);
+        Assert.Equal(new TownId("redmesa"), clue.Anchors.Locations[0].TownId);
+        Assert.Equal("rail spur", clue.Anchors.Locations[0].Route);
+        Assert.Single(clue.Anchors.Times);
+        Assert.Equal(ClueRecency.Recent, clue.Anchors.Times[0].Recency);
+        Assert.Single(clue.Anchors.Directions);
+        Assert.Contains("north", clue.Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void RevealingPublicCluesDoesNotAdvanceReleaseProgress()
     {
         var caseFile = new CaseFile(

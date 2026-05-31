@@ -349,7 +349,8 @@ public sealed partial class GameSessionJsonSerializer
             InvestigationTargetKind targetKind = InvestigationTargetKind.Unknown,
             InvestigationSourceKind? sourceKind = null,
             string? source = null,
-            string? context = null)
+            string? context = null,
+            ClueAnchorsSnapshot? anchors = null)
         {
             Id = id;
             Kind = kind;
@@ -359,6 +360,7 @@ public sealed partial class GameSessionJsonSerializer
             SourceKind = sourceKind;
             Source = source;
             Context = context;
+            Anchors = anchors;
         }
 
         public string Id { get; init; }
@@ -369,6 +371,7 @@ public sealed partial class GameSessionJsonSerializer
         public InvestigationSourceKind? SourceKind { get; init; }
         public string? Source { get; init; }
         public string? Context { get; init; }
+        public ClueAnchorsSnapshot? Anchors { get; init; }
 
         public static ClueSnapshot FromDomain(Clue clue)
             => new(
@@ -379,7 +382,8 @@ public sealed partial class GameSessionJsonSerializer
                 clue.TargetKind,
                 clue.SourceKind,
                 clue.Source,
-                clue.Context);
+                clue.Context,
+                ClueAnchorsSnapshot.FromDomain(clue.Anchors));
 
         public static Clue ToDomain(ClueSnapshot snapshot)
             => new(
@@ -390,7 +394,95 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.TargetKind,
                 snapshot.SourceKind,
                 snapshot.Source,
-                snapshot.Context);
+                snapshot.Context,
+                snapshot.Anchors?.ToDomain()
+                ?? ClueAnchors.FromLinkedSuspectIds((snapshot.LinkedSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId))));
+    }
+
+    private sealed record ClueAnchorsSnapshot(
+        IReadOnlyList<ClueSubjectAnchorSnapshot>? Subjects,
+        IReadOnlyList<ClueLocationAnchorSnapshot>? Locations,
+        IReadOnlyList<ClueTimeAnchorSnapshot>? Times,
+        IReadOnlyList<ClueDirectionAnchorSnapshot>? Directions)
+    {
+        public static ClueAnchorsSnapshot FromDomain(ClueAnchors anchors)
+            => new(
+                anchors.Subjects.Select(ClueSubjectAnchorSnapshot.FromDomain).ToArray(),
+                anchors.Locations.Select(ClueLocationAnchorSnapshot.FromDomain).ToArray(),
+                anchors.Times.Select(ClueTimeAnchorSnapshot.FromDomain).ToArray(),
+                anchors.Directions.Select(ClueDirectionAnchorSnapshot.FromDomain).ToArray());
+
+        public ClueAnchors ToDomain()
+            => new(
+                (Subjects ?? Array.Empty<ClueSubjectAnchorSnapshot>()).Select(ClueSubjectAnchorSnapshot.ToDomain),
+                (Locations ?? Array.Empty<ClueLocationAnchorSnapshot>()).Select(ClueLocationAnchorSnapshot.ToDomain),
+                (Times ?? Array.Empty<ClueTimeAnchorSnapshot>()).Select(ClueTimeAnchorSnapshot.ToDomain),
+                (Directions ?? Array.Empty<ClueDirectionAnchorSnapshot>()).Select(ClueDirectionAnchorSnapshot.ToDomain));
+    }
+
+    private sealed record ClueSubjectAnchorSnapshot(
+        string Label,
+        string? SuspectId = null,
+        string? Alias = null,
+        string? Feature = null,
+        string? Fact = null)
+    {
+        public static ClueSubjectAnchorSnapshot FromDomain(ClueSubjectAnchor anchor)
+            => new(anchor.Label, anchor.SuspectId?.Value, anchor.Alias, anchor.Feature, anchor.Fact);
+
+        public static ClueSubjectAnchor ToDomain(ClueSubjectAnchorSnapshot snapshot)
+            => new(
+                snapshot.Label,
+                snapshot.SuspectId is null ? null : new SuspectId(snapshot.SuspectId),
+                snapshot.Alias,
+                snapshot.Feature,
+                snapshot.Fact);
+    }
+
+    private sealed record ClueLocationAnchorSnapshot(
+        string Label,
+        string? TownId = null,
+        string? Place = null,
+        string? Route = null)
+    {
+        public static ClueLocationAnchorSnapshot FromDomain(ClueLocationAnchor anchor)
+            => new(anchor.Label, anchor.TownId?.Value, anchor.Place, anchor.Route);
+
+        public static ClueLocationAnchor ToDomain(ClueLocationAnchorSnapshot snapshot)
+            => new(
+                snapshot.Label,
+                snapshot.TownId is null ? null : new TownId(snapshot.TownId),
+                snapshot.Place,
+                snapshot.Route);
+    }
+
+    private sealed record ClueTimeAnchorSnapshot(
+        ClueRecency Recency,
+        int? Day = null,
+        int? Turn = null)
+    {
+        public static ClueTimeAnchorSnapshot FromDomain(ClueTimeAnchor anchor)
+            => new(anchor.Recency, anchor.Day, anchor.Turn);
+
+        public static ClueTimeAnchor ToDomain(ClueTimeAnchorSnapshot snapshot)
+            => new(snapshot.Recency, snapshot.Day, snapshot.Turn);
+    }
+
+    private sealed record ClueDirectionAnchorSnapshot(
+        string Label,
+        string? Movement = null,
+        string? DestinationTownId = null,
+        string? Route = null)
+    {
+        public static ClueDirectionAnchorSnapshot FromDomain(ClueDirectionAnchor anchor)
+            => new(anchor.Label, anchor.Movement, anchor.DestinationTownId?.Value, anchor.Route);
+
+        public static ClueDirectionAnchor ToDomain(ClueDirectionAnchorSnapshot snapshot)
+            => new(
+                snapshot.Label,
+                snapshot.Movement,
+                snapshot.DestinationTownId is null ? null : new TownId(snapshot.DestinationTownId),
+                snapshot.Route);
     }
 
     private sealed record WarrantSnapshot(

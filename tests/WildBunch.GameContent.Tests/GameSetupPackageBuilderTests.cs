@@ -94,6 +94,11 @@ public sealed class GameSetupPackageBuilderTests
         Assert.Contains(package.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit);
+        Assert.All(package.CaseFile.KnownClues.Concat(package.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
+        var localGossipClue = Assert.Single(package.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        Assert.NotEmpty(localGossipClue.Anchors.Locations);
+        Assert.NotEmpty(localGossipClue.Anchors.Times);
+        Assert.NotEmpty(localGossipClue.Anchors.Directions);
         Assert.Equal(7, package.CaseFile.SuspectTurfAssignments.Count);
         Assert.All(package.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(package.World.Towns, town => town.Id.Equals(assignment.TurfTownId)));
         Assert.All(package.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(package.CaseFile.Suspects, suspect => suspect.Id.Equals(assignment.SuspectId)));
@@ -137,13 +142,24 @@ public sealed class GameSetupPackageBuilderTests
             package.CaseFile.TrueCulpritId.Value,
             package.CaseFile.Accusation?.Value ?? string.Empty,
             package.CaseFile.OpeningLead.Description,
-            string.Join(",", package.CaseFile.KnownClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
-            string.Join(",", package.CaseFile.PublicClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
+            string.Join(",", package.CaseFile.KnownClues.Select(DescribeClue)),
+            string.Join(",", package.CaseFile.PublicClues.Select(DescribeClue)),
             string.Join(",", package.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.Disposition}:{warrant.Terms.BountyAmount}:{string.Join("/", warrant.Terms.KnownAliases)}:{string.Join("/", warrant.Terms.KnownFeatures)}:{warrant.Terms.IssuingSource}:{warrant.Terms.TargetKind}:{string.Join("/", warrant.Terms.GangAffiliations.Select(gang => gang.Value))}:{warrant.Terms.AdvancesGangPressureFor?.Value ?? string.Empty}:{warrant.Summary}")),
             TurfSignature(package));
 
     private static string TurfSignature(GameSetupPackage package)
         => string.Join("|", package.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
+
+    private static string DescribeClue(Clue clue)
+        => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}:{DescribeAnchors(clue.Anchors)}";
+
+    private static string DescribeAnchors(ClueAnchors anchors)
+        => string.Join(
+            "|",
+            $"subjects={string.Join("/", anchors.Subjects.Select(subject => $"{subject.Label}:{subject.Alias ?? string.Empty}:{subject.Feature ?? string.Empty}:{subject.Fact ?? string.Empty}"))}",
+            $"locations={string.Join("/", anchors.Locations.Select(location => $"{location.Label}:{location.TownId?.Value ?? string.Empty}:{location.Place ?? string.Empty}:{location.Route ?? string.Empty}"))}",
+            $"times={string.Join("/", anchors.Times.Select(time => $"{time.Recency}:{time.Day?.ToString() ?? string.Empty}:{time.Turn?.ToString() ?? string.Empty}"))}",
+            $"directions={string.Join("/", anchors.Directions.Select(direction => $"{direction.Label}:{direction.Movement ?? string.Empty}:{direction.DestinationTownId?.Value ?? string.Empty}:{direction.Route ?? string.Empty}"))}");
 
     private static GameSetupSeed FindVaryingTurfSeed(GameSetupSeed baselineSeed)
     {

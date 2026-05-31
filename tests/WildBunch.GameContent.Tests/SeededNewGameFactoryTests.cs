@@ -69,6 +69,18 @@ public sealed class SeededNewGameFactoryTests
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
+        Assert.All(session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
+        var sightingClue = Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        var sightingSuspectId = Assert.Single(sightingClue.LinkedSuspectIds);
+        var sightingTown = session.World.GetTown(
+            Assert.Single(session.CaseFile.SuspectTurfAssignments, assignment => assignment.SuspectId.Equals(sightingSuspectId)).TurfTownId);
+        Assert.NotEmpty(sightingClue.Anchors.Locations);
+        Assert.Equal(sightingTown.Name, sightingClue.Anchors.Locations[0].Label);
+        Assert.Equal("rail spur", sightingClue.Anchors.Locations[0].Route);
+        Assert.NotEmpty(sightingClue.Anchors.Times);
+        Assert.Equal(ClueRecency.Recent, sightingClue.Anchors.Times[0].Recency);
+        Assert.NotEmpty(sightingClue.Anchors.Directions);
+        Assert.Contains("rail spur", sightingClue.Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal("Kid Curry", session.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(WarrantDisposition.DeadOrAlive, session.CaseFile.PublicWarrants[0].Terms.Disposition);

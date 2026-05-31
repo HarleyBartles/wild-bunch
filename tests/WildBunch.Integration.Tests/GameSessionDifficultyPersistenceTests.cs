@@ -79,6 +79,39 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void CaseFileClueAnchorsRoundTripThroughJsonPersistence()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var caseFile = CreateAnchoredCaseFile();
+
+        var json = serializer.SerializeCaseFile(caseFile);
+        var reloaded = serializer.DeserializeCaseFile(json);
+
+        Assert.Contains("\"anchors\"", json, StringComparison.Ordinal);
+        Assert.True(reloaded.KnownClues[0].Anchors.HasAnchors);
+        Assert.Equal("Grey Jay", reloaded.KnownClues[0].Anchors.Subjects[0].Label);
+        Assert.Equal("Red Mesa", reloaded.KnownClues[0].Anchors.Locations[0].Label);
+        Assert.Equal("rail spur", reloaded.KnownClues[0].Anchors.Locations[0].Route);
+        Assert.Equal(ClueRecency.Recent, reloaded.KnownClues[0].Anchors.Times[0].Recency);
+        Assert.Contains("heading", reloaded.KnownClues[0].Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LegacyCaseFileClueSnapshotsWithoutAnchorsBackfillFromLinkedSuspects()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var legacySnapshot = JsonNode.Parse(serializer.SerializeCaseFile(CreateAnchoredCaseFile()))!.AsObject();
+        var knownClue = legacySnapshot["knownClues"]!.AsArray()[0]!.AsObject();
+        knownClue.Remove("anchors");
+
+        var reloaded = serializer.DeserializeCaseFile(legacySnapshot.ToJsonString());
+
+        Assert.True(reloaded.KnownClues[0].Anchors.HasAnchors);
+        Assert.Single(reloaded.KnownClues[0].Anchors.Subjects);
+        Assert.Equal("suspect-1", reloaded.KnownClues[0].Anchors.Subjects[0].Label);
+    }
+
+    [Fact]
     public void LegacyCaseFileSuspectTraitBooleansStillDeserializeIntoTraitTags()
     {
         var serializer = new GameSessionJsonSerializer();
@@ -313,6 +346,51 @@ public sealed class GameSessionDifficultyPersistenceTests
             CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
             Array.Empty<Clue>(),
             publicWarrants: publicWarrants);
+    }
+
+    private static CaseFile CreateAnchoredCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Jonah Pike", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+
+        var clues = new[]
+        {
+            new Clue(
+                new ClueId("clue-1"),
+                ClueKind.Whereabouts,
+                "Local gossip out of Red Mesa says the rider kept to the rail spur after dark.",
+                new[] { new SuspectId("suspect-1") },
+                InvestigationTargetKind.Suspected,
+                InvestigationSourceKind.LocalGossip,
+                source: "saloon talk",
+                context: "Town gossip",
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay", Feature: "red neckerchief")
+                    },
+                    locations: new[]
+                    {
+                        new ClueLocationAnchor("Red Mesa", TownId: new TownId("redmesa"), Place: "Red Mesa", Route: "rail spur")
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    },
+                    directions: new[]
+                    {
+                        new ClueDirectionAnchor("heading north", Movement: "heading north", Route: "rail spur", DestinationTownId: new TownId("redmesa"))
+                    }))
+        };
+
+        return new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: clues);
     }
 
     private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
