@@ -55,6 +55,8 @@ public sealed class SeededNewGameFactoryTests
         Assert.Contains(session.CaseFile.Suspects[0].Profile.Aliases, alias => alias.Name == "Grey Jay");
         Assert.NotEmpty(session.CaseFile.Suspects[3].Profile.IdentifyingFacts);
         var culpritOpeningFeature = Assert.Single(CaseSuspectFeaturePool.FeaturePool, feature => feature.OpeningLeadText == session.CaseFile.OpeningLead.Description);
+        Assert.True(culpritOpeningFeature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable));
+        Assert.True(culpritOpeningFeature.HasTag(CaseSuspectFeatureTags.ClassicNod));
         Assert.Equal(culpritOpeningFeature.Description, session.CaseFile.Suspects[3].Profile.IdentifyingFacts[0].Description);
         Assert.All(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Description == fact.Description));
         Assert.Contains(session.CaseFile.KnownClues, clue =>

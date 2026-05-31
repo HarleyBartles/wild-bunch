@@ -44,8 +44,19 @@ public sealed class CaseCharacterRosterTests
         Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Key == "eyepatch-left");
         Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Key == "eyepatch-right");
         Assert.All(
-            CaseSuspectFeaturePool.FeaturePool.Where(feature => feature.SupportsOpeningLead),
+            CaseSuspectFeaturePool.FeaturePool.Where(feature => feature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable)),
             feature => Assert.False(string.IsNullOrWhiteSpace(feature.OpeningLeadText)));
+
+        var scarLeftTags = CaseSuspectFeaturePool.FeaturePool.Single(feature => feature.Key == "scar-left-cheek").Tags;
+        Assert.Contains(scarLeftTags, tag => tag.Value == CaseSuspectFeatureTags.ClassicNod.Value);
+        Assert.Contains(scarLeftTags, tag => tag.Value == CaseSuspectFeatureTags.OpeningLeadCapable.Value);
+        Assert.Contains(scarLeftTags, tag => tag.Value == CaseSuspectFeatureTags.Scar.Value);
+        Assert.Contains(scarLeftTags, tag => tag.Value == CaseSuspectFeatureTags.Face.Value);
+
+        var earringTags = CaseSuspectFeaturePool.FeaturePool.Single(feature => feature.Key == "distinctive-left-earring").Tags;
+        Assert.Contains(earringTags, tag => tag.Value == CaseSuspectFeatureTags.Accessory.Value);
+        Assert.Contains(earringTags, tag => tag.Value == CaseSuspectFeatureTags.DistinctiveItem.Value);
+        Assert.Contains(earringTags, tag => tag.Value == CaseSuspectFeatureTags.Ear.Value);
 
         var noLeftEar = CaseSuspectFeaturePool.FeaturePool.Single(feature => feature.Key == "no-left-ear");
         var noRightLeg = CaseSuspectFeaturePool.FeaturePool.Single(feature => feature.Key == "limp-right-leg");
@@ -106,7 +117,7 @@ public sealed class CaseCharacterRosterTests
 
         Assert.Equal(FeatureSignature(features), FeatureSignature(featuresAgain));
         Assert.Contains(features, assignment => assignment.AdditionalFeatures.Count > 0);
-        Assert.All(features, assignment => Assert.True(assignment.AllFeatures.Count(feature => feature.IsClassicNod) <= 2));
+        Assert.All(features, assignment => Assert.True(assignment.AllFeatures.Count(feature => feature.HasTag(CaseSuspectFeatureTags.ClassicNod)) <= 2));
         Assert.All(features, assignment => Assert.All(assignment.AdditionalFeatures, additional => Assert.True(assignment.PrimaryFeature.IsCompatibleWith(additional))));
         Assert.All(
             features,

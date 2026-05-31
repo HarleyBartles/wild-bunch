@@ -1,5 +1,29 @@
 namespace WildBunch.GameContent.NewGame;
 
+internal readonly record struct CaseSuspectFeatureTag(string Value)
+{
+    public override string ToString() => Value;
+}
+
+internal static class CaseSuspectFeatureTags
+{
+    public static readonly CaseSuspectFeatureTag OpeningLeadCapable = new("opening-lead-capable");
+    public static readonly CaseSuspectFeatureTag ClassicNod = new("classic-nod");
+    public static readonly CaseSuspectFeatureTag PhysicalMarker = new("physical-marker");
+    public static readonly CaseSuspectFeatureTag Accessory = new("accessory");
+    public static readonly CaseSuspectFeatureTag SideAware = new("side-aware");
+    public static readonly CaseSuspectFeatureTag Face = new("face");
+    public static readonly CaseSuspectFeatureTag Leg = new("leg");
+    public static readonly CaseSuspectFeatureTag Ear = new("ear");
+    public static readonly CaseSuspectFeatureTag Eye = new("eye");
+    public static readonly CaseSuspectFeatureTag Visible = new("visible");
+    public static readonly CaseSuspectFeatureTag Wearable = new("wearable");
+    public static readonly CaseSuspectFeatureTag Gait = new("gait");
+    public static readonly CaseSuspectFeatureTag Scar = new("scar");
+    public static readonly CaseSuspectFeatureTag MissingPart = new("missing-part");
+    public static readonly CaseSuspectFeatureTag DistinctiveItem = new("distinctive-item");
+}
+
 internal enum CaseFeatureKind
 {
     PrimaryMarker = 0,
@@ -20,12 +44,17 @@ internal sealed record CaseSuspectFeatureProfile(
     CaseFeatureKind Kind,
     string FamilyKey,
     CaseFeatureSide Side,
-    IReadOnlyList<string> Tags,
+    IReadOnlyList<CaseSuspectFeatureTag> Tags,
     IReadOnlyList<string> IncompatibleKeys,
-    string SourceNote,
-    bool SupportsOpeningLead,
-    bool IsClassicNod)
+    string SourceNote)
 {
+    public bool SupportsOpeningLead => HasTag(CaseSuspectFeatureTags.OpeningLeadCapable);
+
+    public bool IsClassicNod => HasTag(CaseSuspectFeatureTags.ClassicNod);
+
+    public bool HasTag(CaseSuspectFeatureTag tag)
+        => Tags.Any(existing => string.Equals(existing.Value, tag.Value, StringComparison.OrdinalIgnoreCase));
+
     public bool IsCompatibleWith(CaseSuspectFeatureProfile other)
     {
         ArgumentNullException.ThrowIfNull(other);
@@ -60,35 +89,35 @@ internal static class CaseSuspectFeaturePool
 {
     private static readonly CaseSuspectFeatureProfile[] PrimaryFeatures =
     [
-        NodFeature("limp-left-leg", "Has a limp in the left leg.", "The culprit walks with a limp in the left leg.", "limp", CaseFeatureSide.Left, ["limp", "leg"], "Original feature text; used to build the opening lead."),
-        NodFeature("limp-right-leg", "Has a limp in the right leg.", "The culprit walks with a limp in the right leg.", "limp", CaseFeatureSide.Right, ["limp", "leg"], "Original feature text; used to build the opening lead."),
-        NodFeature("no-left-ear", "Is missing the left ear.", "The culprit is missing the left ear.", "ear", CaseFeatureSide.Left, ["ear", "missing"], "Original feature text; used to build the opening lead.", "distinctive-left-earring"),
-        NodFeature("no-right-ear", "Is missing the right ear.", "The culprit is missing the right ear.", "ear", CaseFeatureSide.Right, ["ear", "missing"], "Original feature text; used to build the opening lead.", "distinctive-right-earring"),
-        NodFeature("scar-left-cheek", "Has a scar on the left cheek.", "The culprit has a scar on his left cheek.", "cheek-scar", CaseFeatureSide.Left, ["scar", "face"], "Original feature text; used to build the opening lead."),
-        NodFeature("scar-right-cheek", "Has a scar on the right cheek.", "The culprit has a scar on his right cheek.", "cheek-scar", CaseFeatureSide.Right, ["scar", "face"], "Original feature text; used to build the opening lead."),
-        NodFeature("no-eyebrows", "Has no eyebrows.", "The culprit has no eyebrows.", "brow", CaseFeatureSide.None, ["brow", "face"], "Original feature text; used to build the opening lead.")
+        NodFeature("limp-left-leg", "Has a limp in the left leg.", "The culprit walks with a limp in the left leg.", "limp", CaseFeatureSide.Left, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Gait, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Leg, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("limp-right-leg", "Has a limp in the right leg.", "The culprit walks with a limp in the right leg.", "limp", CaseFeatureSide.Right, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Gait, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Leg, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("no-left-ear", "Is missing the left ear.", "The culprit is missing the left ear.", "ear", CaseFeatureSide.Left, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.MissingPart, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Ear, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead.", "distinctive-left-earring"),
+        NodFeature("no-right-ear", "Is missing the right ear.", "The culprit is missing the right ear.", "ear", CaseFeatureSide.Right, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.MissingPart, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Ear, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead.", "distinctive-right-earring"),
+        NodFeature("scar-left-cheek", "Has a scar on the left cheek.", "The culprit has a scar on his left cheek.", "cheek-scar", CaseFeatureSide.Left, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Scar, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Face, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("scar-right-cheek", "Has a scar on the right cheek.", "The culprit has a scar on his right cheek.", "cheek-scar", CaseFeatureSide.Right, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Scar, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Face, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("no-eyebrows", "Has no eyebrows.", "The culprit has no eyebrows.", "brow", CaseFeatureSide.None, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.MissingPart, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.Face, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead.")
     ];
 
     private static readonly CaseSuspectFeatureProfile[] AccessoryFeatures =
     [
-        AccessoryFeature("distinctive-left-earring", "Wears a distinctive earring in the left ear.", "earring", CaseFeatureSide.Left, ["earring", "left"], "Original feature text.", "no-left-ear"),
-        AccessoryFeature("distinctive-right-earring", "Wears a distinctive earring in the right ear.", "earring", CaseFeatureSide.Right, ["earring", "right"], "Original feature text.", "no-right-ear"),
-        AccessoryFeature("eyepatch-left", "Wears an eyepatch over the left eye.", "eyepatch", CaseFeatureSide.Left, ["eyepatch", "left"], "Original feature text."),
-        AccessoryFeature("eyepatch-right", "Wears an eyepatch over the right eye.", "eyepatch", CaseFeatureSide.Right, ["eyepatch", "right"], "Original feature text."),
-        AccessoryFeature("cracked-gauntlet", "Wears a cracked leather gauntlet on the right hand.", "gauntlet", CaseFeatureSide.None, ["gauntlet", "hand"], "Original feature text."),
-        AccessoryFeature("stitched-brim-hat", "Prefers a sand-colored hat with the brim stitched flat.", "hat", CaseFeatureSide.None, ["hat", "brim"], "Original feature text."),
-        AccessoryFeature("black-stained-cuff", "Has a black-stained cuff on the left sleeve.", "cuff", CaseFeatureSide.Left, ["cuff", "sleeve"], "Original feature text."),
-        AccessoryFeature("split-finger-glove", "Keeps a split-finger glove tucked into a coat pocket.", "glove", CaseFeatureSide.None, ["glove", "coat"], "Original feature text."),
-        AccessoryFeature("silver-tooth", "Has a silver tooth that catches the light when he smiles.", "tooth", CaseFeatureSide.None, ["tooth", "smile"], "Original feature text."),
-        AccessoryFeature("copper-ribbon", "Keeps a copper ribbon tied in her hair.", "ribbon", CaseFeatureSide.None, ["ribbon", "hair"], "Original feature text."),
-        AccessoryFeature("rope-burn-scar", "Carries a rope-burn scar on the left wrist.", "scar", CaseFeatureSide.Left, ["scar", "wrist"], "Original feature text."),
-        AccessoryFeature("faded-blue-scarf", "Wears a faded blue scarf over a dark vest.", "scarf", CaseFeatureSide.None, ["scarf", "vest"], "Original feature text."),
-        AccessoryFeature("iron-rim-spectacles", "Keeps iron-rim spectacles tucked into a coat pocket.", "spectacles", CaseFeatureSide.None, ["spectacles", "coat"], "Original feature text."),
-        AccessoryFeature("dust-colored-duster", "Wears a long dust-colored duster with a frayed hem.", "duster", CaseFeatureSide.None, ["duster", "hem"], "Original feature text."),
-        AccessoryFeature("brass-spur", "Keeps a brass spur tucked into a coat pocket.", "spur", CaseFeatureSide.None, ["spur", "coat"], "Original feature text."),
-        AccessoryFeature("tobacco-stained-gloves", "Leaves tobacco-stained glove prints on ledgers and rail notices.", "glove", CaseFeatureSide.None, ["glove", "ledger"], "Original feature text."),
-        AccessoryFeature("copper-spur-ribbon", "Keeps a brass spur tied to a faded blue sash.", "spur", CaseFeatureSide.None, ["spur", "sash"], "Original feature text."),
-        AccessoryFeature("straw-hat", "Wears a straw hat with the crown creased low.", "hat", CaseFeatureSide.None, ["hat", "crown"], "Original feature text.")
+        AccessoryFeature("distinctive-left-earring", "Wears a distinctive earring in the left ear.", "earring", CaseFeatureSide.Left, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.DistinctiveItem, CaseSuspectFeatureTags.Ear], "Original feature text.", "no-left-ear"),
+        AccessoryFeature("distinctive-right-earring", "Wears a distinctive earring in the right ear.", "earring", CaseFeatureSide.Right, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.DistinctiveItem, CaseSuspectFeatureTags.Ear], "Original feature text.", "no-right-ear"),
+        AccessoryFeature("eyepatch-left", "Wears an eyepatch over the left eye.", "eyepatch", CaseFeatureSide.Left, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Eye, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("eyepatch-right", "Wears an eyepatch over the right eye.", "eyepatch", CaseFeatureSide.Right, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Eye, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("cracked-gauntlet", "Wears a cracked leather gauntlet on the right hand.", "gauntlet", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("stitched-brim-hat", "Prefers a sand-colored hat with the brim stitched flat.", "hat", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("black-stained-cuff", "Has a black-stained cuff on the left sleeve.", "cuff", CaseFeatureSide.Left, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("split-finger-glove", "Keeps a split-finger glove tucked into a coat pocket.", "glove", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("silver-tooth", "Has a silver tooth that catches the light when he smiles.", "tooth", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("copper-ribbon", "Keeps a copper ribbon tied in her hair.", "ribbon", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("rope-burn-scar", "Carries a rope-burn scar on the left wrist.", "scar", CaseFeatureSide.Left, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Scar, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("faded-blue-scarf", "Wears a faded blue scarf over a dark vest.", "scarf", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("iron-rim-spectacles", "Keeps iron-rim spectacles tucked into a coat pocket.", "spectacles", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("dust-colored-duster", "Wears a long dust-colored duster with a frayed hem.", "duster", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("brass-spur", "Keeps a brass spur tucked into a coat pocket.", "spur", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("tobacco-stained-gloves", "Leaves tobacco-stained glove prints on ledgers and rail notices.", "glove", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("copper-spur-ribbon", "Keeps a brass spur tied to a faded blue sash.", "spur", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        AccessoryFeature("straw-hat", "Wears a straw hat with the crown creased low.", "hat", CaseFeatureSide.None, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text.")
     ];
 
     public static IReadOnlyList<CaseSuspectFeatureProfile> FeaturePool
@@ -106,7 +135,7 @@ internal static class CaseSuspectFeaturePool
         foreach (var primary in primaryFeatures)
         {
             var additionalFeatures = new List<CaseSuspectFeatureProfile>(2);
-            var classicNodCount = primary.IsClassicNod ? 1 : 0;
+            var classicNodCount = primary.HasTag(CaseSuspectFeatureTags.ClassicNod) ? 1 : 0;
 
             foreach (var candidate in accessoryCandidates)
             {
@@ -125,7 +154,7 @@ internal static class CaseSuspectFeaturePool
                     continue;
                 }
 
-                if (classicNodCount >= 2 && candidate.IsClassicNod)
+                if (classicNodCount >= 2 && candidate.HasTag(CaseSuspectFeatureTags.ClassicNod))
                 {
                     continue;
                 }
@@ -133,7 +162,7 @@ internal static class CaseSuspectFeaturePool
                 additionalFeatures.Add(candidate);
                 usedAccessoryKeys.Add(candidate.Key);
 
-                if (candidate.IsClassicNod)
+                if (candidate.HasTag(CaseSuspectFeatureTags.ClassicNod))
                 {
                     classicNodCount++;
                 }
@@ -173,7 +202,7 @@ internal static class CaseSuspectFeaturePool
     {
         ArgumentNullException.ThrowIfNull(feature);
 
-        if (!feature.SupportsOpeningLead || string.IsNullOrWhiteSpace(feature.OpeningLeadText))
+        if (!feature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable) || string.IsNullOrWhiteSpace(feature.OpeningLeadText))
         {
             throw new InvalidOperationException($"Feature '{feature.Key}' does not support an opening lead.");
         }
@@ -187,7 +216,7 @@ internal static class CaseSuspectFeaturePool
         string openingLeadText,
         string familyKey,
         CaseFeatureSide side,
-        IReadOnlyList<string> tags,
+        IReadOnlyList<CaseSuspectFeatureTag> tags,
         string sourceNote,
         params string[] incompatibleKeys)
         => new(
@@ -199,16 +228,14 @@ internal static class CaseSuspectFeaturePool
             side,
             tags,
             incompatibleKeys,
-            sourceNote,
-            true,
-            true);
+            sourceNote);
 
     private static CaseSuspectFeatureProfile AccessoryFeature(
         string key,
         string description,
         string familyKey,
         CaseFeatureSide side,
-        IReadOnlyList<string> tags,
+        IReadOnlyList<CaseSuspectFeatureTag> tags,
         string sourceNote,
         params string[] incompatibleKeys)
         => new(
@@ -220,9 +247,7 @@ internal static class CaseSuspectFeaturePool
             side,
             tags,
             incompatibleKeys,
-            sourceNote,
-            false,
-            false);
+            sourceNote);
 
     private static IReadOnlyList<T> SelectByScore<T>(
         GameSetupDeterministicSource source,
