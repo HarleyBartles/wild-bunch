@@ -6,6 +6,7 @@ unspecified machine-global cluster or data directory.
 
 ## Convention
 
+- Tooling version: PostgreSQL `16.14`
 - Tooling root: `.local/postgresql16`
 - Persistent cluster data: `.local/postgres-dev/data/wildbunch-dev`
 - Persistent logs: `.local/postgres-dev/logs/wildbunch-dev.log`
@@ -26,6 +27,12 @@ persistent local app database and are dropped only by the harness that created
 them.
 
 ## Setup
+
+Check or document the pinned tooling first:
+
+```powershell
+.\scripts\postgres-dev.ps1 install-tools
+```
 
 Initialize or start the persistent local development cluster and database:
 

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('setup', 'start', 'stop', 'reset', 'status')]
+    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status')]
     [string]$Command = 'setup'
 )
 
@@ -8,6 +8,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$PostgreSqlVersion = '16.14'
+$PostgreSqlDownloadPage = 'https://www.postgresql.org/download/windows/'
 $LocalRoot = Join-Path $RepoRoot '.local\postgresql16'
 $PostgresDevRoot = Join-Path $RepoRoot '.local\postgres-dev'
 $BinDir = Join-Path $LocalRoot 'bin'
@@ -26,6 +28,42 @@ function Get-BinaryPath {
     }
 
     return $path
+}
+
+function Get-ToolingVersion {
+    if (-not (Test-Path (Join-Path $BinDir 'postgres.exe'))) {
+        return $null
+    }
+
+    $versionOutput = & (Get-BinaryPath 'postgres.exe') --version
+    if ($LASTEXITCODE -ne 0 -or $null -eq $versionOutput) {
+        return $null
+    }
+
+    if ($versionOutput -match '(\d+\.\d+)') {
+        return $Matches[1]
+    }
+
+    return $null
+}
+
+function Write-ToolingInstructions {
+    $toolingPath = Join-Path $RepoRoot '.local\postgresql16'
+    Write-Host "PostgreSQL tooling is expected at $toolingPath and pinned to version $PostgreSqlVersion."
+    Write-Host "If the binaries are missing, download the Windows installer from $PostgreSqlDownloadPage, install PostgreSQL $PostgreSqlVersion into $toolingPath, and rerun this command."
+}
+
+function Assert-PostgreSqlTooling {
+    $toolingVersion = Get-ToolingVersion
+    if ($null -eq $toolingVersion) {
+        Write-ToolingInstructions
+        throw "Missing PostgreSQL tooling under .local/postgresql16."
+    }
+
+    if ($toolingVersion -ne $PostgreSqlVersion) {
+        Write-ToolingInstructions
+        throw "Expected PostgreSQL tooling version $PostgreSqlVersion but found $toolingVersion."
+    }
 }
 
 function Invoke-PostgresBinary {
@@ -85,6 +123,8 @@ function Test-ClusterRunning {
 }
 
 function Initialize-Cluster {
+    Assert-PostgreSqlTooling
+
     if (-not (Test-Path (Join-Path $DataDir 'PG_VERSION'))) {
         Ensure-Directory (Split-Path $DataDir -Parent)
         Invoke-PostgresBinary 'initdb.exe' @('-D', $DataDir, '--auth=trust', '--encoding=UTF8', '-U', 'postgres')
@@ -148,6 +188,20 @@ function Reset-Cluster {
 }
 
 switch ($Command) {
+    'install-tools' {
+        $toolingVersion = Get-ToolingVersion
+        if ($null -eq $toolingVersion) {
+            Write-ToolingInstructions
+            exit 1
+        }
+
+        if ($toolingVersion -ne $PostgreSqlVersion) {
+            Write-ToolingInstructions
+            exit 1
+        }
+
+        Write-Host "PostgreSQL tooling is already pinned at version $toolingVersion in $LocalRoot."
+    }
     'setup' {
         Initialize-Cluster
         Start-Cluster
