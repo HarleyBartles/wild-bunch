@@ -13,7 +13,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task PostGamesReturnsCreatedSession()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalMountedNormal;
@@ -70,7 +70,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task GetGameByIdReturnsCreatedSession()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -106,7 +106,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task TravelPreviewStartAndAdvanceFollowTheJourneyLoop()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -206,7 +206,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task PostGamesWithSubmittedSeedCodeKeepsTheNoHorseOptionsAndExposesASixDayRoute()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.NoHorseLightEasy;
@@ -278,7 +278,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task HighRiskTravelCanPauseResolveAndResumeWithoutSkippingTheTrail()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.HighRiskFoeInterruptRoute;
@@ -411,7 +411,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task GetMissingGameReturnsNotFound()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}");
@@ -422,7 +422,7 @@ public sealed class GameApiTests
     [Fact]
     public async Task TravelMissingGameReturnsNotFound()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync(

@@ -12,7 +12,7 @@ public sealed class GameApiPurchaseTests
     [Fact]
     public async Task PostStoreBuySucceedsForCurrentTownOfferAndReturnsUpdatedState()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -42,7 +42,7 @@ public sealed class GameApiPurchaseTests
     [Fact]
     public async Task PostStoreBuyReturnsSuccessFalseWhenTownDoesNotMatchCurrentTown()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -70,7 +70,7 @@ public sealed class GameApiPurchaseTests
     [Fact]
     public async Task PostStoreBuyReturnsSuccessFalseForInsufficientCash()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -98,7 +98,7 @@ public sealed class GameApiPurchaseTests
     [Fact]
     public async Task PostStoreBuyReturnsSuccessFalseForUnavailableOffer()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;

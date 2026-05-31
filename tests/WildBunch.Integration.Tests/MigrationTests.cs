@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
@@ -7,6 +6,8 @@ using WildBunch.Domain.World;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using Npgsql;
+using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
 
@@ -15,11 +16,10 @@ public sealed class MigrationTests
     [Fact]
     public async Task MigrationsCreateGameSessionsTableAndRoundTripSession()
     {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
+        using var database = new PostgreSqlTestDatabase();
 
         var options = new DbContextOptionsBuilder<WildBunchDbContext>()
-            .UseSqlite(connection)
+            .UseNpgsql(database.ConnectionString)
             .Options;
 
         using (var context = new WildBunchDbContext(options))
@@ -59,14 +59,22 @@ public sealed class MigrationTests
             Assert.Equal(0, await verificationContext.GameSessionDiaryDays.CountAsync());
         }
 
+        await using var connection = new NpgsqlConnection(database.ConnectionString);
+        await connection.OpenAsync();
         await using var schemaCommand = connection.CreateCommand();
-        schemaCommand.CommandText = "PRAGMA table_info('GameSessions');";
+        schemaCommand.CommandText = """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'GameSessions'
+            ORDER BY ordinal_position;
+            """;
         var columns = new List<string>();
         await using (var reader = await schemaCommand.ExecuteReaderAsync())
         {
             while (await reader.ReadAsync())
             {
-                columns.Add(reader.GetString(1));
+                columns.Add(reader.GetString(0));
             }
         }
 

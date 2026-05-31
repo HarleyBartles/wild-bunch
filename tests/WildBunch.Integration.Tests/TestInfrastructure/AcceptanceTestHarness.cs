@@ -12,7 +12,7 @@ namespace WildBunch.Integration.Tests.TestInfrastructure;
 
 internal static class AcceptanceTestHarness
 {
-    public static HttpClient CreateAuthenticatedClient(this SqliteApiFactory factory)
+    public static HttpClient CreateAuthenticatedClient(this PostgreSqlApiFactory factory)
     {
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test", "acceptance-user");
@@ -20,7 +20,7 @@ internal static class AcceptanceTestHarness
     }
 
     public static async Task<GameSessionDto> SeedCanonicalSessionAsync(
-        this SqliteApiFactory factory,
+        this PostgreSqlApiFactory factory,
         string playerName = "Ranger Vale")
     {
         var session = new SeededNewGameFactory(new DeterministicTravelRandomnessSource())
@@ -33,7 +33,7 @@ internal static class AcceptanceTestHarness
         return GameSessionMapper.ToDto(session);
     }
 
-    public static async Task<GameSessionDto> LoadSessionAsync(this SqliteApiFactory factory, Guid sessionId)
+    public static async Task<GameSessionDto> LoadSessionAsync(this PostgreSqlApiFactory factory, Guid sessionId)
     {
         using var scope = factory.Services.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();

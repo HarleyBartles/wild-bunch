@@ -8,9 +8,20 @@ public sealed class WildBunchDbContextFactory : IDesignTimeDbContextFactory<Wild
     public WildBunchDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<WildBunchDbContext>()
-            .UseSqlite(SqliteConnectionStringResolver.Resolve(null))
+            .UseNpgsql(ResolveDesignTimeConnectionString())
             .Options;
 
         return new WildBunchDbContext(options);
+    }
+
+    private static string ResolveDesignTimeConnectionString()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__WildBunchPostgresDb");
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            return connectionString;
+        }
+
+        return "Host=localhost;Port=5433;Database=wildbunch_design;Username=postgres";
     }
 }

@@ -13,7 +13,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostGamesWithBlankPlayerNameReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("   "));
@@ -25,7 +25,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostGamesWithInvalidSeedCodeReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SeedCode: "WB1-N-03-000000000000-0000"));
@@ -37,7 +37,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostGamesWithMissingPlayerNameReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/games", new { });
@@ -49,7 +49,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostTravelWithBlankDestinationReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -68,7 +68,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostTravelWithMissingDestinationReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -87,7 +87,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostStoreBuyWithMissingFieldsReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -106,7 +106,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostStoreBuyWithZeroQuantityReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -125,7 +125,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task PostResolveJourneyEncounterWithMissingChoiceReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync(
@@ -139,7 +139,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task GetMalformedGameIdReturnsNotFound()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/games/not-a-guid");
@@ -150,7 +150,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task GetJournalWithInvalidPagingReturnsValidationProblem()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -170,7 +170,7 @@ public sealed class GameApiValidationTests
     [Fact]
     public async Task TravelToUnconnectedTownReturnsSuccessFalse()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));

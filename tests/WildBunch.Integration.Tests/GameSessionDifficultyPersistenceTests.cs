@@ -16,7 +16,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     [Fact]
     public async Task TravelDifficultyRoundTripsThroughJsonPersistence()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = new EfGameSessionRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
         var session = CreateEasySession();
 

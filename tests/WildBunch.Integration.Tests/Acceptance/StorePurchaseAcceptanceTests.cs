@@ -14,7 +14,7 @@ public sealed class StorePurchaseAcceptanceTests
     [Fact]
     public async Task PostStoreBuyConsumesCashAndPersistsTheNewInventoryTotals()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
 
         var createdSession = await factory.SeedCanonicalSessionAsync();
@@ -41,4 +41,3 @@ public sealed class StorePurchaseAcceptanceTests
         Assert.Equal(GameLogEntryKind.Purchase, persistedSession.LogEntries.Last().Kind);
     }
 }
-

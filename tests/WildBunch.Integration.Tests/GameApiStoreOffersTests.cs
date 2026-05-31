@@ -11,7 +11,7 @@ public sealed class GameApiStoreOffersTests
     [Fact]
     public async Task GetTownStoreOffersReturnsTownCatalogForCurrentTown()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -42,7 +42,7 @@ public sealed class GameApiStoreOffersTests
     [Fact]
     public async Task GetTownStoreOffersReturnsNotFoundForUnknownTown()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -59,7 +59,7 @@ public sealed class GameApiStoreOffersTests
     [Fact]
     public async Task GetTownStoreOffersReturnsUnavailableCatalogForTownWithoutStoreServices()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;

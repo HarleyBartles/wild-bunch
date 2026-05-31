@@ -11,7 +11,7 @@ public sealed class WantedPosterAcceptanceTests
     [Fact]
     public async Task PostReadWantedPostersUpdatesThePublicJournalAndKeepsHiddenTruthPrivate()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
 
         var createdSession = await factory.SeedCanonicalSessionAsync();

@@ -1,25 +1,22 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Persistence;
 
 namespace WildBunch.Integration.Tests.TestInfrastructure;
 
-public sealed class SqlitePersistenceFixture : IDisposable
+public sealed class PostgreSqlPersistenceFixture : IDisposable
 {
-    public SqlitePersistenceFixture()
+    public PostgreSqlPersistenceFixture()
     {
-        Connection = new SqliteConnection("Data Source=:memory:");
-        Connection.Open();
-
+        Database = new PostgreSqlTestDatabase();
         using var context = CreateContext();
         context.Database.Migrate();
     }
 
-    public SqliteConnection Connection { get; }
+    public PostgreSqlTestDatabase Database { get; }
 
     public DbContextOptions<WildBunchDbContext> CreateOptions()
         => new DbContextOptionsBuilder<WildBunchDbContext>()
-            .UseSqlite(Connection)
+            .UseNpgsql(Database.ConnectionString)
             .Options;
 
     public WildBunchDbContext CreateContext()
@@ -27,6 +24,6 @@ public sealed class SqlitePersistenceFixture : IDisposable
 
     public void Dispose()
     {
-        Connection.Dispose();
+        Database.Dispose();
     }
 }

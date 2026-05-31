@@ -12,7 +12,7 @@ public sealed class GameApiWantedPostersTests
     [Fact]
     public async Task PostReadWantedPostersSucceedsForCreatedGameAndUpdatesJournal()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -93,7 +93,7 @@ public sealed class GameApiWantedPostersTests
     [Fact]
     public async Task PostReadWantedPostersReturnsNotFoundForMissingGame()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.PostAsync($"/api/games/{Guid.NewGuid()}/wanted-posters/read", content: null);
@@ -104,7 +104,7 @@ public sealed class GameApiWantedPostersTests
     [Fact]
     public async Task PostReadWantedPostersReturnsFailureWhenTownDoesNotSupportPosters()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;

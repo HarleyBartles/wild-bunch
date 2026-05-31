@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -33,11 +33,11 @@ namespace WildBunch.Persistence.Migrations
                 name: "GameSessionComponents",
                 columns: table => new
                 {
-                    SessionId = table.Column<Guid>(type: ColumnTypeForGuid(migrationBuilder), nullable: false),
+                    SessionId = table.Column<Guid>(type: "uuid", nullable: false),
                     ComponentName = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
                     ComponentVersion = table.Column<int>(type: "INTEGER", nullable: false),
                     PayloadJson = table.Column<string>(type: "TEXT", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: ColumnTypeForDateTime(migrationBuilder), nullable: false)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -54,7 +54,7 @@ namespace WildBunch.Persistence.Migrations
                 name: "GameSessionLogEntries",
                 columns: table => new
                 {
-                    SessionId = table.Column<Guid>(type: ColumnTypeForGuid(migrationBuilder), nullable: false),
+                    SessionId = table.Column<Guid>(type: "uuid", nullable: false),
                     Sequence = table.Column<int>(type: "INTEGER", nullable: false),
                     Kind = table.Column<int>(type: "INTEGER", nullable: false),
                     Message = table.Column<string>(type: "TEXT", nullable: false),
@@ -76,10 +76,10 @@ namespace WildBunch.Persistence.Migrations
                 name: "GameSessionTravelDiaryDays",
                 columns: table => new
                 {
-                    SessionId = table.Column<Guid>(type: ColumnTypeForGuid(migrationBuilder), nullable: false),
+                    SessionId = table.Column<Guid>(type: "uuid", nullable: false),
                     Sequence = table.Column<int>(type: "INTEGER", nullable: false),
                     PayloadJson = table.Column<string>(type: "TEXT", nullable: false),
-                    RecordedAtUtc = table.Column<DateTime>(type: ColumnTypeForDateTime(migrationBuilder), nullable: false)
+                    RecordedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -119,20 +119,6 @@ namespace WildBunch.Persistence.Migrations
                 type: "TEXT",
                 nullable: false,
                 defaultValue: "");
-        }
-
-        private static string ColumnTypeForGuid(MigrationBuilder migrationBuilder)
-        {
-            return migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL"
-                ? "uuid"
-                : "TEXT";
-        }
-
-        private static string ColumnTypeForDateTime(MigrationBuilder migrationBuilder)
-        {
-            return migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL"
-                ? "timestamp with time zone"
-                : "TEXT";
         }
     }
 }

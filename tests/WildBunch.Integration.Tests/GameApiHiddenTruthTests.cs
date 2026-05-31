@@ -10,7 +10,7 @@ public sealed class GameApiHiddenTruthTests
     [Fact]
     public async Task PublicApiResponsesDoNotLeakHiddenCulpritMarkers()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));

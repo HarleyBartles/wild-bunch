@@ -13,7 +13,7 @@ public sealed class GameApiJournalTests
     [Fact]
     public async Task GetJournalReturnsExpectedDataForCreatedGame()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -54,7 +54,7 @@ public sealed class GameApiJournalTests
     [Fact]
     public async Task GetMissingGameJournalReturnsNotFound()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}/journal");
@@ -65,7 +65,7 @@ public sealed class GameApiJournalTests
     [Fact]
     public async Task GetJournalAfterTravelReflectsUpdatedState()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
@@ -106,7 +106,7 @@ public sealed class GameApiJournalTests
     [Fact]
     public async Task GetJournalSupportsSkipAndTakeQueryParameters()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));

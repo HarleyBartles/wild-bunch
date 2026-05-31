@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,18 +11,17 @@ using WildBunch.Persistence.GameSessions;
 
 namespace WildBunch.Integration.Tests.TestInfrastructure;
 
-public sealed class SqliteApiFactory : WebApplicationFactory<Program>, IDisposable
+public sealed class PostgreSqlApiFactory : WebApplicationFactory<Program>, IDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly PostgreSqlTestDatabase _database;
     private bool _disposed;
 
-    public SqliteApiFactory()
+    public PostgreSqlApiFactory()
     {
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        _database = new PostgreSqlTestDatabase();
 
         using var context = new WildBunchDbContext(new DbContextOptionsBuilder<WildBunchDbContext>()
-            .UseSqlite(_connection)
+            .UseNpgsql(_database.ConnectionString)
             .Options);
 
         context.Database.Migrate();
@@ -38,8 +36,8 @@ public sealed class SqliteApiFactory : WebApplicationFactory<Program>, IDisposab
             services.RemoveAll<IGameSessionRepository>();
             services.RemoveAll<ITravelRandomnessSource>();
 
-            services.AddSingleton(_connection);
-            services.AddDbContext<WildBunchDbContext>((_, options) => options.UseSqlite(_connection));
+            services.AddSingleton(_database);
+            services.AddDbContext<WildBunchDbContext>((_, options) => options.UseNpgsql(_database.ConnectionString));
             services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
             services.AddSingleton<ITravelRandomnessSource, DeterministicTravelRandomnessSource>();
         });
@@ -52,7 +50,7 @@ public sealed class SqliteApiFactory : WebApplicationFactory<Program>, IDisposab
         if (disposing && !_disposed)
         {
             _disposed = true;
-            _connection.Dispose();
+            _database.Dispose();
         }
     }
 }

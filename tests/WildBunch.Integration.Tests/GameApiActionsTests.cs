@@ -12,7 +12,7 @@ public sealed class GameApiActionsTests
     [Fact]
     public async Task GetAvailableActionsReturnsExpectedActionsForCreatedGame()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
@@ -42,7 +42,7 @@ public sealed class GameApiActionsTests
     [Fact]
     public async Task GetMissingGameActionsReturnsNotFound()
     {
-        using var factory = new SqliteApiFactory();
+        using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}/actions");

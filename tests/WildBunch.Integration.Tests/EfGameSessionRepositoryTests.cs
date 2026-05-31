@@ -24,9 +24,9 @@ public sealed class EfGameSessionRepositoryTests
     private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
 
     [Fact]
-    public async Task SaveAndLoadNewSessionRoundTripsThroughSqlite()
+    public async Task SaveAndLoadNewSessionRoundTripsThroughPostgreSql()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var session = CreateSession();
 
@@ -55,7 +55,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAndLoadEasyTravelSessionRetainsTravelDifficulty()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var session = CreateEasySession();
 
@@ -71,7 +71,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterTravelUpdatesReloadedState()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateSession();
@@ -112,7 +112,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterInterruptedTravelRoundTripsPendingEncounterState()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateHighRiskSession();
@@ -167,7 +167,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterPendingFoeEncounterWithHiddenPressureRoundTripsTheHiddenState()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateHighRiskSession();
@@ -207,7 +207,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterLuckyTrailEventRoundTripsWalletGain()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateLuckySession();
@@ -238,7 +238,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAndLoadTravelDiaryRoundTripsStructuredDiaryState()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateDiarySession();
@@ -268,7 +268,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterDryTravelRoundTripsHorseAndCanteenState()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateDryTravelSession();
@@ -299,7 +299,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterHorseLossFallbackRoundTripsFootTravelAndHorseState()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var resolver = new TravelResolver();
         var session = CreateHorseLossFallbackSession();
@@ -329,7 +329,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task SaveAfterJourneyAcknowledgementRoundTripsActiveSequenceAndCompletedHistory()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture);
         var session = CreateJourneyHistorySession();
 
@@ -379,7 +379,7 @@ public sealed class EfGameSessionRepositoryTests
     [Fact]
     public async Task ReadRepositoriesProjectComposedSessionAndJournalViews()
     {
-        using var fixture = new SqlitePersistenceFixture();
+        using var fixture = new PostgreSqlPersistenceFixture();
         var commandRepository = CreateRepository(fixture);
         var travelResolver = new TravelResolver();
         var session = CreateSession();
@@ -425,7 +425,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(loaded.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync(day => day.SessionId == session.Id.Value));
     }
 
-    private static EfGameSessionRepository CreateRepository(SqlitePersistenceFixture fixture)
+    private static EfGameSessionRepository CreateRepository(PostgreSqlPersistenceFixture fixture)
         => new(fixture.CreateContext(), new GameSessionJsonSerializer());
 
     private static GameSession CreateSession()
@@ -726,7 +726,3 @@ public sealed class EfGameSessionRepositoryTests
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 }
-
-
-
-

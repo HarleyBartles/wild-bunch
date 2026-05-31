@@ -11,6 +11,7 @@ using WildBunch.Domain.World;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
 
@@ -20,29 +21,12 @@ public sealed class PostgreSqlPersistenceTests
     private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
 
     [Fact]
-    public void AddPersistence_UsesSqliteByDefault()
-    {
-        var services = new ServiceCollection();
-        var configuration = new ConfigurationBuilder().Build();
-
-        services.AddPersistence(configuration);
-
-        using var provider = services.BuildServiceProvider();
-        using var scope = provider.CreateScope();
-
-        var context = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
-
-        Assert.Equal("Microsoft.EntityFrameworkCore.Sqlite", context.Database.ProviderName);
-    }
-
-    [Fact]
     public void AddPersistence_UsesPostgreSqlWhenConfigured()
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                [$"{PersistenceOptions.SectionName}:Provider"] = PersistenceProvider.PostgreSql.ToString(),
                 ["ConnectionStrings:WildBunchPostgresDb"] = "Host=localhost;Database=wild-bunch;Username=wild-bunch;Password=wild-bunch"
             })
             .Build();
@@ -60,11 +44,11 @@ public sealed class PostgreSqlPersistenceTests
     [SkippableFact]
     public async Task PostgreSqlLaneRoundTripsAggregateComponentsLogsAndDiaryWhenConnectionStringIsProvided()
     {
-        var connectionString = Environment.GetEnvironmentVariable(PostgreSqlConnectionStringEnvironmentVariable);
-        Skip.If(string.IsNullOrWhiteSpace(connectionString), $"Set {PostgreSqlConnectionStringEnvironmentVariable} to exercise the PostgreSQL persistence lane.");
+        Skip.If(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgreSqlConnectionStringEnvironmentVariable)), $"Set {PostgreSqlConnectionStringEnvironmentVariable} to exercise the PostgreSQL persistence lane.");
+        using var database = new PostgreSqlTestDatabase();
 
         var options = new DbContextOptionsBuilder<WildBunchDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(database.ConnectionString)
             .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
@@ -180,14 +164,6 @@ public sealed class PostgreSqlPersistenceTests
 
         return session;
     }
-
-    private static async Task CleanupSessionAsync(DbContextOptions<WildBunchDbContext> options, Guid sessionId)
-    {
-        await using var cleanupContext = new WildBunchDbContext(options);
-        cleanupContext.GameSessions.Remove(new GameSessionEntity { Id = sessionId });
-        await cleanupContext.SaveChangesAsync();
-    }
-
     private static TravelPreviewResult CreatePostgreSqlLanePreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
     {
         var preview = new TravelPreview(
@@ -218,5 +194,12 @@ public sealed class PostgreSqlPersistenceTests
             Warnings: Array.Empty<string>());
 
         return new TravelPreviewResult(true, string.Empty, preview);
+    }
+
+    private static async Task CleanupSessionAsync(DbContextOptions<WildBunchDbContext> options, Guid sessionId)
+    {
+        await using var cleanupContext = new WildBunchDbContext(options);
+        cleanupContext.GameSessions.Remove(new GameSessionEntity { Id = sessionId });
+        await cleanupContext.SaveChangesAsync();
     }
 }
