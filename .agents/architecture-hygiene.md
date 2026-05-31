@@ -34,6 +34,11 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Session-owned travel topology work belongs to a separate source-backed decision, not this issue. In particular, the `TravelJourney` aggregate-root direction is tracked separately and should not be reintroduced here.
 - Travel, Player, and similar session-owned domains may be cohesive internal aggregates under `GameSession`, but they are not separate aggregate roots by default.
 
+## Mapper Ownership
+
+- Travel, journey, and encounter DTO mapping should live in `TravelMapper`.
+- `GameSessionMapper` should delegate travel mapping rather than duplicating that shape in parallel helper code.
+
 ## CQRS and Repository Boundaries
 
 - Command-side repositories coordinate persistence for mutations.
@@ -46,6 +51,7 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Split codecs by coherent domain area when the serializer grows large.
 - Keep serializer facades stable when they already serve as the public persistence entrypoint.
 - Prefer small persistence-internal helpers over generic codec registries, plugin models, or reflection-driven frameworks.
+- Repo-local database artifacts belong under repo-root `.local/` or another ignored local area, never under `src/`.
 
 ## Onion Dependency Direction
 
@@ -58,6 +64,7 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Favor one canonical formatter, mapper, or codec owner over duplicated versions that drift.
 - Extract pure helpers when a class becomes too broad, but avoid splitting away the aggregate authority that belongs in `GameSession`.
 - Leave temporary debug or cockpit surfaces lightweight; do not polish them for architecture credit alone.
+- When cleanup touches a surface, leave a clear before/after ownership boundary that tests can prove.
 
 ## Hidden-State and Public Boundaries
 
