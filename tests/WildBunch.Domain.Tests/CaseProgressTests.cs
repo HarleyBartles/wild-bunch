@@ -46,7 +46,7 @@ public sealed class CaseProgressTests
                 {
                     new SuspectIdentityFact("A pale scar cuts across the left cheek.")
                 }),
-            new SuspectTraits(true, true, false),
+            SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed),
             SuspectStatus.AtLarge);
 
         Assert.Single(suspect.Profile.Aliases);
@@ -54,6 +54,26 @@ public sealed class CaseProgressTests
         Assert.Equal("Red Wren", suspect.Profile.Aliases[0].Name);
         Assert.Equal(AliasKind.Nickname, suspect.Profile.Aliases[0].Kind);
         Assert.Equal("A pale scar cuts across the left cheek.", suspect.Profile.IdentifyingFacts[0].Description);
+    }
+
+    [Fact]
+    public void SuspectTraitsExposeTagsAndDeriveLegacyFlags()
+    {
+        var traits = SuspectTraits.FromTags(
+            SuspectTraitTags.Local,
+            SuspectTraitTags.Armed,
+            SuspectTraitTags.Desperate,
+            SuspectTraitTags.Local);
+
+        Assert.Equal(3, traits.Tags.Count);
+        Assert.Contains(traits.Tags, tag => tag.Value == SuspectTraitTags.Local.Value);
+        Assert.Contains(traits.Tags, tag => tag.Value == SuspectTraitTags.Armed.Value);
+        Assert.Contains(traits.Tags, tag => tag.Value == SuspectTraitTags.Desperate.Value);
+        Assert.True(traits.IsLocal);
+        Assert.True(traits.IsArmed);
+        Assert.True(traits.IsDesperate);
+        Assert.True(traits.HasTag(SuspectTraitTags.Local));
+        Assert.False(traits.HasTag(SuspectTraitTags.Lookout));
     }
 
     private static CaseFile CreateCaseFile()
@@ -64,7 +84,7 @@ public sealed class CaseProgressTests
                 new SuspectId("suspect-1"),
                 "Jonah Pike",
                 new SuspectProfile(Array.Empty<SuspectAlias>(), Array.Empty<SuspectIdentityFact>()),
-                new SuspectTraits(true, false, true),
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge),
             new Suspect(
                 new SuspectId("suspect-2"),
@@ -72,7 +92,7 @@ public sealed class CaseProgressTests
                 new SuspectProfile(
                     new[] { new SuspectAlias("Red Wren", AliasKind.Nickname) },
                     new[] { new SuspectIdentityFact("A pale scar cuts across the left cheek.") }),
-                new SuspectTraits(false, true, false),
+                SuspectTraits.FromTags(SuspectTraitTags.Armed),
                 SuspectStatus.AtLarge)
         };
 

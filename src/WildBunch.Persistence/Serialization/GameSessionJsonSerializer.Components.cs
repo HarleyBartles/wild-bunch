@@ -303,13 +303,27 @@ public sealed partial class GameSessionJsonSerializer
             => new(snapshot.Description);
     }
 
-    private sealed record SuspectTraitsSnapshot(bool IsLocal, bool IsArmed, bool IsDesperate)
+    private sealed record SuspectTraitsSnapshot(
+        IReadOnlyList<string>? Tags,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? IsLocal,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? IsArmed,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? IsDesperate)
     {
         public static SuspectTraitsSnapshot FromDomain(SuspectTraits traits)
-            => new(traits.IsLocal, traits.IsArmed, traits.IsDesperate);
+            => new(traits.Tags.Select(tag => tag.Value).ToArray(), null, null, null);
 
         public static SuspectTraits ToDomain(SuspectTraitsSnapshot snapshot)
-            => new(snapshot.IsLocal, snapshot.IsArmed, snapshot.IsDesperate);
+        {
+            if (snapshot.Tags is not null)
+            {
+                return new(snapshot.Tags.Select(tag => new SuspectTraitTag(tag)));
+            }
+
+            return SuspectTraits.FromLegacyFlags(
+                snapshot.IsLocal == true,
+                snapshot.IsArmed == true,
+                snapshot.IsDesperate == true);
+        }
     }
 
     private sealed record ClueSnapshot

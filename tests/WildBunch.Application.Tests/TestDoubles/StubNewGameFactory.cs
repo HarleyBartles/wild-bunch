@@ -54,7 +54,7 @@ public sealed class StubNewGameFactory : INewGameFactory
                 new SuspectProfile(
                     new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
                     new[] { new SuspectIdentityFact("Wears a brass buckle with a cracked star engraving.") }),
-                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge)
         };
 

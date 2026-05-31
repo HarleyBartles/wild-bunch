@@ -46,7 +46,7 @@ public sealed class QueryHandlersAreReadOnlyTests
 
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Jonah Pike", new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true), SuspectStatus.AtLarge)
+            new Suspect(new SuspectId("suspect-1"), "Jonah Pike", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());

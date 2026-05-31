@@ -13,7 +13,7 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(true, false, true), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-1"),
             knownClues: new[] { clue });
@@ -32,8 +32,8 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(true, false, true), SuspectStatus.AtLarge),
-                new Suspect(new SuspectId("suspect-2"), "Mira Cline", new SuspectTraits(false, false, false), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-2"),
             knownClues: Array.Empty<Clue>());
@@ -58,8 +58,8 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(true, false, true), SuspectStatus.AtLarge),
-                new Suspect(new SuspectId("suspect-2"), "Mira Cline", new SuspectTraits(false, false, false), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-2"),
             knownClues: Array.Empty<Clue>(),
@@ -90,7 +90,7 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Ira Flint", new SuspectTraits(true, false, true), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-1"),
             knownClues: Array.Empty<Clue>(),
@@ -127,7 +127,7 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-1"),
             knownClues: Array.Empty<Clue>());
@@ -162,7 +162,7 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Reno Pike", new SuspectTraits(true, false, false), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-1"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
@@ -184,7 +184,7 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-1"),
             knownClues: new[]
@@ -206,8 +206,8 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge),
-                new Suspect(new SuspectId("suspect-2"), "Reno Pike", new SuspectTraits(false, false, false), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-2"),
             knownClues: Array.Empty<Clue>(),

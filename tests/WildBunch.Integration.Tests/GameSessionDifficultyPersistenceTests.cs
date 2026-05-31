@@ -58,14 +58,43 @@ public sealed class GameSessionDifficultyPersistenceTests
         var json = serializer.SerializeCaseFile(caseFile);
         var reloaded = serializer.DeserializeCaseFile(json);
 
+        Assert.Contains("\"tags\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"isLocal\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"isArmed\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"isDesperate\"", json, StringComparison.Ordinal);
         Assert.Contains("\"gangAffiliations\"", json, StringComparison.Ordinal);
         Assert.Contains("\"advancesGangPressureFor\"", json, StringComparison.Ordinal);
         Assert.DoesNotContain("\"isGangRelevant\"", json, StringComparison.Ordinal);
         Assert.DoesNotContain("\"advancesGangPressure\"", json, StringComparison.Ordinal);
+        Assert.True(reloaded.Suspects[0].Traits.HasTag(SuspectTraitTags.Local));
+        Assert.True(reloaded.Suspects[0].Traits.HasTag(SuspectTraitTags.Armed));
+        Assert.True(reloaded.Suspects[0].Traits.HasTag(SuspectTraitTags.Desperate));
         Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[0].Terms.GangAffiliations);
         Assert.Equal(OutlawGangIds.WildBunch, reloaded.PublicWarrants[0].Terms.AdvancesGangPressureFor);
         Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
+    }
+
+    [Fact]
+    public void LegacyCaseFileSuspectTraitBooleansStillDeserializeIntoTraitTags()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var legacySnapshot = JsonNode.Parse(serializer.SerializeCaseFile(CreateGangAwareCaseFile()))!.AsObject();
+        var suspect = legacySnapshot["suspects"]!.AsArray()[0]!.AsObject();
+        var traits = suspect["traits"]!.AsObject();
+
+        traits.Remove("tags");
+        traits["isLocal"] = true;
+        traits["isArmed"] = false;
+        traits["isDesperate"] = true;
+
+        var reloaded = serializer.DeserializeCaseFile(legacySnapshot.ToJsonString());
+
+        Assert.True(reloaded.Suspects[0].Traits.IsLocal);
+        Assert.False(reloaded.Suspects[0].Traits.IsArmed);
+        Assert.True(reloaded.Suspects[0].Traits.IsDesperate);
+        Assert.Contains(reloaded.Suspects[0].Traits.Tags, tag => tag.Value == SuspectTraitTags.Local.Value);
+        Assert.Contains(reloaded.Suspects[0].Traits.Tags, tag => tag.Value == SuspectTraitTags.Desperate.Value);
     }
 
     [Fact]
@@ -144,7 +173,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge)
+            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
         };
 
         var publicWarrants = new[]

@@ -125,7 +125,7 @@ public sealed class GetJournalHandlerTests
                 new SuspectProfile(
                     new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
                     new[] { new SuspectIdentityFact("Wears a cracked leather gauntlet on the right hand.") }),
-                new SuspectTraits(IsLocal: true, IsArmed: false, IsDesperate: true),
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge),
             new Suspect(
                 new SuspectId("suspect-2"),
@@ -133,7 +133,7 @@ public sealed class GetJournalHandlerTests
                 new SuspectProfile(
                     new[] { new SuspectAlias("M.K. Rook", AliasKind.KnownAs) },
                     new[] { new SuspectIdentityFact("Carries a tin badge clipped to a saddle strap.") }),
-                new SuspectTraits(IsLocal: false, IsArmed: false, IsDesperate: false),
+                SuspectTraits.Empty,
                 SuspectStatus.AtLarge)
         };
 

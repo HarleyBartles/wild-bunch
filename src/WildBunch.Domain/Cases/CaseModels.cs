@@ -19,7 +19,66 @@ public sealed record Suspect(
     }
 }
 
-public readonly record struct SuspectTraits(bool IsLocal, bool IsArmed, bool IsDesperate);
+public sealed record SuspectTraits
+{
+    public static SuspectTraits Empty { get; } = new(Array.Empty<SuspectTraitTag>());
+
+    public SuspectTraits(IEnumerable<SuspectTraitTag> tags)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+
+        Tags = tags
+            .Select(tag => Normalize(tag))
+            .DistinctBy(tag => tag.Value, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    public SuspectTraits(bool isLocal, bool isArmed, bool isDesperate)
+        : this(CreateLegacyTags(isLocal, isArmed, isDesperate))
+    {
+    }
+
+    public static SuspectTraits FromTags(params SuspectTraitTag[] tags)
+        => new(tags);
+
+    public static SuspectTraits FromLegacyFlags(bool isLocal, bool isArmed, bool isDesperate)
+        => new(isLocal, isArmed, isDesperate);
+
+    public IReadOnlyList<SuspectTraitTag> Tags { get; }
+
+    public bool IsLocal => HasTag(SuspectTraitTags.Local);
+
+    public bool IsArmed => HasTag(SuspectTraitTags.Armed);
+
+    public bool IsDesperate => HasTag(SuspectTraitTags.Desperate);
+
+    public bool HasTag(SuspectTraitTag tag)
+        => Tags.Any(existing => string.Equals(existing.Value, Normalize(tag).Value, StringComparison.Ordinal));
+
+    private static IEnumerable<SuspectTraitTag> CreateLegacyTags(bool isLocal, bool isArmed, bool isDesperate)
+    {
+        if (isLocal)
+        {
+            yield return SuspectTraitTags.Local;
+        }
+
+        if (isArmed)
+        {
+            yield return SuspectTraitTags.Armed;
+        }
+
+        if (isDesperate)
+        {
+            yield return SuspectTraitTags.Desperate;
+        }
+    }
+
+    private static SuspectTraitTag Normalize(SuspectTraitTag tag)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag.Value);
+        return new SuspectTraitTag(tag.Value.Trim().ToLowerInvariant());
+    }
+}
 
 public enum SuspectStatus
 {

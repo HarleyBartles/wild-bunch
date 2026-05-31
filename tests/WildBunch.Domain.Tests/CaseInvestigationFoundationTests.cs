@@ -66,8 +66,8 @@ public sealed class CaseInvestigationFoundationTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-true"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge),
-                new Suspect(new SuspectId("suspect-gang"), "Jonah Pike", new SuspectTraits(true, false, false), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-true"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-gang"), "Jonah Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
             },
             trueCulpritId: new SuspectId("suspect-true"),
             openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
