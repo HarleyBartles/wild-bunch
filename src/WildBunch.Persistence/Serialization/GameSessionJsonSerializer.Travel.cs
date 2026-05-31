@@ -1,15 +1,39 @@
+using System.Text.Json;
 using System.Reflection;
-using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
-using DomainWorld = WildBunch.Domain.World.World;
 using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 
 namespace WildBunch.Persistence.Serialization;
 
 public sealed partial class GameSessionJsonSerializer
 {
+    public string SerializeJourneySnapshot(TravelJourneySnapshot? journey)
+        => journey is null ? string.Empty : JsonSerializer.Serialize(JourneySnapshot.FromDomain(journey), Options);
+
+    public TravelJourneySnapshot? DeserializeJourneySnapshot(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        return Deserialize<JourneySnapshot>(json).ToDomain();
+    }
+
+    public string SerializeTravelDiaryDay(TravelDiaryDayState day)
+    {
+        ArgumentNullException.ThrowIfNull(day);
+        return JsonSerializer.Serialize(TravelDiaryDaySnapshot.FromDomain(day), Options);
+    }
+
+    public TravelDiaryDayState DeserializeTravelDiaryDay(string json)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        return Deserialize<TravelDiaryDaySnapshot>(json).ToDomain();
+    }
+
     private sealed class JourneySnapshot
     {
         public string OriginTownId { get; set; } = string.Empty;
@@ -142,9 +166,9 @@ public sealed partial class GameSessionJsonSerializer
         public TravelDayEncounterCategory Category { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
-        public JourneyTrailEventSnapshot? TrailEvent { get; set; }
-        public JourneyEncounterSnapshot? PendingEncounter { get; set; }
-        public TravelDiaryEncounterResolutionSnapshot? Resolution { get; set; }
+        public JourneyTrailEventState? TrailEvent { get; set; }
+        public JourneyEncounterState? PendingEncounter { get; set; }
+        public TravelDiaryEncounterResolutionState? Resolution { get; set; }
 
         public static TravelDayEncounterSnapshot FromDomain(TravelDayEncounterState encounter)
             => new()
@@ -153,9 +177,9 @@ public sealed partial class GameSessionJsonSerializer
                 Category = encounter.Category,
                 Title = encounter.Title,
                 Message = encounter.Message,
-                TrailEvent = encounter.TrailEvent is null ? null : JourneyTrailEventSnapshot.FromDomain(encounter.TrailEvent),
-                PendingEncounter = encounter.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(encounter.PendingEncounter),
-                Resolution = encounter.Resolution is null ? null : TravelDiaryEncounterResolutionSnapshot.FromDomain(encounter.Resolution)
+                TrailEvent = encounter.TrailEvent,
+                PendingEncounter = encounter.PendingEncounter,
+                Resolution = encounter.Resolution
             };
 
         public TravelDayEncounterState ToDomain()
@@ -164,9 +188,9 @@ public sealed partial class GameSessionJsonSerializer
                 Category,
                 Title,
                 Message,
-                TrailEvent?.ToDomain(),
-                PendingEncounter?.ToDomain(),
-                Resolution?.ToDomain());
+                TrailEvent,
+                PendingEncounter,
+                Resolution);
     }
 
     private sealed class JourneyEncounterSnapshot
@@ -383,77 +407,158 @@ public sealed partial class GameSessionJsonSerializer
                 Warnings.ToArray());
     }
 
-    private static class GameSessionRehydrator
+    private sealed class TravelDiaryDaySnapshot
     {
-        private static readonly ConstructorInfo? Constructor = typeof(GameSession).GetConstructor(
-            BindingFlags.Instance | BindingFlags.NonPublic,
-            binder: null,
-            new[]
+        public int DayNumber { get; set; }
+        public string OriginTownName { get; set; } = string.Empty;
+        public string DestinationTownName { get; set; } = string.Empty;
+        public TravelMode StartingTravelMode { get; set; }
+        public TravelMode EndingTravelMode { get; set; }
+        public JourneyStatus Status { get; set; }
+        public decimal StartingRideDayDistance { get; set; }
+        public decimal RemainingRideDayDistance { get; set; }
+        public int StartingDaysRemaining { get; set; }
+        public int RemainingDays { get; set; }
+        public DomainHorseTravelState? HorseStateBefore { get; set; }
+        public DomainHorseTravelState? HorseStateAfter { get; set; }
+        public JourneyTrailEventState? TrailEvent { get; set; }
+        public JourneyEncounterState? PendingEncounter { get; set; }
+        public TravelDiaryEncounterResolutionState? EncounterResolution { get; set; }
+        public string? OpeningNarration { get; set; }
+        public string? JourneyBeat { get; set; }
+        public string? ResourceBeat { get; set; }
+        public IReadOnlyList<string> Entries { get; set; } = Array.Empty<string>();
+        public int HealthDelta { get; set; }
+        public decimal WalletDelta { get; set; }
+        public int FoodDelta { get; set; }
+        public int HorseFeedDelta { get; set; }
+        public int CanteenChargeDelta { get; set; }
+        public int AmmoSpent { get; set; }
+        public int HorseHungerDelta { get; set; }
+        public int HorseThirstDelta { get; set; }
+        public int HorseExhaustionDelta { get; set; }
+        public int DelayDays { get; set; }
+        public int HeatIncrease { get; set; }
+        public int CurrentHealth { get; set; }
+        public decimal CurrentWallet { get; set; }
+        public int CurrentFood { get; set; }
+        public int CurrentHorseFeed { get; set; }
+        public int CurrentCanteenCharges { get; set; }
+        public int CurrentAmmo { get; set; }
+        public int CurrentHeat { get; set; }
+        public IReadOnlyList<string> Warnings { get; set; } = Array.Empty<string>();
+        public TrailTerrain Terrain { get; set; }
+        public bool RouteWaterSecure { get; set; }
+        public int CanteenChargesPerDay { get; set; }
+
+        public static TravelDiaryDaySnapshot FromDomain(TravelDiaryDayState day)
+            => new()
             {
-                typeof(GameSessionId),
-                typeof(Player),
-                typeof(DomainWorld),
-                typeof(CaseFile),
-                typeof(PursuitState),
-                typeof(GameClock),
-                typeof(GameStatus),
-                typeof(TravelJourney),
-                typeof(TravelDifficulty),
-                typeof(TravelRandomnessState)
-            },
-            modifiers: null);
+                DayNumber = day.DayNumber,
+                OriginTownName = day.OriginTownName,
+                DestinationTownName = day.DestinationTownName,
+                StartingTravelMode = day.StartingTravelMode,
+                EndingTravelMode = day.EndingTravelMode,
+                Status = day.Status,
+                StartingRideDayDistance = day.StartingRideDayDistance,
+                RemainingRideDayDistance = day.RemainingRideDayDistance,
+                StartingDaysRemaining = day.StartingDaysRemaining,
+                RemainingDays = day.RemainingDays,
+                HorseStateBefore = day.HorseStateBefore,
+                HorseStateAfter = day.HorseStateAfter,
+                TrailEvent = day.TrailEvent,
+                PendingEncounter = day.PendingEncounter,
+                EncounterResolution = day.EncounterResolution,
+                OpeningNarration = day.OpeningNarration,
+                JourneyBeat = day.JourneyBeat,
+                ResourceBeat = day.ResourceBeat,
+                Entries = day.Entries.ToArray(),
+                HealthDelta = day.HealthDelta,
+                WalletDelta = day.WalletDelta,
+                FoodDelta = day.FoodDelta,
+                HorseFeedDelta = day.HorseFeedDelta,
+                CanteenChargeDelta = day.CanteenChargeDelta,
+                AmmoSpent = day.AmmoSpent,
+                HorseHungerDelta = day.HorseHungerDelta,
+                HorseThirstDelta = day.HorseThirstDelta,
+                HorseExhaustionDelta = day.HorseExhaustionDelta,
+                DelayDays = day.DelayDays,
+                HeatIncrease = day.HeatIncrease,
+                CurrentHealth = day.CurrentHealth,
+                CurrentWallet = day.CurrentWallet,
+                CurrentFood = day.CurrentFood,
+                CurrentHorseFeed = day.CurrentHorseFeed,
+                CurrentCanteenCharges = day.CurrentCanteenCharges,
+                CurrentAmmo = day.CurrentAmmo,
+                CurrentHeat = day.CurrentHeat,
+                Warnings = day.Warnings.ToArray(),
+                Terrain = GetInternalProperty<TrailTerrain>(day, "Terrain"),
+                RouteWaterSecure = GetInternalProperty<bool>(day, "RouteWaterSecure"),
+                CanteenChargesPerDay = GetInternalProperty<int>(day, "CanteenChargesPerDay")
+            };
 
-        private static readonly FieldInfo? LogEntriesField = typeof(GameSession).GetField("_logEntries", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static readonly FieldInfo? TravelDiaryDaysField = typeof(GameSession).GetField("_travelDiaryDays", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        public static GameSession Create(
-            GameSessionId id,
-            Player player,
-            DomainWorld world,
-            CaseFile caseFile,
-            PursuitState pursuitState,
-            GameClock clock,
-            GameStatus status,
-            TravelJourney? journey,
-            TravelDifficulty travelDifficulty,
-            TravelRandomnessState travelRandomness)
+        public TravelDiaryDayState ToDomain()
         {
-            if (Constructor is null)
-            {
-                throw new InvalidOperationException("Unable to locate the GameSession persistence constructor.");
-            }
+            var day = new TravelDiaryDayState(
+                DayNumber,
+                OriginTownName,
+                DestinationTownName,
+                StartingTravelMode,
+                EndingTravelMode,
+                Status,
+                StartingRideDayDistance,
+                RemainingRideDayDistance,
+                StartingDaysRemaining,
+                RemainingDays,
+                HorseStateBefore,
+                HorseStateAfter,
+                TrailEvent,
+                PendingEncounter,
+                EncounterResolution,
+                OpeningNarration,
+                JourneyBeat,
+                ResourceBeat,
+                Entries.ToArray(),
+                HealthDelta,
+                WalletDelta,
+                FoodDelta,
+                HorseFeedDelta,
+                CanteenChargeDelta,
+                AmmoSpent,
+                HorseHungerDelta,
+                HorseThirstDelta,
+                HorseExhaustionDelta,
+                DelayDays,
+                HeatIncrease,
+                CurrentHealth,
+                CurrentWallet,
+                CurrentFood,
+                CurrentHorseFeed,
+                CurrentCanteenCharges,
+                CurrentAmmo,
+                CurrentHeat,
+                Warnings.ToArray());
 
-            return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, travelDifficulty, travelRandomness });
+            SetInternalProperty(day, "Terrain", Terrain);
+            SetInternalProperty(day, "RouteWaterSecure", RouteWaterSecure);
+            SetInternalProperty(day, "CanteenChargesPerDay", CanteenChargesPerDay);
+            return day;
         }
+    }
 
-        public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)
-        {
-            if (LogEntriesField?.GetValue(session) is not List<GameLogEntry> entries)
-            {
-                throw new InvalidOperationException("Unable to access game log entries for rehydration.");
-            }
+    private static TProperty GetInternalProperty<TProperty>(object target, string propertyName)
+    {
+        var property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Unable to access property {propertyName} on {target.GetType().Name}.");
 
-            entries.Clear();
-            entries.AddRange(logEntries);
-        }
+        return (TProperty)(property.GetValue(target) ?? throw new InvalidOperationException($"Property {propertyName} on {target.GetType().Name} was null."));
+    }
 
-        public static void ReplaceTravelDiaryDays(GameSession session, IReadOnlyList<TravelDiaryDayState> travelDiaryDays)
-        {
-            if (TravelDiaryDaysField?.GetValue(session) is not List<TravelDiaryDayState> entries)
-            {
-                throw new InvalidOperationException("Unable to access travel diary entries for rehydration.");
-            }
+    private static void SetInternalProperty<TProperty>(object target, string propertyName, TProperty value)
+    {
+        var property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Unable to access property {propertyName} on {target.GetType().Name}.");
 
-            entries.Clear();
-            entries.AddRange(travelDiaryDays);
-        }
-
-        public static void SetBackingField<T>(object target, string fieldName, T value)
-        {
-            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
-                ?? throw new InvalidOperationException($"Unable to access field {fieldName} on {target.GetType().Name}.");
-
-            field.SetValue(target, value);
-        }
+        property.SetValue(target, value);
     }
 }
