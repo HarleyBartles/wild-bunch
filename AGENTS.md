@@ -4,6 +4,7 @@
 - Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - This repo is mainline-only.
 - Docs index: `docs/INDEX.md`
+- Required working knowledge for architecture-sensitive work: `docs/architecture-hygiene.md`
 
 ## Mainline-only Rule
 - Final accepted work must be on `main`.
