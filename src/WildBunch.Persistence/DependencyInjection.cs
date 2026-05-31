@@ -16,6 +16,8 @@ public static class DependencyInjection
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddDbContext<WildBunchDbContext>(options => options.UseSqlite(connectionString));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
+        services.AddScoped<IGameSessionReadRepository, EfGameSessionReadRepository>();
+        services.AddScoped<IGameJournalReadRepository, EfGameJournalReadRepository>();
 
         return services;
     }

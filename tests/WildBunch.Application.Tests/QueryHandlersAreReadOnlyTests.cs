@@ -22,7 +22,7 @@ public sealed class QueryHandlersAreReadOnlyTests
         repository.Seed(session);
 
         var gameSessionHandler = new GetGameSessionHandler(repository);
-        var journalHandler = new GetJournalHandler(repository, new JournalResolver());
+        var journalHandler = new GetJournalHandler(repository);
         var availableActionsHandler = new GetAvailableActionsHandler(repository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
         var storeOffersHandler = new GetTownStoreOffersHandler(repository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
 

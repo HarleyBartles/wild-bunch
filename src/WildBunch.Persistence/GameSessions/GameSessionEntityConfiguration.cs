@@ -23,7 +23,25 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
             .IsRequired()
             .HasMaxLength(32);
 
-        builder.Property(e => e.StateJson)
+        builder.Property(e => e.TravelDifficulty)
             .IsRequired();
+
+        builder.Property(e => e.SchemaVersion)
+            .IsRequired();
+
+        builder.HasMany(e => e.Components)
+            .WithOne(e => e.Session)
+            .HasForeignKey(e => e.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(e => e.LogEntries)
+            .WithOne(e => e.Session)
+            .HasForeignKey(e => e.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(e => e.TravelDiaryDays)
+            .WithOne(e => e.Session)
+            .HasForeignKey(e => e.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

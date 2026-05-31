@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
@@ -323,6 +324,55 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(1, reloaded.Journey.RemainingDays);
         Assert.Equal(new DomainHorseTravelState(0, 0, 2), reloaded.Player.Inventory.GetHorseState());
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("went lame", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task ReadRepositoriesProjectComposedSessionAndJournalViews()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var commandRepository = CreateRepository(fixture);
+        var travelResolver = new TravelResolver();
+        var session = CreateSession();
+
+        await commandRepository.SaveAsync(session);
+        var loaded = await commandRepository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var preview = travelResolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("holloway"), loaded.Player.Inventory);
+        Assert.True(preview.Success);
+        loaded.StartJourney(preview.Preview!);
+        loaded.AdvanceJourneyDay();
+
+        await commandRepository.SaveAsync(loaded);
+
+        var readRepository = new EfGameSessionReadRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
+        var journalRepository = new EfGameJournalReadRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
+
+        var sessionRead = await readRepository.GetByIdAsync(session.Id);
+        var journalRead = await journalRepository.GetByIdAsync(session.Id, take: 2);
+
+        Assert.NotNull(sessionRead);
+        Assert.Equal(loaded!.Status, sessionRead!.Status);
+        Assert.Equal(loaded.TravelDifficulty, sessionRead.TravelDifficulty);
+        Assert.Equal(loaded.Player.CurrentTownId, sessionRead.Player.CurrentTownId);
+        Assert.Equal(loaded.Player.Wallet.Cash, sessionRead.Player.Wallet.Cash);
+        Assert.NotNull(sessionRead.Journey);
+        Assert.Equal(loaded.Journey!.Status, sessionRead.Journey!.Status);
+        Assert.Equal(loaded.TravelDiaryDays.Count, sessionRead.TravelDiaryDays.Count);
+        Assert.Equal(loaded.LogEntries.Count, sessionRead.LogEntries.Count);
+
+        Assert.NotNull(journalRead);
+        Assert.Equal(loaded.Id.Value, journalRead!.SessionId);
+        Assert.Equal(loaded.Clock.Day, journalRead.Day);
+        Assert.Equal(loaded.Clock.Turn, journalRead.Turn);
+        Assert.Equal(2, journalRead.LogEntries.Count);
+        Assert.Equal(loaded.LogEntries.Take(2).Select(entry => entry.Message), journalRead.LogEntries.Select(entry => entry.Message));
+        Assert.DoesNotContain("true culprit", System.Text.Json.JsonSerializer.Serialize(journalRead), StringComparison.OrdinalIgnoreCase);
+
+        await using var verificationContext = fixture.CreateContext();
+        Assert.Equal(loaded.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync(entry => entry.SessionId == session.Id.Value));
+        Assert.Equal(loaded.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync(day => day.SessionId == session.Id.Value));
     }
 
     private static EfGameSessionRepository CreateRepository(SqlitePersistenceFixture fixture)

@@ -21,7 +21,7 @@ public sealed class GetJournalHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetJournalHandler(repository, new JournalResolver());
+        var handler = new GetJournalHandler(repository);
 
         var result = await handler.HandleAsync(new GetJournalQuery(session.Id.Value));
 
@@ -60,7 +60,7 @@ public sealed class GetJournalHandlerTests
         var session = CreateSession();
         session.CaseFile.DiscoverSuspect(new SuspectId("suspect-2"));
         repository.Seed(session);
-        var handler = new GetJournalHandler(repository, new JournalResolver());
+        var handler = new GetJournalHandler(repository);
 
         var result = await handler.HandleAsync(new GetJournalQuery(session.Id.Value));
 
@@ -79,7 +79,7 @@ public sealed class GetJournalHandlerTests
     [Fact]
     public async Task GetJournalThrowsWhenMissing()
     {
-        var handler = new GetJournalHandler(new InMemoryGameSessionRepository(), new JournalResolver());
+        var handler = new GetJournalHandler(new InMemoryGameSessionRepository());
 
         var exception = await Assert.ThrowsAsync<GameSessionNotFoundException>(
             () => handler.HandleAsync(new GetJournalQuery(Guid.NewGuid())));

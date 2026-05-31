@@ -10,5 +10,13 @@ public sealed class GameSessionEntity
 
     public string Status { get; set; } = string.Empty;
 
-    public string StateJson { get; set; } = string.Empty;
+    public int TravelDifficulty { get; set; }
+
+    public int SchemaVersion { get; set; }
+
+    public ICollection<GameSessionComponentEntity> Components { get; set; } = [];
+
+    public ICollection<GameSessionLogEntryEntity> LogEntries { get; set; } = [];
+
+    public ICollection<GameSessionDiaryDayEntity> TravelDiaryDays { get; set; } = [];
 }

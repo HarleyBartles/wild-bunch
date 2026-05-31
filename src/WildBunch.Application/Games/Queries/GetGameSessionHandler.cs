@@ -1,5 +1,5 @@
 using WildBunch.Application.Abstractions;
-using WildBunch.Application.Games.Execution;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 
@@ -7,11 +7,11 @@ namespace WildBunch.Application.Games.Queries;
 
 public sealed class GetGameSessionHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionReadRepository _gameSessionReadRepository;
 
-    public GetGameSessionHandler(IGameSessionRepository gameSessionRepository)
+    public GetGameSessionHandler(IGameSessionReadRepository gameSessionReadRepository)
     {
-        _gameSessionRepository = gameSessionRepository;
+        _gameSessionReadRepository = gameSessionReadRepository;
     }
 
     public async Task<GameSessionDto> HandleAsync(GetGameSessionQuery query, CancellationToken cancellationToken = default)
@@ -19,7 +19,8 @@ public sealed class GetGameSessionHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionReadRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+            ?? throw new GameSessionNotFoundException(sessionId);
 
         return GameSessionMapper.ToDto(session);
     }

@@ -25,6 +25,12 @@ public sealed class MigrationTests
         using (var context = new WildBunchDbContext(options))
         {
             await context.Database.MigrateAsync();
+
+            Assert.True(await context.Database.CanConnectAsync());
+            Assert.Equal(0, await context.GameSessions.CountAsync());
+            Assert.Equal(0, await context.GameSessionComponents.CountAsync());
+            Assert.Equal(0, await context.GameSessionLogEntries.CountAsync());
+            Assert.Equal(0, await context.GameSessionDiaryDays.CountAsync());
         }
 
         var repository = new EfGameSessionRepository(new WildBunchDbContext(options), new GameSessionJsonSerializer());
@@ -37,6 +43,29 @@ public sealed class MigrationTests
         Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
         Assert.Equal(session.Player.Name, reloaded.Player.Name);
         Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
+
+        using (var verificationContext = new WildBunchDbContext(options))
+        {
+            Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
+            Assert.Equal(6, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
+            Assert.Equal(0, await verificationContext.GameSessionDiaryDays.CountAsync());
+        }
+
+        await using var schemaCommand = connection.CreateCommand();
+        schemaCommand.CommandText = "PRAGMA table_info('GameSessions');";
+        var columns = new List<string>();
+        await using (var reader = await schemaCommand.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                columns.Add(reader.GetString(1));
+            }
+        }
+
+        Assert.DoesNotContain("StateJson", columns);
+        Assert.Contains("SchemaVersion", columns);
+        Assert.Contains("TravelDifficulty", columns);
     }
 
     private static GameSession CreateSession()

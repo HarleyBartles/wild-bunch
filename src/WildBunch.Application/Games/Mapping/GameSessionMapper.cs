@@ -4,12 +4,17 @@ using DomainClue = WildBunch.Domain.Cases.Clue;
 using DomainSuspect = WildBunch.Domain.Cases.Suspect;
 using DomainGameLogEntry = WildBunch.Domain.Game.GameLogEntry;
 using DomainGameSession = WildBunch.Domain.Game.GameSession;
+using DomainGameSessionReadModel = WildBunch.Application.Games.Models.GameSessionReadModel;
 using DomainPlayer = WildBunch.Domain.Game.Player;
 using DomainPursuitState = WildBunch.Domain.Game.PursuitState;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
 using DomainTrail = WildBunch.Domain.World.Trail;
 using DomainKillerReleaseState = WildBunch.Domain.Cases.KillerReleaseState;
+using DomainTravelDiaryDayState = WildBunch.Domain.Travel.TravelDiaryDayState;
+using DomainTravelRulesProfile = WildBunch.Domain.Travel.TravelRulesProfile;
 
 namespace WildBunch.Application.Games.Mapping;
 
@@ -19,20 +24,63 @@ public static class GameSessionMapper
     {
         ArgumentNullException.ThrowIfNull(session);
 
-        return new GameSessionDto(
+        return ToDto(
             session.Id.Value,
             session.Status,
             session.TravelDifficulty,
-            ToDto(session.Player),
-            ToDto(session.World),
-            ToDto(session.CaseFile),
-            InventoryMapper.ToDto(session.Player, session.TravelRules),
-            new GameClockDto(session.Clock.Day, session.Clock.Turn),
-            new PursuitStateDto(session.PursuitState.Heat),
+            session.Player,
+            session.World,
+            session.CaseFile,
+            session.Clock,
+            session.PursuitState,
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, session.TravelRules),
-            TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules),
-            session.LogEntries.Select(ToDto).ToArray());
+            session.TravelDiaryDays,
+            session.LogEntries);
     }
+
+    public static GameSessionDto ToDto(DomainGameSessionReadModel session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        return ToDto(
+            session.Id,
+            session.Status,
+            session.TravelDifficulty,
+            session.Player,
+            session.World,
+            session.CaseFile,
+            session.Clock,
+            session.PursuitState,
+            session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.TravelDifficulty)),
+            session.TravelDiaryDays,
+            session.LogEntries);
+    }
+
+    private static GameSessionDto ToDto(
+        Guid id,
+        GameStatus status,
+        TravelDifficulty travelDifficulty,
+        DomainPlayer player,
+        DomainWorld world,
+        DomainCaseFile caseFile,
+        GameClock clock,
+        DomainPursuitState pursuitState,
+        TravelJourneyDto? journey,
+        IReadOnlyList<DomainTravelDiaryDayState> travelDiaryDays,
+        IReadOnlyList<DomainGameLogEntry> logEntries)
+        => new(
+            id,
+            status,
+            travelDifficulty,
+            ToDto(player),
+            ToDto(world),
+            ToDto(caseFile),
+            InventoryMapper.ToDto(player, TravelRulesProfile.For(travelDifficulty)),
+            new GameClockDto(clock.Day, clock.Turn),
+            new PursuitStateDto(pursuitState.Heat),
+            journey,
+            TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(travelDifficulty)),
+            logEntries.Select(ToDto).ToArray());
 
     private static PlayerDto ToDto(DomainPlayer player)
         => new(
