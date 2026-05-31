@@ -34,7 +34,7 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(1, actionResult.CurrentJournal.Clock.Turn);
         Assert.Equal(2, actionResult.CurrentJournal.LogEntries.Count);
         Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
-        Assert.Equal(4, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal("The Wild Bunch trail is quiet.", actionResult.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.SourceLabel is not null);
@@ -55,7 +55,7 @@ public sealed class GameApiWantedPostersTests
         var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
 
         Assert.NotNull(journal);
-        Assert.Equal(4, journal!.CaseFile.KnownClues.Count);
+        Assert.Equal(2, journal!.CaseFile.KnownClues.Count);
         Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
         Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
@@ -77,10 +77,10 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(secondRead);
         Assert.Equal("The Wild Bunch trail is quiet.", secondRead!.CurrentJournal.CaseFile.CaseState.StatusText);
-        Assert.Equal(4, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Single(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects);
         Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
-        Assert.Equal(4, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Equal(1, secondRead.CurrentJournal.CaseFile.KnownClues.Count(clue => clue.Kind is ClueKind.Alias or ClueKind.Record));
 
         var thirdReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
@@ -91,7 +91,7 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(thirdRead);
         Assert.Equal("The Wild Bunch trail is quiet.", thirdRead!.CurrentJournal.CaseFile.CaseState.StatusText);
-        Assert.Equal(4, thirdRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, thirdRead.CurrentJournal.CaseFile.KnownClues.Count);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(3, result.CurrentJournal.Clock.Day);
         Assert.Equal(0, result.CurrentJournal.Clock.Turn);
         Assert.True(result.CurrentJournal.LogEntries.Count >= 4);
-        Assert.Equal(3, result.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
         Assert.DoesNotContain(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
 

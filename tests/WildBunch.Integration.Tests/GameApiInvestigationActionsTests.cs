@@ -45,7 +45,7 @@ public sealed class GameApiInvestigationActionsTests
         Assert.NotNull(sheriffRecordsResult);
         Assert.True(sheriffRecordsResult!.Success);
         Assert.Equal(2, sheriffRecordsResult.CurrentJournal.Clock.Turn);
-        Assert.Equal(4, sheriffRecordsResult.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, sheriffRecordsResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Single(sheriffRecordsResult.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Contains(sheriffRecordsResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Record);
 
@@ -58,7 +58,7 @@ public sealed class GameApiInvestigationActionsTests
         Assert.NotNull(gossipResult);
         Assert.True(gossipResult!.Success);
         Assert.Equal(3, gossipResult.CurrentJournal.Clock.Turn);
-        Assert.Equal(5, gossipResult.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(3, gossipResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(gossipResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("local gossip", StringComparison.OrdinalIgnoreCase));
 
         var telegraphResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/telegraph-leads/follow", content: null);

@@ -95,7 +95,7 @@ public sealed class GameSetupPackageBuilderTests
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit);
         Assert.All(package.CaseFile.KnownClues.Concat(package.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
-        var localGossipClue = Assert.Single(package.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        var localGossipClue = Assert.Single(package.CaseFile.PublicClues, clue => clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal));
         Assert.NotEmpty(localGossipClue.Anchors.Locations);
         Assert.NotEmpty(localGossipClue.Anchors.Times);
         Assert.NotEmpty(localGossipClue.Anchors.Directions);

@@ -63,8 +63,10 @@ public sealed class SeededNewGameFactoryTests
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
-        Assert.Contains(session.CaseFile.KnownClues, clue => clue.Description.StartsWith("A witness tied the rider to a man who ", StringComparison.Ordinal));
-        Assert.Equal(4, session.CaseFile.PublicClues.Count);
+        Assert.Single(session.CaseFile.KnownClues);
+        Assert.Equal(6, session.CaseFile.PublicClues.Count);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A witness tied the rider to ", StringComparison.Ordinal));
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
@@ -77,7 +79,8 @@ public sealed class SeededNewGameFactoryTests
             clue => clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal)
                 && clue.Description.Contains(" a rider who ", StringComparison.OrdinalIgnoreCase)
                 && clue.Description.Contains("kept to the rail spur after dark", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(3, session.CaseFile.KnownClues.Count);
+        Assert.DoesNotContain(session.CaseFile.KnownClues, clue => clue.Description.StartsWith("A witness tied the rider to ", StringComparison.Ordinal));
+        Assert.DoesNotContain(session.CaseFile.KnownClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
         Assert.All(session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
         Assert.All(
             session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues),
@@ -88,7 +91,7 @@ public sealed class SeededNewGameFactoryTests
                 Assert.DoesNotContain("tied the rider to Has", clue.Description, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("..", clue.Description, StringComparison.Ordinal);
             });
-        var sightingClue = Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        var sightingClue = Assert.Single(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal));
         var sightingSuspectId = Assert.Single(sightingClue.LinkedSuspectIds);
         var sightingTown = session.World.GetTown(
             Assert.Single(session.CaseFile.SuspectTurfAssignments, assignment => assignment.SuspectId.Equals(sightingSuspectId)).TurfTownId);
@@ -112,7 +115,6 @@ public sealed class SeededNewGameFactoryTests
         Assert.Empty(session.CaseFile.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(session.CaseFile.PublicWarrants[1].Terms.AdvancesGangPressureFor);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
-        Assert.All(session.CaseFile.PublicClues, clue => Assert.DoesNotContain(session.CaseFile.TrueCulpritId, clue.LinkedSuspectIds));
         Assert.Equal(7, session.CaseFile.SuspectTurfAssignments.Count);
         Assert.All(session.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(session.World.Towns, town => town.Id.Equals(assignment.TurfTownId)));
         Assert.All(session.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Id.Equals(assignment.SuspectId)));

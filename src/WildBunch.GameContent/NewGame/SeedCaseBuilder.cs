@@ -85,7 +85,7 @@ internal static class SeedCaseBuilder
         var suspectTurfAssignments = SelectSuspectTurfAssignments(source, world, suspects);
         var openingLead = CaseOpeningLead.Create(CaseSuspectFeaturePool.BuildOpeningLead(features[trueCulpritIndex].PrimaryFeature));
         var knownClues = CreateKnownClues(source, features[trueCulpritIndex].PrimaryFeature);
-        var publicClues = CreatePublicClues(source, world, suspects, features, suspectTurfAssignments);
+        var publicClues = CreatePublicClues(source, world, suspects, features, suspectTurfAssignments, features[trueCulpritIndex].PrimaryFeature);
         var accusationId = suspects[accusationIndex].Id;
         var publicWarrants = new[]
         {
@@ -135,54 +135,6 @@ internal static class SeedCaseBuilder
                     times: new[]
                     {
                         new ClueTimeAnchor(ClueRecency.Recent)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CaseKnownClues,
-                2,
-                ClueKind.IdentityFact,
-                $"A witness tied the rider to {DescribePersonWithFeature(culpritFeature, "a man")}.",
-                TrueCulpritId,
-                InvestigationTargetKind.TrueCulprit,
-                "telegraph ledger",
-                "Identity match",
-                InvestigationSourceKind.TelegraphLead,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(culpritFeature.Description, Feature: culpritFeature.Description, Fact: "identity match")
-                    },
-                    times: new[]
-                    {
-                        new ClueTimeAnchor(ClueRecency.Recent)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CaseKnownClues,
-                3,
-                ClueKind.Whereabouts,
-                "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.",
-                TrueCulpritId,
-                InvestigationTargetKind.TrueCulprit,
-                "waystation clerk",
-                "Route lead",
-                InvestigationSourceKind.LocalGossip,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor("Red Mesa rider", Feature: culpritFeature.Description)
-                    },
-                    locations: new[]
-                    {
-                        new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "Red Mesa road")
-                    },
-                    times: new[]
-                    {
-                        new ClueTimeAnchor(ClueRecency.Recent)
-                    },
-                    directions: new[]
-                    {
-                        new ClueDirectionAnchor("after dusk", Movement: "heading along the Red Mesa road", Route: "Red Mesa road")
                     }))
         };
 
@@ -191,7 +143,8 @@ internal static class SeedCaseBuilder
         World world,
         IReadOnlyList<Suspect> suspects,
         IReadOnlyList<CaseSuspectFeatureAssignment> features,
-        IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments)
+        IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments,
+        CaseSuspectFeatureProfile culpritFeature)
         => new[]
         {
             CreateClue(
@@ -269,6 +222,54 @@ internal static class SeedCaseBuilder
                     directions: new[]
                     {
                         new ClueDirectionAnchor("kept to the rail spur after dark", Movement: "kept to the rail spur after dark", Route: "rail spur", DestinationTownId: suspectTurfAssignments[4].TurfTownId)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                5,
+                ClueKind.IdentityFact,
+                $"A witness tied the rider to {DescribePersonWithFeature(culpritFeature, "a man")}.",
+                TrueCulpritId,
+                InvestigationTargetKind.TrueCulprit,
+                "telegraph ledger",
+                "Identity match",
+                InvestigationSourceKind.TelegraphLead,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(culpritFeature.Description, Feature: culpritFeature.Description, Fact: "identity match")
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    })),
+            CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                6,
+                ClueKind.Whereabouts,
+                "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.",
+                TrueCulpritId,
+                InvestigationTargetKind.TrueCulprit,
+                "waystation clerk",
+                "Route lead",
+                InvestigationSourceKind.LocalGossip,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor("Red Mesa rider", Feature: culpritFeature.Description)
+                    },
+                    locations: new[]
+                    {
+                        new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "Red Mesa road")
+                    },
+                    times: new[]
+                    {
+                        new ClueTimeAnchor(ClueRecency.Recent)
+                    },
+                    directions: new[]
+                    {
+                        new ClueDirectionAnchor("after dusk", Movement: "heading along the Red Mesa road", Route: "Red Mesa road")
                     }))
         };
 

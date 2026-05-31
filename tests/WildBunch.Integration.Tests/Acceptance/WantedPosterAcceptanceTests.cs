@@ -27,7 +27,7 @@ public sealed class WantedPosterAcceptanceTests
         Assert.True(result!.Success);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
-        Assert.Equal(4, result.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(2, result.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Contains(result.CurrentJournal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
