@@ -45,6 +45,16 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
+        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
+        Assert.Equal("Tessa Wren", session.CaseFile.PublicWarrants[0].TargetName);
+        Assert.Equal(WarrantDisposition.DeadOrAlive, session.CaseFile.PublicWarrants[0].Terms.Disposition);
+        Assert.Equal(2500m, session.CaseFile.PublicWarrants[0].Terms.BountyAmount);
+        Assert.Contains("Red Wren", session.CaseFile.PublicWarrants[0].Terms.KnownAliases);
+        Assert.Equal(InvestigationTargetKind.TrueCulprit, session.CaseFile.PublicWarrants[0].Terms.TargetKind);
+        Assert.True(session.CaseFile.PublicWarrants[0].Terms.AdvancesGangPressure);
+        Assert.Equal("Reno Pike", session.CaseFile.PublicWarrants[1].TargetName);
+        Assert.Equal(WarrantDisposition.AliveOnly, session.CaseFile.PublicWarrants[1].Terms.Disposition);
+        Assert.False(session.CaseFile.PublicWarrants[1].Terms.IsGangRelevant);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
         Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 && suspect.Profile.IdentifyingFacts.Count > 0);
         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Profile.IdentifyingFacts.Any(fact => fact.Description == session.CaseFile.OpeningLead.Description));

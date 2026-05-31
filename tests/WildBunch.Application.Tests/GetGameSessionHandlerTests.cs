@@ -54,6 +54,7 @@ public sealed class GetGameSessionHandlerTests
         Assert.DoesNotContain("\"trueculpritid\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(typeof(WildBunch.Application.Games.Models.CaseFileDto).GetProperties(), property => property.Name.Contains("culprit", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

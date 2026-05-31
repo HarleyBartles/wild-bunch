@@ -138,6 +138,20 @@ export function formatClueKind(kind: number) {
       return "Record";
     case 3:
       return "Rumor";
+    case 4:
+      return "Culprit trail";
+    case 5:
+      return "Identity fact";
+    case 6:
+      return "Alias";
+    case 7:
+      return "Whereabouts";
+    case 8:
+      return "Warrant";
+    case 9:
+      return "Contradiction";
+    case 10:
+      return "Context";
     default:
       return `Clue ${kind}`;
   }

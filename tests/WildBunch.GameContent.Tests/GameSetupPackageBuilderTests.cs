@@ -108,6 +108,7 @@ public sealed class GameSetupPackageBuilderTests
             package.CaseFile.TrueCulpritId.Value,
             package.CaseFile.Accusation?.Value ?? string.Empty,
             package.CaseFile.OpeningLead.Description,
-            string.Join(",", package.CaseFile.KnownClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
-            string.Join(",", package.CaseFile.PublicClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")));
+            string.Join(",", package.CaseFile.KnownClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
+            string.Join(",", package.CaseFile.PublicClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
+            string.Join(",", package.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.Disposition}:{warrant.Terms.BountyAmount}:{string.Join("/", warrant.Terms.KnownAliases)}:{string.Join("/", warrant.Terms.KnownFeatures)}:{warrant.Terms.IssuingSource}:{warrant.Terms.TargetKind}:{warrant.Terms.IsGangRelevant}:{warrant.Terms.AdvancesGangPressure}:{warrant.Summary}")));
 }

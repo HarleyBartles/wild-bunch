@@ -51,6 +51,7 @@ public sealed class GetJournalHandlerTests
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(typeof(WildBunch.Application.Games.Models.JournalCaseFileDto).GetProperties(), property => property.Name.Contains("culprit", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

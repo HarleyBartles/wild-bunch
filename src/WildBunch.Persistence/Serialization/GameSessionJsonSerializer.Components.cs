@@ -213,7 +213,9 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<string>? DiscoveredSuspectIds,
         string TrueCulpritId,
         IReadOnlyList<ClueSnapshot> KnownClues,
-        IReadOnlyList<ClueSnapshot>? PublicClues)
+        IReadOnlyList<ClueSnapshot>? PublicClues,
+        IReadOnlyList<WarrantSnapshot>? KnownWarrants,
+        IReadOnlyList<WarrantSnapshot>? PublicWarrants)
     {
         public static CaseFileSnapshot FromDomain(CaseFile caseFile)
             => new(
@@ -225,7 +227,9 @@ public sealed partial class GameSessionJsonSerializer
                 caseFile.DiscoveredSuspectIds.Select(suspectId => suspectId.Value).ToArray(),
                 caseFile.TrueCulpritId.Value,
                 caseFile.KnownClues.Select(ClueSnapshot.FromDomain).ToArray(),
-                caseFile.PublicClues.Select(ClueSnapshot.FromDomain).ToArray());
+                caseFile.PublicClues.Select(ClueSnapshot.FromDomain).ToArray(),
+                caseFile.KnownWarrants.Select(WarrantSnapshot.FromDomain).ToArray(),
+                caseFile.PublicWarrants.Select(WarrantSnapshot.FromDomain).ToArray());
 
         public static CaseFile ToDomain(CaseFileSnapshot snapshot)
         {
@@ -238,7 +242,9 @@ public sealed partial class GameSessionJsonSerializer
                 (snapshot.DiscoveredSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
                 snapshot.PublicClues?.Select(ClueSnapshot.ToDomain),
                 snapshot.KillerReleaseThreshold,
-                snapshot.KillerReleaseProgress);
+                snapshot.KillerReleaseProgress,
+                (snapshot.KnownWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
+                (snapshot.PublicWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain));
 
             return caseFile;
         }
@@ -295,32 +301,105 @@ public sealed partial class GameSessionJsonSerializer
 
     private sealed record ClueSnapshot
     {
-        public ClueSnapshot(string id, ClueKind kind, string description, IReadOnlyList<string>? linkedSuspectIds = null)
+        public ClueSnapshot(
+            string id,
+            ClueKind kind,
+            string description,
+            IReadOnlyList<string>? linkedSuspectIds = null,
+            InvestigationTargetKind targetKind = InvestigationTargetKind.Unknown,
+            string? source = null,
+            string? context = null)
         {
             Id = id;
             Kind = kind;
             Description = description;
             LinkedSuspectIds = linkedSuspectIds;
+            TargetKind = targetKind;
+            Source = source;
+            Context = context;
         }
 
         public string Id { get; init; }
         public ClueKind Kind { get; init; }
         public string Description { get; init; }
         public IReadOnlyList<string>? LinkedSuspectIds { get; init; }
+        public InvestigationTargetKind TargetKind { get; init; }
+        public string? Source { get; init; }
+        public string? Context { get; init; }
 
         public static ClueSnapshot FromDomain(Clue clue)
             => new(
                 clue.Id.Value,
                 clue.Kind,
                 clue.Description,
-                clue.LinkedSuspectIds.Select(suspectId => suspectId.Value).ToArray());
+                clue.LinkedSuspectIds.Select(suspectId => suspectId.Value).ToArray(),
+                clue.TargetKind,
+                clue.Source,
+                clue.Context);
 
         public static Clue ToDomain(ClueSnapshot snapshot)
             => new(
                 new ClueId(snapshot.Id),
                 snapshot.Kind,
                 snapshot.Description,
-                (snapshot.LinkedSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)));
+                (snapshot.LinkedSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
+                snapshot.TargetKind,
+                snapshot.Source,
+                snapshot.Context);
+    }
+
+    private sealed record WarrantSnapshot(
+        string Id,
+        string TargetName,
+        WarrantTermsSnapshot Terms,
+        string Summary)
+    {
+        public static WarrantSnapshot FromDomain(Warrant warrant)
+            => new(
+                warrant.Id.Value,
+                warrant.TargetName,
+                WarrantTermsSnapshot.FromDomain(warrant.Terms),
+                warrant.Summary);
+
+        public static Warrant ToDomain(WarrantSnapshot snapshot)
+            => new(
+                new WarrantId(snapshot.Id),
+                snapshot.TargetName,
+                WarrantTermsSnapshot.ToDomain(snapshot.Terms),
+                snapshot.Summary);
+    }
+
+    private sealed record WarrantTermsSnapshot(
+        WarrantDisposition Disposition,
+        decimal BountyAmount,
+        IReadOnlyList<string>? KnownAliases,
+        IReadOnlyList<string>? KnownFeatures,
+        string IssuingSource,
+        InvestigationTargetKind TargetKind,
+        bool IsGangRelevant,
+        bool AdvancesGangPressure)
+    {
+        public static WarrantTermsSnapshot FromDomain(WarrantTerms terms)
+            => new(
+                terms.Disposition,
+                terms.BountyAmount,
+                terms.KnownAliases.ToArray(),
+                terms.KnownFeatures.ToArray(),
+                terms.IssuingSource,
+                terms.TargetKind,
+                terms.IsGangRelevant,
+                terms.AdvancesGangPressure);
+
+        public static WarrantTerms ToDomain(WarrantTermsSnapshot snapshot)
+            => new(
+                snapshot.Disposition,
+                snapshot.BountyAmount,
+                snapshot.KnownAliases ?? Array.Empty<string>(),
+                snapshot.KnownFeatures ?? Array.Empty<string>(),
+                snapshot.IssuingSource,
+                snapshot.TargetKind,
+                snapshot.IsGangRelevant,
+                snapshot.AdvancesGangPressure);
     }
 
     private sealed record PursuitStateSnapshot(int Heat)

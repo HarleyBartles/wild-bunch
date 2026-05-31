@@ -26,6 +26,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(2, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Single(session.CaseFile.DiscoveredSuspectIds);
         Assert.Contains(new SuspectId("suspect-1"), session.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
@@ -47,6 +48,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Single(session.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
     }
@@ -62,6 +64,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.False(result.SessionChanged);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Single(session.CaseFile.PublicClues);
+        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Single(session.LogEntries);
@@ -81,6 +84,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Single(session.CaseFile.PublicClues);
+        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Equal(2, session.LogEntries.Count);
         Assert.Equal(JourneyStatus.Completed, session.Journey.Status);
@@ -107,14 +111,47 @@ public sealed class GameSessionWantedPostersTests
             accusation: null,
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
             knownClues: Array.Empty<Clue>(),
             publicClues: new[]
             {
                 new Clue(
                     new ClueId("clue-public-1"),
-                    ClueKind.Witness,
+                    ClueKind.Alias,
                     "A posted notice describes a rider wearing a faded blue scarf.",
-                    new[] { new SuspectId("suspect-1") })
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.GangMember,
+                    source: "notice board",
+                    context: "Public wanted poster")
+            },
+            publicWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-public-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Red Wren", "Aunt Tess" },
+                        new[] { "Pale scar across the left cheek" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        isGangRelevant: true,
+                        advancesGangPressure: true),
+                    "Wanted for a Wild Bunch robbery."),
+                new Warrant(
+                    new WarrantId("warrant-public-2"),
+                    "Reno Pike",
+                    new WarrantTerms(
+                        WarrantDisposition.AliveOnly,
+                        300m,
+                        new[] { "The Magpie", "R. Pike" },
+                        new[] { "Mismatched spurs" },
+                        "Silver Creek Sheriff",
+                        InvestigationTargetKind.UnrelatedWantedCriminal,
+                        isGangRelevant: false,
+                        advancesGangPressure: false),
+                    "Wanted for cattle theft.")
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
