@@ -44,8 +44,8 @@ public sealed class CaseInvestigationFoundationTests
                 new[] { "Pale scar across the left cheek", "Raven-feather pin" },
                 "Dodge City Marshal",
                 InvestigationTargetKind.TrueCulprit,
-                isGangRelevant: true,
-                advancesGangPressure: true),
+                [OutlawGangIds.WildBunch],
+                OutlawGangIds.WildBunch),
             "Wanted for a Wild Bunch robbery and related killings.");
 
         var unrelatedWarrant = new Warrant(
@@ -58,8 +58,8 @@ public sealed class CaseInvestigationFoundationTests
                 new[] { "Mismatched spurs", "Black felt hat" },
                 "Silver Creek Sheriff",
                 InvestigationTargetKind.UnrelatedWantedCriminal,
-                isGangRelevant: false,
-                advancesGangPressure: false),
+                Array.Empty<OutlawGangId>(),
+                null),
             "Wanted for cattle theft and forging livery tags.");
 
         var caseFile = new CaseFile(
@@ -83,7 +83,10 @@ public sealed class CaseInvestigationFoundationTests
         Assert.Equal(ClueKind.Whereabouts, caseFile.PublicClues[0].Kind);
         Assert.Equal(InvestigationTargetKind.TrueCulprit, caseFile.PublicClues[0].TargetKind);
 
-        Assert.Single(caseFile.PublicWarrants, warrant => warrant.Terms.IsGangRelevant);
+        Assert.Single(caseFile.PublicWarrants, warrant => warrant.Terms.GangAffiliations.Contains(OutlawGangIds.WildBunch));
+        Assert.Equal(OutlawGangIds.WildBunch, caseFile.PublicWarrants[0].Terms.AdvancesGangPressureFor);
+        Assert.Empty(caseFile.PublicWarrants[1].Terms.GangAffiliations);
+        Assert.Null(caseFile.PublicWarrants[1].Terms.AdvancesGangPressureFor);
         Assert.Single(caseFile.PublicWarrants, warrant => warrant.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal);
         Assert.Equal(2500m, caseFile.PublicWarrants[0].Terms.BountyAmount);
         Assert.Equal(WarrantDisposition.DeadOrAlive, caseFile.PublicWarrants[0].Terms.Disposition);

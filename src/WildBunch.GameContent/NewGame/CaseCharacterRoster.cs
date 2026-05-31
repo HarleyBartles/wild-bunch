@@ -21,7 +21,8 @@ internal sealed record CaseCharacterProfile(
     string SourceNote,
     bool IsGangEligible,
     bool IsTrueCulpritEligible,
-    bool IsAssociatedCharacter);
+    bool IsAssociatedCharacter,
+    IReadOnlyList<OutlawGangId> GangAffiliations);
 
 internal sealed record OutlawWarrantProfile(
     string Key,
@@ -35,8 +36,8 @@ internal sealed record OutlawWarrantProfile(
     WarrantDisposition Disposition,
     decimal BountyAmount,
     InvestigationTargetKind TargetKind,
-    bool IsGangRelevant,
-    bool AdvancesGangPressure);
+    IReadOnlyList<OutlawGangId> GangAffiliations,
+    OutlawGangId? AdvancesGangPressureFor);
 
 internal static class CaseCharacterRoster
 {
@@ -299,8 +300,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.AliveOnly,
             300m,
             InvestigationTargetKind.UnrelatedWantedCriminal,
-            isGangRelevant: false,
-            advancesGangPressure: false),
+            [],
+            null),
         Wanted(
             "maddox-vale",
             "Maddox Vale",
@@ -312,8 +313,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.AliveOnly,
             225m,
             InvestigationTargetKind.UnrelatedWantedCriminal,
-            isGangRelevant: false,
-            advancesGangPressure: false),
+            [],
+            null),
         Wanted(
             "ivy-calder",
             "Ivy Calder",
@@ -325,8 +326,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.DeadOrAlive,
             175m,
             InvestigationTargetKind.UnrelatedWantedCriminal,
-            isGangRelevant: false,
-            advancesGangPressure: false),
+            [],
+            null),
         Wanted(
             "harlan-bowe",
             "Harlan Bowe",
@@ -338,8 +339,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.AliveOnly,
             260m,
             InvestigationTargetKind.UnrelatedWantedCriminal,
-            isGangRelevant: false,
-            advancesGangPressure: false),
+            [],
+            null),
         Wanted(
             "nell-vera",
             "Nell Vera",
@@ -351,8 +352,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.AliveOnly,
             190m,
             InvestigationTargetKind.UnrelatedWantedCriminal,
-            isGangRelevant: false,
-            advancesGangPressure: false),
+            [],
+            null),
         Wanted(
             "oscar-holt",
             "Oscar Holt",
@@ -364,8 +365,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.DeadOrAlive,
             340m,
             InvestigationTargetKind.UnrelatedWantedCriminal,
-            isGangRelevant: false,
-            advancesGangPressure: false)
+            [],
+            null)
     ];
 
     public static IReadOnlyList<CaseCharacterProfile> GangCandidatePool => GangCandidates;
@@ -431,8 +432,8 @@ internal static class CaseCharacterRoster
             WarrantDisposition.DeadOrAlive,
             2500m,
             InvestigationTargetKind.TrueCulprit,
-            true,
-            true);
+            [OutlawGangIds.WildBunch],
+            OutlawGangIds.WildBunch);
     }
 
     public static OutlawWarrantProfile CreateCanonicalTrueCulpritWarrant()
@@ -500,7 +501,8 @@ internal static class CaseCharacterRoster
             sourceNote,
             isGangEligible,
             isTrueCulpritEligible,
-            isAssociatedCharacter);
+            isAssociatedCharacter,
+            [OutlawGangIds.WildBunch]);
 
     private static CaseCharacterProfile Orbit(
         string key,
@@ -524,7 +526,8 @@ internal static class CaseCharacterRoster
             sourceNote,
             false,
             false,
-            true);
+            true,
+            Array.Empty<OutlawGangId>());
 
     private static OutlawWarrantProfile Wanted(
         string key,
@@ -537,8 +540,8 @@ internal static class CaseCharacterRoster
         WarrantDisposition disposition,
         decimal bountyAmount,
         InvestigationTargetKind targetKind,
-        bool isGangRelevant,
-        bool advancesGangPressure,
+        IReadOnlyList<OutlawGangId> gangAffiliations,
+        OutlawGangId? advancesGangPressureFor,
         IReadOnlyList<string>? knownFeatures = null)
         => new(
             key,
@@ -552,6 +555,6 @@ internal static class CaseCharacterRoster
             disposition,
             bountyAmount,
             targetKind,
-            isGangRelevant,
-            advancesGangPressure);
+            gangAffiliations,
+            advancesGangPressureFor);
 }

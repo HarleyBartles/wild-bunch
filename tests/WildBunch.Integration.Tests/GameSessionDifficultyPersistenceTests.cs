@@ -50,6 +50,52 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void CaseFileWarrantGangAffiliationFieldsRoundTripThroughJsonPersistence()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var caseFile = CreateGangAwareCaseFile();
+
+        var json = serializer.SerializeCaseFile(caseFile);
+        var reloaded = serializer.DeserializeCaseFile(json);
+
+        Assert.Contains("\"gangAffiliations\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"advancesGangPressureFor\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"isGangRelevant\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"advancesGangPressure\"", json, StringComparison.Ordinal);
+        Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[0].Terms.GangAffiliations);
+        Assert.Equal(OutlawGangIds.WildBunch, reloaded.PublicWarrants[0].Terms.AdvancesGangPressureFor);
+        Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
+        Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
+    }
+
+    [Fact]
+    public void LegacyCaseFileWarrantGangBooleansStillDeserializeIntoTypedGangFields()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var legacySnapshot = JsonNode.Parse(serializer.SerializeCaseFile(CreateGangAwareCaseFile()))!.AsObject();
+        var legacyWarrants = legacySnapshot["publicWarrants"]!.AsArray();
+
+        var firstTerms = legacyWarrants[0]!["terms"]!.AsObject();
+        firstTerms.Remove("gangAffiliations");
+        firstTerms.Remove("advancesGangPressureFor");
+        firstTerms["isGangRelevant"] = true;
+        firstTerms["advancesGangPressure"] = true;
+
+        var secondTerms = legacyWarrants[1]!["terms"]!.AsObject();
+        secondTerms.Remove("gangAffiliations");
+        secondTerms.Remove("advancesGangPressureFor");
+        secondTerms["isGangRelevant"] = false;
+        secondTerms["advancesGangPressure"] = false;
+
+        var reloaded = serializer.DeserializeCaseFile(legacySnapshot.ToJsonString());
+
+        Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[0].Terms.GangAffiliations);
+        Assert.Equal(OutlawGangIds.WildBunch, reloaded.PublicWarrants[0].Terms.AdvancesGangPressureFor);
+        Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
+        Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
+    }
+
+    [Fact]
     public void MissingTravelRandomnessInLegacySessionJsonFallsBackToRuntimeSalted()
     {
         var serializer = new GameSessionJsonSerializer();
@@ -92,6 +138,52 @@ public sealed class GameSessionDifficultyPersistenceTests
             Wallet.Starting(25m),
             inventory,
             TravelDifficulty.Easy);
+    }
+
+    private static CaseFile CreateGangAwareCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge)
+        };
+
+        var publicWarrants = new[]
+        {
+            new Warrant(
+                new WarrantId("warrant-gang"),
+                "Tessa Wren",
+                new WarrantTerms(
+                    WarrantDisposition.DeadOrAlive,
+                    2500m,
+                    new[] { "Red Wren", "Aunt Tess" },
+                    new[] { "Pale scar across the left cheek", "Raven-feather pin" },
+                    "Dodge City Marshal",
+                    InvestigationTargetKind.TrueCulprit,
+                    [OutlawGangIds.WildBunch],
+                    OutlawGangIds.WildBunch),
+                "Wanted for a Wild Bunch robbery and related killings."),
+            new Warrant(
+                new WarrantId("warrant-unrelated"),
+                "Reno Pike",
+                new WarrantTerms(
+                    WarrantDisposition.AliveOnly,
+                    300m,
+                    new[] { "The Magpie", "R. Pike" },
+                    new[] { "Mismatched spurs", "Black felt hat" },
+                    "Silver Creek Sheriff",
+                    InvestigationTargetKind.UnrelatedWantedCriminal,
+                    Array.Empty<OutlawGangId>(),
+                    null),
+                "Wanted for cattle theft.")
+        };
+
+        return new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            Array.Empty<Clue>(),
+            publicWarrants: publicWarrants);
     }
 
     private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)

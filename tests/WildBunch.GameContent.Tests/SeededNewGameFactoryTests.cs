@@ -71,10 +71,12 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(2500m, session.CaseFile.PublicWarrants[0].Terms.BountyAmount);
         Assert.Contains("Red Wren", session.CaseFile.PublicWarrants[0].Terms.KnownAliases);
         Assert.Equal(InvestigationTargetKind.TrueCulprit, session.CaseFile.PublicWarrants[0].Terms.TargetKind);
-        Assert.True(session.CaseFile.PublicWarrants[0].Terms.AdvancesGangPressure);
+        Assert.Equal(new[] { OutlawGangIds.WildBunch }, session.CaseFile.PublicWarrants[0].Terms.GangAffiliations);
+        Assert.Equal(OutlawGangIds.WildBunch, session.CaseFile.PublicWarrants[0].Terms.AdvancesGangPressureFor);
         Assert.Equal("Reno Pike", session.CaseFile.PublicWarrants[1].TargetName);
         Assert.Equal(WarrantDisposition.AliveOnly, session.CaseFile.PublicWarrants[1].Terms.Disposition);
-        Assert.False(session.CaseFile.PublicWarrants[1].Terms.IsGangRelevant);
+        Assert.Empty(session.CaseFile.PublicWarrants[1].Terms.GangAffiliations);
+        Assert.Null(session.CaseFile.PublicWarrants[1].Terms.AdvancesGangPressureFor);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
         Assert.All(session.CaseFile.PublicClues, clue => Assert.DoesNotContain(session.CaseFile.TrueCulpritId, clue.LinkedSuspectIds));
         Assert.Equal(7, session.CaseFile.SuspectTurfAssignments.Count);
@@ -181,7 +183,7 @@ public sealed class SeededNewGameFactoryTests
         => string.Join("|", session.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}"));
 
     private static string WarrantSignature(WildBunch.Domain.Game.GameSession session)
-        => string.Join("|", session.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.TargetKind}:{warrant.Terms.IsGangRelevant}:{warrant.Terms.AdvancesGangPressure}"));
+        => string.Join("|", session.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.TargetKind}:{string.Join("/", warrant.Terms.GangAffiliations.Select(gang => gang.Value))}:{warrant.Terms.AdvancesGangPressureFor?.Value ?? string.Empty}"));
 
     private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
@@ -388,8 +389,10 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<string>? KnownFeatures,
         string IssuingSource,
         InvestigationTargetKind TargetKind,
-        bool IsGangRelevant,
-        bool AdvancesGangPressure)
+        IReadOnlyList<OutlawGangId>? GangAffiliations,
+        OutlawGangId? AdvancesGangPressureFor,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? IsGangRelevant,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? AdvancesGangPressure)
     {
         public static WarrantTermsSnapshot FromDomain(WarrantTerms terms)
             => new(
@@ -399,8 +402,10 @@ public sealed partial class GameSessionJsonSerializer
                 terms.KnownFeatures.ToArray(),
                 terms.IssuingSource,
                 terms.TargetKind,
-                terms.IsGangRelevant,
-                terms.AdvancesGangPressure);
+                terms.GangAffiliations.ToArray(),
+                terms.AdvancesGangPressureFor,
+                null,
+                null);
 
         public static WarrantTerms ToDomain(WarrantTermsSnapshot snapshot)
             => new(
@@ -410,8 +415,8 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.KnownFeatures ?? Array.Empty<string>(),
                 snapshot.IssuingSource,
                 snapshot.TargetKind,
-                snapshot.IsGangRelevant,
-                snapshot.AdvancesGangPressure);
+                snapshot.GangAffiliations ?? ((snapshot.IsGangRelevant == true || snapshot.AdvancesGangPressure == true) ? [OutlawGangIds.WildBunch] : []),
+                snapshot.AdvancesGangPressureFor ?? (snapshot.AdvancesGangPressure == true ? OutlawGangIds.WildBunch : null));
     }
 
     private sealed record PursuitStateSnapshot(int Heat)

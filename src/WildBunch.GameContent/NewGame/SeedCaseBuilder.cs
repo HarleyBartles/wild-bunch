@@ -173,8 +173,8 @@ internal static class SeedCaseBuilder
                 profile.KnownFeatures,
                 profile.IssuingSource,
                 profile.TargetKind,
-                profile.IsGangRelevant,
-                profile.AdvancesGangPressure),
+                profile.GangAffiliations,
+                profile.AdvancesGangPressureFor),
             summary);
     }
 

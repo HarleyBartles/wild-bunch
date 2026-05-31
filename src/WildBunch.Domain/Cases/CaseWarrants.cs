@@ -26,11 +26,12 @@ public sealed record WarrantTerms
         IEnumerable<string> knownFeatures,
         string issuingSource,
         InvestigationTargetKind targetKind,
-        bool isGangRelevant,
-        bool advancesGangPressure)
+        IEnumerable<OutlawGangId> gangAffiliations,
+        OutlawGangId? advancesGangPressureFor)
     {
         ArgumentNullException.ThrowIfNull(knownAliases);
         ArgumentNullException.ThrowIfNull(knownFeatures);
+        ArgumentNullException.ThrowIfNull(gangAffiliations);
         ArgumentException.ThrowIfNullOrWhiteSpace(issuingSource);
 
         Disposition = disposition;
@@ -39,8 +40,8 @@ public sealed record WarrantTerms
         KnownFeatures = knownFeatures.Where(feature => !string.IsNullOrWhiteSpace(feature)).Select(feature => feature.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         IssuingSource = issuingSource.Trim();
         TargetKind = targetKind;
-        IsGangRelevant = isGangRelevant;
-        AdvancesGangPressure = advancesGangPressure;
+        GangAffiliations = gangAffiliations.DistinctBy(gang => gang.Value).ToArray();
+        AdvancesGangPressureFor = advancesGangPressureFor;
     }
 
     public WarrantDisposition Disposition { get; }
@@ -55,9 +56,9 @@ public sealed record WarrantTerms
 
     public InvestigationTargetKind TargetKind { get; }
 
-    public bool IsGangRelevant { get; }
+    public IReadOnlyList<OutlawGangId> GangAffiliations { get; }
 
-    public bool AdvancesGangPressure { get; }
+    public OutlawGangId? AdvancesGangPressureFor { get; }
 }
 
 public sealed record Warrant

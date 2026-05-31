@@ -21,13 +21,15 @@ public sealed class CaseCharacterRosterTests
         Assert.Contains(CaseCharacterRoster.GangCandidatePool, candidate => candidate.SourceAliases.Contains("Arkansas Tom Jones"));
         Assert.Contains(CaseCharacterRoster.GangCandidatePool, candidate => candidate.SourceAliases.Contains("Bitter Creek"));
         Assert.Contains(CaseCharacterRoster.GangCandidatePool, candidate => candidate.SourceAliases.Contains("Deaf Charley Hanks"));
+        Assert.All(CaseCharacterRoster.GangCandidatePool, candidate => Assert.Equal(new[] { OutlawGangIds.WildBunch }, candidate.GangAffiliations));
 
         Assert.All(CaseCharacterRoster.AssociatedCharacterPool, candidate => Assert.True(candidate.IsAssociatedCharacter));
+        Assert.All(CaseCharacterRoster.AssociatedCharacterPool, candidate => Assert.Empty(candidate.GangAffiliations));
         Assert.Contains(CaseCharacterRoster.AssociatedCharacterPool, candidate => candidate.DisplayName == "Ann Bassett");
         Assert.Contains(CaseCharacterRoster.AssociatedCharacterPool, candidate => candidate.DisplayName == "Etta Place");
 
-        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.False(warrant.IsGangRelevant));
-        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.False(warrant.AdvancesGangPressure));
+        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.Empty(warrant.GangAffiliations));
+        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.Null(warrant.AdvancesGangPressureFor));
         Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.Equal(InvestigationTargetKind.UnrelatedWantedCriminal, warrant.TargetKind));
 
         Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Key == "limp-left-leg");
@@ -174,6 +176,6 @@ public sealed class CaseCharacterRosterTests
             warrant.Disposition,
             warrant.BountyAmount,
             warrant.TargetKind,
-            warrant.IsGangRelevant,
-            warrant.AdvancesGangPressure);
+            string.Join("/", warrant.GangAffiliations.Select(gang => gang.Value)),
+            warrant.AdvancesGangPressureFor?.Value ?? string.Empty);
 }

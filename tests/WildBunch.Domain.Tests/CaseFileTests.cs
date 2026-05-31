@@ -119,8 +119,8 @@ public sealed class CaseFileTests
                 new[] { "Pale scar across the left cheek" },
                 "Dodge City Marshal",
                 InvestigationTargetKind.TrueCulprit,
-                isGangRelevant: true,
-                advancesGangPressure: true),
+                [OutlawGangIds.WildBunch],
+                OutlawGangIds.WildBunch),
             "Wanted for a Wild Bunch robbery.");
 
         var caseFile = new CaseFile(
@@ -154,8 +154,8 @@ public sealed class CaseFileTests
                 new[] { "Mismatched spurs" },
                 "Silver Creek Sheriff",
                 InvestigationTargetKind.UnrelatedWantedCriminal,
-                isGangRelevant: false,
-                advancesGangPressure: false),
+                Array.Empty<OutlawGangId>(),
+                null),
             "Wanted for cattle theft.");
 
         var caseFile = new CaseFile(
