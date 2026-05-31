@@ -15,9 +15,9 @@ namespace WildBunch.Persistence.Migrations
                 name: "GameSessions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: ColumnTypeForGuid(migrationBuilder), nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: ColumnTypeForDateTime(migrationBuilder), nullable: false),
+                    UpdatedAtUtc = table.Column<DateTime>(type: ColumnTypeForDateTime(migrationBuilder), nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false),
                     StateJson = table.Column<string>(type: "TEXT", nullable: false)
                 },
@@ -32,6 +32,20 @@ namespace WildBunch.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "GameSessions");
+        }
+
+        private static string ColumnTypeForGuid(MigrationBuilder migrationBuilder)
+        {
+            return migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL"
+                ? "uuid"
+                : "TEXT";
+        }
+
+        private static string ColumnTypeForDateTime(MigrationBuilder migrationBuilder)
+        {
+            return migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL"
+                ? "timestamp with time zone"
+                : "TEXT";
         }
     }
 }

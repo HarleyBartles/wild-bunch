@@ -4,9 +4,9 @@ This page turns issue #31 into a staged persistence migration plan that matches 
 
 ## Current Source-Backed Decision
 
-- SQLite remains the local and development default.
-- PostgreSQL should be added as an additional provider path first, not used to replace SQLite immediately.
-- `Persistence:Provider` now selects `Sqlite` or `PostgreSql`, while the default remains SQLite.
+- PostgreSQL is the provider target.
+- SQLite is not the end-state architecture goal; it may remain a transition lane while the cutover is being proven, but it is not the preferred persistence shape.
+- `Persistence:Provider` still selects `Sqlite` or `PostgreSql` in the current code, but the end-state target is PostgreSQL-native persistence rather than SQLite compatibility.
 - `GameSession` remains the command-side aggregate root.
 - `IGameSessionRepository` remains the command persistence boundary.
 - Read repositories stay query-only.
@@ -35,12 +35,12 @@ That shape means the first PostgreSQL version should preserve the same repositor
 
 ## Recommended Migration Strategy
 
-1. Keep SQLite as the default local/dev provider.
-2. Add PostgreSQL as a parallel provider path behind the same persistence boundaries.
-3. Keep the composed session model intact.
-4. Move cohesive component payloads to PostgreSQL `jsonb` where it materially helps evolution and indexing.
-5. Keep append-only log and diary surfaces as ordered relational rows.
-6. Add PostgreSQL-specific integration coverage before any attempt to retire SQLite.
+1. Treat PostgreSQL as the end-state provider target.
+2. Keep the composed session model intact.
+3. Prefer native PostgreSQL identity and storage shapes, including `uuid` IDs and FKs where the provider supports them cleanly.
+4. Keep append-only log and diary surfaces as ordered relational rows.
+5. Use PostgreSQL-native storage for cohesive runtime state where it helps evolution and indexing.
+6. Retire SQLite compatibility once the PostgreSQL lane is fully proven and the cutover is accepted.
 
 The migration should be evolutionary, not a domain redesign.
 
@@ -49,30 +49,30 @@ The migration should be evolutionary, not a domain redesign.
 The intended PostgreSQL shape should stay close to the current composed model:
 
 - `game_sessions`
-  - id
-  - created_at_utc
-  - updated_at_utc
+  - id (`uuid`)
+  - created_at_utc (`timestamp with time zone`)
+  - updated_at_utc (`timestamp with time zone`)
   - status
   - travel_difficulty
   - schema_version
 - `game_session_components`
-  - session_id
+  - session_id (`uuid`)
   - component_name
   - component_version
   - payload `jsonb`
-  - updated_at_utc
+  - updated_at_utc (`timestamp with time zone`)
 - `game_session_log_entries`
-  - session_id
+  - session_id (`uuid`)
   - sequence
   - kind
   - message
   - day
   - turn
 - `game_session_travel_diary_days`
-  - session_id
+  - session_id (`uuid`)
   - sequence
   - payload `jsonb` or provider-owned JSON equivalent
-  - recorded_at_utc
+  - recorded_at_utc (`timestamp with time zone`)
 
 The key design choice is to use relational columns for identity, ordering, filtering, and append streams while letting `jsonb` hold evolving cohesive runtime state.
 
@@ -92,9 +92,9 @@ If a provider-selection seam is added later, it should be small and configuratio
 ### Stage 1: Provider Readiness
 
 - Add PostgreSQL provider support in persistence configuration.
-- Keep the SQLite path intact.
+- Keep the current transition lane green while the PostgreSQL cutover is proven.
 - Introduce provider-specific EF configuration only where the provider truly differs.
-- Preserve the current migration lineage and schema versioning.
+- Preserve or reset migrations as needed to reach the PostgreSQL-native shape cleanly.
 - Use `ConnectionStrings:WildBunchPostgresDb` for the opt-in PostgreSQL lane when a dedicated test or host database is available.
 
 ### Stage 2: JSONB Adoption
@@ -109,13 +109,13 @@ If a provider-selection seam is added later, it should be small and configuratio
 - Add PostgreSQL integration tests that exercise round-trip aggregate persistence.
 - Confirm read repositories still project query-only models.
 - Confirm log ordering, diary ordering, and aggregate rehydration remain stable.
-- Confirm SQLite continues to pass the same behavioral tests.
+- Keep the current transition lane green until the PostgreSQL cutover is complete.
 
 ### Stage 4: Operational Decision
 
-- Decide later whether SQLite remains the default forever or becomes a dev-only fallback.
-- Retire SQLite only if Harley explicitly chooses that path.
-- Do not make PostgreSQL a hard runtime requirement before that decision.
+- Decide later whether the SQLite lane is kept temporarily for transition validation or retired once PostgreSQL is the sole provider.
+- Treat PostgreSQL as the target provider.
+- Do not make PostgreSQL a hard runtime requirement before the transition lane is proven.
 
 ## Validation Strategy
 
@@ -125,7 +125,7 @@ Validate each layer separately so false-green results are harder to miss.
 - `dotnet build WildBunch.sln`
 - `dotnet test WildBunch.sln`
 - `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`
-- PostgreSQL lane smoke tests can be run with `ConnectionStrings__WildBunchPostgresDb` set to a dedicated test database connection string, for example:
+- PostgreSQL lane smoke tests can be run with `ConnectionStrings__WildBunchPostgresDb` set to a dedicated disposable PostgreSQL test database connection string, for example:
 
 ```powershell
 $env:ConnectionStrings__WildBunchPostgresDb = "Host=...;Database=...;Username=...;Password=..."
@@ -133,6 +133,7 @@ dotnet test WildBunch.sln --filter PostgreSqlPersistenceTests
 ```
 
 - The current live lane covers aggregate save/load round-trip, composed component rows, ordered log rows, and ordered travel diary rows.
+- The current provider-native goal prefers `uuid` IDs and FKs on PostgreSQL instead of SQLite-compatible text GUID compromises.
 
 When PostgreSQL provider work starts, add provider-specific integration coverage for:
 
@@ -156,19 +157,19 @@ Do not let the PostgreSQL provider become a shortcut around the aggregate.
 
 - PostgreSQL package references alone are not progress.
 - A `jsonb` column without a working provider path is not progress.
-- A provider switch that breaks SQLite development is not acceptable.
 - Normalizing runtime state into many gameplay tables is not acceptable.
 - Letting command handlers mutate component rows directly around `GameSession` is not acceptable.
 - Letting read repositories mutate gameplay state is not acceptable.
 - Treating `ConnectionStrings__WildBunchPostgresDb` as required for normal local builds is not acceptable.
 - Claiming live PostgreSQL coverage without a real database and a non-skipped lane is not acceptable.
+- Treating text GUID columns as the preferred PostgreSQL design is not acceptable once native `uuid` mapping is proven.
 - Treating this planning slice as completion of #31 is not acceptable.
 
 ## What This Issue Is Now
 
 Issue #31 is now an actionable provider-planning slice:
 
-- it recommends PostgreSQL as the additional provider path,
-- it keeps SQLite as the current local/dev baseline,
+- it recommends PostgreSQL as the provider target,
+- it treats SQLite as a transition lane rather than the end-state design,
 - it preserves the `GameSession` aggregate and repository boundary,
 - and it gives the later implementation a safe target shape without forcing a risky rewrite today.

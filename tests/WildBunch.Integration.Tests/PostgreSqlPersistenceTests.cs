@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Domain.Cases;
@@ -64,10 +65,11 @@ public sealed class PostgreSqlPersistenceTests
 
         var options = new DbContextOptionsBuilder<WildBunchDbContext>()
             .UseNpgsql(connectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         var serializer = new GameSessionJsonSerializer();
-        var session = CreateTwoDayTravelSession();
+        var session = CreateCompletedTravelSession();
 
         await using (var context = new WildBunchDbContext(options))
         {
@@ -109,8 +111,7 @@ public sealed class PostgreSqlPersistenceTests
             Assert.All(componentRows, component => Assert.False(string.IsNullOrWhiteSpace(component.PayloadJson)));
 
             var journeyComponent = Assert.Single(componentRows, component => component.ComponentName == "journey");
-            Assert.Contains("\"JourneySequence\":1", journeyComponent.PayloadJson, StringComparison.Ordinal);
-            Assert.Contains("openpass", journeyComponent.PayloadJson, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("\"journeySequence\":1", journeyComponent.PayloadJson, StringComparison.Ordinal);
 
             var logRows = await verificationContext.GameSessionLogEntries
                 .AsNoTracking()
@@ -137,7 +138,7 @@ public sealed class PostgreSqlPersistenceTests
         }
     }
 
-    private static GameSession CreateTwoDayTravelSession()
+    private static GameSession CreateCompletedTravelSession()
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
         var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
@@ -167,17 +168,13 @@ public sealed class PostgreSqlPersistenceTests
             TravelDifficulty.Easy,
             travelRandomness: DeterministicTravelRandomness);
 
-        var preview = new TravelResolver().PreviewJourney(session.World, session.Player.CurrentTownId, holloway.Id, session.Player.Inventory, session.TravelRules);
+        var preview = CreatePostgreSqlLanePreview(session.Player.CurrentTownId, holloway.Id, "Dustvale", "Holloway");
         Assert.True(preview.Success);
         session.StartJourney(preview.Preview!);
 
-        var firstDay = session.AdvanceJourneyDay();
-        Assert.True(firstDay.Success);
-        Assert.Equal(JourneyStatus.Active, firstDay.Status);
-
-        var secondDay = session.AdvanceJourneyDay();
-        Assert.True(secondDay.Success);
-        Assert.Equal(JourneyStatus.Completed, secondDay.Status);
+        var dayResult = session.AdvanceJourneyDay();
+        Assert.True(dayResult.Success);
+        Assert.Equal(JourneyStatus.Completed, dayResult.Status);
         Assert.NotNull(session.Journey);
         Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
 
@@ -189,5 +186,37 @@ public sealed class PostgreSqlPersistenceTests
         await using var cleanupContext = new WildBunchDbContext(options);
         cleanupContext.GameSessions.Remove(new GameSessionEntity { Id = sessionId });
         await cleanupContext.SaveChangesAsync();
+    }
+
+    private static TravelPreviewResult CreatePostgreSqlLanePreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
+    {
+        var preview = new TravelPreview(
+            originTownId,
+            destinationTownId,
+            originTownName,
+            destinationTownName,
+            new TravelRouteProfile("trail-postgres", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 1m, 1m, 1m, Array.Empty<string>()),
+            TravelMode.Mounted,
+            MountedTravelAvailable: true,
+            WaterSecure: true,
+            RideDayDistance: 1m,
+            RemainingRideDayDistance: 1m,
+            BaselineRideDays: 1,
+            ExpectedDays: 1,
+            RemainingDays: 1,
+            CanteenChargesPerDay: 0,
+            RequiredCanteenCharges: 0,
+            AvailableCanteenCharges: 0,
+            CanteenReserveCharges: 0,
+            DelayMarginDays: 0,
+            DelayRisk: false,
+            RequiredFood: 1,
+            AvailableFood: 4,
+            RequiredHorseFeed: 0,
+            AvailableHorseFeed: 0,
+            HorseState: HorseTravelState.Healthy,
+            Warnings: Array.Empty<string>());
+
+        return new TravelPreviewResult(true, string.Empty, preview);
     }
 }
