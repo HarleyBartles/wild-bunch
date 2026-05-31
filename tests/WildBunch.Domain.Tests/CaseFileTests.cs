@@ -1,4 +1,5 @@
 using WildBunch.Domain.Cases;
+using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Domain.Tests;
 
@@ -195,5 +196,32 @@ public sealed class CaseFileTests
         Assert.True(caseFile.KnownClues is ICollection<Clue> cluesCollection && cluesCollection.IsReadOnly);
         Assert.True(caseFile.DiscoveredSuspectIds is ICollection<SuspectId> discoveredCollection && discoveredCollection.IsReadOnly);
         Assert.True(caseFile.KnownWarrants is ICollection<Warrant> warrantsCollection && warrantsCollection.IsReadOnly);
+        Assert.True(caseFile.SuspectTurfAssignments is ICollection<SuspectTurfAssignment> turfCollection && turfCollection.IsReadOnly);
+    }
+
+    [Fact]
+    public void SuspectTurfAssignmentsAreTrackedBySuspectId()
+    {
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Tessa Wren", new SuspectTraits(true, true, true), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Reno Pike", new SuspectTraits(false, false, false), SuspectStatus.AtLarge)
+            },
+            trueCulpritId: new SuspectId("suspect-2"),
+            knownClues: Array.Empty<Clue>(),
+            suspectTurfAssignments: new[]
+            {
+                new SuspectTurfAssignment(new SuspectId("suspect-1"), new TownId("pinecross")),
+                new SuspectTurfAssignment(new SuspectId("suspect-2"), new TownId("redmesa"))
+            });
+
+        Assert.Equal(2, caseFile.SuspectTurfAssignments.Count);
+        Assert.True(caseFile.TryGetSuspectTurf(new SuspectId("suspect-1"), out var firstTurf));
+        Assert.Equal(new TownId("pinecross"), firstTurf);
+        Assert.True(caseFile.TryGetSuspectTurf(new SuspectId("suspect-2"), out var secondTurf));
+        Assert.Equal(new TownId("redmesa"), secondTurf);
+        Assert.False(caseFile.TryGetSuspectTurf(new SuspectId("suspect-3"), out _));
     }
 }

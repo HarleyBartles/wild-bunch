@@ -215,7 +215,8 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<ClueSnapshot> KnownClues,
         IReadOnlyList<ClueSnapshot>? PublicClues,
         IReadOnlyList<WarrantSnapshot>? KnownWarrants,
-        IReadOnlyList<WarrantSnapshot>? PublicWarrants)
+        IReadOnlyList<WarrantSnapshot>? PublicWarrants,
+        IReadOnlyList<SuspectTurfAssignmentSnapshot>? SuspectTurfAssignments)
     {
         public static CaseFileSnapshot FromDomain(CaseFile caseFile)
             => new(
@@ -229,7 +230,8 @@ public sealed partial class GameSessionJsonSerializer
                 caseFile.KnownClues.Select(ClueSnapshot.FromDomain).ToArray(),
                 caseFile.PublicClues.Select(ClueSnapshot.FromDomain).ToArray(),
                 caseFile.KnownWarrants.Select(WarrantSnapshot.FromDomain).ToArray(),
-                caseFile.PublicWarrants.Select(WarrantSnapshot.FromDomain).ToArray());
+                caseFile.PublicWarrants.Select(WarrantSnapshot.FromDomain).ToArray(),
+                caseFile.SuspectTurfAssignments.Select(SuspectTurfAssignmentSnapshot.FromDomain).ToArray());
 
         public static CaseFile ToDomain(CaseFileSnapshot snapshot)
         {
@@ -244,10 +246,20 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.KillerReleaseThreshold,
                 snapshot.KillerReleaseProgress,
                 (snapshot.KnownWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
-                (snapshot.PublicWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain));
+                (snapshot.PublicWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
+                (snapshot.SuspectTurfAssignments ?? Array.Empty<SuspectTurfAssignmentSnapshot>()).Select(SuspectTurfAssignmentSnapshot.ToDomain));
 
             return caseFile;
         }
+    }
+
+    private sealed record SuspectTurfAssignmentSnapshot(string SuspectId, string TurfTownId)
+    {
+        public static SuspectTurfAssignmentSnapshot FromDomain(SuspectTurfAssignment assignment)
+            => new(assignment.SuspectId.Value, assignment.TurfTownId.Value);
+
+        public static SuspectTurfAssignment ToDomain(SuspectTurfAssignmentSnapshot snapshot)
+            => new(new SuspectId(snapshot.SuspectId), new TownId(snapshot.TurfTownId));
     }
 
     private sealed record SuspectSnapshot(string Id, string Name, SuspectProfileSnapshot Profile, SuspectTraitsSnapshot Traits, SuspectStatus Status)

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Domain.Cases;
 
@@ -16,6 +17,8 @@ public sealed class CaseFile
     private readonly ReadOnlyCollection<Warrant> _knownWarrantsView;
     private readonly List<Warrant> _publicWarrants = [];
     private readonly ReadOnlyCollection<Warrant> _publicWarrantsView;
+    private readonly List<SuspectTurfAssignment> _suspectTurfAssignments = [];
+    private readonly ReadOnlyCollection<SuspectTurfAssignment> _suspectTurfAssignmentsView;
     private int _killerReleaseProgress;
 
     public CaseFile(
@@ -24,7 +27,8 @@ public sealed class CaseFile
         SuspectId trueCulpritId,
         IEnumerable<Clue> knownClues,
         IEnumerable<SuspectId>? discoveredSuspectIds = null,
-        IEnumerable<Clue>? publicClues = null)
+        IEnumerable<Clue>? publicClues = null,
+        IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null)
         : this(
             accusation,
             suspects,
@@ -32,7 +36,8 @@ public sealed class CaseFile
             CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues,
             discoveredSuspectIds,
-            publicClues)
+            publicClues,
+            suspectTurfAssignments: suspectTurfAssignments)
     {
     }
 
@@ -47,7 +52,8 @@ public sealed class CaseFile
         int killerReleaseThreshold = 2,
         int killerReleaseProgress = 0,
         IEnumerable<Warrant>? knownWarrants = null,
-        IEnumerable<Warrant>? publicWarrants = null)
+        IEnumerable<Warrant>? publicWarrants = null,
+        IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null)
     {
         ArgumentNullException.ThrowIfNull(suspects);
         ArgumentNullException.ThrowIfNull(knownClues);
@@ -75,6 +81,17 @@ public sealed class CaseFile
 
         _publicWarrants.AddRange((publicWarrants ?? Array.Empty<Warrant>()).DistinctBy(warrant => warrant.Id));
         _publicWarrantsView = _publicWarrants.AsReadOnly();
+
+        _suspectTurfAssignments.AddRange((suspectTurfAssignments ?? Array.Empty<SuspectTurfAssignment>()).DistinctBy(assignment => assignment.SuspectId));
+        foreach (var assignment in _suspectTurfAssignments)
+        {
+            if (!_suspects.Any(suspect => suspect.Id.Equals(assignment.SuspectId)))
+            {
+                throw new ArgumentException("The turf assignment does not belong to this case.", nameof(suspectTurfAssignments));
+            }
+        }
+
+        _suspectTurfAssignmentsView = _suspectTurfAssignments.AsReadOnly();
     }
 
     public SuspectId? Accusation { get; private set; }
@@ -102,6 +119,8 @@ public sealed class CaseFile
     public IReadOnlyList<Warrant> KnownWarrants => _knownWarrantsView;
 
     public IReadOnlyList<Warrant> PublicWarrants => _publicWarrantsView;
+
+    public IReadOnlyList<SuspectTurfAssignment> SuspectTurfAssignments => _suspectTurfAssignmentsView;
 
     public IReadOnlyList<Suspect> GetDiscoveredSuspects()
         => _suspects.Where(suspect => _discoveredSuspectIds.Any(discovered => discovered.Equals(suspect.Id))).ToArray();
@@ -213,6 +232,21 @@ public sealed class CaseFile
         }
 
         return null;
+    }
+
+    public bool TryGetSuspectTurf(SuspectId suspectId, out TownId turfTownId)
+    {
+        foreach (var assignment in _suspectTurfAssignments)
+        {
+            if (assignment.SuspectId.Equals(suspectId))
+            {
+                turfTownId = assignment.TurfTownId;
+                return true;
+            }
+        }
+
+        turfTownId = default;
+        return false;
     }
 
     private void AdvanceKillerReleaseProgress()

@@ -1,4 +1,5 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -7,12 +8,14 @@ internal static class SeedCaseBuilder
     private const int NormalReleaseThreshold = 5;
     private static readonly SuspectId TrueCulpritId = new("suspect-4");
 
-    public static CaseFile CreateCanonicalCaseFile(GameSetupGenerationPlan plan)
+    public static CaseFile CreateCanonicalCaseFile(GameSetupGenerationPlan plan, World world)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(world);
 
         return BuildCase(
             plan.Source,
+            world,
             CaseCharacterRoster.SelectCanonicalGangRoster(),
             CaseSuspectFeaturePool.SelectCanonicalAssignedFeatures(plan.Source),
             accusationIndex: 1,
@@ -21,13 +24,14 @@ internal static class SeedCaseBuilder
             publicWarrant2: CaseCharacterRoster.CreateCanonicalUnrelatedWarrant());
     }
 
-    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan)
+    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan, World world)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(world);
 
         if (plan.IsCanonical)
         {
-            return CreateCanonicalCaseFile(plan);
+            return CreateCanonicalCaseFile(plan, world);
         }
 
         var roster = CaseCharacterRoster.SelectGangRoster(plan.Source);
@@ -35,6 +39,7 @@ internal static class SeedCaseBuilder
         var accusationIndex = plan.Source.PickIndex(GameSetupDeterministicLabels.CaseAccusation, roster.Count);
         return BuildCase(
             plan.Source,
+            world,
             roster,
             features,
             accusationIndex,
@@ -45,6 +50,7 @@ internal static class SeedCaseBuilder
 
     private static CaseFile BuildCase(
         GameSetupDeterministicSource source,
+        World world,
         IReadOnlyList<CaseCharacterProfile> roster,
         IReadOnlyList<CaseSuspectFeatureAssignment> features,
         int accusationIndex,
@@ -76,6 +82,7 @@ internal static class SeedCaseBuilder
         };
 
         var culprit = suspects[trueCulpritIndex];
+        var suspectTurfAssignments = SelectSuspectTurfAssignments(source, world, suspects);
         var openingLead = CaseOpeningLead.Create(CaseSuspectFeaturePool.BuildOpeningLead(features[trueCulpritIndex].PrimaryFeature));
         var knownClues = CreateKnownClues(source, features[trueCulpritIndex].PrimaryFeature);
         var publicClues = CreatePublicClues(source, suspects, features);
@@ -94,7 +101,8 @@ internal static class SeedCaseBuilder
             knownClues,
             publicClues: publicClues,
             killerReleaseThreshold: NormalReleaseThreshold,
-            publicWarrants: publicWarrants);
+            publicWarrants: publicWarrants,
+            suspectTurfAssignments: suspectTurfAssignments);
     }
 
     private static Suspect CreateSuspect(SuspectId id, CaseCharacterProfile profile, CaseSuspectFeatureAssignment feature)
@@ -119,6 +127,33 @@ internal static class SeedCaseBuilder
             CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster"),
             CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice")
         };
+
+    private static IReadOnlyList<SuspectTurfAssignment> SelectSuspectTurfAssignments(
+        GameSetupDeterministicSource source,
+        World world,
+        IReadOnlyList<Suspect> suspects)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(suspects);
+
+        var towns = world.Towns
+            .OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (towns.Length == 0)
+        {
+            throw new InvalidOperationException("Seed case turf requires at least one town in the seeded world.");
+        }
+
+        return suspects
+            .Select(suspect =>
+            {
+                var townIndex = source.PickIndex($"{GameSetupDeterministicLabels.CaseSuspectTurf}.{suspect.Id.Value}", towns.Length);
+                return new SuspectTurfAssignment(suspect.Id, towns[townIndex].Id);
+            })
+            .ToArray();
+    }
 
     private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "")
     {

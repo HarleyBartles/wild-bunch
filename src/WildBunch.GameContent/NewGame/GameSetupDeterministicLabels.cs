@@ -7,6 +7,7 @@ internal static class GameSetupDeterministicLabels
     public const string WorldStartingTownFoot = "world.startingTown.foot";
     public const string CaseCulprit = "case.culprit";
     public const string CaseAccusation = "case.accusation";
+    public const string CaseSuspectTurf = "case.suspect-turf";
     public const string CaseKnownClues = "case.clues.known";
     public const string CasePublicClues = "case.clues.public";
     public const string CasePublicWarrants = "case.warrants.public";

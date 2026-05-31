@@ -77,6 +77,9 @@ public sealed class SeededNewGameFactoryTests
         Assert.False(session.CaseFile.PublicWarrants[1].Terms.IsGangRelevant);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
         Assert.All(session.CaseFile.PublicClues, clue => Assert.DoesNotContain(session.CaseFile.TrueCulpritId, clue.LinkedSuspectIds));
+        Assert.Equal(7, session.CaseFile.SuspectTurfAssignments.Count);
+        Assert.All(session.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(session.World.Towns, town => town.Id.Equals(assignment.TurfTownId)));
+        Assert.All(session.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Id.Equals(assignment.SuspectId)));
     }
 
     [Fact]
@@ -94,6 +97,7 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Equal(RosterSignature(first), RosterSignature(firstAgain));
         Assert.Equal(WarrantSignature(first), WarrantSignature(firstAgain));
+        Assert.Equal(TurfSignature(first), TurfSignature(firstAgain));
         Assert.True(
             RosterSignature(first) != RosterSignature(second)
             || WarrantSignature(first) != WarrantSignature(second),
@@ -178,4 +182,7 @@ public sealed class SeededNewGameFactoryTests
 
     private static string WarrantSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.TargetKind}:{warrant.Terms.IsGangRelevant}:{warrant.Terms.AdvancesGangPressure}"));
+
+    private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
+        => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
 }

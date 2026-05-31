@@ -94,6 +94,27 @@ public sealed class GameSetupPackageBuilderTests
         Assert.Contains(package.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit);
+        Assert.Equal(7, package.CaseFile.SuspectTurfAssignments.Count);
+        Assert.All(package.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(package.World.Towns, town => town.Id.Equals(assignment.TurfTownId)));
+        Assert.All(package.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(package.CaseFile.Suspects, suspect => suspect.Id.Equals(assignment.SuspectId)));
+    }
+
+    [Fact]
+    public void DifferentEntropyCanChangeSuspectTurfAssignments()
+    {
+        var baseSeed = GameSetupSeedCodec.WithOption(
+            GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Normal),
+            GameSetupOption.LoadoutProfile,
+            (int)StartingLoadoutProfile.Standard);
+        var sameSeed = baseSeed with { Entropy = 31 };
+        var varyingSeed = FindVaryingTurfSeed(sameSeed);
+
+        var samePackage = BuildPackage(sameSeed);
+        var samePackageAgain = BuildPackage(sameSeed);
+        var varyingPackage = BuildPackage(varyingSeed);
+
+        Assert.Equal(TurfSignature(samePackage), TurfSignature(samePackageAgain));
+        Assert.NotEqual(TurfSignature(samePackage), TurfSignature(varyingPackage));
     }
 
     private static GameSetupPackage BuildPackage(GameSetupSeed seed)
@@ -118,5 +139,28 @@ public sealed class GameSetupPackageBuilderTests
             package.CaseFile.OpeningLead.Description,
             string.Join(",", package.CaseFile.KnownClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
             string.Join(",", package.CaseFile.PublicClues.Select(clue => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}")),
-            string.Join(",", package.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.Disposition}:{warrant.Terms.BountyAmount}:{string.Join("/", warrant.Terms.KnownAliases)}:{string.Join("/", warrant.Terms.KnownFeatures)}:{warrant.Terms.IssuingSource}:{warrant.Terms.TargetKind}:{warrant.Terms.IsGangRelevant}:{warrant.Terms.AdvancesGangPressure}:{warrant.Summary}")));
+            string.Join(",", package.CaseFile.PublicWarrants.Select(warrant => $"{warrant.Id.Value}:{warrant.TargetName}:{warrant.Terms.Disposition}:{warrant.Terms.BountyAmount}:{string.Join("/", warrant.Terms.KnownAliases)}:{string.Join("/", warrant.Terms.KnownFeatures)}:{warrant.Terms.IssuingSource}:{warrant.Terms.TargetKind}:{warrant.Terms.IsGangRelevant}:{warrant.Terms.AdvancesGangPressure}:{warrant.Summary}")),
+            TurfSignature(package));
+
+    private static string TurfSignature(GameSetupPackage package)
+        => string.Join("|", package.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
+
+    private static GameSetupSeed FindVaryingTurfSeed(GameSetupSeed baselineSeed)
+    {
+        var baselinePackage = BuildPackage(baselineSeed);
+        var baselineSignature = TurfSignature(baselinePackage);
+
+        for (ulong entropy = baselineSeed.Entropy + 1; entropy < 200; entropy++)
+        {
+            var candidateSeed = baselineSeed with { Entropy = entropy };
+            var candidatePackage = BuildPackage(candidateSeed);
+
+            if (TurfSignature(candidatePackage) != baselineSignature)
+            {
+                return candidateSeed;
+            }
+        }
+
+        throw new InvalidOperationException("Could not find a deterministic seed that changed suspect turf assignments.");
+    }
 }
