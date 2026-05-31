@@ -61,6 +61,12 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Destructive cleanup is allowed only for databases created specifically for a validation/test run or by an explicit reset command targeted at the persistent local development app database.
 - Do not let test cleanup silently target the persistent app database.
 - Do not rely on an unspecified machine-global PostgreSQL cluster or data directory when the repo can define its own local convention.
+- After the PostgreSQL cutover, `dotnet test WildBunch.sln` requires the repo-local PostgreSQL connection string for the integration lane. If the first failure is only the missing `ConnectionStrings__WildBunchPostgresDb` variable, treat that as lane setup evidence rather than a product regression, then rerun with the documented local value before judging validation:
+
+  ```powershell
+  $env:ConnectionStrings__WildBunchPostgresDb = 'Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres'
+  dotnet test WildBunch.sln
+  ```
 
 ## Onion Dependency Direction
 
