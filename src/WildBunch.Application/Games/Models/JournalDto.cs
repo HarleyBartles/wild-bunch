@@ -19,5 +19,6 @@ public sealed record JournalCaseFileDto(
     CaseStateDto CaseState,
     string CaseSummary,
     IReadOnlyList<DiscoveredSuspectDto> DiscoveredSuspects,
+    CaseBoardDto CaseBoard,
     IReadOnlyList<ClueDto> KnownClues,
     IReadOnlyList<WarrantDto> KnownWarrants);

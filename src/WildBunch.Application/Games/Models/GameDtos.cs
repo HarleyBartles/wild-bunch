@@ -86,13 +86,13 @@ public sealed record CaseFileDto(
     string OpeningLead,
     CaseStateDto CaseState,
     IReadOnlyList<DiscoveredSuspectDto> DiscoveredSuspects,
+    CaseBoardDto CaseBoard,
     IReadOnlyList<ClueDto> KnownClues);
 
 public sealed record DiscoveredSuspectDto(
     string Id,
     string Name,
-    SuspectStatus Status,
-    IReadOnlyList<string> LeadSummaries);
+    SuspectStatus Status);
 
 public sealed record ClueDto(
     string Id,

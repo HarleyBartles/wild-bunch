@@ -41,6 +41,8 @@ export type JourneyTrailEventKind = 0 | 1;
 export type JourneyTrailEventId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type StoreVendorType = 0 | 1 | 2;
 export type StoreOfferAvailability = 0 | 1;
+export type CaseIdentityKind = 0 | 1 | 2 | 3 | 4;
+export type CaseIdentityStatus = 0 | 1 | 2;
 
 export interface StartGameRequest {
   playerName: string;
@@ -328,7 +330,33 @@ export interface DiscoveredSuspectDto {
   id: string;
   name: string;
   status: SuspectStatus;
-  leadSummaries: string[];
+}
+
+export interface CaseBoardDto {
+  namedRecords: CaseIdentityHandleDto[];
+  looseLeads: CaseIdentityHandleDto[];
+  evidenceItems: CaseEvidenceItemDto[];
+}
+
+export interface CaseIdentityHandleDto {
+  id: string;
+  displayName: string;
+  kind: CaseIdentityKind;
+  status: CaseIdentityStatus;
+  resolvedToDisplayName: string | null;
+  evidenceIds: string[];
+  summaryLines: string[];
+  relatedLabels: string[];
+}
+
+export interface CaseEvidenceItemDto {
+  id: string;
+  kindLabel: string;
+  sourceLabel: string;
+  summary: string;
+  identityBearing: boolean;
+  anchors: ClueAnchorsDto;
+  handleIds: string[];
 }
 
 export interface CaseStateDto {
@@ -372,6 +400,7 @@ export interface CaseFileDto {
   openingLead: string;
   caseState: CaseStateDto;
   discoveredSuspects: DiscoveredSuspectDto[];
+  caseBoard: CaseBoardDto;
   knownClues: ClueDto[];
 }
 
@@ -428,6 +457,7 @@ export interface JournalCaseFileDto {
   caseState: CaseStateDto;
   caseSummary: string;
   discoveredSuspects: DiscoveredSuspectDto[];
+  caseBoard: CaseBoardDto;
   knownClues: ClueDto[];
   knownWarrants: WarrantDto[];
 }

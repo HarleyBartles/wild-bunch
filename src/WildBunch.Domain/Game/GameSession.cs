@@ -1505,9 +1505,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var clue = CaseFile.RevealNextPublicClue(publicClue =>
-            publicClue.SourceKind is null
-            || publicClue.SourceKind == InvestigationSourceKind.NoticeBoard
-            || publicClue.SourceKind == InvestigationSourceKind.SheriffRecords);
+            IsPlayerKnownClue(publicClue)
+            && (
+                publicClue.SourceKind is null
+                || publicClue.SourceKind == InvestigationSourceKind.NoticeBoard
+                || publicClue.SourceKind == InvestigationSourceKind.SheriffRecords));
 
         if (clue is null)
         {
@@ -1539,7 +1541,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You ask after telegraph leads again, but no new wire has come in.", sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.TelegraphLead);
+        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.TelegraphLead);
 
         if (clue is null)
         {
@@ -1571,7 +1573,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You ask around again, but hear nothing new.", sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.LocalGossip);
+        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.LocalGossip);
 
         if (clue is null)
         {
@@ -1635,7 +1637,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You check the sheriff records again, but find nothing new.", sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.SheriffRecords);
+        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.SheriffRecords);
 
         if (clue is null)
         {
@@ -1734,6 +1736,21 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private static string DescribeClueLead(string description)
         => description.Trim().TrimEnd('.', '!', '?');
+
+    private static bool IsPlayerKnownClue(Clue clue)
+    {
+        ArgumentNullException.ThrowIfNull(clue);
+
+        if (clue.Kind is ClueKind.Warrant or ClueKind.Alias or ClueKind.IdentityFact or ClueKind.CulpritTrail)
+        {
+            return true;
+        }
+
+        return clue.Anchors.Subjects.Any(subject =>
+            !string.IsNullOrWhiteSpace(subject.Alias)
+            || !string.IsNullOrWhiteSpace(subject.Feature)
+            || !string.IsNullOrWhiteSpace(subject.Fact));
+    }
 
     private bool IsJourneyModal()
         => Journey is not null;

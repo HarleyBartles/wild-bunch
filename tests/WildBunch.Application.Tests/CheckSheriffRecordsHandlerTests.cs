@@ -104,12 +104,17 @@ public sealed class CheckSheriffRecordsHandlerTests
                 new Clue(
                     new ClueId("clue-public-1"),
                     ClueKind.Record,
-                    "A sheriff note ties the rider to a rail ledger.",
+                    "A sheriff note ties the rider to a rail ledger and notes a scarred left ear.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.SheriffRecords,
                     source: "sheriff record",
-                    context: "Public notice")
+                    context: "Public notice",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("scarred left ear", Feature: "scarred left ear")
+                        }))
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

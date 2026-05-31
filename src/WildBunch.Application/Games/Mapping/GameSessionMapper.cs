@@ -111,18 +111,15 @@ public static class GameSessionMapper
         => new(
             caseFile.OpeningLead.Description,
             CaseReadMapper.ToDto(caseFile.KillerReleaseState),
-            caseFile.GetDiscoveredSuspects().Select(suspect => ToDto(suspect, caseFile)).ToArray(),
+            caseFile.GetDiscoveredSuspects().Select(ToDto).ToArray(),
+            CaseBoardMapper.ToDto(caseFile.KnownClues, caseFile.KnownWarrants),
             caseFile.KnownClues.Select(CaseReadMapper.ToDto).ToArray());
 
-    private static DiscoveredSuspectDto ToDto(DomainSuspect suspect, DomainCaseFile caseFile)
+    private static DiscoveredSuspectDto ToDto(DomainSuspect suspect)
         => new(
             suspect.Id.Value,
             suspect.Name,
-            suspect.Status,
-            caseFile.KnownClues
-                .Where(clue => clue.LinkedSuspectIds.Any(linkedSuspectId => linkedSuspectId.Equals(suspect.Id)))
-                .Select(CaseReadMapper.ToLeadSummary)
-                .ToArray());
+            suspect.Status);
 
     private static GameLogEntryDto ToDto(DomainGameLogEntry logEntry)
         => new(

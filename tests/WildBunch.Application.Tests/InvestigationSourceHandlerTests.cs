@@ -126,21 +126,31 @@ public sealed class InvestigationSourceHandlerTests
                 new Clue(
                     new ClueId("clue-public-telegraph"),
                     ClueKind.IdentityFact,
-                    "A telegraph clerk filed a name in shorthand.",
+                    "A telegraph clerk filed Grey Jay in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.TelegraphLead,
                     source: "telegraph clerk",
-                    context: "Telegraph lead"),
+                    context: "Telegraph lead",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
+                        })),
                 new Clue(
                     new ClueId("clue-public-gossip"),
                     ClueKind.Whereabouts,
-                    "Local gossip says the rider kept to the rail spur after dark.",
+                    "Local gossip says the rider with the red hat kept to the rail spur after dark.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.GangMember,
                     InvestigationSourceKind.LocalGossip,
                     source: "saloon talk",
-                    context: "Town gossip")
+                    context: "Town gossip",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("red hat rider", Feature: "red hat")
+                        })),
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

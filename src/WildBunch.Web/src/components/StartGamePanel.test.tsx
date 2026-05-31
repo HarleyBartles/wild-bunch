@@ -44,15 +44,20 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       towns: [],
       trails: [],
     },
-    caseFile: {
-      accusationId: null,
-      openingLead: "",
-      caseState: {
-        statusText: "",
+      caseFile: {
+        accusationId: null,
+        openingLead: "",
+        caseState: {
+          statusText: "",
+        },
+        discoveredSuspects: [],
+        caseBoard: {
+          namedRecords: [],
+          looseLeads: [],
+          evidenceItems: [],
+        },
+        knownClues: [],
       },
-      discoveredSuspects: [],
-      knownClues: [],
-    },
     inventory: {
       wallet: { cash: 0 },
       items: [],

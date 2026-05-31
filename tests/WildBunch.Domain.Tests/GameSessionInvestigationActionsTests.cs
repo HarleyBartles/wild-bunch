@@ -84,6 +84,20 @@ public sealed class GameSessionInvestigationActionsTests
     }
 
     [Fact]
+    public void GatherLocalGossipSkipsColorOnlyObservationAndReturnsNothingUseful()
+    {
+        var session = CreateColorOnlyGossipSession();
+
+        var result = session.GatherLocalGossip();
+
+        Assert.True(result.Success);
+        Assert.Equal("You ask around for local gossip, but hear nothing new.", result.Message);
+        Assert.Empty(session.CaseFile.KnownClues);
+        Assert.Single(session.CaseFile.PublicClues);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+    }
+
+    [Fact]
     public void InvestigationActionsFailWhileJourneyAwaitingAcknowledgement()
     {
         var session = CreateSession();
@@ -250,21 +264,31 @@ public sealed class GameSessionInvestigationActionsTests
                 new Clue(
                     new ClueId("clue-public-telegraph"),
                     ClueKind.IdentityFact,
-                    "A telegraph clerk filed a name in shorthand.",
+                    "A telegraph clerk filed Grey Jay in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.TelegraphLead,
                     source: "telegraph clerk",
-                    context: "Telegraph lead"),
+                    context: "Telegraph lead",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
+                        })),
                 new Clue(
                     new ClueId("clue-public-gossip"),
                     ClueKind.Whereabouts,
-                    "Local gossip says the rider kept to the rail spur after dark.",
+                    "Local gossip says the rider with the red hat kept to the rail spur after dark.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.GangMember,
                     InvestigationSourceKind.LocalGossip,
                     source: "saloon talk",
-                    context: "Town gossip")
+                    context: "Town gossip",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("red hat rider", Feature: "red hat")
+                        })),
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
@@ -306,21 +330,31 @@ public sealed class GameSessionInvestigationActionsTests
                 new Clue(
                     new ClueId("clue-public-telegraph-1"),
                     ClueKind.IdentityFact,
-                    "A telegraph clerk filed a name in shorthand.",
+                    "A telegraph clerk filed Grey Jay in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.TelegraphLead,
                     source: "telegraph clerk",
-                    context: "Telegraph lead"),
+                    context: "Telegraph lead",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
+                        })),
                 new Clue(
                     new ClueId("clue-public-telegraph-2"),
                     ClueKind.Whereabouts,
-                    "A rail clerk mentions a rider cutting south at dusk.",
+                    "A rail clerk mentions a rider with a red hat cutting south at dusk.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.GangMember,
                     InvestigationSourceKind.TelegraphLead,
                     source: "telegraph clerk",
-                    context: "Telegraph lead")
+                    context: "Telegraph lead",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("red hat rider", Feature: "red hat")
+                        })),
             });
 
         return GameSession.StartNew(
@@ -370,21 +404,31 @@ public sealed class GameSessionInvestigationActionsTests
                 new Clue(
                     new ClueId("clue-public-notice-1"),
                     ClueKind.Alias,
-                    "A poster mentions a rider with a pale scar.",
+                    "A poster links Grey Jay to a rider with a pale scar.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.NoticeBoard,
                     source: "notice board",
-                    context: "Public wanted poster"),
+                    context: "Public wanted poster",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
+                        })),
                 new Clue(
                     new ClueId("clue-public-record-2"),
                     ClueKind.Record,
-                    "A sheriff note ties the rider to a rail ledger.",
+                    "A sheriff note ties the rider to a rail ledger and notes a red hat.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.SheriffRecords,
                     source: "sheriff record",
-                    context: "Public wanted poster")
+                    context: "Public wanted poster",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("red hat rider", Feature: "red hat")
+                        })),
             });
 
         return GameSession.StartNew(
@@ -396,6 +440,58 @@ public sealed class GameSessionInvestigationActionsTests
             inventory,
             TravelDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
+    }
+
+    private static GameSession CreateColorOnlyGossipSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(
+                    new ClueId("clue-public-color"),
+                    ClueKind.Whereabouts,
+                    "A rider turned north at dusk.",
+                    Array.Empty<SuspectId>(),
+                    InvestigationTargetKind.GangMember,
+                    InvestigationSourceKind.LocalGossip,
+                    source: "saloon talk",
+                    context: "Town gossip",
+                    anchors: new ClueAnchors(
+                        locations: new[]
+                        {
+                            new ClueLocationAnchor("North road", Place: "North road", Route: "North road")
+                        },
+                        times: new[]
+                        {
+                            new ClueTimeAnchor(ClueRecency.Yesterday, Day: 2)
+                        },
+                        directions: new[]
+                        {
+                            new ClueDirectionAnchor("north", Movement: "turned north", Route: "North road")
+                        })),
+            });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }
 
     private static void TravelToTown(GameSession session, TownId destinationTownId)

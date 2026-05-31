@@ -123,9 +123,18 @@ public sealed class ReadWantedPostersHandlerTests
             {
                 new Clue(
                     new ClueId("clue-public-1"),
-                    ClueKind.Witness,
-                    "A posted notice names a rider with a faded blue scarf.",
-                    new[] { new SuspectId("suspect-1") })
+                    ClueKind.Alias,
+                    "A posted notice links Grey Jay to a rider with a faded blue scarf.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.NoticeBoard,
+                    source: "notice board",
+                    context: "Public wanted poster",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
+                        }))
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

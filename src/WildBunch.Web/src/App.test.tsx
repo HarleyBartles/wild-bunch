@@ -76,6 +76,11 @@ function createSession(): GameSessionDto {
         statusText: "Still chasing leads.",
       },
       discoveredSuspects: [],
+      caseBoard: {
+        namedRecords: [],
+        looseLeads: [],
+        evidenceItems: [],
+      },
       knownClues: [],
     },
     inventory: {
@@ -121,18 +126,58 @@ function createJournal(): JournalDto {
           id: "suspect-1",
           name: "Gus Mercer",
           status: 0,
-          leadSummaries: [
-            "Alias clue: A poster links the alias M.K. Rook to a rider who has a limp in the right leg.",
-            "Whereabouts clue: Local gossip out of Red Mesa says the rider kept to the rail spur after dark.",
-          ],
         },
         {
           id: "suspect-2",
           name: "Mabel Quinn",
           status: 1,
-          leadSummaries: [],
         },
       ],
+      caseBoard: {
+        namedRecords: [],
+        looseLeads: [
+          {
+            id: "lead-grey-jay",
+            displayName: "Grey Jay",
+            kind: 1,
+            status: 0,
+            resolvedToDisplayName: null,
+            evidenceIds: ["clue-1"],
+            summaryLines: ["Alias lead: A poster links the alias Grey Jay without naming Butch Cassidy."],
+            relatedLabels: [],
+          },
+        ],
+        evidenceItems: [
+          {
+            id: "clue-1",
+            kindLabel: "Alias",
+            summary: "A poster links the alias Grey Jay to a rider who has a limp in the right leg.",
+            sourceLabel: "Wanted poster",
+            identityBearing: true,
+            anchors: {
+              subjects: [{ label: "Grey Jay", alias: "Grey Jay", feature: "has a limp in the right leg", fact: null }],
+              locations: [{ label: "Red Mesa road", place: "Red Mesa road", route: "Red Mesa road" }],
+              times: [{ recency: 1, day: 5, turn: 1 }],
+              directions: [{ label: "Eastbound dust line", movement: "Moved off-road", route: "Back trail" }],
+            },
+            handleIds: ["lead-grey-jay"],
+          },
+          {
+            id: "clue-2",
+            kindLabel: "Contradiction",
+            summary: "The witness says the rider wore a blue coat, not the brown coat listed on the warrant.",
+            sourceLabel: "Telegraph lead",
+            identityBearing: true,
+            anchors: {
+              subjects: [{ label: "Blue coat rider", alias: null, feature: "Blue coat", fact: "Witness memory" }],
+              locations: [{ label: "Depot road", place: null, route: "South spur" }],
+              times: [{ recency: 2, day: 4, turn: null }],
+              directions: [{ label: "Southbound", movement: "Rode away", route: null }],
+            },
+            handleIds: [],
+          },
+        ],
+      },
       knownClues: [
         {
           id: "clue-1",
@@ -281,8 +326,9 @@ describe("App", () => {
     expect(dialogScope.getByText("Day 5, turn 2")).toBeInTheDocument();
     expect(dialogScope.getByText("Tumbleweed")).toBeInTheDocument();
     expect(dialogScope.getByText("At large")).toBeInTheDocument();
-    expect(dialogScope.getByText(/Alias clue: A poster links the alias M\.K\. Rook/i)).toBeInTheDocument();
-    expect(dialogScope.getByText("No known clues connect this suspect to the opening lead yet.")).toBeInTheDocument();
+    expect(dialogScope.getByRole("heading", { name: "Grey Jay" })).toBeInTheDocument();
+    expect(dialogScope.getAllByText("No player-known evidence links this suspect yet.")).toHaveLength(2);
+    expect(dialogScope.getByText("No named record links this lead yet.")).toBeInTheDocument();
     expect(dialogScope.getByText("Dead or alive")).toBeInTheDocument();
     expect(dialogScope.getByText("$2,500.50")).toBeInTheDocument();
     expect(screen.queryByText("clue-1")).not.toBeInTheDocument();
