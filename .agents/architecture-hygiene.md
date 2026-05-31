@@ -6,6 +6,15 @@ This document records recurring repository responsibilities for architecture cle
 
 Keep routine worker posture boring, source-backed, and safe. The goal is to prevent architecture drift from becoming accepted background entropy.
 
+## Source Documentation Hygiene
+
+- Source-resident docs are not a second issue tracker.
+- Do not copy GitHub issue bodies, dispatch YAML, worker reports, closeout notes, or future planning queues into `docs/` as source truth.
+- `docs/` is for durable human-facing reference: current architecture, current operational setup, accepted design decisions, validation instructions, and stable constraints.
+- `.agents/` is for durable agent-facing doctrine and routing rules, not issue replication.
+- If planning content is promoted into source docs, rewrite it as stable reference material and strip out issue lifecycle language.
+- If a worker is unsure whether a planning note belongs in source, leave it in the GitHub issue or comment thread and report the ambiguity instead of creating a source-controlled planning document.
+
 ## Recurring Responsibilities
 
 - Preserve CQRS separation.
