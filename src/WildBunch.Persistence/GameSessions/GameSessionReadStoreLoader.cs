@@ -10,14 +10,6 @@ namespace WildBunch.Persistence.GameSessions;
 
 internal static class GameSessionReadStoreLoader
 {
-    private const string PlayerComponentName = "player";
-    private const string WorldComponentName = "world";
-    private const string CaseFileComponentName = "caseFile";
-    private const string ClockComponentName = "clock";
-    private const string PursuitStateComponentName = "pursuitState";
-    private const string TravelRandomnessComponentName = "travelRandomness";
-    private const string JourneyComponentName = "journey";
-
     public static async Task<GameSessionReadModel?> LoadGameSessionReadModelAsync(
         WildBunchDbContext dbContext,
         GameSessionJsonSerializer serializer,
@@ -30,8 +22,8 @@ internal static class GameSessionReadStoreLoader
             return null;
         }
 
-        var player = serializer.DeserializePlayer(store.Components[PlayerComponentName].PayloadJson);
-        var world = serializer.DeserializeWorld(store.Components[WorldComponentName].PayloadJson);
+        var player = serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player));
+        var world = serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
 
         return new GameSessionReadModel(
             store.Envelope.Id,
@@ -39,11 +31,11 @@ internal static class GameSessionReadStoreLoader
             (TravelDifficulty)store.Envelope.TravelDifficulty,
             player,
             world,
-            serializer.DeserializeCaseFile(store.Components[CaseFileComponentName].PayloadJson),
-            serializer.DeserializeClock(store.Components[ClockComponentName].PayloadJson),
-            serializer.DeserializePursuitState(store.Components[PursuitStateComponentName].PayloadJson),
-            store.Components.TryGetValue(JourneyComponentName, out var journeyComponent)
-                ? serializer.DeserializeJourneySnapshot(journeyComponent.PayloadJson)
+            serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile)),
+            serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock)),
+            serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState)),
+            GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey) is { } journeyJson
+                ? serializer.DeserializeJourneySnapshot(journeyJson)
                 : null,
             store.TravelDiaryDays,
             store.LogEntries);
@@ -63,11 +55,11 @@ internal static class GameSessionReadStoreLoader
             return null;
         }
 
-        var player = serializer.DeserializePlayer(store.Components[PlayerComponentName].PayloadJson);
-        var world = serializer.DeserializeWorld(store.Components[WorldComponentName].PayloadJson);
-        var caseFile = serializer.DeserializeCaseFile(store.Components[CaseFileComponentName].PayloadJson);
+        var player = serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player));
+        var world = serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
+        var caseFile = serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile));
         var currentTown = world.GetTown(player.CurrentTownId);
-        var clock = serializer.DeserializeClock(store.Components[ClockComponentName].PayloadJson);
+        var clock = serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
         var logEntries = ApplySlice(store.LogEntries, skip, take);
 
         return new JournalSnapshot(

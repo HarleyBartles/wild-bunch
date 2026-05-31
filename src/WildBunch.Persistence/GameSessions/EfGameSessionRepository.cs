@@ -9,13 +9,6 @@ namespace WildBunch.Persistence.GameSessions;
 public sealed class EfGameSessionRepository : IGameSessionRepository
 {
     private const int SchemaVersion = 1;
-    private const string PlayerComponentName = "player";
-    private const string WorldComponentName = "world";
-    private const string CaseFileComponentName = "caseFile";
-    private const string ClockComponentName = "clock";
-    private const string PursuitStateComponentName = "pursuitState";
-    private const string TravelRandomnessComponentName = "travelRandomness";
-    private const string JourneyComponentName = "journey";
 
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
@@ -57,20 +50,20 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         entity.TravelDifficulty = (int)session.TravelDifficulty;
         entity.SchemaVersion = SchemaVersion;
 
-        UpsertComponent(entity.Id, PlayerComponentName, _serializer.SerializePlayer(session.Player), now);
-        UpsertComponent(entity.Id, WorldComponentName, _serializer.SerializeWorld(session.World), now);
-        UpsertComponent(entity.Id, CaseFileComponentName, _serializer.SerializeCaseFile(session.CaseFile), now);
-        UpsertComponent(entity.Id, ClockComponentName, _serializer.SerializeClock(session.Clock), now);
-        UpsertComponent(entity.Id, PursuitStateComponentName, _serializer.SerializePursuitState(session.PursuitState), now);
-        UpsertComponent(entity.Id, TravelRandomnessComponentName, _serializer.SerializeTravelRandomness(session.TravelRandomness), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.Player, _serializer.SerializePlayer(session.Player), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.World, _serializer.SerializeWorld(session.World), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.CaseFile, _serializer.SerializeCaseFile(session.CaseFile), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.Clock, _serializer.SerializeClock(session.Clock), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.PursuitState, _serializer.SerializePursuitState(session.PursuitState), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.TravelRandomness, _serializer.SerializeTravelRandomness(session.TravelRandomness), now);
 
         if (session.Journey is null)
         {
-            await RemoveComponentAsync(entity.Id, JourneyComponentName, cancellationToken).ConfigureAwait(false);
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.Journey, cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            UpsertComponent(entity.Id, JourneyComponentName, _serializer.SerializeJourneySnapshot(session.Journey.ToSnapshot(session.TravelRules)), now);
+            UpsertComponent(entity.Id, GameSessionComponentNames.Journey, _serializer.SerializeJourneySnapshot(session.Journey.ToSnapshot(session.TravelRules)), now);
         }
 
         await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
@@ -116,15 +109,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private GameSession ToAggregate(GameSessionStore store)
     {
-        var player = _serializer.DeserializePlayer(store.Components[PlayerComponentName].PayloadJson);
-        var world = _serializer.DeserializeWorld(store.Components[WorldComponentName].PayloadJson);
-        var caseFile = _serializer.DeserializeCaseFile(store.Components[CaseFileComponentName].PayloadJson);
-        var clock = _serializer.DeserializeClock(store.Components[ClockComponentName].PayloadJson);
-        var pursuitState = _serializer.DeserializePursuitState(store.Components[PursuitStateComponentName].PayloadJson);
-        var randomness = _serializer.DeserializeTravelRandomness(store.Components[TravelRandomnessComponentName].PayloadJson);
-        var journey = store.Components.TryGetValue(JourneyComponentName, out var journeyComponent)
-            ? _serializer.DeserializeJourneySnapshot(journeyComponent.PayloadJson)
-            : null;
+        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player));
+        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
+        var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile));
+        var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
+        var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState));
+        var randomness = _serializer.DeserializeTravelRandomness(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.TravelRandomness));
+        var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey);
+        var journey = journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson);
 
         return _serializer.RehydrateGameSession(
             store.Envelope.Id,

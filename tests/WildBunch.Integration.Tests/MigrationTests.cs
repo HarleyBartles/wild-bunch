@@ -48,6 +48,13 @@ public sealed class MigrationTests
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
             Assert.Equal(6, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(
+                new[] { "caseFile", "clock", "player", "pursuitState", "travelRandomness", "world" },
+                await verificationContext.GameSessionComponents
+                    .Where(component => component.SessionId == session.Id.Value)
+                    .OrderBy(component => component.ComponentName)
+                    .Select(component => component.ComponentName)
+                    .ToArrayAsync());
             Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
             Assert.Equal(0, await verificationContext.GameSessionDiaryDays.CountAsync());
         }
