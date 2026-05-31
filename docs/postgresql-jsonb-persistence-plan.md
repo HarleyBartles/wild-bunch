@@ -125,7 +125,14 @@ Validate each layer separately so false-green results are harder to miss.
 - `dotnet build WildBunch.sln`
 - `dotnet test WildBunch.sln`
 - `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`
-- PostgreSQL lane smoke tests can be run by setting `ConnectionStrings__WildBunchPostgresDb` to a dedicated test database connection string.
+- PostgreSQL lane smoke tests can be run with `ConnectionStrings__WildBunchPostgresDb` set to a dedicated test database connection string, for example:
+
+```powershell
+$env:ConnectionStrings__WildBunchPostgresDb = "Host=...;Database=...;Username=...;Password=..."
+dotnet test WildBunch.sln --filter PostgreSqlPersistenceTests
+```
+
+- The current live lane covers aggregate save/load round-trip, composed component rows, ordered log rows, and ordered travel diary rows.
 
 When PostgreSQL provider work starts, add provider-specific integration coverage for:
 
@@ -154,6 +161,7 @@ Do not let the PostgreSQL provider become a shortcut around the aggregate.
 - Letting command handlers mutate component rows directly around `GameSession` is not acceptable.
 - Letting read repositories mutate gameplay state is not acceptable.
 - Treating `ConnectionStrings__WildBunchPostgresDb` as required for normal local builds is not acceptable.
+- Claiming live PostgreSQL coverage without a real database and a non-skipped lane is not acceptable.
 - Treating this planning slice as completion of #31 is not acceptable.
 
 ## What This Issue Is Now
