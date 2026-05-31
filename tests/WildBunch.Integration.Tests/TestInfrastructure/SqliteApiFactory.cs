@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using WildBunch.Api;
 using WildBunch.Application.Abstractions;
+using WildBunch.GameContent.Abstractions;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 
@@ -35,10 +36,12 @@ public sealed class SqliteApiFactory : WebApplicationFactory<Program>, IDisposab
             services.RemoveAll<DbContextOptions<WildBunchDbContext>>();
             services.RemoveAll<WildBunchDbContext>();
             services.RemoveAll<IGameSessionRepository>();
+            services.RemoveAll<ITravelRandomnessSource>();
 
             services.AddSingleton(_connection);
             services.AddDbContext<WildBunchDbContext>((_, options) => options.UseSqlite(_connection));
             services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
+            services.AddSingleton<ITravelRandomnessSource, DeterministicTravelRandomnessSource>();
         });
     }
 

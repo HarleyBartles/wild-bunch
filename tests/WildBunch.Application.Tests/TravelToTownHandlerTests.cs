@@ -13,6 +13,8 @@ namespace WildBunch.Application.Tests;
 
 public sealed class TravelToTownHandlerTests
 {
+    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+
     [Fact]
     public async Task TravelToConnectedTownSucceedsSavesAndReturnsUpdatedState()
     {
@@ -109,6 +111,10 @@ public sealed class TravelToTownHandlerTests
                 new DomainInventoryItem(DomainItemKind.Canteen, 1)
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 }
+
+
+
+

@@ -42,6 +42,7 @@ public sealed class GameSessionJsonSerializer
         Guid Id,
         GameStatus Status,
         TravelDifficulty TravelDifficulty,
+        TravelRandomnessSnapshot TravelRandomness,
         PlayerSnapshot Player,
         WorldSnapshot World,
         CaseFileSnapshot CaseFile,
@@ -56,6 +57,7 @@ public sealed class GameSessionJsonSerializer
                 session.Id.Value,
                 session.Status,
                 session.TravelDifficulty,
+                TravelRandomnessSnapshot.FromDomain(session.TravelRandomness),
                 PlayerSnapshot.FromDomain(session.Player),
                 WorldSnapshot.FromDomain(session.World),
                 CaseFileSnapshot.FromDomain(session.CaseFile),
@@ -82,7 +84,8 @@ public sealed class GameSessionJsonSerializer
                 clock,
                 Status,
                 journey,
-                TravelDifficulty);
+                TravelDifficulty,
+                TravelRandomness.ToDomain());
 
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
@@ -345,6 +348,15 @@ public sealed class GameSessionJsonSerializer
             GameSessionRehydrator.SetBackingField(clock, "<Turn>k__BackingField", snapshot.Turn);
             return clock;
         }
+    }
+
+    private sealed record TravelRandomnessSnapshot(TravelRandomnessMode Mode, string Salt)
+    {
+        public static TravelRandomnessSnapshot FromDomain(TravelRandomnessState randomnessState)
+            => new(randomnessState.Mode, randomnessState.Salt);
+
+        public TravelRandomnessState ToDomain()
+            => new(Mode, Salt);
     }
 
     private sealed record GameLogEntrySnapshot(GameLogEntryKind Kind, string Message, int Day, int Turn)
@@ -744,7 +756,8 @@ public sealed class GameSessionJsonSerializer
                 typeof(GameClock),
                 typeof(GameStatus),
                 typeof(TravelJourney),
-                typeof(TravelDifficulty)
+                typeof(TravelDifficulty),
+                typeof(TravelRandomnessState)
             },
             modifiers: null);
 
@@ -760,14 +773,15 @@ public sealed class GameSessionJsonSerializer
             GameClock clock,
             GameStatus status,
             TravelJourney? journey,
-            TravelDifficulty travelDifficulty)
+            TravelDifficulty travelDifficulty,
+            TravelRandomnessState travelRandomness)
         {
             if (Constructor is null)
             {
                 throw new InvalidOperationException("Unable to locate the GameSession persistence constructor.");
             }
 
-            return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, travelDifficulty });
+            return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, travelDifficulty, travelRandomness });
         }
 
         public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)

@@ -11,6 +11,8 @@ namespace WildBunch.Application.Tests;
 
 public sealed class ResolveJourneyEncounterHandlerTests
 {
+    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+
     [Fact]
     public async Task HandleAsyncReturnsFirstPersonDiaryForResolvedRunChoice()
     {
@@ -190,10 +192,14 @@ public sealed class ResolveJourneyEncounterHandlerTests
             new InventoryItem(ItemKind.RevolverAmmo, 2)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }
 }
+
+
+
+

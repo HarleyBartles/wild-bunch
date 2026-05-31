@@ -28,7 +28,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         GameClock clock,
         GameStatus status,
         TravelJourney? journey,
-        TravelDifficulty travelDifficulty)
+        TravelDifficulty travelDifficulty,
+        TravelRandomnessState travelRandomness)
     {
         Id = id;
         Player = player;
@@ -39,6 +40,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Status = status;
         Journey = journey;
         TravelDifficulty = travelDifficulty;
+        TravelRandomness = travelRandomness;
     }
 
     public GameSessionId Id { get; }
@@ -59,6 +61,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelDifficulty TravelDifficulty { get; private set; }
 
+    public TravelRandomnessState TravelRandomness { get; private set; }
+
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
 
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
@@ -75,7 +79,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         TownId? startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet,
         DomainInventory? inventory,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal)
+        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        TravelRandomnessState? travelRandomness = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -98,7 +103,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             new GameClock(),
             GameStatus.Active,
             journey: null,
-            travelDifficulty);
+            travelDifficulty,
+            travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted());
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
@@ -623,7 +629,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             recentTrailEventKinds,
             recentTrailEventIds,
             recentEncounterCategories,
-            HasHorse: horseState is not null && !horseState.IsDeadFor(TravelRules));
+            HasHorse: horseState is not null && !horseState.IsDeadFor(TravelRules),
+            TravelRandomness.Mode,
+            TravelRandomness.Salt);
     }
 
     private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)
@@ -1237,6 +1245,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Player.Health,
             Player.Wallet.Cash,
             PursuitState.Heat,
+            TravelRandomness.Salt,
             encounter.Message);
 
         var foeProfile = JourneyEncounterResolutionEngine.CreateFoeProfile(context, TravelRules, fallbackSeed);

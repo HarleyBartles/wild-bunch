@@ -42,32 +42,42 @@ internal static partial class TravelDayPlanGenerator
     }
 
     private static string ComposeSeed(TravelDayGenerationContext context)
-        => string.Join(
-            "|",
-            context.GeneratorVersion,
+    {
+        var seedParts = new List<string>
+        {
+            context.GeneratorVersion.ToString(),
             context.GameSeed ?? string.Empty,
             context.ScenarioProfileId ?? string.Empty,
             context.TrailId,
             context.OriginTownId.Value,
             context.DestinationTownId.Value,
-            context.DayNumber,
-            context.TravelMode,
-            context.Risk,
-            context.Terrain,
-            context.WaterFeature,
-            context.Difficulty,
-            context.RemainingDays,
-            context.RemainingRideDayDistance,
-            context.FoodPressure,
-            context.CanteenPressure,
-            context.HorseFeedPressure,
-            context.HorseConditionBand,
-            context.PursuitHeatBand,
-            context.WalletBand,
+            context.DayNumber.ToString(),
+            context.TravelMode.ToString(),
+            context.Risk.ToString(),
+            context.Terrain.ToString(),
+            context.WaterFeature.ToString(),
+            context.Difficulty.ToString(),
+            context.RemainingDays.ToString(),
+            context.RemainingRideDayDistance.ToString(),
+            context.FoodPressure.ToString(),
+            context.CanteenPressure.ToString(),
+            context.HorseFeedPressure.ToString(),
+            context.HorseConditionBand.ToString(),
+            context.PursuitHeatBand.ToString(),
+            context.WalletBand.ToString(),
             string.Join(",", context.RecentTrailEventKinds),
             string.Join(",", context.RecentTrailEventIds),
             string.Join(",", context.RecentEncounterCategories),
-            context.HasHorse);
+            context.HasHorse.ToString()
+        };
+
+        if (context.RandomnessMode == TravelRandomnessMode.RuntimeSalted && !string.IsNullOrEmpty(context.RandomnessSalt))
+        {
+            seedParts.Insert(1, context.RandomnessSalt);
+        }
+
+        return string.Join("|", seedParts);
+    }
 
     private static string ComposeSeed(string seed, string suffix)
         => $"{seed}|{suffix}";

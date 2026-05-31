@@ -108,6 +108,7 @@ internal static class GameSetupSeedCodec
         {
             GameSetupOption.StartWithHorse => seed.Options with { StartWithHorse = value != 0 },
             GameSetupOption.LoadoutProfile => seed.Options with { LoadoutProfile = ParseLoadoutProfile(value) },
+            GameSetupOption.JourneyRandomness => seed.Options with { JourneyRandomnessMode = ParseJourneyRandomnessMode(value) },
             _ => throw new ArgumentOutOfRangeException(nameof(option), option, "Unsupported setup option.")
         };
 
@@ -162,6 +163,10 @@ internal static class GameSetupSeedCodec
         }
 
         bits |= ((int)options.LoadoutProfile & 0x03) << 1;
+        if (options.JourneyRandomnessMode == TravelRandomnessMode.Deterministic)
+        {
+            bits |= 1 << 3;
+        }
         return (byte)bits;
     }
 
@@ -169,7 +174,10 @@ internal static class GameSetupSeedCodec
     {
         var startWithHorse = (bits & 0x01) != 0;
         var loadoutProfile = ParseLoadoutProfile((bits >> 1) & 0x03);
-        return new GameSetupOptionsV1(startWithHorse, loadoutProfile);
+        var journeyRandomnessMode = (bits & (1 << 3)) != 0
+            ? TravelRandomnessMode.Deterministic
+            : TravelRandomnessMode.RuntimeSalted;
+        return new GameSetupOptionsV1(startWithHorse, loadoutProfile, journeyRandomnessMode);
     }
 
     private static StartingLoadoutProfile ParseLoadoutProfile(int value)
@@ -179,6 +187,14 @@ internal static class GameSetupSeedCodec
             1 => StartingLoadoutProfile.Light,
             2 => StartingLoadoutProfile.Stocked,
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unsupported loadout profile.")
+        };
+
+    private static TravelRandomnessMode ParseJourneyRandomnessMode(int value)
+        => value switch
+        {
+            0 => TravelRandomnessMode.RuntimeSalted,
+            1 => TravelRandomnessMode.Deterministic,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unsupported journey randomness mode.")
         };
 
     private static ushort ComputeChecksum(int generatorVersion, TravelDifficulty difficulty, GameSetupOptionsV1 options, ulong entropy)

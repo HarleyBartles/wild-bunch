@@ -68,4 +68,30 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(2, session.Player.Inventory.GetQuantity(ItemKind.HorseFeed));
         Assert.Equal(4, session.Player.Inventory.GetQuantity(ItemKind.RevolverAmmo));
     }
+
+    [Fact]
+    public void DefaultJourneyRandomnessStaysRuntimeSaltedAndDeterministicSetupOptionCanOptOut()
+    {
+        var factory = new SeededNewGameFactory();
+
+        var runtimeFirst = factory.Create("Ranger Vale");
+        var runtimeSecond = factory.Create("Ranger Vale");
+
+        Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeFirst.TravelRandomness.Mode);
+        Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeSecond.TravelRandomness.Mode);
+        Assert.NotEqual(runtimeFirst.TravelRandomness.Salt, runtimeSecond.TravelRandomness.Salt);
+
+        var deterministicSeed = GameSetupSeedCodec.Encode(
+            GameSetupSeedCodec.WithOption(
+                GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Normal),
+                GameSetupOption.JourneyRandomness,
+                1));
+
+        var deterministicFirst = factory.Create("Ranger Vale", setupSeedCode: deterministicSeed);
+        var deterministicSecond = factory.Create("Ranger Vale", setupSeedCode: deterministicSeed);
+
+        Assert.Equal(TravelRandomnessMode.Deterministic, deterministicFirst.TravelRandomness.Mode);
+        Assert.Equal(TravelRandomnessMode.Deterministic, deterministicSecond.TravelRandomness.Mode);
+        Assert.Equal(deterministicFirst.TravelRandomness.Salt, deterministicSecond.TravelRandomness.Salt);
+    }
 }

@@ -20,6 +20,8 @@ namespace WildBunch.Domain.Tests;
 
 public sealed class TravelResolverTests
 {
+    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+
     [Fact]
     public void PreviewTravelReportsMountedRouteProfileAndResources()
     {
@@ -385,7 +387,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        var mountedSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), mountedInventory);
+        var mountedSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), mountedInventory, travelRandomness: DeterministicTravelRandomness);
         var mountedPreview = resolver.PreviewJourney(mountedSession.World, mountedSession.Player.CurrentTownId, new TownId("dryfork"), mountedSession.Player.Inventory).Preview!;
 
         Assert.Equal(5m, mountedPreview.RideDayDistance);
@@ -404,7 +406,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(10, 10))
         });
 
-        var footSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), footInventory);
+        var footSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), footInventory, travelRandomness: DeterministicTravelRandomness);
         var footPreview = resolver.PreviewJourney(footSession.World, footSession.Player.CurrentTownId, new TownId("dryfork"), footSession.Player.Inventory).Preview!;
 
         Assert.Equal(5m, footPreview.RideDayDistance);
@@ -442,10 +444,10 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        var withHorseSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), withHorseInventory);
+        var withHorseSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), withHorseInventory, travelRandomness: DeterministicTravelRandomness);
         var withHorsePreview = resolver.PreviewJourney(withHorseSession.World, withHorseSession.Player.CurrentTownId, new TownId("dryfork"), withHorseSession.Player.Inventory).Preview!;
 
-        var noHorseSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), noHorseInventory);
+        var noHorseSession = GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), noHorseInventory, travelRandomness: DeterministicTravelRandomness);
         var noHorsePreview = resolver.PreviewJourney(noHorseSession.World, noHorseSession.Player.CurrentTownId, new TownId("dryfork"), noHorseSession.Player.Inventory).Preview!;
 
         Assert.Contains(withHorsePreview.Warnings, warning => warning.Contains("stress the horse", StringComparison.OrdinalIgnoreCase));
@@ -996,7 +998,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.HorseFeed, withHorseFeed)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateFootSession()
@@ -1009,7 +1011,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateDryMountedSession()
@@ -1034,7 +1036,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.HorseFeed, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static DomainWorld CreateParityWorld(TrailRisk trailRisk = TrailRisk.Low)
@@ -1068,7 +1070,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateLuckyFootSession()
@@ -1089,7 +1091,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateBadLuckSession()
@@ -1115,7 +1117,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateNoHorseBadLuckSession()
@@ -1139,7 +1141,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateEasyLuckyFoodSession()
@@ -1163,7 +1165,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateEasyLuckyWaterSession()
@@ -1187,7 +1189,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateHardBadLuckSession()
@@ -1211,7 +1213,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateHardMountedHorseSession()
@@ -1235,7 +1237,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateHighRiskSession(
@@ -1271,7 +1273,7 @@ public sealed class TravelResolverTests
 
         var inventory = new DomainInventory(items);
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, travelDifficulty);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, travelDifficulty, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateProgressionSession(
@@ -1306,7 +1308,7 @@ public sealed class TravelResolverTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), travelDifficulty);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), travelDifficulty, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static DomainWorld CreateWorld()
@@ -1432,3 +1434,7 @@ public sealed class TravelResolverTests
         return ulong.MaxValue;
     }
 }
+
+
+
+

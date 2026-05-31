@@ -5,7 +5,8 @@ namespace WildBunch.GameContent.NewGame;
 internal enum GameSetupOption
 {
     StartWithHorse = 0,
-    LoadoutProfile = 1
+    LoadoutProfile = 1,
+    JourneyRandomness = 2
 }
 
 internal enum StartingLoadoutProfile
@@ -17,7 +18,8 @@ internal enum StartingLoadoutProfile
 
 internal sealed record GameSetupOptionsV1(
     bool StartWithHorse = true,
-    StartingLoadoutProfile LoadoutProfile = StartingLoadoutProfile.Standard)
+    StartingLoadoutProfile LoadoutProfile = StartingLoadoutProfile.Standard,
+    TravelRandomnessMode JourneyRandomnessMode = TravelRandomnessMode.RuntimeSalted)
 {
     public static GameSetupOptionsV1 Default { get; } = new();
 }

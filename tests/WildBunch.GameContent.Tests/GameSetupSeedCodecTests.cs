@@ -15,6 +15,7 @@ public sealed class GameSetupSeedCodecTests
             GameSetupOption.LoadoutProfile,
             (int)StartingLoadoutProfile.Stocked);
         seed = GameSetupSeedCodec.WithOption(seed, GameSetupOption.StartWithHorse, 0);
+        seed = GameSetupSeedCodec.WithOption(seed, GameSetupOption.JourneyRandomness, 1);
 
         var seedCode = GameSetupSeedCodec.Encode(seed);
         var decoded = GameSetupSeedCodec.Decode(seedCode);
@@ -35,10 +36,12 @@ public sealed class GameSetupSeedCodecTests
         var easySeed = GameSetupSeedCodec.WithDifficulty(canonical, WildBunch.Domain.Travel.TravelDifficulty.Easy);
         var noHorseSeed = GameSetupSeedCodec.WithOption(canonical, GameSetupOption.StartWithHorse, 0);
         var stockedSeed = GameSetupSeedCodec.WithOption(canonical, GameSetupOption.LoadoutProfile, (int)StartingLoadoutProfile.Stocked);
+        var deterministicTravelSeed = GameSetupSeedCodec.WithOption(canonical, GameSetupOption.JourneyRandomness, 1);
 
         Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(easySeed));
         Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(noHorseSeed));
         Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(stockedSeed));
+        Assert.NotEqual(GameSetupSeedCodec.Encode(canonical), GameSetupSeedCodec.Encode(deterministicTravelSeed));
     }
 
     [Theory]
