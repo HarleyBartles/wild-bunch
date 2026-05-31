@@ -42,75 +42,69 @@ type AnchorRow = {
   value: string;
 };
 
+type DiscoveredSuspectCard = {
+  suspect: JournalDto["caseFile"]["discoveredSuspects"][number];
+  basis: string;
+  record: JournalDto["caseFile"]["caseBoard"]["namedRecords"][number] | undefined;
+};
+
 function cleanText(text: string) {
   return text.trim().replace(/\s+/g, " ").replace(/[.?!]+$/u, "");
 }
 
-function lowerFirst(text: string) {
-  if (text.length === 0) {
-    return text;
-  }
-
-  return text[0].toLowerCase() + text.slice(1);
-}
-
-function addUniqueRow(rows: AnchorRow[], label: string, value: string) {
+function addUniqueRow(rows: AnchorRow[], seenValues: Set<string>, label: string, value: string) {
   const cleanedValue = cleanText(value);
   if (!cleanedValue) {
     return;
   }
 
-  if (rows.some((row) => row.value.toLowerCase() === cleanedValue.toLowerCase())) {
+  const normalizedValue = cleanedValue.toLowerCase();
+  if (seenValues.has(normalizedValue)) {
     return;
   }
 
+  seenValues.add(normalizedValue);
   rows.push({ label, value: cleanedValue });
 }
 
-function formatSubjectRows(subjects: { label: string; alias: string | null; feature: string | null; fact: string | null }[]) {
+function buildAnchorRows(anchors: {
+  subjects: { label: string; alias: string | null; feature: string | null; fact: string | null }[];
+  locations: { label: string; place: string | null; route: string | null }[];
+  times: { recency: number; day: number | null; turn: number | null }[];
+  directions: { label: string; movement: string | null; route: string | null }[];
+}) {
   const rows: AnchorRow[] = [];
+  const seenValues = new Set<string>();
 
-  for (const subject of subjects) {
-    addUniqueRow(rows, "Subject", subject.label);
+  for (const subject of anchors.subjects) {
+    addUniqueRow(rows, seenValues, "Subject", subject.label);
 
     if (subject.alias && subject.alias !== subject.label) {
-      addUniqueRow(rows, "Alias", subject.alias);
+      addUniqueRow(rows, seenValues, "Alias", subject.alias);
     }
 
     if (subject.feature) {
-      addUniqueRow(rows, "Feature", lowerFirst(cleanText(subject.feature)));
+      addUniqueRow(rows, seenValues, "Feature", cleanText(subject.feature));
     }
 
     if (subject.fact) {
-      addUniqueRow(rows, "Fact", lowerFirst(cleanText(subject.fact)));
+      addUniqueRow(rows, seenValues, "Fact", cleanText(subject.fact));
     }
   }
 
-  return rows;
-}
-
-function formatLocationRows(locations: { label: string; place: string | null; route: string | null }[]) {
-  const rows: AnchorRow[] = [];
-
-  for (const location of locations) {
-    addUniqueRow(rows, "Location", location.label);
+  for (const location of anchors.locations) {
+    addUniqueRow(rows, seenValues, "Location", location.label);
 
     if (location.place && location.place !== location.label) {
-      addUniqueRow(rows, "Place", location.place);
+      addUniqueRow(rows, seenValues, "Place", location.place);
     }
 
     if (location.route) {
-      addUniqueRow(rows, "Route", location.route);
+      addUniqueRow(rows, seenValues, "Route", location.route);
     }
   }
 
-  return rows;
-}
-
-function formatTimeRows(times: { recency: number; day: number | null; turn: number | null }[]) {
-  const rows: AnchorRow[] = [];
-
-  for (const time of times) {
+  for (const time of anchors.times) {
     const parts = [formatClueRecency(time.recency)];
     if (time.day !== null) {
       parts.push(`day ${time.day}`);
@@ -119,24 +113,18 @@ function formatTimeRows(times: { recency: number; day: number | null; turn: numb
       parts.push(`turn ${time.turn}`);
     }
 
-    addUniqueRow(rows, "When", parts.join(", "));
+    addUniqueRow(rows, seenValues, "When", parts.join(", "));
   }
 
-  return rows;
-}
-
-function formatDirectionRows(directions: { label: string; movement: string | null; route: string | null }[]) {
-  const rows: AnchorRow[] = [];
-
-  for (const direction of directions) {
-    addUniqueRow(rows, "Direction", direction.label);
+  for (const direction of anchors.directions) {
+    addUniqueRow(rows, seenValues, "Direction", direction.label);
 
     if (direction.movement && direction.movement !== direction.label) {
-      addUniqueRow(rows, "Movement", direction.movement);
+      addUniqueRow(rows, seenValues, "Movement", direction.movement);
     }
 
     if (direction.route) {
-      addUniqueRow(rows, "Route", direction.route);
+      addUniqueRow(rows, seenValues, "Route", direction.route);
     }
   }
 
@@ -165,6 +153,54 @@ function formatClockContext(journal: JournalDto) {
 
 function formatBounty(amount: number) {
   return currencyFormatter.format(amount);
+}
+
+function normalizeText(text: string) {
+  return text.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function formatDiscoveryBasis(basisSourceLabel: string | null | undefined) {
+  const lower = normalizeText(basisSourceLabel ?? "");
+  if (lower.includes("notice board") || lower.includes("wanted poster") || lower.includes("wanted notice")) {
+    return "Discovered from wanted poster";
+  }
+
+  if (lower.includes("sheriff")) {
+    return "Named in sheriff record";
+  }
+
+  if (lower.includes("telegraph")) {
+    return "Named in telegraph lead";
+  }
+
+  if (lower.includes("gossip") || lower.includes("saloon talk")) {
+    return "Mentioned in local gossip";
+  }
+
+  return basisSourceLabel?.trim() || "Player-known evidence";
+}
+
+function findSuspectDiscoveryBasis(journal: JournalDto, suspectName: string) {
+  const normalizedSuspectName = normalizeText(suspectName);
+
+  const matchingRecord = journal.caseFile.caseBoard.namedRecords.find(
+    (record) => normalizeText(record.displayName) === normalizedSuspectName,
+  );
+  if (matchingRecord) {
+    return formatDiscoveryBasis("wanted poster");
+  }
+
+  const clue = journal.caseFile.knownClues.find((candidate) => {
+    const descriptionMatches = normalizeText(candidate.description).includes(normalizedSuspectName);
+    const subjectMatches = candidate.anchors.subjects.some((subject) => normalizeText(subject.label) === normalizedSuspectName);
+    return descriptionMatches || subjectMatches;
+  });
+
+  if (!clue) {
+    return null;
+  }
+
+  return formatDiscoveryBasis(clue.sourceLabel ?? clue.context);
 }
 
 function Section({
@@ -228,6 +264,29 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
     }
 
     return activeJournal.caseFile.knownClues.filter((clue) => clue.kind === 9);
+  }, [activeJournal]);
+
+  const visibleDiscoveredSuspects = useMemo<DiscoveredSuspectCard[]>(() => {
+    if (!activeJournal) {
+      return [];
+    }
+
+    return activeJournal.caseFile.discoveredSuspects
+      .map((suspect) => {
+        const basis = findSuspectDiscoveryBasis(activeJournal, suspect.name);
+        const record = activeJournal.caseFile.caseBoard.namedRecords.find(
+          (entry) => normalizeText(entry.displayName) === normalizeText(suspect.name),
+        );
+
+        return basis
+          ? {
+              suspect,
+              basis,
+              record,
+            }
+          : null;
+      })
+      .filter((entry): entry is DiscoveredSuspectCard => entry !== null);
   }, [activeJournal]);
 
   if (loading && !activeJournal) {
@@ -391,19 +450,14 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             </div>
           </div>
           <div className="stack">
-            {caseJournal.caseFile.discoveredSuspects.length > 0 ? (
-              caseJournal.caseFile.discoveredSuspects.map((suspect) => {
-                const record = caseJournal.caseFile.caseBoard.namedRecords.find(
-                  (entry) => entry.displayName.toLowerCase() === suspect.name.toLowerCase(),
-                );
-
-                return (
+            {visibleDiscoveredSuspects.length > 0 ? (
+              visibleDiscoveredSuspects.map(({ suspect, basis, record }) => (
                   <div key={suspect.name} className="compact-item">
                     <strong>{suspect.name}</strong>
                     <p>{formatSuspectStatus(suspect.status)}</p>
+                    <p className="case-modal__minor">{basis}</p>
                     {record ? (
                       <>
-                        <p className="case-modal__minor">Earned identity record</p>
                         {record.summaryLines.length > 0 ? (
                           <ul className="case-modal__lead-list">
                             {record.summaryLines.map((line) => (
@@ -417,14 +471,11 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                           </p>
                         ) : null}
                       </>
-                    ) : (
-                      <p className="case-modal__minor">No player-known evidence links this suspect yet.</p>
-                    )}
+                    ) : null}
                   </div>
-                );
-              })
+                ))
             ) : (
-              <p className="muted">No suspects have been discovered yet.</p>
+              <p className="muted">No suspects have been confirmed from player-known evidence yet.</p>
             )}
           </div>
         </div>
@@ -465,10 +516,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                   <strong>Source:</strong> {evidence.sourceLabel}
                 </p>
                 {evidence.identityBearing ? <p className="case-modal__minor">Identity-bearing evidence</p> : <p className="case-modal__minor">Color-only observation</p>}
-                {renderAnchorRows(formatSubjectRows(evidence.anchors.subjects))}
-                {renderAnchorRows(formatLocationRows(evidence.anchors.locations))}
-                {renderAnchorRows(formatTimeRows(evidence.anchors.times))}
-                {renderAnchorRows(formatDirectionRows(evidence.anchors.directions))}
+                {renderAnchorRows(buildAnchorRows(evidence.anchors))}
               </Card>
             ))
           ) : (
@@ -489,7 +537,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             </div>
             <div>
               <dt>Suspects</dt>
-              <dd>{caseJournal.caseFile.discoveredSuspects.length}</dd>
+              <dd>{visibleDiscoveredSuspects.length}</dd>
             </div>
             <div>
               <dt>Warrants</dt>

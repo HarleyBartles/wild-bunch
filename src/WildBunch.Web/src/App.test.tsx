@@ -77,7 +77,18 @@ function createSession(): GameSessionDto {
       },
       discoveredSuspects: [],
       caseBoard: {
-        namedRecords: [],
+        namedRecords: [
+          {
+            id: "record-gus",
+            displayName: "Gus Mercer",
+            kind: 4,
+            status: 2,
+            resolvedToDisplayName: null,
+            evidenceIds: ["clue-1"],
+            summaryLines: ["Discovered from wanted poster"],
+            relatedLabels: ["Red Wren"],
+          },
+        ],
         looseLeads: [],
         evidenceItems: [],
       },
@@ -134,7 +145,18 @@ function createJournal(): JournalDto {
         },
       ],
       caseBoard: {
-        namedRecords: [],
+        namedRecords: [
+          {
+            id: "record-gus",
+            displayName: "Gus Mercer",
+            kind: 4,
+            status: 2,
+            resolvedToDisplayName: null,
+            evidenceIds: ["clue-1"],
+            summaryLines: ["Discovered from wanted poster"],
+            relatedLabels: ["Red Wren"],
+          },
+        ],
         looseLeads: [
           {
             id: "lead-grey-jay",
@@ -326,8 +348,9 @@ describe("App", () => {
     expect(dialogScope.getByText("Day 5, turn 2")).toBeInTheDocument();
     expect(dialogScope.getByText("Tumbleweed")).toBeInTheDocument();
     expect(dialogScope.getByText("At large")).toBeInTheDocument();
-    expect(dialogScope.getByRole("heading", { name: "Grey Jay" })).toBeInTheDocument();
-    expect(dialogScope.getAllByText("No player-known evidence links this suspect yet.")).toHaveLength(2);
+    expect(dialogScope.getAllByText("Gus Mercer")).toHaveLength(3);
+    expect(dialogScope.getAllByText("Discovered from wanted poster")).toHaveLength(3);
+    expect(dialogScope.queryByText("Mabel Quinn")).not.toBeInTheDocument();
     expect(dialogScope.getByText("No named record links this lead yet.")).toBeInTheDocument();
     expect(dialogScope.getByText("Dead or alive")).toBeInTheDocument();
     expect(dialogScope.getByText("$2,500.50")).toBeInTheDocument();
@@ -340,8 +363,8 @@ describe("App", () => {
       dialogScope.queryAllByText((_, element) => element?.textContent === "Place: Red Mesa road"),
     ).toHaveLength(0);
     expect(
-      dialogScope.queryAllByText((_, element) => element?.textContent === "Route: Red Mesa road"),
-    ).toHaveLength(0);
+      dialogScope.queryAllByText((_, element) => element?.textContent === "Route: Back trail"),
+    ).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: /close/i }));
 

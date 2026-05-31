@@ -1748,8 +1748,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         return clue.Anchors.Subjects.Any(subject =>
             !string.IsNullOrWhiteSpace(subject.Alias)
-            || !string.IsNullOrWhiteSpace(subject.Feature)
-            || !string.IsNullOrWhiteSpace(subject.Fact));
+            || !string.IsNullOrWhiteSpace(subject.Feature));
     }
 
     private bool IsJourneyModal()

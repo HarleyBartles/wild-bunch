@@ -72,6 +72,11 @@ public sealed class SeededNewGameFactoryTests
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A poster links the alias ", StringComparison.Ordinal));
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A public notice describes an unnamed rider who ", StringComparison.Ordinal));
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A telegraph clerk filed the alias ", StringComparison.Ordinal));
+        Assert.Contains(
+            session.CaseFile.PublicClues,
+            clue => clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal)
+                && clue.Description.Contains(" a rider who ", StringComparison.OrdinalIgnoreCase)
+                && clue.Description.Contains("kept to the rail spur after dark", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
         Assert.All(session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
         Assert.All(

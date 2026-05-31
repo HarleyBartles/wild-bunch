@@ -247,7 +247,7 @@ internal static class SeedCaseBuilder
                 GameSetupDeterministicLabels.CasePublicClues,
                 4,
                 ClueKind.Whereabouts,
-                $"Local gossip out of {world.GetTown(suspectTurfAssignments[4].TurfTownId).Name} says the rider kept to the rail spur after dark.",
+                $"Local gossip out of {world.GetTown(suspectTurfAssignments[4].TurfTownId).Name} says {DescribePersonWithFeature(features[4].PrimaryFeature, "a rider")} kept to the rail spur after dark.",
                 suspects[4].Id,
                 InvestigationTargetKind.GangMember,
                 "saloon talk",

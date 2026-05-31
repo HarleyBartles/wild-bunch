@@ -120,4 +120,42 @@ public sealed class CaseBoardMapperTests
         Assert.Single(board.EvidenceItems);
         Assert.False(board.EvidenceItems[0].IdentityBearing);
     }
+
+    [Fact]
+    public void FeatureAndRouteLeadsUseNaturalPersonLabelsAndIgnoreContextFacts()
+    {
+        var board = CaseBoardMapper.ToDto(
+            new[]
+            {
+                new Clue(
+                    new ClueId("clue-feature-route"),
+                    ClueKind.Whereabouts,
+                    "Local gossip says the rider with no eyebrows kept to the rail spur after dark.",
+                    Array.Empty<SuspectId>(),
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.LocalGossip,
+                    source: "saloon talk",
+                    context: "Town gossip",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Has no eyebrows", Feature: "Has no eyebrows", Fact: "opening lead")
+                        },
+                        locations: new[]
+                        {
+                            new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "rail spur")
+                        },
+                        directions: new[]
+                        {
+                            new ClueDirectionAnchor("kept to the rail spur after dark", Movement: "kept to the rail spur after dark", Route: "rail spur")
+                        }))
+            },
+            Array.Empty<Warrant>());
+
+        Assert.Contains(board.LooseLeads, lead => lead.DisplayName == "Rider with no eyebrows");
+        Assert.Contains(board.LooseLeads, lead => lead.DisplayName == "Rider on rail spur");
+        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName.Contains("opening lead", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName.Contains("identity match", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(board.EvidenceItems);
+    }
 }

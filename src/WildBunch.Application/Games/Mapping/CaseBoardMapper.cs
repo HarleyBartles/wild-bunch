@@ -21,7 +21,7 @@ public static class CaseBoardMapper
 
             foreach (var marker in markers)
             {
-                var builder = GetOrCreate(looseLeads, marker.Kind, marker.DisplayName);
+                var builder = GetOrCreate(looseLeads, marker.Kind, marker.KeyValue, marker.DisplayName);
                 builder.AddEvidence(clue.Id.Value);
                 builder.AddSummaryLine(DescribeClueSummary(clue));
                 handleIds.Add(builder.Key);
@@ -39,7 +39,7 @@ public static class CaseBoardMapper
 
         foreach (var warrant in warrants)
         {
-            var namedRecord = GetOrCreate(namedRecords, CaseIdentityKind.WarrantTarget, warrant.TargetName);
+            var namedRecord = GetOrCreate(namedRecords, CaseIdentityKind.WarrantTarget, warrant.TargetName, warrant.TargetName);
             namedRecord.Status = CaseIdentityStatus.Resolved;
             namedRecord.AddEvidence(warrant.Id.Value);
             namedRecord.AddSummaryLine(DescribeWarrantSummary(warrant));
@@ -92,9 +92,10 @@ public static class CaseBoardMapper
     private static HandleBuilder GetOrCreate(
         Dictionary<string, HandleBuilder> builders,
         CaseIdentityKind kind,
+        string keyValue,
         string displayName)
     {
-        var key = BuildKey(kind, displayName);
+        var key = BuildKey(kind, keyValue);
         if (!builders.TryGetValue(key, out var builder))
         {
             builder = new HandleBuilder(key, displayName, kind);
@@ -115,29 +116,14 @@ public static class CaseBoardMapper
 
         foreach (var subject in clue.Anchors.Subjects)
         {
-            var addedMarker = false;
-
             if (!string.IsNullOrWhiteSpace(subject.Alias))
             {
-                markers.Add(new IdentityMarker(subject.Alias!, CaseIdentityKind.Alias));
-                addedMarker = true;
+                markers.Add(new IdentityMarker(subject.Alias!, Clean(subject.Alias!), CaseIdentityKind.Alias));
             }
 
             if (!string.IsNullOrWhiteSpace(subject.Feature))
             {
-                markers.Add(new IdentityMarker(subject.Feature!, CaseIdentityKind.FeatureLed));
-                addedMarker = true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(subject.Fact))
-            {
-                markers.Add(new IdentityMarker(subject.Fact!, CaseIdentityKind.FeatureLed));
-                addedMarker = true;
-            }
-
-            if (!addedMarker && !string.IsNullOrWhiteSpace(subject.Label))
-            {
-                markers.Add(new IdentityMarker(subject.Label, CaseIdentityKind.KnownName));
+                markers.Add(new IdentityMarker(subject.Feature!, BuildFeatureDisplayName(subject.Feature!), CaseIdentityKind.FeatureLed));
             }
         }
 
@@ -151,14 +137,14 @@ public static class CaseBoardMapper
 
             if (!string.IsNullOrWhiteSpace(route))
             {
-                markers.Add(new IdentityMarker(route, CaseIdentityKind.RouteLed));
+                markers.Add(new IdentityMarker(route, BuildRouteDisplayName(route), CaseIdentityKind.RouteLed));
             }
         }
 
         return markers
-            .Select(marker => new IdentityMarker(Clean(marker.DisplayName), marker.Kind))
-            .Where(marker => marker.DisplayName.Length > 0)
-            .DistinctBy(marker => $"{marker.Kind}:{Normalize(marker.DisplayName)}")
+            .Select(marker => new IdentityMarker(Clean(marker.KeyValue), Clean(marker.DisplayName), marker.Kind))
+            .Where(marker => marker.KeyValue.Length > 0 && marker.DisplayName.Length > 0)
+            .DistinctBy(marker => $"{marker.Kind}:{Normalize(marker.KeyValue)}")
             .ToArray();
     }
 
@@ -171,8 +157,7 @@ public static class CaseBoardMapper
 
         return clue.Anchors.Subjects.Any(subject =>
             !string.IsNullOrWhiteSpace(subject.Alias)
-            || !string.IsNullOrWhiteSpace(subject.Feature)
-            || !string.IsNullOrWhiteSpace(subject.Fact));
+            || !string.IsNullOrWhiteSpace(subject.Feature));
     }
 
     private static string DescribeClueSummary(Clue clue)
@@ -221,7 +206,62 @@ public static class CaseBoardMapper
     private static string Clean(string value)
         => value.Trim().TrimEnd('.', '!', '?');
 
-    private sealed record IdentityMarker(string DisplayName, CaseIdentityKind Kind);
+    private static string BuildFeatureDisplayName(string feature)
+    {
+        var cleaned = Clean(feature);
+        if (cleaned.Length == 0)
+        {
+            return "Rider with an unknown feature";
+        }
+
+        if (cleaned.StartsWith("has no ", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Rider with {LowerFirst(cleaned[4..])}";
+        }
+
+        if (cleaned.StartsWith("has ", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Rider with {LowerFirst(cleaned[4..])}";
+        }
+
+        if (cleaned.StartsWith("is missing ", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Rider {LowerFirst(cleaned[3..])}";
+        }
+
+        if (cleaned.StartsWith("missing ", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Rider {LowerFirst(cleaned)}";
+        }
+
+        if (cleaned.StartsWith("wears ", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Rider wearing {LowerFirst(cleaned[6..])}";
+        }
+
+        if (cleaned.StartsWith("wearing ", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Rider wearing {LowerFirst(cleaned[8..])}";
+        }
+
+        return $"Rider with {LowerFirst(cleaned)}";
+    }
+
+    private static string BuildRouteDisplayName(string route)
+    {
+        var cleaned = Clean(route);
+        if (cleaned.Length == 0)
+        {
+            return "Rider on an unnamed route";
+        }
+
+        return $"Rider on {cleaned}";
+    }
+
+    private static string LowerFirst(string value)
+        => value.Length == 0 ? value : char.ToLowerInvariant(value[0]) + value[1..];
+
+    private sealed record IdentityMarker(string KeyValue, string DisplayName, CaseIdentityKind Kind);
 
     private sealed class HandleBuilder
     {
