@@ -63,13 +63,26 @@ public sealed class SeededNewGameFactoryTests
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
+        Assert.Contains(session.CaseFile.KnownClues, clue => clue.Description.StartsWith("A witness tied the rider to a man who ", StringComparison.Ordinal));
         Assert.Equal(4, session.CaseFile.PublicClues.Count);
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A poster links the alias ", StringComparison.Ordinal));
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A public notice describes an unnamed rider who ", StringComparison.Ordinal));
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A telegraph clerk filed the alias ", StringComparison.Ordinal));
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
         Assert.All(session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues), clue => Assert.True(clue.Anchors.HasAnchors));
+        Assert.All(
+            session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues),
+            clue =>
+            {
+                Assert.DoesNotContain("mentions has", clue.Description, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("describes is missing", clue.Description, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("tied the rider to Has", clue.Description, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("..", clue.Description, StringComparison.Ordinal);
+            });
         var sightingClue = Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         var sightingSuspectId = Assert.Single(sightingClue.LinkedSuspectIds);
         var sightingTown = session.World.GetTown(

@@ -17,6 +17,9 @@ public static class CaseReadMapper
             clue.Context,
             ToDto(clue.Anchors));
 
+    public static string ToLeadSummary(Clue clue)
+        => $"{DescribeClueKind(clue.Kind)} clue: {NormalizeDescription(clue.Description)}";
+
     public static ClueAnchorsDto ToDto(ClueAnchors anchors)
         => new(
             anchors.Subjects.Select(ToDto).ToArray(),
@@ -48,6 +51,26 @@ public static class CaseReadMapper
             anchor.Label,
             anchor.Movement,
             anchor.Route);
+
+    private static string DescribeClueKind(ClueKind kind)
+        => kind switch
+        {
+            ClueKind.Physical => "Physical",
+            ClueKind.Witness => "Witness",
+            ClueKind.Record => "Record",
+            ClueKind.Rumor => "Rumor",
+            ClueKind.CulpritTrail => "Culprit trail",
+            ClueKind.IdentityFact => "Identity fact",
+            ClueKind.Alias => "Alias",
+            ClueKind.Whereabouts => "Whereabouts",
+            ClueKind.Warrant => "Warrant",
+            ClueKind.Contradiction => "Contradiction",
+            ClueKind.Context => "Context",
+            _ => $"Clue {kind}"
+        };
+
+    private static string NormalizeDescription(string description)
+        => description.Trim().TrimEnd('.', '!', '?');
 
     private static string ToStatusText(KillerReleaseState state)
         => state.IsReleased

@@ -328,6 +328,7 @@ export interface DiscoveredSuspectDto {
   id: string;
   name: string;
   status: SuspectStatus;
+  leadSummaries: string[];
 }
 
 export interface CaseStateDto {

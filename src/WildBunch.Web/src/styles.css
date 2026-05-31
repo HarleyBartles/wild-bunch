@@ -405,6 +405,23 @@ h1 {
   color: var(--muted);
 }
 
+.case-modal__anchor-list,
+.case-modal__lead-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.case-modal__anchor-list {
+  display: grid;
+  gap: 6px;
+}
+
+.case-modal__lead-list {
+  display: grid;
+  gap: 6px;
+}
+
 .case-modal__deductions {
   display: grid;
   gap: 12px;

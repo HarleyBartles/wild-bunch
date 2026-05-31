@@ -1515,7 +1515,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Succeeded("You study the wanted posters, but find nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You study the wanted posters and note a public lead: {clue.Description}.");
+        RecordCaseUpdate($"You study the wanted posters and note a public lead: {DescribeClueLead(clue.Description)}.");
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1547,7 +1547,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You follow the telegraph leads, but find nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You follow the telegraph leads and uncover a public lead: {clue.Description}.");
+        RecordCaseUpdate($"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.");
         return CaseInvestigationResult.Succeeded("You follow the telegraph leads and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1579,7 +1579,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You ask around for local gossip, but hear nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You ask around for local gossip and uncover a public lead: {clue.Description}.");
+        RecordCaseUpdate($"You ask around for local gossip and uncover a public lead: {DescribeClueLead(clue.Description)}.");
         return CaseInvestigationResult.Succeeded("You ask around for local gossip and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1643,7 +1643,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You check the sheriff records, but find nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You check the sheriff records and uncover a public lead: {clue.Description}.");
+        RecordCaseUpdate($"You check the sheriff records and uncover a public lead: {DescribeClueLead(clue.Description)}.");
         return CaseInvestigationResult.Succeeded("You check the sheriff records and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1731,6 +1731,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         _logEntries.Add(new GameLogEntry(kind, message, Clock.Day, Clock.Turn));
     }
+
+    private static string DescribeClueLead(string description)
+        => description.Trim().TrimEnd('.', '!', '?');
 
     private bool IsJourneyModal()
         => Journey is not null;

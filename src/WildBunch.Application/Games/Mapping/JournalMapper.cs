@@ -20,17 +20,21 @@ public static class JournalMapper
                 snapshot.OpeningLead,
                 CaseReadMapper.ToDto(snapshot.KillerReleaseState),
                 snapshot.CaseSummary,
-                snapshot.DiscoveredSuspects.Select(ToDto).ToArray(),
+                snapshot.DiscoveredSuspects.Select(suspect => ToDto(suspect, snapshot.KnownClues)).ToArray(),
                 snapshot.KnownClues.Select(CaseReadMapper.ToDto).ToArray(),
                 snapshot.KnownWarrants.Select(ToDto).ToArray()),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
 
-    private static DiscoveredSuspectDto ToDto(Suspect suspect)
+    private static DiscoveredSuspectDto ToDto(Suspect suspect, IReadOnlyList<Clue> knownClues)
         => new(
             suspect.Id.Value,
             suspect.Name,
-            suspect.Status);
+            suspect.Status,
+            knownClues
+                .Where(clue => clue.LinkedSuspectIds.Any(linkedSuspectId => linkedSuspectId.Equals(suspect.Id)))
+                .Select(CaseReadMapper.ToLeadSummary)
+                .ToArray());
 
     private static WarrantDto ToDto(Warrant warrant)
         => new(

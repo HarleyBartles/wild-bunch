@@ -121,6 +121,16 @@ function createJournal(): JournalDto {
           id: "suspect-1",
           name: "Gus Mercer",
           status: 0,
+          leadSummaries: [
+            "Alias clue: A poster links the alias M.K. Rook to a rider who has a limp in the right leg.",
+            "Whereabouts clue: Local gossip out of Red Mesa says the rider kept to the rail spur after dark.",
+          ],
+        },
+        {
+          id: "suspect-2",
+          name: "Mabel Quinn",
+          status: 1,
+          leadSummaries: [],
         },
       ],
       knownClues: [
@@ -132,7 +142,7 @@ function createJournal(): JournalDto {
           context: "Logged after the notice board search.",
           anchors: {
             subjects: [{ label: "Gus Mercer", alias: "The ranch hand", feature: null, fact: "Seen near the creek" }],
-            locations: [{ label: "North creek", place: "Outside Tumbleweed", route: null }],
+            locations: [{ label: "Red Mesa road", place: "Red Mesa road", route: "Red Mesa road" }],
             times: [{ recency: 1, day: 5, turn: 1 }],
             directions: [{ label: "Eastbound dust line", movement: "Moved off-road", route: "Back trail" }],
           },
@@ -271,10 +281,21 @@ describe("App", () => {
     expect(dialogScope.getByText("Day 5, turn 2")).toBeInTheDocument();
     expect(dialogScope.getByText("Tumbleweed")).toBeInTheDocument();
     expect(dialogScope.getByText("At large")).toBeInTheDocument();
+    expect(dialogScope.getByText(/Alias clue: A poster links the alias M\.K\. Rook/i)).toBeInTheDocument();
+    expect(dialogScope.getByText("No known clues connect this suspect to the opening lead yet.")).toBeInTheDocument();
     expect(dialogScope.getByText("Dead or alive")).toBeInTheDocument();
     expect(dialogScope.getByText("$2,500.50")).toBeInTheDocument();
     expect(screen.queryByText("clue-1")).not.toBeInTheDocument();
     expect(screen.queryByText("suspect-1")).not.toBeInTheDocument();
+    const redMesaRows = dialogScope.getAllByText((_, element) => element?.textContent === "Location: Red Mesa road");
+    expect(redMesaRows.some((element) => element.tagName === "LI")).toBe(true);
+    expect(redMesaRows.filter((element) => element.tagName === "LI")).toHaveLength(1);
+    expect(
+      dialogScope.queryAllByText((_, element) => element?.textContent === "Place: Red Mesa road"),
+    ).toHaveLength(0);
+    expect(
+      dialogScope.queryAllByText((_, element) => element?.textContent === "Route: Red Mesa road"),
+    ).toHaveLength(0);
 
     await user.click(screen.getByRole("button", { name: /close/i }));
 

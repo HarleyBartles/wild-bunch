@@ -91,7 +91,8 @@ public sealed record CaseFileDto(
 public sealed record DiscoveredSuspectDto(
     string Id,
     string Name,
-    SuspectStatus Status);
+    SuspectStatus Status,
+    IReadOnlyList<string> LeadSummaries);
 
 public sealed record ClueDto(
     string Id,

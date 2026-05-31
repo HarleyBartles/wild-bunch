@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import type { ClueDto, DiscoveredSuspectDto, JournalDto } from "../api/types";
+import type { JournalDto } from "../api/types";
 import {
   formatClueKind,
   formatGameStatus,
@@ -35,79 +35,125 @@ function formatClueRecency(recency: number) {
   }
 }
 
-function formatAnchorItems(items: { label: string; alias: string | null; feature: string | null; fact: string | null }[] | { label: string; place: string | null; route: string | null }[] | { label: string; movement: string | null; route: string | null }[] | { recency: number; day: number | null; turn: number | null }[]) {
-  if (items.length === 0) {
-    return "";
-  }
+type AnchorRow = {
+  label: string;
+  value: string;
+};
 
-  return items
-    .map((item) => {
-      if ("recency" in item) {
-        const parts = [formatClueRecency(item.recency)];
-        if (item.day !== null) parts.push(`day ${item.day}`);
-        if (item.turn !== null) parts.push(`turn ${item.turn}`);
-        return parts.join(", ");
-      }
-
-      const parts = [item.label];
-      if ("alias" in item && item.alias) parts.push(`alias ${item.alias}`);
-      if ("feature" in item && item.feature) parts.push(item.feature);
-      if ("fact" in item && item.fact) parts.push(item.fact);
-      if ("place" in item && item.place) parts.push(item.place);
-      if ("route" in item && item.route) parts.push(item.route);
-      if ("movement" in item && item.movement) parts.push(item.movement);
-      return parts.join(" - ");
-    })
-    .join(" | ");
+function cleanText(text: string) {
+  return text.trim().replace(/\s+/g, " ").replace(/[.?!]+$/u, "");
 }
 
-function renderAnchorSummary(
-  label: string,
-  items: { label: string; alias: string | null; feature: string | null; fact: string | null }[] | { label: string; place: string | null; route: string | null }[] | { label: string; movement: string | null; route: string | null }[] | { recency: number; day: number | null; turn: number | null }[],
-) {
-  const summary = formatAnchorItems(items);
+function lowerFirst(text: string) {
+  if (text.length === 0) {
+    return text;
+  }
 
-  if (!summary) {
+  return text[0].toLowerCase() + text.slice(1);
+}
+
+function addUniqueRow(rows: AnchorRow[], label: string, value: string) {
+  const cleanedValue = cleanText(value);
+  if (!cleanedValue) {
+    return;
+  }
+
+  if (rows.some((row) => row.value.toLowerCase() === cleanedValue.toLowerCase())) {
+    return;
+  }
+
+  rows.push({ label, value: cleanedValue });
+}
+
+function formatSubjectRows(subjects: { label: string; alias: string | null; feature: string | null; fact: string | null }[]) {
+  const rows: AnchorRow[] = [];
+
+  for (const subject of subjects) {
+    addUniqueRow(rows, "Subject", subject.label);
+
+    if (subject.alias && subject.alias !== subject.label) {
+      addUniqueRow(rows, "Alias", subject.alias);
+    }
+
+    if (subject.feature) {
+      addUniqueRow(rows, "Feature", lowerFirst(cleanText(subject.feature)));
+    }
+
+    if (subject.fact) {
+      addUniqueRow(rows, "Fact", lowerFirst(cleanText(subject.fact)));
+    }
+  }
+
+  return rows;
+}
+
+function formatLocationRows(locations: { label: string; place: string | null; route: string | null }[]) {
+  const rows: AnchorRow[] = [];
+
+  for (const location of locations) {
+    addUniqueRow(rows, "Location", location.label);
+
+    if (location.place && location.place !== location.label) {
+      addUniqueRow(rows, "Place", location.place);
+    }
+
+    if (location.route) {
+      addUniqueRow(rows, "Route", location.route);
+    }
+  }
+
+  return rows;
+}
+
+function formatTimeRows(times: { recency: number; day: number | null; turn: number | null }[]) {
+  const rows: AnchorRow[] = [];
+
+  for (const time of times) {
+    const parts = [formatClueRecency(time.recency)];
+    if (time.day !== null) {
+      parts.push(`day ${time.day}`);
+    }
+    if (time.turn !== null) {
+      parts.push(`turn ${time.turn}`);
+    }
+
+    addUniqueRow(rows, "When", parts.join(", "));
+  }
+
+  return rows;
+}
+
+function formatDirectionRows(directions: { label: string; movement: string | null; route: string | null }[]) {
+  const rows: AnchorRow[] = [];
+
+  for (const direction of directions) {
+    addUniqueRow(rows, "Direction", direction.label);
+
+    if (direction.movement && direction.movement !== direction.label) {
+      addUniqueRow(rows, "Movement", direction.movement);
+    }
+
+    if (direction.route) {
+      addUniqueRow(rows, "Route", direction.route);
+    }
+  }
+
+  return rows;
+}
+
+function renderAnchorRows(rows: AnchorRow[]) {
+  if (rows.length === 0) {
     return null;
   }
 
   return (
-    <p className="case-modal__anchor-line">
-      <strong>{label}:</strong> {summary}
-    </p>
-  );
-}
-
-function matchesSuspectText(text: string | null | undefined, suspect: DiscoveredSuspectDto) {
-  if (!text) {
-    return false;
-  }
-
-  const normalizedText = text.toLowerCase();
-  const name = suspect.name.toLowerCase();
-
-  return normalizedText.includes(name);
-}
-
-function clueRefsSuspect(clue: ClueDto, suspect: DiscoveredSuspectDto) {
-  if (matchesSuspectText(clue.description, suspect)) {
-    return true;
-  }
-
-  if (matchesSuspectText(clue.sourceLabel, suspect) || matchesSuspectText(clue.context, suspect)) {
-    return true;
-  }
-
-  return (
-    clue.anchors.subjects.some((anchor) =>
-      [anchor.label, anchor.alias, anchor.feature, anchor.fact].some((value) => matchesSuspectText(value, suspect)),
-    ) ||
-    clue.anchors.locations.some((anchor) =>
-      [anchor.label, anchor.place, anchor.route].some((value) => matchesSuspectText(value, suspect)),
-    ) ||
-    clue.anchors.directions.some((anchor) =>
-      [anchor.label, anchor.movement, anchor.route].some((value) => matchesSuspectText(value, suspect)),
-    )
+    <ul className="case-modal__anchor-list">
+      {rows.map((row) => (
+        <li key={`${row.label}:${row.value}`}>
+          <strong>{row.label}:</strong> {row.value}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -257,18 +303,18 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         <div className="stack">
           {caseJournal.caseFile.discoveredSuspects.length > 0 ? (
             caseJournal.caseFile.discoveredSuspects.map((suspect) => {
-              const relatedClues = caseJournal.caseFile.knownClues.filter((clue) => clueRefsSuspect(clue, suspect));
-
               return (
                 <div key={suspect.id} className="compact-item">
                   <strong>{suspect.name}</strong>
                   <p>{formatSuspectStatus(suspect.status)}</p>
-                  {relatedClues.length > 0 ? (
-                    <p className="case-modal__minor">
-                      <strong>Clues:</strong> {relatedClues.map((clue) => clue.description).join(" | ")}
-                    </p>
+                  {suspect.leadSummaries.length > 0 ? (
+                    <ul className="case-modal__lead-list">
+                      {suspect.leadSummaries.map((leadSummary) => (
+                        <li key={leadSummary}>{leadSummary}</li>
+                      ))}
+                    </ul>
                   ) : (
-                    <p className="case-modal__minor">No clue text explicitly names this suspect yet.</p>
+                    <p className="case-modal__minor">No known clues connect this suspect to the opening lead yet.</p>
                   )}
                 </div>
               );
@@ -305,8 +351,8 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
       <Section title="Evidence stack" subtitle="All player-known clues with their safe anchors." wide>
         <div className="stack">
           {caseJournal.caseFile.knownClues.length > 0 ? (
-            caseJournal.caseFile.knownClues.map((clue, index) => (
-              <Card key={`${clue.description}-${index}`} title={clue.description}>
+            caseJournal.caseFile.knownClues.map((clue) => (
+              <Card key={clue.id} title={clue.description}>
                 <p>
                   <strong>Kind:</strong> {formatClueKind(clue.kind)}
                 </p>
@@ -316,10 +362,10 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                     {clue.context ? ` - ${clue.context}` : ""}
                   </p>
                 ) : null}
-                {renderAnchorSummary("Subjects", clue.anchors.subjects)}
-                {renderAnchorSummary("Locations", clue.anchors.locations)}
-                {renderAnchorSummary("Times", clue.anchors.times)}
-                {renderAnchorSummary("Directions", clue.anchors.directions)}
+                {renderAnchorRows(formatSubjectRows(clue.anchors.subjects))}
+                {renderAnchorRows(formatLocationRows(clue.anchors.locations))}
+                {renderAnchorRows(formatTimeRows(clue.anchors.times))}
+                {renderAnchorRows(formatDirectionRows(clue.anchors.directions))}
               </Card>
             ))
           ) : (

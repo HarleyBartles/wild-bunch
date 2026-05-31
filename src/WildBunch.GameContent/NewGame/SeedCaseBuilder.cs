@@ -141,7 +141,7 @@ internal static class SeedCaseBuilder
                 GameSetupDeterministicLabels.CaseKnownClues,
                 2,
                 ClueKind.IdentityFact,
-                $"A witness tied the rider to {culpritFeature.Description}.",
+                $"A witness tied the rider to {DescribePersonWithFeature(culpritFeature, "a man")}.",
                 TrueCulpritId,
                 InvestigationTargetKind.TrueCulprit,
                 "telegraph ledger",
@@ -199,7 +199,7 @@ internal static class SeedCaseBuilder
                 GameSetupDeterministicLabels.CasePublicClues,
                 1,
                 ClueKind.Alias,
-                $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}",
+                $"A poster links the alias {DescribePrimaryAlias(suspects[0])} to {DescribePersonWithFeature(features[0].PrimaryFeature, "a rider")}.",
                 suspects[0].Id,
                 InvestigationTargetKind.GangMember,
                 "notice board",
@@ -215,7 +215,7 @@ internal static class SeedCaseBuilder
                 GameSetupDeterministicLabels.CasePublicClues,
                 2,
                 ClueKind.Record,
-                $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}",
+                $"A public notice describes {DescribeUnnamedRider(features[1].PrimaryFeature)}.",
                 suspects[1].Id,
                 InvestigationTargetKind.Suspected,
                 "sheriff record",
@@ -231,7 +231,7 @@ internal static class SeedCaseBuilder
                 GameSetupDeterministicLabels.CasePublicClues,
                 3,
                 ClueKind.IdentityFact,
-                $"A telegraph clerk filed {DescribePrimaryAlias(suspects[2])} alongside a note about {features[2].PrimaryFeature.Description.ToLowerInvariant()}.",
+                $"A telegraph clerk filed the alias {DescribePrimaryAlias(suspects[2])} alongside a note about {DescribePersonWithFeature(features[2].PrimaryFeature, "a rider")}.",
                 suspects[2].Id,
                 InvestigationTargetKind.Suspected,
                 "telegraph clerk",
@@ -276,6 +276,24 @@ internal static class SeedCaseBuilder
         => suspect.Profile.Aliases.Count > 0
             ? suspect.Profile.Aliases[0].Name
             : suspect.Name;
+
+    private static string DescribeUnnamedRider(CaseSuspectFeatureProfile feature)
+        => $"an unnamed rider who {DescribeFeatureClause(feature.Description)}";
+
+    private static string DescribePersonWithFeature(CaseSuspectFeatureProfile feature, string person)
+        => $"{person} who {DescribeFeatureClause(feature.Description)}";
+
+    private static string DescribeFeatureClause(string featureDescription)
+    {
+        var trimmed = featureDescription.Trim().TrimEnd('.', '!', '?');
+
+        if (trimmed.Length == 0)
+        {
+            return "is described by an unrecorded feature";
+        }
+
+        return char.ToLowerInvariant(trimmed[0]) + trimmed[1..];
+    }
 
     private static IReadOnlyList<SuspectTurfAssignment> SelectSuspectTurfAssignments(
         GameSetupDeterministicSource source,
