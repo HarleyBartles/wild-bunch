@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import type { TravelDifficulty } from "../api/types";
-import type { GameSetupLoadoutProfile, GameSetupSeedState } from "../ui/gameSetupSeedCodec";
+import type { GameSetupJourneyRandomnessMode, GameSetupLoadoutProfile, GameSetupSeedState } from "../ui/gameSetupSeedCodec";
 import { SeedCodeEditor } from "./SeedCodeEditor";
 
 interface StartGameOptionsFormProps {
@@ -14,6 +14,7 @@ interface StartGameOptionsFormProps {
   onDifficultyChange: (difficulty: TravelDifficulty) => void;
   onStartWithHorseChange: (value: boolean) => void;
   onLoadoutProfileChange: (profile: GameSetupLoadoutProfile) => void;
+  onJourneyRandomnessModeChange: (mode: GameSetupJourneyRandomnessMode) => void;
 }
 
 export function StartGameOptionsForm({
@@ -27,6 +28,7 @@ export function StartGameOptionsForm({
   onDifficultyChange,
   onStartWithHorseChange,
   onLoadoutProfileChange,
+  onJourneyRandomnessModeChange,
 }: StartGameOptionsFormProps) {
   return (
     <DraftGrid>
@@ -79,6 +81,18 @@ export function StartGameOptionsForm({
             <option value={2}>Stocked</option>
           </Select>
         </Field>
+
+        <Field>
+          <Label htmlFor="journey-randomness">Journey randomness</Label>
+          <Select
+            id="journey-randomness"
+            value={seedState.journeyRandomnessMode}
+            onChange={(event) => onJourneyRandomnessModeChange(Number(event.target.value) as GameSetupJourneyRandomnessMode)}
+          >
+            <option value={0}>Normal unpredictable trail events</option>
+            <option value={1}>Deterministic no-salt trail events</option>
+          </Select>
+        </Field>
       </OptionsRow>
     </DraftGrid>
   );
@@ -126,7 +140,7 @@ const Select = styled.select`
 const OptionsRow = styled.div`
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 `;
 
 const ToggleRow = styled.div`

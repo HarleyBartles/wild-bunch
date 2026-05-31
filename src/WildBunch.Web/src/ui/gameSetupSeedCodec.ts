@@ -1,11 +1,13 @@
 import type { TravelDifficulty } from "../api/types";
 
 export type GameSetupLoadoutProfile = 0 | 1 | 2;
+export type GameSetupJourneyRandomnessMode = 0 | 1;
 
 export interface GameSetupSeedState {
   difficulty: TravelDifficulty;
   startWithHorse: boolean;
   loadoutProfile: GameSetupLoadoutProfile;
+  journeyRandomnessMode: GameSetupJourneyRandomnessMode;
   entropy: bigint;
 }
 
@@ -24,6 +26,7 @@ export function createCanonicalSeedState(): GameSetupSeedState {
     difficulty: 0,
     startWithHorse: true,
     loadoutProfile: 0,
+    journeyRandomnessMode: 0,
     entropy: 0n,
   };
 }
@@ -38,6 +41,13 @@ export function withStartWithHorse(seed: GameSetupSeedState, startWithHorse: boo
 
 export function withLoadoutProfile(seed: GameSetupSeedState, loadoutProfile: GameSetupLoadoutProfile): GameSetupSeedState {
   return { ...seed, loadoutProfile };
+}
+
+export function withJourneyRandomnessMode(
+  seed: GameSetupSeedState,
+  journeyRandomnessMode: GameSetupJourneyRandomnessMode,
+): GameSetupSeedState {
+  return { ...seed, journeyRandomnessMode };
 }
 
 export function withRandomEntropy(seed: GameSetupSeedState): GameSetupSeedState {
@@ -92,6 +102,7 @@ export async function decodeGameSetupSeed(seedCode: string): Promise<DecodedGame
   }
 
   const startWithHorse = (optionsBits & 0x01) !== 0;
+  const journeyRandomnessMode = ((optionsBits >> 3) & 0x01) as GameSetupJourneyRandomnessMode;
   const expectedChecksum = await computeChecksum(difficulty, parts[2].toUpperCase(), parts[3].toUpperCase());
   if (checksum !== expectedChecksum) {
     throw new Error("Seed checksum does not match.");
@@ -101,13 +112,18 @@ export async function decodeGameSetupSeed(seedCode: string): Promise<DecodedGame
     difficulty,
     startWithHorse,
     loadoutProfile,
+    journeyRandomnessMode,
     entropy,
   };
 
   return {
     ...seedState,
     seedCode: await encodeGameSetupSeed(seedState),
-    canonical: seedState.entropy === 0n && seedState.startWithHorse === true && seedState.loadoutProfile === 0,
+    canonical:
+      seedState.entropy === 0n &&
+      seedState.startWithHorse === true &&
+      seedState.loadoutProfile === 0 &&
+      seedState.journeyRandomnessMode === 0,
   };
 }
 
@@ -146,12 +162,19 @@ function packOptions(seed: GameSetupSeedState) {
     throw new Error("Unsupported loadout profile.");
   }
 
+  if (seed.journeyRandomnessMode < 0 || seed.journeyRandomnessMode > 1) {
+    throw new Error("Unsupported journey randomness mode.");
+  }
+
   let bits = 0;
   if (seed.startWithHorse) {
     bits |= 1;
   }
 
   bits |= (seed.loadoutProfile & 0x03) << 1;
+  if (seed.journeyRandomnessMode === 1) {
+    bits |= 1 << 3;
+  }
   return bits;
 }
 

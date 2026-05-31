@@ -5,6 +5,7 @@ import {
   decodeGameSetupSeed,
   encodeGameSetupSeed,
   withDifficulty,
+  withJourneyRandomnessMode,
   withLoadoutProfile,
   withRandomEntropy,
   withStartWithHorse,
@@ -28,6 +29,7 @@ export interface UseStartGameSeedResult {
   setDifficulty: (difficulty: TravelDifficulty) => void;
   setStartWithHorse: (value: boolean) => void;
   setLoadoutProfile: (profile: GameSetupLoadoutProfile) => void;
+  setJourneyRandomnessMode: (mode: 0 | 1) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
@@ -95,12 +97,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
       const decoded = await decodeGameSetupSeed(seedDraft);
       setDecodeError(null);
       setSeedDirty(false);
-      setSeedState({
-        difficulty: decoded.difficulty,
-        startWithHorse: decoded.startWithHorse,
-        loadoutProfile: decoded.loadoutProfile,
-        entropy: decoded.entropy,
-      });
+      setSeedState(decoded);
     } catch (error) {
       setDecodeError(getErrorMessage(error));
     }
@@ -130,6 +127,12 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedState((current) => withLoadoutProfile(current, profile));
   }
 
+  function handleJourneyRandomnessModeChange(mode: 0 | 1) {
+    setDecodeError(null);
+    setSeedDirty(false);
+    setSeedState((current) => withJourneyRandomnessMode(current, mode));
+  }
+
   function randomizeSeed() {
     setDecodeError(null);
     setSeedDirty(false);
@@ -147,6 +150,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setDifficulty: handleDifficultyChange,
     setStartWithHorse: handleStartWithHorseChange,
     setLoadoutProfile: handleLoadoutProfileChange,
+    setJourneyRandomnessMode: handleJourneyRandomnessModeChange,
     applySeed,
     randomizeSeed,
   };

@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { formatLoadoutProfile, formatTravelDifficulty } from "../ui/formatters";
+import { formatJourneyRandomnessMode, formatLoadoutProfile, formatTravelDifficulty } from "../ui/formatters";
 import type { GameSetupSeedState } from "../ui/gameSetupSeedCodec";
 
 interface SetupSeedSummaryProps {
@@ -22,6 +22,10 @@ export function SetupSeedSummary({ seedState }: SetupSeedSummaryProps) {
         <dd>{formatLoadoutProfile(seedState.loadoutProfile)}</dd>
       </SummaryItem>
       <SummaryItem>
+        <dt>Journey randomness</dt>
+        <dd>{formatJourneyRandomnessMode(seedState.journeyRandomnessMode)}</dd>
+      </SummaryItem>
+      <SummaryItem>
         <dt>Entropy</dt>
         <dd>{seedState.entropy.toString(16).toUpperCase().padStart(12, "0")}</dd>
       </SummaryItem>
@@ -32,7 +36,7 @@ export function SetupSeedSummary({ seedState }: SetupSeedSummaryProps) {
 const SummaryCard = styled.dl`
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   margin: 0;
   padding: 16px;
   border-radius: 20px;

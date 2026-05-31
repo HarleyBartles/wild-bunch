@@ -85,6 +85,7 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
     setDifficulty,
     setStartWithHorse,
     setLoadoutProfile,
+    setJourneyRandomnessMode,
     applySeed,
     randomizeSeed,
   } = useStartGameSeed({ session, resetToken });
@@ -125,6 +126,7 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
           onDifficultyChange={setDifficulty}
           onStartWithHorseChange={setStartWithHorse}
           onLoadoutProfileChange={setLoadoutProfile}
+          onJourneyRandomnessModeChange={setJourneyRandomnessMode}
         />
 
         <SetupSeedSummary seedState={seedState} />

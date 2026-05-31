@@ -196,6 +196,17 @@ export function formatLoadoutProfile(profile: number) {
   }
 }
 
+export function formatJourneyRandomnessMode(mode: number) {
+  switch (mode) {
+    case 0:
+      return "Runtime-salted";
+    case 1:
+      return "Deterministic no-salt";
+    default:
+      return `Journey randomness ${mode}`;
+  }
+}
+
 export function formatStoreVendorType(vendorType: number) {
   switch (vendorType) {
     case 0:

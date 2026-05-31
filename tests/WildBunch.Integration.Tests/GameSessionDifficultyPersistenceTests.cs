@@ -7,6 +7,7 @@ using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using System.Text.Json.Nodes;
 
 namespace WildBunch.Integration.Tests;
 
@@ -26,6 +27,19 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Equal(TravelDifficulty.Easy, reloaded!.TravelDifficulty);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Capacity);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+    }
+
+    [Fact]
+    public void MissingTravelRandomnessInLegacySessionJsonFallsBackToRuntimeSalted()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateEasySession()))!.AsObject();
+        legacySnapshot.Remove("travelRandomness");
+
+        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
+
+        Assert.Equal(TravelRandomnessMode.RuntimeSalted, reloaded.TravelRandomness.Mode);
+        Assert.False(string.IsNullOrWhiteSpace(reloaded.TravelRandomness.Salt));
     }
 
     private static GameSession CreateEasySession()

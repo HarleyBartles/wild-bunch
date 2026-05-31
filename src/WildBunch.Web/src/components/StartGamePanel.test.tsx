@@ -9,9 +9,10 @@ import {
   decodeGameSetupSeed,
   encodeGameSetupSeed,
   withDifficulty,
+  withJourneyRandomnessMode,
   withLoadoutProfile,
-  withStartWithHorse,
   withRandomEntropy,
+  withStartWithHorse,
 } from "../ui/gameSetupSeedCodec";
 
 vi.mock("../ui/gameSetupSeedCodec", async () => {
@@ -133,7 +134,7 @@ describe("StartGamePanel", () => {
     renderPanel();
 
     const seedState = withLoadoutProfile(
-      withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false),
+      withJourneyRandomnessMode(withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false), 1),
       2,
     );
     const seedCode = await encodeGameSetupSeed(seedState);
@@ -143,6 +144,7 @@ describe("StartGamePanel", () => {
     const difficulty = screen.getByLabelText(/difficulty/i);
     const horse = screen.getByLabelText(/start with horse/i);
     const loadout = screen.getByLabelText(/loadout profile/i);
+    const journeyRandomness = screen.getByLabelText(/journey randomness/i);
     const applyButton = screen.getByRole("button", { name: /apply seed/i });
 
     await waitFor(() => {
@@ -156,6 +158,7 @@ describe("StartGamePanel", () => {
     expect(difficulty).toHaveValue("0");
     expect(horse).toBeChecked();
     expect(loadout).toHaveValue("0");
+    expect(journeyRandomness).toHaveValue("0");
     expect(screen.getByText(/seed changes are staged until you apply them/i)).toBeInTheDocument();
 
     await user.click(applyButton);
@@ -164,6 +167,7 @@ describe("StartGamePanel", () => {
       expect(difficulty).toHaveValue("2");
       expect(horse).not.toBeChecked();
       expect(loadout).toHaveValue("2");
+      expect(journeyRandomness).toHaveValue("1");
       expect((seedInput as HTMLInputElement).value).toBe(seedCode);
     });
   });
@@ -173,7 +177,10 @@ describe("StartGamePanel", () => {
     const { onStartGame } = renderPanel();
 
     const dirtySeed = await encodeGameSetupSeed(
-      withLoadoutProfile(withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false), 2),
+      withLoadoutProfile(
+        withJourneyRandomnessMode(withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false), 1),
+        2,
+      ),
     );
     const canonicalSeedCode = await encodeGameSetupSeed(createCanonicalSeedState());
 
@@ -208,12 +215,14 @@ describe("StartGamePanel", () => {
     await user.selectOptions(screen.getByLabelText(/difficulty/i), "2");
     await user.click(screen.getByLabelText(/start with horse/i));
     await user.selectOptions(screen.getByLabelText(/loadout profile/i), "2");
+    await user.selectOptions(screen.getByLabelText(/journey randomness/i), "1");
 
     await waitFor(() => {
       expect((seedInput as HTMLInputElement).value).not.toBe(initialCode);
       expect(screen.getByLabelText(/difficulty/i)).toHaveValue("2");
       expect(screen.getByLabelText(/start with horse/i)).not.toBeChecked();
       expect(screen.getByLabelText(/loadout profile/i)).toHaveValue("2");
+      expect(screen.getByLabelText(/journey randomness/i)).toHaveValue("1");
     });
   });
 
@@ -225,6 +234,7 @@ describe("StartGamePanel", () => {
     await user.selectOptions(screen.getByLabelText(/difficulty/i), "1");
     await user.click(screen.getByLabelText(/start with horse/i));
     await user.selectOptions(screen.getByLabelText(/loadout profile/i), "1");
+    await user.selectOptions(screen.getByLabelText(/journey randomness/i), "1");
 
     const beforeRandomize = (seedInput as HTMLInputElement).value;
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
@@ -235,6 +245,7 @@ describe("StartGamePanel", () => {
       expect(screen.getByLabelText(/difficulty/i)).toHaveValue("1");
       expect(screen.getByLabelText(/start with horse/i)).not.toBeChecked();
       expect(screen.getByLabelText(/loadout profile/i)).toHaveValue("1");
+      expect(screen.getByLabelText(/journey randomness/i)).toHaveValue("1");
     });
 
     await user.type(screen.getByLabelText(/player name/i), "Ranger Vale");
@@ -251,6 +262,7 @@ describe("StartGamePanel", () => {
     expect(decoded.difficulty).toBe(1);
     expect(decoded.startWithHorse).toBe(false);
     expect(decoded.loadoutProfile).toBe(1);
+    expect(decoded.journeyRandomnessMode).toBe(1);
     expect(decoded.entropy).toBe(1234n);
   });
 });

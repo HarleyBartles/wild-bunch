@@ -42,7 +42,7 @@ public sealed class GameSessionJsonSerializer
         Guid Id,
         GameStatus Status,
         TravelDifficulty TravelDifficulty,
-        TravelRandomnessSnapshot TravelRandomness,
+        TravelRandomnessSnapshot? TravelRandomness,
         PlayerSnapshot Player,
         WorldSnapshot World,
         CaseFileSnapshot CaseFile,
@@ -85,7 +85,7 @@ public sealed class GameSessionJsonSerializer
                 Status,
                 journey,
                 TravelDifficulty,
-                TravelRandomness.ToDomain());
+                TravelRandomness?.ToDomain() ?? TravelRandomnessState.CreateRuntimeSalted());
 
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());

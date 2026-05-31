@@ -3,16 +3,17 @@ import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
   encodeGameSetupSeed,
-  withRandomEntropy,
   withDifficulty,
+  withJourneyRandomnessMode,
   withLoadoutProfile,
+  withRandomEntropy,
   withStartWithHorse,
 } from "./gameSetupSeedCodec";
 
 describe("gameSetupSeedCodec", () => {
   it("round-trips the encoded seed and decodes the v1 options", async () => {
     const seedState = withLoadoutProfile(
-      withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false),
+      withJourneyRandomnessMode(withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false), 1),
       2,
     );
 
@@ -23,6 +24,7 @@ describe("gameSetupSeedCodec", () => {
     expect(decoded.difficulty).toBe(2);
     expect(decoded.startWithHorse).toBe(false);
     expect(decoded.loadoutProfile).toBe(2);
+    expect(decoded.journeyRandomnessMode).toBe(1);
     expect(decoded.entropy).toBe(seedState.entropy);
     expect(decoded.canonical).toBe(false);
   });
@@ -32,15 +34,18 @@ describe("gameSetupSeedCodec", () => {
     const hardSeed = withDifficulty(canonical, 2);
     const noHorseSeed = withStartWithHorse(canonical, false);
     const stockedSeed = withLoadoutProfile(canonical, 2);
+    const deterministicSeed = withJourneyRandomnessMode(canonical, 1);
 
     const canonicalCode = await encodeGameSetupSeed(canonical);
     const hardCode = await encodeGameSetupSeed(hardSeed);
     const noHorseCode = await encodeGameSetupSeed(noHorseSeed);
     const stockedCode = await encodeGameSetupSeed(stockedSeed);
+    const deterministicCode = await encodeGameSetupSeed(deterministicSeed);
 
     expect(canonicalCode).not.toBe(hardCode);
     expect(canonicalCode).not.toBe(noHorseCode);
     expect(canonicalCode).not.toBe(stockedCode);
+    expect(canonicalCode).not.toBe(deterministicCode);
   });
 
   it("round-trips canonical entropy boundaries and a representative middle value", async () => {
@@ -51,6 +56,7 @@ describe("gameSetupSeedCodec", () => {
 
       expect(decoded.entropy).toBe(entropy);
       expect(decoded.seedCode).toBe(seedCode);
+      expect(decoded.journeyRandomnessMode).toBe(0);
     }
   });
 
