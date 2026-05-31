@@ -3,6 +3,7 @@
 ## Project
 - Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - This repo is mainline-only.
+- Docs index: `docs/INDEX.md`
 
 ## Mainline-only Rule
 - Final accepted work must be on `main`.
@@ -18,6 +19,7 @@
 ## Validation
 - Run `dotnet build`.
 - Run `dotnet test`.
+- Run `dotnet tool restore` before EF validation commands when the repo-local tool manifest is used.
 - Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api` when persistence may be affected, or as standing validation unless clearly irrelevant.
 - Report warnings separately from failures.
 
