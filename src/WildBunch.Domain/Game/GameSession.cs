@@ -343,40 +343,32 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Journey!.SetCanteenCharges(refilledCanteen.Charges);
     }
 
-    private TravelJourneyStepResult AdvanceJourneyDayDeterministic()
+    private TravelResourceSnapshot CaptureTravelResources()
+        => TravelResourceSnapshotFactory.Capture(Player, PursuitState);
+
+    private void AppendTravelDiaryDay(
+        TravelJourneySnapshot journeySnapshot,
+        TravelDiaryBaselineState startingState,
+        JourneyTrailEventState? trailEvent = null,
+        JourneyEncounterState? pendingEncounter = null,
+        TravelDiaryEncounterResolutionState? encounterResolution = null,
+        IReadOnlyList<string>? entries = null)
     {
-        if (Journey is null)
-        {
-            return TravelJourneyStepResult.Failed("No active journey is underway.");
-        }
+        AppendTravelDiaryDay(TravelDiaryDayFactory.Create(
+            journeySnapshot,
+            startingState,
+            CaptureTravelResources(),
+            trailEvent: trailEvent,
+            pendingEncounter: pendingEncounter,
+            encounterResolution: encounterResolution,
+            entries: entries));
+    }
 
-        if (Journey.PendingEncounter is not null)
-        {
-            var encounterMessage = Journey.PendingEncounter.Message;
-            AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
-            return new TravelJourneyStepResult(
-                false,
-                Journey.Status,
-                "Resolve the pending encounter before you continue on the trail.",
-                encounterMessage,
-                0,
-                Journey.ToSnapshot(TravelRules));
-        }
-
-        if (Journey.Status != JourneyStatus.Active)
-        {
-            return new TravelJourneyStepResult(
-                false,
-                Journey.Status,
-                "The journey is not active.",
-                "The journey is not active.",
-                0,
-                Journey.ToSnapshot(TravelRules));
-        }
-
-        var startingResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
+    private TravelDayAdvanceState PrepareTravelDayAdvance()
+    {
+        var startingResources = CaptureTravelResources();
         var startingState = new TravelDiaryBaselineState(
-            Journey.TravelMode,
+            Journey!.TravelMode,
             Journey.RemainingRideDayDistance,
             Journey.RemainingDays,
             Journey.DelayDays,
@@ -440,9 +432,141 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
 
         var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
-        var plan = TravelDayPlanGenerator.Generate(generationContext);
-        Journey.SetCurrentDayPlan(plan);
+        Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
 
+        return new TravelDayAdvanceState(startingState, horseLostMessage, progress);
+    }
+
+    private TravelJourneyStepResult HandleInterruptedTravelDay(
+        TravelDiaryBaselineState startingState,
+        string horseLostMessage,
+        JourneyEncounterState pendingEncounter,
+        JourneyTrailEventState? lastTrailEvent,
+        List<string> dayEntries)
+    {
+        var encounterMessage = PrependHorseLossMessage(horseLostMessage, pendingEncounter.Message);
+        dayEntries.Add(encounterMessage);
+        dayEntries.Add("I could run, fight, or bribe my way through.");
+        AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
+
+        var interruptedSnapshot = Journey!.ToSnapshot(TravelRules);
+        AppendTravelDiaryDay(
+            interruptedSnapshot,
+            startingState,
+            pendingEncounter: pendingEncounter,
+            entries: dayEntries);
+
+        return new TravelJourneyStepResult(
+            false,
+            Journey.Status,
+            horseLostMessage.Length == 0
+                ? "Your journey is interrupted by a trail encounter."
+                : $"Your journey is interrupted by a trail encounter. {horseLostMessage}",
+            encounterMessage,
+            0,
+            interruptedSnapshot,
+            lastTrailEvent);
+    }
+
+    private TravelJourneyStepResult HandleCompletedTravelDay(
+        TravelDiaryBaselineState startingState,
+        string horseLostMessage,
+        JourneyTrailEventState? lastTrailEvent,
+        List<string> dayEntries,
+        JourneyProgress progress)
+    {
+        var destinationTownName = Journey!.Preview.DestinationTownName;
+        var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
+        var completedSnapshot = CompleteJourneyAtDestination();
+        var completionMessage = horseLostMessage.Length == 0
+            ? $"You reach {destinationTownName}."
+            : $"{horseLostMessage} You reach {destinationTownName}.";
+        AddLogEntry(
+            GameLogEntryKind.Travel,
+            horseLostMessage.Length == 0
+                ? $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s)."
+                : $"{horseLostMessage} You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
+
+        AppendTravelDiaryDay(
+            completedSnapshot,
+            startingState,
+            trailEvent: lastTrailEvent,
+            entries: dayEntries.Count == 0 ? null : dayEntries);
+        Journey!.SetCurrentDayPlan(null);
+
+        return new TravelJourneyStepResult(
+            true,
+            JourneyStatus.Completed,
+            completionMessage,
+            horseLostMessage.Length == 0
+                ? $"You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s)."
+                : $"{horseLostMessage} You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s).",
+            heatIncrease,
+            completedSnapshot,
+            lastTrailEvent);
+    }
+
+    private TravelJourneyStepResult HandleOngoingTravelDay(
+        TravelDiaryBaselineState startingState,
+        string horseLostMessage,
+        JourneyTrailEventState? lastTrailEvent,
+        List<string> dayEntries,
+        TravelJourneySnapshot journeySnapshot)
+    {
+        var ongoingMessage = horseLostMessage.Length == 0
+            ? $"One trail day passes. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey!.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}."
+            : $"{horseLostMessage} One trail day passes on foot. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey!.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}.";
+        AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
+
+        AppendTravelDiaryDay(
+            journeySnapshot,
+            startingState,
+            trailEvent: lastTrailEvent,
+            entries: dayEntries.Count == 0 ? null : dayEntries);
+        Journey!.SetCurrentDayPlan(null);
+
+        return new TravelJourneyStepResult(
+            true,
+            JourneyStatus.Active,
+            ongoingMessage,
+            ongoingMessage,
+            Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
+            journeySnapshot,
+            lastTrailEvent);
+    }
+
+    private TravelJourneyStepResult AdvanceJourneyDayDeterministic()
+    {
+        if (Journey is null)
+        {
+            return TravelJourneyStepResult.Failed("No active journey is underway.");
+        }
+
+        if (Journey.PendingEncounter is not null)
+        {
+            var encounterMessage = Journey.PendingEncounter.Message;
+            AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
+            return new TravelJourneyStepResult(
+                false,
+                Journey.Status,
+                "Resolve the pending encounter before you continue on the trail.",
+                encounterMessage,
+                0,
+                Journey.ToSnapshot(TravelRules));
+        }
+
+        if (Journey.Status != JourneyStatus.Active)
+        {
+            return new TravelJourneyStepResult(
+                false,
+                Journey.Status,
+                "The journey is not active.",
+                "The journey is not active.",
+                0,
+                Journey.ToSnapshot(TravelRules));
+        }
+
+        var travelDay = PrepareTravelDayAdvance();
         var dayEntries = new List<string>();
         JourneyTrailEventState? lastTrailEvent = null;
 
@@ -458,37 +582,19 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             {
                 var pendingEncounter = currentEncounter.PendingEncounter!;
                 Journey.MarkInterrupted(pendingEncounter);
-                var encounterMessage = PrependHorseLossMessage(horseLostMessage, pendingEncounter.Message);
-                dayEntries.Add(encounterMessage);
-                dayEntries.Add("I could run, fight, or bribe my way through.");
-                AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
-
-                var interruptedSnapshot = Journey.ToSnapshot(TravelRules);
-                var currentResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
-                AppendTravelDiaryDay(TravelDiaryDayFactory.Create(
-                    interruptedSnapshot,
-                    startingState,
-                    currentResources,
-                    pendingEncounter: pendingEncounter,
-                    entries: dayEntries));
-
-                return new TravelJourneyStepResult(
-                    false,
-                    JourneyStatus.Interrupted,
-                    horseLostMessage.Length == 0
-                        ? "Your journey is interrupted by a trail encounter."
-                        : $"Your journey is interrupted by a trail encounter. {horseLostMessage}",
-                    encounterMessage,
-                    0,
-                    interruptedSnapshot,
-                    lastTrailEvent);
+                return HandleInterruptedTravelDay(
+                    travelDay.StartingState,
+                    travelDay.HorseLostMessage,
+                    pendingEncounter,
+                    lastTrailEvent,
+                    dayEntries);
             }
 
             if (currentEncounter.TrailEvent is not null)
             {
                 var trailEventApplication = ApplyTrailEvent(currentEncounter.TrailEvent);
                 var trailEventMessage = PrependHorseLossMessage(
-                    CombineHorseLossMessage(horseLostMessage, trailEventApplication.HorseLossMessage),
+                    CombineHorseLossMessage(travelDay.HorseLostMessage, trailEventApplication.HorseLossMessage),
                     currentEncounter.Message);
                 dayEntries.Add(trailEventMessage);
                 AddLogEntry(GameLogEntryKind.Travel, trailEventMessage);
@@ -504,63 +610,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var journeySnapshot = Journey.ToSnapshot(TravelRules);
-        var diaryEntries = dayEntries.Count == 0 ? null : dayEntries;
-
-        if (progress.Completed)
-        {
-            var destinationTownName = Journey.Preview.DestinationTownName;
-            var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
-            var completedSnapshot = CompleteJourneyAtDestination();
-            var completionMessage = horseLostMessage.Length == 0
-                ? $"You reach {destinationTownName}."
-                : $"{horseLostMessage} You reach {destinationTownName}.";
-            AddLogEntry(
-                GameLogEntryKind.Travel,
-                horseLostMessage.Length == 0
-                    ? $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s)."
-                    : $"{horseLostMessage} You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
-            var currentResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
-            AppendTravelDiaryDay(TravelDiaryDayFactory.Create(
-                completedSnapshot,
-                startingState,
-                currentResources,
-                trailEvent: lastTrailEvent,
-                entries: diaryEntries));
-            Journey.SetCurrentDayPlan(null);
-
-            return new TravelJourneyStepResult(
-                true,
-                JourneyStatus.Completed,
-                completionMessage,
-                horseLostMessage.Length == 0
-                    ? $"You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s)."
-                    : $"{horseLostMessage} You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s).",
-                heatIncrease,
-                completedSnapshot,
-                lastTrailEvent);
-        }
-
-        var ongoingMessage = horseLostMessage.Length == 0
-            ? $"One trail day passes. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}."
-            : $"{horseLostMessage} One trail day passes on foot. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}.";
-        AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
-        var ongoingResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
-        AppendTravelDiaryDay(TravelDiaryDayFactory.Create(
-            journeySnapshot,
-            startingState,
-            ongoingResources,
-            trailEvent: lastTrailEvent,
-            entries: diaryEntries));
-        Journey.SetCurrentDayPlan(null);
-
-        return new TravelJourneyStepResult(
-            true,
-            JourneyStatus.Active,
-            ongoingMessage,
-            ongoingMessage,
-            Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
-            journeySnapshot,
-            lastTrailEvent);
+        return travelDay.Progress.Completed
+            ? HandleCompletedTravelDay(travelDay.StartingState, travelDay.HorseLostMessage, lastTrailEvent, dayEntries, travelDay.Progress)
+            : HandleOngoingTravelDay(travelDay.StartingState, travelDay.HorseLostMessage, lastTrailEvent, dayEntries, journeySnapshot);
     }
 
     public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
@@ -1283,6 +1335,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     private sealed record TrailEventApplicationResult(string HorseLossMessage);
+
+    private sealed record TravelDayAdvanceState(
+        TravelDiaryBaselineState StartingState,
+        string HorseLostMessage,
+        JourneyProgress Progress);
 
     public JourneyEncounterResolutionResult ResolveJourneyEncounter(string choiceId)
         => ResolveJourneyEncounter(choiceId, bulletSpend: null, bribeAmount: null, forcedRoll: null);
