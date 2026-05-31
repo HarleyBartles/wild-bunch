@@ -1,8 +1,10 @@
+import { useCallback, useState } from "react";
 import { buyStoreItem } from "./api/wildBunchApi";
 import { AvailableActionKind, type TownStoreOffersDto } from "./api/types";
 import { StartGamePanel } from "./components/StartGamePanel";
 import { TravelRoutesPanel } from "./components/TravelRoutesPanel";
-import { CaseFilePanel } from "./components/CaseFilePanel";
+import { CockpitOverlayFrame } from "./components/CockpitOverlayFrame";
+import { CaseFileSurface } from "./components/CaseFileSurface";
 import { FieldReportPanel } from "./components/FieldReportPanel";
 import { LogPanel } from "./components/LogPanel";
 import { formatActionKind, formatGameStatus } from "./ui/formatters";
@@ -41,6 +43,9 @@ export default function App() {
     setNotice,
     setError,
   } = useCurrentGameSession();
+  const [isCaseFileOpen, setIsCaseFileOpen] = useState(false);
+  const openCaseFile = useCallback(() => setIsCaseFileOpen(true), []);
+  const closeCaseFile = useCallback(() => setIsCaseFileOpen(false), []);
 
   const { storeOffers, loading: storeOffersLoading, refreshStoreOffers } = useTownStoreOffers(
     gameId,
@@ -112,7 +117,22 @@ export default function App() {
           <div className="panel-head">
             <h2>{gameId ? "Current session" : "Start a new hunt"}</h2>
             <div className="panel-actions">
-              <button type="button" className="button button--ghost" onClick={handleReset}>
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={openCaseFile}
+                disabled={!journal && !loading}
+              >
+                Open case file
+              </button>
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => {
+                  setIsCaseFileOpen(false);
+                  handleReset();
+                }}
+              >
                 Reset
               </button>
             </div>
@@ -165,7 +185,7 @@ export default function App() {
                       className="button"
                       onClick={handleReadWantedPosters}
                       disabled={!gameId || loading || !canReadWantedPosters}
-                      >
+                    >
                       {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
                     </button>
                   ) : action.kind === AvailableActionKind.InspectNoticeBoard ? (
@@ -215,10 +235,18 @@ export default function App() {
 
         <TravelRoutesPanel gameId={gameId ?? session?.id ?? null} session={session} busy={loading} onTravel={handleTravel} />
 
-        <CaseFilePanel journal={journal} />
-
         <LogPanel journal={journal} sessionLogEntries={session?.logEntries ?? []} />
       </main>
+
+      <CockpitOverlayFrame
+        open={isCaseFileOpen}
+        eyebrow="Case file"
+        title="Investigation board"
+        description="A read-only summary of player-known clues, suspects, and warrants."
+        onClose={closeCaseFile}
+      >
+        <CaseFileSurface journal={journal} loading={loading} error={error} />
+      </CockpitOverlayFrame>
     </div>
   );
 }

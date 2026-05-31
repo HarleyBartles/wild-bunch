@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { AvailableActionKind, JourneyStatus, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "./api/types";
 import {
@@ -115,9 +116,50 @@ function createJournal(): JournalDto {
         statusText: "Still chasing leads.",
       },
       caseSummary: "Find the culprit before the law closes in.",
-      discoveredSuspects: [],
-      knownClues: [],
-      knownWarrants: [],
+      discoveredSuspects: [
+        {
+          id: "suspect-1",
+          name: "Gus Mercer",
+          status: 0,
+        },
+      ],
+      knownClues: [
+        {
+          id: "clue-1",
+          kind: 4,
+          description: "A boot print with Gus Mercer's ranch brand was found near the creek.",
+          sourceLabel: "Sheriff records",
+          context: "Logged after the notice board search.",
+          anchors: {
+            subjects: [{ label: "Gus Mercer", alias: "The ranch hand", feature: null, fact: "Seen near the creek" }],
+            locations: [{ label: "North creek", place: "Outside Tumbleweed", route: null }],
+            times: [{ recency: 1, day: 5, turn: 1 }],
+            directions: [{ label: "Eastbound dust line", movement: "Moved off-road", route: "Back trail" }],
+          },
+        },
+        {
+          id: "clue-2",
+          kind: 9,
+          description: "The witness says the rider wore a blue coat, not the brown coat listed on the warrant.",
+          sourceLabel: "Telegraph lead",
+          context: null,
+          anchors: {
+            subjects: [{ label: "Blue coat rider", alias: null, feature: "Blue coat", fact: "Witness memory" }],
+            locations: [{ label: "Depot road", place: null, route: "South spur" }],
+            times: [{ recency: 2, day: 4, turn: null }],
+            directions: [{ label: "Southbound", movement: "Rode away", route: null }],
+          },
+        },
+      ],
+      knownWarrants: [
+        {
+          targetName: "Gus Mercer",
+          summary: "Wanted for a string of robberies near the county line.",
+          issuingSource: "County marshal",
+          disposition: 1,
+          bountyAmount: 2500.5,
+        },
+      ],
     },
     logEntries: [{ kind: 0, message: "Booted", day: 1, turn: 0 }],
   };
@@ -210,11 +252,34 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: /current session/i })).toBeInTheDocument();
     expect(screen.getByText("Tumbleweed (t-town)")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /case file/i })).toBeInTheDocument();
-    expect(screen.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /log/i })).toBeInTheDocument();
     expect(screen.getByText("Booted")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /store offers/i })).toBeInTheDocument();
     expect(screen.getByText("Food $2.00")).toBeInTheDocument();
+
+    expect(screen.queryByRole("heading", { name: /case file/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /open case file/i }));
+
+    const dialog = await screen.findByRole("dialog", { name: /investigation board/i });
+    const dialogScope = within(dialog);
+    expect(screen.getByRole("heading", { name: /investigation board/i })).toBeInTheDocument();
+    expect(dialogScope.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
+    expect(dialogScope.getByText("The trail went cold outside town.")).toBeInTheDocument();
+    expect(dialogScope.getByText("Day 5, turn 2")).toBeInTheDocument();
+    expect(dialogScope.getByText("Tumbleweed")).toBeInTheDocument();
+    expect(dialogScope.getByText("At large")).toBeInTheDocument();
+    expect(dialogScope.getByText("Dead or alive")).toBeInTheDocument();
+    expect(dialogScope.getByText("$2,500.50")).toBeInTheDocument();
+    expect(screen.queryByText("clue-1")).not.toBeInTheDocument();
+    expect(screen.queryByText("suspect-1")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /close/i }));
+
+    await waitFor(() => {
+      expect(dialog).not.toBeInTheDocument();
+    });
   });
 });

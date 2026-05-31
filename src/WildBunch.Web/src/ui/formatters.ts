@@ -182,6 +182,17 @@ export function formatSuspectStatus(status: number) {
   }
 }
 
+export function formatWarrantDisposition(disposition: number) {
+  switch (disposition) {
+    case 0:
+      return "Alive only";
+    case 1:
+      return "Dead or alive";
+    default:
+      return `Disposition ${disposition}`;
+  }
+}
+
 export function formatItemKind(kind: number) {
   switch (kind) {
     case 0:

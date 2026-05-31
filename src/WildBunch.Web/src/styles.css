@@ -302,6 +302,114 @@ h1 {
   color: var(--muted);
 }
 
+.case-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(7, 8, 11, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.case-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, 100%);
+  max-height: min(92vh, 980px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 26px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.case-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.case-modal__header h2 {
+  margin-bottom: 8px;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1;
+}
+
+.case-modal__body {
+  overflow: auto;
+  padding: 22px 24px 24px;
+}
+
+.case-modal__state {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.case-modal__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.case-modal__section {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.case-modal__section--wide {
+  grid-column: 1 / -1;
+}
+
+.case-modal__section-head {
+  margin-bottom: 12px;
+}
+
+.case-modal__section-head h3,
+.case-modal__card h4 {
+  margin-bottom: 0;
+}
+
+.case-modal__section-head .panel-subtitle {
+  margin-top: 4px;
+}
+
+.case-modal__card {
+  padding: 14px 15px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.case-modal__card h4 {
+  margin-bottom: 8px;
+  font-size: 0.98rem;
+}
+
+.case-modal__stats {
+  margin-bottom: 12px;
+}
+
+.case-modal__anchor-line,
+.case-modal__minor {
+  color: var(--muted);
+}
+
+.case-modal__deductions {
+  display: grid;
+  gap: 12px;
+}
+
 .tag-row {
   display: flex;
   gap: 8px;
@@ -338,6 +446,10 @@ h1 {
     display: grid;
   }
 
+  .case-modal__grid {
+    grid-template-columns: 1fr;
+  }
+
   .hero {
     align-items: start;
   }
@@ -365,8 +477,18 @@ h1 {
 
   .action-row,
   .destination-card,
-  .log-entry__meta {
+  .log-entry__meta,
+  .case-modal__header {
     align-items: start;
     flex-direction: column;
+  }
+
+  .case-modal__backdrop {
+    padding: 12px;
+  }
+
+  .case-modal__body,
+  .case-modal__header {
+    padding: 18px;
   }
 }
