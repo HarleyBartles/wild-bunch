@@ -77,6 +77,24 @@ public sealed class GetJournalHandlerTests
     }
 
     [Fact]
+    public async Task GetJournalPassesPagingParametersThroughToRepository()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession();
+        session.RecordCaseUpdate("Second entry");
+        session.RecordCaseUpdate("Third entry");
+        repository.Seed(session);
+        var handler = new GetJournalHandler(repository);
+
+        var result = await handler.HandleAsync(new GetJournalQuery(session.Id.Value, Skip: 1, Take: 1));
+
+        Assert.Equal(1, repository.LastJournalSkip);
+        Assert.Equal(1, repository.LastJournalTake);
+        Assert.Single(result.LogEntries);
+        Assert.Equal(session.LogEntries[1].Message, result.LogEntries[0].Message);
+    }
+
+    [Fact]
     public async Task GetJournalThrowsWhenMissing()
     {
         var handler = new GetJournalHandler(new InMemoryGameSessionRepository());

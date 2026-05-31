@@ -148,6 +148,26 @@ public sealed class GameApiValidationTests
     }
 
     [Fact]
+    public async Task GetJournalWithInvalidPagingReturnsValidationProblem()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(createdSession);
+
+        var negativeSkipResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal?skip=-1");
+        Assert.Equal(HttpStatusCode.BadRequest, negativeSkipResponse.StatusCode);
+        await AssertValidationProblemAsync(negativeSkipResponse, "skip");
+
+        var zeroTakeResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal?take=0");
+        Assert.Equal(HttpStatusCode.BadRequest, zeroTakeResponse.StatusCode);
+        await AssertValidationProblemAsync(zeroTakeResponse, "take");
+    }
+
+    [Fact]
     public async Task TravelToUnconnectedTownReturnsSuccessFalse()
     {
         using var factory = new SqliteApiFactory();

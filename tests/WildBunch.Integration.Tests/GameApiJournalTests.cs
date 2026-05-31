@@ -103,6 +103,39 @@ public sealed class GameApiJournalTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task GetJournalSupportsSkipAndTakeQueryParameters()
+    {
+        using var factory = new SqliteApiFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(createdSession);
+
+        var travelResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession!.Id}/travel",
+            new TravelRequest("redmesa"));
+
+        Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
+
+        var fullResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
+        Assert.Equal(HttpStatusCode.OK, fullResponse.StatusCode);
+        var fullJournal = await fullResponse.Content.ReadFromJsonAsync<JournalDto>();
+        Assert.NotNull(fullJournal);
+        Assert.True(fullJournal!.LogEntries.Count >= 2);
+
+        var pagedResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal?skip=1&take=1");
+        Assert.Equal(HttpStatusCode.OK, pagedResponse.StatusCode);
+
+        var pagedJournal = await pagedResponse.Content.ReadFromJsonAsync<JournalDto>();
+        Assert.NotNull(pagedJournal);
+        Assert.Single(pagedJournal!.LogEntries);
+        Assert.Equal(fullJournal.LogEntries[1].Message, pagedJournal.LogEntries[0].Message);
+        Assert.Equal(fullJournal.LogEntries[1].Kind, pagedJournal.LogEntries[0].Kind);
+    }
+
     private static async Task AdvanceUntilTownAsync(HttpClient client, Guid gameId, string destinationTownId)
     {
         for (var step = 0; step < 12; step++)

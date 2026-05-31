@@ -11,6 +11,10 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
 
     public int SaveCalls { get; private set; }
 
+    public int? LastJournalSkip { get; private set; }
+
+    public int? LastJournalTake { get; private set; }
+
     public IReadOnlyCollection<GameSession> Sessions => _sessions.Values.ToArray();
 
     public void Seed(GameSession session)
@@ -47,6 +51,8 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         int? take,
         CancellationToken cancellationToken)
     {
+        LastJournalSkip = skip;
+        LastJournalTake = take;
         _sessions.TryGetValue(id, out var session);
         if (session is null)
         {

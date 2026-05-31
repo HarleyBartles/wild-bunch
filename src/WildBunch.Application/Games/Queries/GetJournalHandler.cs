@@ -19,7 +19,7 @@ public sealed class GetJournalHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
-        var snapshot = await _gameJournalReadRepository.GetByIdAsync(sessionId, cancellationToken: cancellationToken).ConfigureAwait(false)
+        var snapshot = await _gameJournalReadRepository.GetByIdAsync(sessionId, query.Skip, query.Take, cancellationToken).ConfigureAwait(false)
             ?? throw new GameSessionNotFoundException(sessionId);
         return JournalMapper.ToDto(snapshot);
     }

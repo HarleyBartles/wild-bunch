@@ -72,6 +72,23 @@ public static class RequestValidation
         return WriteResult(errors, out result);
     }
 
+    public static bool TryValidateJournalPaging(int? skip, int? take, out IResult? result)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (skip is < 0)
+        {
+            errors["skip"] = ["Skip must be at least 0."]; 
+        }
+
+        if (take is not null && take < 1)
+        {
+            errors["take"] = ["Take must be at least 1 when provided."];
+        }
+
+        return WriteResult(errors, out result);
+    }
+
     private static bool WriteResult(Dictionary<string, string[]> errors, out IResult? result)
     {
         if (errors.Count == 0)
