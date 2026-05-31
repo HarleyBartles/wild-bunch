@@ -16,6 +16,12 @@
 - Worker reports, issue comments, conversation summaries, and session notes are not proof.
 - Always report exact branch, commit, remote head, and changed files.
 
+## Connector / Tool Safety
+- Read-only verification must stay read-only.
+- Do not call GitHub mutation tools while inspecting repo state, reassessing an issue, or preparing a dispatch.
+- Treat tools named `create_*`, `update_*`, `delete_*`, `add_*`, `remove_*`, `lock_*`, `unlock_*`, or low-level Git primitives such as `create_tree` / `create_commit` as mutation routes.
+- `create_tree` is not a repo-listing tool. If a tree/listing read route is unavailable, use `fetch_file`, `fetch`, `search`, `compare_commits`, issue readers, and commit/status readers instead.
+
 ## Validation
 - Run `dotnet build`.
 - Run `dotnet test`.
