@@ -2,6 +2,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
@@ -105,6 +106,26 @@ public sealed class GameSessionPurchaseTests
     }
 
     [Fact]
+    public void PurchaseWhileJourneyIsActiveFailsWithoutMutation()
+    {
+        var session = CreateSession();
+        StartJourney(session);
+        var resolver = new TownStoreCatalogResolver();
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
+
+        var result = session.Purchase(offer, 1);
+
+        Assert.False(result.Success);
+        Assert.Equal("Finish the current journey before taking that action.", result.Message);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Canteen));
+        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
+    }
+
+    [Fact]
     public void HorseQuantityAboveOneFailsWithoutMutation()
     {
         var session = CreateSession(emptyInventory: true);
@@ -151,5 +172,18 @@ public sealed class GameSessionPurchaseTests
                 }));
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), resolvedInventory);
+    }
+
+    private static void StartJourney(GameSession session)
+    {
+        var travelResolver = new TravelResolver();
+        var preview = travelResolver.PreviewJourney(
+                session.World,
+                session.Player.CurrentTownId,
+                new TownId("redmesa"),
+                session.Player.Inventory)
+            .Preview!;
+
+        session.StartJourney(preview);
     }
 }

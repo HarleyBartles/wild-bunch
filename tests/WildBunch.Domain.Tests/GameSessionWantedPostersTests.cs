@@ -1,6 +1,7 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.WantedPosters;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
@@ -66,6 +67,25 @@ public sealed class GameSessionWantedPostersTests
         Assert.Single(session.LogEntries);
     }
 
+    [Fact]
+    public void ReadingWantedPostersWhileJourneyAwaitingAcknowledgementFailsWithoutMutation()
+    {
+        var session = CreateSession(TownServices.NoticeBoard);
+        StartJourney(session);
+        session.Journey!.MarkCompleted();
+
+        var result = session.ReadWantedPosters();
+
+        Assert.False(result.Success);
+        Assert.False(result.SessionChanged);
+        Assert.Equal("Finish the current journey before taking that action.", result.Message);
+        Assert.Empty(session.CaseFile.KnownClues);
+        Assert.Single(session.CaseFile.PublicClues);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(JourneyStatus.Completed, session.Journey.Status);
+    }
+
     private static GameSession CreateSession(TownServices currentTownServices)
     {
         var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
@@ -98,5 +118,19 @@ public sealed class GameSessionWantedPostersTests
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static void StartJourney(GameSession session)
+    {
+        var travelResolver = new TravelResolver();
+        var destinationTownId = new TownId("connected");
+        var preview = travelResolver.PreviewJourney(
+                session.World,
+                session.Player.CurrentTownId,
+                destinationTownId,
+                session.Player.Inventory)
+            .Preview!;
+
+        session.StartJourney(preview);
     }
 }

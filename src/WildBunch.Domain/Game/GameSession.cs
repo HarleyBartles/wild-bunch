@@ -16,6 +16,8 @@ namespace WildBunch.Domain.Game;
 /// </summary>
 public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 {
+    private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
+
     private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
@@ -1426,6 +1428,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         ArgumentNullException.ThrowIfNull(offer);
 
+        if (IsJourneyModal())
+        {
+            return StorePurchaseResult.Failed(JourneyModalBlockMessage);
+        }
+
         if (quantity < 1)
         {
             return StorePurchaseResult.Failed("Quantity must be at least 1.");
@@ -1463,6 +1470,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     public ReadWantedPostersResult ReadWantedPosters()
     {
+        if (IsJourneyModal())
+        {
+            return ReadWantedPostersResult.Failed(JourneyModalBlockMessage);
+        }
+
         var currentTown = World.GetTown(Player.CurrentTownId);
 
         if ((currentTown.Services & TownServices.NoticeBoard) == 0)
@@ -1566,6 +1578,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     {
         _logEntries.Add(new GameLogEntry(kind, message, Clock.Day, Clock.Turn));
     }
+
+    private bool IsJourneyModal()
+        => Journey is not null;
 
     private bool CanPurchaseInventoryItem(StoreOffer offer, int quantity, out string failureMessage)
     {

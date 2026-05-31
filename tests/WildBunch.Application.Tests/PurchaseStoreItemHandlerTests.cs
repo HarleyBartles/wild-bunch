@@ -5,6 +5,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using System.Linq;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
@@ -104,6 +105,31 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Single(session.LogEntries);
     }
 
+    [Fact]
+    public async Task PurchaseWhileJourneyIsActiveReturnsFailureWithoutSaving()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession();
+        StartJourney(session);
+        repository.Seed(session);
+        var handler = new PurchaseStoreItemHandler(repository, new TownStoreCatalogResolver());
+
+        var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
+            session.Id.Value,
+            "pinecross",
+            StoreVendorType.GeneralStore,
+            DomainItemKind.Food,
+            1));
+
+        Assert.False(result.Success);
+        Assert.Equal("Finish the current journey before taking that action.", result.Message);
+        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.NotNull(result.CurrentSession.Journey);
+        Assert.Equal(JourneyStatus.Active, result.CurrentSession.Journey!.Status);
+        Assert.Equal(2, result.CurrentSession.LogEntries.Count);
+    }
+
     private static GameSession CreateSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
@@ -127,5 +153,18 @@ public sealed class PurchaseStoreItemHandlerTests
             new DomainInventoryItem(DomainItemKind.Food, 1),
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         }));
+    }
+
+    private static void StartJourney(GameSession session)
+    {
+        var travelResolver = new TravelResolver();
+        var preview = travelResolver.PreviewJourney(
+                session.World,
+                session.Player.CurrentTownId,
+                new TownId("redmesa"),
+                session.Player.Inventory)
+            .Preview!;
+
+        session.StartJourney(preview);
     }
 }

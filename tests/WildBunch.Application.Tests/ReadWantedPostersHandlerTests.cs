@@ -4,6 +4,7 @@ using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.WantedPosters;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
@@ -65,6 +66,25 @@ public sealed class ReadWantedPostersHandlerTests
     }
 
     [Fact]
+    public async Task ReadWantedPostersWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession(TownServices.NoticeBoard);
+        StartJourney(session);
+        session.Journey!.MarkCompleted();
+        repository.Seed(session);
+        var handler = new ReadWantedPostersHandler(repository, new JournalResolver());
+
+        var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
+
+        Assert.False(result.Success);
+        Assert.Equal("Finish the current journey before taking that action.", result.Message);
+        Assert.Equal(0, repository.SaveCalls);
+        Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
+    }
+
+    [Fact]
     public async Task ReadWantedPostersThrowsWhenMissing()
     {
         var handler = new ReadWantedPostersHandler(
@@ -107,5 +127,18 @@ public sealed class ReadWantedPostersHandlerTests
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static void StartJourney(GameSession session)
+    {
+        var travelResolver = new TravelResolver();
+        var preview = travelResolver.PreviewJourney(
+                session.World,
+                session.Player.CurrentTownId,
+                new TownId("connected"),
+                session.Player.Inventory)
+            .Preview!;
+
+        session.StartJourney(preview);
     }
 }
