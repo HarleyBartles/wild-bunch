@@ -19,6 +19,7 @@ public sealed partial class GameSessionJsonSerializer
         PursuitState pursuitState,
         TravelRandomnessState travelRandomness,
         TravelJourneySnapshot? journey,
+        IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory,
         IReadOnlyList<TravelDiaryDayState> travelDiaryDays,
         IReadOnlyList<GameLogEntry> logEntries)
     {
@@ -32,7 +33,8 @@ public sealed partial class GameSessionJsonSerializer
             status,
             journey is null ? null : TravelJourney.FromSnapshot(journey),
             travelDifficulty,
-            travelRandomness);
+            travelRandomness,
+            completedJourneyHistory);
 
         GameSessionRehydrator.ReplaceTravelDiaryDays(session, travelDiaryDays);
         GameSessionRehydrator.ReplaceLogEntries(session, logEntries);

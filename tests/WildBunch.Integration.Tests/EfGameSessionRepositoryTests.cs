@@ -327,6 +327,56 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Fact]
+    public async Task SaveAfterJourneyAcknowledgementRoundTripsActiveSequenceAndCompletedHistory()
+    {
+        using var fixture = new SqlitePersistenceFixture();
+        var repository = CreateRepository(fixture);
+        var session = CreateJourneyHistorySession();
+
+        await repository.SaveAsync(session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(loaded);
+
+        var firstPreview = CreateJourneyPreview(loaded!.Player.CurrentTownId, new TownId("openpass"), "Pinecross", "Open Pass");
+        loaded.StartJourney(firstPreview);
+        Assert.Equal(1, loaded.Journey!.JourneySequence);
+
+        await repository.SaveAsync(loaded);
+        var activeReload = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(activeReload);
+        Assert.NotNull(activeReload!.Journey);
+        Assert.Equal(1, activeReload.Journey!.JourneySequence);
+
+        loaded = activeReload;
+        loaded.Journey!.MarkCompleted();
+        Assert.True(loaded.AcknowledgeJourneyArrival().Success);
+
+        await repository.SaveAsync(loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Null(reloaded!.Journey);
+        Assert.Single(reloaded.CompletedJourneyHistory);
+        Assert.Equal(1, reloaded.CompletedJourneyHistory[0].JourneySequence);
+        Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Completed, reloaded.CompletedJourneyHistory[0].Status);
+
+        var secondPreview = CreateJourneyPreview(reloaded.Player.CurrentTownId, new TownId("dryfork"), "Open Pass", "Dry Fork");
+        reloaded.StartJourney(secondPreview);
+        Assert.Equal(2, reloaded.Journey!.JourneySequence);
+
+        await repository.SaveAsync(reloaded);
+        var secondReload = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(secondReload);
+        Assert.NotNull(secondReload!.Journey);
+        Assert.Equal(2, secondReload.Journey!.JourneySequence);
+        Assert.Single(secondReload.CompletedJourneyHistory);
+        Assert.Equal(1, secondReload.CompletedJourneyHistory[0].JourneySequence);
+    }
+
+    [Fact]
     public async Task ReadRepositoriesProjectComposedSessionAndJournalViews()
     {
         using var fixture = new SqlitePersistenceFixture();
@@ -559,6 +609,60 @@ public sealed class EfGameSessionRepositoryTests
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
     }
+
+    private static GameSession CreateJourneyHistorySession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var world = new WildBunch.Domain.World.World(
+            new[] { pinecross, openpass, dryfork },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-open"), pinecross.Id, openpass.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m),
+                new Trail(new TrailId("trail-open-dry"), openpass.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m)
+            });
+
+        var caseFile = CreateCaseFile();
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 6),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new DomainCanteenState(6, 6)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+    }
+
+    private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
+        => new(
+            originTownId,
+            destinationTownId,
+            originTownName,
+            destinationTownName,
+            new TravelRouteProfile("trail-preview", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 1m, 1m, 1m, Array.Empty<string>()),
+            TravelMode.Mounted,
+            MountedTravelAvailable: true,
+            WaterSecure: true,
+            RideDayDistance: 1m,
+            RemainingRideDayDistance: 1m,
+            BaselineRideDays: 1,
+            ExpectedDays: 1,
+            RemainingDays: 1,
+            CanteenChargesPerDay: 0,
+            RequiredCanteenCharges: 0,
+            AvailableCanteenCharges: 0,
+            CanteenReserveCharges: 0,
+            DelayMarginDays: 0,
+            DelayRisk: false,
+            RequiredFood: 1,
+            AvailableFood: 6,
+            RequiredHorseFeed: 0,
+            AvailableHorseFeed: 0,
+            HorseState: DomainHorseTravelState.Healthy,
+            Warnings: Array.Empty<string>());
 
     private static GameSession CreateDiarySession()
     {

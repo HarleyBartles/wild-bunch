@@ -18,6 +18,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
+    private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
+    private int _nextJourneySequence = 1;
 
     private GameSession(
         GameSessionId id,
@@ -29,7 +31,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         GameStatus status,
         TravelJourney? journey,
         TravelDifficulty travelDifficulty,
-        TravelRandomnessState travelRandomness)
+        TravelRandomnessState travelRandomness,
+        IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory)
     {
         Id = id;
         Player = player;
@@ -41,6 +44,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Journey = journey;
         TravelDifficulty = travelDifficulty;
         TravelRandomness = travelRandomness;
+        if (completedJourneyHistory is not null)
+        {
+            _completedJourneyHistory.AddRange(completedJourneyHistory);
+        }
+
+        _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
 
     public GameSessionId Id { get; }
@@ -68,6 +77,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
     public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _travelDiaryDays;
+
+    public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
         => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
@@ -104,7 +115,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             GameStatus.Active,
             journey: null,
             travelDifficulty,
-            travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted());
+            travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted(),
+            Array.Empty<TravelJourneySnapshot>());
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
@@ -127,7 +139,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return TravelJourneyStepResult.Failed("You are already on the trail.");
         }
 
-        Journey = TravelJourney.Start(preview, BuildJourneyOpeningNarration(preview));
+        Journey = TravelJourney.Start(preview, _nextJourneySequence++, BuildJourneyOpeningNarration(preview));
         _travelDiaryDays.Clear();
         var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
         AddLogEntry(
@@ -628,6 +640,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var completedSnapshot = Journey.ToSnapshot(TravelRules);
+        ArchiveCompletedJourney(completedSnapshot);
         Journey = null;
 
         return new JourneyArrivalAcknowledgementResult(
@@ -1390,6 +1403,23 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         return $"The canteen is short by {Math.Abs(canteenReserveCharges)} charge(s) for the base trail";
+    }
+
+    private void ArchiveCompletedJourney(TravelJourneySnapshot completedJourney)
+    {
+        _completedJourneyHistory.Add(completedJourney);
+    }
+
+    private static int CalculateNextJourneySequence(TravelJourney? journey, IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory)
+    {
+        var maxSequence = journey?.JourneySequence ?? 0;
+
+        if (completedJourneyHistory.Count > 0)
+        {
+            maxSequence = Math.Max(maxSequence, completedJourneyHistory.Max(history => history.JourneySequence));
+        }
+
+        return Math.Max(1, maxSequence + 1);
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)

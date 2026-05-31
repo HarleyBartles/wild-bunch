@@ -4,9 +4,10 @@ namespace WildBunch.Domain.Travel;
 
 public sealed class TravelJourney
 {
-    internal TravelJourney(TravelPreview preview, string? openingNarration = null)
+    internal TravelJourney(TravelPreview preview, int journeySequence, string? openingNarration = null)
     {
         Preview = preview;
+        JourneySequence = journeySequence;
         TravelMode = preview.TravelMode;
         Status = JourneyStatus.Active;
         RemainingRideDayDistance = preview.RemainingRideDayDistance;
@@ -19,6 +20,8 @@ public sealed class TravelJourney
     }
 
     public TravelPreview Preview { get; }
+
+    public int JourneySequence { get; }
 
     public TravelMode TravelMode { get; private set; }
 
@@ -49,13 +52,25 @@ public sealed class TravelJourney
     public static TravelJourney Start(TravelPreview preview)
     {
         ArgumentNullException.ThrowIfNull(preview);
-        return new TravelJourney(preview);
+        return new TravelJourney(preview, journeySequence: 1);
     }
 
     public static TravelJourney Start(TravelPreview preview, string? openingNarration)
     {
         ArgumentNullException.ThrowIfNull(preview);
-        return new TravelJourney(preview, openingNarration);
+        return new TravelJourney(preview, 1, openingNarration);
+    }
+
+    public static TravelJourney Start(TravelPreview preview, int journeySequence)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+        return new TravelJourney(preview, journeySequence);
+    }
+
+    public static TravelJourney Start(TravelPreview preview, int journeySequence, string? openingNarration)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+        return new TravelJourney(preview, journeySequence, openingNarration);
     }
 
     public static TravelJourney FromSnapshot(TravelJourneySnapshot snapshot)
@@ -89,7 +104,7 @@ public sealed class TravelJourney
             snapshot.HorseState,
             snapshot.Warnings);
 
-        var journey = new TravelJourney(preview)
+        var journey = new TravelJourney(preview, Math.Max(1, snapshot.JourneySequence))
         {
             TravelMode = snapshot.TravelMode,
             Status = snapshot.Status,
@@ -342,6 +357,7 @@ public sealed class TravelJourney
             Preview.MountedTravelAvailable && (HorseState?.CanProvideMountedTravelFor(travelRulesProfile) ?? false));
 
         return new(
+            JourneySequence,
             Preview.OriginTownId,
             Preview.DestinationTownId,
             Preview.OriginTownName,

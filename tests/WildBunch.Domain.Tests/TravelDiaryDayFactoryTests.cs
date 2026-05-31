@@ -34,6 +34,7 @@ public sealed class TravelDiaryDayFactoryTests
 
     private static TravelJourneySnapshot CreateJourneySnapshot()
         => new(
+            JourneySequence: 1,
             OriginTownId: new TownId("pinecross"),
             DestinationTownId: new TownId("dryfork"),
             OriginTownName: "Pinecross",

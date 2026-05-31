@@ -9,6 +9,7 @@ internal static class GameSessionComponentNames
     internal const string PursuitState = "pursuitState";
     internal const string TravelRandomness = "travelRandomness";
     internal const string Journey = "journey";
+    internal const string CompletedJourneyHistory = "completedJourneyHistory";
 }
 
 internal static class GameSessionComponentPayloads

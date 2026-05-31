@@ -16,6 +16,7 @@ public sealed partial class GameSessionJsonSerializer
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
         JourneySnapshot? Journey,
+        IReadOnlyList<JourneySnapshot>? CompletedJourneyHistory,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         IReadOnlyList<GameLogEntrySnapshot> LogEntries)
     {
@@ -31,6 +32,7 @@ public sealed partial class GameSessionJsonSerializer
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
                 session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot(session.TravelRules)),
+                session.CompletedJourneyHistory.Select(JourneySnapshot.FromDomain).ToArray(),
                 session.TravelDiaryDays.ToArray(),
                 session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray());
 
@@ -52,7 +54,8 @@ public sealed partial class GameSessionJsonSerializer
                 Status,
                 journey,
                 TravelDifficulty,
-                TravelRandomness?.ToDomain() ?? TravelRandomnessState.CreateRuntimeSalted());
+                TravelRandomness?.ToDomain() ?? TravelRandomnessState.CreateRuntimeSalted(),
+                (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());

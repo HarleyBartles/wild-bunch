@@ -23,7 +23,8 @@ internal static class GameSessionRehydrator
             typeof(GameStatus),
             typeof(TravelJourney),
             typeof(TravelDifficulty),
-            typeof(TravelRandomnessState)
+            typeof(TravelRandomnessState),
+            typeof(IReadOnlyList<TravelJourneySnapshot>)
         },
         modifiers: null);
 
@@ -40,14 +41,15 @@ internal static class GameSessionRehydrator
         GameStatus status,
         TravelJourney? journey,
         TravelDifficulty travelDifficulty,
-        TravelRandomnessState travelRandomness)
+        TravelRandomnessState travelRandomness,
+        IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory)
     {
         if (Constructor is null)
         {
             throw new InvalidOperationException("Unable to locate the GameSession persistence constructor.");
         }
 
-        return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, travelDifficulty, travelRandomness });
+        return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, travelDifficulty, travelRandomness, completedJourneyHistory ?? Array.Empty<TravelJourneySnapshot>() });
     }
 
     public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)

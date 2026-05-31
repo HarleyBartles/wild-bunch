@@ -76,10 +76,11 @@ public sealed record TravelPreview(
     IReadOnlyList<string> Warnings)
 {
     public TravelJourney ToJourney()
-        => new TravelJourney(this);
+        => new TravelJourney(this, 1);
 }
 
 public sealed record TravelJourneySnapshot(
+    int JourneySequence,
     TownId OriginTownId,
     TownId DestinationTownId,
     string OriginTownName,

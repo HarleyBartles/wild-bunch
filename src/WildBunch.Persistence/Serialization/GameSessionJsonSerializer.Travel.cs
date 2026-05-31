@@ -22,6 +22,22 @@ public sealed partial class GameSessionJsonSerializer
         return Deserialize<JourneySnapshot>(json).ToDomain();
     }
 
+    public string SerializeCompletedJourneyHistory(IReadOnlyList<TravelJourneySnapshot> completedJourneys)
+    {
+        ArgumentNullException.ThrowIfNull(completedJourneys);
+        return JsonSerializer.Serialize(completedJourneys.Select(JourneySnapshot.FromDomain).ToArray(), Options);
+    }
+
+    public IReadOnlyList<TravelJourneySnapshot> DeserializeCompletedJourneyHistory(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return Array.Empty<TravelJourneySnapshot>();
+        }
+
+        return Deserialize<JourneySnapshot[]>(json).Select(snapshot => snapshot.ToDomain()).ToArray();
+    }
+
     public string SerializeTravelDiaryDay(TravelDiaryDayState day)
     {
         ArgumentNullException.ThrowIfNull(day);
@@ -36,6 +52,7 @@ public sealed partial class GameSessionJsonSerializer
 
     private sealed class JourneySnapshot
     {
+        public int JourneySequence { get; set; }
         public string OriginTownId { get; set; } = string.Empty;
         public string DestinationTownId { get; set; } = string.Empty;
         public string OriginTownName { get; set; } = string.Empty;
@@ -70,6 +87,7 @@ public sealed partial class GameSessionJsonSerializer
         public static JourneySnapshot FromDomain(TravelJourneySnapshot snapshot)
             => new()
             {
+                JourneySequence = snapshot.JourneySequence,
                 OriginTownId = snapshot.OriginTownId.Value,
                 DestinationTownId = snapshot.DestinationTownId.Value,
                 OriginTownName = snapshot.OriginTownName,
@@ -104,6 +122,7 @@ public sealed partial class GameSessionJsonSerializer
 
         public TravelJourneySnapshot ToDomain()
             => new(
+                Math.Max(1, JourneySequence),
                 new TownId(OriginTownId),
                 new TownId(DestinationTownId),
                 OriginTownName,

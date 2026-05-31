@@ -66,6 +66,15 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.Journey, _serializer.SerializeJourneySnapshot(session.Journey.ToSnapshot(session.TravelRules)), now);
         }
 
+        if (session.CompletedJourneyHistory.Count == 0)
+        {
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.CompletedJourneyHistory, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            UpsertComponent(entity.Id, GameSessionComponentNames.CompletedJourneyHistory, _serializer.SerializeCompletedJourneyHistory(session.CompletedJourneyHistory), now);
+        }
+
         await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
 
@@ -117,6 +126,10 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var randomness = _serializer.DeserializeTravelRandomness(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.TravelRandomness));
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey);
         var journey = journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson);
+        var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CompletedJourneyHistory);
+        var completedJourneyHistory = completedJourneyHistoryJson is null
+            ? Array.Empty<TravelJourneySnapshot>()
+            : _serializer.DeserializeCompletedJourneyHistory(completedJourneyHistoryJson);
 
         return _serializer.RehydrateGameSession(
             store.Envelope.Id,
@@ -129,6 +142,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             pursuitState,
             randomness,
             journey,
+            completedJourneyHistory,
             store.TravelDiaryDays,
             store.LogEntries);
     }
