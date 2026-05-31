@@ -53,6 +53,15 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Prefer small persistence-internal helpers over generic codec registries, plugin models, or reflection-driven frameworks.
 - Repo-local database artifacts belong under repo-root `.local/` or another ignored local area, never under `src/`.
 
+## Local PostgreSQL Safety
+
+- Distinguish the persistent local development app database from temporary test-created databases.
+- The persistent local development app database must have an explicit repo-local provisioning convention and should live under `.local/` or another ignored repo-local path.
+- Temporary test-created databases may be created, migrated, exercised, and dropped by the harness that created them when they contain no production or user data.
+- Destructive cleanup is allowed only for databases created specifically for a validation/test run or by an explicit reset command targeted at the persistent local development app database.
+- Do not let test cleanup silently target the persistent app database.
+- Do not rely on an unspecified machine-global PostgreSQL cluster or data directory when the repo can define its own local convention.
+
 ## Onion Dependency Direction
 
 - Domain and Application should not depend on Persistence/EF implementation details.

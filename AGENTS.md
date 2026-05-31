@@ -72,7 +72,7 @@
 - Do not add compatibility shims for obsolete old saves or internal models unless Harley explicitly asks for one.
 - Serializer optionality should exist only for current-domain reasons, not as a default legacy-save support layer.
 - When a task calls for replacement, fully replace the old internal model instead of layering a compatibility adapter over it.
-- Repo-local SQLite dev artifacts should live under repo-root `.local/`, never under `src/`.
+- Repo-local database artifacts should live under repo-root `.local/`, never under `src/`.
 
 ## Scope Discipline
 - Do only the requested slice.

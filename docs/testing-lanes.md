@@ -43,8 +43,10 @@ Provider/storage tests are exceptional, not the default confidence lane.
 Use them when the behavior under test is EF mapping, migrations, SQL
 translation, snapshot persistence, concurrency, or provider-specific behavior.
 For Wild Bunch persistence work, the active provider lane is PostgreSQL-backed
-and should use a dedicated disposable test database when it needs to exercise
-`WildBunch.Persistence` against the real provider.
+and should use a dedicated local/test PostgreSQL database with no production or
+user data when it needs to exercise `WildBunch.Persistence` against the real
+provider. The persistent local development app database is a separate concern;
+see [Local PostgreSQL](local-postgresql.md) for that convention.
 When this lane is intentional, name it clearly so it is obvious that the test is
 about provider fidelity rather than ordinary gameplay behavior.
 
