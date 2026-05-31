@@ -4,6 +4,7 @@ using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 using DomainJourneyEncounter = WildBunch.Domain.Travel.JourneyEncounterState;
 using DomainJourneyEncounterChoice = WildBunch.Domain.Travel.JourneyEncounterChoiceState;
 using DomainJourneyTrailEvent = WildBunch.Domain.Travel.JourneyTrailEventState;
+using DomainTravelJourney = WildBunch.Domain.Travel.TravelJourney;
 using DomainJourneySnapshot = WildBunch.Domain.Travel.TravelJourneySnapshot;
 using DomainTravelPreview = WildBunch.Domain.Travel.TravelPreview;
 using DomainTravelRouteProfile = WildBunch.Domain.Travel.TravelRouteProfile;
@@ -43,6 +44,13 @@ public static class TravelMapper
             ToHorseDto(preview.HorseState, travelRulesProfile),
             preview.Warnings,
             ToDto(preview.RouteProfile));
+    }
+
+    public static TravelJourneyDto ToDto(DomainTravelJourney journey, DomainTravelRulesProfile? travelRulesProfile = null)
+    {
+        travelRulesProfile ??= DomainTravelRulesProfile.Default;
+
+        return ToDto(journey.ToSnapshot(travelRulesProfile), travelRulesProfile);
     }
 
     public static TravelJourneyDto ToDto(DomainJourneySnapshot snapshot, DomainTravelRulesProfile? travelRulesProfile = null)

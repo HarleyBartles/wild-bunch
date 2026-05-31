@@ -14,6 +14,7 @@ using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using System.Text.Json;
 
 namespace WildBunch.Integration.Tests;
 
@@ -148,6 +149,18 @@ public sealed class EfGameSessionRepositoryTests
         var loadedEncounter = loadedJourney.PendingEncounter!;
         var reloadedEncounter = reloaded.Journey.PendingEncounter!;
         Assert.Equal(loadedEncounter.FoeProfile, reloadedEncounter.FoeProfile);
+
+        var dtoPayload = JsonSerializer.Serialize(GameSessionMapper.ToDto(reloaded));
+        Assert.DoesNotContain("foeProfile", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("minimumBribe", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("fightStrength", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("resolutionAttempts", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("bribeOffersMade", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("cumulativeBribePaid", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("bribeLockedOut", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("chaseFatigue", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("annoyance", dtoPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("shaken", dtoPayload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

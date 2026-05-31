@@ -317,6 +317,32 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 ? primaryHorseLossMessage
                 : $"{primaryHorseLossMessage} {secondaryHorseLossMessage}";
 
+    private TravelJourneySnapshot CompleteJourneyAtDestination()
+    {
+        if (Journey is null)
+        {
+            throw new InvalidOperationException("A journey is required to complete arrival handling.");
+        }
+
+        Journey.MarkCompleted();
+        Player.TravelTo(Journey.Preview.DestinationTownId);
+        RefillCanteenAfterArrival();
+        return Journey.ToSnapshot(TravelRules);
+    }
+
+    private void RefillCanteenAfterArrival()
+    {
+        var canteenState = Player.Inventory.GetCanteenState();
+        if (canteenState is null || canteenState.Charges >= canteenState.Capacity)
+        {
+            return;
+        }
+
+        var refilledCanteen = CanteenState.Full(canteenState.Capacity);
+        Player.Inventory.SetCanteenState(refilledCanteen);
+        Journey!.SetCanteenCharges(refilledCanteen.Charges);
+    }
+
     private TravelJourneyStepResult AdvanceJourneyDayDeterministic()
     {
         if (Journey is null)
@@ -482,20 +508,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (progress.Completed)
         {
-            var destinationTownId = Journey.Preview.DestinationTownId;
             var destinationTownName = Journey.Preview.DestinationTownName;
             var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
-            Journey.MarkCompleted();
-            Player.TravelTo(destinationTownId);
-            var canteenState = Player.Inventory.GetCanteenState();
-            if (canteenState is not null && canteenState.Charges < canteenState.Capacity)
-            {
-                var refilledCanteen = CanteenState.Full(canteenState.Capacity);
-                Player.Inventory.SetCanteenState(refilledCanteen);
-                Journey.SetCanteenCharges(refilledCanteen.Charges);
-            }
-
-            var completedSnapshot = Journey.ToSnapshot(TravelRules);
+            var completedSnapshot = CompleteJourneyAtDestination();
             var completionMessage = horseLostMessage.Length == 0
                 ? $"You reach {destinationTownName}."
                 : $"{horseLostMessage} You reach {destinationTownName}.";
@@ -1167,19 +1182,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (Journey.RemainingDays == 0 && Journey.RemainingRideDayDistance == 0)
         {
-            var destinationTownId = Journey.Preview.DestinationTownId;
             var destinationTownName = Journey.Preview.DestinationTownName;
-            Journey.MarkCompleted();
-            Player.TravelTo(destinationTownId);
-            var canteenState = Player.Inventory.GetCanteenState();
-            if (canteenState is not null && canteenState.Charges < canteenState.Capacity)
-            {
-                var refilledCanteen = CanteenState.Full(canteenState.Capacity);
-                Player.Inventory.SetCanteenState(refilledCanteen);
-                Journey.SetCanteenCharges(refilledCanteen.Charges);
-            }
-
-            var completedSnapshot = Journey.ToSnapshot(TravelRules);
+            var completedSnapshot = CompleteJourneyAtDestination();
             currentResources = TravelResourceSnapshotFactory.Capture(Player, PursuitState);
             PersistLatestTravelDiaryDay(
                 startingState,

@@ -8,7 +8,7 @@ public sealed class WildBunchDbContextFactory : IDesignTimeDbContextFactory<Wild
     public WildBunchDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<WildBunchDbContext>()
-            .UseSqlite("Data Source=wildbunch.db")
+            .UseSqlite(SqliteConnectionStringResolver.Resolve(null))
             .Options;
 
         return new WildBunchDbContext(options);

@@ -43,17 +43,20 @@
 ## Architecture Guardrails
 - `GameSession` is the live-play aggregate root.
 - Game mutations should flow through `GameSession` or the established aggregate route.
+- Travel, journey, and encounter DTO mapping should live in `TravelMapper`; `GameSessionMapper` should delegate rather than duplicate that shape.
 - Wallet and Inventory are concrete player state; avoid generic supplies.
 - Hidden culprit truth remains internal.
 - Clue, journal, and wanted-poster flows stay stable unless directly in scope.
 - Horse and saddle are separate inventory concepts.
 - Mounted travel requires a living/non-lame horse plus saddle.
 - Travel advances one trail day at a time; do not reintroduce instant multi-day travel.
+- Keep temporary cockpit/debug-shell UI light; do not spend architecture cleanup effort polishing it for its own sake.
 
 ## Persistence / Model Posture
 - POCO domain models are fine when they keep the domain plain, composable, and naturally serializable.
 - Do not couple domain models to EF/table shape.
 - Runtime session persistence is JSON snapshot-oriented today.
+- Snapshot codecs belong in `WildBunch.Persistence` and should be split by coherent domain area when they get unwieldy.
 - Do not normalize runtime session state into many DB tables unless explicitly directed.
 - Persistence adapters may map the domain to JSON now and tables later without forcing domain refactors.
 - In this greenfield repo, current mainline model correctness wins over old-save or legacy internal compatibility.
@@ -61,6 +64,7 @@
 - Do not add compatibility shims for obsolete old saves or internal models unless Harley explicitly asks for one.
 - Serializer optionality should exist only for current-domain reasons, not as a default legacy-save support layer.
 - When a task calls for replacement, fully replace the old internal model instead of layering a compatibility adapter over it.
+- Repo-local SQLite dev artifacts should live under repo-root `.local/`, never under `src/`.
 
 ## Scope Discipline
 - Do only the requested slice.

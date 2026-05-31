@@ -11,7 +11,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("WildBunchDb") ?? "Data Source=wildbunch.db";
+        var connectionString = SqliteConnectionStringResolver.Resolve(configuration.GetConnectionString("WildBunchDb"));
 
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddDbContext<WildBunchDbContext>(options => options.UseSqlite(connectionString));
