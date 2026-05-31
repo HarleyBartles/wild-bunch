@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
@@ -79,6 +80,18 @@ public sealed class PostgreSqlPersistenceTests
         {
             await using var verificationContext = new WildBunchDbContext(options);
 
+            var payloadColumns = await GetPayloadColumnTypesAsync(database.ConnectionString);
+            Assert.Equal(
+                new[]
+                {
+                    ("GameSessionComponents", "jsonb"),
+                    ("GameSessionTravelDiaryDays", "jsonb")
+                },
+                payloadColumns);
+
+            var jsonbJourneyMatches = await CountJsonbJourneyMatchesAsync(database.ConnectionString, session.Id.Value);
+            Assert.Equal(1, jsonbJourneyMatches);
+
             var componentRows = await verificationContext.GameSessionComponents
                 .AsNoTracking()
                 .Where(component => component.SessionId == session.Id.Value)
@@ -95,7 +108,7 @@ public sealed class PostgreSqlPersistenceTests
             Assert.All(componentRows, component => Assert.False(string.IsNullOrWhiteSpace(component.PayloadJson)));
 
             var journeyComponent = Assert.Single(componentRows, component => component.ComponentName == "journey");
-            Assert.Contains("\"journeySequence\":1", journeyComponent.PayloadJson, StringComparison.Ordinal);
+            Assert.Contains("\"status\": 2", journeyComponent.PayloadJson, StringComparison.Ordinal);
 
             var logRows = await verificationContext.GameSessionLogEntries
                 .AsNoTracking()
@@ -120,6 +133,49 @@ public sealed class PostgreSqlPersistenceTests
         {
             await CleanupSessionAsync(options, session.Id.Value);
         }
+    }
+
+    private static async Task<(string TableName, string DataType)[]> GetPayloadColumnTypesAsync(string connectionString)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT table_name, data_type
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name IN ('GameSessionComponents', 'GameSessionTravelDiaryDays')
+              AND column_name = 'PayloadJson'
+            ORDER BY table_name;
+            """;
+
+        var result = new List<(string TableName, string DataType)>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            result.Add((reader.GetString(0), reader.GetString(1)));
+        }
+
+        return result.ToArray();
+    }
+
+    private static async Task<int> CountJsonbJourneyMatchesAsync(string connectionString, Guid sessionId)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM "GameSessionComponents"
+            WHERE "SessionId" = @sessionId
+              AND "ComponentName" = 'journey'
+              AND "PayloadJson" @> '{"status":2}'::jsonb;
+            """;
+        command.Parameters.AddWithValue("sessionId", sessionId);
+
+        return Convert.ToInt32(await command.ExecuteScalarAsync());
     }
 
     private static GameSession CreateCompletedTravelSession()

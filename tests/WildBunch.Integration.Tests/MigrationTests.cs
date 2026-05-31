@@ -61,6 +61,7 @@ public sealed class MigrationTests
 
         await using var connection = new NpgsqlConnection(database.ConnectionString);
         await connection.OpenAsync();
+        await AssertJsonbColumnTypesAsync(connection);
         await using var schemaCommand = connection.CreateCommand();
         schemaCommand.CommandText = """
             SELECT column_name
@@ -81,6 +82,34 @@ public sealed class MigrationTests
         Assert.DoesNotContain("StateJson", columns);
         Assert.Contains("SchemaVersion", columns);
         Assert.Contains("TravelDifficulty", columns);
+    }
+
+    private static async Task AssertJsonbColumnTypesAsync(NpgsqlConnection connection)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT table_name, data_type
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND column_name = 'PayloadJson'
+              AND table_name IN ('GameSessionComponents', 'GameSessionTravelDiaryDays')
+            ORDER BY table_name;
+            """;
+
+        var payloadColumns = new List<(string TableName, string DataType)>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            payloadColumns.Add((reader.GetString(0), reader.GetString(1)));
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                ("GameSessionComponents", "jsonb"),
+                ("GameSessionTravelDiaryDays", "jsonb")
+            },
+            payloadColumns);
     }
 
     private static GameSession CreateSession()

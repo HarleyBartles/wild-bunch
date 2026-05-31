@@ -11,7 +11,8 @@ public sealed class GameSessionDiaryDayEntityConfiguration : IEntityTypeConfigur
         builder.HasKey(e => new { e.SessionId, e.Sequence });
 
         builder.Property(e => e.PayloadJson)
-            .IsRequired();
+            .IsRequired()
+            .HasColumnType("jsonb");
 
         builder.Property(e => e.RecordedAtUtc)
             .IsRequired();

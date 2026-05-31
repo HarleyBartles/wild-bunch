@@ -18,7 +18,8 @@ public sealed class GameSessionComponentEntityConfiguration : IEntityTypeConfigu
             .IsRequired();
 
         builder.Property(e => e.PayloadJson)
-            .IsRequired();
+            .IsRequired()
+            .HasColumnType("jsonb");
 
         builder.Property(e => e.UpdatedAtUtc)
             .IsRequired();
