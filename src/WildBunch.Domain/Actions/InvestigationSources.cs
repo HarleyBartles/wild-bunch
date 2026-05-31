@@ -23,5 +23,17 @@ public static class InvestigationSources
         "Check sheriff records",
         TownServices.NoticeBoard);
 
-    public static IReadOnlyList<InvestigationSourceDefinition> All { get; } = [NoticeBoard, SheriffRecords];
+    public static readonly InvestigationSourceDefinition TelegraphLead = new(
+        InvestigationSourceKind.TelegraphLead,
+        AvailableActionKind.FollowTelegraphLeads,
+        "Follow telegraph leads",
+        TownServices.Telegraph);
+
+    public static readonly InvestigationSourceDefinition LocalGossip = new(
+        InvestigationSourceKind.LocalGossip,
+        AvailableActionKind.GatherLocalGossip,
+        "Gather local gossip",
+        TownServices.NoticeBoard);
+
+    public static IReadOnlyList<InvestigationSourceDefinition> All { get; } = [NoticeBoard, SheriffRecords, TelegraphLead, LocalGossip];
 }

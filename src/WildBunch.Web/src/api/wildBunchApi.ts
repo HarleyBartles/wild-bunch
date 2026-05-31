@@ -168,3 +168,15 @@ export function checkSheriffRecords(gameId: string) {
     method: "POST",
   });
 }
+
+export function followTelegraphLeads(gameId: string) {
+  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/telegraph-leads/follow`, {
+    method: "POST",
+  });
+}
+
+export function gatherLocalGossip(gameId: string) {
+  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/local-gossip/gather`, {
+    method: "POST",
+  });
+}

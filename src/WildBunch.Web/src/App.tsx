@@ -25,6 +25,8 @@ export default function App() {
     canReadWantedPosters,
     canInspectNoticeBoard,
     canCheckSheriffRecords,
+    canFollowTelegraphLeads,
+    canGatherLocalGossip,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -32,6 +34,8 @@ export default function App() {
     handleReadWantedPosters,
     handleInspectNoticeBoard,
     handleCheckSheriffRecords,
+    handleFollowTelegraphLeads,
+    handleGatherLocalGossip,
     handleReset,
     setSession,
     setNotice,
@@ -181,6 +185,24 @@ export default function App() {
                       disabled={!gameId || loading || !canCheckSheriffRecords}
                     >
                       {busyMode === "investigating" ? "Checking..." : "Check sheriff records"}
+                    </button>
+                  ) : action.kind === AvailableActionKind.FollowTelegraphLeads ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={handleFollowTelegraphLeads}
+                      disabled={!gameId || loading || !canFollowTelegraphLeads}
+                    >
+                      {busyMode === "investigating" ? "Following..." : "Follow telegraph leads"}
+                    </button>
+                  ) : action.kind === AvailableActionKind.GatherLocalGossip ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={handleGatherLocalGossip}
+                      disabled={!gameId || loading || !canGatherLocalGossip}
+                    >
+                      {busyMode === "investigating" ? "Gathering..." : "Gather local gossip"}
                     </button>
                   ) : null}
                 </div>

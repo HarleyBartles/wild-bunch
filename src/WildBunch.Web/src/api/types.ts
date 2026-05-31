@@ -9,7 +9,7 @@ export const JourneyStatus = {
 } as const;
 export type TravelMode = 0 | 1;
 
-export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 export const AvailableActionKind = {
   Travel: 0,
   ViewMap: 1,
@@ -23,6 +23,8 @@ export const AvailableActionKind = {
   ResolveTravelEncounter: 9,
   InspectNoticeBoard: 10,
   CheckSheriffRecords: 11,
+  FollowTelegraphLeads: 12,
+  GatherLocalGossip: 13,
 } as const;
 
 export type TrailRisk = 1 | 2 | 3;

@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createGame,
   checkSheriffRecords,
+  followTelegraphLeads,
   getAvailableActions,
   getGame,
   getJournal,
   inspectNoticeBoard,
+  gatherLocalGossip,
   readWantedPosters,
   travel,
 } from "../api/wildBunchApi";
@@ -27,6 +29,14 @@ function actionIsInspectNoticeBoard(action: AvailableActionDto) {
 
 function actionIsCheckSheriffRecords(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.CheckSheriffRecords;
+}
+
+function actionIsFollowTelegraphLeads(action: AvailableActionDto) {
+  return action.kind === AvailableActionKind.FollowTelegraphLeads;
+}
+
+function actionIsGatherLocalGossip(action: AvailableActionDto) {
+  return action.kind === AvailableActionKind.GatherLocalGossip;
 }
 
 export function useCurrentGameSession() {
@@ -203,6 +213,46 @@ export function useCurrentGameSession() {
     }
   }
 
+  async function handleFollowTelegraphLeads() {
+    if (!gameId || !canFollowTelegraphLeads) {
+      return;
+    }
+
+    setBusyMode("investigating");
+    setError("");
+
+    try {
+      const result = await followTelegraphLeads(gameId);
+      setJournal(result.currentJournal);
+      await reloadCurrentGame(gameId);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to follow telegraph leads.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
+  async function handleGatherLocalGossip() {
+    if (!gameId || !canGatherLocalGossip) {
+      return;
+    }
+
+    setBusyMode("investigating");
+    setError("");
+
+    try {
+      const result = await gatherLocalGossip(gameId);
+      setJournal(result.currentJournal);
+      await reloadCurrentGame(gameId);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to gather local gossip.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
   function handleReset() {
     window.localStorage.removeItem(storageKey);
     setSession(null);
@@ -219,6 +269,8 @@ export function useCurrentGameSession() {
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
   const canInspectNoticeBoard = actions.some(actionIsInspectNoticeBoard);
   const canCheckSheriffRecords = actions.some(actionIsCheckSheriffRecords);
+  const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
+  const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
 
   return {
     session,
@@ -235,6 +287,8 @@ export function useCurrentGameSession() {
     canReadWantedPosters,
     canInspectNoticeBoard,
     canCheckSheriffRecords,
+    canFollowTelegraphLeads,
+    canGatherLocalGossip,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -242,6 +296,8 @@ export function useCurrentGameSession() {
     handleReadWantedPosters,
     handleInspectNoticeBoard,
     handleCheckSheriffRecords,
+    handleFollowTelegraphLeads,
+    handleGatherLocalGossip,
     handleReset,
     setSession,
     setNotice,

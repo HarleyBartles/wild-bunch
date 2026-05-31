@@ -63,9 +63,11 @@ public sealed class SeededNewGameFactoryTests
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
-        Assert.Equal(2, session.CaseFile.PublicClues.Count);
+        Assert.Equal(4, session.CaseFile.PublicClues.Count);
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Equal(3, session.CaseFile.KnownClues.Count);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal("Kid Curry", session.CaseFile.PublicWarrants[0].TargetName);

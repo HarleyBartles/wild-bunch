@@ -47,6 +47,40 @@ public sealed class GameSessionInvestigationActionsTests
     }
 
     [Fact]
+    public void FollowTelegraphLeadsRevealsTelegraphTaggedClueAndIsIdempotent()
+    {
+        var session = CreateExpandedSession();
+
+        var first = session.FollowTelegraphLeads();
+        var second = session.FollowTelegraphLeads();
+
+        Assert.True(first.Success);
+        Assert.True(second.Success);
+        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+    }
+
+    [Fact]
+    public void GatherLocalGossipRevealsGossipTaggedClueAndIsIdempotent()
+    {
+        var session = CreateExpandedSession();
+
+        var first = session.GatherLocalGossip();
+        var second = session.GatherLocalGossip();
+
+        Assert.True(first.Success);
+        Assert.True(second.Success);
+        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+    }
+
+    [Fact]
     public void InvestigationActionsFailWhileJourneyAwaitingAcknowledgement()
     {
         var session = CreateSession();
@@ -116,6 +150,54 @@ public sealed class GameSessionInvestigationActionsTests
                         OutlawGangIds.WildBunch,
                         InvestigationSourceKind.NoticeBoard),
                     "Wanted for a Wild Bunch robbery.")
+            });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateExpandedSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard | TownServices.Telegraph);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(
+                    new ClueId("clue-public-telegraph"),
+                    ClueKind.IdentityFact,
+                    "A telegraph clerk filed a name in shorthand.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.TelegraphLead,
+                    source: "telegraph clerk",
+                    context: "Telegraph lead"),
+                new Clue(
+                    new ClueId("clue-public-gossip"),
+                    ClueKind.Whereabouts,
+                    "Local gossip says the rider kept to the rail spur after dark.",
+                    new[] { new SuspectId("suspect-2") },
+                    InvestigationTargetKind.GangMember,
+                    InvestigationSourceKind.LocalGossip,
+                    source: "saloon talk",
+                    context: "Town gossip")
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

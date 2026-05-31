@@ -49,6 +49,28 @@ public sealed class GameApiInvestigationActionsTests
         Assert.Single(sheriffRecordsResult.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Contains(sheriffRecordsResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Record);
 
+        var gossipResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/local-gossip/gather", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, gossipResponse.StatusCode);
+
+        var gossipResult = await gossipResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
+
+        Assert.NotNull(gossipResult);
+        Assert.True(gossipResult!.Success);
+        Assert.Equal(3, gossipResult.CurrentJournal.Clock.Turn);
+        Assert.Equal(5, gossipResult.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Contains(gossipResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("local gossip", StringComparison.OrdinalIgnoreCase));
+
+        var telegraphResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/telegraph-leads/follow", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, telegraphResponse.StatusCode);
+
+        var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
+
+        Assert.NotNull(telegraphResult);
+        Assert.False(telegraphResult!.Success);
+        Assert.Equal("There is no telegraph office here.", telegraphResult.Message);
+
         var payload = await sheriffRecordsResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);

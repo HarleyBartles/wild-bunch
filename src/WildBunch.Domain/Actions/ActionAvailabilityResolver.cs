@@ -58,8 +58,10 @@ public sealed class ActionAvailabilityResolver
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.VisitDoctor);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.SendTelegram);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
-            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.CheckSheriffRecords);
+            foreach (var source in InvestigationSources.All)
+            {
+                availableActions.RemoveAll(action => action.Kind == source.ActionKind);
+            }
             if (session.Journey.PendingEncounter is not null)
             {
                 availableActions.Add(new AvailableAction(AvailableActionKind.ResolveTravelEncounter, "Resolve travel encounter"));

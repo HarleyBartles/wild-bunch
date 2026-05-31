@@ -6,6 +6,8 @@ import {
   buyStoreItem,
   checkSheriffRecords,
   createGame,
+  followTelegraphLeads,
+  gatherLocalGossip,
   getAvailableActions,
   getGame,
   getJournal,
@@ -25,6 +27,8 @@ vi.mock("./api/wildBunchApi", () => ({
   checkSheriffRecords: vi.fn(),
   inspectNoticeBoard: vi.fn(),
   readWantedPosters: vi.fn(),
+  followTelegraphLeads: vi.fn(),
+  gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
 }));
 
@@ -37,6 +41,8 @@ const mockedBuyStoreItem = vi.mocked(buyStoreItem);
 const mockedCheckSheriffRecords = vi.mocked(checkSheriffRecords);
 const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
+const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
+const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 
 afterEach(() => {
@@ -175,6 +181,16 @@ describe("App", () => {
     mockedCheckSheriffRecords.mockResolvedValue({
       success: true,
       message: "Check sheriff records",
+      currentJournal: createJournal(),
+    });
+    mockedFollowTelegraphLeads.mockResolvedValue({
+      success: true,
+      message: "Follow telegraph leads",
+      currentJournal: createJournal(),
+    });
+    mockedGatherLocalGossip.mockResolvedValue({
+      success: true,
+      message: "Gather local gossip",
       currentJournal: createJournal(),
     });
     mockedTravel.mockResolvedValue({

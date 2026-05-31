@@ -85,7 +85,7 @@ internal static class SeedCaseBuilder
         var suspectTurfAssignments = SelectSuspectTurfAssignments(source, world, suspects);
         var openingLead = CaseOpeningLead.Create(CaseSuspectFeaturePool.BuildOpeningLead(features[trueCulpritIndex].PrimaryFeature));
         var knownClues = CreateKnownClues(source, features[trueCulpritIndex].PrimaryFeature);
-        var publicClues = CreatePublicClues(source, suspects, features);
+        var publicClues = CreatePublicClues(source, world, suspects, features, suspectTurfAssignments);
         var accusationId = suspects[accusationIndex].Id;
         var publicWarrants = new[]
         {
@@ -121,12 +121,24 @@ internal static class SeedCaseBuilder
             CreateClue(source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", TrueCulpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead", InvestigationSourceKind.LocalGossip)
         };
 
-    private static IReadOnlyList<Clue> CreatePublicClues(GameSetupDeterministicSource source, IReadOnlyList<Suspect> suspects, IReadOnlyList<CaseSuspectFeatureAssignment> features)
+    private static IReadOnlyList<Clue> CreatePublicClues(
+        GameSetupDeterministicSource source,
+        World world,
+        IReadOnlyList<Suspect> suspects,
+        IReadOnlyList<CaseSuspectFeatureAssignment> features,
+        IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments)
         => new[]
         {
             CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 1, ClueKind.Alias, $"A poster mentions {features[0].PrimaryFeature.Description.ToLowerInvariant()}", suspects[0].Id, InvestigationTargetKind.GangMember, "notice board", "Public wanted poster", InvestigationSourceKind.NoticeBoard),
-            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice", InvestigationSourceKind.SheriffRecords)
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 2, ClueKind.Record, $"A public notice describes {features[1].PrimaryFeature.Description.ToLowerInvariant()}", suspects[1].Id, InvestigationTargetKind.Suspected, "sheriff record", "Public notice", InvestigationSourceKind.SheriffRecords),
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 3, ClueKind.IdentityFact, $"A telegraph clerk filed {DescribePrimaryAlias(suspects[2])} alongside a note about {features[2].PrimaryFeature.Description.ToLowerInvariant()}.", suspects[2].Id, InvestigationTargetKind.Suspected, "telegraph clerk", "Telegraph lead", InvestigationSourceKind.TelegraphLead),
+            CreateClue(source, GameSetupDeterministicLabels.CasePublicClues, 4, ClueKind.Whereabouts, $"Local gossip out of {world.GetTown(suspectTurfAssignments[4].TurfTownId).Name} says the rider kept to the rail spur after dark.", suspects[4].Id, InvestigationTargetKind.GangMember, "saloon talk", "Town gossip", InvestigationSourceKind.LocalGossip)
         };
+
+    private static string DescribePrimaryAlias(Suspect suspect)
+        => suspect.Profile.Aliases.Count > 0
+            ? suspect.Profile.Aliases[0].Name
+            : suspect.Name;
 
     private static IReadOnlyList<SuspectTurfAssignment> SelectSuspectTurfAssignments(
         GameSetupDeterministicSource source,

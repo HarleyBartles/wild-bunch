@@ -216,6 +216,36 @@ public sealed class CaseFile
         return null;
     }
 
+    public Clue? RevealNextPublicClue(Func<Clue, bool> canReveal, bool advanceKillerReleaseProgress = true)
+    {
+        ArgumentNullException.ThrowIfNull(canReveal);
+
+        for (var i = 0; i < _publicClues.Count; i++)
+        {
+            var clue = _publicClues[i];
+
+            if (!canReveal(clue))
+            {
+                continue;
+            }
+
+            if (_knownClues.Any(existing => existing.Id.Equals(clue.Id)))
+            {
+                _publicClues.RemoveAt(i);
+                i--;
+                continue;
+            }
+
+            _publicClues.RemoveAt(i);
+            if (DiscoverClue(clue, advanceKillerReleaseProgress))
+            {
+                return clue;
+            }
+        }
+
+        return null;
+    }
+
     public Warrant? RevealNextPublicWarrant(InvestigationSourceKind? sourceKind = null)
     {
         for (var i = 0; i < _publicWarrants.Count; i++)

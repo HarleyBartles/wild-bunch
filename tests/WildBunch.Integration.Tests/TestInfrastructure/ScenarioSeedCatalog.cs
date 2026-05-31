@@ -278,6 +278,8 @@ internal static class ScenarioSeedCatalog
         Require("CanonicalPinecrossServices", "actions.readWantedPosters", actions.Any(action => action.Kind == AvailableActionKind.ReadWantedPosters), "expected ReadWantedPosters to be available.");
         Require("CanonicalPinecrossServices", "actions.inspectNoticeBoard", actions.Any(action => action.Kind == AvailableActionKind.InspectNoticeBoard), "expected InspectNoticeBoard to be available.");
         Require("CanonicalPinecrossServices", "actions.checkSheriffRecords", actions.Any(action => action.Kind == AvailableActionKind.CheckSheriffRecords), "expected CheckSheriffRecords to be available.");
+        Require("CanonicalPinecrossServices", "actions.gatherLocalGossip", actions.Any(action => action.Kind == AvailableActionKind.GatherLocalGossip), "expected GatherLocalGossip to be available.");
+        Require("CanonicalPinecrossServices", "actions.followTelegraphLeads", !actions.Any(action => action.Kind == AvailableActionKind.FollowTelegraphLeads), "expected FollowTelegraphLeads to stay unavailable at the start.");
         Require("CanonicalPinecrossServices", "actions.visitDoctor", !actions.Any(action => action.Kind == AvailableActionKind.VisitDoctor), "expected VisitDoctor to stay unavailable at the start.");
         Require("CanonicalPinecrossServices", "actions.sendTelegram", !actions.Any(action => action.Kind == AvailableActionKind.SendTelegram), "expected SendTelegram to stay unavailable at the start.");
     }

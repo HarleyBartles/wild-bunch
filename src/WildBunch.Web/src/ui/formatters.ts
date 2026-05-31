@@ -52,6 +52,10 @@ export function formatActionKind(kind: number) {
       return "Inspect notice board";
     case 11:
       return "Check sheriff records";
+    case 12:
+      return "Follow telegraph leads";
+    case 13:
+      return "Gather local gossip";
     default:
       return `Action ${kind}`;
   }

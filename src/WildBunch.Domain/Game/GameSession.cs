@@ -1482,7 +1482,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
-        var clue = CaseFile.RevealNextPublicClue();
+        var clue = CaseFile.RevealNextPublicClue(publicClue =>
+            publicClue.SourceKind is null
+            || publicClue.SourceKind == InvestigationSourceKind.NoticeBoard
+            || publicClue.SourceKind == InvestigationSourceKind.SheriffRecords);
 
         if (clue is null)
         {
@@ -1492,6 +1495,58 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         RecordCaseUpdate($"You study the wanted posters and note a public lead: {clue.Description}.");
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
+    }
+
+    public CaseInvestigationResult FollowTelegraphLeads()
+    {
+        if (IsJourneyModal())
+        {
+            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
+        }
+
+        var currentTown = World.GetTown(Player.CurrentTownId);
+
+        if ((currentTown.Services & TownServices.Telegraph) == 0)
+        {
+            return CaseInvestigationResult.Failed("There is no telegraph office here.");
+        }
+
+        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.TelegraphLead);
+
+        if (clue is null)
+        {
+            RecordCaseUpdate("You follow the telegraph leads, but find nothing new.");
+            return CaseInvestigationResult.Succeeded("You follow the telegraph leads, but find nothing new.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate($"You follow the telegraph leads and uncover a public lead: {clue.Description}.");
+        return CaseInvestigationResult.Succeeded("You follow the telegraph leads and uncover a public lead.", sessionChanged: true);
+    }
+
+    public CaseInvestigationResult GatherLocalGossip()
+    {
+        if (IsJourneyModal())
+        {
+            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
+        }
+
+        var currentTown = World.GetTown(Player.CurrentTownId);
+
+        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
+        {
+            return CaseInvestigationResult.Failed("There is no one around to talk to here.");
+        }
+
+        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.LocalGossip);
+
+        if (clue is null)
+        {
+            RecordCaseUpdate("You ask around for local gossip, but hear nothing new.");
+            return CaseInvestigationResult.Succeeded("You ask around for local gossip, but hear nothing new.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate($"You ask around for local gossip and uncover a public lead: {clue.Description}.");
+        return CaseInvestigationResult.Succeeded("You ask around for local gossip and uncover a public lead.", sessionChanged: true);
     }
 
     public CaseInvestigationResult InspectNoticeBoard()

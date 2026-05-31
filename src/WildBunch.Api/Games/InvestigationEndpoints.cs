@@ -18,6 +18,16 @@ public static class InvestigationEndpoints
             .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapPost("{id:guid}/investigations/telegraph-leads/follow", FollowTelegraphLeadsAsync)
+            .WithName("FollowTelegraphLeads")
+            .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        games.MapPost("{id:guid}/investigations/local-gossip/gather", GatherLocalGossipAsync)
+            .WithName("GatherLocalGossip")
+            .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         return games;
     }
 
@@ -45,6 +55,38 @@ public static class InvestigationEndpoints
         try
         {
             var result = await handler.HandleAsync(new CheckSheriffRecordsCommand(id), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> FollowTelegraphLeadsAsync(
+        Guid id,
+        FollowTelegraphLeadsHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new FollowTelegraphLeadsCommand(id), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> GatherLocalGossipAsync(
+        Guid id,
+        GatherLocalGossipHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new GatherLocalGossipCommand(id), cancellationToken);
             return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)

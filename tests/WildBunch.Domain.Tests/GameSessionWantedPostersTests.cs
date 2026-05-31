@@ -54,6 +54,27 @@ public sealed class GameSessionWantedPostersTests
     }
 
     [Fact]
+    public void ReadingWantedPostersSkipsTelegraphAndGossipClues()
+    {
+        var session = CreateSession(TownServices.NoticeBoard, includeSourceSpecificClues: true);
+
+        var first = session.ReadWantedPosters();
+        var second = session.ReadWantedPosters();
+        var third = session.ReadWantedPosters();
+
+        Assert.True(first.Success);
+        Assert.True(second.Success);
+        Assert.True(third.Success);
+        Assert.Equal(3, session.Clock.Turn);
+        Assert.Equal(4, session.LogEntries.Count);
+        Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind is null);
+        Assert.Equal(2, session.CaseFile.PublicClues.Count);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        Assert.Equal(1, session.CaseFile.KillerReleaseProgress);
+    }
+
+    [Fact]
     public void ReadingWantedPostersInUnsupportedTownFailsAndDoesNotMutateClues()
     {
         var session = CreateSession(TownServices.None);
@@ -90,7 +111,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(JourneyStatus.Completed, session.Journey.Status);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession(TownServices currentTownServices, bool includeSourceSpecificClues = false)
     {
         var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
@@ -123,7 +144,29 @@ public sealed class GameSessionWantedPostersTests
                     InvestigationTargetKind.GangMember,
                     source: "notice board",
                     context: "Public wanted poster")
-            },
+            }.Concat(includeSourceSpecificClues
+                ? new[]
+                {
+                    new Clue(
+                        new ClueId("clue-public-telegraph"),
+                        ClueKind.IdentityFact,
+                        "A telegraph clerk filed a name in shorthand.",
+                        new[] { new SuspectId("suspect-2") },
+                        InvestigationTargetKind.Suspected,
+                        InvestigationSourceKind.TelegraphLead,
+                        source: "telegraph clerk",
+                        context: "Telegraph lead"),
+                    new Clue(
+                        new ClueId("clue-public-gossip"),
+                        ClueKind.Whereabouts,
+                        "Local gossip says the rider kept to the rail spur after dark.",
+                        new[] { new SuspectId("suspect-2") },
+                        InvestigationTargetKind.GangMember,
+                        InvestigationSourceKind.LocalGossip,
+                        source: "saloon talk",
+                        context: "Town gossip")
+                }
+                : Array.Empty<Clue>()).ToArray(),
             publicWarrants: new[]
             {
                 new Warrant(
