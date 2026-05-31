@@ -47,9 +47,9 @@ public sealed class MigrationTests
         using (var verificationContext = new WildBunchDbContext(options))
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
-            Assert.Equal(6, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(7, await verificationContext.GameSessionComponents.CountAsync());
             Assert.Equal(
-                new[] { "caseFile", "clock", "player", "pursuitState", "travelRandomness", "world" },
+                new[] { "caseFile", "clock", "player", "pursuitState", "townVisitState", "travelRandomness", "world" },
                 await verificationContext.GameSessionComponents
                     .Where(component => component.SessionId == session.Id.Value)
                     .OrderBy(component => component.ComponentName)

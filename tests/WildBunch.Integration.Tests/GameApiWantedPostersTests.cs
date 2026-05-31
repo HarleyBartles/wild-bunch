@@ -75,13 +75,12 @@ public sealed class GameApiWantedPostersTests
         var secondRead = await secondReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
 
         Assert.NotNull(secondRead);
-        Assert.Equal(2, secondRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
-        Assert.Equal(5, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
-        Assert.Equal(2, secondRead.CurrentJournal.CaseFile.DiscoveredSuspects.Count);
+        Assert.Equal(1, secondRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(4, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Single(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects);
         Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
-        Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-2");
-        Assert.Equal(5, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
-        Assert.Equal(2, secondRead.CurrentJournal.CaseFile.KnownClues.Count(clue => clue.Kind is ClueKind.Alias or ClueKind.Record));
+        Assert.Equal(4, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Equal(1, secondRead.CurrentJournal.CaseFile.KnownClues.Count(clue => clue.Kind is ClueKind.Alias or ClueKind.Record));
 
         var thirdReadResponse = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
@@ -90,7 +89,8 @@ public sealed class GameApiWantedPostersTests
         var thirdRead = await thirdReadResponse.Content.ReadFromJsonAsync<WantedPostersResultDto>();
 
         Assert.NotNull(thirdRead);
-        Assert.Equal(2, thirdRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(1, thirdRead!.CurrentJournal.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(4, thirdRead.CurrentJournal.CaseFile.KnownClues.Count);
     }
 
     [Fact]

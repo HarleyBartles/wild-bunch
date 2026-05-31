@@ -94,6 +94,19 @@ public sealed partial class GameSessionJsonSerializer
         return snapshot.ToDomain();
     }
 
+    public string SerializeTownVisitState(TownVisitState townVisitState)
+    {
+        ArgumentNullException.ThrowIfNull(townVisitState);
+        return JsonSerializer.Serialize(TownVisitStateSnapshot.FromDomain(townVisitState), Options);
+    }
+
+    public TownVisitState DeserializeTownVisitState(string json)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        var snapshot = Deserialize<TownVisitStateSnapshot>(json);
+        return snapshot.ToDomain();
+    }
+
     private sealed record PlayerSnapshot(
         string Name,
         string CurrentTownId,
@@ -475,5 +488,23 @@ public sealed partial class GameSessionJsonSerializer
 
         public TravelRandomnessState ToDomain()
             => new(Mode, Salt);
+    }
+
+    private sealed record TownVisitStateSnapshot(
+        string TownId,
+        IReadOnlyList<InvestigationSourceKind>? SpentInvestigationSources,
+        bool WantedPostersSpent)
+    {
+        public static TownVisitStateSnapshot FromDomain(TownVisitState townVisitState)
+            => new(
+                townVisitState.TownId.Value,
+                townVisitState.SpentInvestigationSources.Select(sourceKind => sourceKind).ToArray(),
+                townVisitState.WantedPostersSpent);
+
+        public TownVisitState ToDomain()
+            => new(
+                new TownId(TownId),
+                (SpentInvestigationSources ?? Array.Empty<InvestigationSourceKind>()).Select(sourceKind => sourceKind),
+                WantedPostersSpent);
     }
 }

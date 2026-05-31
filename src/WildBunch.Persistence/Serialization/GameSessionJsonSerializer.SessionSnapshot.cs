@@ -10,6 +10,7 @@ public sealed partial class GameSessionJsonSerializer
         GameStatus Status,
         TravelDifficulty TravelDifficulty,
         TravelRandomnessSnapshot? TravelRandomness,
+        TownVisitStateSnapshot? CurrentTownVisit,
         PlayerSnapshot Player,
         WorldSnapshot World,
         CaseFileSnapshot CaseFile,
@@ -26,6 +27,7 @@ public sealed partial class GameSessionJsonSerializer
                 session.Status,
                 session.TravelDifficulty,
                 TravelRandomnessSnapshot.FromDomain(session.TravelRandomness),
+                TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
                 PlayerSnapshot.FromDomain(session.Player),
                 WorldSnapshot.FromDomain(session.World),
                 CaseFileSnapshot.FromDomain(session.CaseFile),
@@ -44,6 +46,7 @@ public sealed partial class GameSessionJsonSerializer
             var pursuitState = PursuitStateSnapshot.ToDomain(PursuitState);
             var clock = GameClockSnapshot.ToDomain(Clock);
             var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey.ToDomain());
+            var townVisit = CurrentTownVisit?.ToDomain() ?? new TownVisitState(player.CurrentTownId);
             var session = GameSessionRehydrator.Create(
                 new GameSessionId(Id),
                 player,
@@ -55,6 +58,7 @@ public sealed partial class GameSessionJsonSerializer
                 journey,
                 TravelDifficulty,
                 TravelRandomness?.ToDomain() ?? TravelRandomnessState.CreateRuntimeSalted(),
+                townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);

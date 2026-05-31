@@ -140,6 +140,48 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.False(string.IsNullOrWhiteSpace(reloaded.TravelRandomness.Salt));
     }
 
+    [Fact]
+    public void TownVisitInvestigationStateRoundTripsThroughFullSessionJsonSnapshot()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateTownVisitSession();
+
+        var result = session.FollowTelegraphLeads();
+        Assert.True(result.Success);
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+
+        var json = serializer.Serialize(session);
+        var reloaded = serializer.Deserialize(json);
+
+        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
+        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.Single(reloaded.CaseFile.KnownClues);
+        Assert.Empty(reloaded.CaseFile.PublicClues);
+    }
+
+    [Fact]
+    public async Task TownVisitInvestigationStateRoundTripsThroughRepositoryPersistence()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = new EfGameSessionRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
+        var session = CreateTownVisitSession();
+
+        var result = session.FollowTelegraphLeads();
+        Assert.True(result.Success);
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+
+        await repository.SaveAsync(session);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
+        Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
+        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.Single(reloaded.CaseFile.KnownClues);
+        Assert.Empty(reloaded.CaseFile.PublicClues);
+    }
+
     private static GameSession CreateEasySession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
@@ -169,6 +211,59 @@ public sealed class GameSessionDifficultyPersistenceTests
             pinecross.Id,
             Wallet.Starting(25m),
             inventory,
+            TravelDifficulty.Easy);
+    }
+
+    private static GameSession CreateTownVisitSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph | TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+
+        var world = new World(
+            new[] { currentTown, connectedTown },
+            new[]
+            {
+                new Trail(new TrailId("trail-current-connected"), currentTown.Id, connectedTown.Id, TrailRisk.Low)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(
+                    new ClueId("clue-public-telegraph"),
+                    ClueKind.IdentityFact,
+                    "A telegraph clerk filed a name in shorthand.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.TelegraphLead,
+                    source: "telegraph clerk",
+                    context: "Telegraph lead")
+            });
+
+        return GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            currentTown.Id,
+            Wallet.Starting(25m),
+            new Inventory(new[]
+            {
+                new InventoryItem(ItemKind.Food, 4),
+                new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
+                new InventoryItem(ItemKind.Horse, 1, new HorseTravelState(3, 2, 3)),
+                new InventoryItem(ItemKind.Saddle, 1)
+            }),
             TravelDifficulty.Easy);
     }
 

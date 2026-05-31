@@ -34,6 +34,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         TravelJourney? journey,
         TravelDifficulty travelDifficulty,
         TravelRandomnessState travelRandomness,
+        TownVisitState? currentTownVisit,
         IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory)
     {
         Id = id;
@@ -46,6 +47,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Journey = journey;
         TravelDifficulty = travelDifficulty;
         TravelRandomness = travelRandomness;
+        CurrentTownVisit = currentTownVisit ?? new TownVisitState(player.CurrentTownId);
+        if (!CurrentTownVisit.TownId.Equals(player.CurrentTownId))
+        {
+            CurrentTownVisit.Reset(player.CurrentTownId);
+        }
+
         if (completedJourneyHistory is not null)
         {
             _completedJourneyHistory.AddRange(completedJourneyHistory);
@@ -73,6 +80,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     public TravelDifficulty TravelDifficulty { get; private set; }
 
     public TravelRandomnessState TravelRandomness { get; private set; }
+
+    public TownVisitState CurrentTownVisit { get; private set; }
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
 
@@ -118,6 +127,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             journey: null,
             travelDifficulty,
             travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted(),
+            currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>());
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
@@ -340,8 +350,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         Journey.MarkCompleted();
         Player.TravelTo(Journey.Preview.DestinationTownId);
+        RefreshTownVisit(Journey.Preview.DestinationTownId);
         RefillCanteenAfterArrival();
         return Journey.ToSnapshot(TravelRules);
+    }
+
+    private void RefreshTownVisit(TownId townId)
+    {
+        CurrentTownVisit.Reset(townId);
     }
 
     private void RefillCanteenAfterArrival()
@@ -1482,6 +1498,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
+        if (!CurrentTownVisit.TrySpendWantedPosters())
+        {
+            RecordCaseUpdate("You study the wanted posters again, but find nothing new.");
+            return ReadWantedPostersResult.Succeeded("You study the wanted posters again, but find nothing new.", sessionChanged: true);
+        }
+
         var clue = CaseFile.RevealNextPublicClue(publicClue =>
             publicClue.SourceKind is null
             || publicClue.SourceKind == InvestigationSourceKind.NoticeBoard
@@ -1511,6 +1533,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
 
+        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.TelegraphLead))
+        {
+            RecordCaseUpdate("You ask after telegraph leads again, but no new wire has come in.");
+            return CaseInvestigationResult.Succeeded("You ask after telegraph leads again, but no new wire has come in.", sessionChanged: true);
+        }
+
         var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.TelegraphLead);
 
         if (clue is null)
@@ -1535,6 +1563,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if ((currentTown.Services & TownServices.NoticeBoard) == 0)
         {
             return CaseInvestigationResult.Failed("There is no one around to talk to here.");
+        }
+
+        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.LocalGossip))
+        {
+            RecordCaseUpdate("You ask around again, but hear nothing new.");
+            return CaseInvestigationResult.Succeeded("You ask around again, but hear nothing new.", sessionChanged: true);
         }
 
         var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.LocalGossip);
@@ -1563,6 +1597,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed("There is no notice board here.");
         }
 
+        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.NoticeBoard))
+        {
+            RecordCaseUpdate("You inspect the notice board again, but nothing new has been posted.");
+            return CaseInvestigationResult.Succeeded("You inspect the notice board again, but nothing new has been posted.", sessionChanged: true);
+        }
+
         var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.NoticeBoard);
 
         if (warrant is null)
@@ -1587,6 +1627,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if ((currentTown.Services & TownServices.NoticeBoard) == 0)
         {
             return CaseInvestigationResult.Failed("There are no sheriff records here.");
+        }
+
+        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.SheriffRecords))
+        {
+            RecordCaseUpdate("You check the sheriff records again, but find nothing new.");
+            return CaseInvestigationResult.Succeeded("You check the sheriff records again, but find nothing new.", sessionChanged: true);
         }
 
         var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.SheriffRecords);

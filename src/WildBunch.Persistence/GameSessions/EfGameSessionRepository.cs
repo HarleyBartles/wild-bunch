@@ -56,6 +56,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         UpsertComponent(entity.Id, GameSessionComponentNames.Clock, _serializer.SerializeClock(session.Clock), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.PursuitState, _serializer.SerializePursuitState(session.PursuitState), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.TravelRandomness, _serializer.SerializeTravelRandomness(session.TravelRandomness), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.TownVisitState, _serializer.SerializeTownVisitState(session.CurrentTownVisit), now);
 
         if (session.Journey is null)
         {
@@ -124,6 +125,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
         var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState));
         var randomness = _serializer.DeserializeTravelRandomness(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.TravelRandomness));
+        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
+        var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey);
         var journey = journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson);
         var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CompletedJourneyHistory);
@@ -141,6 +144,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             clock,
             pursuitState,
             randomness,
+            townVisitState,
             journey,
             completedJourneyHistory,
             store.TravelDiaryDays,
