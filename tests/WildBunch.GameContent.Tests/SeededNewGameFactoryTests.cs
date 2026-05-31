@@ -35,12 +35,18 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(7, session.World.Trails.Count);
         Assert.Contains(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("redmesa")));
         Assert.DoesNotContain(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("dryfork")));
-        Assert.Equal(4, session.CaseFile.Suspects.Count);
+        Assert.Equal(7, session.CaseFile.Suspects.Count);
         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Id.Equals(session.CaseFile.TrueCulpritId));
-        Assert.Equal("A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead.Description);
+        Assert.Equal(5, session.CaseFile.KillerReleaseThreshold);
+        Assert.Equal("The culprit has a scar on his left cheek.", session.CaseFile.OpeningLead.Description);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
-        Assert.Equal(2, session.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(5, session.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Contains(session.CaseFile.KnownClues, clue =>
+            clue.Kind == ClueKind.CulpritTrail
+            && clue.TargetKind == InvestigationTargetKind.TrueCulprit
+            && clue.Description.Contains("scar", StringComparison.OrdinalIgnoreCase)
+            && clue.Description.Contains("left cheek", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
@@ -56,8 +62,11 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(WarrantDisposition.AliveOnly, session.CaseFile.PublicWarrants[1].Terms.Disposition);
         Assert.False(session.CaseFile.PublicWarrants[1].Terms.IsGangRelevant);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
-        Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Profile.Aliases.Count > 0 && suspect.Profile.IdentifyingFacts.Count > 0);
-        Assert.Single(session.CaseFile.Suspects, suspect => suspect.Profile.IdentifyingFacts.Any(fact => fact.Description == session.CaseFile.OpeningLead.Description));
+        Assert.Contains(session.CaseFile.Suspects, suspect =>
+            suspect.Id.Equals(session.CaseFile.TrueCulpritId)
+            && suspect.Profile.IdentifyingFacts.Any(fact => fact.Description.Contains("scar", StringComparison.OrdinalIgnoreCase))
+            && suspect.Profile.IdentifyingFacts.Any(fact => fact.Description.Contains("left cheek", StringComparison.OrdinalIgnoreCase)));
+        Assert.All(session.CaseFile.PublicClues, clue => Assert.DoesNotContain(session.CaseFile.TrueCulpritId, clue.LinkedSuspectIds));
     }
 
     [Fact]

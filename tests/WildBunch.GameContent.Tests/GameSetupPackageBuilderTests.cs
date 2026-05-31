@@ -1,3 +1,4 @@
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -86,6 +87,13 @@ public sealed class GameSetupPackageBuilderTests
         Assert.Equal(new TownId("pinecross"), package.StartingTownId);
         Assert.Equal(25m, package.StartingWallet.Cash);
         Assert.Equal(SeedWorldVariant.Canonical, plan.WorldVariant);
+        Assert.Equal(7, package.CaseFile.Suspects.Count);
+        Assert.Single(package.CaseFile.Suspects, suspect => suspect.Id.Equals(package.CaseFile.TrueCulpritId));
+        Assert.Equal(5, package.CaseFile.KillerReleaseThreshold);
+        Assert.Equal("The culprit has a scar on his left cheek.", package.CaseFile.OpeningLead.Description);
+        Assert.Contains(package.CaseFile.KnownClues, clue =>
+            clue.Kind == ClueKind.CulpritTrail
+            && clue.TargetKind == InvestigationTargetKind.TrueCulprit);
     }
 
     private static GameSetupPackage BuildPackage(GameSetupSeed seed)

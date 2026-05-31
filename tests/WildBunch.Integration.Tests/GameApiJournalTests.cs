@@ -35,7 +35,7 @@ public sealed class GameApiJournalTests
         Assert.Equal("pinecross", journal.CurrentTown.Id);
         Assert.Equal("Pinecross", journal.CurrentTown.Name);
         Assert.Equal("Find the culprit before the law closes in.", journal.CaseFile.CaseSummary);
-        Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
+        Assert.Equal("The culprit has a scar on his left cheek.", journal.CaseFile.OpeningLead);
         Assert.False(journal.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, journal.CaseFile.KillerReleaseState.Progress);
         Assert.Empty(journal.CaseFile.DiscoveredSuspects);
@@ -92,7 +92,7 @@ public sealed class GameApiJournalTests
         Assert.Equal(5, journal.Clock.Day);
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
-        Assert.Equal("A pale scar cuts across the left cheek.", journal.CaseFile.OpeningLead);
+        Assert.Equal("The culprit has a scar on his left cheek.", journal.CaseFile.OpeningLead);
         Assert.Empty(journal.CaseFile.DiscoveredSuspects);
 
         var payload = await journalResponse.Content.ReadAsStringAsync();

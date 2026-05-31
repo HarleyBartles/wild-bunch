@@ -231,7 +231,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
         RequireEqual(scenarioName, "start-game.world.towns", 6, session.World.Towns.Count);
         RequireEqual(scenarioName, "start-game.world.trails", 7, session.World.Trails.Count);
-        RequireEqual(scenarioName, "start-game.caseFile.openingLead", "A pale scar cuts across the left cheek.", session.CaseFile.OpeningLead);
+        RequireEqual(scenarioName, "start-game.caseFile.openingLead", "The culprit has a scar on his left cheek.", session.CaseFile.OpeningLead);
         RequireEqual(scenarioName, "start-game.caseFile.killerReleaseState.isReleased", false, session.CaseFile.KillerReleaseState.IsReleased);
         RequireEqual(scenarioName, "start-game.caseFile.killerReleaseState.progress", 0, session.CaseFile.KillerReleaseState.Progress);
         RequireEqual(scenarioName, "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);

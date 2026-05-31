@@ -6,6 +6,9 @@ namespace WildBunch.GameContent.NewGame;
 
 internal static class SeedCaseBuilder
 {
+    private const int NormalReleaseThreshold = 5;
+    private static readonly SuspectId TrueCulpritId = new("suspect-4");
+
     public static CaseFile CreateCanonicalCaseFile()
     {
         var suspects = CreateSuspects();
@@ -14,8 +17,8 @@ internal static class SeedCaseBuilder
             new Clue(
                 new ClueId("clue-1"),
                 ClueKind.CulpritTrail,
-                "A pale scar across the left cheek caught the lantern light at dusk.",
-                new[] { new SuspectId("suspect-4") },
+                "The culprit has a scar on his left cheek.",
+                new[] { TrueCulpritId },
                 InvestigationTargetKind.TrueCulprit,
                 source: "trail witness",
                 context: "Opening lead"),
@@ -23,7 +26,7 @@ internal static class SeedCaseBuilder
                 new ClueId("clue-2"),
                 ClueKind.IdentityFact,
                 "A rider answered to the name Red Wren and wore a raven-feather pin.",
-                new[] { new SuspectId("suspect-4") },
+                new[] { TrueCulpritId },
                 InvestigationTargetKind.TrueCulprit,
                 source: "telegraph ledger",
                 context: "Identity match"),
@@ -31,7 +34,7 @@ internal static class SeedCaseBuilder
                 new ClueId("clue-3"),
                 ClueKind.Whereabouts,
                 "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.",
-                new[] { new SuspectId("suspect-4") },
+                new[] { TrueCulpritId },
                 InvestigationTargetKind.TrueCulprit,
                 source: "waystation clerk",
                 context: "Route lead")
@@ -39,11 +42,11 @@ internal static class SeedCaseBuilder
 
         var publicClues = new[]
         {
-            new Clue(
-                new ClueId("clue-public-1"),
-                ClueKind.Alias,
-                "A poster shows a rider marked by a faded blue scarf and the nickname Grey Jay.",
-                new[] { new SuspectId("suspect-1") },
+                new Clue(
+                    new ClueId("clue-public-1"),
+                    ClueKind.Alias,
+                    "A poster shows a rider marked by a faded blue scarf and the nickname Grey Jay.",
+                    new[] { new SuspectId("suspect-1") },
                 InvestigationTargetKind.GangMember,
                 source: "notice board",
                 context: "Public wanted poster"),
@@ -90,11 +93,11 @@ internal static class SeedCaseBuilder
         return new CaseFile(
             accusation: new SuspectId("suspect-2"),
             suspects,
-            trueCulpritId: new SuspectId("suspect-4"),
-            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            trueCulpritId: TrueCulpritId,
+            openingLead: CaseOpeningLead.Create("The culprit has a scar on his left cheek."),
             knownClues: clues,
             publicClues: publicClues,
-            killerReleaseThreshold: 2,
+            killerReleaseThreshold: NormalReleaseThreshold,
             publicWarrants: publicWarrants);
     }
 
@@ -108,15 +111,14 @@ internal static class SeedCaseBuilder
         }
 
         var suspects = CreateSuspects();
-        var culpritIndex = plan.Source.PickIndex(GameSetupDeterministicLabels.CaseCulprit, suspects.Count);
-        var culpritId = suspects[culpritIndex].Id;
+        var culpritId = TrueCulpritId;
         var accusationId = suspects[plan.Source.PickIndex(GameSetupDeterministicLabels.CaseAccusation, suspects.Count)].Id;
 
         var knownClues = new[]
         {
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, "A rider with a split-finger glove was seen crossing the red ridge at dusk.", culpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead"),
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, "The telegraph ledger shows a coded payment routed through Sagewell.", suspects[(culpritIndex + 2) % suspects.Count].Id, InvestigationTargetKind.GangMember, "telegraph ledger", "Identity match"),
-            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints match a narrow-heeled trail rider's boots.", culpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead")
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 1, ClueKind.CulpritTrail, "The culprit has a scar on his left cheek.", culpritId, InvestigationTargetKind.TrueCulprit, "trail witness", "Opening lead"),
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 2, ClueKind.IdentityFact, "A rider answered to the name Red Wren and wore a raven-feather pin.", culpritId, InvestigationTargetKind.TrueCulprit, "telegraph ledger", "Identity match"),
+            CreateClue(plan.Source, GameSetupDeterministicLabels.CaseKnownClues, 3, ClueKind.Whereabouts, "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", culpritId, InvestigationTargetKind.TrueCulprit, "waystation clerk", "Route lead")
         };
 
         var publicClues = new[]
@@ -131,13 +133,7 @@ internal static class SeedCaseBuilder
             CreateWarrant(plan.Source, GameSetupDeterministicLabels.CasePublicClues, 2, "Reno Pike", WarrantDisposition.AliveOnly, 300m, new[] { "The Magpie", "R. Pike" }, new[] { "Mismatched spurs", "Black felt hat" }, "Silver Creek Sheriff", InvestigationTargetKind.UnrelatedWantedCriminal, false, false, "Wanted for cattle theft and forging livery tags.")
         };
 
-        var openingLead = CaseOpeningLead.Create(plan.Source.PickIndex(GameSetupDeterministicLabels.CaseOpeningLead, 4) switch
-        {
-            0 => "A cracked leather gauntlet turned up in the dust at dusk.",
-            1 => "A tin badge was found clipped to a saddle strap.",
-            2 => "A black-stained cuff was seen by the tracks.",
-            _ => "A pale scar cuts across the left cheek."
-        });
+        var openingLead = CaseOpeningLead.Create("The culprit has a scar on his left cheek.");
 
         return new CaseFile(
             accusationId,
@@ -146,7 +142,7 @@ internal static class SeedCaseBuilder
             openingLead,
             knownClues,
             publicClues: publicClues,
-            killerReleaseThreshold: 2,
+            killerReleaseThreshold: NormalReleaseThreshold,
             publicWarrants: publicWarrants);
     }
 
@@ -215,6 +211,51 @@ internal static class SeedCaseBuilder
                         new SuspectIdentityFact("Wears a raven-feather pin on a dark coat.")
                     }),
                 new SuspectTraits(IsLocal: false, IsArmed: true, IsDesperate: true),
+                SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-5"),
+                "Silas Boone",
+                new SuspectProfile(
+                    new[]
+                    {
+                        new SuspectAlias("Hollow Boone", AliasKind.Nickname)
+                    },
+                    new[]
+                    {
+                        new SuspectIdentityFact("Keeps iron-rim spectacles tucked into a coat pocket."),
+                        new SuspectIdentityFact("Wears a long dust-colored duster with a frayed hem.")
+                    }),
+                new SuspectTraits(IsLocal: true, IsArmed: true, IsDesperate: false),
+                SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-6"),
+                "Clara Vale",
+                new SuspectProfile(
+                    new[]
+                    {
+                        new SuspectAlias("Cedar Vale", AliasKind.Nickname)
+                    },
+                    new[]
+                    {
+                        new SuspectIdentityFact("Keeps a copper ribbon tied in her hair."),
+                        new SuspectIdentityFact("Leaves tobacco-stained glove prints on ledgers and rail notices.")
+                    }),
+                new SuspectTraits(IsLocal: false, IsArmed: false, IsDesperate: true),
+                SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-7"),
+                "Orin Nash",
+                new SuspectProfile(
+                    new[]
+                    {
+                        new SuspectAlias("O. Nash", AliasKind.FormerName)
+                    },
+                    new[]
+                    {
+                        new SuspectIdentityFact("Has a silver tooth that catches the light when he smiles."),
+                        new SuspectIdentityFact("Carries a rope-burn scar on the left wrist.")
+                    }),
+                new SuspectTraits(IsLocal: true, IsArmed: true, IsDesperate: true),
                 SuspectStatus.AtLarge)
         };
 
