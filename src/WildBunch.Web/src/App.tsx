@@ -15,6 +15,8 @@ export default function App() {
   const {
     session,
     journal,
+    wantedPosters,
+    hasReadWantedPosters,
     actions,
     gameId,
     currentTown,
@@ -117,10 +119,10 @@ export default function App() {
           <div className="panel-head">
             <h2>{gameId ? "Current session" : "Start a new hunt"}</h2>
             <div className="panel-actions">
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={openCaseFile}
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={openCaseFile}
                 disabled={!journal && !loading}
               >
                 Open case file
@@ -245,7 +247,13 @@ export default function App() {
         description="A read-only summary of player-known clues, suspects, and warrants."
         onClose={closeCaseFile}
       >
-        <CaseFileSurface journal={journal} loading={loading} error={error} />
+        <CaseFileSurface
+          journal={journal}
+          loading={loading}
+          error={error}
+          wantedPosters={wantedPosters}
+          hasReadWantedPosters={hasReadWantedPosters}
+        />
       </CockpitOverlayFrame>
     </div>
   );

@@ -2,7 +2,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
-import { AvailableActionKind, JourneyStatus, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "./api/types";
+import {
+  AvailableActionKind,
+  JourneyStatus,
+  WantedPosterFeatureRenderMode,
+  WantedPosterFeatureSalience,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+  type WantedPosterDto,
+} from "./api/types";
 import {
   buyStoreItem,
   checkSheriffRecords,
@@ -279,6 +288,42 @@ function createStoreOffers(): TownStoreOffersDto {
   };
 }
 
+function createWantedPoster(overrides: Partial<WantedPosterDto> = {}): WantedPosterDto {
+  return {
+    posterId: "warrant-public-1",
+    targetDisplayName: "Mira Cline",
+    aliases: ["Red Wren", "Aunt Tess"],
+    legalTerms: {
+      disposition: 1,
+      bountyAmount: 2500.5,
+      issuingAuthority: "County marshal",
+    },
+    quickView: {
+      headlineNameOrAlias: "Mira Cline",
+      headlineFeatureOrDescriptor: "Raven-feather pin",
+      pocketCheckDescriptor: "Dead or alive, $2,500.50 bounty",
+    },
+    details: {
+      summary: "Wanted for a string of robberies near the county line.",
+      publicOrigin: "County marshal",
+      features: [
+        {
+          text: "Raven-feather pin",
+          salience: WantedPosterFeatureSalience.Headline,
+          renderMode: WantedPosterFeatureRenderMode.PortraitRenderable,
+        },
+        {
+          text: "Limp in the right leg",
+          salience: WantedPosterFeatureSalience.Buried,
+          renderMode: WantedPosterFeatureRenderMode.TextOnly,
+        },
+      ],
+    },
+    publicSafeClassification: "gang-affiliated wanted criminal",
+    ...overrides,
+  };
+}
+
 describe("App", () => {
   it("hydrates the current session from local storage and loads store offers for the current town", async () => {
     mockedGetGame.mockResolvedValue(createSession());
@@ -303,35 +348,7 @@ describe("App", () => {
       success: true,
       message: "Read wanted posters",
       currentJournal: createJournal(),
-      wantedPosters: [
-        {
-          posterId: "warrant-public-1",
-          targetDisplayName: "Mira Cline",
-          aliases: ["Red Wren", "Aunt Tess"],
-          legalTerms: {
-            disposition: 1,
-            bountyAmount: 2500.5,
-            issuingAuthority: "County marshal",
-          },
-          quickView: {
-            headlineNameOrAlias: "Mira Cline",
-            headlineFeatureOrDescriptor: "Raven-feather pin",
-            pocketCheckDescriptor: "Dead or alive, $2,500.50 bounty",
-          },
-          details: {
-            summary: "Wanted for a string of robberies near the county line.",
-            publicOrigin: "County marshal",
-            features: [
-              {
-                text: "Raven-feather pin",
-                salience: 0,
-                renderMode: 0,
-              },
-            ],
-          },
-          publicSafeClassification: "gang-affiliated wanted criminal",
-        },
-      ],
+      wantedPosters: [createWantedPoster()],
     });
     mockedInspectNoticeBoard.mockResolvedValue({
       success: true,
@@ -427,10 +444,112 @@ describe("App", () => {
       dialogScope.queryAllByText((_, element) => element?.textContent === "Route: Back trail"),
     ).toHaveLength(1);
 
+    await user.click(screen.getByRole("button", { name: /read wanted posters/i }));
+
+    await waitFor(() => {
+      expect(mockedReadWantedPosters).toHaveBeenCalledWith("game-1");
+    });
+
+    const wantedPosterSection = dialogScope.getByRole("heading", { name: "Wanted posters" }).closest("article");
+    expect(wantedPosterSection).not.toBeNull();
+    const wantedPosterScope = within(wantedPosterSection as HTMLElement);
+
+    expect(wantedPosterScope.getByRole("heading", { name: "Mira Cline" })).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Red Wren, Aunt Tess")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Dead or alive, $2,500.50 bounty")).toBeInTheDocument();
+    expect(wantedPosterScope.getAllByText("County marshal")).toHaveLength(2);
+    expect(wantedPosterScope.getByText("Wanted for a string of robberies near the county line.")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Portrait-renderable")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Text-only")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Limp in the right leg")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("gang-affiliated wanted criminal")).toBeInTheDocument();
+    expect(wantedPosterScope.getAllByText("Raven-feather pin").length).toBe(2);
+    expect(dialogScope.queryByText("targetKind")).not.toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: /close/i }));
 
     await waitFor(() => {
       expect(dialog).not.toBeInTheDocument();
     });
+  });
+
+  it("shows a clean empty wanted-poster state when the response is empty", async () => {
+    mockedGetGame.mockResolvedValue(createSession());
+    mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+    ]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
+    mockedCreateGame.mockResolvedValue(createSession());
+    mockedBuyStoreItem.mockResolvedValue({
+      success: true,
+      message: "Purchased",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    mockedReadWantedPosters.mockResolvedValue({
+      success: true,
+      message: "Read wanted posters",
+      currentJournal: createJournal(),
+      wantedPosters: [],
+    });
+    mockedInspectNoticeBoard.mockResolvedValue({
+      success: true,
+      message: "Inspect notice board",
+      currentJournal: createJournal(),
+    });
+    mockedCheckSheriffRecords.mockResolvedValue({
+      success: true,
+      message: "Check sheriff records",
+      currentJournal: createJournal(),
+    });
+    mockedFollowTelegraphLeads.mockResolvedValue({
+      success: true,
+      message: "Follow telegraph leads",
+      currentJournal: createJournal(),
+    });
+    mockedGatherLocalGossip.mockResolvedValue({
+      success: true,
+      message: "Gather local gossip",
+      currentJournal: createJournal(),
+    });
+    mockedTravel.mockResolvedValue({
+      success: true,
+      message: "Travelled",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    render(<App />);
+
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+      expect(mockedGetAvailableActions).toHaveBeenCalledWith("game-1");
+      expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(await screen.findByRole("button", { name: /open case file/i }));
+    const dialog = await screen.findByRole("dialog", { name: /investigation board/i });
+    const dialogScope = within(dialog);
+
+    await user.click(screen.getByRole("button", { name: /read wanted posters/i }));
+
+    await waitFor(() => {
+      expect(mockedReadWantedPosters).toHaveBeenCalledWith("game-1");
+    });
+
+    expect(dialogScope.getByRole("heading", { name: /wanted posters/i })).toBeInTheDocument();
+    expect(dialogScope.getByText("No wanted posters were returned for this read.")).toBeInTheDocument();
+    expect(dialogScope.queryByText("Mira Cline")).not.toBeInTheDocument();
   });
 });

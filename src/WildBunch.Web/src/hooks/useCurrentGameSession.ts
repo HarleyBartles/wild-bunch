@@ -12,7 +12,14 @@ import {
   travel,
 } from "../api/wildBunchApi";
 import { AvailableActionKind } from "../api/types";
-import type { AvailableActionDto, GameSessionDto, GameTurnResultDto, JournalDto, StartGameRequest } from "../api/types";
+import type {
+  AvailableActionDto,
+  GameSessionDto,
+  GameTurnResultDto,
+  JournalDto,
+  StartGameRequest,
+  WantedPosterDto,
+} from "../api/types";
 
 const storageKey = "wild-bunch.current-game-id";
 
@@ -42,6 +49,8 @@ function actionIsGatherLocalGossip(action: AvailableActionDto) {
 export function useCurrentGameSession() {
   const [session, setSession] = useState<GameSessionDto | null>(null);
   const [journal, setJournal] = useState<JournalDto | null>(null);
+  const [wantedPosters, setWantedPosters] = useState<WantedPosterDto[]>([]);
+  const [hasReadWantedPosters, setHasReadWantedPosters] = useState(false);
   const [actions, setActions] = useState<AvailableActionDto[]>([]);
   const [cockpitMode, setCockpitMode] = useState<CockpitMode>("home");
   const [busyMode, setBusyMode] = useState<BusyMode>("booting");
@@ -91,6 +100,8 @@ export function useCurrentGameSession() {
       window.localStorage.removeItem(storageKey);
       setSession(null);
       setJournal(null);
+      setWantedPosters([]);
+      setHasReadWantedPosters(false);
       setActions([]);
       setCockpitMode("home");
       setError(exception instanceof Error ? exception.message : "Unable to load the saved game.");
@@ -102,6 +113,8 @@ export function useCurrentGameSession() {
   async function startNewGame(request: StartGameRequest) {
     setBusyMode("starting");
     setError("");
+    setWantedPosters([]);
+    setHasReadWantedPosters(false);
 
     try {
       const createdSession = await createGame(request);
@@ -164,6 +177,8 @@ export function useCurrentGameSession() {
     try {
       const result = await readWantedPosters(gameId);
       setJournal(result.currentJournal);
+      setWantedPosters(result.wantedPosters);
+      setHasReadWantedPosters(true);
       await reloadCurrentGame(gameId);
       setNotice(result.message);
     } catch (exception) {
@@ -257,6 +272,8 @@ export function useCurrentGameSession() {
     window.localStorage.removeItem(storageKey);
     setSession(null);
     setJournal(null);
+    setWantedPosters([]);
+    setHasReadWantedPosters(false);
     setActions([]);
     setNotice("");
     setError("");
@@ -275,6 +292,8 @@ export function useCurrentGameSession() {
   return {
     session,
     journal,
+    wantedPosters,
+    hasReadWantedPosters,
     actions,
     gameId,
     currentTown,

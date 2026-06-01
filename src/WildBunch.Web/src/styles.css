@@ -439,6 +439,136 @@ h1 {
   gap: 12px;
 }
 
+.wanted-poster__list {
+  display: grid;
+  gap: 14px;
+}
+
+.wanted-poster-card {
+  padding: 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(62, 45, 20, 0.42), rgba(17, 15, 13, 0.2)),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(223, 159, 79, 0.26);
+}
+
+.wanted-poster-card__frame {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.wanted-poster-card__portrait {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+  min-height: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(223, 159, 79, 0.26);
+  background:
+    radial-gradient(circle at top, rgba(223, 159, 79, 0.2), transparent 55%),
+    rgba(10, 9, 8, 0.45);
+}
+
+.wanted-poster-card__portrait-label {
+  color: var(--accent-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+}
+
+.wanted-poster-card__portrait strong {
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.wanted-poster-card__portrait p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.wanted-poster-card__content {
+  display: grid;
+  gap: 14px;
+}
+
+.wanted-poster-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.wanted-poster-card__header h4 {
+  margin-bottom: 6px;
+  font-size: 1.2rem;
+}
+
+.wanted-poster-card__quick-view {
+  margin-bottom: 0;
+  color: var(--accent-strong);
+}
+
+.wanted-poster-card__meta {
+  display: grid;
+  gap: 6px;
+}
+
+.wanted-poster-card__meta p {
+  margin-bottom: 0;
+}
+
+.wanted-poster-card__feature-block {
+  display: grid;
+  gap: 10px;
+}
+
+.wanted-poster-card__section-head h5 {
+  margin-bottom: 0;
+  font-size: 0.98rem;
+}
+
+.wanted-poster__feature-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wanted-poster__feature {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.wanted-poster__feature-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.wanted-poster__feature-copy p {
+  margin-bottom: 0;
+}
+
+.wanted-poster__feature-tags {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wanted-poster-card__text-only-note {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
 .tag-row {
   display: flex;
   gap: 8px;
@@ -489,6 +619,10 @@ h1 {
 
   .hero-metrics {
     width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .wanted-poster-card__frame {
     grid-template-columns: 1fr;
   }
 }

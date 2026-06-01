@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import type { JournalDto } from "../api/types";
+import type { JournalDto, WantedPosterDto } from "../api/types";
 import {
   formatCaseIdentityKind,
   formatCaseIdentityStatus,
@@ -8,11 +8,14 @@ import {
   formatSuspectStatus,
   formatWarrantDisposition,
 } from "../ui/formatters";
+import { WantedPosterSurface } from "./WantedPosterSurface";
 
 interface CaseFileSurfaceProps {
   journal: JournalDto | null;
   loading: boolean;
   error: string;
+  wantedPosters: WantedPosterDto[];
+  hasReadWantedPosters: boolean;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -290,7 +293,7 @@ function Card({
   );
 }
 
-export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProps) {
+export function CaseFileSurface({ journal, loading, error, wantedPosters, hasReadWantedPosters }: CaseFileSurfaceProps) {
   const activeJournal = journal;
 
   const trailClues = useMemo(() => {
@@ -564,6 +567,8 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           )}
         </div>
       </Section>
+
+      <WantedPosterSurface wantedPosters={wantedPosters} hasReadWantedPosters={hasReadWantedPosters} />
 
       <Section title="Deductions and contradictions" subtitle="A safe comparison board for known facts and unresolved links." wide>
         <div className="case-modal__deductions">
