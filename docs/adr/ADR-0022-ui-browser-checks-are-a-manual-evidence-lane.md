@@ -34,7 +34,7 @@ The closeout lesson from issue #5 was that browser evidence is most useful when 
 
 ## Decision Summary
 
-UI browser checks are a manual evidence lane, not an automated validation substitute. The repo now keeps a human-facing playbook and a worker-facing playbook that both point at the same local run route, checklist, and reporting contract. Browser checks are required only when the UI/game-flow change or Harley explicitly calls for them; they are optional or skippable for backend-only, docs, or tooling work when automated validation is sufficient.
+UI browser checks are a manual evidence lane, not an automated validation substitute. The repo now keeps a human-facing testing posture document and a worker-facing playbook that both point at the same local run route, checklist, and reporting contract. Browser checks are required only when the UI/game-flow change or Harley explicitly calls for them; they are optional or skippable for backend-only, docs, or tooling work when automated validation is sufficient.
 
 ## Detailed Decision Breakdown
 
@@ -42,7 +42,7 @@ The manual browser lane exists to prove what a user can see and click in the run
 
 The repo documents backend validation as unit, acceptance, integration, and manual; and frontend validation as unit, acceptance, integration, and manual. That split keeps the manual browser lane from swallowing the automated lanes. In practice, a browser check should be reported as user-facing evidence, while the automated lanes remain reported as test/build evidence.
 
-The playbook route is now captured in source so a worker can say "follow the browser-check playbook" instead of rediscovering commands, ports, or evidence format. The human-facing doc is written for a developer or Harley running the app locally. The worker-facing doc is written for future dispatches and includes trigger policy, skip policy, and report format.
+The operational browser route is now captured in source so a worker can say "follow the browser-check playbook" instead of rediscovering commands, ports, or evidence format. The human-facing doc is written as testing posture and coverage guidance for a developer or Harley running the app locally. The worker-facing doc is written for future dispatches and includes trigger policy, skip policy, and report format.
 
 ## Options Considered and Rejected
 
@@ -58,7 +58,7 @@ An informal route would only be better for a one-off exploratory session, not fo
 ## Benefits
 
 - Future dispatches can point to a stable browser-check route.
-- Humans get a repeatable local run and evidence checklist.
+- Humans get repeatable testing-posture guidance and a clear evidence model.
 - Workers can report skipped browser checks without pretending they passed.
 - Backend and frontend validation stay distinct and legible.
 
@@ -69,7 +69,7 @@ An informal route would only be better for a one-off exploratory session, not fo
 
 ## Risks
 
-- If the local run ports or launch profiles change, the playbook must be updated.
+- If the local run ports or launch profiles change, the docs must be updated.
 - If future workers ignore the reporting split, manual evidence could still be blurred with automated results.
 
 ## Consequences for Future Work
@@ -78,11 +78,11 @@ Future UI or game-flow dispatches may require browser checks when the visible fl
 
 ## Implementation Status or Plan
 
-Live. The playbook docs and repo indices now carry the route.
+Live. The posture doc, worker playbook, and repo indices now carry the route.
 
 ## Related Stable Source Surfaces
 
-- `docs/ui-browser-check-playbook.md`
+- `docs/testing-posture.md`
 - `.agents/ui-browser-check-playbook.md`
 - `docs/testing-lanes.md`
 - `docs/local-postgresql.md`
@@ -93,7 +93,7 @@ Live. The playbook docs and repo indices now carry the route.
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-The repo now contains a human-facing browser-check playbook, a worker-facing browser-check playbook, and index links to both. The API launch profile and web client package scripts provide the verified local run targets that the playbooks reference.
+The repo now contains a human-facing testing posture document, a worker-facing browser-check playbook, and index links to both. The API launch profile and web client package scripts provide the verified local run targets that the docs reference.
 
 ## Review Triggers
 

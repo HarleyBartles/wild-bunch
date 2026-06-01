@@ -2,6 +2,8 @@
 
 This is the worker-facing browser-check route for Wild Bunch. Use it when a dispatch needs visible UI/game-flow evidence and do not restate setup from scratch unless the local route changed.
 
+For policy and coverage expectations, point human readers to [Wild Bunch Testing Posture](../docs/testing-posture.md).
+
 ## Trigger Policy
 
 Require or request a browser check when:
@@ -87,5 +89,5 @@ Keep that statement separate from `dotnet build`, `dotnet test`, and any fronten
 ## References
 
 - [ADR-0022 UI browser checks are a manual evidence lane](../docs/adr/ADR-0022-ui-browser-checks-are-a-manual-evidence-lane.md)
-- [UI Browser Check Playbook](../docs/ui-browser-check-playbook.md)
+- [Wild Bunch Testing Posture](../docs/testing-posture.md)
 - [Wild Bunch Testing Lanes](../docs/testing-lanes.md)
