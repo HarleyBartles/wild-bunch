@@ -14,6 +14,11 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - `.agents/` is for durable agent-facing doctrine and routing rules, not issue replication.
 - If planning content is promoted into source docs, rewrite it as stable reference material and strip out issue lifecycle language.
 - If a worker is unsure whether a planning note belongs in source, leave it in the GitHub issue or comment thread and report the ambiguity instead of creating a source-controlled planning document.
+- Agents SHOULD consult `docs/adr/` when making architecture, persistence, API, UI-stack, validation, aggregate-boundary, repository, Unit of Work, hidden-state, or long-lived convention decisions.
+- Treat the ADR log as a first-class agent reasoning surface for accepted decisions, so implementation follows current doctrine boringly instead of rediscovering or contradicting it.
+- ADR consultation should be targeted and relevant: inspect the ADR index and the specific ADRs related to the surface being changed, not the whole log by default.
+- If implementation would contradict a live ADR, update, supersede, or explicitly report the mismatch as AMBER/BLOCKED rather than silently coding against stale doctrine.
+- Keep ADRs as stable human-facing decision records that are also safe for agents to use as reasoning inputs, not as issue trackers or worker-report dumps.
 
 ## Recurring Responsibilities
 
