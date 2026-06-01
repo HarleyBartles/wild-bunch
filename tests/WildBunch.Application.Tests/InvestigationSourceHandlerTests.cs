@@ -82,7 +82,7 @@ public sealed class InvestigationSourceHandlerTests
     }
 
     [Fact]
-    public async Task GatherLocalGossipReturnsFailureWithoutSavingWhenActionUnavailable()
+    public async Task GatherLocalGossipLoadsSessionSavesSuccessfulMutationEvenWithoutNoticeBoardService()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.Telegraph);
@@ -91,10 +91,11 @@ public sealed class InvestigationSourceHandlerTests
 
         var result = await handler.HandleAsync(new GatherLocalGossipCommand(session.Id.Value));
 
-        Assert.False(result.Success);
-        Assert.Equal(0, repository.SaveCalls);
-        Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
+        Assert.True(result.Success);
+        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, result.CurrentJournal.Clock.Turn);
+        Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
+        Assert.Single(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("local gossip", StringComparison.OrdinalIgnoreCase));
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 

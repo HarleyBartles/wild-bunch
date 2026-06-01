@@ -42,7 +42,7 @@ public sealed class InspectNoticeBoardHandlerTests
     }
 
     [Fact]
-    public async Task InspectNoticeBoardReturnsFailureWithoutSavingWhenActionUnavailable()
+    public async Task InspectNoticeBoardLoadsSessionSavesSuccessfulMutationEvenWithoutNoticeBoardService()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.None);
@@ -51,10 +51,11 @@ public sealed class InspectNoticeBoardHandlerTests
 
         var result = await handler.HandleAsync(new InspectNoticeBoardCommand(session.Id.Value));
 
-        Assert.False(result.Success);
-        Assert.Equal(0, repository.SaveCalls);
-        Assert.Empty(result.CurrentJournal.CaseFile.KnownWarrants);
-        Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
+        Assert.True(result.Success);
+        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, result.CurrentJournal.Clock.Turn);
+        Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
+        Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 

@@ -56,7 +56,7 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
-    public void TownWithoutNoticeBoardDoesNotExposeReadWantedPosters()
+    public void TownWithoutNoticeBoardStillExposesBaselineInvestigationActions()
     {
         var session = CreateSession(TownServices.Supplies);
         var resolver = new ActionAvailabilityResolver();
@@ -64,10 +64,10 @@ public sealed class ActionAvailabilityResolverTests
         var result = resolver.Resolve(session);
 
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
     [Fact]

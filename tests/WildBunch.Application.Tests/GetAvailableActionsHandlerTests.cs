@@ -33,6 +33,23 @@ public sealed class GetAvailableActionsHandlerTests
     }
 
     [Fact]
+    public async Task GetAvailableActionsExposesBaselineInvestigationSourcesEvenWithoutTownServices()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession(TownServices.None);
+        repository.Seed(session);
+        var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
+
+        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+    }
+
+    [Fact]
     public async Task GetAvailableActionsThrowsWhenMissing()
     {
         var handler = new GetAvailableActionsHandler(new InMemoryGameSessionRepository(), new ActionAvailabilityResolver());

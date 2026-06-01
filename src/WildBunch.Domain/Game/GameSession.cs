@@ -1560,13 +1560,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-
-        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
-        {
-            return CaseInvestigationResult.Failed("There is no one around to talk to here.");
-        }
-
         if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.LocalGossip))
         {
             RecordCaseUpdate("You ask around again, but hear nothing new.");
@@ -1592,13 +1585,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-
-        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
-        {
-            return CaseInvestigationResult.Failed("There is no notice board here.");
-        }
-
         if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.NoticeBoard))
         {
             RecordCaseUpdate("You inspect the notice board again, but nothing new has been posted.");
@@ -1622,13 +1608,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        var currentTown = World.GetTown(Player.CurrentTownId);
-
-        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
-        {
-            return CaseInvestigationResult.Failed("There are no sheriff records here.");
         }
 
         if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.SheriffRecords))

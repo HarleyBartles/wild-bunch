@@ -42,12 +42,13 @@ public sealed class ActionAvailabilityResolver
             availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
         }
 
-        foreach (var source in InvestigationSources.All)
+        availableActions.Add(new AvailableAction(AvailableActionKind.InspectNoticeBoard, InvestigationSources.NoticeBoard.Label));
+        availableActions.Add(new AvailableAction(AvailableActionKind.CheckSheriffRecords, InvestigationSources.SheriffRecords.Label));
+        availableActions.Add(new AvailableAction(AvailableActionKind.GatherLocalGossip, InvestigationSources.LocalGossip.Label));
+
+        if ((currentTown.Services & InvestigationSources.TelegraphLead.RequiredServices) != 0)
         {
-            if ((currentTown.Services & source.RequiredServices) != 0)
-            {
-                availableActions.Add(new AvailableAction(source.ActionKind, source.Label));
-            }
+            availableActions.Add(new AvailableAction(AvailableActionKind.FollowTelegraphLeads, InvestigationSources.TelegraphLead.Label));
         }
 
         if (session.Journey is not null)
