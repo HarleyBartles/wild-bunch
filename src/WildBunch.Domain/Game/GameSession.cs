@@ -22,6 +22,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
     private int _nextJourneySequence = 1;
+    private readonly TownAggregate _currentTown;
 
     private GameSession(
         GameSessionId id,
@@ -47,13 +48,13 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Journey = journey;
         TravelDifficulty = travelDifficulty;
         TravelRandomness = travelRandomness;
-        CurrentTownVisit = currentTownVisit ?? new TownVisitState(player.CurrentTownId);
-        if (!CurrentTownVisit.TownId.Equals(player.CurrentTownId))
+        _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
+        if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
         {
-            CurrentTownVisit.Reset(player.CurrentTownId);
+            _currentTown.EnterTown(World.GetTown(player.CurrentTownId));
         }
 
-        CurrentTownVisit.PrimeCurrentTown(World.GetTown(player.CurrentTownId).Sources);
+        _currentTown.PrimeCurrentTown();
 
         if (completedJourneyHistory is not null)
         {
@@ -83,7 +84,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelRandomnessState TravelRandomness { get; private set; }
 
-    public TownVisitState CurrentTownVisit { get; private set; }
+    public TownAggregate CurrentTown => _currentTown;
+
+    public TownVisitState CurrentTownVisit => _currentTown.VisitState;
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
 
@@ -360,8 +363,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     private void RefreshTownVisit(TownId townId)
     {
         var currentTown = World.GetTown(townId);
-        CurrentTownVisit.Reset(townId);
-        CurrentTownVisit.PrimeCurrentTown(currentTown.Sources);
+        _currentTown.EnterTown(currentTown);
     }
 
     private void RefillCanteenAfterArrival()
@@ -1495,14 +1497,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-
-        if ((currentTown.Services & TownServices.NoticeBoard) == 0)
+        if (!CurrentTown.SupportsWantedPosters)
         {
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
-        if (CurrentTownVisit.CheckWantedPosters() == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTown.CheckWantedPosters() == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You study the wanted posters again, but find nothing new.");
             return ReadWantedPostersResult.Succeeded("You study the wanted posters again, but find nothing new.", sessionChanged: true);
@@ -1532,15 +1532,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-        var telegraphLeadSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.TelegraphLead);
+        var telegraphLeadSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.TelegraphLead);
 
-        if ((currentTown.Services & TownServices.Telegraph) == 0)
+        if (!CurrentTown.IsAvailable(InvestigationSourceKind.TelegraphLead))
         {
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
 
-        if (CurrentTownVisit.CheckSource(telegraphLeadSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTown.CheckSource(telegraphLeadSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You ask after telegraph leads again, but no new wire has come in.");
             return CaseInvestigationResult.Succeeded("You ask after telegraph leads again, but no new wire has come in.", sessionChanged: true);
@@ -1565,10 +1564,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-        var localGossipSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.LocalGossip);
+        var localGossipSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.LocalGossip);
 
-        if (CurrentTownVisit.CheckSource(localGossipSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTown.CheckSource(localGossipSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You ask around again, but hear nothing new.");
             return CaseInvestigationResult.Succeeded("You ask around again, but hear nothing new.", sessionChanged: true);
@@ -1593,10 +1591,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-        var noticeBoardSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.NoticeBoard);
+        var noticeBoardSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.NoticeBoard);
 
-        if (CurrentTownVisit.CheckSource(noticeBoardSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTown.CheckSource(noticeBoardSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You inspect the notice board again, but nothing new has been posted.");
             return CaseInvestigationResult.Succeeded("You inspect the notice board again, but nothing new has been posted.", sessionChanged: true);
@@ -1621,10 +1618,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var currentTown = World.GetTown(Player.CurrentTownId);
-        var sheriffRecordsSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.SheriffRecords);
+        var sheriffRecordsSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.SheriffRecords);
 
-        if (CurrentTownVisit.CheckSource(sheriffRecordsSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTown.CheckSource(sheriffRecordsSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You check the sheriff records again, but find nothing new.");
             return CaseInvestigationResult.Succeeded("You check the sheriff records again, but find nothing new.", sessionChanged: true);

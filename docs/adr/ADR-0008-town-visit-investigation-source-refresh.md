@@ -9,6 +9,9 @@ live
 - 2026-06-01 - live: investigation sources are tracked by session-owned,
   town-local visit state with explicit first-check, revisit, and refresh
   markers when the player arrives in a town.
+- 2026-06-01 - live: the session-owned `TownAggregate` boundary now owns the
+  town definition, source affordances, visit refresh, and wanted-poster
+  bookkeeping while `GameSession` remains the live-play command route.
 
 ## Decision Type
 
@@ -42,11 +45,12 @@ session-owned town visit book.
 
 ## Detailed Decision Breakdown
 
-`TownVisitState` tracks per-town visit records, per-source refresh markers, and
-the wanted-poster flag for the current town. `GameSession` refreshes the active
-town's source state when the player changes towns, which makes investigation
-sources reusable after travel without making them endlessly repeatable inside
-one visit.
+`TownAggregate` keeps the current town definition together with the session's
+town visit state. `TownVisitState` tracks per-town visit records, per-source
+refresh markers, and the wanted-poster flag for the current town. `GameSession`
+delegates town-local behavior to the aggregate when the player changes towns or
+checks a source, which makes investigation sources reusable after travel
+without making them endlessly repeatable inside one visit.
 
 The action methods use that state to return source-specific “nothing new” feedback
 when the player revisits the same source in the same town.
@@ -103,8 +107,9 @@ Live. The town-visit state and investigation actions already use this pattern.
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-`TownVisitState` stores per-town visit records and source refresh markers, and
-`GameSession` refreshes it when the player arrives in a new town.
+`TownAggregate` stores the current town definition and delegates into
+`TownVisitState` for the per-town visit records and source refresh markers.
+`GameSession` refreshes the aggregate when the player arrives in a new town.
 
 ## Review Triggers
 
