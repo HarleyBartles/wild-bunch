@@ -4,7 +4,10 @@ public readonly record struct TownId(string Value);
 
 public readonly record struct TrailId(string Value);
 
-public sealed record Town(TownId Id, string Name, TownServices Services);
+public sealed record Town(TownId Id, string Name, TownServices Services, TownSourceCatalog? SourceCatalog = null)
+{
+    public TownSourceCatalog Sources => SourceCatalog ?? TownSourceCatalog.Default;
+}
 
 public enum TrailTerrain
 {

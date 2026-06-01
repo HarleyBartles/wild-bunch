@@ -3,37 +3,17 @@ using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Actions;
 
-public sealed record InvestigationSourceDefinition(
-    InvestigationSourceKind Kind,
-    AvailableActionKind ActionKind,
-    string Label,
-    TownServices RequiredServices);
-
 public static class InvestigationSources
 {
-    public static readonly InvestigationSourceDefinition NoticeBoard = new(
-        InvestigationSourceKind.NoticeBoard,
-        AvailableActionKind.InspectNoticeBoard,
-        "Inspect notice board",
-        TownServices.NoticeBoard);
+    public static TownSourceCatalog Catalog => TownSourceCatalog.Default;
 
-    public static readonly InvestigationSourceDefinition SheriffRecords = new(
-        InvestigationSourceKind.SheriffRecords,
-        AvailableActionKind.CheckSheriffRecords,
-        "Check sheriff records",
-        TownServices.NoticeBoard);
+    public static IReadOnlyList<TownSourceDefinition> All => Catalog.Definitions;
 
-    public static readonly InvestigationSourceDefinition TelegraphLead = new(
-        InvestigationSourceKind.TelegraphLead,
-        AvailableActionKind.FollowTelegraphLeads,
-        "Follow telegraph leads",
-        TownServices.Telegraph);
+    public static TownSourceDefinition NoticeBoard => Catalog.GetRequiredDefinition(InvestigationSourceKind.NoticeBoard);
 
-    public static readonly InvestigationSourceDefinition LocalGossip = new(
-        InvestigationSourceKind.LocalGossip,
-        AvailableActionKind.GatherLocalGossip,
-        "Gather local gossip",
-        TownServices.NoticeBoard);
+    public static TownSourceDefinition SheriffRecords => Catalog.GetRequiredDefinition(InvestigationSourceKind.SheriffRecords);
 
-    public static IReadOnlyList<InvestigationSourceDefinition> All { get; } = [NoticeBoard, SheriffRecords, TelegraphLead, LocalGossip];
+    public static TownSourceDefinition TelegraphLead => Catalog.GetRequiredDefinition(InvestigationSourceKind.TelegraphLead);
+
+    public static TownSourceDefinition LocalGossip => Catalog.GetRequiredDefinition(InvestigationSourceKind.LocalGossip);
 }

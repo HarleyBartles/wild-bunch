@@ -17,13 +17,16 @@ internal sealed record SeedTownDefinition(
     TownServices RailServices)
 {
     public Town Create(SeedWorldVariant variant)
-        => new(new TownId(Id), Name, variant switch
-        {
-            SeedWorldVariant.Canonical => CanonicalServices,
-            SeedWorldVariant.Frontier => FrontierServices,
-            SeedWorldVariant.Rail => RailServices,
-            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Unsupported seed world variant.")
-        });
+        => new(
+            new TownId(Id),
+            Name,
+            variant switch
+            {
+                SeedWorldVariant.Canonical => CanonicalServices,
+                SeedWorldVariant.Frontier => FrontierServices,
+                SeedWorldVariant.Rail => RailServices,
+                _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Unsupported seed world variant.")
+            });
 }
 
 internal sealed record SeedTrailVariant(

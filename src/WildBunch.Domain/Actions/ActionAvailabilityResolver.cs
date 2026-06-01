@@ -42,14 +42,7 @@ public sealed class ActionAvailabilityResolver
             availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
         }
 
-        availableActions.Add(new AvailableAction(AvailableActionKind.InspectNoticeBoard, InvestigationSources.NoticeBoard.Label));
-        availableActions.Add(new AvailableAction(AvailableActionKind.CheckSheriffRecords, InvestigationSources.SheriffRecords.Label));
-        availableActions.Add(new AvailableAction(AvailableActionKind.GatherLocalGossip, InvestigationSources.LocalGossip.Label));
-
-        if ((currentTown.Services & InvestigationSources.TelegraphLead.RequiredServices) != 0)
-        {
-            availableActions.Add(new AvailableAction(AvailableActionKind.FollowTelegraphLeads, InvestigationSources.TelegraphLead.Label));
-        }
+        availableActions.AddRange(currentTown.Sources.GetInvestigationActions(currentTown.Services));
 
         if (session.Journey is not null)
         {
@@ -59,7 +52,7 @@ public sealed class ActionAvailabilityResolver
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.VisitDoctor);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.SendTelegram);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
-            foreach (var source in InvestigationSources.All)
+            foreach (var source in currentTown.Sources.Definitions)
             {
                 availableActions.RemoveAll(action => action.Kind == source.ActionKind);
             }
