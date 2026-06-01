@@ -84,6 +84,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0019 Use a manual typed frontend API client until generated clients are justified](ADR-0019-use-a-manual-typed-frontend-api-client-until-generated-clients-are-justified.md)
 - [ADR-0020 Aggregate domain authority and root persistence posture](ADR-0020-aggregate-domain-authority-and-root-persistence-posture.md)
 - [ADR-0021 UUID-shaped setup seeds resolve to legal starting-world descriptors](ADR-0021-uuid-shaped-setup-seeds-resolve-to-legal-starting-world-descriptors.md)
+- [ADR-0022 UI browser checks are a manual evidence lane](ADR-0022-ui-browser-checks-are-a-manual-evidence-lane.md)
 
 ## Current Working Set
 
