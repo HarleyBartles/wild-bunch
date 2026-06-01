@@ -74,10 +74,14 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var getResponse = await client.GetAsync($"/api/games/{createdSession!.Id}");
 
@@ -110,10 +114,14 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
         var startingFood = createdSession!.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity;
         var startingHorseFeed = createdSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity;
 

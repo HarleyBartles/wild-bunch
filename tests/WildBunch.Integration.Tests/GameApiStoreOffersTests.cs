@@ -14,12 +14,14 @@ public sealed class GameApiStoreOffersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
         var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
-        await scenario.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/pinecross/store-offers");
 
@@ -45,7 +47,9 @@ public sealed class GameApiStoreOffersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
         var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
@@ -62,12 +66,14 @@ public sealed class GameApiStoreOffersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
         var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
-        await scenario.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/dryfork/store-offers");
 

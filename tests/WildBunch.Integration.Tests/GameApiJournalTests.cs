@@ -16,10 +16,14 @@ public sealed class GameApiJournalTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var response = await client.GetAsync($"/api/games/{createdSession!.Id}/journal");
 
@@ -70,10 +74,14 @@ public sealed class GameApiJournalTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
@@ -113,10 +121,14 @@ public sealed class GameApiJournalTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",

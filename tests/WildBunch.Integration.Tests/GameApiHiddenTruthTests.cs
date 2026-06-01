@@ -13,7 +13,10 @@ public sealed class GameApiHiddenTruthTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);

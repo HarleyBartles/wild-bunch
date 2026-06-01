@@ -15,12 +15,14 @@ public sealed class GameApiInvestigationActionsTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.CanonicalPinecrossServices;
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
         var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
-        await scenario.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var noticeBoardResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/notice-board/inspect", content: null);
 
