@@ -4,8 +4,6 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
-using WildBunch.Domain.Travel;
-using WildBunch.GameContent.NewGame;
 using WildBunch.Persistence.GameSessions;
 
 namespace WildBunch.Integration.Tests.TestInfrastructure;
@@ -23,8 +21,8 @@ internal static class AcceptanceTestHarness
         this PostgreSqlApiFactory factory,
         string playerName = "Ranger Vale")
     {
-        var session = new SeededNewGameFactory(new DeterministicTravelRandomnessSource())
-            .Create(playerName, TravelDifficulty.Normal, ScenarioSeedCatalog.CanonicalMountedNormal.SeedCode);
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        var session = scenario.CreateSession(playerName);
 
         using var scope = factory.Services.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();

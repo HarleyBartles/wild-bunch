@@ -16,7 +16,8 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.CanonicalMountedNormal;
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
         var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -24,7 +25,7 @@ public sealed class GameApiTests
         var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(session);
-        scenario.AssertCreatedSession(session!);
+        scenario.Fixture.AssertCreatedSession(session!);
         Assert.NotEqual(Guid.Empty, session!.Id);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, session.Status);
 
@@ -209,7 +210,8 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.NoHorseLightEasy;
+        var scenario = BoringScenarioBuilder.NoHorseFootTravelReady();
+        scenario.AssertReady();
 
         var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
 
@@ -218,7 +220,7 @@ public sealed class GameApiTests
         var createdSession = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
-        scenario.AssertCreatedSession(createdSession!);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var connectedTownIds = createdSession.World.Trails
             .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
@@ -234,7 +236,7 @@ public sealed class GameApiTests
 
         var redMesaPreviewResult = await redMesaPreviewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
         Assert.NotNull(redMesaPreviewResult);
-        scenario.AssertTravelPreview(createdSession!, "redmesa", redMesaPreviewResult!);
+        scenario.Fixture.AssertTravelPreview(createdSession!, "redmesa", redMesaPreviewResult!);
 
         var travelToRedMesaResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
@@ -245,7 +247,7 @@ public sealed class GameApiTests
         var redMesaTurn = await travelToRedMesaResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(redMesaTurn);
-        scenario.AssertTravelTurn(createdSession!, "redmesa", redMesaTurn!, redMesaPreviewResult!);
+        scenario.Fixture.AssertTravelTurn(createdSession!, "redmesa", redMesaTurn!, redMesaPreviewResult!);
 
         var arrivedRedMesa = await AdvanceUntilTownAsync(client, createdSession.Id, "redmesa");
 
@@ -260,7 +262,7 @@ public sealed class GameApiTests
 
         var dryForkPreviewResult = await dryForkPreviewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
         Assert.NotNull(dryForkPreviewResult);
-        scenario.AssertDryFootRoute(createdSession!, "dryfork", dryForkPreviewResult!);
+        scenario.Fixture.AssertDryFootRoute(createdSession!, "dryfork", dryForkPreviewResult!);
 
         var destinationTownId = "dryfork";
         var onFootTravelResponse = await client.PostAsJsonAsync(
@@ -272,7 +274,7 @@ public sealed class GameApiTests
         var onFootTurn = await onFootTravelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(onFootTurn);
-        scenario.AssertDryFootRoute(createdSession!, destinationTownId, onFootTurn!, dryForkPreviewResult!);
+        scenario.Fixture.AssertDryFootRoute(createdSession!, destinationTownId, onFootTurn!, dryForkPreviewResult!);
     }
 
     [Fact]
@@ -281,12 +283,13 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = ScenarioSeedCatalog.HighRiskFoeInterruptRoute;
+        var scenario = BoringScenarioBuilder.HighRiskFoeInterruptRoute();
+        scenario.AssertReady();
         var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
         var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(createdSession);
-        scenario.AssertCreatedSession(createdSession!);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var travelToRedMesaResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
@@ -405,7 +408,7 @@ public sealed class GameApiTests
         Assert.Equal(redMesaArrivalDay + 2, resumeAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
 
-        scenario.AssertHighRiskFoeInterruptRoute(createdSession!, dryForkTravel!, blockedAdvance!, resolved!, resumeAdvance!);
+        scenario.Fixture.AssertHighRiskFoeInterruptRoute(createdSession!, dryForkTravel!, blockedAdvance!, resolved!, resumeAdvance!);
     }
 
     [Fact]
