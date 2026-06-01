@@ -16,7 +16,7 @@ operations, persistence, testing
 ## Related ADRs
 
 - `depends on`: ADR-0001
-- `informs`: ADR-0003, ADR-0012
+- `informs`: ADR-0003, ADR-0012, ADR-0014
 
 ## Context
 
@@ -43,6 +43,10 @@ test databases.
 The repo documents a persistent local app database at `wildbunch_dev` on
 `localhost:5434`, with repo-local tooling under `.local/` and explicit setup and
 reset commands.
+
+The persistence adapter uses EF Core with Npgsql against PostgreSQL. That is an
+adapter choice, not a domain dependency, and it remains compatible with the
+composed JSONB session shape recorded in ADR-0003.
 
 The validation guidance distinguishes the persistent app database from
 temporary test-created databases so test cleanup does not silently target the
@@ -97,12 +101,16 @@ convention and the validation posture.
 - `.agents/architecture-hygiene.md`
 - `scripts/postgres-dev.ps1`
 - `tests/WildBunch.Integration.Tests/PostgreSqlPersistenceTests.cs`
+- `src/WildBunch.Persistence/WildBunch.Persistence.csproj`
+- `src/WildBunch.Persistence/WildBunchDbContext.cs`
+- `src/WildBunch.Persistence/DependencyInjection.cs`
+- `src/WildBunch.Persistence/PersistenceDbContextOptions.cs`
 
 ## Proof of Implementation or Explicit Non-Implementation
 
 The repo documents the persistent local PostgreSQL setup, the repo-local
 connection string, and the provider/storage lane that targets PostgreSQL-backed
-tests.
+tests, plus the EF Core/Npgsql adapter that talks to PostgreSQL.
 
 ## Review Triggers
 

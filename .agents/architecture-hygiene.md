@@ -23,8 +23,8 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Preserve Onion dependency direction.
 - Keep read repositories query-only.
 - Keep command mutation flowing through `GameSession` or the established aggregate route.
-- Keep repository-side unit-of-work discipline local and boring while only one command aggregate repository is coordinated.
-- Introduce a formal application-level `IUnitOfWork` only when multiple command repositories or aggregates make the need concrete.
+- Treat first-class Unit of Work as the chosen persistence coordination boundary; issue #40 owns implementation and aggregate-level repository cleanup.
+- Keep repository-side unit-of-work discipline local and boring instead of turning it into generic framework ornamentation.
 - Keep overloaded files and classes split by coherent responsibility before they become catch-alls.
 
 ## Aggregate Authority

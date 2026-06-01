@@ -76,6 +76,12 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0011 Cockpit-hosted modal play surfaces before routing](ADR-0011-cockpit-hosted-modal-play-surfaces-before-routing.md)
 - [ADR-0012 GameContent in code now, DB-backed content later](ADR-0012-gamecontent-in-code-now-db-backed-content-later.md)
 - [ADR-0013 Travel journey is a session-owned aggregate subtree](ADR-0013-travel-journey-is-a-session-owned-aggregate-subtree.md)
+- [ADR-0014 Use DDD, Onion dependency direction, CQRS handlers, repositories, and first-class Unit of Work](ADR-0014-use-ddd-onion-cqrs-repositories-and-first-class-unit-of-work.md)
+- [ADR-0015 Use ASP.NET Core Minimal APIs as the game HTTP boundary](ADR-0015-use-aspnet-core-minimal-apis-as-the-game-http-boundary.md)
+- [ADR-0016 Use React, Vite, TanStack React Query, and styled-components for the web client](ADR-0016-use-react-vite-react-query-and-styled-components-for-the-web-client.md)
+- [ADR-0017 Use xUnit, Vitest, Testing Library, and explicit PostgreSQL validation lanes](ADR-0017-use-xunit-vitest-testing-library-and-explicit-postgresql-validation-lanes.md)
+- [ADR-0018 Target .NET 10 with nullable-enabled SDK-style projects](ADR-0018-target-net10-with-nullable-enabled-sdk-style-projects.md)
+- [ADR-0019 Use a manual typed frontend API client until generated clients are justified](ADR-0019-use-a-manual-typed-frontend-api-client-until-generated-clients-are-justified.md)
 
 ## Current Working Set
 
