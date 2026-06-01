@@ -110,3 +110,10 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Confirm a cleanup did not just move overload into another catch-all file or class.
 - Confirm the change did not introduce a generic framework where a small helper would do.
 - Confirm no unrelated gameplay, API, or schema change slipped in.
+
+## Deterministic Generated-Travel Tests
+
+- Do not write generated journey, trail-day, encounter, or travel tests that rely on repeated sampling or "usually passes" behavior.
+- When a test needs a particular generated travel outcome, use an explicit deterministic seed that produces that shape on the first relevant turn.
+- Use the existing no-salt trail option where it makes the scenario stable and direct.
+- Do not loop, retry, or search arbitrary seeds until the desired generated journey appears.

@@ -21,10 +21,11 @@ internal static class SeedCaseBuilder
             accusationIndex: 1,
             trueCulpritIndex: 3,
             publicWarrant1: CaseCharacterRoster.CreateGangMemberWarrant(CaseCharacterRoster.SelectCanonicalGangRoster()[0]),
-            publicWarrant2: CaseCharacterRoster.CreateCanonicalUnrelatedWarrant());
+            publicWarrant2: CaseCharacterRoster.CreateCanonicalUnrelatedWarrant(),
+            startingTownId: SeedWorldCatalog.PinecrossId);
     }
 
-    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan, World world)
+    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan, World world, TownId? startingTownId = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(world);
@@ -45,7 +46,8 @@ internal static class SeedCaseBuilder
             accusationIndex,
             3,
             CaseCharacterRoster.CreateGangMemberWarrant(roster[0]),
-            CaseCharacterRoster.SelectUnrelatedWarrant(plan.Source));
+            CaseCharacterRoster.SelectUnrelatedWarrant(plan.Source),
+            startingTownId ?? world.Towns.First().Id);
     }
 
     private static CaseFile BuildCase(
@@ -56,11 +58,13 @@ internal static class SeedCaseBuilder
         int accusationIndex,
         int trueCulpritIndex,
         OutlawWarrantProfile publicWarrant1,
-        OutlawWarrantProfile publicWarrant2)
+        OutlawWarrantProfile publicWarrant2,
+        TownId startingTownId)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(roster);
         ArgumentNullException.ThrowIfNull(features);
+        ArgumentNullException.ThrowIfNull(startingTownId);
         if (roster.Count != 7)
         {
             throw new InvalidOperationException("Seed case rosters must contain exactly seven gang suspects.");
@@ -85,13 +89,21 @@ internal static class SeedCaseBuilder
         var suspectTurfAssignments = SelectSuspectTurfAssignments(source, world, suspects);
         var openingLead = CaseOpeningLead.Create(CaseSuspectFeaturePool.BuildOpeningLead(features[trueCulpritIndex].PrimaryFeature));
         var knownClues = CreateKnownClues(source, features[trueCulpritIndex].PrimaryFeature);
-        var publicClues = CreatePublicClues(source, world, suspects, features, suspectTurfAssignments, features[trueCulpritIndex].PrimaryFeature);
+        var publicClues = CreatePublicClues(
+            source,
+            world,
+            suspects,
+            features,
+            suspectTurfAssignments,
+            features[trueCulpritIndex].PrimaryFeature,
+            startingTownId);
+        var publicWarrants = CreatePublicWarrants(
+            source,
+            world,
+            publicWarrant1,
+            publicWarrant2,
+            startingTownId);
         var accusationId = suspects[accusationIndex].Id;
-        var publicWarrants = new[]
-        {
-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings.", InvestigationSourceKind.NoticeBoard),
-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.", InvestigationSourceKind.SheriffRecords)
-        };
 
         return new CaseFile(
             accusationId,
@@ -144,8 +156,10 @@ internal static class SeedCaseBuilder
         IReadOnlyList<Suspect> suspects,
         IReadOnlyList<CaseSuspectFeatureAssignment> features,
         IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments,
-        CaseSuspectFeatureProfile culpritFeature)
-        => new[]
+        CaseSuspectFeatureProfile culpritFeature,
+        TownId startingTownId)
+    {
+        var publicClues = new List<Clue>
         {
             CreateClue(
                 source,
@@ -272,6 +286,147 @@ internal static class SeedCaseBuilder
                         new ClueDirectionAnchor("after dusk", Movement: "heading along the Red Mesa road", Route: "Red Mesa road")
                     }))
         };
+
+        publicClues.AddRange(CreateTownSpecificPublicClues(
+            source,
+            world,
+            suspects,
+            features,
+            startingTownId,
+            firstExtraClueIndex: publicClues.Count + 1));
+
+        return publicClues;
+    }
+
+    private static IReadOnlyList<Warrant> CreatePublicWarrants(
+        GameSetupDeterministicSource source,
+        World world,
+        OutlawWarrantProfile publicWarrant1,
+        OutlawWarrantProfile publicWarrant2,
+        TownId startingTownId)
+    {
+        var publicWarrants = new List<Warrant>
+        {
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings.", InvestigationSourceKind.NoticeBoard),
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.", InvestigationSourceKind.SheriffRecords)
+        };
+
+        publicWarrants.AddRange(CreateTownSpecificPublicWarrants(
+            source,
+            world,
+            startingTownId,
+            firstExtraWarrantIndex: publicWarrants.Count + 1));
+
+        return publicWarrants;
+    }
+
+    private static IReadOnlyList<Clue> CreateTownSpecificPublicClues(
+        GameSetupDeterministicSource source,
+        World world,
+        IReadOnlyList<Suspect> suspects,
+        IReadOnlyList<CaseSuspectFeatureAssignment> features,
+        TownId startingTownId,
+        int firstExtraClueIndex)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(suspects);
+        ArgumentNullException.ThrowIfNull(features);
+        ArgumentNullException.ThrowIfNull(startingTownId);
+
+        var extraTownClues = new List<Clue>();
+        var extraTownIndex = 0;
+        var candidateSuspectIndices = Enumerable.Range(0, suspects.Count)
+            .Where(index => index != 3)
+            .ToArray();
+
+        foreach (var town in world.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            if (town.Id.Equals(startingTownId) || (town.Services & TownServices.NoticeBoard) == 0)
+            {
+                continue;
+            }
+
+            var clueBaseIndex = firstExtraClueIndex + extraTownIndex * 2;
+            var noticeSuspectIndex = candidateSuspectIndices[(extraTownIndex * 2) % candidateSuspectIndices.Length];
+            var sheriffSuspectIndex = candidateSuspectIndices[(extraTownIndex * 2 + 1) % candidateSuspectIndices.Length];
+
+            extraTownClues.Add(CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                clueBaseIndex,
+                ClueKind.Alias,
+                $"A posted circular in {town.Name} links {DescribePrimaryAlias(suspects[noticeSuspectIndex])} to {DescribePersonWithFeature(features[noticeSuspectIndex].PrimaryFeature, "a rider")}.",
+                suspects[noticeSuspectIndex].Id,
+                InvestigationTargetKind.GangMember,
+                "notice board",
+                "Public wanted poster",
+                InvestigationSourceKind.NoticeBoard,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[noticeSuspectIndex]), Alias: DescribePrimaryAlias(suspects[noticeSuspectIndex]), Feature: features[noticeSuspectIndex].PrimaryFeature.Description)
+                    })));
+
+            extraTownClues.Add(CreateClue(
+                source,
+                GameSetupDeterministicLabels.CasePublicClues,
+                clueBaseIndex + 1,
+                ClueKind.Record,
+                $"A sheriff ledger in {town.Name} notes {DescribePersonWithFeature(features[sheriffSuspectIndex].PrimaryFeature, "a rider")} paying cash under a clean alias.",
+                suspects[sheriffSuspectIndex].Id,
+                InvestigationTargetKind.Suspected,
+                "sheriff record",
+                "Public notice",
+                InvestigationSourceKind.SheriffRecords,
+                anchors: new ClueAnchors(
+                    subjects: new[]
+                    {
+                        new ClueSubjectAnchor(features[sheriffSuspectIndex].PrimaryFeature.Description, Feature: features[sheriffSuspectIndex].PrimaryFeature.Description)
+                    })));
+
+            extraTownIndex++;
+        }
+
+        return extraTownClues;
+    }
+
+    private static IReadOnlyList<Warrant> CreateTownSpecificPublicWarrants(
+        GameSetupDeterministicSource source,
+        World world,
+        TownId startingTownId,
+        int firstExtraWarrantIndex)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(startingTownId);
+
+        var extraTownWarrants = new List<Warrant>();
+        var extraTownIndex = 0;
+        var candidateWarrants = CaseCharacterRoster.UnrelatedWantedCriminalPool;
+
+        foreach (var town in world.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            if (town.Id.Equals(startingTownId) || (town.Services & TownServices.NoticeBoard) == 0)
+            {
+                continue;
+            }
+
+            var warrantIndex = firstExtraWarrantIndex + extraTownIndex;
+            var profile = candidateWarrants[extraTownIndex % candidateWarrants.Count];
+            extraTownWarrants.Add(CreateWarrant(
+                GameSetupDeterministicLabels.CasePublicWarrants,
+                warrantIndex,
+                profile,
+                source,
+                $"Wanted for offenses reported out of {town.Name}.",
+                InvestigationSourceKind.NoticeBoard));
+
+            extraTownIndex++;
+        }
+
+        return extraTownWarrants;
+    }
 
     private static string DescribePrimaryAlias(Suspect suspect)
         => suspect.Profile.Aliases.Count > 0

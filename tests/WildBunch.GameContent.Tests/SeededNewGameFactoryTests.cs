@@ -125,6 +125,31 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
+    public void FrontierSeedAddsTownSpecificCivicCluesForTheNextVisitedTown()
+    {
+        const string seedCode = "WB1-N-01-000000000001-6E5D";
+        var factory = new SeededNewGameFactory();
+
+        var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedCode);
+
+        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+        Assert.True(session.CaseFile.PublicClues.Count > 6);
+        Assert.True(session.CaseFile.PublicWarrants.Count > 2);
+        Assert.Contains(
+            session.CaseFile.PublicClues,
+            clue => clue.SourceKind == InvestigationSourceKind.NoticeBoard
+                && clue.Description.Contains("Holloway", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            session.CaseFile.PublicClues,
+            clue => clue.SourceKind == InvestigationSourceKind.SheriffRecords
+                && clue.Description.Contains("Holloway", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            session.CaseFile.PublicWarrants,
+            warrant => warrant.Terms.SourceKind == InvestigationSourceKind.NoticeBoard
+                && warrant.Summary.Contains("Holloway", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void SameSeedKeepsTheRosterStableWhileDifferentEntropyCanChangeIt()
     {
         var factory = new SeededNewGameFactory();

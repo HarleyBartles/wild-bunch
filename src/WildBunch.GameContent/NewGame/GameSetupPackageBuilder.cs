@@ -13,7 +13,7 @@ internal sealed class GameSetupPackageBuilder
 
         var plan = GameSetupGenerationPlan.Create(seed);
         var worldSetup = SeedWorldBuilder.CreateWorld(plan);
-        var caseFile = SeedCaseBuilder.CreateCaseFile(plan, worldSetup.World);
+        var caseFile = SeedCaseBuilder.CreateCaseFile(plan, worldSetup.World, worldSetup.StartingTownId);
         var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(plan);
         var startingWallet = SeedInventoryBuilder.CreateStartingWallet(plan);
 

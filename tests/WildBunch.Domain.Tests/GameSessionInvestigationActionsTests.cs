@@ -132,8 +132,10 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-telegraph-2");
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
 
-        TravelToTown(session, new TownId("connected"));
-        TravelToTown(session, new TownId("current"));
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
 
         Assert.Equal(new TownId("current"), session.CurrentTownVisit.TownId);
         Assert.False(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
@@ -164,8 +166,10 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-record-2");
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
 
-        TravelToTown(session, new TownId("connected"));
-        TravelToTown(session, new TownId("current"));
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
 
         Assert.Equal(new TownId("current"), session.CurrentTownVisit.TownId);
         Assert.False(session.CurrentTownVisit.WantedPostersSpent);
@@ -178,6 +182,39 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-2");
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+    }
+
+    [Fact]
+    public void NoticeBoardAndSheriffRecordsRefreshWhenReturningToAVisitedTown()
+    {
+        var session = CreateTownSourceRefreshableSession();
+
+        var firstNoticeBoard = session.InspectNoticeBoard();
+        var firstSheriffRecords = session.CheckSheriffRecords();
+        var repeatNoticeBoard = session.InspectNoticeBoard();
+        var repeatSheriffRecords = session.CheckSheriffRecords();
+
+        Assert.True(firstNoticeBoard.Success);
+        Assert.True(firstSheriffRecords.Success);
+        Assert.Equal("You inspect the notice board again, but nothing new has been posted.", repeatNoticeBoard.Message);
+        Assert.Equal("You check the sheriff records again, but find nothing new.", repeatSheriffRecords.Message);
+        Assert.Single(session.CaseFile.KnownWarrants, warrant => warrant.Id.Value == "warrant-public-1");
+        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-1");
+
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
+
+        var afterReturnNoticeBoard = session.InspectNoticeBoard();
+        var afterReturnSheriffRecords = session.CheckSheriffRecords();
+
+        Assert.True(afterReturnNoticeBoard.Success);
+        Assert.True(afterReturnSheriffRecords.Success);
+        Assert.Equal("You inspect the notice board and uncover a wanted notice.", afterReturnNoticeBoard.Message);
+        Assert.Equal("You check the sheriff records and uncover a public lead.", afterReturnSheriffRecords.Message);
+        Assert.Single(session.CaseFile.KnownWarrants, warrant => warrant.Id.Value == "warrant-public-2");
+        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-2");
     }
 
     private static GameSession CreateSession()
@@ -196,6 +233,14 @@ public sealed class GameSessionInvestigationActionsTests
             new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
+
+        var inventory = new DomainInventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 4),
+            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
+            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
+            new InventoryItem(ItemKind.Saddle, 1)
+        });
 
         var caseFile = new CaseFile(
             accusation: null,
@@ -232,6 +277,105 @@ public sealed class GameSessionInvestigationActionsTests
                         InvestigationSourceKind.NoticeBoard),
                     "Wanted for a Wild Bunch robbery.")
             });
+
+        return GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            currentTown.Id,
+            Wallet.Starting(25m),
+            inventory,
+            TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+    }
+
+    private static GameSession CreateTownSourceRefreshableSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.NoticeBoard);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var publicWarrants = new[]
+        {
+            new Warrant(
+                new WarrantId("warrant-public-1"),
+                "Mira Cline",
+                new WarrantTerms(
+                    WarrantDisposition.DeadOrAlive,
+                    2500m,
+                    new[] { "Red Wren", "Aunt Tess" },
+                    new[] { "Pale scar across the left cheek" },
+                    "Dodge City Marshal",
+                    InvestigationTargetKind.TrueCulprit,
+                    [OutlawGangIds.WildBunch],
+                    OutlawGangIds.WildBunch,
+                    InvestigationSourceKind.NoticeBoard),
+                "Wanted for a Wild Bunch robbery."),
+            new Warrant(
+                new WarrantId("warrant-public-2"),
+                "Reno Pike",
+                new WarrantTerms(
+                    WarrantDisposition.AliveOnly,
+                    300m,
+                    new[] { "The Magpie", "R. Pike" },
+                    new[] { "Mismatched spurs" },
+                    "Silver Creek Sheriff",
+                    InvestigationTargetKind.UnrelatedWantedCriminal,
+                    Array.Empty<OutlawGangId>(),
+                    null,
+                    InvestigationSourceKind.NoticeBoard),
+                "Wanted for cattle theft.")
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[]
+            {
+                new Clue(
+                    new ClueId("clue-public-record-1"),
+                    ClueKind.Record,
+                    "A sheriff note ties the rider to a rail ledger.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.SheriffRecords,
+                    source: "sheriff record",
+                    context: "Public notice",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("red hat rider", Feature: "red hat")
+                        })),
+                new Clue(
+                    new ClueId("clue-public-record-2"),
+                    ClueKind.Record,
+                    "A sheriff ledger in Holloway notes a rider with a red hat paying cash under a clean alias.",
+                    new[] { new SuspectId("suspect-2") },
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.SheriffRecords,
+                    source: "sheriff record",
+                    context: "Public notice",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("red hat rider", Feature: "red hat")
+                        })),
+            },
+            publicWarrants: publicWarrants);
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }
@@ -505,7 +649,11 @@ public sealed class GameSessionInvestigationActionsTests
             .Preview!;
 
         session.StartJourney(preview);
-        session.AdvanceJourneyDay();
+        while (session.Journey is not null && session.Journey.Status == JourneyStatus.Active)
+        {
+            session.AdvanceJourneyDay();
+        }
+
         var acknowledgment = session.AcknowledgeJourneyArrival();
 
         Assert.True(acknowledgment.Success);
