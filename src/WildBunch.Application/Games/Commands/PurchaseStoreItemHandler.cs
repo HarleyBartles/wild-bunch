@@ -11,13 +11,16 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class PurchaseStoreItemHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
     private readonly TownStoreCatalogResolver _storeCatalogResolver;
 
     public PurchaseStoreItemHandler(
         IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork,
         TownStoreCatalogResolver storeCatalogResolver)
     {
         _gameSessionRepository = gameSessionRepository;
+        _gameSessionUnitOfWork = gameSessionUnitOfWork;
         _storeCatalogResolver = storeCatalogResolver;
     }
 
@@ -70,7 +73,8 @@ public sealed class PurchaseStoreItemHandler
         var purchaseResult = session.Purchase(offer, command.Quantity);
         if (purchaseResult.Success)
         {
-            await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return GameTurnResultFactory.Create(

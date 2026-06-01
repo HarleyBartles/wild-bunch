@@ -25,11 +25,9 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         return store is null ? null : ToAggregate(store);
     }
 
-    public async Task SaveAsync(GameSession session, CancellationToken cancellationToken = default)
+    public async Task StoreAsync(GameSession session, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
-
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
         var now = DateTime.UtcNow;
         var entity = await _dbContext.GameSessions.SingleOrDefaultAsync(existing => existing.Id == session.Id.Value, cancellationToken).ConfigureAwait(false);
@@ -78,9 +76,12 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
+    }
 
-        await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    public async Task SaveAsync(GameSession session, CancellationToken cancellationToken = default)
+    {
+        await StoreAsync(session, cancellationToken).ConfigureAwait(false);
+        await new EfGameSessionUnitOfWork(_dbContext).CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<GameSessionStore?> LoadStoreAsync(GameSessionId id, CancellationToken cancellationToken)

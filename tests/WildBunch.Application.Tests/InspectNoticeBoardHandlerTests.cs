@@ -22,12 +22,13 @@ public sealed class InspectNoticeBoardHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.NoticeBoard);
         repository.Seed(session);
-        var handler = new InspectNoticeBoardHandler(repository, new JournalResolver());
+        var handler = new InspectNoticeBoardHandler(repository, repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new InspectNoticeBoardCommand(session.Id.Value));
 
         Assert.True(result.Success);
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
@@ -47,12 +48,13 @@ public sealed class InspectNoticeBoardHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.None);
         repository.Seed(session);
-        var handler = new InspectNoticeBoardHandler(repository, new JournalResolver());
+        var handler = new InspectNoticeBoardHandler(repository, repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new InspectNoticeBoardCommand(session.Id.Value));
 
         Assert.True(result.Success);
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
@@ -67,13 +69,14 @@ public sealed class InspectNoticeBoardHandlerTests
         StartJourney(session);
         session.Journey!.MarkCompleted();
         repository.Seed(session);
-        var handler = new InspectNoticeBoardHandler(repository, new JournalResolver());
+        var handler = new InspectNoticeBoardHandler(repository, repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new InspectNoticeBoardCommand(session.Id.Value));
 
         Assert.False(result.Success);
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
     }

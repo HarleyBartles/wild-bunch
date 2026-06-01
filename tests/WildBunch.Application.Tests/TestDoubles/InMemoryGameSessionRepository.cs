@@ -5,11 +5,16 @@ using WildBunch.Domain.Journal;
 
 namespace WildBunch.Application.Tests.TestDoubles;
 
-public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGameSessionReadRepository, IGameJournalReadRepository
+public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGameSessionReadRepository, IGameJournalReadRepository, IGameSessionUnitOfWork
 {
     private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
+    private readonly Dictionary<GameSessionId, GameSession> _pendingSessions = new();
 
-    public int SaveCalls { get; private set; }
+    public int StoreCalls { get; private set; }
+
+    public int CommitCalls { get; private set; }
+
+    public int SaveCalls => StoreCalls;
 
     public int? LastJournalSkip { get; private set; }
 
@@ -65,10 +70,28 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult<JournalSnapshot?>(snapshot with { LogEntries = slicedEntries });
     }
 
-    public Task SaveAsync(GameSession session, CancellationToken cancellationToken = default)
+    public Task StoreAsync(GameSession session, CancellationToken cancellationToken = default)
     {
-        SaveCalls++;
-        _sessions[session.Id] = session;
+        StoreCalls++;
+        _pendingSessions[session.Id] = session;
         return Task.CompletedTask;
+    }
+
+    public Task CommitAsync(CancellationToken cancellationToken = default)
+    {
+        CommitCalls++;
+        foreach (var pending in _pendingSessions)
+        {
+            _sessions[pending.Key] = pending.Value;
+        }
+
+        _pendingSessions.Clear();
+        return Task.CompletedTask;
+    }
+
+    public async Task SaveAsync(GameSession session, CancellationToken cancellationToken = default)
+    {
+        await StoreAsync(session, cancellationToken).ConfigureAwait(false);
+        await CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 }

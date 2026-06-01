@@ -9,13 +9,16 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class GatherLocalGossipHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
     private readonly JournalResolver _journalResolver;
 
     public GatherLocalGossipHandler(
         IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork,
         JournalResolver journalResolver)
     {
         _gameSessionRepository = gameSessionRepository;
+        _gameSessionUnitOfWork = gameSessionUnitOfWork;
         _journalResolver = journalResolver;
     }
 
@@ -32,7 +35,8 @@ public sealed class GatherLocalGossipHandler
 
         if (actionResult.SessionChanged)
         {
-            await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return new InvestigationActionResultDto(

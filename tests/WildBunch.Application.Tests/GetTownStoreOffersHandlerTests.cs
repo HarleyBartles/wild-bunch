@@ -28,7 +28,8 @@ public sealed class GetTownStoreOffersHandlerTests
         Assert.True(result.Available);
         Assert.Equal("Red Mesa", result.TownName);
         Assert.Contains(result.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith && offer.DisplayName == "Revolver ammo");
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
 
         var payload = JsonSerializer.Serialize(result);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -47,7 +48,8 @@ public sealed class GetTownStoreOffersHandlerTests
 
         Assert.False(result.Available);
         Assert.Empty(result.Offers);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
     }
 
     [Fact]

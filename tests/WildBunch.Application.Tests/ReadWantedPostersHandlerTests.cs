@@ -23,12 +23,13 @@ public sealed class ReadWantedPostersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.NoticeBoard);
         repository.Seed(session);
-        var handler = new ReadWantedPostersHandler(repository, new JournalResolver());
+        var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
 
         Assert.True(result.Success);
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
@@ -49,12 +50,13 @@ public sealed class ReadWantedPostersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.None);
         repository.Seed(session);
-        var handler = new ReadWantedPostersHandler(repository, new JournalResolver());
+        var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
 
         Assert.False(result.Success);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
@@ -75,13 +77,14 @@ public sealed class ReadWantedPostersHandlerTests
         StartJourney(session);
         session.Journey!.MarkCompleted();
         repository.Seed(session);
-        var handler = new ReadWantedPostersHandler(repository, new JournalResolver());
+        var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
         var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
 
         Assert.False(result.Success);
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
     }
@@ -89,9 +92,8 @@ public sealed class ReadWantedPostersHandlerTests
     [Fact]
     public async Task ReadWantedPostersThrowsWhenMissing()
     {
-        var handler = new ReadWantedPostersHandler(
-            new InMemoryGameSessionRepository(),
-            new JournalResolver());
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
         await Assert.ThrowsAsync<WildBunch.Application.Games.Exceptions.GameSessionNotFoundException>(
             () => handler.HandleAsync(new ReadWantedPostersCommand(Guid.NewGuid())));

@@ -10,11 +10,16 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class TravelToTownHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
     private readonly TravelResolver _travelResolver;
 
-    public TravelToTownHandler(IGameSessionRepository gameSessionRepository, TravelResolver travelResolver)
+    public TravelToTownHandler(
+        IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork,
+        TravelResolver travelResolver)
     {
         _gameSessionRepository = gameSessionRepository;
+        _gameSessionUnitOfWork = gameSessionUnitOfWork;
         _travelResolver = travelResolver;
     }
 
@@ -37,7 +42,8 @@ public sealed class TravelToTownHandler
             session.StartJourney(previewResult.Preview);
             var travelResult = session.AdvanceJourneyDay();
 
-            await _gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
             return GameTurnResultFactory.Create(
                 travelResult.Success,

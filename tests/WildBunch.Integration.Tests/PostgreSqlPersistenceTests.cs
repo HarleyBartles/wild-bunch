@@ -43,6 +43,44 @@ public sealed class PostgreSqlPersistenceTests
     }
 
     [SkippableFact]
+    public async Task PostgreSqlUnitOfWorkCommitsStagedSessionChanges()
+    {
+        Skip.If(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgreSqlConnectionStringEnvironmentVariable)), $"Set {PostgreSqlConnectionStringEnvironmentVariable} to exercise the PostgreSQL persistence lane.");
+        using var database = new PostgreSqlTestDatabase();
+
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+            .Options;
+
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateCompletedTravelSession();
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+
+            var repository = new EfGameSessionRepository(context, serializer);
+            var unitOfWork = new EfGameSessionUnitOfWork(context);
+
+            await repository.StoreAsync(session);
+
+            await using var verificationBeforeCommit = new WildBunchDbContext(options);
+            Assert.Equal(0, await verificationBeforeCommit.GameSessions.CountAsync());
+
+            await unitOfWork.CommitAsync();
+        }
+
+        await using (var verificationContext = new WildBunchDbContext(options))
+        {
+            Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
+            Assert.Equal(8, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
+            Assert.Equal(session.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync());
+        }
+    }
+
+    [SkippableFact]
     public async Task PostgreSqlLaneRoundTripsAggregateComponentsLogsAndDiaryWhenConnectionStringIsProvided()
     {
         Skip.If(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgreSqlConnectionStringEnvironmentVariable)), $"Set {PostgreSqlConnectionStringEnvironmentVariable} to exercise the PostgreSQL persistence lane.");

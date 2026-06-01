@@ -21,13 +21,14 @@ public sealed class TravelToTownHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new TravelToTownHandler(repository, new TravelResolver());
+        var handler = new TravelToTownHandler(repository, repository, new TravelResolver());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
         Assert.True(result.Success);
         Assert.Contains("trail", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(2, result.CurrentSession.Clock.Day);
@@ -51,13 +52,14 @@ public sealed class TravelToTownHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new TravelToTownHandler(repository, new TravelResolver());
+        var handler = new TravelToTownHandler(repository, repository, new TravelResolver());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "dryridge"));
 
         Assert.False(result.Success);
         Assert.Equal("No trail connects those towns.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
@@ -70,12 +72,13 @@ public sealed class TravelToTownHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(emptyInventory: true);
         repository.Seed(session);
-        var handler = new TravelToTownHandler(repository, new TravelResolver());
+        var handler = new TravelToTownHandler(repository, repository, new TravelResolver());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
         Assert.True(result.Success);
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);

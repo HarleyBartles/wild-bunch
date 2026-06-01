@@ -21,7 +21,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
-        var handler = new AdvanceTravelDayHandler(repository);
+        var handler = new AdvanceTravelDayHandler(repository, repository);
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -41,7 +41,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
-        var handler = new AdvanceTravelDayHandler(repository);
+        var handler = new AdvanceTravelDayHandler(repository, repository);
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -60,7 +60,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession();
         repository.Seed(session);
-        var handler = new AdvanceTravelDayHandler(repository);
+        var handler = new AdvanceTravelDayHandler(repository, repository);
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -83,7 +83,7 @@ public sealed class AdvanceTravelDayHandlerTests
             trailRisk: TrailRisk.Moderate,
             travelDifficulty: TravelDifficulty.Hard);
         repository.Seed(session);
-        var handler = new AdvanceTravelDayHandler(repository);
+        var handler = new AdvanceTravelDayHandler(repository, repository);
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -102,8 +102,8 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
 
-        var advanceHandler = new AdvanceTravelDayHandler(repository);
-        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
+        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository);
 
         var secondAdvance = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.NotNull(secondAdvance.CurrentSession.Journey);
@@ -125,8 +125,8 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateSixDayQuietSession();
         repository.Seed(session);
 
-        var advanceHandler = new AdvanceTravelDayHandler(repository);
-        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
+        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository);
 
         GameTurnResultDto? result = null;
         for (var day = 1; day <= 6; day++)

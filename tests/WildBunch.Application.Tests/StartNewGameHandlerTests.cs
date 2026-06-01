@@ -10,13 +10,14 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository);
 
         var result = await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
 
         Assert.Equal("Ranger Vale", factory.RequestedPlayerNames.Single());
         Assert.Equal(WildBunch.Domain.Travel.TravelDifficulty.Normal, factory.RequestedTravelDifficulties.Single());
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(factory.CreatedSession.Id.Value, result.Id);
         Assert.Equal("Ranger Vale", result.Player.Name);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, result.Status);
@@ -31,7 +32,7 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository);
 
         await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", WildBunch.Domain.Travel.TravelDifficulty.Easy));
 
@@ -43,7 +44,7 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository);
 
         await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", SetupSeedCode: "WB1-N-03-000000000000-0000"));
 

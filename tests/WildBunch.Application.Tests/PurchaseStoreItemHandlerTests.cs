@@ -22,7 +22,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -33,7 +33,8 @@ public sealed class PurchaseStoreItemHandlerTests
 
         Assert.True(result.Success);
         Assert.Equal("Purchased 2 Food for $4.00.", result.Message);
-        Assert.Equal(1, repository.SaveCalls);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(21m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(2, result.CurrentSession.Inventory.Items.Count);
         Assert.Equal(3, result.CurrentSession.Inventory.Items.Single(item => item.Kind == DomainItemKind.Food).Quantity);
@@ -46,7 +47,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -57,7 +58,8 @@ public sealed class PurchaseStoreItemHandlerTests
 
         Assert.False(result.Success);
         Assert.Equal("You must be in that town to buy there.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Equal("pinecross", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Single(result.CurrentSession.LogEntries);
@@ -69,7 +71,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -80,7 +82,8 @@ public sealed class PurchaseStoreItemHandlerTests
 
         Assert.False(result.Success);
         Assert.Equal("That store offer is not available in this town.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Single(result.CurrentSession.LogEntries);
     }
@@ -91,7 +94,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
         await Assert.ThrowsAsync<TownNotFoundException>(() => handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -100,7 +103,8 @@ public sealed class PurchaseStoreItemHandlerTests
             DomainItemKind.Food,
             1)));
 
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Single(session.LogEntries);
     }
@@ -112,7 +116,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var session = CreateSession();
         StartJourney(session);
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -123,7 +127,8 @@ public sealed class PurchaseStoreItemHandlerTests
 
         Assert.False(result.Success);
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(JourneyStatus.Active, result.CurrentSession.Journey!.Status);

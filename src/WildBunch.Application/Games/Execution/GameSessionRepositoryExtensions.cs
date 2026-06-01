@@ -17,21 +17,4 @@ public static class GameSessionRepositoryExtensions
 
         return session ?? throw new GameSessionNotFoundException(sessionId);
     }
-
-    public static async Task SaveIfAsync(
-        this IGameSessionRepository gameSessionRepository,
-        GameSession session,
-        bool shouldSave,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(gameSessionRepository);
-        ArgumentNullException.ThrowIfNull(session);
-
-        if (!shouldSave)
-        {
-            return;
-        }
-
-        await gameSessionRepository.SaveAsync(session, cancellationToken).ConfigureAwait(false);
-    }
 }

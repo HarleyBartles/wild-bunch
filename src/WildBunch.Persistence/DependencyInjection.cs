@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddDbContext<WildBunchDbContext>((_, options) => PersistenceDbContextOptions.Configure(options, configuration));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
+        services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         services.AddScoped<IGameSessionReadRepository, EfGameSessionReadRepository>();
         services.AddScoped<IGameJournalReadRepository, EfGameJournalReadRepository>();
 

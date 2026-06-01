@@ -31,7 +31,8 @@ public sealed class QueryHandlersAreReadOnlyTests
         _ = await availableActionsHandler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
         _ = await storeOffersHandler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "pinecross"));
 
-        Assert.Equal(0, repository.SaveCalls);
+        Assert.Equal(0, repository.StoreCalls);
+        Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Single(session.LogEntries);
     }

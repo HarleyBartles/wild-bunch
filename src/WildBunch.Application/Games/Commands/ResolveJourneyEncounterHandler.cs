@@ -8,10 +8,14 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class ResolveJourneyEncounterHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
 
-    public ResolveJourneyEncounterHandler(IGameSessionRepository gameSessionRepository)
+    public ResolveJourneyEncounterHandler(
+        IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork)
     {
         _gameSessionRepository = gameSessionRepository;
+        _gameSessionUnitOfWork = gameSessionUnitOfWork;
     }
 
     public async Task<GameTurnResultDto> HandleAsync(ResolveJourneyEncounterCommand command, CancellationToken cancellationToken = default)
@@ -22,7 +26,11 @@ public sealed class ResolveJourneyEncounterHandler
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var result = session.ResolveJourneyEncounter(command.ChoiceId, command.BulletSpend, command.BribeAmount, command.ForcedRoll);
 
-        await _gameSessionRepository.SaveIfAsync(session, result.SessionChanged, cancellationToken).ConfigureAwait(false);
+        if (result.SessionChanged)
+        {
+            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         return GameTurnResultFactory.Create(
             result.Success,

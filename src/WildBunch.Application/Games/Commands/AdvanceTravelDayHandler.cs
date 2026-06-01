@@ -8,10 +8,14 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class AdvanceTravelDayHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
 
-    public AdvanceTravelDayHandler(IGameSessionRepository gameSessionRepository)
+    public AdvanceTravelDayHandler(
+        IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork)
     {
         _gameSessionRepository = gameSessionRepository;
+        _gameSessionUnitOfWork = gameSessionUnitOfWork;
     }
 
     public async Task<GameTurnResultDto> HandleAsync(AdvanceTravelDayCommand command, CancellationToken cancellationToken = default)
@@ -22,7 +26,11 @@ public sealed class AdvanceTravelDayHandler
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var result = session.AdvanceJourneyDay();
 
-        await _gameSessionRepository.SaveIfAsync(session, result.Success || result.Journey is not null, cancellationToken).ConfigureAwait(false);
+        if (result.Success || result.Journey is not null)
+        {
+            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         return GameTurnResultFactory.Create(
             result.Success,

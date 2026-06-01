@@ -7,6 +7,7 @@ live
 ## Dated Status History
 
 - 2026-06-01 - live: the repo records DDD aggregate boundaries, Onion dependency direction, CQRS-style handlers, repository roles, and first-class Unit of Work as the current architecture posture.
+- 2026-06-01 - implemented: command handlers stage aggregate changes through the repository boundary and commit them through an application-facing Unit of Work.
 
 ## Decision Type
 
@@ -28,7 +29,7 @@ Wild Bunch already has a visible command and persistence shape in source: `GameS
 - CQRS-style handler separation is already the application shape and should remain the default.
 - Command-side repositories must represent aggregate persistence boundaries, not generic data access.
 - Read repositories should stay query-only.
-- Unit of Work is now a first-class decided coordination boundary, even though implementation proof is still partial.
+- Unit of Work is now a first-class decided coordination boundary, and the codebase implements that boundary in the application/persistence split.
 
 ## Decision Summary
 
@@ -40,7 +41,7 @@ The domain model keeps the authority for live-play mutation inside `GameSession`
 
 Command-side repositories are the unit of aggregate persistence ownership. Read repositories are query-only projections and should not gain mutation behavior. This keeps mutation and query roles distinct without forcing a framework-first CQRS implementation.
 
-Unit of Work is no longer a maybe-later nice-to-have. It is the chosen persistence coordination boundary for command work, but the actual implementation work is still tracked separately and intentionally not overclaimed here. Issue #40 owns the implementation track and the aggregate-level repository boundary cleanup.
+Unit of Work is no longer a maybe-later nice-to-have. It is the chosen persistence coordination boundary for command work, and the code now implements that coordination explicitly in the application and persistence layers. Issue #40 remains the implementation track for the repository boundary cleanup and any future refinements.
 
 ## Options Considered and Rejected
 
@@ -65,7 +66,7 @@ A framework-first repository layer would only be better for a tiny CRUD applicat
 ## Accepted Tradeoffs
 
 - `GameSession` remains substantial because it owns live-play orchestration.
-- The current Unit of Work implementation track is not complete yet.
+- The current Unit of Work implementation is intentionally small and session-specific rather than a generic framework layer.
 - Repository and handler boundaries have to stay disciplined so the architecture does not drift into generic boilerplate.
 
 ## Risks
@@ -80,7 +81,7 @@ New command-side work should assume aggregate-scoped repositories, explicit hand
 
 ## Implementation Status or Plan
 
-Live as architecture doctrine, with partial implementation proof and an active follow-up track for the remaining Unit of Work work.
+Live as architecture doctrine, with application-facing Unit of Work and repository staging in source.
 
 ## Related Stable Source Surfaces
 
@@ -102,7 +103,7 @@ Live as architecture doctrine, with partial implementation proof and an active f
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-The repo already shows the aggregate root, handler structure, repository split, and persistence adapter boundaries in source. The Unit of Work implementation itself is not yet complete, and issue #40 owns that work.
+The repo shows the aggregate root, handler structure, repository split, persistence adapter boundaries, and an application-facing Unit of Work implementation in source. Issue #40 remains the traceable follow-up for any future repository boundary refinement.
 
 ## Review Triggers
 
