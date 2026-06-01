@@ -22,7 +22,7 @@ function StartGameHeader({ busy, gameId, seedDirty, session }: { busy: boolean; 
         <Eyebrow>Seeded setup</Eyebrow>
         <Title>{gameId ? "Refine the next hunt" : "Start a new hunt"}</Title>
         <Lead>
-          The setup seed stays visible and editable, so the player can paste a code, tune the v1 options, or let the game roll a fresh variant.
+          The setup seed stays visible and editable as a UUID replay key. Paste one, randomize one, or let the backend resolve it into a legal starting world.
         </Lead>
       </div>
       <HeaderMeta>
@@ -76,16 +76,14 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     playerName,
+    travelDifficulty,
     seedState,
     seedDraft,
     seedDirty,
     decodeError,
     setPlayerName,
     setSeedDraft,
-    setDifficulty,
-    setStartWithHorse,
-    setLoadoutProfile,
-    setJourneyRandomnessMode,
+    setTravelDifficulty,
     applySeed,
     randomizeSeed,
   } = useStartGameSeed({ session, resetToken });
@@ -103,7 +101,7 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
     const seedCode = await encodeGameSetupSeed(seedState);
     await onStartGame({
       playerName: trimmedName,
-      travelDifficulty: seedState.difficulty,
+      travelDifficulty,
       seedCode,
     });
   }
@@ -117,16 +115,13 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
       <StartGameForm onSubmit={(event: FormEvent<HTMLFormElement>) => void handleSubmit(event)}>
         <StartGameOptionsForm
           playerName={playerName}
-          seedState={seedState}
+          travelDifficulty={travelDifficulty}
           seedDraft={seedDraft}
           seedDirty={seedDirty}
           decodeError={decodeError}
           onPlayerNameChange={setPlayerName}
           onSeedDraftChange={setSeedDraft}
-          onDifficultyChange={setDifficulty}
-          onStartWithHorseChange={setStartWithHorse}
-          onLoadoutProfileChange={setLoadoutProfile}
-          onJourneyRandomnessModeChange={setJourneyRandomnessMode}
+          onTravelDifficultyChange={setTravelDifficulty}
         />
 
         <SetupSeedSummary seedState={seedState} />

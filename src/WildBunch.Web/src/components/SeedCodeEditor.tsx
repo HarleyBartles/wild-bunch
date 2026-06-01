@@ -16,13 +16,13 @@ export function SeedCodeEditor({ seedDraft, seedDirty, decodeError, onSeedDraftC
         type="text"
         value={seedDraft}
         onChange={(event) => onSeedDraftChange(event.target.value)}
-        placeholder="WB1-N-03-000000000000-0000"
+        placeholder="00000000-0000-0000-0000-000000000000"
         spellCheck={false}
-        autoCapitalize="characters"
+        autoCapitalize="off"
         autoComplete="off"
       />
       <Hint>
-        Paste a code, then click Apply to decode it. Editing the options rewrites the applied seed.
+        Paste a UUID-shaped replay key, then click Apply to validate it. Randomize creates a fresh UUID.
       </Hint>
       {seedDirty ? <DraftNotice>Seed changes are staged until you apply them.</DraftNotice> : null}
       {decodeError ? <InlineError>{decodeError}</InlineError> : null}
@@ -33,6 +33,7 @@ export function SeedCodeEditor({ seedDraft, seedDirty, decodeError, onSeedDraftC
 const Field = styled.div`
   display: grid;
   gap: 6px;
+  grid-column: 1 / -1;
 `;
 
 const Label = styled.label`

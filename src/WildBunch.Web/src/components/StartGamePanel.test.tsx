@@ -4,30 +4,11 @@ import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { StartGamePanel } from "./StartGamePanel";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
-import {
-  createCanonicalSeedState,
-  decodeGameSetupSeed,
-  encodeGameSetupSeed,
-  withDifficulty,
-  withJourneyRandomnessMode,
-  withLoadoutProfile,
-  withRandomEntropy,
-  withStartWithHorse,
-} from "../ui/gameSetupSeedCodec";
-
-vi.mock("../ui/gameSetupSeedCodec", async () => {
-  const actual = await vi.importActual<typeof import("../ui/gameSetupSeedCodec")>("../ui/gameSetupSeedCodec");
-  return {
-    ...actual,
-    withRandomEntropy: vi.fn((seed) => ({ ...seed, entropy: 1234n })),
-  };
-});
-
-const mockedWithRandomEntropy = vi.mocked(withRandomEntropy);
+import { decodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 
 afterEach(() => {
   cleanup();
-  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
@@ -44,20 +25,20 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       towns: [],
       trails: [],
     },
-      caseFile: {
-        accusationId: null,
-        openingLead: "",
-        caseState: {
-          statusText: "",
-        },
-        discoveredSuspects: [],
-        caseBoard: {
-          namedRecords: [],
-          looseLeads: [],
-          evidenceItems: [],
-        },
-        knownClues: [],
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: {
+        statusText: "",
       },
+      discoveredSuspects: [],
+      caseBoard: {
+        namedRecords: [],
+        looseLeads: [],
+        evidenceItems: [],
+      },
+      knownClues: [],
+    },
     inventory: {
       wallet: { cash: 0 },
       items: [],
@@ -107,17 +88,19 @@ function renderPanel(
 }
 
 describe("StartGamePanel", () => {
-  it("renders the seed setup UI and starts a game with the current seed", async () => {
+  it("renders a UUID seed and starts a game with the current seed", async () => {
     const user = userEvent.setup();
     const { onStartGame } = renderPanel();
 
     const playerName = screen.getByLabelText(/player name/i);
+    const difficulty = screen.getByLabelText(/travel difficulty/i);
     const seedInput = await screen.findByLabelText(/setup seed/i);
 
     await waitFor(() => {
-      expect((seedInput as HTMLInputElement).value).toMatch(/^WB1-/);
+      expect((seedInput as HTMLInputElement).value).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
+    await user.selectOptions(difficulty, "2");
     await user.type(playerName, "Ranger Vale");
     await user.click(screen.getByRole("button", { name: /start new game/i }));
 
@@ -127,74 +110,42 @@ describe("StartGamePanel", () => {
 
     const [request] = onStartGame.mock.calls[0];
     expect(request.playerName).toBe("Ranger Vale");
-    expect(request.travelDifficulty).toBe(0);
+    expect(request.travelDifficulty).toBe(2);
     expect(request.seedCode).toBe((seedInput as HTMLInputElement).value);
   });
 
-  it("stages a manually entered seed until Apply is clicked", async () => {
+  it("validates a pasted UUID until Apply is clicked", async () => {
     const user = userEvent.setup();
     renderPanel();
 
-    const seedState = withLoadoutProfile(
-      withJourneyRandomnessMode(withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false), 1),
-      2,
-    );
-    const seedCode = await encodeGameSetupSeed(seedState);
-    const canonicalSeedCode = await encodeGameSetupSeed(createCanonicalSeedState());
-
     const seedInput = await screen.findByLabelText(/setup seed/i);
-    const difficulty = screen.getByLabelText(/difficulty/i);
-    const horse = screen.getByLabelText(/start with horse/i);
-    const loadout = screen.getByLabelText(/loadout profile/i);
-    const journeyRandomness = screen.getByLabelText(/journey randomness/i);
     const applyButton = screen.getByRole("button", { name: /apply seed/i });
 
-    await waitFor(() => {
-      expect(seedInput).toHaveValue(canonicalSeedCode);
-    });
-
     await user.clear(seedInput);
-    await user.type(seedInput, seedCode);
+    await user.type(seedInput, "7D455293-F269-A642-72AF-0193FDBDFB51");
 
-    expect(seedInput).toHaveValue(seedCode);
-    expect(difficulty).toHaveValue("0");
-    expect(horse).toBeChecked();
-    expect(loadout).toHaveValue("0");
-    expect(journeyRandomness).toHaveValue("0");
+    expect(seedInput).toHaveValue("7D455293-F269-A642-72AF-0193FDBDFB51");
     expect(screen.getByText(/seed changes are staged until you apply them/i)).toBeInTheDocument();
 
     await user.click(applyButton);
 
     await waitFor(() => {
-      expect(difficulty).toHaveValue("2");
-      expect(horse).not.toBeChecked();
-      expect(loadout).toHaveValue("2");
-      expect(journeyRandomness).toHaveValue("1");
-      expect((seedInput as HTMLInputElement).value).toBe(seedCode);
+      expect(seedInput).toHaveValue("7d455293-f269-a642-72af-0193fdbdfb51");
     });
+
+    const decoded = await decodeGameSetupSeed((seedInput as HTMLInputElement).value);
+    expect(decoded.seedCode).toBe("7d455293-f269-a642-72af-0193fdbdfb51");
   });
 
   it("starts with the applied seed even if a dirty draft is still staged", async () => {
     const user = userEvent.setup();
     const { onStartGame } = renderPanel();
 
-    const dirtySeed = await encodeGameSetupSeed(
-      withLoadoutProfile(
-        withJourneyRandomnessMode(withStartWithHorse(withDifficulty(createCanonicalSeedState(), 2), false), 1),
-        2,
-      ),
-    );
-    const canonicalSeedCode = await encodeGameSetupSeed(createCanonicalSeedState());
-
     const seedInput = await screen.findByLabelText(/setup seed/i);
-
-    await waitFor(() => {
-      expect(seedInput).toHaveValue(canonicalSeedCode);
-    });
+    const canonicalSeedCode = (seedInput as HTMLInputElement).value;
 
     await user.clear(seedInput);
-    await user.type(seedInput, dirtySeed);
-
+    await user.type(seedInput, "7d455293-f269-a642-72af-0193fdbdfb51");
     await user.type(screen.getByLabelText(/player name/i), "Ranger Vale");
     await user.click(screen.getByRole("button", { name: /start new game/i }));
 
@@ -207,47 +158,21 @@ describe("StartGamePanel", () => {
     expect(request.travelDifficulty).toBe(0);
   });
 
-  it("rewrites the seed when the visible options change", async () => {
+  it("randomizes the seed to a fresh UUID and sends it to the backend", async () => {
     const user = userEvent.setup();
-    renderPanel();
-
-    const seedInput = await screen.findByLabelText(/setup seed/i);
-    const initialCode = (seedInput as HTMLInputElement).value;
-
-    await user.selectOptions(screen.getByLabelText(/difficulty/i), "2");
-    await user.click(screen.getByLabelText(/start with horse/i));
-    await user.selectOptions(screen.getByLabelText(/loadout profile/i), "2");
-    await user.selectOptions(screen.getByLabelText(/journey randomness/i), "1");
-
-    await waitFor(() => {
-      expect((seedInput as HTMLInputElement).value).not.toBe(initialCode);
-      expect(screen.getByLabelText(/difficulty/i)).toHaveValue("2");
-      expect(screen.getByLabelText(/start with horse/i)).not.toBeChecked();
-      expect(screen.getByLabelText(/loadout profile/i)).toHaveValue("2");
-      expect(screen.getByLabelText(/journey randomness/i)).toHaveValue("1");
-    });
-  });
-
-  it("randomizes the seed without losing the selected v1 options", async () => {
-    const user = userEvent.setup();
+    const randomUUID = vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-2222-3333-4444-555555555555");
     const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
-    await user.selectOptions(screen.getByLabelText(/difficulty/i), "1");
-    await user.click(screen.getByLabelText(/start with horse/i));
-    await user.selectOptions(screen.getByLabelText(/loadout profile/i), "1");
-    await user.selectOptions(screen.getByLabelText(/journey randomness/i), "1");
-
     const beforeRandomize = (seedInput as HTMLInputElement).value;
+
+    await user.selectOptions(screen.getByLabelText(/travel difficulty/i), "1");
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
 
     await waitFor(() => {
-      expect(mockedWithRandomEntropy).toHaveBeenCalled();
+      expect(randomUUID).toHaveBeenCalledTimes(1);
+      expect((seedInput as HTMLInputElement).value).toBe("11111111-2222-3333-4444-555555555555");
       expect((seedInput as HTMLInputElement).value).not.toBe(beforeRandomize);
-      expect(screen.getByLabelText(/difficulty/i)).toHaveValue("1");
-      expect(screen.getByLabelText(/start with horse/i)).not.toBeChecked();
-      expect(screen.getByLabelText(/loadout profile/i)).toHaveValue("1");
-      expect(screen.getByLabelText(/journey randomness/i)).toHaveValue("1");
     });
 
     await user.type(screen.getByLabelText(/player name/i), "Ranger Vale");
@@ -258,13 +183,7 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    const decoded = await decodeGameSetupSeed(request.seedCode);
-
-    expect(request.seedCode).toBe((seedInput as HTMLInputElement).value);
-    expect(decoded.difficulty).toBe(1);
-    expect(decoded.startWithHorse).toBe(false);
-    expect(decoded.loadoutProfile).toBe(1);
-    expect(decoded.journeyRandomnessMode).toBe(1);
-    expect(decoded.entropy).toBe(1234n);
+    expect(request.travelDifficulty).toBe(1);
+    expect(request.seedCode).toBe("11111111-2222-3333-4444-555555555555");
   });
 });

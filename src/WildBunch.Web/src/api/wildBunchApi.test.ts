@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 describe("wildBunchApi", () => {
-  it("submits the encoded seed code when creating a game", async () => {
+  it("submits the UUID seed code when creating a game", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       headers: new Headers({ "content-type": "application/json" }),
@@ -20,7 +20,7 @@ describe("wildBunchApi", () => {
     await createGame({
       playerName: "Ranger Vale",
       travelDifficulty: 2,
-      seedCode: "WB1-H-03-000000000000-ABCD",
+      seedCode: "7d455293-f269-a642-72af-0193fdbdfb51",
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -30,7 +30,7 @@ describe("wildBunchApi", () => {
         body: JSON.stringify({
           playerName: "Ranger Vale",
           travelDifficulty: 2,
-          seedCode: "WB1-H-03-000000000000-ABCD",
+          seedCode: "7d455293-f269-a642-72af-0193fdbdfb51",
         }),
       }),
     );

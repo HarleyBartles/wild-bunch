@@ -107,7 +107,7 @@ Live.
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, uses `AdventureRandomnessPolicy` as a descriptor-level concept, derives setup choices through labeled hashing rather than raw UUID byte slicing, and no longer relies on the retired WB1 product format.
+The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, and the web start-game surface now emits and validates UUID-shaped replay keys instead of the retired WB1 seed codec. `AdventureRandomnessPolicy` remains a descriptor-level concept, setup choices are derived through labeled hashing rather than raw UUID byte slicing, and the product no longer relies on the retired WB1 format.
 
 ## Review Triggers
 

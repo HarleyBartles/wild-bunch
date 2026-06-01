@@ -1,34 +1,27 @@
 import styled from "styled-components";
 import type { TravelDifficulty } from "../api/types";
-import type { GameSetupJourneyRandomnessMode, GameSetupLoadoutProfile, GameSetupSeedState } from "../ui/gameSetupSeedCodec";
 import { SeedCodeEditor } from "./SeedCodeEditor";
 
 interface StartGameOptionsFormProps {
   playerName: string;
-  seedState: GameSetupSeedState;
+  travelDifficulty: TravelDifficulty;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   onPlayerNameChange: (value: string) => void;
   onSeedDraftChange: (value: string) => void;
-  onDifficultyChange: (difficulty: TravelDifficulty) => void;
-  onStartWithHorseChange: (value: boolean) => void;
-  onLoadoutProfileChange: (profile: GameSetupLoadoutProfile) => void;
-  onJourneyRandomnessModeChange: (mode: GameSetupJourneyRandomnessMode) => void;
+  onTravelDifficultyChange: (difficulty: TravelDifficulty) => void;
 }
 
 export function StartGameOptionsForm({
   playerName,
-  seedState,
+  travelDifficulty,
   seedDraft,
   seedDirty,
   decodeError,
   onPlayerNameChange,
   onSeedDraftChange,
-  onDifficultyChange,
-  onStartWithHorseChange,
-  onLoadoutProfileChange,
-  onJourneyRandomnessModeChange,
+  onTravelDifficultyChange,
 }: StartGameOptionsFormProps) {
   return (
     <DraftGrid>
@@ -44,56 +37,16 @@ export function StartGameOptionsForm({
         />
       </Field>
 
-      <SeedCodeEditor seedDraft={seedDraft} seedDirty={seedDirty} decodeError={decodeError} onSeedDraftChange={onSeedDraftChange} />
-
       <Field>
-        <Label htmlFor="difficulty">Difficulty</Label>
-        <Select id="difficulty" value={seedState.difficulty} onChange={(event) => onDifficultyChange(Number(event.target.value) as TravelDifficulty)}>
+        <Label htmlFor="difficulty">Travel difficulty</Label>
+        <Select id="difficulty" value={travelDifficulty} onChange={(event) => onTravelDifficultyChange(Number(event.target.value) as TravelDifficulty)}>
           <option value={0}>Normal</option>
           <option value={1}>Easy</option>
           <option value={2}>Hard</option>
         </Select>
       </Field>
 
-      <OptionsRow>
-        <Field>
-          <Label htmlFor="start-with-horse">Start with horse</Label>
-          <ToggleRow>
-            <ToggleInput
-              id="start-with-horse"
-              type="checkbox"
-              checked={seedState.startWithHorse}
-              onChange={(event) => onStartWithHorseChange(event.target.checked)}
-            />
-            <ToggleLabel htmlFor="start-with-horse">{seedState.startWithHorse ? "Enabled" : "Disabled"}</ToggleLabel>
-          </ToggleRow>
-        </Field>
-
-        <Field>
-          <Label htmlFor="loadout-profile">Loadout profile</Label>
-          <Select
-            id="loadout-profile"
-            value={seedState.loadoutProfile}
-            onChange={(event) => onLoadoutProfileChange(Number(event.target.value) as GameSetupLoadoutProfile)}
-          >
-            <option value={0}>Standard</option>
-            <option value={1}>Light</option>
-            <option value={2}>Stocked</option>
-          </Select>
-        </Field>
-
-        <Field>
-          <Label htmlFor="journey-randomness">Journey randomness</Label>
-          <Select
-            id="journey-randomness"
-            value={seedState.journeyRandomnessMode}
-            onChange={(event) => onJourneyRandomnessModeChange(Number(event.target.value) as GameSetupJourneyRandomnessMode)}
-          >
-            <option value={0}>Normal unpredictable trail events</option>
-            <option value={1}>Deterministic no-salt trail events</option>
-          </Select>
-        </Field>
-      </OptionsRow>
+      <SeedCodeEditor seedDraft={seedDraft} seedDirty={seedDirty} decodeError={decodeError} onSeedDraftChange={onSeedDraftChange} />
     </DraftGrid>
   );
 }
@@ -102,6 +55,10 @@ const DraftGrid = styled.div`
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (max-width: 840px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const Field = styled.div`
@@ -135,28 +92,4 @@ const Input = styled.input`
 
 const Select = styled.select`
   ${baseControl}
-`;
-
-const OptionsRow = styled.div`
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-`;
-
-const ToggleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 0 2px;
-`;
-
-const ToggleInput = styled.input`
-  width: 18px;
-  height: 18px;
-  accent-color: #df9f4f;
-`;
-
-const ToggleLabel = styled.label`
-  color: rgba(242, 239, 232, 0.82);
 `;

@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { formatJourneyRandomnessMode, formatLoadoutProfile, formatTravelDifficulty } from "../ui/formatters";
 import type { GameSetupSeedState } from "../ui/gameSetupSeedCodec";
 
 interface SetupSeedSummaryProps {
@@ -10,24 +9,16 @@ export function SetupSeedSummary({ seedState }: SetupSeedSummaryProps) {
   return (
     <SummaryCard>
       <SummaryItem>
-        <dt>Difficulty</dt>
-        <dd>{formatTravelDifficulty(seedState.difficulty)}</dd>
+        <dt>Seed</dt>
+        <dd>{seedState.seedCode}</dd>
       </SummaryItem>
       <SummaryItem>
-        <dt>Horse</dt>
-        <dd>{seedState.startWithHorse ? "Enabled" : "Disabled"}</dd>
+        <dt>Shape</dt>
+        <dd>UUID replay key</dd>
       </SummaryItem>
       <SummaryItem>
-        <dt>Loadout</dt>
-        <dd>{formatLoadoutProfile(seedState.loadoutProfile)}</dd>
-      </SummaryItem>
-      <SummaryItem>
-        <dt>Journey randomness</dt>
-        <dd>{formatJourneyRandomnessMode(seedState.journeyRandomnessMode)}</dd>
-      </SummaryItem>
-      <SummaryItem>
-        <dt>Entropy</dt>
-        <dd>{seedState.entropy.toString(16).toUpperCase().padStart(12, "0")}</dd>
+        <dt>Validation</dt>
+        <dd>Backend-resolved</dd>
       </SummaryItem>
     </SummaryCard>
   );
@@ -55,5 +46,7 @@ const SummaryItem = styled.div`
   dd {
     margin: 4px 0 0;
     font-weight: 600;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    word-break: break-all;
   }
 `;

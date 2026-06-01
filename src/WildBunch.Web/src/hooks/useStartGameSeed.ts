@@ -4,12 +4,7 @@ import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
   encodeGameSetupSeed,
-  withDifficulty,
-  withJourneyRandomnessMode,
-  withLoadoutProfile,
-  withRandomEntropy,
-  withStartWithHorse,
-  type GameSetupLoadoutProfile,
+  withRandomSeed,
   type GameSetupSeedState,
 } from "../ui/gameSetupSeedCodec";
 
@@ -20,16 +15,14 @@ interface UseStartGameSeedArgs {
 
 export interface UseStartGameSeedResult {
   playerName: string;
+  travelDifficulty: TravelDifficulty;
   seedState: GameSetupSeedState;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   setPlayerName: (value: string) => void;
   setSeedDraft: (value: string) => void;
-  setDifficulty: (difficulty: TravelDifficulty) => void;
-  setStartWithHorse: (value: boolean) => void;
-  setLoadoutProfile: (profile: GameSetupLoadoutProfile) => void;
-  setJourneyRandomnessMode: (mode: 0 | 1) => void;
+  setTravelDifficulty: (difficulty: TravelDifficulty) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
@@ -48,8 +41,9 @@ function getErrorMessage(error: unknown) {
 
 export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs): UseStartGameSeedResult {
   const [playerName, setPlayerName] = useState("");
+  const [travelDifficulty, setTravelDifficulty] = useState<TravelDifficulty>(0);
   const [seedState, setSeedState] = useState(createCanonicalSeedState());
-  const [seedDraft, setSeedDraft] = useState("");
+  const [seedDraft, setSeedDraft] = useState(createCanonicalSeedState().seedCode);
   const [seedDirty, setSeedDirty] = useState(false);
   const [decodeError, setDecodeError] = useState<string | null>(null);
 
@@ -63,30 +57,16 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     }
 
     const resetSeed = createCanonicalSeedState();
+    setTravelDifficulty(0);
     setSeedState(resetSeed);
+    setSeedDraft(resetSeed.seedCode);
     setSeedDirty(false);
     setDecodeError(null);
   }, [resetToken]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    void encodeGameSetupSeed(seedState)
-      .then((seedCode) => {
-        if (!cancelled) {
-          setSeedDraft(seedCode);
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setDecodeError(getErrorMessage(error));
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [seedState]);
+    setSeedDraft(seedState.seedCode);
+  }, [seedState.seedCode]);
 
   async function applySeed() {
     if (!seedDirty) {
@@ -109,48 +89,27 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDirty(true);
   }
 
-  function handleDifficultyChange(difficulty: TravelDifficulty) {
+  function handleTravelDifficultyChange(difficulty: TravelDifficulty) {
     setDecodeError(null);
-    setSeedDirty(false);
-    setSeedState((current) => withDifficulty(current, difficulty));
-  }
-
-  function handleStartWithHorseChange(value: boolean) {
-    setDecodeError(null);
-    setSeedDirty(false);
-    setSeedState((current) => withStartWithHorse(current, value));
-  }
-
-  function handleLoadoutProfileChange(profile: GameSetupLoadoutProfile) {
-    setDecodeError(null);
-    setSeedDirty(false);
-    setSeedState((current) => withLoadoutProfile(current, profile));
-  }
-
-  function handleJourneyRandomnessModeChange(mode: 0 | 1) {
-    setDecodeError(null);
-    setSeedDirty(false);
-    setSeedState((current) => withJourneyRandomnessMode(current, mode));
+    setTravelDifficulty(difficulty);
   }
 
   function randomizeSeed() {
     setDecodeError(null);
     setSeedDirty(false);
-    setSeedState((current) => withRandomEntropy(current));
+    setSeedState((current) => withRandomSeed(current));
   }
 
   return {
     playerName,
+    travelDifficulty,
     seedState,
     seedDraft,
     seedDirty,
     decodeError,
     setPlayerName,
     setSeedDraft: handleSeedDraftChange,
-    setDifficulty: handleDifficultyChange,
-    setStartWithHorse: handleStartWithHorseChange,
-    setLoadoutProfile: handleLoadoutProfileChange,
-    setJourneyRandomnessMode: handleJourneyRandomnessModeChange,
+    setTravelDifficulty: handleTravelDifficultyChange,
     applySeed,
     randomizeSeed,
   };
