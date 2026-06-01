@@ -28,7 +28,9 @@ internal static class AcceptanceTestHarness
 
         using var scope = factory.Services.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
-        await repository.SaveAsync(session);
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
 
         return GameSessionMapper.ToDto(session);
     }

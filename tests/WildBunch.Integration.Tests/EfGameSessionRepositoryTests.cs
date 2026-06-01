@@ -27,10 +27,10 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAndLoadNewSessionRoundTripsThroughPostgreSql()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var session = CreateSession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -56,10 +56,10 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAndLoadEasyTravelSessionRetainsTravelDifficulty()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var session = CreateEasySession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -72,11 +72,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterTravelUpdatesReloadedState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateSession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -87,7 +87,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -113,11 +113,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterInterruptedTravelRoundTripsPendingEncounterState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateHighRiskSession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -128,7 +128,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -168,11 +168,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterPendingFoeEncounterWithHiddenPressureRoundTripsTheHiddenState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateHighRiskSession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -192,7 +192,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(5m, loaded.Journey.PendingEncounter.HiddenState.CumulativeBribePaid);
         Assert.True(loaded.Journey.PendingEncounter.HiddenState.Shaken);
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -208,11 +208,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterLuckyTrailEventRoundTripsWalletGain()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateLuckySession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -223,7 +223,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -239,11 +239,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAndLoadTravelDiaryRoundTripsStructuredDiaryState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateDiarySession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -254,7 +254,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -269,11 +269,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterDryTravelRoundTripsHorseAndCanteenState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateDryTravelSession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -284,7 +284,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -300,11 +300,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterHorseLossFallbackRoundTripsFootTravelAndHorseState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var resolver = new TravelResolver();
         var session = CreateHorseLossFallbackSession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -315,7 +315,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -330,10 +330,10 @@ public sealed class EfGameSessionRepositoryTests
     public async Task SaveAfterJourneyAcknowledgementRoundTripsActiveSequenceAndCompletedHistory()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture);
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var session = CreateJourneyHistorySession();
 
-        await repository.SaveAsync(session);
+        await PersistAsync(repository, unitOfWork, session);
         var loaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -342,7 +342,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(firstPreview);
         Assert.Equal(1, loaded.Journey!.JourneySequence);
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var activeReload = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(activeReload);
@@ -353,7 +353,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.Journey!.MarkCompleted();
         Assert.True(loaded.AcknowledgeJourneyArrival().Success);
 
-        await repository.SaveAsync(loaded);
+        await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -366,7 +366,7 @@ public sealed class EfGameSessionRepositoryTests
         reloaded.StartJourney(secondPreview);
         Assert.Equal(2, reloaded.Journey!.JourneySequence);
 
-        await repository.SaveAsync(reloaded);
+        await PersistAsync(repository, unitOfWork, reloaded);
         var secondReload = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(secondReload);
@@ -380,11 +380,11 @@ public sealed class EfGameSessionRepositoryTests
     public async Task ReadRepositoriesProjectComposedSessionAndJournalViews()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var commandRepository = CreateRepository(fixture);
+        var commandRepository = CreateRepository(fixture, out var unitOfWork);
         var travelResolver = new TravelResolver();
         var session = CreateSession();
 
-        await commandRepository.SaveAsync(session);
+        await PersistAsync(commandRepository, unitOfWork, session);
         var loaded = await commandRepository.GetByIdAsync(session.Id);
 
         Assert.NotNull(loaded);
@@ -394,7 +394,7 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
 
-        await commandRepository.SaveAsync(loaded);
+        await PersistAsync(commandRepository, unitOfWork, loaded);
 
         var readRepository = new EfGameSessionReadRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
         var journalRepository = new EfGameJournalReadRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
@@ -425,8 +425,21 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(loaded.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync(day => day.SessionId == session.Id.Value));
     }
 
-    private static EfGameSessionRepository CreateRepository(PostgreSqlPersistenceFixture fixture)
-        => new(fixture.CreateContext(), new GameSessionJsonSerializer());
+    private static EfGameSessionRepository CreateRepository(PostgreSqlPersistenceFixture fixture, out EfGameSessionUnitOfWork unitOfWork)
+    {
+        var context = fixture.CreateContext();
+        unitOfWork = new EfGameSessionUnitOfWork(context);
+        return new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+    }
+
+    private static async Task PersistAsync(
+        EfGameSessionRepository repository,
+        EfGameSessionUnitOfWork unitOfWork,
+        GameSession session)
+    {
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
+    }
 
     private static GameSession CreateSession()
     {

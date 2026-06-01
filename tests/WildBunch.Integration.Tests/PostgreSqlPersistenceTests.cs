@@ -99,7 +99,9 @@ public sealed class PostgreSqlPersistenceTests
             await context.Database.MigrateAsync();
 
             var repository = new EfGameSessionRepository(context, serializer);
-            await repository.SaveAsync(session);
+            var unitOfWork = new EfGameSessionUnitOfWork(context);
+            await repository.StoreAsync(session);
+            await unitOfWork.CommitAsync();
 
             var reloaded = await repository.GetByIdAsync(session.Id);
             Assert.NotNull(reloaded);

@@ -33,10 +33,13 @@ public sealed class MigrationTests
             Assert.Equal(0, await context.GameSessionDiaryDays.CountAsync());
         }
 
-        var repository = new EfGameSessionRepository(new WildBunchDbContext(options), new GameSessionJsonSerializer());
+        await using var commandContext = new WildBunchDbContext(options);
+        var repository = new EfGameSessionRepository(commandContext, new GameSessionJsonSerializer());
+        var unitOfWork = new EfGameSessionUnitOfWork(commandContext);
         var session = CreateSession();
 
-        await repository.SaveAsync(session);
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);

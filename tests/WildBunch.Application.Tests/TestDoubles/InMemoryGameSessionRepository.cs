@@ -89,9 +89,4 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.CompletedTask;
     }
 
-    public async Task SaveAsync(GameSession session, CancellationToken cancellationToken = default)
-    {
-        await StoreAsync(session, cancellationToken).ConfigureAwait(false);
-        await CommitAsync(cancellationToken).ConfigureAwait(false);
-    }
 }

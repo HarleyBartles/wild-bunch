@@ -78,12 +78,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task SaveAsync(GameSession session, CancellationToken cancellationToken = default)
-    {
-        await StoreAsync(session, cancellationToken).ConfigureAwait(false);
-        await new EfGameSessionUnitOfWork(_dbContext).CommitAsync(cancellationToken).ConfigureAwait(false);
-    }
-
     private async Task<GameSessionStore?> LoadStoreAsync(GameSessionId id, CancellationToken cancellationToken)
     {
         var envelope = await _dbContext.GameSessions.AsNoTracking().SingleOrDefaultAsync(session => session.Id == id.Value, cancellationToken).ConfigureAwait(false);

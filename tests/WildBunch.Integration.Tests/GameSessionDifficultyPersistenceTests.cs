@@ -17,10 +17,13 @@ public sealed class GameSessionDifficultyPersistenceTests
     public async Task TravelDifficultyRoundTripsThroughJsonPersistence()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = new EfGameSessionRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
+        await using var context = fixture.CreateContext();
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateEasySession();
 
-        await repository.SaveAsync(session);
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
@@ -197,14 +200,17 @@ public sealed class GameSessionDifficultyPersistenceTests
     public async Task TownVisitInvestigationStateRoundTripsThroughRepositoryPersistence()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = new EfGameSessionRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
+        await using var context = fixture.CreateContext();
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 
         var result = session.FollowTelegraphLeads();
         Assert.True(result.Success);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
 
-        await repository.SaveAsync(session);
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
