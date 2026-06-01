@@ -82,6 +82,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0017 Use xUnit, Vitest, Testing Library, and explicit PostgreSQL validation lanes](ADR-0017-use-xunit-vitest-testing-library-and-explicit-postgresql-validation-lanes.md)
 - [ADR-0018 Target .NET 10 with nullable-enabled SDK-style projects](ADR-0018-target-net10-with-nullable-enabled-sdk-style-projects.md)
 - [ADR-0019 Use a manual typed frontend API client until generated clients are justified](ADR-0019-use-a-manual-typed-frontend-api-client-until-generated-clients-are-justified.md)
+- [ADR-0020 Aggregate domain authority and root persistence posture](ADR-0020-aggregate-domain-authority-and-root-persistence-posture.md)
 
 ## Current Working Set
 

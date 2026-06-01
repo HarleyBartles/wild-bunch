@@ -20,7 +20,7 @@ gameplay, domain
 ## Related ADRs
 
 - `depends on`: ADR-0005, ADR-0006
-- `informs`: ADR-0007, ADR-0009
+- `informs`: ADR-0007, ADR-0009, ADR-0020
 
 ## Context
 
