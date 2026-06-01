@@ -67,7 +67,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0002 GameSession is the command aggregate root](ADR-0002-gamesession-is-the-command-aggregate-root.md)
 - [ADR-0003 Composed JSONB session persistence](ADR-0003-composed-jsonb-session-persistence.md)
 - [ADR-0004 PostgreSQL local development and validation lane](ADR-0004-postgresql-local-development-and-validation-lane.md)
-- [ADR-0005 CaseFile is a session-owned case component](ADR-0005-casefile-is-a-session-owned-case-component.md)
+- [ADR-0005 CaseFile is a session-owned aggregate/subaggregate](ADR-0005-casefile-is-a-session-owned-case-component.md)
 - [ADR-0006 Investigation reveals knowledge, not gang pressure](ADR-0006-investigation-reveals-knowledge-not-gang-pressure.md)
 - [ADR-0007 Hidden culprit truth and hidden progress boundaries](ADR-0007-hidden-culprit-truth-and-hidden-progress-boundaries.md)
 - [ADR-0008 Town-visit investigation source refresh](ADR-0008-town-visit-investigation-source-refresh.md)
@@ -75,6 +75,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0010 Lawman evidence is event-derived, not seeded](ADR-0010-lawman-evidence-is-event-derived-not-seeded.md)
 - [ADR-0011 Cockpit-hosted modal play surfaces before routing](ADR-0011-cockpit-hosted-modal-play-surfaces-before-routing.md)
 - [ADR-0012 GameContent in code now, DB-backed content later](ADR-0012-gamecontent-in-code-now-db-backed-content-later.md)
+- [ADR-0013 Travel journey is a session-owned aggregate subtree](ADR-0013-travel-journey-is-a-session-owned-aggregate-subtree.md)
 
 ## Current Working Set
 
