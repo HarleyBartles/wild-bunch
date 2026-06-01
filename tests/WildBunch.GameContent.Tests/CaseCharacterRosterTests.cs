@@ -129,12 +129,25 @@ public sealed class CaseCharacterRosterTests
     }
 
     private static string CreateSeedCode(ulong entropy)
-        => GameSetupSeedCodec.Encode(
-            new GameSetupSeed(
-                GameSetupSeedCodec.CurrentGeneratorVersion,
-                TravelDifficulty.Normal,
-                GameSetupOptionsV1.Default,
-                entropy));
+        => new Guid(new byte[]
+            {
+                (byte)(entropy & 0xFF),
+                (byte)((entropy >> 8) & 0xFF),
+                (byte)((entropy >> 16) & 0xFF),
+                (byte)((entropy >> 24) & 0xFF),
+                (byte)((entropy >> 32) & 0xFF),
+                (byte)((entropy >> 40) & 0xFF),
+                (byte)((entropy >> 48) & 0xFF),
+                (byte)((entropy >> 56) & 0xFF),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            }).ToString("D");
 
     private static string RosterSignature(IReadOnlyList<CaseCharacterProfile> roster)
         => string.Join("|", roster.Select(candidate => $"{candidate.Key}:{candidate.DisplayName}:{string.Join(",", candidate.SourceAliases)}"));

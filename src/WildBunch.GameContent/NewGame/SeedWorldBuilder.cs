@@ -15,7 +15,7 @@ internal static class SeedWorldBuilder
         return new SeedWorldSetup(world, SeedWorldCatalog.PinecrossId);
     }
 
-    public static SeedWorldSetup CreateWorld(GameSetupGenerationPlan plan)
+    public static SeedWorldSetup CreateWorld(StartingWorldGenerationPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
 
@@ -28,7 +28,7 @@ internal static class SeedWorldBuilder
         return new SeedWorldSetup(world, PickStartingTown(plan, world));
     }
 
-    private static TownId PickStartingTown(GameSetupGenerationPlan plan, World world)
+    private static TownId PickStartingTown(StartingWorldGenerationPlan plan, World world)
     {
         var candidates = world.Towns
             .Where(town => (town.Services & TownServices.Supplies) != 0 || (town.Services & TownServices.NoticeBoard) != 0)
@@ -40,9 +40,7 @@ internal static class SeedWorldBuilder
             return world.Towns.First().Id;
         }
 
-        var label = plan.Seed.Options.StartWithHorse
-            ? GameSetupDeterministicLabels.WorldStartingTownHorse
-            : GameSetupDeterministicLabels.WorldStartingTownFoot;
+        var label = plan.Descriptor.World.StartingTownSelectionKey;
         var index = plan.Source.PickIndex(label, candidates.Length);
         return candidates[index].Id;
     }

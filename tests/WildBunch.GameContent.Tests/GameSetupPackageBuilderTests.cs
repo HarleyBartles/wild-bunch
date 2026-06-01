@@ -10,47 +10,70 @@ namespace WildBunch.GameContent.Tests;
 public sealed class GameSetupPackageBuilderTests
 {
     [Fact]
-    public void SameEncodedSeedProducesTheSameDurableStartingPackage()
+    public void SameDescriptorProducesTheSameDurableStartingPackage()
     {
-        var seed = GameSetupSeedCodec.WithOption(
-            GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Hard),
-            GameSetupOption.LoadoutProfile,
-            (int)StartingLoadoutProfile.Stocked);
-        seed = GameSetupSeedCodec.WithOption(seed, GameSetupOption.StartWithHorse, 1);
+        var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor();
 
-        var packageA = BuildPackage(seed);
-        var packageB = BuildPackage(seed);
+        var packageA = BuildPackage(descriptor);
+        var packageB = BuildPackage(descriptor);
 
         Assert.Equal(BuildPackageSignature(packageA), BuildPackageSignature(packageB));
     }
 
     [Fact]
-    public void DifferentEntropyChangesAtLeastOneSeededSetupSurface()
+    public void DifferentUuidSeedCodesCanChangeAtLeastOneSetupSurface()
     {
-        var firstSeed = GameSetupSeedCodec.WithOption(
-            GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Normal),
-            GameSetupOption.LoadoutProfile,
-            (int)StartingLoadoutProfile.Standard);
-        firstSeed = firstSeed with { Entropy = 1 };
+        var firstDescriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
+        var secondDescriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(3, 2, 1, 1, 6, 8, 2, tail: 42));
 
-        var secondSeed = firstSeed with { Entropy = 2 };
-
-        var firstPackage = BuildPackage(firstSeed);
-        var secondPackage = BuildPackage(secondSeed);
+        var firstPackage = BuildPackage(firstDescriptor);
+        var secondPackage = BuildPackage(secondDescriptor);
 
         Assert.NotEqual(BuildPackageSignature(firstPackage), BuildPackageSignature(secondPackage));
     }
 
     [Fact]
-    public void DifferentOptionsChangeTheStartingLoadoutAndWallet()
+    public void DifferentLoadoutProfilesChangeTheStartingLoadoutAndWallet()
     {
-        var horseSeed = GameSetupSeedCodec.WithOption(GameSetupSeedCodec.CreateCanonicalSeed(), GameSetupOption.StartWithHorse, 1);
-        var footSeed = GameSetupSeedCodec.WithOption(GameSetupSeedCodec.CreateCanonicalSeed(), GameSetupOption.StartWithHorse, 0);
-        horseSeed = horseSeed with { Entropy = 8 };
-        footSeed = footSeed with { Entropy = 8 };
+        var baseline = StartingWorldDescriptorResolver.CreateCanonicalDescriptor();
+        var horseDescriptor = baseline with
+        {
+            Player = baseline.Player with
+            {
+                StartWithHorse = true,
+                LoadoutProfile = StartingLoadoutProfile.Stocked,
+                StartingCash = 30m,
+                Loadout = baseline.Player.Loadout with
+                {
+                    Food = 6,
+                    HorseFeed = 4,
+                    RevolverAmmo = 8,
+                    IncludeHorse = true,
+                    IncludeSaddle = true
+                }
+            }
+        };
+        var footDescriptor = baseline with
+        {
+            World = baseline.World with { StartingTownSelectionKey = GameSetupDeterministicLabels.WorldStartingTownFoot },
+            Player = baseline.Player with
+            {
+                StartWithHorse = false,
+                LoadoutProfile = StartingLoadoutProfile.Light,
+                StartingCash = 18m,
+                Loadout = baseline.Player.Loadout with
+                {
+                    Food = 3,
+                    HorseFeed = 2,
+                    RevolverAmmo = 4,
+                    IncludeHorse = false,
+                    IncludeSaddle = false
+                }
+            }
+        };
 
-        var horsePackage = BuildPackage(horseSeed);
-        var footPackage = BuildPackage(footSeed);
+        var horsePackage = BuildPackage(horseDescriptor);
+        var footPackage = BuildPackage(footDescriptor);
 
         Assert.True(horsePackage.StartingInventory.HasItem(ItemKind.Horse));
         Assert.False(footPackage.StartingInventory.HasItem(ItemKind.Horse));
@@ -62,28 +85,27 @@ public sealed class GameSetupPackageBuilderTests
     [Fact]
     public void DifferentDifficultyChangesTravelRulesAndStartingCash()
     {
-        var easySeed = GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Easy);
-        var hardSeed = GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Hard);
-        easySeed = easySeed with { Entropy = 14 };
-        hardSeed = hardSeed with { Entropy = 14 };
+        var easyDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy);
+        var hardDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Hard);
 
-        var easyPackage = BuildPackage(easySeed);
-        var hardPackage = BuildPackage(hardSeed);
+        var easyPackage = BuildPackage(easyDescriptor);
+        var hardPackage = BuildPackage(hardDescriptor);
 
         Assert.NotEqual(easyPackage.TravelRulesProfile, hardPackage.TravelRulesProfile);
-        Assert.NotEqual(easyPackage.StartingWallet.Cash, hardPackage.StartingWallet.Cash);
+        Assert.Equal(30m, easyPackage.StartingWallet.Cash);
+        Assert.Equal(20m, hardPackage.StartingWallet.Cash);
     }
 
     [Fact]
-    public void CanonicalZeroEntropyUsesTheExplicitCanonicalPlan()
+    public void CanonicalDescriptorUsesTheExplicitCanonicalPlan()
     {
-        var canonicalSeed = GameSetupSeedCodec.CreateCanonicalSeed();
-        var plan = GameSetupGenerationPlan.Create(canonicalSeed);
+        var canonicalDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor();
+        var plan = StartingWorldGenerationPlan.Create(canonicalDescriptor);
 
         Assert.True(plan.IsCanonical);
         Assert.Equal(SeedWorldVariant.Canonical, plan.WorldVariant);
 
-        var package = BuildPackage(canonicalSeed);
+        var package = BuildPackage(canonicalDescriptor);
         Assert.Equal(new TownId("pinecross"), package.StartingTownId);
         Assert.Equal(25m, package.StartingWallet.Cash);
         Assert.Equal(SeedWorldVariant.Canonical, plan.WorldVariant);
@@ -109,33 +131,32 @@ public sealed class GameSetupPackageBuilderTests
     }
 
     [Fact]
-    public void DifferentEntropyCanChangeSuspectTurfAssignments()
+    public void DifferentUuidSeedsCanChangeSuspectTurfAssignments()
     {
-        var baseSeed = GameSetupSeedCodec.WithOption(
-            GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Normal),
-            GameSetupOption.LoadoutProfile,
-            (int)StartingLoadoutProfile.Standard);
-        var sameSeed = baseSeed with { Entropy = 31 };
-        var varyingSeed = FindVaryingTurfSeed(sameSeed);
+        var baseDescriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 31));
+        var varyingDescriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 63));
 
-        var samePackage = BuildPackage(sameSeed);
-        var samePackageAgain = BuildPackage(sameSeed);
-        var varyingPackage = BuildPackage(varyingSeed);
+        var samePackage = BuildPackage(baseDescriptor);
+        var samePackageAgain = BuildPackage(baseDescriptor);
+        var varyingPackage = BuildPackage(varyingDescriptor);
 
         Assert.Equal(TurfSignature(samePackage), TurfSignature(samePackageAgain));
         Assert.NotEqual(TurfSignature(samePackage), TurfSignature(varyingPackage));
     }
 
-    private static GameSetupPackage BuildPackage(GameSetupSeed seed)
-        => new GameSetupPackageBuilder().Build(seed);
+    private static GameSetupPackage BuildPackage(StartingWorldDescriptor descriptor)
+        => new GameSetupPackageBuilder().Build(descriptor);
 
     private static string BuildPackageSignature(GameSetupPackage package)
         => string.Join(
             "|",
-            package.Seed.GeneratorVersion,
-            package.Seed.Difficulty,
-            package.Seed.Options,
-            package.Seed.Entropy,
+            package.Descriptor.SeedCode,
+            package.Descriptor.Difficulty,
+            package.Descriptor.AdventureRandomnessPolicy,
+            package.Descriptor.World.Variant,
+            package.Descriptor.Player.StartWithHorse,
+            package.Descriptor.Player.LoadoutProfile,
+            package.Descriptor.Player.StartingCash,
             package.TravelRulesProfile,
             package.StartingTownId.Value,
             package.StartingWallet.Cash,
@@ -165,22 +186,23 @@ public sealed class GameSetupPackageBuilderTests
             $"times={string.Join("/", anchors.Times.Select(time => $"{time.Recency}:{time.Day?.ToString() ?? string.Empty}:{time.Turn?.ToString() ?? string.Empty}"))}",
             $"directions={string.Join("/", anchors.Directions.Select(direction => $"{direction.Label}:{direction.Movement ?? string.Empty}:{direction.DestinationTownId?.Value ?? string.Empty}:{direction.Route ?? string.Empty}"))}");
 
-    private static GameSetupSeed FindVaryingTurfSeed(GameSetupSeed baselineSeed)
+    private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
     {
-        var baselinePackage = BuildPackage(baselineSeed);
-        var baselineSignature = TurfSignature(baselinePackage);
-
-        for (ulong entropy = baselineSeed.Entropy + 1; entropy < 200; entropy++)
-        {
-            var candidateSeed = baselineSeed with { Entropy = entropy };
-            var candidatePackage = BuildPackage(candidateSeed);
-
-            if (TurfSignature(candidatePackage) != baselineSignature)
-            {
-                return candidateSeed;
-            }
-        }
-
-        throw new InvalidOperationException("Could not find a deterministic seed that changed suspect turf assignments.");
+        var bytes = new byte[16];
+        bytes[0] = byte0;
+        bytes[1] = byte1;
+        bytes[2] = byte2;
+        bytes[3] = byte3;
+        bytes[4] = byte4;
+        bytes[5] = byte5;
+        bytes[6] = byte6;
+        bytes[7] = (byte)(tail & 0xFF);
+        bytes[8] = (byte)((tail >> 8) & 0xFF);
+        bytes[9] = (byte)((tail >> 16) & 0xFF);
+        bytes[10] = (byte)((tail >> 32) & 0xFF);
+        bytes[11] = (byte)((tail >> 40) & 0xFF);
+        bytes[12] = (byte)((tail >> 48) & 0xFF);
+        bytes[13] = (byte)((tail >> 56) & 0xFF);
+        return new Guid(bytes);
     }
 }

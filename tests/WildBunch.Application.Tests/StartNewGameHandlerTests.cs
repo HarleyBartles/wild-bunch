@@ -46,8 +46,8 @@ public sealed class StartNewGameHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var handler = new StartNewGameHandler(factory, repository, repository);
 
-        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", SetupSeedCode: "WB1-N-03-000000000000-0000"));
+        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", SetupSeedCode: "not-a-uuid"));
 
-        Assert.Equal("WB1-N-03-000000000000-0000", factory.RequestedSetupSeedCodes.Single());
+        Assert.Equal("not-a-uuid", factory.RequestedSetupSeedCodes.Single());
     }
 }

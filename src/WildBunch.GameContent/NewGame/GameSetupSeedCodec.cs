@@ -1,213 +1,362 @@
-using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using WildBunch.Domain.Travel;
 
 namespace WildBunch.GameContent.NewGame;
 
-internal static class GameSetupSeedCodec
+public static class StartingWorldDescriptorResolver
 {
-    private const string Prefix = "WB1";
-    internal const int CurrentGeneratorVersion = 1;
-
-    public static GameSetupSeed CreateCanonicalSeed(TravelDifficulty difficulty = TravelDifficulty.Normal)
-        => new(CurrentGeneratorVersion, difficulty, GameSetupOptionsV1.Default, 0);
-
-    public static GameSetupSeed GenerateRandom(GameSetupOptionsV1 options, TravelDifficulty difficulty = TravelDifficulty.Normal)
+    private const string SeedCodeFormat = "D";
+    private static readonly Dictionary<StartingLoadoutProfile, (int Food, int HorseFeed, int RevolverAmmo)> LoadoutCounts = new()
     {
-        ArgumentNullException.ThrowIfNull(options);
+        [StartingLoadoutProfile.Standard] = (4, 3, 6),
+        [StartingLoadoutProfile.Light] = (3, 2, 4),
+        [StartingLoadoutProfile.Stocked] = (6, 4, 8)
+    };
 
-        Span<byte> buffer = stackalloc byte[6];
-        RandomNumberGenerator.Fill(buffer);
-        var entropy = (ulong)buffer[0]
-            | ((ulong)buffer[1] << 8)
-            | ((ulong)buffer[2] << 16)
-            | ((ulong)buffer[3] << 24)
-            | ((ulong)buffer[4] << 32)
-            | ((ulong)buffer[5] << 40);
+    public static Guid CreateCanonicalSeedCode(TravelDifficulty difficulty = TravelDifficulty.Normal)
+        => CreateSeedCode(
+            AdventureRandomnessPolicy.Standard,
+            SeedWorldVariant.Canonical,
+            StartingLoadoutProfile.Standard,
+            startWithHorse: true,
+            accusationIndex: 1,
+            startingCashBonus: 0,
+            difficulty);
 
-        return new GameSetupSeed(CurrentGeneratorVersion, difficulty, options, entropy);
-    }
+    public static Guid GenerateRandomSeedCode()
+        => Guid.NewGuid();
 
-    public static string Encode(GameSetupSeed seed)
+    internal static StartingWorldDescriptor CreateCanonicalDescriptor(TravelDifficulty difficulty = TravelDifficulty.Normal)
     {
-        ArgumentNullException.ThrowIfNull(seed);
-        ValidateVersion(seed.GeneratorVersion);
-        if (!seed.IsCanonicalEntropy)
+        var startingCash = difficulty switch
         {
-            throw new ArgumentOutOfRangeException(nameof(seed.Entropy), seed.Entropy, $"Entropy must be between 0 and {GameSetupSeed.CanonicalEntropyMaximum}.");
-        }
+            TravelDifficulty.Easy => 30m,
+            TravelDifficulty.Hard => 20m,
+            _ => 25m
+        };
 
-        var difficultyCode = EncodeDifficulty(seed.Difficulty);
-        var optionsCode = PackOptions(seed.Options).ToString("X2", CultureInfo.InvariantCulture);
-        var entropyCode = seed.Entropy.ToString("X12", CultureInfo.InvariantCulture);
-        var checksum = ComputeChecksum(seed.GeneratorVersion, seed.Difficulty, seed.Options, seed.Entropy).ToString("X4", CultureInfo.InvariantCulture);
-        return $"{Prefix}-{difficultyCode}-{optionsCode}-{entropyCode}-{checksum}";
+        return new StartingWorldDescriptor(
+            CreateCanonicalSeedCode(difficulty),
+            difficulty,
+            AdventureRandomnessPolicy.Standard,
+            new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownHorse),
+            new StartingWorldDescriptorPlayer(
+                StartWithHorse: true,
+                LoadoutProfile: StartingLoadoutProfile.Standard,
+                StartingCash: startingCash,
+                Loadout: new StartingWorldDescriptorLoadout(
+                Food: 4,
+                HorseFeed: 3,
+                RevolverAmmo: 6,
+                IncludeHorse: true,
+                IncludeSaddle: true)),
+            new StartingWorldDescriptorCase(1));
     }
 
-    public static GameSetupSeedDecodeResult Decode(string? seedCode)
+    internal static StartingWorldDescriptor Resolve(string? seedCode, TravelDifficulty requestedDifficulty = TravelDifficulty.Normal)
     {
         if (string.IsNullOrWhiteSpace(seedCode))
         {
-            return GameSetupSeedDecodeResult.Failed("Seed code is required.");
+            return CreateCanonicalDescriptor(requestedDifficulty);
         }
 
-        var parts = seedCode.Trim().Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (parts.Length != 5 || !string.Equals(parts[0], Prefix, StringComparison.OrdinalIgnoreCase))
+        if (!TryParseSeedCode(seedCode, out var seed))
         {
-            return GameSetupSeedDecodeResult.Failed("Seed code format is invalid.");
+            throw new ArgumentException("Seed code must be a UUID-shaped string.", nameof(seedCode));
         }
 
-        if (!TryDecodeDifficulty(parts[1], out var difficulty))
-        {
-            return GameSetupSeedDecodeResult.Failed("Seed difficulty is invalid.");
-        }
-
-        if (!byte.TryParse(parts[2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var optionsBits))
-        {
-            return GameSetupSeedDecodeResult.Failed("Seed options are invalid.");
-        }
-
-        if (parts[3].Length != 12 || !ulong.TryParse(parts[3], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var entropy))
-        {
-            return GameSetupSeedDecodeResult.Failed("Seed entropy is invalid.");
-        }
-
-        if (entropy > GameSetupSeed.CanonicalEntropyMaximum)
-        {
-            return GameSetupSeedDecodeResult.Failed("Seed entropy is out of range.");
-        }
-
-        if (!ushort.TryParse(parts[4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var checksum))
-        {
-            return GameSetupSeedDecodeResult.Failed("Seed checksum is invalid.");
-        }
-
-        var options = UnpackOptions(optionsBits);
-        var seed = new GameSetupSeed(CurrentGeneratorVersion, difficulty, options, entropy);
-        var expectedChecksum = ComputeChecksum(seed.GeneratorVersion, seed.Difficulty, seed.Options, seed.Entropy);
-        if (checksum != expectedChecksum)
-        {
-            return GameSetupSeedDecodeResult.Failed("Seed checksum does not match.");
-        }
-
-        return GameSetupSeedDecodeResult.Ok(seed);
+        return Resolve(seed);
     }
 
-    public static GameSetupSeed WithDifficulty(GameSetupSeed seed, TravelDifficulty difficulty)
+    internal static StartingWorldDescriptor Resolve(Guid seedCode)
     {
-        ArgumentNullException.ThrowIfNull(seed);
-        return seed with { Difficulty = difficulty, GeneratorVersion = CurrentGeneratorVersion };
+        var bytes = seedCode.ToByteArray();
+        var policy = ResolveAdventureRandomnessPolicy(bytes[0]);
+        var worldVariant = ResolveWorldVariant(bytes[1]);
+        var loadoutProfile = ResolveLoadoutProfile(bytes[2]);
+        var startWithHorse = (bytes[3] & 0x01) == 0;
+        var startingTownSelectionKey = startWithHorse
+            ? GameSetupDeterministicLabels.WorldStartingTownHorse
+            : GameSetupDeterministicLabels.WorldStartingTownFoot;
+        var difficulty = ResolveDifficulty(bytes[6]);
+        var startingCash = ResolveStartingCash(difficulty, loadoutProfile, startWithHorse, policy, bytes[5]);
+        var loadoutCounts = ResolveLoadoutCounts(loadoutProfile);
+        var accusationIndex = bytes[4] % 7;
+
+        return new StartingWorldDescriptor(
+            seedCode,
+            difficulty,
+            policy,
+            new StartingWorldDescriptorWorld(worldVariant, startingTownSelectionKey),
+            new StartingWorldDescriptorPlayer(
+                startWithHorse,
+                loadoutProfile,
+                startingCash,
+                new StartingWorldDescriptorLoadout(
+                    loadoutCounts.Food,
+                    loadoutCounts.HorseFeed,
+                    loadoutCounts.RevolverAmmo,
+                    startWithHorse,
+                    startWithHorse)),
+            new StartingWorldDescriptorCase(accusationIndex));
     }
 
-    public static GameSetupSeed WithOption(GameSetupSeed seed, GameSetupOption option, int value)
+    internal static StartingWorldDescriptorValidationResult Validate(StartingWorldDescriptor descriptor)
     {
-        ArgumentNullException.ThrowIfNull(seed);
+        ArgumentNullException.ThrowIfNull(descriptor);
 
-        var nextOptions = option switch
+        if (!Enum.IsDefined(typeof(TravelDifficulty), descriptor.Difficulty))
         {
-            GameSetupOption.StartWithHorse => seed.Options with { StartWithHorse = value != 0 },
-            GameSetupOption.LoadoutProfile => seed.Options with { LoadoutProfile = ParseLoadoutProfile(value) },
-            GameSetupOption.JourneyRandomness => seed.Options with { JourneyRandomnessMode = ParseJourneyRandomnessMode(value) },
-            _ => throw new ArgumentOutOfRangeException(nameof(option), option, "Unsupported setup option.")
+            return StartingWorldDescriptorValidationResult.Failed("Travel difficulty is invalid.");
+        }
+
+        if (!Enum.IsDefined(typeof(AdventureRandomnessPolicy), descriptor.AdventureRandomnessPolicy))
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Adventure randomness policy is invalid.");
+        }
+
+        if (!Enum.IsDefined(typeof(SeedWorldVariant), descriptor.World.Variant))
+        {
+            return StartingWorldDescriptorValidationResult.Failed("World variant is invalid.");
+        }
+
+        var expectedTownSelectionKey = descriptor.Player.StartWithHorse
+            ? GameSetupDeterministicLabels.WorldStartingTownHorse
+            : GameSetupDeterministicLabels.WorldStartingTownFoot;
+
+        if (descriptor.World.StartingTownSelectionKey is not (GameSetupDeterministicLabels.WorldStartingTownHorse or GameSetupDeterministicLabels.WorldStartingTownFoot)
+            || descriptor.World.StartingTownSelectionKey != expectedTownSelectionKey)
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Starting town selection key is invalid.");
+        }
+
+        if (!Enum.IsDefined(typeof(StartingLoadoutProfile), descriptor.Player.LoadoutProfile))
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Loadout profile is invalid.");
+        }
+
+        var expectedLoadout = ResolveLoadoutCounts(descriptor.Player.LoadoutProfile);
+        if (descriptor.Player.Loadout.Food != expectedLoadout.Food
+            || descriptor.Player.Loadout.HorseFeed != expectedLoadout.HorseFeed
+            || descriptor.Player.Loadout.RevolverAmmo != expectedLoadout.RevolverAmmo)
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Loadout counts do not match the selected loadout profile.");
+        }
+
+        if (descriptor.Player.Loadout.IncludeHorse != descriptor.Player.StartWithHorse
+            || descriptor.Player.Loadout.IncludeSaddle != descriptor.Player.StartWithHorse)
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Horse and saddle flags must match the selected start-with-horse posture.");
+        }
+
+        if (descriptor.Player.StartingCash < 10m || descriptor.Player.StartingCash > 40m || descriptor.Player.StartingCash != decimal.Truncate(descriptor.Player.StartingCash))
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Starting cash is outside the legal envelope.");
+        }
+
+        var baseCash = descriptor.Difficulty switch
+        {
+            TravelDifficulty.Easy => 28m,
+            TravelDifficulty.Hard => 18m,
+            _ => 23m
         };
 
-        return seed with { Options = nextOptions, GeneratorVersion = CurrentGeneratorVersion };
-    }
-
-    public static string GetStableKey(GameSetupSeed seed)
-        => Encode(seed);
-
-    private static void ValidateVersion(int generatorVersion)
-    {
-        if (generatorVersion != CurrentGeneratorVersion)
+        var profileBonus = descriptor.Player.LoadoutProfile switch
         {
-            throw new NotSupportedException($"Unsupported game setup generator version {generatorVersion}.");
-        }
-    }
-
-    private static char EncodeDifficulty(TravelDifficulty difficulty)
-        => difficulty switch
-        {
-            TravelDifficulty.Normal => 'N',
-            TravelDifficulty.Easy => 'E',
-            TravelDifficulty.Hard => 'H',
-            _ => throw new ArgumentOutOfRangeException(nameof(difficulty), difficulty, "Unsupported travel difficulty.")
+            StartingLoadoutProfile.Light => -5m,
+            StartingLoadoutProfile.Stocked => 5m,
+            _ => 0m
         };
 
-    private static bool TryDecodeDifficulty(string code, out TravelDifficulty difficulty)
+        var horseBonus = descriptor.Player.StartWithHorse ? 2m : 0m;
+        var bonus = descriptor.Player.StartingCash - baseCash - profileBonus - horseBonus;
+        var maxBonus = descriptor.AdventureRandomnessPolicy switch
+        {
+            AdventureRandomnessPolicy.Boring => 0m,
+            AdventureRandomnessPolicy.Standard => 2m,
+            AdventureRandomnessPolicy.Adventurous => 5m,
+            AdventureRandomnessPolicy.Wild => 8m,
+            _ => 0m
+        };
+
+        if (bonus < 0m || bonus > maxBonus || bonus != decimal.Truncate(bonus))
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Starting cash does not fit the selected policy envelope.");
+        }
+
+        if (descriptor.Case.AccusationIndex is < 0 or > 6)
+        {
+            return StartingWorldDescriptorValidationResult.Failed("Accusation index is outside the legal envelope.");
+        }
+
+        return StartingWorldDescriptorValidationResult.Ok();
+    }
+
+    public static bool TryParseSeedCode(string? seedCode, out Guid seed)
     {
-        difficulty = TravelDifficulty.Normal;
-        if (code.Length != 1)
+        seed = default;
+        if (string.IsNullOrWhiteSpace(seedCode))
         {
             return false;
         }
 
-        difficulty = char.ToUpperInvariant(code[0]) switch
+        return Guid.TryParseExact(seedCode.Trim(), SeedCodeFormat, out seed);
+    }
+
+    public static string FormatSeedCode(Guid seedCode)
+        => seedCode.ToString(SeedCodeFormat);
+
+    internal static Guid CreateRepresentativeSeedCode(StartingWorldDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        var validation = Validate(descriptor);
+        if (!validation.Success)
         {
-            'N' => TravelDifficulty.Normal,
-            'E' => TravelDifficulty.Easy,
-            'H' => TravelDifficulty.Hard,
-            _ => TravelDifficulty.Normal
+            throw new ArgumentException(validation.ErrorMessage ?? "Starting world descriptor is invalid.", nameof(descriptor));
+        }
+
+        var bytes = new byte[16];
+        bytes[0] = (byte)descriptor.AdventureRandomnessPolicy;
+        bytes[1] = (byte)descriptor.World.Variant;
+        bytes[2] = (byte)descriptor.Player.LoadoutProfile;
+        bytes[3] = descriptor.Player.StartWithHorse ? (byte)0 : (byte)1;
+        bytes[4] = (byte)descriptor.Case.AccusationIndex;
+        bytes[5] = EncodeStartingCashBonus(descriptor);
+        bytes[6] = EncodeDifficulty(descriptor.Difficulty);
+        return new Guid(bytes);
+    }
+
+    private static AdventureRandomnessPolicy ResolveAdventureRandomnessPolicy(byte seedByte)
+        => (seedByte & 0x03) switch
+        {
+            0 => AdventureRandomnessPolicy.Boring,
+            1 => AdventureRandomnessPolicy.Standard,
+            2 => AdventureRandomnessPolicy.Adventurous,
+            _ => AdventureRandomnessPolicy.Wild
         };
 
-        return difficulty is TravelDifficulty.Normal or TravelDifficulty.Easy or TravelDifficulty.Hard;
-    }
-
-    private static byte PackOptions(GameSetupOptionsV1 options)
-    {
-        var bits = 0;
-        if (options.StartWithHorse)
+    private static SeedWorldVariant ResolveWorldVariant(byte seedByte)
+        => (seedByte % 3) switch
         {
-            bits |= 1;
-        }
+            0 => SeedWorldVariant.Canonical,
+            1 => SeedWorldVariant.Frontier,
+            _ => SeedWorldVariant.Rail
+        };
 
-        bits |= ((int)options.LoadoutProfile & 0x03) << 1;
-        if (options.JourneyRandomnessMode == TravelRandomnessMode.Deterministic)
-        {
-            bits |= 1 << 3;
-        }
-        return (byte)bits;
-    }
-
-    private static GameSetupOptionsV1 UnpackOptions(byte bits)
-    {
-        var startWithHorse = (bits & 0x01) != 0;
-        var loadoutProfile = ParseLoadoutProfile((bits >> 1) & 0x03);
-        var journeyRandomnessMode = (bits & (1 << 3)) != 0
-            ? TravelRandomnessMode.Deterministic
-            : TravelRandomnessMode.RuntimeSalted;
-        return new GameSetupOptionsV1(startWithHorse, loadoutProfile, journeyRandomnessMode);
-    }
-
-    private static StartingLoadoutProfile ParseLoadoutProfile(int value)
-        => value switch
+    private static StartingLoadoutProfile ResolveLoadoutProfile(byte seedByte)
+        => (seedByte % 3) switch
         {
             0 => StartingLoadoutProfile.Standard,
             1 => StartingLoadoutProfile.Light,
-            2 => StartingLoadoutProfile.Stocked,
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unsupported loadout profile.")
+            _ => StartingLoadoutProfile.Stocked
         };
 
-    private static TravelRandomnessMode ParseJourneyRandomnessMode(int value)
-        => value switch
-        {
-            0 => TravelRandomnessMode.RuntimeSalted,
-            1 => TravelRandomnessMode.Deterministic,
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unsupported journey randomness mode.")
-        };
-
-    private static ushort ComputeChecksum(int generatorVersion, TravelDifficulty difficulty, GameSetupOptionsV1 options, ulong entropy)
+    private static (int Food, int HorseFeed, int RevolverAmmo) ResolveLoadoutCounts(StartingLoadoutProfile profile)
     {
-        var payload = string.Join(
-            "|",
-            Prefix,
-            generatorVersion,
-            difficulty,
-            PackOptions(options),
-            entropy.ToString("X12", CultureInfo.InvariantCulture));
+        return profile switch
+        {
+            StartingLoadoutProfile.Light => (3, 2, 4),
+            StartingLoadoutProfile.Stocked => (6, 4, 8),
+            _ => (4, 3, 6)
+        };
+    }
 
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
-        return BitConverter.ToUInt16(hash, 0);
+    private static decimal ResolveStartingCash(
+        TravelDifficulty difficulty,
+        StartingLoadoutProfile loadoutProfile,
+        bool startWithHorse,
+        AdventureRandomnessPolicy policy,
+        byte cashSeed)
+    {
+        var baseCash = difficulty switch
+        {
+            TravelDifficulty.Easy => 28m,
+            TravelDifficulty.Hard => 18m,
+            _ => 23m
+        };
+
+        var profileBonus = loadoutProfile switch
+        {
+            StartingLoadoutProfile.Light => -5m,
+            StartingLoadoutProfile.Stocked => 5m,
+            _ => 0m
+        };
+
+        var horseBonus = startWithHorse ? 2m : 0m;
+        var policyBonus = policy switch
+        {
+            AdventureRandomnessPolicy.Boring => 0m,
+            AdventureRandomnessPolicy.Standard => cashSeed % 3,
+            AdventureRandomnessPolicy.Adventurous => cashSeed % 6,
+            AdventureRandomnessPolicy.Wild => cashSeed % 9,
+            _ => 0m
+        };
+
+        return Math.Max(10m, baseCash + profileBonus + horseBonus + policyBonus);
+    }
+
+    private static TravelDifficulty ResolveDifficulty(byte seedByte)
+        => (seedByte & 0x03) switch
+        {
+            0 => TravelDifficulty.Easy,
+            1 => TravelDifficulty.Normal,
+            2 => TravelDifficulty.Hard,
+            _ => TravelDifficulty.Normal
+        };
+
+    private static byte EncodeDifficulty(TravelDifficulty difficulty)
+        => difficulty switch
+        {
+            TravelDifficulty.Easy => 0,
+            TravelDifficulty.Normal => 1,
+            TravelDifficulty.Hard => 2,
+            _ => 1
+        };
+
+    private static Guid CreateSeedCode(
+        AdventureRandomnessPolicy policy,
+        SeedWorldVariant worldVariant,
+        StartingLoadoutProfile loadoutProfile,
+        bool startWithHorse,
+        int accusationIndex,
+        byte startingCashBonus,
+        TravelDifficulty difficulty)
+    {
+        var bytes = new byte[16];
+        bytes[0] = (byte)policy;
+        bytes[1] = (byte)worldVariant;
+        bytes[2] = (byte)loadoutProfile;
+        bytes[3] = startWithHorse ? (byte)0 : (byte)1;
+        bytes[4] = (byte)accusationIndex;
+        bytes[5] = startingCashBonus;
+        bytes[6] = EncodeDifficulty(difficulty);
+        return new Guid(bytes);
+    }
+
+    private static byte EncodeStartingCashBonus(StartingWorldDescriptor descriptor)
+    {
+        var baseCash = descriptor.Difficulty switch
+        {
+            TravelDifficulty.Easy => 28m,
+            TravelDifficulty.Hard => 18m,
+            _ => 23m
+        };
+
+        var profileBonus = descriptor.Player.LoadoutProfile switch
+        {
+            StartingLoadoutProfile.Light => -5m,
+            StartingLoadoutProfile.Stocked => 5m,
+            _ => 0m
+        };
+
+        var horseBonus = descriptor.Player.StartWithHorse ? 2m : 0m;
+        var bonus = descriptor.Player.StartingCash - baseCash - profileBonus - horseBonus;
+        if (bonus < 0m || bonus > 8m || bonus != decimal.Truncate(bonus))
+        {
+            return 0;
+        }
+
+        return (byte)bonus;
     }
 }

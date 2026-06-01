@@ -28,7 +28,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SeedCode: "WB1-N-03-000000000000-0000"));
+        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SeedCode: "not-a-uuid"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "seedCode");

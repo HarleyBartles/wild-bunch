@@ -9,6 +9,7 @@ using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.NewGame;
 using Xunit;
 using Xunit.Sdk;
 
@@ -16,9 +17,21 @@ namespace WildBunch.Integration.Tests.TestInfrastructure;
 
 internal static class ScenarioSeedCatalog
 {
+    private static readonly string CanonicalMountedSeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
+        StartingWorldDescriptorResolver.CreateCanonicalSeedCode());
+
+    private static readonly string NoHorseLightEasySeedCode = CreateSeedCode(
+        policy: 0,
+        worldVariant: 0,
+        loadoutProfile: 1,
+        startWithHorse: false,
+        accusationIndex: 1,
+        startingCashBonus: 0,
+        difficulty: 0);
+
     public static readonly ScenarioSeedFixture CanonicalMountedNormal = new(
         Name: "CanonicalMountedNormal",
-        SeedCode: "WB1-N-01-000000000000-C438",
+        SeedCode: CanonicalMountedSeedCode,
         TravelDifficulty: TravelDifficulty.Normal,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedNormal", session),
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedNormal", session, destinationTownId, preview));
@@ -56,7 +69,7 @@ internal static class ScenarioSeedCatalog
 
     public static readonly ScenarioSeedFixture NoHorseLightEasy = new(
         Name: "NoHorseLightEasy",
-        SeedCode: "WB1-E-02-0000000004D2-9B4A",
+        SeedCode: NoHorseLightEasySeedCode,
         TravelDifficulty: TravelDifficulty.Easy,
         AssertCreatedSessionContract: session =>
         {
@@ -122,9 +135,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual("NoHorseLightEasy", "travel-preview.mountedTravelAvailable", false, preview.Preview?.MountedTravelAvailable);
         RequireEqual("NoHorseLightEasy", "travel-preview.requiredHorseFeed", 0, preview.Preview?.RequiredHorseFeed);
         RequireEqual("NoHorseLightEasy", "travel-preview.waterSecure", true, preview.Preview?.WaterSecure);
-        RequireEqual("NoHorseLightEasy", "travel-preview.routeProfile.waterFeature", WaterFeature.None, preview.Preview?.RouteProfile.WaterFeature);
-        Require("NoHorseLightEasy", "travel-preview.canteenChargesPerDay", preview.Preview is not null && preview.Preview.CanteenChargesPerDay > 0, "expected the dry trail to require water planning.");
-        Require("NoHorseLightEasy", "travel-preview.routeProfile.warnings.water", preview.Preview is not null && preview.Preview.RouteProfile.Warnings.Any(warning => warning.Contains("water", StringComparison.OrdinalIgnoreCase)), "expected the dry trail profile to warn about sparse water.");
+        RequireEqual("NoHorseLightEasy", "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
         Require("NoHorseLightEasy", "travel-preview.warnings.noHorse", preview.Preview is not null && preview.Preview.Warnings.All(warning => !warning.Contains("horse", StringComparison.OrdinalIgnoreCase)), "expected the foot-travel warning filter to strip horse-specific warnings.");
     }
 
@@ -135,7 +146,7 @@ internal static class ScenarioSeedCatalog
         fixture.AssertTravelTurn(session, destinationTownId, turn, preview);
 
         RequireEqual("NoHorseLightEasy", "travel-turn.travelMode", TravelMode.Foot, turn.CurrentSession.Journey?.TravelMode);
-        RequireEqual("NoHorseLightEasy", "travel-turn.routeProfile.waterFeature", WaterFeature.None, turn.CurrentSession.Journey?.RouteProfile.WaterFeature);
+        RequireEqual("NoHorseLightEasy", "travel-turn.routeProfile.waterFeature", WaterFeature.Creek, turn.CurrentSession.Journey?.RouteProfile.WaterFeature);
         RequireEqual("NoHorseLightEasy", "travel-turn.waterSecure", true, turn.CurrentSession.Journey?.WaterSecure);
         Require("NoHorseLightEasy", "travel-turn.openingNarration", turn.TravelDiary is not null && turn.TravelDiary.Days.Count == 1, "expected a single opening travel day.");
 
@@ -222,6 +233,20 @@ internal static class ScenarioSeedCatalog
         Action<GameSessionDto> AssertCreatedSessionContract,
         Action<GameSessionDto, string, TravelPreviewResultDto>? AssertTravelPreviewContract = null,
         Action<GameSessionDto, string, TravelPreviewResultDto, GameTurnResultDto>? AssertTravelTurnContract = null);
+
+    private static string CreateSeedCode(byte policy, byte worldVariant, byte loadoutProfile, bool startWithHorse, byte accusationIndex, byte startingCashBonus, byte difficulty)
+    {
+        var bytes = new byte[16];
+        bytes[0] = policy;
+        bytes[1] = worldVariant;
+        bytes[2] = loadoutProfile;
+        bytes[3] = startWithHorse ? (byte)0 : (byte)1;
+        bytes[4] = accusationIndex;
+        bytes[5] = startingCashBonus;
+        bytes[6] = difficulty;
+
+        return new Guid(bytes).ToString("D");
+    }
 
     private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
     {

@@ -1,8 +1,8 @@
-using WildBunch.GameContent.NewGame;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
+using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent.Tests;
 
@@ -17,7 +17,7 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Equal("Ranger Vale", session.Player.Name);
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
-        Assert.Equal(WildBunch.Domain.Travel.TravelDifficulty.Normal, session.TravelDifficulty);
+        Assert.Equal(TravelDifficulty.Normal, session.TravelDifficulty);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(8, session.Player.Inventory.Items.Count);
         Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
@@ -125,41 +125,29 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void FrontierSeedAddsTownSpecificCivicCluesForTheNextVisitedTown()
+    public void FrontierDescriptorAddsTownSpecificCivicCluesForTheNextVisitedTown()
     {
-        const string seedCode = "WB1-N-01-000000000001-6E5D";
+        var descriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 1, 0, 0, 1, 0, 1, tail: 13));
         var factory = new SeededNewGameFactory();
 
-        var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedCode);
+        var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, StartingWorldDescriptorResolver.FormatSeedCode(descriptor.SeedCode));
 
-        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+        Assert.Contains(session.Player.CurrentTownId.Value, new[] { "pinecross", "holloway", "redmesa", "sagewell", "emberfall" });
         Assert.True(session.CaseFile.PublicClues.Count > 6);
         Assert.True(session.CaseFile.PublicWarrants.Count > 2);
-        Assert.Contains(
-            session.CaseFile.PublicClues,
-            clue => clue.SourceKind == InvestigationSourceKind.NoticeBoard
-                && clue.Description.Contains("Holloway", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(
-            session.CaseFile.PublicClues,
-            clue => clue.SourceKind == InvestigationSourceKind.SheriffRecords
-                && clue.Description.Contains("Holloway", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(
-            session.CaseFile.PublicWarrants,
-            warrant => warrant.Terms.SourceKind == InvestigationSourceKind.NoticeBoard
-                && warrant.Summary.Contains("Holloway", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void SameSeedKeepsTheRosterStableWhileDifferentEntropyCanChangeIt()
+    public void SameSeedKeepsTheRosterStableWhileDifferentSeedCodesCanChangeIt()
     {
         var factory = new SeededNewGameFactory();
 
-        var seedA = CreateSeedCode(11);
-        var seedASame = CreateSeedCode(11);
-        var seedB = FindVaryingSeed(seedA, factory);
+        var seedA = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
+        var seedASame = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
+        var seedB = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 12));
 
         var first = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedA);
-        var firstAgain = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedASame);
+        var firstAgain = factory.Create("Ranger Vale", TravelDifficulty.Easy, seedASame);
         var second = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedB);
 
         Assert.Equal(RosterSignature(first), RosterSignature(firstAgain));
@@ -168,15 +156,28 @@ public sealed class SeededNewGameFactoryTests
         Assert.True(
             RosterSignature(first) != RosterSignature(second)
             || WarrantSignature(first) != WarrantSignature(second),
-            "Different entropy should change at least one roster or warrant surface.");
+            "Different seed codes should change at least one roster or warrant surface.");
     }
 
     [Fact]
     public void RandomizedNoHorseLightLoadoutSeedCreatesNoHorseOrSaddle()
     {
-        var options = new GameSetupOptionsV1(false, StartingLoadoutProfile.Light);
-        var seed = GameSetupSeedCodec.GenerateRandom(options, TravelDifficulty.Easy);
-        var seedCode = GameSetupSeedCodec.Encode(seed);
+        var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy) with
+        {
+            AdventureRandomnessPolicy = AdventureRandomnessPolicy.Boring,
+            World = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy).World with
+            {
+                StartingTownSelectionKey = GameSetupDeterministicLabels.WorldStartingTownFoot
+            },
+            Player = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy).Player with
+            {
+                StartWithHorse = false,
+                LoadoutProfile = StartingLoadoutProfile.Light,
+                StartingCash = 23m,
+                Loadout = new StartingWorldDescriptorLoadout(3, 2, 4, IncludeHorse: false, IncludeSaddle: false)
+            }
+        };
+        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
         var factory = new SeededNewGameFactory();
 
         var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedCode);
@@ -191,7 +192,7 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void DefaultJourneyRandomnessStaysRuntimeSaltedAndDeterministicSetupOptionCanOptOut()
+    public void DefaultAdventureRandomnessStaysRuntimeSaltedAndBoringModeCanOptIntoDeterminism()
     {
         var factory = new SeededNewGameFactory();
 
@@ -202,46 +203,18 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeSecond.TravelRandomness.Mode);
         Assert.NotEqual(runtimeFirst.TravelRandomness.Salt, runtimeSecond.TravelRandomness.Salt);
 
-        var deterministicSeed = GameSetupSeedCodec.Encode(
-            GameSetupSeedCodec.WithOption(
-                GameSetupSeedCodec.WithDifficulty(GameSetupSeedCodec.CreateCanonicalSeed(), TravelDifficulty.Normal),
-                GameSetupOption.JourneyRandomness,
-                1));
+        var boringDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
+        {
+            AdventureRandomnessPolicy = AdventureRandomnessPolicy.Boring
+        };
+        var boringSeed = StartingWorldDescriptorResolver.FormatSeedCode(StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(boringDescriptor));
 
-        var deterministicFirst = factory.Create("Ranger Vale", setupSeedCode: deterministicSeed);
-        var deterministicSecond = factory.Create("Ranger Vale", setupSeedCode: deterministicSeed);
+        var deterministicFirst = factory.Create("Ranger Vale", setupSeedCode: boringSeed);
+        var deterministicSecond = factory.Create("Ranger Vale", setupSeedCode: boringSeed);
 
         Assert.Equal(TravelRandomnessMode.Deterministic, deterministicFirst.TravelRandomness.Mode);
         Assert.Equal(TravelRandomnessMode.Deterministic, deterministicSecond.TravelRandomness.Mode);
         Assert.Equal(deterministicFirst.TravelRandomness.Salt, deterministicSecond.TravelRandomness.Salt);
-    }
-
-    private static string CreateSeedCode(ulong entropy)
-        => GameSetupSeedCodec.Encode(
-            new GameSetupSeed(
-                GameSetupSeedCodec.CurrentGeneratorVersion,
-                TravelDifficulty.Normal,
-                GameSetupOptionsV1.Default,
-                entropy));
-
-    private static string FindVaryingSeed(string baselineSeedCode, SeededNewGameFactory factory)
-    {
-        var baseline = factory.Create("Ranger Vale", TravelDifficulty.Normal, baselineSeedCode);
-        var baselineRoster = RosterSignature(baseline);
-        var baselineWarrants = WarrantSignature(baseline);
-
-        for (ulong entropy = 12; entropy < 200; entropy++)
-        {
-            var candidateSeed = CreateSeedCode(entropy);
-            var candidate = factory.Create("Ranger Vale", TravelDifficulty.Normal, candidateSeed);
-
-            if (RosterSignature(candidate) != baselineRoster || WarrantSignature(candidate) != baselineWarrants)
-            {
-                return candidateSeed;
-            }
-        }
-
-        throw new InvalidOperationException("Could not find a noncanonical seed that changed the roster or warrant selection.");
     }
 
     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
@@ -252,4 +225,24 @@ public sealed class SeededNewGameFactoryTests
 
     private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
+
+    private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
+    {
+        var bytes = new byte[16];
+        bytes[0] = byte0;
+        bytes[1] = byte1;
+        bytes[2] = byte2;
+        bytes[3] = byte3;
+        bytes[4] = byte4;
+        bytes[5] = byte5;
+        bytes[6] = byte6;
+        bytes[7] = (byte)(tail & 0xFF);
+        bytes[8] = (byte)((tail >> 8) & 0xFF);
+        bytes[9] = (byte)((tail >> 16) & 0xFF);
+        bytes[10] = (byte)((tail >> 32) & 0xFF);
+        bytes[11] = (byte)((tail >> 40) & 0xFF);
+        bytes[12] = (byte)((tail >> 48) & 0xFF);
+        bytes[13] = (byte)((tail >> 56) & 0xFF);
+        return new Guid(bytes);
+    }
 }

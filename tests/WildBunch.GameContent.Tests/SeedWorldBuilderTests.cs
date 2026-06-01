@@ -40,7 +40,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateFrontierWorldUsesTheSharedCatalogAndFrontierOverlay()
     {
-        var setup = FindSeedWorld(SeedWorldVariant.Frontier, startWithHorse: true);
+        var setup = BuildSeedWorld(StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 1, 0, 0, 1, 0, 1, tail: 17)));
 
         Assert.Equal(
             new[]
@@ -75,7 +75,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateRailWorldUsesTheSharedCatalogAndRailOverlay()
     {
-        var setup = FindSeedWorld(SeedWorldVariant.Rail, startWithHorse: true);
+        var setup = BuildSeedWorld(StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 2, 0, 0, 1, 0, 1, tail: 19)));
 
         Assert.Equal(
             new[]
@@ -110,7 +110,36 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void StartingTownSelectionStillUsesDifferentHorseAndFootLabels()
     {
-        var (horseSetup, footSetup) = FindSameVariantPairWithDifferentStartingTowns();
+        var horseDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
+        {
+            World = new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
+            Player = StartingWorldDescriptorResolver.CreateCanonicalDescriptor().Player with
+            {
+                StartWithHorse = true,
+                Loadout = StartingWorldDescriptorResolver.CreateCanonicalDescriptor().Player.Loadout with
+                {
+                    IncludeHorse = true,
+                    IncludeSaddle = true
+                }
+            }
+        };
+
+        var footDescriptor = horseDescriptor with
+        {
+            World = horseDescriptor.World with { StartingTownSelectionKey = GameSetupDeterministicLabels.WorldStartingTownFoot },
+            Player = horseDescriptor.Player with
+            {
+                StartWithHorse = false,
+                Loadout = horseDescriptor.Player.Loadout with
+                {
+                    IncludeHorse = false,
+                    IncludeSaddle = false
+                }
+            }
+        };
+
+        var horseSetup = BuildSeedWorld(horseDescriptor);
+        var footSetup = BuildSeedWorld(footDescriptor);
 
         Assert.NotEqual(horseSetup.StartingTownId, footSetup.StartingTownId);
         Assert.Equal(GetStartingTownCandidateIds(horseSetup.World), GetStartingTownCandidateIds(footSetup.World));
@@ -118,70 +147,28 @@ public sealed class SeedWorldBuilderTests
         Assert.Contains(footSetup.StartingTownId.Value, GetStartingTownCandidateIds(footSetup.World));
     }
 
-    private static SeedWorldSetup FindSeedWorld(SeedWorldVariant expectedVariant, bool startWithHorse)
+    private static SeedWorldSetup BuildSeedWorld(StartingWorldDescriptor descriptor)
+        => SeedWorldBuilder.CreateWorld(StartingWorldGenerationPlan.Create(descriptor));
+
+    private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
     {
-        for (ulong entropy = 0; entropy < 20_000; entropy++)
-        {
-            var setup = BuildSeedWorld(startWithHorse, entropy);
-            if (expectedVariant == SeedWorldVariant.Frontier && IsFrontierWorld(setup.World))
-            {
-                return setup;
-            }
-
-            if (expectedVariant == SeedWorldVariant.Rail && IsRailWorld(setup.World))
-            {
-                return setup;
-            }
-        }
-
-        throw new InvalidOperationException($"Could not find a {expectedVariant} seed world within the search range.");
+        var bytes = new byte[16];
+        bytes[0] = byte0;
+        bytes[1] = byte1;
+        bytes[2] = byte2;
+        bytes[3] = byte3;
+        bytes[4] = byte4;
+        bytes[5] = byte5;
+        bytes[6] = byte6;
+        bytes[7] = (byte)(tail & 0xFF);
+        bytes[8] = (byte)((tail >> 8) & 0xFF);
+        bytes[9] = (byte)((tail >> 16) & 0xFF);
+        bytes[10] = (byte)((tail >> 32) & 0xFF);
+        bytes[11] = (byte)((tail >> 40) & 0xFF);
+        bytes[12] = (byte)((tail >> 48) & 0xFF);
+        bytes[13] = (byte)((tail >> 56) & 0xFF);
+        return new Guid(bytes);
     }
-
-    private static (SeedWorldSetup Horse, SeedWorldSetup Foot) FindSameVariantPairWithDifferentStartingTowns()
-    {
-        for (ulong entropy = 0; entropy < 20_000; entropy++)
-        {
-            var horseSetup = BuildSeedWorld(startWithHorse: true, entropy);
-            var footSetup = BuildSeedWorld(startWithHorse: false, entropy);
-
-            var horseVariant = GetVariant(horseSetup.World);
-            var footVariant = GetVariant(footSetup.World);
-            if (horseVariant is null || footVariant is null || horseVariant != footVariant)
-            {
-                continue;
-            }
-
-            if (horseSetup.StartingTownId.Equals(footSetup.StartingTownId))
-            {
-                continue;
-            }
-
-            return (horseSetup, footSetup);
-        }
-
-        throw new InvalidOperationException("Could not find a seed that preserved the world variant while changing the starting-town label.");
-    }
-
-    private static SeedWorldSetup BuildSeedWorld(bool startWithHorse, ulong entropy)
-    {
-        var seed = new GameSetupSeed(
-            GameSetupSeedCodec.CurrentGeneratorVersion,
-            TravelDifficulty.Normal,
-            new GameSetupOptionsV1(startWithHorse, StartingLoadoutProfile.Standard),
-            entropy);
-        return SeedWorldBuilder.CreateWorld(GameSetupGenerationPlan.Create(seed));
-    }
-
-    private static SeedWorldVariant? GetVariant(World world)
-        => IsFrontierWorld(world) ? SeedWorldVariant.Frontier : IsRailWorld(world) ? SeedWorldVariant.Rail : null;
-
-    private static bool IsFrontierWorld(World world)
-        => world.GetTown(new TownId("holloway")).Services.HasFlag(TownServices.NoticeBoard)
-            && !world.GetTown(new TownId("redmesa")).Services.HasFlag(TownServices.NoticeBoard);
-
-    private static bool IsRailWorld(World world)
-        => world.GetTown(new TownId("redmesa")).Services.HasFlag(TownServices.NoticeBoard)
-            && !world.GetTown(new TownId("holloway")).Services.HasFlag(TownServices.NoticeBoard);
 
     private static string[] GetStartingTownCandidateIds(World world)
         => world.Towns

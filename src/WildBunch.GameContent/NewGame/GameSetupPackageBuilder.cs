@@ -7,19 +7,19 @@ namespace WildBunch.GameContent.NewGame;
 
 internal sealed class GameSetupPackageBuilder
 {
-    public GameSetupPackage Build(GameSetupSeed seed)
+    public GameSetupPackage Build(StartingWorldDescriptor descriptor)
     {
-        ArgumentNullException.ThrowIfNull(seed);
+        ArgumentNullException.ThrowIfNull(descriptor);
 
-        var plan = GameSetupGenerationPlan.Create(seed);
+        var plan = StartingWorldGenerationPlan.Create(descriptor);
         var worldSetup = SeedWorldBuilder.CreateWorld(plan);
         var caseFile = SeedCaseBuilder.CreateCaseFile(plan, worldSetup.World, worldSetup.StartingTownId);
-        var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(plan);
+        var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(plan.TravelRulesProfile, plan);
         var startingWallet = SeedInventoryBuilder.CreateStartingWallet(plan);
 
         return new GameSetupPackage(
-            seed,
-            seed.Difficulty,
+            descriptor,
+            descriptor.Difficulty,
             plan.TravelRulesProfile,
             worldSetup.World,
             worldSetup.StartingTownId,

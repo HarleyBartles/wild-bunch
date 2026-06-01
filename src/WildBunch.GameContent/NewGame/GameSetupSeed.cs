@@ -2,11 +2,12 @@ using WildBunch.Domain.Travel;
 
 namespace WildBunch.GameContent.NewGame;
 
-internal enum GameSetupOption
+internal enum AdventureRandomnessPolicy
 {
-    StartWithHorse = 0,
-    LoadoutProfile = 1,
-    JourneyRandomness = 2
+    Boring = 0,
+    Standard = 1,
+    Adventurous = 2,
+    Wild = 3
 }
 
 internal enum StartingLoadoutProfile
@@ -16,37 +17,44 @@ internal enum StartingLoadoutProfile
     Stocked = 2
 }
 
-internal sealed record GameSetupOptionsV1(
-    bool StartWithHorse = true,
-    StartingLoadoutProfile LoadoutProfile = StartingLoadoutProfile.Standard,
-    TravelRandomnessMode JourneyRandomnessMode = TravelRandomnessMode.RuntimeSalted)
-{
-    public static GameSetupOptionsV1 Default { get; } = new();
-}
-
-internal sealed record GameSetupSeed(
-    int GeneratorVersion,
+internal sealed record StartingWorldDescriptor(
+    Guid SeedCode,
     TravelDifficulty Difficulty,
-    GameSetupOptionsV1 Options,
-    ulong Entropy)
+    AdventureRandomnessPolicy AdventureRandomnessPolicy,
+    StartingWorldDescriptorWorld World,
+    StartingWorldDescriptorPlayer Player,
+    StartingWorldDescriptorCase Case)
 {
-    public const ulong CanonicalEntropyMaximum = 0xFFFFFFFFFFFFUL;
-
-    public bool IsCanonical => GeneratorVersion == GameSetupSeedCodec.CurrentGeneratorVersion
-        && Options == GameSetupOptionsV1.Default
-        && Entropy == 0;
-
-    public bool IsCanonicalEntropy => Entropy <= CanonicalEntropyMaximum;
+    public string SeedCodeText => SeedCode.ToString("D");
 }
 
-internal sealed record GameSetupSeedDecodeResult(
+internal sealed record StartingWorldDescriptorWorld(
+    SeedWorldVariant Variant,
+    string StartingTownSelectionKey);
+
+internal sealed record StartingWorldDescriptorPlayer(
+    bool StartWithHorse,
+    StartingLoadoutProfile LoadoutProfile,
+    decimal StartingCash,
+    StartingWorldDescriptorLoadout Loadout);
+
+internal sealed record StartingWorldDescriptorLoadout(
+    int Food,
+    int HorseFeed,
+    int RevolverAmmo,
+    bool IncludeHorse,
+    bool IncludeSaddle);
+
+internal sealed record StartingWorldDescriptorCase(
+    int AccusationIndex);
+
+internal sealed record StartingWorldDescriptorValidationResult(
     bool Success,
-    GameSetupSeed? Seed,
     string? ErrorMessage)
 {
-    public static GameSetupSeedDecodeResult Ok(GameSetupSeed seed)
-        => new(true, seed, null);
+    public static StartingWorldDescriptorValidationResult Ok()
+        => new(true, null);
 
-    public static GameSetupSeedDecodeResult Failed(string errorMessage)
-        => new(false, null, errorMessage);
+    public static StartingWorldDescriptorValidationResult Failed(string errorMessage)
+        => new(false, errorMessage);
 }

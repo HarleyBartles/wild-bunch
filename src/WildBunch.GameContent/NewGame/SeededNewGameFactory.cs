@@ -24,11 +24,11 @@ public sealed class SeededNewGameFactory : INewGameFactory
 
     public GameSession Create(string playerName, TravelDifficulty travelDifficulty = TravelDifficulty.Normal, string? setupSeedCode = null)
     {
-        var setupSeed = ResolveSeed(travelDifficulty, setupSeedCode);
-        var setupPackage = _setupPackageBuilder.Build(setupSeed);
-        var travelRandomnessState = setupSeed.Options.JourneyRandomnessMode == TravelRandomnessMode.Deterministic
-            ? TravelRandomnessState.CreateDeterministic(string.Empty)
-            : _travelRandomnessSource.Create(setupSeedCode ?? GameSetupSeedCodec.Encode(setupSeed), setupPackage.TravelDifficulty);
+        var descriptor = ResolveDescriptor(travelDifficulty, setupSeedCode);
+        var setupPackage = _setupPackageBuilder.Build(descriptor);
+        var travelRandomnessState = descriptor.AdventureRandomnessPolicy == AdventureRandomnessPolicy.Boring
+            ? TravelRandomnessState.CreateDeterministic(descriptor.SeedCodeText)
+            : _travelRandomnessSource.Create(descriptor.SeedCodeText, setupPackage.TravelDifficulty);
 
         return GameSession.StartNew(
             playerName,
@@ -41,19 +41,8 @@ public sealed class SeededNewGameFactory : INewGameFactory
             travelRandomnessState);
     }
 
-    private static GameSetupSeed ResolveSeed(TravelDifficulty travelDifficulty, string? setupSeedCode)
+    private static StartingWorldDescriptor ResolveDescriptor(TravelDifficulty travelDifficulty, string? setupSeedCode)
     {
-        if (string.IsNullOrWhiteSpace(setupSeedCode))
-        {
-            return GameSetupSeedCodec.CreateCanonicalSeed(travelDifficulty);
-        }
-
-        var decodeResult = GameSetupSeedCodec.Decode(setupSeedCode);
-        if (!decodeResult.Success || decodeResult.Seed is null)
-        {
-            throw new ArgumentException(decodeResult.ErrorMessage ?? "Seed code is invalid.", nameof(setupSeedCode));
-        }
-
-        return decodeResult.Seed;
+        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, travelDifficulty);
     }
 }

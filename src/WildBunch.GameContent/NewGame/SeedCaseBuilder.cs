@@ -8,7 +8,7 @@ internal static class SeedCaseBuilder
     private const int NormalReleaseThreshold = 5;
     private static readonly SuspectId TrueCulpritId = new("suspect-4");
 
-    public static CaseFile CreateCanonicalCaseFile(GameSetupGenerationPlan plan, World world)
+    public static CaseFile CreateCanonicalCaseFile(StartingWorldGenerationPlan plan, World world)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(world);
@@ -25,7 +25,7 @@ internal static class SeedCaseBuilder
             startingTownId: SeedWorldCatalog.PinecrossId);
     }
 
-    public static CaseFile CreateCaseFile(GameSetupGenerationPlan plan, World world, TownId? startingTownId = null)
+    public static CaseFile CreateCaseFile(StartingWorldGenerationPlan plan, World world, TownId? startingTownId = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(world);
@@ -37,7 +37,7 @@ internal static class SeedCaseBuilder
 
         var roster = CaseCharacterRoster.SelectGangRoster(plan.Source);
         var features = CaseSuspectFeaturePool.SelectAssignedFeatures(plan.Source);
-        var accusationIndex = plan.Source.PickIndex(GameSetupDeterministicLabels.CaseAccusation, roster.Count);
+        var accusationIndex = plan.Descriptor.Case.AccusationIndex;
         return BuildCase(
             plan.Source,
             world,

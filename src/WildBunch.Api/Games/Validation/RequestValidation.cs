@@ -17,7 +17,7 @@ public static class RequestValidation
 
         if (!string.IsNullOrWhiteSpace(request?.SeedCode))
         {
-            if (!GameSetupSeedCodeValidator.TryValidate(request.SeedCode, out var errorMessage))
+            if (!StartingWorldDescriptorCodeValidator.TryValidate(request.SeedCode, out var errorMessage))
             {
                 errors["seedCode"] = [errorMessage ?? "Seed code is invalid."];
             }

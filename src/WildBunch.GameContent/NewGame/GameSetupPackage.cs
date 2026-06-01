@@ -7,7 +7,7 @@ using WildBunch.Domain.World;
 namespace WildBunch.GameContent.NewGame;
 
 internal sealed record GameSetupPackage(
-    GameSetupSeed Seed,
+    StartingWorldDescriptor Descriptor,
     TravelDifficulty TravelDifficulty,
     TravelRulesProfile TravelRulesProfile,
     World World,

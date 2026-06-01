@@ -3,31 +3,35 @@ using WildBunch.Domain.Travel;
 namespace WildBunch.GameContent.NewGame;
 
 /// <summary>
-/// Deterministic setup plan derived from the player-facing seed.
+/// Deterministic setup plan derived from the player-facing seed code and resolved descriptor.
 /// Setup facts are selected here once, while travel generation keeps reading live session state later.
 /// </summary>
-internal sealed record GameSetupGenerationPlan(
-    GameSetupSeed Seed,
+internal sealed record StartingWorldGenerationPlan(
+    StartingWorldDescriptor Descriptor,
     string SeedCode,
     GameSetupDeterministicSource Source,
     TravelRulesProfile TravelRulesProfile,
     SeedWorldVariant WorldVariant)
 {
-    public bool IsCanonical => Seed.IsCanonical;
+    public bool IsCanonical => Descriptor == StartingWorldDescriptorResolver.CreateCanonicalDescriptor(Descriptor.Difficulty);
 
-    public static GameSetupGenerationPlan Create(GameSetupSeed seed)
+    public TravelDifficulty TravelDifficulty => Descriptor.Difficulty;
+
+    public static StartingWorldGenerationPlan Create(StartingWorldDescriptor descriptor)
     {
-        ArgumentNullException.ThrowIfNull(seed);
+        ArgumentNullException.ThrowIfNull(descriptor);
 
-        var seedCode = GameSetupSeedCodec.GetStableKey(seed);
+        var validation = StartingWorldDescriptorResolver.Validate(descriptor);
+        if (!validation.Success)
+        {
+            throw new ArgumentException(validation.ErrorMessage ?? "Starting world descriptor is invalid.", nameof(descriptor));
+        }
+
+        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(descriptor.SeedCode);
         var source = new GameSetupDeterministicSource(seedCode);
-        var travelRulesProfile = TravelRulesProfile.For(seed.Difficulty);
-        var worldVariant = seed.IsCanonical
-            ? SeedWorldVariant.Canonical
-            : source.Roll(GameSetupDeterministicLabels.WorldVariant) % 2 == 0
-                ? SeedWorldVariant.Frontier
-                : SeedWorldVariant.Rail;
+        var travelRulesProfile = TravelRulesProfile.For(descriptor.Difficulty);
+        var worldVariant = descriptor.World.Variant;
 
-        return new GameSetupGenerationPlan(seed, seedCode, source, travelRulesProfile, worldVariant);
+        return new StartingWorldGenerationPlan(descriptor, seedCode, source, travelRulesProfile, worldVariant);
     }
 }

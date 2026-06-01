@@ -1,11 +1,16 @@
 namespace WildBunch.GameContent.NewGame;
 
-public static class GameSetupSeedCodeValidator
+public static class StartingWorldDescriptorCodeValidator
 {
     public static bool TryValidate(string? seedCode, out string? errorMessage)
     {
-        var decodeResult = GameSetupSeedCodec.Decode(seedCode);
-        errorMessage = decodeResult.Success ? null : decodeResult.ErrorMessage;
-        return decodeResult.Success;
+        if (!StartingWorldDescriptorResolver.TryParseSeedCode(seedCode, out _))
+        {
+            errorMessage = "Seed code must be a UUID-shaped string.";
+            return false;
+        }
+
+        errorMessage = null;
+        return true;
     }
 }
