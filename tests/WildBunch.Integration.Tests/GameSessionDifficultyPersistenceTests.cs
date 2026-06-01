@@ -177,6 +177,65 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public async Task TownVisitStateWithMultipleTownVisitsRoundTripsThroughRepositoryPersistence()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        await using var context = fixture.CreateContext();
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var unitOfWork = new EfGameSessionUnitOfWork(context);
+        var session = CreateTownVisitSession();
+
+        var firstResult = session.FollowTelegraphLeads();
+        Assert.True(firstResult.Success);
+
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
+
+        var afterReturnResult = session.FollowTelegraphLeads();
+        Assert.True(afterReturnResult.Success);
+
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
+        Assert.True(reloaded.CurrentTownVisit.TryGetTownState(new TownId("current"), out var currentTownState));
+        Assert.True(reloaded.CurrentTownVisit.TryGetTownState(new TownId("connected"), out var connectedTownState));
+        Assert.Equal(2, currentTownState!.VisitNumber);
+        Assert.Equal(new TownId("connected"), connectedTownState!.TownId);
+        Assert.True(connectedTownState.VisitNumber >= 1);
+        Assert.True(currentTownState.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.Empty(connectedTownState.SpentInvestigationSources);
+        Assert.Single(reloaded.CaseFile.KnownClues);
+        Assert.Empty(reloaded.CaseFile.PublicClues);
+    }
+
+    [Fact]
+    public void LegacyTownVisitSnapshotWithoutTownStatesStillDeserializes()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateTownVisitSession();
+
+        session.FollowTelegraphLeads();
+
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
+        var currentTownVisit = legacySnapshot["currentTownVisit"]!.AsObject();
+        currentTownVisit.Remove("townStates");
+
+        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
+
+        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
+        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.Single(reloaded.CaseFile.KnownClues);
+        Assert.Empty(reloaded.CaseFile.PublicClues);
+    }
+
+    [Fact]
     public void TownVisitInvestigationStateRoundTripsThroughFullSessionJsonSnapshot()
     {
         var serializer = new GameSessionJsonSerializer();

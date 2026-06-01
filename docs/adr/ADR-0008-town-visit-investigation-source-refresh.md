@@ -6,8 +6,9 @@ live
 
 ## Dated Status History
 
-- 2026-06-01 - live: investigation sources are spent per town visit and reset
-  when the player arrives in a new town.
+- 2026-06-01 - live: investigation sources are tracked by session-owned,
+  town-local visit state with explicit first-check, revisit, and refresh
+  markers when the player arrives in a town.
 
 ## Decision Type
 
@@ -34,15 +35,18 @@ fresh again after travel.
 
 ## Decision Summary
 
-Treat investigation sources as town-visit scoped. Same-visit repeats are spent;
-arriving in a new town resets the source list and wanted-poster state.
+Treat investigation sources as town-visit scoped session state. Same-visit
+repeats are spent; arriving in a town refreshes the current town's source
+markers and wanted-poster state while preserving per-town history in the
+session-owned town visit book.
 
 ## Detailed Decision Breakdown
 
-`TownVisitState` tracks spent investigation sources and the wanted-poster flag
-for the current town. `GameSession` resets that state when the player changes
-towns, which makes investigation sources reusable after travel without making
-them endlessly repeatable inside one visit.
+`TownVisitState` tracks per-town visit records, per-source refresh markers, and
+the wanted-poster flag for the current town. `GameSession` refreshes the active
+town's source state when the player changes towns, which makes investigation
+sources reusable after travel without making them endlessly repeatable inside
+one visit.
 
 The action methods use that state to return source-specific “nothing new” feedback
 when the player revisits the same source in the same town.
@@ -90,15 +94,17 @@ Live. The town-visit state and investigation actions already use this pattern.
 
 ## Related Stable Source Surfaces
 
+- `src/WildBunch.Domain/Game/TownSourceVisitState.cs`
 - `src/WildBunch.Domain/Game/TownVisitState.cs`
 - `src/WildBunch.Domain/Game/GameSession.cs`
 - `tests/WildBunch.Domain.Tests/GameSessionInvestigationActionsTests.cs`
+- `tests/WildBunch.Domain.Tests/TownVisitStateTests.cs`
 - `tests/WildBunch.Domain.Tests/GameSessionWantedPostersTests.cs`
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-`TownVisitState` stores spent investigation sources, and `GameSession` resets it
-when the player arrives in a new town.
+`TownVisitState` stores per-town visit records and source refresh markers, and
+`GameSession` refreshes it when the player arrives in a new town.
 
 ## Review Triggers
 

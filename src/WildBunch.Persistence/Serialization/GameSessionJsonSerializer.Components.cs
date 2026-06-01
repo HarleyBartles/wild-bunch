@@ -584,19 +584,81 @@ public sealed partial class GameSessionJsonSerializer
 
     private sealed record TownVisitStateSnapshot(
         string TownId,
+        IReadOnlyList<TownVisitTownStateSnapshot>? TownStates,
         IReadOnlyList<InvestigationSourceKind>? SpentInvestigationSources,
         bool WantedPostersSpent)
     {
         public static TownVisitStateSnapshot FromDomain(TownVisitState townVisitState)
             => new(
-                townVisitState.TownId.Value,
-                townVisitState.SpentInvestigationSources.Select(sourceKind => sourceKind).ToArray(),
+                townVisitState.CurrentTownId.Value,
+                townVisitState.TownStates
+                    .OrderBy(townState => townState.TownId.Value, StringComparer.Ordinal)
+                    .Select(TownVisitTownStateSnapshot.FromDomain)
+                    .ToArray(),
+                townVisitState.SpentInvestigationSources.ToArray(),
                 townVisitState.WantedPostersSpent);
 
         public TownVisitState ToDomain()
-            => new(
+        {
+            if (TownStates is { Count: > 0 })
+            {
+                return TownVisitState.FromTownStates(
+                    new TownId(TownId),
+                    TownStates.Select(townState => townState.ToDomain()));
+            }
+
+            return TownVisitState.FromLegacy(
                 new TownId(TownId),
                 (SpentInvestigationSources ?? Array.Empty<InvestigationSourceKind>()).Select(sourceKind => sourceKind),
                 WantedPostersSpent);
+        }
+    }
+
+    private sealed record TownVisitTownStateSnapshot(
+        string TownId,
+        int VisitNumber,
+        IReadOnlyList<TownSourceVisitStateSnapshot>? SourceStates,
+        int WantedPostersLastCheckedVisitNumber)
+    {
+        public static TownVisitTownStateSnapshot FromDomain(TownVisitTownState townState)
+            => new(
+                townState.TownId.Value,
+                townState.VisitNumber,
+                townState.SourceStates
+                    .OrderBy(sourceState => sourceState.SourceKind)
+                    .Select(TownSourceVisitStateSnapshot.FromDomain)
+                    .ToArray(),
+                townState.WantedPostersLastCheckedVisitNumber);
+
+        public TownVisitTownState ToDomain()
+            => new(
+                new TownId(TownId),
+                VisitNumber,
+                SourceStates?.Select(snapshot => snapshot.ToDomain()),
+                wantedPostersSpent: WantedPostersLastCheckedVisitNumber == VisitNumber);
+    }
+
+    private sealed record TownSourceVisitStateSnapshot(
+        string TownId,
+        InvestigationSourceKind SourceKind,
+        TownSourceRefreshPolicy RefreshPolicy,
+        int LastRefreshedVisitNumber,
+        int LastCheckedVisitNumber)
+    {
+        public static TownSourceVisitStateSnapshot FromDomain(TownSourceVisitState sourceState)
+            => new(
+                sourceState.TownId.Value,
+                sourceState.SourceKind,
+                sourceState.RefreshPolicy,
+                sourceState.LastRefreshedVisitNumber,
+                sourceState.LastCheckedVisitNumber);
+
+        public TownSourceVisitState ToDomain()
+            => new(
+                new TownId(TownId),
+                SourceKind,
+                RefreshPolicy,
+                LastRefreshedVisitNumber,
+                LastCheckedVisitNumber);
     }
 }

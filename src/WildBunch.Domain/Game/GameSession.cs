@@ -53,6 +53,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownVisit.Reset(player.CurrentTownId);
         }
 
+        CurrentTownVisit.PrimeCurrentTown(World.GetTown(player.CurrentTownId).Sources);
+
         if (completedJourneyHistory is not null)
         {
             _completedJourneyHistory.AddRange(completedJourneyHistory);
@@ -357,7 +359,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private void RefreshTownVisit(TownId townId)
     {
+        var currentTown = World.GetTown(townId);
         CurrentTownVisit.Reset(townId);
+        CurrentTownVisit.PrimeCurrentTown(currentTown.Sources);
     }
 
     private void RefillCanteenAfterArrival()
@@ -1498,7 +1502,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
-        if (!CurrentTownVisit.TrySpendWantedPosters())
+        if (CurrentTownVisit.CheckWantedPosters() == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You study the wanted posters again, but find nothing new.");
             return ReadWantedPostersResult.Succeeded("You study the wanted posters again, but find nothing new.", sessionChanged: true);
@@ -1529,13 +1533,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var currentTown = World.GetTown(Player.CurrentTownId);
+        var telegraphLeadSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.TelegraphLead);
 
         if ((currentTown.Services & TownServices.Telegraph) == 0)
         {
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
 
-        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.TelegraphLead))
+        if (CurrentTownVisit.CheckSource(telegraphLeadSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You ask after telegraph leads again, but no new wire has come in.");
             return CaseInvestigationResult.Succeeded("You ask after telegraph leads again, but no new wire has come in.", sessionChanged: true);
@@ -1560,7 +1565,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.LocalGossip))
+        var currentTown = World.GetTown(Player.CurrentTownId);
+        var localGossipSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.LocalGossip);
+
+        if (CurrentTownVisit.CheckSource(localGossipSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You ask around again, but hear nothing new.");
             return CaseInvestigationResult.Succeeded("You ask around again, but hear nothing new.", sessionChanged: true);
@@ -1585,7 +1593,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.NoticeBoard))
+        var currentTown = World.GetTown(Player.CurrentTownId);
+        var noticeBoardSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.NoticeBoard);
+
+        if (CurrentTownVisit.CheckSource(noticeBoardSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You inspect the notice board again, but nothing new has been posted.");
             return CaseInvestigationResult.Succeeded("You inspect the notice board again, but nothing new has been posted.", sessionChanged: true);
@@ -1610,7 +1621,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTownVisit.TrySpend(InvestigationSourceKind.SheriffRecords))
+        var currentTown = World.GetTown(Player.CurrentTownId);
+        var sheriffRecordsSource = currentTown.Sources.GetRequiredDefinition(InvestigationSourceKind.SheriffRecords);
+
+        if (CurrentTownVisit.CheckSource(sheriffRecordsSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
             RecordCaseUpdate("You check the sheriff records again, but find nothing new.");
             return CaseInvestigationResult.Succeeded("You check the sheriff records again, but find nothing new.", sessionChanged: true);
