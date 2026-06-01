@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
@@ -17,6 +18,8 @@ namespace WildBunch.Integration.Tests.TestInfrastructure;
 
 internal static class ScenarioSeedCatalog
 {
+    private const string ResolverContractVersion = StartingWorldDescriptorResolver.ResolverContractVersion;
+
     private static readonly string CanonicalMountedSeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
         StartingWorldDescriptorResolver.CreateCanonicalSeedCode());
 
@@ -26,13 +29,20 @@ internal static class ScenarioSeedCatalog
         Name: "CanonicalMountedNormal",
         SeedCode: CanonicalMountedSeedCode,
         TravelDifficulty: TravelDifficulty.Normal,
+        ResolverContractVersion: ResolverContractVersion,
+        RequiredShapeSignature: "resolver-v2|CanonicalMountedNormal|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
+        DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedNormal", session),
+        PreviewDestinationTownId: "holloway",
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedNormal", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture CanonicalPinecrossServices = new(
         Name: "CanonicalPinecrossServices",
         SeedCode: CanonicalMountedNormal.SeedCode,
         TravelDifficulty: TravelDifficulty.Normal,
+        ResolverContractVersion: ResolverContractVersion,
+        RequiredShapeSignature: "resolver-v2|CanonicalPinecrossServices|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
+        DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
             AssertCanonicalMountedStartState("CanonicalPinecrossServices", session);
@@ -40,12 +50,16 @@ internal static class ScenarioSeedCatalog
             RequireEqual("CanonicalPinecrossServices", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalPinecrossServices", session, ItemKind.Food).Quantity);
             RequireEqual("CanonicalPinecrossServices", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalPinecrossServices", session, ItemKind.HorseFeed).Quantity);
         },
+        PreviewDestinationTownId: "holloway",
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalPinecrossServices", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture HighRiskFoeInterruptRoute = new(
         Name: "HighRiskFoeInterruptRoute",
         SeedCode: CanonicalMountedNormal.SeedCode,
         TravelDifficulty: TravelDifficulty.Normal,
+        ResolverContractVersion: ResolverContractVersion,
+        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=holloway,redmesa|preview=missing",
+        DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
             AssertCanonicalMountedStartState("HighRiskFoeInterruptRoute", session);
@@ -64,6 +78,9 @@ internal static class ScenarioSeedCatalog
         Name: "NoHorseLightEasy",
         SeedCode: NoHorseLightEasySeedCode,
         TravelDifficulty: TravelDifficulty.Easy,
+        ResolverContractVersion: ResolverContractVersion,
+        RequiredShapeSignature: "resolver-v2|NoHorseLightEasy|difficulty=Easy|horse=absent|saddle=absent|health=1250|travel=foot|preview=redmesa:foot:false",
+        DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {
             RequireEqual("NoHorseLightEasy", "start-game.travelDifficulty", TravelDifficulty.Easy, session.TravelDifficulty);
@@ -72,6 +89,7 @@ internal static class ScenarioSeedCatalog
             Require("NoHorseLightEasy", "start-game.inventory.noHorseItem", !session.Inventory.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to omit a horse.");
             Require("NoHorseLightEasy", "start-game.inventory.noSaddleItem", !session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle), "expected the starting inventory to omit a saddle.");
         },
+        PreviewDestinationTownId: "redmesa",
         AssertTravelPreviewContract: (session, destinationTownId, preview) =>
         {
             RequireEqual("NoHorseLightEasy", "travel-preview.success", true, preview.Success);
@@ -95,6 +113,23 @@ internal static class ScenarioSeedCatalog
             Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("on foot", StringComparison.OrdinalIgnoreCase), "expected the narration to describe foot travel.");
             Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("without a horse", StringComparison.OrdinalIgnoreCase), "expected the narration to mention traveling without a horse.");
         });
+
+    public static IReadOnlyList<ScenarioSeedFixture> All { get; } =
+        new[]
+        {
+            CanonicalMountedNormal,
+            CanonicalPinecrossServices,
+            HighRiskFoeInterruptRoute,
+            NoHorseLightEasy
+        };
+
+    public static void AssertCatalogContractsCurrent()
+    {
+        foreach (var fixture in All)
+        {
+            fixture.AssertCachedFixtureContract();
+        }
+    }
 
     public static async Task AssertPinecrossServices(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
     {
@@ -219,14 +254,6 @@ internal static class ScenarioSeedCatalog
         fixture.AssertTravelTurnContract(session, destinationTownId, preview, turn);
     }
 
-    public sealed record ScenarioSeedFixture(
-        string Name,
-        string SeedCode,
-        TravelDifficulty TravelDifficulty,
-        Action<GameSessionDto> AssertCreatedSessionContract,
-        Action<GameSessionDto, string, TravelPreviewResultDto>? AssertTravelPreviewContract = null,
-        Action<GameSessionDto, string, TravelPreviewResultDto, GameTurnResultDto>? AssertTravelTurnContract = null);
-
     private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
     {
         RequireEqual(scenarioName, "start-game.travelDifficulty", TravelDifficulty.Normal, session.TravelDifficulty);
@@ -295,6 +322,81 @@ internal static class ScenarioSeedCatalog
         Require("CanonicalPinecrossServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected Pinecross to expose a general store.");
         Require("CanonicalPinecrossServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected Pinecross to expose a stable.");
     }
+
+    private static string DescribeCanonicalMountedShape(GameSessionDto session, TravelPreviewResultDto? preview)
+        => string.Join(
+            "|",
+            ResolverContractVersion,
+            "CanonicalMountedNormal",
+            $"start={session.Player.CurrentTownId}",
+            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
+            $"items={session.Inventory.Items.Count}",
+            $"preview={DescribeMountedPreview(preview)}");
+
+    private static string DescribeCanonicalPinecrossServicesShape(GameSessionDto session, TravelPreviewResultDto? preview)
+        => string.Join(
+            "|",
+            ResolverContractVersion,
+            "CanonicalPinecrossServices",
+            $"start={session.Player.CurrentTownId}",
+            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
+            $"items={session.Inventory.Items.Count}",
+            "services=pinecross",
+            $"preview={DescribeMountedPreview(preview)}");
+
+    private static string DescribeHighRiskFoeInterruptRouteShape(GameSessionDto session, TravelPreviewResultDto? preview)
+    {
+        var connectedTownIds = session.World.Trails
+            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .OrderBy(townId => townId)
+            .ToArray();
+
+        return string.Join(
+            "|",
+            ResolverContractVersion,
+            "HighRiskFoeInterruptRoute",
+            $"start={session.Player.CurrentTownId}",
+            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
+            $"items={session.Inventory.Items.Count}",
+            $"routes={string.Join(",", connectedTownIds)}",
+            $"preview={DescribeMountedPreview(preview)}");
+    }
+
+    private static string DescribeNoHorseLightEasyShape(GameSessionDto session, TravelPreviewResultDto? preview)
+        => string.Join(
+            "|",
+            ResolverContractVersion,
+            "NoHorseLightEasy",
+            $"difficulty={session.TravelDifficulty}",
+            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"health={session.Player.Health}",
+            $"travel={preview?.Preview?.TravelMode.ToString().ToLowerInvariant() ?? "missing"}",
+            $"preview={DescribeFootPreview(preview)}");
+
+    private static string DescribeHorseState(HorseTravelStateDto? horseState)
+        => horseState is null ? "absent" : horseState.CanProvideMountedTravel ? "healthy" : "degraded";
+
+    private static string DescribePresence(bool present)
+        => present ? "present" : "absent";
+
+    private static string DescribeMountedPreview(TravelPreviewResultDto? preview)
+        => preview?.Preview is null
+            ? "missing"
+            : $"{preview.Preview.DestinationTownId}:{preview.Preview.TravelMode.ToString().ToLowerInvariant()}:{preview.Preview.BaselineRideDays}/{preview.Preview.ExpectedDays}";
+
+    private static string DescribeFootPreview(TravelPreviewResultDto? preview)
+        => preview?.Preview is null
+            ? "missing"
+            : $"{preview.Preview.DestinationTownId}:{preview.Preview.TravelMode.ToString().ToLowerInvariant()}:{preview.Preview.MountedTravelAvailable.ToString().ToLowerInvariant()}";
 
     private static dynamic RequireItem(string scenarioName, GameSessionDto session, ItemKind kind)
     {

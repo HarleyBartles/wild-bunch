@@ -4,6 +4,7 @@ namespace WildBunch.GameContent.NewGame;
 
 public static class StartingWorldDescriptorResolver
 {
+    public const string ResolverContractVersion = "resolver-v2";
     private const string SeedCodeFormat = "D";
     private const int RepresentativeSeedSearchLimit = 131072;
 

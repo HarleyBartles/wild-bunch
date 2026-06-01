@@ -8,7 +8,7 @@ namespace WildBunch.GameContent.NewGame;
 internal static class StartingWorldDescriptorSeedMixer
 {
     private const string ResolverNamespace = "wild-bunch.gamecontent.starting-world-descriptor";
-    private const string ResolverVersion = "resolver-v2";
+    private const string ResolverVersion = StartingWorldDescriptorResolver.ResolverContractVersion;
 
     public static ulong CreateSeedRoot(Guid seedCode)
     {
