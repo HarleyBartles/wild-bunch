@@ -61,7 +61,13 @@ public sealed record CaseIdentityHandleDto(
     string? ResolvedToDisplayName,
     IReadOnlyList<string> EvidenceIds,
     IReadOnlyList<string> SummaryLines,
-    IReadOnlyList<string> RelatedLabels);
+    IReadOnlyList<string> RelatedLabels,
+    IReadOnlyList<string> KnownAliases,
+    IReadOnlyList<string> DistinguishingFeatures,
+    WarrantDisposition? WarrantDisposition,
+    decimal? BountyAmount,
+    string? IssuingAuthority,
+    string? CrimeSummary);
 
 public sealed record CaseEvidenceItemDto(
     string Id,

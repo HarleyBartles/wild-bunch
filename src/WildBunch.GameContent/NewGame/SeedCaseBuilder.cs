@@ -20,7 +20,7 @@ internal static class SeedCaseBuilder
             CaseSuspectFeaturePool.SelectCanonicalAssignedFeatures(plan.Source),
             accusationIndex: 1,
             trueCulpritIndex: 3,
-            publicWarrant1: CaseCharacterRoster.CreateCanonicalTrueCulpritWarrant(),
+            publicWarrant1: CaseCharacterRoster.CreateGangMemberWarrant(CaseCharacterRoster.SelectCanonicalGangRoster()[0]),
             publicWarrant2: CaseCharacterRoster.CreateCanonicalUnrelatedWarrant());
     }
 
@@ -44,7 +44,7 @@ internal static class SeedCaseBuilder
             features,
             accusationIndex,
             3,
-            CaseCharacterRoster.CreateTrueCulpritWarrant(roster[3]),
+            CaseCharacterRoster.CreateGangMemberWarrant(roster[0]),
             CaseCharacterRoster.SelectUnrelatedWarrant(plan.Source));
     }
 

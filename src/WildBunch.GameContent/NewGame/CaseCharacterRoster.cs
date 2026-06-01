@@ -416,7 +416,7 @@ internal static class CaseCharacterRoster
         return SelectByScore(source, "case.roster.unrelated-warrant", UnrelatedWantedCriminals, 1, warrant => warrant.Key).Single();
     }
 
-    public static OutlawWarrantProfile CreateTrueCulpritWarrant(CaseCharacterProfile culprit)
+    public static OutlawWarrantProfile CreateTrueCulpritWarrant(CaseCharacterProfile culprit, CaseSuspectFeatureProfile? openingLeadFeature = null)
     {
         ArgumentNullException.ThrowIfNull(culprit);
 
@@ -425,13 +425,36 @@ internal static class CaseCharacterRoster
             culprit.DisplayName,
             culprit.SourceAliases,
             ["Red Wren", "Aunt Tess"],
-            ["Pale scar across the left cheek", "Raven-feather pin"],
+            BuildTrueCulpritKnownFeatures(openingLeadFeature),
             "Dodge City Marshal",
             culprit.SourceCategory,
             $"Source-derived culprit warrant built from {culprit.SourceNote}.",
             WarrantDisposition.DeadOrAlive,
             2500m,
             InvestigationTargetKind.TrueCulprit,
+            [OutlawGangIds.WildBunch],
+            OutlawGangIds.WildBunch);
+    }
+
+    public static OutlawWarrantProfile CreateGangMemberWarrant(CaseCharacterProfile gangMember)
+    {
+        ArgumentNullException.ThrowIfNull(gangMember);
+
+        return new OutlawWarrantProfile(
+            $"warrant-{gangMember.Key}",
+            gangMember.DisplayName,
+            gangMember.SourceAliases,
+            gangMember.SourceAliases
+                .Concat(gangMember.GameAliases.Select(alias => alias.Name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray(),
+            BuildGangMemberKnownFeatures(),
+            "Dodge City Marshal",
+            gangMember.SourceCategory,
+            $"Source-derived gang warrant built from {gangMember.SourceNote}.",
+            WarrantDisposition.DeadOrAlive,
+            1800m,
+            InvestigationTargetKind.GangMember,
             [OutlawGangIds.WildBunch],
             OutlawGangIds.WildBunch);
     }
@@ -557,4 +580,42 @@ internal static class CaseCharacterRoster
             targetKind,
             gangAffiliations,
             advancesGangPressureFor);
+
+    private static IReadOnlyList<string> BuildTrueCulpritKnownFeatures(CaseSuspectFeatureProfile? openingLeadFeature)
+    {
+        var featurePool = new[]
+        {
+            "Raven-feather pin",
+            "Black felt hat",
+            "Split-finger glove"
+        };
+
+        if (openingLeadFeature is null)
+        {
+            return featurePool.Take(2).ToArray();
+        }
+
+        var openingLeadTokens = new HashSet<string>(
+            Tokenize(openingLeadFeature.Description).Where(token => token.Length > 3),
+            StringComparer.OrdinalIgnoreCase);
+
+        var selectedFeatures = featurePool
+            .Where(feature => !Tokenize(feature).Any(token => openingLeadTokens.Contains(token)))
+            .Take(2)
+            .ToArray();
+
+        return selectedFeatures.Length > 0 ? selectedFeatures : featurePool.Take(2).ToArray();
+    }
+
+    private static IReadOnlyList<string> BuildGangMemberKnownFeatures()
+        => new[]
+        {
+            "Raven-feather pin",
+            "Black felt hat"
+        };
+
+    private static IEnumerable<string> Tokenize(string text)
+        => text
+            .Split([' ', ',', '.', ';', ':', '-', '(', ')', '/'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(token => token.Trim().TrimEnd('!', '?').ToLowerInvariant());
 }

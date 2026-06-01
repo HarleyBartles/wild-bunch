@@ -87,6 +87,12 @@ function createSession(): GameSessionDto {
             evidenceIds: ["clue-1"],
             summaryLines: ["Discovered from wanted poster"],
             relatedLabels: ["Red Wren"],
+            knownAliases: ["Red Wren"],
+            distinguishingFeatures: ["Pale scar across the left cheek"],
+            warrantDisposition: 1,
+            bountyAmount: 2500.5,
+            issuingAuthority: "County marshal",
+            crimeSummary: "Wanted for a string of robberies near the county line.",
           },
         ],
         looseLeads: [],
@@ -155,6 +161,12 @@ function createJournal(): JournalDto {
             evidenceIds: ["clue-1"],
             summaryLines: ["Discovered from wanted poster"],
             relatedLabels: ["Red Wren"],
+            knownAliases: ["Red Wren"],
+            distinguishingFeatures: ["Pale scar across the left cheek"],
+            warrantDisposition: 1,
+            bountyAmount: 2500.5,
+            issuingAuthority: "County marshal",
+            crimeSummary: "Wanted for a string of robberies near the county line.",
           },
         ],
         looseLeads: [
@@ -167,6 +179,12 @@ function createJournal(): JournalDto {
             evidenceIds: ["clue-1"],
             summaryLines: ["Alias lead: A poster links the alias Grey Jay without naming Butch Cassidy."],
             relatedLabels: [],
+            knownAliases: [],
+            distinguishingFeatures: [],
+            warrantDisposition: null,
+            bountyAmount: null,
+            issuingAuthority: null,
+            crimeSummary: null,
           },
         ],
         evidenceItems: [
@@ -350,10 +368,24 @@ describe("App", () => {
     expect(dialogScope.getByText("At large")).toBeInTheDocument();
     expect(dialogScope.getAllByText("Gus Mercer")).toHaveLength(3);
     expect(dialogScope.getAllByText("Discovered from wanted poster")).toHaveLength(3);
+    expect(
+      dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Known aliases: Red Wren")).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Distinguishing features: Pale scar across the left cheek")).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Issuing authority: County marshal")).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Crime summary: Wanted for a string of robberies near the county line.")).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(dialogScope.queryByText("Also linked to: Red Wren")).not.toBeInTheDocument();
     expect(dialogScope.queryByText("Mabel Quinn")).not.toBeInTheDocument();
     expect(dialogScope.getByText("No named record links this lead yet.")).toBeInTheDocument();
-    expect(dialogScope.getByText("Dead or alive")).toBeInTheDocument();
-    expect(dialogScope.getByText("$2,500.50")).toBeInTheDocument();
+    expect(dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Dead or alive")).length).toBeGreaterThanOrEqual(2);
+    expect(dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("$2,500.50")).length).toBeGreaterThanOrEqual(2);
+    expect(dialogScope.getByText("Known name")).toBeInTheDocument();
     expect(screen.queryByText("clue-1")).not.toBeInTheDocument();
     expect(screen.queryByText("suspect-1")).not.toBeInTheDocument();
     const redMesaRows = dialogScope.getAllByText((_, element) => element?.textContent === "Location: Red Mesa road");

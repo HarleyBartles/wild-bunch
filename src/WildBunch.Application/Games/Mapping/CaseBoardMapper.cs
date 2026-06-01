@@ -16,10 +16,10 @@ public static class CaseBoardMapper
 
         foreach (var clue in clues)
         {
-            var markers = ExtractMarkers(clue);
+            var marker = TrySelectPrimaryMarker(clue);
             var handleIds = new List<string>();
 
-            foreach (var marker in markers)
+            if (marker is not null)
             {
                 var builder = GetOrCreate(looseLeads, marker.Kind, marker.KeyValue, marker.DisplayName);
                 builder.AddEvidence(clue.Id.Value);
@@ -32,7 +32,7 @@ public static class CaseBoardMapper
                 DescribeClueKind(clue.Kind),
                 clue.Source ?? "Unknown source",
                 clue.Description,
-                markers.Count > 0,
+                IsIdentityBearingClue(clue),
                 CaseReadMapper.ToDto(clue.Anchors),
                 handleIds.Distinct(StringComparer.OrdinalIgnoreCase).ToArray()));
         }
@@ -43,16 +43,22 @@ public static class CaseBoardMapper
             namedRecord.Status = CaseIdentityStatus.Resolved;
             namedRecord.AddEvidence(warrant.Id.Value);
             namedRecord.AddSummaryLine(DescribeWarrantSummary(warrant));
+            namedRecord.WarrantDisposition = warrant.Terms.Disposition;
+            namedRecord.BountyAmount = warrant.Terms.BountyAmount;
+            namedRecord.IssuingAuthority = warrant.Terms.IssuingSource;
+            namedRecord.CrimeSummary = warrant.Summary;
 
             foreach (var alias in warrant.Terms.KnownAliases)
             {
                 namedRecord.AddRelatedLabel(alias);
+                namedRecord.AddKnownAlias(alias);
                 ResolveLooseLead(looseLeads, namedRecord, alias, CaseIdentityKind.Alias);
             }
 
             foreach (var feature in warrant.Terms.KnownFeatures)
             {
                 namedRecord.AddRelatedLabel(feature);
+                namedRecord.AddDistinguishingFeature(feature);
                 ResolveLooseLead(looseLeads, namedRecord, feature, CaseIdentityKind.FeatureLed);
             }
         }
@@ -87,6 +93,15 @@ public static class CaseBoardMapper
         namedRecord.AddSummaryLine($"Linked lead: {looseLead.DisplayName}");
         namedRecord.AddEvidence(looseLead.EvidenceIds);
         namedRecord.AddRelatedLabel(looseLead.DisplayName);
+
+        if (looseLead.Kind is CaseIdentityKind.Alias)
+        {
+            namedRecord.AddKnownAlias(looseLead.DisplayName);
+        }
+        else if (looseLead.Kind is CaseIdentityKind.FeatureLed)
+        {
+            namedRecord.AddDistinguishingFeature(looseLead.DisplayName);
+        }
     }
 
     private static HandleBuilder GetOrCreate(
@@ -105,49 +120,6 @@ public static class CaseBoardMapper
         return builder;
     }
 
-    private static IReadOnlyList<IdentityMarker> ExtractMarkers(Clue clue)
-    {
-        if (!IsIdentityBearingClue(clue))
-        {
-            return [];
-        }
-
-        var markers = new List<IdentityMarker>();
-
-        foreach (var subject in clue.Anchors.Subjects)
-        {
-            if (!string.IsNullOrWhiteSpace(subject.Alias))
-            {
-                markers.Add(new IdentityMarker(subject.Alias!, Clean(subject.Alias!), CaseIdentityKind.Alias));
-            }
-
-            if (!string.IsNullOrWhiteSpace(subject.Feature))
-            {
-                markers.Add(new IdentityMarker(subject.Feature!, BuildFeatureDisplayName(subject.Feature!), CaseIdentityKind.FeatureLed));
-            }
-        }
-
-        foreach (var location in clue.Anchors.Locations)
-        {
-            var route = !string.IsNullOrWhiteSpace(location.Route)
-                ? location.Route!
-                : !string.IsNullOrWhiteSpace(location.Place)
-                    ? location.Place!
-                    : location.Label;
-
-            if (!string.IsNullOrWhiteSpace(route))
-            {
-                markers.Add(new IdentityMarker(route, BuildRouteDisplayName(route), CaseIdentityKind.RouteLed));
-            }
-        }
-
-        return markers
-            .Select(marker => new IdentityMarker(Clean(marker.KeyValue), Clean(marker.DisplayName), marker.Kind))
-            .Where(marker => marker.KeyValue.Length > 0 && marker.DisplayName.Length > 0)
-            .DistinctBy(marker => $"{marker.Kind}:{Normalize(marker.KeyValue)}")
-            .ToArray();
-    }
-
     private static bool IsIdentityBearingClue(Clue clue)
     {
         if (clue.Kind is ClueKind.Warrant or ClueKind.Alias or ClueKind.IdentityFact or ClueKind.CulpritTrail)
@@ -155,9 +127,7 @@ public static class CaseBoardMapper
             return true;
         }
 
-        return clue.Anchors.Subjects.Any(subject =>
-            !string.IsNullOrWhiteSpace(subject.Alias)
-            || !string.IsNullOrWhiteSpace(subject.Feature));
+        return TrySelectPrimaryMarker(clue) is not null;
     }
 
     private static string DescribeClueSummary(Clue clue)
@@ -258,6 +228,88 @@ public static class CaseBoardMapper
         return $"Rider on {cleaned}";
     }
 
+    private static IdentityMarker? TrySelectPrimaryMarker(Clue clue)
+    {
+        ArgumentNullException.ThrowIfNull(clue);
+
+        var knownName = clue.Anchors.Subjects.FirstOrDefault(subject => !string.IsNullOrWhiteSpace(subject.Alias));
+        if (knownName is not null)
+        {
+            var displayName = Clean(knownName.Alias!);
+            if (displayName.Length > 0)
+            {
+                return new IdentityMarker(displayName, displayName, CaseIdentityKind.Alias);
+            }
+        }
+
+        var featureLead = clue.Anchors.Subjects.FirstOrDefault(subject => !string.IsNullOrWhiteSpace(subject.Feature));
+        if (featureLead is not null)
+        {
+            var feature = Clean(featureLead.Feature!);
+            var displayName = BuildFeatureDisplayName(feature);
+            if (feature.Length > 0 && displayName.Length > 0)
+            {
+                return new IdentityMarker(feature, displayName, CaseIdentityKind.FeatureLed);
+            }
+        }
+
+        var route = SelectBestRoute(clue.Anchors);
+        if (!string.IsNullOrWhiteSpace(route))
+        {
+            var cleaned = Clean(route);
+            var displayName = BuildRouteDisplayName(route);
+            if (cleaned.Length > 0 && displayName.Length > 0)
+            {
+                return new IdentityMarker(cleaned, displayName, CaseIdentityKind.RouteLed);
+            }
+        }
+
+        return null;
+    }
+
+    private static string? SelectBestRoute(ClueAnchors anchors)
+    {
+        var route = anchors.Locations
+            .Select(location => location.Route)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        if (!string.IsNullOrWhiteSpace(route))
+        {
+            return route;
+        }
+
+        route = anchors.Directions
+            .Select(direction => direction.Route)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        if (!string.IsNullOrWhiteSpace(route))
+        {
+            return route;
+        }
+
+        var place = anchors.Locations
+            .Select(location => location.Place)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        if (!string.IsNullOrWhiteSpace(place))
+        {
+            return place;
+        }
+
+        route = anchors.Locations
+            .Select(location => location.Label)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        if (!string.IsNullOrWhiteSpace(route))
+        {
+            return route;
+        }
+
+        return anchors.Directions
+            .Select(direction => direction.Label)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+    }
+
     private static string LowerFirst(string value)
         => value.Length == 0 ? value : char.ToLowerInvariant(value[0]) + value[1..];
 
@@ -287,6 +339,18 @@ public static class CaseBoardMapper
         public List<string> SummaryLines { get; } = [];
 
         public List<string> RelatedLabels { get; } = [];
+
+        public List<string> KnownAliases { get; } = [];
+
+        public List<string> DistinguishingFeatures { get; } = [];
+
+        public WarrantDisposition? WarrantDisposition { get; set; }
+
+        public decimal? BountyAmount { get; set; }
+
+        public string? IssuingAuthority { get; set; }
+
+        public string? CrimeSummary { get; set; }
 
         public void AddEvidence(string evidenceId)
         {
@@ -320,6 +384,22 @@ public static class CaseBoardMapper
             }
         }
 
+        public void AddKnownAlias(string alias)
+        {
+            if (!string.IsNullOrWhiteSpace(alias) && !KnownAliases.Contains(alias, StringComparer.OrdinalIgnoreCase))
+            {
+                KnownAliases.Add(alias);
+            }
+        }
+
+        public void AddDistinguishingFeature(string feature)
+        {
+            if (!string.IsNullOrWhiteSpace(feature) && !DistinguishingFeatures.Contains(feature, StringComparer.OrdinalIgnoreCase))
+            {
+                DistinguishingFeatures.Add(feature);
+            }
+        }
+
         public CaseIdentityHandleDto ToDto()
             => new(
                 Key,
@@ -329,6 +409,12 @@ public static class CaseBoardMapper
                 ResolvedToDisplayName,
                 EvidenceIds.ToArray(),
                 SummaryLines.ToArray(),
-                RelatedLabels.ToArray());
+                RelatedLabels.ToArray(),
+                KnownAliases.ToArray(),
+                DistinguishingFeatures.ToArray(),
+                WarrantDisposition,
+                BountyAmount,
+                IssuingAuthority,
+                CrimeSummary);
     }
 }

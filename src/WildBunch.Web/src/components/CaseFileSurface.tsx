@@ -147,6 +147,54 @@ function renderAnchorRows(rows: AnchorRow[]) {
   );
 }
 
+function renderListField(label: string, values: string[]) {
+  if (values.length === 0) {
+    return null;
+  }
+
+  return (
+    <p>
+      <strong>{label}:</strong> {values.join(", ")}
+    </p>
+  );
+}
+
+function renderWarrantFacts(record: {
+  knownAliases: string[];
+  distinguishingFeatures: string[];
+  warrantDisposition: number | null;
+  bountyAmount: number | null;
+  issuingAuthority: string | null;
+  crimeSummary: string | null;
+}) {
+  return (
+    <>
+      {renderListField("Known aliases", record.knownAliases)}
+      {renderListField("Distinguishing features", record.distinguishingFeatures)}
+      {record.warrantDisposition !== null ? (
+        <p>
+          <strong>Disposition:</strong> {formatWarrantDisposition(record.warrantDisposition)}
+        </p>
+      ) : null}
+      {record.bountyAmount !== null ? (
+        <p>
+          <strong>Bounty:</strong> {formatBounty(record.bountyAmount)}
+        </p>
+      ) : null}
+      {record.issuingAuthority ? (
+        <p>
+          <strong>Issuing authority:</strong> {record.issuingAuthority}
+        </p>
+      ) : null}
+      {record.crimeSummary ? (
+        <p>
+          <strong>Crime summary:</strong> {record.crimeSummary}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function formatClockContext(journal: JournalDto) {
   return `Day ${journal.clock.day}, turn ${journal.clock.turn} in ${journal.currentTown.name}`;
 }
@@ -391,11 +439,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                       ))}
                     </ul>
                   ) : null}
-                  {record.relatedLabels.length > 0 ? (
-                    <p className="case-modal__minor">
-                      Also linked to: {record.relatedLabels.join(", ")}
-                    </p>
-                  ) : null}
+                  {renderWarrantFacts(record)}
                 </article>
               ))
             ) : (
@@ -465,11 +509,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                             ))}
                           </ul>
                         ) : null}
-                        {record.relatedLabels.length > 0 ? (
-                          <p className="case-modal__minor">
-                            Linked markers: {record.relatedLabels.join(", ")}
-                          </p>
-                        ) : null}
+                        {renderWarrantFacts(record)}
                       </>
                     ) : null}
                   </div>

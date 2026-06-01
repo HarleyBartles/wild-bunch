@@ -91,6 +91,10 @@ public sealed class GameSetupPackageBuilderTests
         Assert.Single(package.CaseFile.Suspects, suspect => suspect.Id.Equals(package.CaseFile.TrueCulpritId));
         Assert.Equal(5, package.CaseFile.KillerReleaseThreshold);
         Assert.Equal("The culprit has a scar on his left cheek.", package.CaseFile.OpeningLead.Description);
+        Assert.Equal("Butch Cassidy", package.CaseFile.PublicWarrants[0].TargetName);
+        Assert.Equal(InvestigationTargetKind.GangMember, package.CaseFile.PublicWarrants[0].Terms.TargetKind);
+        Assert.DoesNotContain(package.CaseFile.PublicWarrants, warrant => warrant.TargetName == package.CaseFile.Suspects[3].Name);
+        Assert.DoesNotContain(package.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(package.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit);

@@ -7,7 +7,7 @@ namespace WildBunch.Application.Tests;
 public sealed class CaseBoardMapperTests
 {
     [Fact]
-    public void WantedPosterResolvesLooseAliasLeadIntoNamedRecord()
+    public void WantedPosterResolvesLooseKnownNameLeadIntoNamedRecord()
     {
         var board = CaseBoardMapper.ToDto(
             new[]
@@ -48,6 +48,12 @@ public sealed class CaseBoardMapperTests
         var namedRecord = Assert.Single(board.NamedRecords, record => record.DisplayName == "Butch Cassidy");
         Assert.Equal(CaseIdentityKind.WarrantTarget, namedRecord.Kind);
         Assert.Equal(CaseIdentityStatus.Resolved, namedRecord.Status);
+        Assert.Contains("Grey Jay", namedRecord.KnownAliases);
+        Assert.Contains("red hat", namedRecord.DistinguishingFeatures);
+        Assert.Equal(WarrantDisposition.DeadOrAlive, namedRecord.WarrantDisposition);
+        Assert.Equal(2500m, namedRecord.BountyAmount);
+        Assert.Equal("County marshal", namedRecord.IssuingAuthority);
+        Assert.Contains("Wanted for a string of robberies near the county line.", namedRecord.CrimeSummary);
         Assert.Contains("Grey Jay", namedRecord.RelatedLabels);
         Assert.Contains("red hat", namedRecord.RelatedLabels);
         Assert.Contains(namedRecord.SummaryLines, line => line.Contains("County marshal", StringComparison.OrdinalIgnoreCase));
@@ -55,7 +61,7 @@ public sealed class CaseBoardMapperTests
     }
 
     [Fact]
-    public void AliasLeadWithoutNamedEvidenceStaysLoose()
+    public void KnownNameLeadWithoutNamedEvidenceStaysLoose()
     {
         var board = CaseBoardMapper.ToDto(
             new[]
@@ -85,7 +91,7 @@ public sealed class CaseBoardMapperTests
     }
 
     [Fact]
-    public void ColorOnlyObservationDoesNotCreateIdentityLead()
+    public void RouteOnlyObservationCreatesRouteLead()
     {
         var board = CaseBoardMapper.ToDto(
             new[]
@@ -116,13 +122,17 @@ public sealed class CaseBoardMapperTests
             Array.Empty<Warrant>());
 
         Assert.Empty(board.NamedRecords);
-        Assert.Empty(board.LooseLeads);
+        var looseLead = Assert.Single(board.LooseLeads);
+        Assert.Equal("Rider on North road", looseLead.DisplayName);
+        Assert.Equal(CaseIdentityKind.RouteLed, looseLead.Kind);
         Assert.Single(board.EvidenceItems);
-        Assert.False(board.EvidenceItems[0].IdentityBearing);
+        Assert.True(board.EvidenceItems[0].IdentityBearing);
+        Assert.Single(board.EvidenceItems[0].HandleIds);
+        Assert.Equal("North road", board.EvidenceItems[0].Anchors.Locations[0].Route);
     }
 
     [Fact]
-    public void FeatureAndRouteLeadsUseNaturalPersonLabelsAndIgnoreContextFacts()
+    public void FeatureAndRouteClueYieldsOneFeatureLeadWithRouteEvidence()
     {
         var board = CaseBoardMapper.ToDto(
             new[]
@@ -152,10 +162,52 @@ public sealed class CaseBoardMapperTests
             },
             Array.Empty<Warrant>());
 
-        Assert.Contains(board.LooseLeads, lead => lead.DisplayName == "Rider with no eyebrows");
-        Assert.Contains(board.LooseLeads, lead => lead.DisplayName == "Rider on rail spur");
+        var looseLead = Assert.Single(board.LooseLeads);
+        Assert.Equal("Rider with no eyebrows", looseLead.DisplayName);
+        Assert.Equal(CaseIdentityKind.FeatureLed, looseLead.Kind);
+        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName == "Rider on rail spur");
         Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName.Contains("opening lead", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName.Contains("identity match", StringComparison.OrdinalIgnoreCase));
         Assert.Single(board.EvidenceItems);
+        Assert.True(board.EvidenceItems[0].IdentityBearing);
+        Assert.Single(board.EvidenceItems[0].HandleIds);
+        Assert.Equal("rail spur", board.EvidenceItems[0].Anchors.Locations[0].Route);
+    }
+
+    [Fact]
+    public void NameAndFeatureClueYieldsOneKnownNameLeadWithFeatureEvidence()
+    {
+        var board = CaseBoardMapper.ToDto(
+            new[]
+            {
+                new Clue(
+                    new ClueId("clue-name-feature"),
+                    ClueKind.Alias,
+                    "A poster links Grey Jay to a rider who has no eyebrows.",
+                    Array.Empty<SuspectId>(),
+                    InvestigationTargetKind.Suspected,
+                    InvestigationSourceKind.NoticeBoard,
+                    source: "wanted poster",
+                    context: "Public notice",
+                    anchors: new ClueAnchors(
+                        subjects: new[]
+                        {
+                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay", Feature: "Has no eyebrows")
+                        },
+                        locations: new[]
+                        {
+                            new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "rail spur")
+                        }))
+            },
+            Array.Empty<Warrant>());
+
+        var looseLead = Assert.Single(board.LooseLeads);
+        Assert.Equal("Grey Jay", looseLead.DisplayName);
+        Assert.Equal(CaseIdentityKind.Alias, looseLead.Kind);
+        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName == "Rider with no eyebrows");
+        Assert.Single(board.EvidenceItems);
+        Assert.True(board.EvidenceItems[0].IdentityBearing);
+        Assert.Single(board.EvidenceItems[0].HandleIds);
+        Assert.Equal("Has no eyebrows", board.EvidenceItems[0].Anchors.Subjects[0].Feature);
     }
 }

@@ -40,20 +40,20 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       ],
       trails: [],
     },
-      caseFile: {
-        accusationId: null,
-        openingLead: "The trail went cold outside town.",
-        caseState: {
-          statusText: "Still chasing leads.",
-        },
-        discoveredSuspects: [],
-        caseBoard: {
-          namedRecords: [],
-          looseLeads: [],
-          evidenceItems: [],
-        },
-        knownClues: [],
+    caseFile: {
+      accusationId: null,
+      openingLead: "The trail went cold outside town.",
+      caseState: {
+        statusText: "Still chasing leads.",
       },
+      discoveredSuspects: [],
+      caseBoard: {
+        namedRecords: [],
+        looseLeads: [],
+        evidenceItems: [],
+      },
+      knownClues: [],
+    },
     inventory: {
       wallet: { cash: 14 },
       items: [],

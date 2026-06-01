@@ -174,7 +174,7 @@ export function formatCaseIdentityKind(kind: number) {
     case 0:
       return "Known name";
     case 1:
-      return "Alias";
+      return "Known name";
     case 2:
       return "Feature lead";
     case 3:

@@ -347,6 +347,12 @@ export interface CaseIdentityHandleDto {
   evidenceIds: string[];
   summaryLines: string[];
   relatedLabels: string[];
+  knownAliases: string[];
+  distinguishingFeatures: string[];
+  warrantDisposition: number | null;
+  bountyAmount: number | null;
+  issuingAuthority: string | null;
+  crimeSummary: string | null;
 }
 
 export interface CaseEvidenceItemDto {

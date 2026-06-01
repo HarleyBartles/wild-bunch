@@ -53,20 +53,20 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         },
       ],
     },
-      caseFile: {
-        accusationId: null,
-        openingLead: "",
-        caseState: {
-          statusText: "",
-        },
-        discoveredSuspects: [],
-        caseBoard: {
-          namedRecords: [],
-          looseLeads: [],
-          evidenceItems: [],
-        },
-        knownClues: [],
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: {
+        statusText: "",
       },
+      discoveredSuspects: [],
+      caseBoard: {
+        namedRecords: [],
+        looseLeads: [],
+        evidenceItems: [],
+      },
+      knownClues: [],
+    },
     inventory: {
       wallet: { cash: 0 },
       items: [],
