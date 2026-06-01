@@ -80,6 +80,10 @@
 - No unrelated feature work.
 - If a needed design decision is missing, return `BLOCKED` or `AMBER` rather than inventing broad architecture.
 
+## Modular Excitement Doctrine
+- Modular player excitement is achieved through boring implementation.
+- Build player-facing surprise, variety, and authorship from composable, validated primitives rather than from bespoke adventure chaos.
+
 ## Coding Discipline
 - Keep slices small and mainline-friendly; if a file is getting bulky, extract the pure helper, factory, or renderer before it becomes a god object.
 - Avoid letting aggregate roots, endpoint files, React panels, and builders accumulate unrelated responsibilities.
