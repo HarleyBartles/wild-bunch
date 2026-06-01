@@ -227,22 +227,5 @@ public sealed class SeededNewGameFactoryTests
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
 
     private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
-    {
-        var bytes = new byte[16];
-        bytes[0] = byte0;
-        bytes[1] = byte1;
-        bytes[2] = byte2;
-        bytes[3] = byte3;
-        bytes[4] = byte4;
-        bytes[5] = byte5;
-        bytes[6] = byte6;
-        bytes[7] = (byte)(tail & 0xFF);
-        bytes[8] = (byte)((tail >> 8) & 0xFF);
-        bytes[9] = (byte)((tail >> 16) & 0xFF);
-        bytes[10] = (byte)((tail >> 32) & 0xFF);
-        bytes[11] = (byte)((tail >> 40) & 0xFF);
-        bytes[12] = (byte)((tail >> 48) & 0xFF);
-        bytes[13] = (byte)((tail >> 56) & 0xFF);
-        return new Guid(bytes);
-    }
+        => StartingWorldDescriptorSeedCodeFactory.CreateSeedCode(byte0, byte1, byte2, byte3, byte4, byte5, byte6, tail);
 }

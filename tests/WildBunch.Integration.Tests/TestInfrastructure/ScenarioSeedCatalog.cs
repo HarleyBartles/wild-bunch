@@ -20,14 +20,7 @@ internal static class ScenarioSeedCatalog
     private static readonly string CanonicalMountedSeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
         StartingWorldDescriptorResolver.CreateCanonicalSeedCode());
 
-    private static readonly string NoHorseLightEasySeedCode = CreateSeedCode(
-        policy: 0,
-        worldVariant: 0,
-        loadoutProfile: 1,
-        startWithHorse: false,
-        accusationIndex: 1,
-        startingCashBonus: 0,
-        difficulty: 0);
+    private static readonly string NoHorseLightEasySeedCode = "7d455293-f269-a642-72af-0193fdbdfb51";
 
     public static readonly ScenarioSeedFixture CanonicalMountedNormal = new(
         Name: "CanonicalMountedNormal",
@@ -233,20 +226,6 @@ internal static class ScenarioSeedCatalog
         Action<GameSessionDto> AssertCreatedSessionContract,
         Action<GameSessionDto, string, TravelPreviewResultDto>? AssertTravelPreviewContract = null,
         Action<GameSessionDto, string, TravelPreviewResultDto, GameTurnResultDto>? AssertTravelTurnContract = null);
-
-    private static string CreateSeedCode(byte policy, byte worldVariant, byte loadoutProfile, bool startWithHorse, byte accusationIndex, byte startingCashBonus, byte difficulty)
-    {
-        var bytes = new byte[16];
-        bytes[0] = policy;
-        bytes[1] = worldVariant;
-        bytes[2] = loadoutProfile;
-        bytes[3] = startWithHorse ? (byte)0 : (byte)1;
-        bytes[4] = accusationIndex;
-        bytes[5] = startingCashBonus;
-        bytes[6] = difficulty;
-
-        return new Guid(bytes).ToString("D");
-    }
 
     private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
     {

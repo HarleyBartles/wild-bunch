@@ -52,7 +52,7 @@ The new setup seed architecture is UUID-shaped, descriptor-driven, and validated
 
 ## Detailed Decision Breakdown
 
-The resolver maps seed code bytes into bounded descriptor fields. Multiple UUIDs may resolve to the same descriptor, and the descriptor can later be turned into a representative seed code for tests or fixture setup.
+The resolver canonicalizes the UUID-shaped seed code and feeds it through a stable labeled mixer keyed by resolver namespace, resolver version, and field labels. The mixer derives bounded descriptor choices without treating adjacent UUID bytes as semantic bitfields. Multiple UUIDs may resolve to the same descriptor, and the descriptor can later be turned into a representative seed code for tests or fixture setup.
 
 `AdventureRandomnessPolicy` is a first-class descriptor concept with named bands, including `Boring`, `Standard`, `Adventurous`, and `Wild`. Wild mode is legal and high-variance, but it still stays inside domain invariants.
 
@@ -97,15 +97,17 @@ Live.
 ## Related Stable Source Surfaces
 
 - `src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs`
+- `src/WildBunch.GameContent/NewGame/StartingWorldDescriptorSeedMixer.cs`
 - `src/WildBunch.GameContent/NewGame/GameSetupSeed.cs`
 - `src/WildBunch.GameContent/NewGame/GameSetupGenerationPlan.cs`
 - `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`
 - `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorResolverTests.cs`
+- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorSeedCodeFactory.cs`
 - `tests/WildBunch.Integration.Tests/TestInfrastructure/ScenarioSeedCatalog.cs`
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, uses `AdventureRandomnessPolicy` as a descriptor-level concept, and no longer relies on the retired WB1 product format.
+The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, uses `AdventureRandomnessPolicy` as a descriptor-level concept, derives setup choices through labeled hashing rather than raw UUID byte slicing, and no longer relies on the retired WB1 product format.
 
 ## Review Triggers
 
