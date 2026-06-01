@@ -42,6 +42,7 @@ public sealed class ReadWantedPostersHandler
         return new WantedPostersResultDto(
             actionResult.Success,
             actionResult.Message,
-            JournalMapper.ToDto(_journalResolver.Resolve(session)));
+            JournalMapper.ToDto(_journalResolver.Resolve(session)),
+            WantedPosterMapper.ToDto(session.CaseFile.KnownWarrants));
     }
 }

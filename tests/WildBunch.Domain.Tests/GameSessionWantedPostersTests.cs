@@ -24,9 +24,11 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, session.LogEntries.Count);
+        Assert.Single(session.CaseFile.KnownWarrants);
+        Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
-        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
+        Assert.Single(session.CaseFile.PublicWarrants);
         Assert.Single(session.CaseFile.DiscoveredSuspectIds);
         Assert.Contains(new SuspectId("suspect-1"), session.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
@@ -46,9 +48,10 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(second.Success);
         Assert.Equal(2, session.Clock.Turn);
         Assert.Equal(3, session.LogEntries.Count);
+        Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
-        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
+        Assert.Single(session.CaseFile.PublicWarrants);
         Assert.Single(session.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
@@ -59,14 +62,11 @@ public sealed class GameSessionWantedPostersTests
         var session = CreateSession(TownServices.NoticeBoard, includeSourceSpecificClues: true);
 
         var first = session.ReadWantedPosters();
-        var second = session.ReadWantedPosters();
-        var third = session.ReadWantedPosters();
 
         Assert.True(first.Success);
-        Assert.True(second.Success);
-        Assert.True(third.Success);
-        Assert.Equal(3, session.Clock.Turn);
-        Assert.Equal(4, session.LogEntries.Count);
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind is null);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
@@ -85,6 +85,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.False(result.SessionChanged);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Single(session.CaseFile.PublicClues);
+        Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Equal(0, session.Clock.Turn);
@@ -105,6 +106,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Single(session.CaseFile.PublicClues);
+        Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Equal(2, session.LogEntries.Count);
@@ -180,7 +182,8 @@ public sealed class GameSessionWantedPostersTests
                         "Dodge City Marshal",
                         InvestigationTargetKind.TrueCulprit,
                         [OutlawGangIds.WildBunch],
-                        OutlawGangIds.WildBunch),
+                        OutlawGangIds.WildBunch,
+                        InvestigationSourceKind.NoticeBoard),
                     "Wanted for a Wild Bunch robbery."),
                 new Warrant(
                     new WarrantId("warrant-public-2"),
@@ -193,7 +196,8 @@ public sealed class GameSessionWantedPostersTests
                         "Silver Creek Sheriff",
                         InvestigationTargetKind.UnrelatedWantedCriminal,
                         Array.Empty<OutlawGangId>(),
-                        null),
+                        null,
+                        InvestigationSourceKind.SheriffRecords),
                     "Wanted for cattle theft.")
             });
 

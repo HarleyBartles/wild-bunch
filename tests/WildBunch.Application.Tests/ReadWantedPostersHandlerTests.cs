@@ -1,5 +1,6 @@
 using System.Text.Json;
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Games.Models;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
@@ -34,14 +35,24 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
         Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
+        Assert.Single(result.WantedPosters);
+        Assert.Equal("warrant-public-1", result.WantedPosters[0].PosterId);
+        Assert.Equal("Mira Cline", result.WantedPosters[0].TargetDisplayName);
+        Assert.Equal("Raven-feather pin", result.WantedPosters[0].QuickView.HeadlineFeatureOrDescriptor);
+        Assert.Equal(2, result.WantedPosters[0].Details.Features.Count);
+        Assert.Equal(WantedPosterFeatureRenderMode.TextOnly, result.WantedPosters[0].Details.Features[0].RenderMode);
+        Assert.Equal(WantedPosterFeatureRenderMode.PortraitRenderable, result.WantedPosters[0].Details.Features[1].RenderMode);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"wantedPosters\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"targetKind\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -59,14 +70,17 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(0, repository.CommitCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
+        Assert.Empty(result.WantedPosters);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Single(result.CurrentJournal.LogEntries);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"wantedPosters\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"targetKind\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -86,6 +100,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Empty(result.WantedPosters);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
     }
 
@@ -120,6 +135,7 @@ public sealed class ReadWantedPostersHandlerTests
             accusation: null,
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
             knownClues: Array.Empty<Clue>(),
             publicClues: new[]
             {
@@ -137,6 +153,23 @@ public sealed class ReadWantedPostersHandlerTests
                         {
                             new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
                         }))
+            },
+            publicWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-public-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Red Wren", "Aunt Tess" },
+                        new[] { "Raven-feather pin", "Pale scar across the left cheek" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        [OutlawGangIds.WildBunch],
+                        OutlawGangIds.WildBunch,
+                        InvestigationSourceKind.NoticeBoard),
+                    "Wanted for a Wild Bunch robbery.")
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);

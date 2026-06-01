@@ -303,6 +303,35 @@ describe("App", () => {
       success: true,
       message: "Read wanted posters",
       currentJournal: createJournal(),
+      wantedPosters: [
+        {
+          posterId: "warrant-public-1",
+          targetDisplayName: "Mira Cline",
+          aliases: ["Red Wren", "Aunt Tess"],
+          legalTerms: {
+            disposition: 1,
+            bountyAmount: 2500.5,
+            issuingAuthority: "County marshal",
+          },
+          quickView: {
+            headlineNameOrAlias: "Mira Cline",
+            headlineFeatureOrDescriptor: "Raven-feather pin",
+            pocketCheckDescriptor: "Dead or alive, $2,500.50 bounty",
+          },
+          details: {
+            summary: "Wanted for a string of robberies near the county line.",
+            publicOrigin: "County marshal",
+            features: [
+              {
+                text: "Raven-feather pin",
+                salience: 0,
+                renderMode: 0,
+              },
+            ],
+          },
+          publicSafeClassification: "gang-affiliated wanted criminal",
+        },
+      ],
     });
     mockedInspectNoticeBoard.mockResolvedValue({
       success: true,

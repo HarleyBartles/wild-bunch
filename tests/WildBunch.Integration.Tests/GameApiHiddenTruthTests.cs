@@ -50,7 +50,9 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"isTrueCulprit\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"targetKind\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"discoveredSuspects\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"wantedPosters\"", wantedPostersPayload, StringComparison.OrdinalIgnoreCase);
 
         var noticeBoardResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/notice-board/inspect", content: null);
         var noticeBoardPayload = await noticeBoardResponse.Content.ReadAsStringAsync();

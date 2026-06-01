@@ -477,10 +477,59 @@ export interface JournalDto {
   logEntries: GameLogEntryDto[];
 }
 
+
+export interface WantedPosterDto {
+  posterId: string;
+  targetDisplayName: string;
+  aliases: string[];
+  legalTerms: WantedPosterLegalTermsDto;
+  quickView: WantedPosterQuickViewDto;
+  details: WantedPosterDetailsDto;
+  publicSafeClassification: string | null;
+}
+
+export interface WantedPosterLegalTermsDto {
+  disposition: number;
+  bountyAmount: number;
+  issuingAuthority: string;
+}
+
+export interface WantedPosterQuickViewDto {
+  headlineNameOrAlias: string;
+  headlineFeatureOrDescriptor: string;
+  pocketCheckDescriptor: string;
+}
+
+export interface WantedPosterDetailsDto {
+  summary: string;
+  publicOrigin: string;
+  features: WantedPosterFeatureDto[];
+}
+
+export interface WantedPosterFeatureDto {
+  text: string;
+  salience: WantedPosterFeatureSalience;
+  renderMode: WantedPosterFeatureRenderMode;
+}
+
+export type WantedPosterFeatureSalience = 0 | 1 | 2;
+export const WantedPosterFeatureSalience = {
+  Headline: 0,
+  Supporting: 1,
+  Buried: 2,
+} as const;
+
+export type WantedPosterFeatureRenderMode = 0 | 1;
+export const WantedPosterFeatureRenderMode = {
+  PortraitRenderable: 0,
+  TextOnly: 1,
+} as const;
+
 export interface WantedPostersResultDto {
   success: boolean;
   message: string;
   currentJournal: JournalDto;
+  wantedPosters: WantedPosterDto[];
 }
 
 export interface InvestigationActionResultDto {

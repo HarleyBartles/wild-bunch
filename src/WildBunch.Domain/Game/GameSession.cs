@@ -1508,6 +1508,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Succeeded("You study the wanted posters again, but find nothing new.", sessionChanged: true);
         }
 
+        var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.NoticeBoard);
         var clue = CaseFile.RevealNextPublicClue(publicClue =>
             IsPlayerKnownClue(publicClue)
             && (
@@ -1515,13 +1516,25 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 || publicClue.SourceKind == InvestigationSourceKind.NoticeBoard
                 || publicClue.SourceKind == InvestigationSourceKind.SheriffRecords));
 
-        if (clue is null)
+        if (warrant is null && clue is null)
         {
             RecordCaseUpdate("You study the wanted posters, but find nothing new.");
             return ReadWantedPostersResult.Succeeded("You study the wanted posters, but find nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You study the wanted posters and note a public lead: {DescribeClueLead(clue.Description)}.");
+        if (warrant is not null && clue is not null)
+        {
+            RecordCaseUpdate($"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}, noting a public lead: {DescribeClueLead(clue.Description)}.");
+            return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a wanted notice and a public lead.", sessionChanged: true);
+        }
+
+        if (warrant is not null)
+        {
+            RecordCaseUpdate($"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}.");
+            return ReadWantedPostersResult.Succeeded($"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate($"You study the wanted posters and note a public lead: {DescribeClueLead(clue!.Description)}.");
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
