@@ -37,11 +37,12 @@
 - Debug-only or temporary prototype surfaces, including the current cockpit/debug shell, may use lighter-weight coverage while they remain debug-only.
 
 ## GREEN Standard
-- `GREEN` requires implementation, validation, publication to `main`, remote head proof, a clean worktree, and issue-goal conformance.
+- `GREEN` requires implementation, validation, publication to `main`, remote head proof, a clean worktree, issue-goal conformance, and complete worker-owned cleanup proof when validation touched local workspace resources.
 - Passing tests alone is not `GREEN`.
 - A commit existing is not `GREEN`.
 - A branch push is not `GREEN` in this repo.
 - If the worker started long-running helpers for validation or browser checks, `GREEN` also requires stopping or explicitly accounting for those worker-owned processes and browser sessions before return.
+- If validation touched `C:/WORK/**`, `GREEN` requires a post-cleanup proof block that accounts for worker-owned helpers, used ports, and repo/file-lock risk before the return. Missing or partial cleanup proof is `AMBER` or `BLOCKED`, not `GREEN`.
 
 ## Issue-Goal Conformance
 - Restate the task as observable repo state.
@@ -99,7 +100,9 @@
 ## Worker Environment
 - The worker environment uses PowerShell, so do not use `&&` for command chaining.
 - Run commands separately or use PowerShell-safe sequencing when multiple commands are needed.
-- When you start worker-owned API servers, Vite dev servers, test servers, browsers, watch processes, tunnels, or containers, record what you started and clean them up before returning `GREEN` unless you explicitly return `AMBER` or `BLOCKED` with exact process/port evidence.
+- When you start worker-owned API servers, Vite dev servers, test servers, browsers, watch processes, or other long-running helpers, record what you started and clean them up before returning `GREEN` unless you explicitly return `AMBER` or `BLOCKED` with exact process/port evidence.
+- When validation touches `C:/WORK/**`, verify cleanup from the workspace perspective before returning `GREEN`: account for likely worker-owned server, browser, watcher, and test-helper processes; include process id, process name, and command line for anything stopped or left running; check every port used during validation, including alternate Vite preview/dev ports; and state repo/file-lock posture. If handle tooling is unavailable, say so and provide the process/command-line fallback proof.
+- A later user finding a worker-owned helper from the validation run after `GREEN` falsifies the cleanup lane, even if the product slice itself was correct.
 
 ## Return Format
 - Status: `GREEN` | `AMBER` | `RED` | `BLOCKED`
@@ -109,5 +112,6 @@
 - Changed files
 - Validation commands and results
 - Clean worktree status
+- Cleanup proof when validation touched `C:/WORK/**` or started worker-owned helpers: started helpers, stopped helpers, post-cleanup process scan, post-cleanup port scan, repo/file-lock posture, remaining known worker-owned processes
 - Issue-goal conformance notes
 - Known caveats or next recommended slice
