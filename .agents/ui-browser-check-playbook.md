@@ -47,11 +47,12 @@ The API launch profile already injects `ConnectionStrings__WildBunchPostgresDb` 
 - Confirm the user-facing state matches the expected result.
 - Inspect console and network errors when the flow is interactive.
 - Use a deterministic seed or known scenario when the workflow depends on session state.
-- Record any worker-started long-running helpers you launched for the check, including API servers, Vite dev servers, browsers, test servers, watchers, tunnels, or containers.
+- Record any worker-started long-running helpers you launched for the check, including API servers, Vite dev servers, browsers, test servers, watchers, tunnels, containers, preview servers, or browser kernels.
 - Stop or otherwise account for those worker-owned helpers before returning `GREEN`.
-- If you started port-bound helpers, verify the expected ports are no longer listening or explain why a remaining listener is not worker-owned.
+- If you started port-bound helpers, verify every port used during the check is no longer listening, including alternate Vite dev/preview ports such as `4173`, or explain why a remaining listener is not worker-owned.
 - Close browser tabs or windows created for the check when the environment exposes that action.
-- If you cannot clean up worker-owned helpers safely, return `AMBER` or `BLOCKED` with exact process, port, and browser evidence.
+- If the check touched `C:/WORK/**`, include repo/file-lock posture in the cleanup evidence. Use handle evidence when available; if handle tooling is unavailable, say so and provide process/command-line fallback proof.
+- If you cannot clean up worker-owned helpers safely, return `AMBER` or `BLOCKED` with exact process, port, browser, and repo-lock evidence.
 
 ## Reporting Contract
 
@@ -80,13 +81,17 @@ Report the following fields when a browser check is performed:
 
 ### Cleanup Evidence
 
-When long-running helpers were started for the check, include a short cleanup summary with:
+When long-running helpers were started for the check, include a cleanup proof block with:
 
-- started helpers
-- stopped helpers
-- ports checked
-- remaining known worker-owned processes, if any
+- started helpers: process id, process name, command line, and port when applicable
+- stopped helpers: process id, process name, command line, and stop result
+- post-cleanup process scan for likely worker-owned server, browser, watcher, and test-helper processes rooted in the repo or validation command line
+- post-cleanup port scan for every port used during validation, not just the default API/web ports
+- repo/file-lock posture for `C:/WORK/**` validation, including handle-tool result when available or a stated fallback when unavailable
 - browser tabs or windows closed
+- remaining known worker-owned processes, if any
+
+Do not return `GREEN` with only a bare claim such as "helpers stopped" or "ports clean". If a later user finds a worker-owned helper from the validation run after `GREEN`, the cleanup lane was false-green even if the product behavior was correct.
 
 ### Lawful Skip
 
