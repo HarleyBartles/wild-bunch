@@ -41,6 +41,7 @@
 - Passing tests alone is not `GREEN`.
 - A commit existing is not `GREEN`.
 - A branch push is not `GREEN` in this repo.
+- If the worker started long-running helpers for validation or browser checks, `GREEN` also requires stopping or explicitly accounting for those worker-owned processes and browser sessions before return.
 
 ## Issue-Goal Conformance
 - Restate the task as observable repo state.
@@ -98,6 +99,7 @@
 ## Worker Environment
 - The worker environment uses PowerShell, so do not use `&&` for command chaining.
 - Run commands separately or use PowerShell-safe sequencing when multiple commands are needed.
+- When you start worker-owned API servers, Vite dev servers, test servers, browsers, watch processes, tunnels, or containers, record what you started and clean them up before returning `GREEN` unless you explicitly return `AMBER` or `BLOCKED` with exact process/port evidence.
 
 ## Return Format
 - Status: `GREEN` | `AMBER` | `RED` | `BLOCKED`

@@ -47,6 +47,11 @@ The API launch profile already injects `ConnectionStrings__WildBunchPostgresDb` 
 - Confirm the user-facing state matches the expected result.
 - Inspect console and network errors when the flow is interactive.
 - Use a deterministic seed or known scenario when the workflow depends on session state.
+- Record any worker-started long-running helpers you launched for the check, including API servers, Vite dev servers, browsers, test servers, watchers, tunnels, or containers.
+- Stop or otherwise account for those worker-owned helpers before returning `GREEN`.
+- If you started port-bound helpers, verify the expected ports are no longer listening or explain why a remaining listener is not worker-owned.
+- Close browser tabs or windows created for the check when the environment exposes that action.
+- If you cannot clean up worker-owned helpers safely, return `AMBER` or `BLOCKED` with exact process, port, and browser evidence.
 
 ## Reporting Contract
 
@@ -69,8 +74,19 @@ Report the following fields when a browser check is performed:
 - expected result
 - observed result
 - console/network errors checked, if applicable
+- cleanup evidence for any worker-started long-running helpers
 - screenshots only when useful
 - final status: passed, failed, skipped, or blocked
+
+### Cleanup Evidence
+
+When long-running helpers were started for the check, include a short cleanup summary with:
+
+- started helpers
+- stopped helpers
+- ports checked
+- remaining known worker-owned processes, if any
+- browser tabs or windows closed
 
 ### Lawful Skip
 
