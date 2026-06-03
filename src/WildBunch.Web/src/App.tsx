@@ -15,8 +15,6 @@ export default function App() {
   const {
     session,
     journal,
-    wantedPosters,
-    hasReadWantedPosters,
     actions,
     gameId,
     currentTown,
@@ -247,13 +245,7 @@ export default function App() {
         description="A read-only summary of player-known clues, suspects, and warrants."
         onClose={closeCaseFile}
       >
-        <CaseFileSurface
-          journal={journal}
-          loading={loading}
-          error={error}
-          wantedPosters={wantedPosters}
-          hasReadWantedPosters={hasReadWantedPosters}
-        />
+        <CaseFileSurface journal={journal} loading={loading} error={error} />
       </CockpitOverlayFrame>
     </div>
   );

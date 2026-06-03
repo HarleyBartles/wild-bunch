@@ -34,6 +34,8 @@ public sealed class WantedPosterAcceptanceTests
         Assert.Equal("Butch Cassidy", result.WantedPosters[0].TargetDisplayName);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         Assert.Contains(result.CurrentJournal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
+        Assert.Single(result.CurrentJournal.CaseFile.WantedPosters);
+        Assert.Equal("Butch Cassidy", result.CurrentJournal.CaseFile.WantedPosters[0].TargetDisplayName);
 
         var payload = await response.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);

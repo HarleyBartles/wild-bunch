@@ -21,4 +21,5 @@ public sealed record JournalCaseFileDto(
     IReadOnlyList<DiscoveredSuspectDto> DiscoveredSuspects,
     CaseBoardDto CaseBoard,
     IReadOnlyList<ClueDto> KnownClues,
-    IReadOnlyList<WarrantDto> KnownWarrants);
+    IReadOnlyList<WarrantDto> KnownWarrants,
+    IReadOnlyList<WantedPosterDto> WantedPosters);

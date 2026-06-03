@@ -8,7 +8,6 @@ import { formatWarrantDisposition } from "../ui/formatters";
 
 interface WantedPosterSurfaceProps {
   wantedPosters: WantedPosterDto[];
-  hasReadWantedPosters: boolean;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -135,17 +134,13 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
   );
 }
 
-export function WantedPosterSurface({ wantedPosters, hasReadWantedPosters }: WantedPosterSurfaceProps) {
-  if (!hasReadWantedPosters) {
-    return null;
-  }
-
+export function WantedPosterSurface({ wantedPosters }: WantedPosterSurfaceProps) {
   return (
     <article className="case-modal__section case-modal__section--wide">
       <div className="case-modal__section-head">
         <div>
           <h3>Wanted posters</h3>
-          <p className="panel-subtitle">Public-safe warrants, quick views, and feature notes from the current board.</p>
+          <p className="panel-subtitle">Public-safe sheriff notices, quick views, and feature notes from the current board.</p>
         </div>
       </div>
       {wantedPosters.length > 0 ? (
@@ -155,7 +150,7 @@ export function WantedPosterSurface({ wantedPosters, hasReadWantedPosters }: Wan
           ))}
         </div>
       ) : (
-        <p className="muted">No wanted posters were returned for this read.</p>
+        <p className="muted">No wanted posters are known yet.</p>
       )}
     </article>
   );

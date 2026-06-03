@@ -36,6 +36,10 @@ public sealed class GetJournalHandlerTests
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);
         Assert.Empty(result.CaseFile.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.CaseFile.KnownClues.Count);
+        Assert.Single(result.CaseFile.WantedPosters);
+        Assert.Equal("Butch Cassidy", result.CaseFile.WantedPosters[0].TargetDisplayName);
+        Assert.Equal("County marshal", result.CaseFile.WantedPosters[0].LegalTerms.IssuingAuthority);
+        Assert.Equal("Dead or alive, $2,500.00 bounty", result.CaseFile.WantedPosters[0].QuickView.PocketCheckDescriptor);
         Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
@@ -50,6 +54,7 @@ public sealed class GetJournalHandlerTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"wantedPosters\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(typeof(WildBunch.Application.Games.Models.JournalCaseFileDto).GetProperties(), property => property.Name.Contains("culprit", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -148,7 +153,25 @@ public sealed class GetJournalHandlerTests
             accusation: new SuspectId("suspect-2"),
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
-            knownClues: clues);
+            openingLead: CaseOpeningLead.Create("Find the culprit before the law closes in."),
+            knownClues: clues,
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-1"),
+                    "Butch Cassidy",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Grey Jay" },
+                        new[] { "Raven-feather pin" },
+                        "County marshal",
+                        InvestigationTargetKind.Suspected,
+                        Array.Empty<OutlawGangId>(),
+                        null,
+                        InvestigationSourceKind.NoticeBoard),
+                    "Wanted for a string of robberies near the county line.")
+            });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
     }

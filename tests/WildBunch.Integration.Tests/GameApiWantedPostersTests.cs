@@ -69,11 +69,14 @@ public sealed class GameApiWantedPostersTests
         Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
         Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(journal.CaseFile.WantedPosters);
+        Assert.Equal("Butch Cassidy", journal.CaseFile.WantedPosters[0].TargetDisplayName);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("suspect-1", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"wantedPosters\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", journalPayload, StringComparison.OrdinalIgnoreCase);

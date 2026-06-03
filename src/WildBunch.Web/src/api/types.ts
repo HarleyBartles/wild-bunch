@@ -466,6 +466,7 @@ export interface JournalCaseFileDto {
   caseBoard: CaseBoardDto;
   knownClues: ClueDto[];
   knownWarrants: WarrantDto[];
+  wantedPosters: WantedPosterDto[];
 }
 
 export interface JournalDto {

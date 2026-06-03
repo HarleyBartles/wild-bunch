@@ -23,7 +23,8 @@ public static class JournalMapper
                 snapshot.DiscoveredSuspects.Select(ToDto).ToArray(),
                 CaseBoardMapper.ToDto(snapshot.KnownClues, snapshot.KnownWarrants),
                 snapshot.KnownClues.Select(CaseReadMapper.ToDto).ToArray(),
-                snapshot.KnownWarrants.Select(ToDto).ToArray()),
+                snapshot.KnownWarrants.Select(ToDto).ToArray(),
+                WantedPosterMapper.ToDto(snapshot.KnownWarrants)),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
 

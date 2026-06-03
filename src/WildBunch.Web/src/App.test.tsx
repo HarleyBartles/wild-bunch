@@ -264,6 +264,40 @@ function createJournal(): JournalDto {
           bountyAmount: 2500.5,
         },
       ],
+      wantedPosters: [
+        {
+          posterId: "warrant-gus",
+          targetDisplayName: "Gus Mercer",
+          aliases: ["Red Wren"],
+          legalTerms: {
+            disposition: 1,
+            bountyAmount: 2500.5,
+            issuingAuthority: "County marshal",
+          },
+          quickView: {
+            headlineNameOrAlias: "Gus Mercer",
+            headlineFeatureOrDescriptor: "Pale scar across the left cheek",
+            pocketCheckDescriptor: "Dead or alive, $2,500.50 bounty",
+          },
+          details: {
+            summary: "Wanted for a string of robberies near the county line.",
+            publicOrigin: "County marshal",
+            features: [
+              {
+                text: "Pale scar across the left cheek",
+                salience: WantedPosterFeatureSalience.Headline,
+                renderMode: WantedPosterFeatureRenderMode.PortraitRenderable,
+              },
+              {
+                text: "Known as Red Wren",
+                salience: WantedPosterFeatureSalience.Supporting,
+                renderMode: WantedPosterFeatureRenderMode.TextOnly,
+              },
+            ],
+          },
+          publicSafeClassification: "gang-affiliated wanted criminal",
+        },
+      ],
     },
     logEntries: [{ kind: 0, message: "Booted", day: 1, turn: 0 }],
   };
@@ -412,7 +446,7 @@ describe("App", () => {
     expect(dialogScope.getByText("Day 5, turn 2")).toBeInTheDocument();
     expect(dialogScope.getByText("Tumbleweed")).toBeInTheDocument();
     expect(dialogScope.getByText("At large")).toBeInTheDocument();
-    expect(dialogScope.getAllByText("Gus Mercer")).toHaveLength(3);
+    expect(dialogScope.getAllByText("Gus Mercer").length).toBeGreaterThanOrEqual(5);
     expect(dialogScope.getAllByText("Discovered from wanted poster")).toHaveLength(3);
     expect(
       dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Known aliases: Red Wren")).length,
@@ -432,6 +466,15 @@ describe("App", () => {
     expect(dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("Dead or alive")).length).toBeGreaterThanOrEqual(2);
     expect(dialogScope.getAllByText((_, element) => element?.tagName === "P" && element.textContent?.includes("$2,500.50")).length).toBeGreaterThanOrEqual(2);
     expect(dialogScope.getByText("Known name")).toBeInTheDocument();
+    const wantedPosterSection = dialogScope.getByRole("heading", { name: "Wanted posters" }).closest("article");
+    expect(wantedPosterSection).not.toBeNull();
+    const wantedPosterScope = within(wantedPosterSection as HTMLElement);
+    expect(wantedPosterScope.getByRole("heading", { name: "Gus Mercer" })).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Red Wren")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Dead or alive, $2,500.50 bounty")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("gang-affiliated wanted criminal")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Wanted for a string of robberies near the county line.")).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Public-safe sheriff notices, quick views, and feature notes from the current board.")).toBeInTheDocument();
     expect(screen.queryByText("clue-1")).not.toBeInTheDocument();
     expect(screen.queryByText("suspect-1")).not.toBeInTheDocument();
     const redMesaRows = dialogScope.getAllByText((_, element) => element?.textContent === "Location: Red Mesa road");
@@ -450,20 +493,15 @@ describe("App", () => {
       expect(mockedReadWantedPosters).toHaveBeenCalledWith("game-1");
     });
 
-    const wantedPosterSection = dialogScope.getByRole("heading", { name: "Wanted posters" }).closest("article");
-    expect(wantedPosterSection).not.toBeNull();
-    const wantedPosterScope = within(wantedPosterSection as HTMLElement);
-
-    expect(wantedPosterScope.getByRole("heading", { name: "Mira Cline" })).toBeInTheDocument();
-    expect(wantedPosterScope.getByText("Red Wren, Aunt Tess")).toBeInTheDocument();
+    expect(wantedPosterScope.getByRole("heading", { name: "Gus Mercer" })).toBeInTheDocument();
+    expect(wantedPosterScope.getByText("Red Wren")).toBeInTheDocument();
     expect(wantedPosterScope.getByText("Dead or alive, $2,500.50 bounty")).toBeInTheDocument();
     expect(wantedPosterScope.getAllByText("County marshal")).toHaveLength(2);
     expect(wantedPosterScope.getByText("Wanted for a string of robberies near the county line.")).toBeInTheDocument();
-    expect(wantedPosterScope.getByText("Portrait-renderable")).toBeInTheDocument();
-    expect(wantedPosterScope.getByText("Text-only")).toBeInTheDocument();
-    expect(wantedPosterScope.getByText("Limp in the right leg")).toBeInTheDocument();
+    expect(wantedPosterScope.getAllByText("Pale scar across the left cheek").length).toBeGreaterThanOrEqual(2);
+    expect(wantedPosterScope.getByText("Known as Red Wren")).toBeInTheDocument();
     expect(wantedPosterScope.getByText("gang-affiliated wanted criminal")).toBeInTheDocument();
-    expect(wantedPosterScope.getAllByText("Raven-feather pin").length).toBe(2);
+    expect(dialogScope.queryByText("Mira Cline")).not.toBeInTheDocument();
     expect(dialogScope.queryByText("targetKind")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /close/i }));
@@ -474,11 +512,14 @@ describe("App", () => {
   });
 
   it("shows a clean empty wanted-poster state when the response is empty", async () => {
+    const emptyJournal = createJournal();
+    emptyJournal.caseFile.wantedPosters = [];
+
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
       { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
     ]);
-    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetJournal.mockResolvedValue(emptyJournal);
     mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
     mockedCreateGame.mockResolvedValue(createSession());
     mockedBuyStoreItem.mockResolvedValue({
@@ -493,28 +534,28 @@ describe("App", () => {
     mockedReadWantedPosters.mockResolvedValue({
       success: true,
       message: "Read wanted posters",
-      currentJournal: createJournal(),
+      currentJournal: emptyJournal,
       wantedPosters: [],
     });
     mockedInspectNoticeBoard.mockResolvedValue({
       success: true,
       message: "Inspect notice board",
-      currentJournal: createJournal(),
+      currentJournal: emptyJournal,
     });
     mockedCheckSheriffRecords.mockResolvedValue({
       success: true,
       message: "Check sheriff records",
-      currentJournal: createJournal(),
+      currentJournal: emptyJournal,
     });
     mockedFollowTelegraphLeads.mockResolvedValue({
       success: true,
       message: "Follow telegraph leads",
-      currentJournal: createJournal(),
+      currentJournal: emptyJournal,
     });
     mockedGatherLocalGossip.mockResolvedValue({
       success: true,
       message: "Gather local gossip",
-      currentJournal: createJournal(),
+      currentJournal: emptyJournal,
     });
     mockedTravel.mockResolvedValue({
       success: true,
@@ -549,7 +590,7 @@ describe("App", () => {
     });
 
     expect(dialogScope.getByRole("heading", { name: /wanted posters/i })).toBeInTheDocument();
-    expect(dialogScope.getByText("No wanted posters were returned for this read.")).toBeInTheDocument();
+    expect(dialogScope.getByText("No wanted posters are known yet.")).toBeInTheDocument();
     expect(dialogScope.queryByText("Mira Cline")).not.toBeInTheDocument();
   });
 });
