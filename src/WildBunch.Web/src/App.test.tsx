@@ -14,7 +14,7 @@ import {
 } from "./api/types";
 import {
   buyStoreItem,
-  checkSheriffRecords,
+  checkLocalRecords,
   createGame,
   followTelegraphLeads,
   gatherLocalGossip,
@@ -34,7 +34,7 @@ vi.mock("./api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkSheriffRecords: vi.fn(),
+  checkLocalRecords: vi.fn(),
   inspectNoticeBoard: vi.fn(),
   readWantedPosters: vi.fn(),
   followTelegraphLeads: vi.fn(),
@@ -48,7 +48,7 @@ const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedCreateGame = vi.mocked(createGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
-const mockedCheckSheriffRecords = vi.mocked(checkSheriffRecords);
+const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
 const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
@@ -364,7 +364,7 @@ describe("App", () => {
     mockedGetAvailableActions.mockResolvedValue([
       { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
       { kind: AvailableActionKind.InspectNoticeBoard, label: "Inspect notice board" },
-      { kind: AvailableActionKind.CheckSheriffRecords, label: "Check sheriff records" },
+      { kind: AvailableActionKind.CheckSheriffRecords, label: "Check local records" },
     ]);
     mockedGetJournal.mockResolvedValue(createJournal());
     mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -389,9 +389,9 @@ describe("App", () => {
       message: "Inspect notice board",
       currentJournal: createJournal(),
     });
-    mockedCheckSheriffRecords.mockResolvedValue({
+    mockedCheckLocalRecords.mockResolvedValue({
       success: true,
-      message: "Check sheriff records",
+      message: "Check local records",
       currentJournal: createJournal(),
     });
     mockedFollowTelegraphLeads.mockResolvedValue({
@@ -542,9 +542,9 @@ describe("App", () => {
       message: "Inspect notice board",
       currentJournal: emptyJournal,
     });
-    mockedCheckSheriffRecords.mockResolvedValue({
+    mockedCheckLocalRecords.mockResolvedValue({
       success: true,
-      message: "Check sheriff records",
+      message: "Check local records",
       currentJournal: emptyJournal,
     });
     mockedFollowTelegraphLeads.mockResolvedValue({

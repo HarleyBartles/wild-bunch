@@ -67,7 +67,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind is null);
+        Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
@@ -144,6 +144,7 @@ public sealed class GameSessionWantedPostersTests
                     "A posted notice describes a rider wearing a faded blue scarf.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.GangMember,
+                    InvestigationSourceKind.SheriffWarrants,
                     source: "notice board",
                     context: "Public wanted poster")
             }.Concat(includeSourceSpecificClues
@@ -183,7 +184,7 @@ public sealed class GameSessionWantedPostersTests
                         InvestigationTargetKind.TrueCulprit,
                         [OutlawGangIds.WildBunch],
                         OutlawGangIds.WildBunch,
-                        InvestigationSourceKind.NoticeBoard),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for a Wild Bunch robbery."),
                 new Warrant(
                     new WarrantId("warrant-public-2"),
@@ -197,7 +198,7 @@ public sealed class GameSessionWantedPostersTests
                         InvestigationTargetKind.UnrelatedWantedCriminal,
                         Array.Empty<OutlawGangId>(),
                         null,
-                        InvestigationSourceKind.SheriffRecords),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for cattle theft.")
             });
 

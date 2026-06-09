@@ -31,8 +31,7 @@ public sealed class InspectNoticeBoardHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
-        Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
-        Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants, warrant => warrant.TargetName == "Mira Cline");
+        Assert.Empty(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -57,7 +56,7 @@ public sealed class InspectNoticeBoardHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
-        Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
+        Assert.Empty(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 
@@ -118,7 +117,7 @@ public sealed class InspectNoticeBoardHandlerTests
                         InvestigationTargetKind.TrueCulprit,
                         [OutlawGangIds.WildBunch],
                         OutlawGangIds.WildBunch,
-                        InvestigationSourceKind.NoticeBoard),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for a Wild Bunch robbery.")
             });
 

@@ -75,10 +75,10 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.True(reloaded.Suspects[0].Traits.HasTag(SuspectTraitTags.Desperate));
         Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[0].Terms.GangAffiliations);
         Assert.Equal(OutlawGangIds.WildBunch, reloaded.PublicWarrants[0].Terms.AdvancesGangPressureFor);
-        Assert.Equal(InvestigationSourceKind.NoticeBoard, reloaded.PublicWarrants[0].Terms.SourceKind);
+        Assert.Equal(InvestigationSourceKind.SheriffWarrants, reloaded.PublicWarrants[0].Terms.SourceKind);
         Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
-        Assert.Equal(InvestigationSourceKind.SheriffRecords, reloaded.PublicWarrants[1].Terms.SourceKind);
+        Assert.Equal(InvestigationSourceKind.LocalRecords, reloaded.PublicWarrants[1].Terms.SourceKind);
     }
 
     [Fact]
@@ -386,7 +386,7 @@ public sealed class GameSessionDifficultyPersistenceTests
                     InvestigationTargetKind.TrueCulprit,
                     [OutlawGangIds.WildBunch],
                     OutlawGangIds.WildBunch,
-                    InvestigationSourceKind.NoticeBoard),
+                    InvestigationSourceKind.SheriffWarrants),
                 "Wanted for a Wild Bunch robbery and related killings."),
             new Warrant(
                 new WarrantId("warrant-unrelated"),
@@ -400,7 +400,7 @@ public sealed class GameSessionDifficultyPersistenceTests
                     InvestigationTargetKind.UnrelatedWantedCriminal,
                     Array.Empty<OutlawGangId>(),
                     null,
-                    InvestigationSourceKind.SheriffRecords),
+                    InvestigationSourceKind.LocalRecords),
                 "Wanted for cattle theft.")
         };
 

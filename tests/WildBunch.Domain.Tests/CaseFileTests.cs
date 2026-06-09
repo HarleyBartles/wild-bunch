@@ -213,10 +213,10 @@ public sealed class CaseFileTests
                     "A sheriff note ties the rider to a rail ledger.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffRecords)
+                    InvestigationSourceKind.LocalRecords)
             });
 
-        var revealed = caseFile.RevealNextPublicClue(InvestigationSourceKind.SheriffRecords);
+        var revealed = caseFile.RevealNextPublicClue(InvestigationSourceKind.LocalRecords);
 
         Assert.NotNull(revealed);
         Assert.Equal("A sheriff note ties the rider to a rail ledger.", revealed!.Description);
@@ -325,7 +325,7 @@ public sealed class CaseFileTests
                 InvestigationTargetKind.TrueCulprit,
                 [OutlawGangIds.WildBunch],
                 OutlawGangIds.WildBunch,
-                InvestigationSourceKind.SheriffRecords));
+                InvestigationSourceKind.SheriffWarrants));
 
         var caseFile = new CaseFile(
             accusation: null,
@@ -338,7 +338,7 @@ public sealed class CaseFileTests
             knownClues: Array.Empty<Clue>(),
             publicWarrants: new[] { noticeBoardWarrant, sheriffWarrant });
 
-        var revealed = caseFile.RevealNextPublicWarrant(InvestigationSourceKind.SheriffRecords);
+        var revealed = caseFile.RevealNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
 
         Assert.NotNull(revealed);
         Assert.Equal(sheriffWarrant.Id, revealed!.Id);

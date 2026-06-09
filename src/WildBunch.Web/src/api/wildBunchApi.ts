@@ -163,8 +163,8 @@ export function inspectNoticeBoard(gameId: string) {
   });
 }
 
-export function checkSheriffRecords(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/sheriff-records/check`, {
+export function checkLocalRecords(gameId: string) {
+  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/local-records/check`, {
     method: "POST",
   });
 }

@@ -16,7 +16,7 @@ namespace WildBunch.Domain.Tests;
 public sealed class GameSessionInvestigationActionsTests
 {
     [Fact]
-    public void InspectNoticeBoardRevealsSourceTaggedWarrantAndIsIdempotent()
+    public void InspectNoticeBoardStaysOnCivicNoticesAndIsIdempotent()
     {
         var session = CreateSession();
 
@@ -27,13 +27,14 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(second.Success);
         Assert.Equal(2, session.Clock.Turn);
         Assert.Equal(3, session.LogEntries.Count);
-        Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Empty(session.CaseFile.PublicWarrants);
+        Assert.Empty(session.CaseFile.KnownWarrants);
+        Assert.Empty(session.CaseFile.KnownClues);
+        Assert.Single(session.CaseFile.PublicWarrants);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
-    public void CheckSheriffRecordsRevealsSourceTaggedClueWithoutAdvancingProgress()
+    public void CheckSheriffRecordsRevealsLocalRecordsTaggedClueWithoutAdvancingProgress()
     {
         var session = CreateSession();
 
@@ -177,28 +178,27 @@ public sealed class GameSessionInvestigationActionsTests
         var afterReturn = session.ReadWantedPosters();
 
         Assert.True(afterReturn.Success);
-        Assert.Equal("You study the wanted posters and uncover a public lead.", afterReturn.Message);
+        Assert.Equal("You study the wanted posters, but find nothing new.", afterReturn.Message);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-notice-1");
-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-2");
-        Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-record-2");
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
-    public void NoticeBoardAndSheriffRecordsRefreshWhenReturningToAVisitedTown()
+    public void NoticeBoardAndLocalRecordsRefreshWhenReturningToAVisitedTown()
     {
         var session = CreateTownSourceRefreshableSession();
 
         var firstNoticeBoard = session.InspectNoticeBoard();
-        var firstSheriffRecords = session.CheckSheriffRecords();
+        var firstLocalRecords = session.CheckSheriffRecords();
         var repeatNoticeBoard = session.InspectNoticeBoard();
-        var repeatSheriffRecords = session.CheckSheriffRecords();
+        var repeatLocalRecords = session.CheckSheriffRecords();
 
         Assert.True(firstNoticeBoard.Success);
-        Assert.True(firstSheriffRecords.Success);
+        Assert.True(firstLocalRecords.Success);
         Assert.Equal("You inspect the notice board again, but nothing new has been posted.", repeatNoticeBoard.Message);
-        Assert.Equal("You check the sheriff records again, but find nothing new.", repeatSheriffRecords.Message);
-        Assert.Single(session.CaseFile.KnownWarrants, warrant => warrant.Id.Value == "warrant-public-1");
+        Assert.Equal("You check the local records again, but find nothing new.", repeatLocalRecords.Message);
+        Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-1");
 
         session.Player.TravelTo(new TownId("connected"));
@@ -207,13 +207,13 @@ public sealed class GameSessionInvestigationActionsTests
         session.CurrentTownVisit.Reset(new TownId("current"));
 
         var afterReturnNoticeBoard = session.InspectNoticeBoard();
-        var afterReturnSheriffRecords = session.CheckSheriffRecords();
+        var afterReturnLocalRecords = session.CheckSheriffRecords();
 
         Assert.True(afterReturnNoticeBoard.Success);
-        Assert.True(afterReturnSheriffRecords.Success);
-        Assert.Equal("You inspect the notice board and uncover a wanted notice.", afterReturnNoticeBoard.Message);
-        Assert.Equal("You check the sheriff records and uncover a public lead.", afterReturnSheriffRecords.Message);
-        Assert.Single(session.CaseFile.KnownWarrants, warrant => warrant.Id.Value == "warrant-public-2");
+        Assert.True(afterReturnLocalRecords.Success);
+        Assert.Equal("You inspect the notice board, but find nothing new.", afterReturnNoticeBoard.Message);
+        Assert.Equal("You check the local records and uncover a public lead.", afterReturnLocalRecords.Message);
+        Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-record-2");
     }
 
@@ -256,7 +256,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A sheriff note ties the rider to a rail ledger.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffRecords,
+                    InvestigationSourceKind.LocalRecords,
                     source: "sheriff record",
                     context: "Public notice")
             },
@@ -274,7 +274,7 @@ public sealed class GameSessionInvestigationActionsTests
                         InvestigationTargetKind.TrueCulprit,
                         [OutlawGangIds.WildBunch],
                         OutlawGangIds.WildBunch,
-                        InvestigationSourceKind.NoticeBoard),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for a Wild Bunch robbery.")
             });
 
@@ -320,7 +320,7 @@ public sealed class GameSessionInvestigationActionsTests
                     InvestigationTargetKind.TrueCulprit,
                     [OutlawGangIds.WildBunch],
                     OutlawGangIds.WildBunch,
-                    InvestigationSourceKind.NoticeBoard),
+                    InvestigationSourceKind.SheriffWarrants),
                 "Wanted for a Wild Bunch robbery."),
             new Warrant(
                 new WarrantId("warrant-public-2"),
@@ -334,7 +334,7 @@ public sealed class GameSessionInvestigationActionsTests
                     InvestigationTargetKind.UnrelatedWantedCriminal,
                     Array.Empty<OutlawGangId>(),
                     null,
-                    InvestigationSourceKind.NoticeBoard),
+                    InvestigationSourceKind.SheriffWarrants),
                 "Wanted for cattle theft.")
         };
 
@@ -352,7 +352,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A sheriff note ties the rider to a rail ledger.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffRecords,
+                    InvestigationSourceKind.LocalRecords,
                     source: "sheriff record",
                     context: "Public notice",
                     anchors: new ClueAnchors(
@@ -366,7 +366,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A sheriff ledger in Holloway notes a rider with a red hat paying cash under a clean alias.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffRecords,
+                    InvestigationSourceKind.LocalRecords,
                     source: "sheriff record",
                     context: "Public notice",
                     anchors: new ClueAnchors(
@@ -551,7 +551,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A poster links Grey Jay to a rider with a pale scar.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.NoticeBoard,
+                    InvestigationSourceKind.SheriffWarrants,
                     source: "notice board",
                     context: "Public wanted poster",
                     anchors: new ClueAnchors(
@@ -565,7 +565,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A sheriff note ties the rider to a rail ledger and notes a red hat.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffRecords,
+                    InvestigationSourceKind.LocalRecords,
                     source: "sheriff record",
                     context: "Public wanted poster",
                     anchors: new ClueAnchors(

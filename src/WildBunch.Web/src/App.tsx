@@ -26,7 +26,7 @@ export default function App() {
     resetToken,
     canReadWantedPosters,
     canInspectNoticeBoard,
-    canCheckSheriffRecords,
+    canCheckLocalRecords,
     canFollowTelegraphLeads,
     canGatherLocalGossip,
     startNewGame,
@@ -35,7 +35,7 @@ export default function App() {
     handleTravel,
     handleReadWantedPosters,
     handleInspectNoticeBoard,
-    handleCheckSheriffRecords,
+    handleCheckLocalRecords,
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleReset,
@@ -201,10 +201,10 @@ export default function App() {
                     <button
                       type="button"
                       className="button"
-                      onClick={handleCheckSheriffRecords}
-                      disabled={!gameId || loading || !canCheckSheriffRecords}
+                      onClick={handleCheckLocalRecords}
+                      disabled={!gameId || loading || !canCheckLocalRecords}
                     >
-                      {busyMode === "investigating" ? "Checking..." : "Check sheriff records"}
+                      {busyMode === "investigating" ? "Checking..." : "Check local records"}
                     </button>
                   ) : action.kind === AvailableActionKind.FollowTelegraphLeads ? (
                     <button

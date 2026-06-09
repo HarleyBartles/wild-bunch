@@ -11,7 +11,7 @@ public static class InvestigationSources
 
     public static TownSourceDefinition NoticeBoard => Catalog.GetRequiredDefinition(InvestigationSourceKind.NoticeBoard);
 
-    public static TownSourceDefinition SheriffRecords => Catalog.GetRequiredDefinition(InvestigationSourceKind.SheriffRecords);
+    public static TownSourceDefinition LocalRecords => Catalog.GetRequiredDefinition(InvestigationSourceKind.LocalRecords);
 
     public static TownSourceDefinition TelegraphLead => Catalog.GetRequiredDefinition(InvestigationSourceKind.TelegraphLead);
 

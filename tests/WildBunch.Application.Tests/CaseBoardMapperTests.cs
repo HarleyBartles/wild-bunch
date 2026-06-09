@@ -18,7 +18,7 @@ public sealed class CaseBoardMapperTests
                     "A poster links the alias Grey Jay to a rider in the county line files.",
                     Array.Empty<SuspectId>(),
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.NoticeBoard,
+                    InvestigationSourceKind.SheriffWarrants,
                     source: "wanted poster",
                     context: "Public notice",
                     anchors: new ClueAnchors(
@@ -41,7 +41,7 @@ public sealed class CaseBoardMapperTests
                         InvestigationTargetKind.TrueCulprit,
                         Array.Empty<OutlawGangId>(),
                         null,
-                        InvestigationSourceKind.NoticeBoard),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for a string of robberies near the county line.")
             });
 
@@ -72,7 +72,7 @@ public sealed class CaseBoardMapperTests
                     "A poster links the alias Grey Jay to a rider in the county line files.",
                     Array.Empty<SuspectId>(),
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.NoticeBoard,
+                    InvestigationSourceKind.SheriffWarrants,
                     source: "wanted poster",
                     context: "Public notice",
                     anchors: new ClueAnchors(
@@ -186,7 +186,7 @@ public sealed class CaseBoardMapperTests
                     "A poster links Grey Jay to a rider who has no eyebrows.",
                     Array.Empty<SuspectId>(),
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.NoticeBoard,
+                    InvestigationSourceKind.SheriffWarrants,
                     source: "wanted poster",
                     context: "Public notice",
                     anchors: new ClueAnchors(

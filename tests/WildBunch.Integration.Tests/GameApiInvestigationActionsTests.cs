@@ -34,22 +34,21 @@ public sealed class GameApiInvestigationActionsTests
         Assert.True(noticeBoardResult!.Success);
         Assert.Equal(1, noticeBoardResult.CurrentJournal.Clock.Turn);
         Assert.Equal(2, noticeBoardResult.CurrentJournal.LogEntries.Count);
-        Assert.Single(noticeBoardResult.CurrentJournal.CaseFile.KnownWarrants);
-        Assert.Contains(noticeBoardResult.CurrentJournal.CaseFile.KnownWarrants, warrant => warrant.Summary.Contains("Wild Bunch", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(noticeBoardResult.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Empty(noticeBoardResult.CurrentJournal.CaseFile.DiscoveredSuspects);
 
-        var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/sheriff-records/check", content: null);
+        var localRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/local-records/check", content: null);
 
-        Assert.Equal(HttpStatusCode.OK, sheriffRecordsResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, localRecordsResponse.StatusCode);
 
-        var sheriffRecordsResult = await sheriffRecordsResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
+        var localRecordsResult = await localRecordsResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
 
-        Assert.NotNull(sheriffRecordsResult);
-        Assert.True(sheriffRecordsResult!.Success);
-        Assert.Equal(2, sheriffRecordsResult.CurrentJournal.Clock.Turn);
-        Assert.Equal(2, sheriffRecordsResult.CurrentJournal.CaseFile.KnownClues.Count);
-        Assert.Single(sheriffRecordsResult.CurrentJournal.CaseFile.KnownWarrants);
-        Assert.Contains(sheriffRecordsResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Record);
+        Assert.NotNull(localRecordsResult);
+        Assert.True(localRecordsResult!.Success);
+        Assert.Equal(2, localRecordsResult.CurrentJournal.Clock.Turn);
+        Assert.Equal(2, localRecordsResult.CurrentJournal.CaseFile.KnownClues.Count);
+        Assert.Empty(localRecordsResult.CurrentJournal.CaseFile.KnownWarrants);
+        Assert.Contains(localRecordsResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Record);
 
         var gossipResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/local-gossip/gather", content: null);
 
@@ -73,7 +72,7 @@ public sealed class GameApiInvestigationActionsTests
         Assert.False(telegraphResult!.Success);
         Assert.Equal("There is no telegraph office here.", telegraphResult.Message);
 
-        var payload = await sheriffRecordsResponse.Content.ReadAsStringAsync();
+        var payload = await localRecordsResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);

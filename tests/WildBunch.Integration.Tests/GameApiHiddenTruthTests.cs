@@ -62,7 +62,7 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", noticeBoardPayload, StringComparison.OrdinalIgnoreCase);
 
-        var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/sheriff-records/check", content: null);
+        var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/local-records/check", content: null);
         var sheriffRecordsPayload = await sheriffRecordsResponse.Content.ReadAsStringAsync();
 
         Assert.DoesNotContain("\"trueCulpritId\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
