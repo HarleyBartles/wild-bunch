@@ -14,13 +14,13 @@ namespace WildBunch.Integration.Tests;
 public sealed class GameSessionDifficultyPersistenceTests
 {
     [Fact]
-    public async Task TravelDifficultyRoundTripsThroughJsonPersistence()
+    public async Task TravelDifficultyAndEntropyRoundTripThroughJsonPersistence()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
         var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
         var unitOfWork = new EfGameSessionUnitOfWork(context);
-        var session = CreateEasySession();
+        var session = CreateSession(TravelDifficulty.Easy, AdventureRandomnessPolicy.Wild);
 
         await repository.StoreAsync(session);
         await unitOfWork.CommitAsync();
@@ -28,8 +28,21 @@ public sealed class GameSessionDifficultyPersistenceTests
 
         Assert.NotNull(reloaded);
         Assert.Equal(TravelDifficulty.Easy, reloaded!.TravelDifficulty);
+        Assert.Equal(AdventureRandomnessPolicy.Wild, reloaded.Entropy);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Capacity);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+    }
+
+    [Fact]
+    public void MissingEntropyInLegacySessionJsonDefaultsToStandard()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(TravelDifficulty.Normal, AdventureRandomnessPolicy.Boring)))!.AsObject();
+        legacySnapshot.Remove("entropy");
+
+        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
+
+        Assert.Equal(AdventureRandomnessPolicy.Standard, reloaded.Entropy);
     }
 
     [Fact]
@@ -167,7 +180,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     public void MissingTravelRandomnessInLegacySessionJsonFallsBackToRuntimeSalted()
     {
         var serializer = new GameSessionJsonSerializer();
-        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateEasySession()))!.AsObject();
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(TravelDifficulty.Easy, AdventureRandomnessPolicy.Boring)))!.AsObject();
         legacySnapshot.Remove("travelRandomness");
 
         var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
@@ -280,7 +293,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Empty(reloaded.CaseFile.PublicClues);
     }
 
-    private static GameSession CreateEasySession()
+    private static GameSession CreateSession(TravelDifficulty travelDifficulty, AdventureRandomnessPolicy entropy)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
         var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
@@ -309,7 +322,8 @@ public sealed class GameSessionDifficultyPersistenceTests
             pinecross.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy);
+            travelDifficulty,
+            entropy: entropy);
     }
 
     private static GameSession CreateTownVisitSession()

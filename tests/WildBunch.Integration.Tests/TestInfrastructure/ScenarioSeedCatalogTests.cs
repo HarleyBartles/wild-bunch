@@ -19,6 +19,7 @@ public sealed class ScenarioSeedCatalogTests
             Name: "DriftedFixture",
             SeedCode: ScenarioSeedCatalog.CanonicalMountedNormal.SeedCode,
             TravelDifficulty: TravelDifficulty.Normal,
+            Entropy: AdventureRandomnessPolicy.Standard,
             ResolverContractVersion: StartingWorldDescriptorResolver.ResolverContractVersion,
             RequiredShapeSignature: "resolver-v2|DriftedFixture|unexpected-shape",
             DescribeShapeSignature: static (_, _) => "resolver-v2|DriftedFixture|actual-shape",

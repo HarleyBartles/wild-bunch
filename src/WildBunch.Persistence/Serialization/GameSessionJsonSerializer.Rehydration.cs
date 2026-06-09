@@ -12,6 +12,7 @@ public sealed partial class GameSessionJsonSerializer
         Guid id,
         GameStatus status,
         TravelDifficulty travelDifficulty,
+        AdventureRandomnessPolicy entropy,
         Player player,
         World world,
         CaseFile caseFile,
@@ -35,6 +36,7 @@ public sealed partial class GameSessionJsonSerializer
             journey is null ? null : TravelJourney.FromSnapshot(journey),
             travelDifficulty,
             travelRandomness,
+            entropy,
             townVisitState,
             completedJourneyHistory);
 

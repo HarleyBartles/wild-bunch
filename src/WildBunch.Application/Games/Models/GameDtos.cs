@@ -10,6 +10,7 @@ public sealed record GameSessionDto(
     Guid Id,
     GameStatus Status,
     TravelDifficulty TravelDifficulty,
+    AdventureRandomnessPolicy Entropy,
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,

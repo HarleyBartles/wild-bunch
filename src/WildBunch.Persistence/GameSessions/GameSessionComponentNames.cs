@@ -7,6 +7,7 @@ internal static class GameSessionComponentNames
     internal const string CaseFile = "caseFile";
     internal const string Clock = "clock";
     internal const string PursuitState = "pursuitState";
+    internal const string Setup = "setup";
     internal const string TravelRandomness = "travelRandomness";
     internal const string TownVisitState = "townVisitState";
     internal const string Journey = "journey";

@@ -22,9 +22,13 @@ public sealed class SeededNewGameFactory : INewGameFactory
         _travelRandomnessSource = travelRandomnessSource;
     }
 
-    public GameSession Create(string playerName, TravelDifficulty travelDifficulty = TravelDifficulty.Normal, string? setupSeedCode = null)
+    public GameSession Create(
+        string playerName,
+        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        string? setupSeedCode = null,
+        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
     {
-        var descriptor = ResolveDescriptor(travelDifficulty, setupSeedCode);
+        var descriptor = ResolveDescriptor(travelDifficulty, setupSeedCode, entropy);
         var setupPackage = _setupPackageBuilder.Build(descriptor);
         var travelRandomnessState = descriptor.AdventureRandomnessPolicy == AdventureRandomnessPolicy.Boring
             ? TravelRandomnessState.CreateDeterministic(descriptor.SeedCodeText)
@@ -38,11 +42,12 @@ public sealed class SeededNewGameFactory : INewGameFactory
             setupPackage.StartingWallet,
             setupPackage.StartingInventory,
             setupPackage.TravelDifficulty,
-            travelRandomnessState);
+            travelRandomnessState,
+            descriptor.AdventureRandomnessPolicy);
     }
 
-    private static StartingWorldDescriptor ResolveDescriptor(TravelDifficulty travelDifficulty, string? setupSeedCode)
+    private static StartingWorldDescriptor ResolveDescriptor(TravelDifficulty travelDifficulty, string? setupSeedCode, AdventureRandomnessPolicy entropy)
     {
-        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, travelDifficulty);
+        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, travelDifficulty, entropy);
     }
 }

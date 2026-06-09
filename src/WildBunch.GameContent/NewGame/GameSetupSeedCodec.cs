@@ -25,17 +25,25 @@ public static class StartingWorldDescriptorResolver
     public static Guid GenerateRandomSeedCode()
         => Guid.NewGuid();
 
-    internal static StartingWorldDescriptor CreateCanonicalDescriptor(TravelDifficulty difficulty = TravelDifficulty.Normal)
-        => CreateCanonicalDescriptorShape(difficulty) with
-        {
-            SeedCode = GetCanonicalSeedCode(difficulty)
-        };
+    internal static StartingWorldDescriptor CreateCanonicalDescriptor(
+        TravelDifficulty difficulty = TravelDifficulty.Normal,
+        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
+    {
+        var descriptor = CreateCanonicalDescriptorShape(difficulty, entropy);
 
-    internal static StartingWorldDescriptor Resolve(string? seedCode, TravelDifficulty requestedDifficulty = TravelDifficulty.Normal)
+        return entropy == AdventureRandomnessPolicy.Standard
+            ? descriptor with { SeedCode = GetCanonicalSeedCode(difficulty) }
+            : descriptor with { SeedCode = CreateRepresentativeSeedCode(descriptor) };
+    }
+
+    internal static StartingWorldDescriptor Resolve(
+        string? seedCode,
+        TravelDifficulty requestedDifficulty = TravelDifficulty.Normal,
+        AdventureRandomnessPolicy requestedEntropy = AdventureRandomnessPolicy.Standard)
     {
         if (string.IsNullOrWhiteSpace(seedCode))
         {
-            return CreateCanonicalDescriptor(requestedDifficulty);
+            return CreateCanonicalDescriptor(requestedDifficulty, requestedEntropy);
         }
 
         if (!TryParseSeedCode(seedCode, out var seed))
@@ -201,7 +209,9 @@ public static class StartingWorldDescriptorResolver
         throw new InvalidOperationException("Could not derive a representative UUID-shaped seed for the requested starting-world descriptor.");
     }
 
-    private static StartingWorldDescriptor CreateCanonicalDescriptorShape(TravelDifficulty difficulty)
+    private static StartingWorldDescriptor CreateCanonicalDescriptorShape(
+        TravelDifficulty difficulty,
+        AdventureRandomnessPolicy entropy)
     {
         var startingCash = difficulty switch
         {
@@ -213,7 +223,7 @@ public static class StartingWorldDescriptorResolver
         return new StartingWorldDescriptor(
             Guid.Empty,
             difficulty,
-            AdventureRandomnessPolicy.Standard,
+            entropy,
             new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownHorse),
             new StartingWorldDescriptorPlayer(
                 StartWithHorse: true,
@@ -237,7 +247,7 @@ public static class StartingWorldDescriptorResolver
         };
 
     private static Guid CreateCanonicalSeedCodeCore(TravelDifficulty difficulty)
-        => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty));
+        => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty, AdventureRandomnessPolicy.Standard));
 
     private static bool HasSameSemantics(StartingWorldDescriptor left, StartingWorldDescriptor right)
         => left.Difficulty == right.Difficulty

@@ -35,6 +35,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         TravelJourney? journey,
         TravelDifficulty travelDifficulty,
         TravelRandomnessState travelRandomness,
+        AdventureRandomnessPolicy entropy,
         TownVisitState? currentTownVisit,
         IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory)
     {
@@ -47,6 +48,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         Status = status;
         Journey = journey;
         TravelDifficulty = travelDifficulty;
+        Entropy = entropy;
         TravelRandomness = travelRandomness;
         _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
         if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
@@ -82,6 +84,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelDifficulty TravelDifficulty { get; private set; }
 
+    public AdventureRandomnessPolicy Entropy { get; private set; }
+
     public TravelRandomnessState TravelRandomness { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown;
@@ -107,7 +111,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         WildBunch.Domain.Economy.Wallet? wallet,
         DomainInventory? inventory,
         TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
-        TravelRandomnessState? travelRandomness = null)
+        TravelRandomnessState? travelRandomness = null,
+        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -132,6 +137,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             journey: null,
             travelDifficulty,
             travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted(),
+            entropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>());
 

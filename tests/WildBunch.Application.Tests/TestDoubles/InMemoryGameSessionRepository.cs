@@ -40,6 +40,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             session.Id.Value,
             session.Status,
             session.TravelDifficulty,
+            session.Entropy,
             session.Player,
             session.World,
             session.CaseFile,

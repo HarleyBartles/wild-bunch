@@ -2,14 +2,6 @@ using WildBunch.Domain.Travel;
 
 namespace WildBunch.GameContent.NewGame;
 
-internal enum AdventureRandomnessPolicy
-{
-    Boring = 0,
-    Standard = 1,
-    Adventurous = 2,
-    Wild = 3
-}
-
 internal enum StartingLoadoutProfile
 {
     Standard = 0,

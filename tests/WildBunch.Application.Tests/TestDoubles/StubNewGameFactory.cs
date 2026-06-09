@@ -23,11 +23,18 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<string?> RequestedSetupSeedCodes { get; } = [];
 
-    public GameSession Create(string playerName, TravelDifficulty travelDifficulty = TravelDifficulty.Normal, string? setupSeedCode = null)
+    public List<AdventureRandomnessPolicy> RequestedEntropies { get; } = [];
+
+    public GameSession Create(
+        string playerName,
+        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        string? setupSeedCode = null,
+        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
     {
         RequestedPlayerNames.Add(playerName);
         RequestedTravelDifficulties.Add(travelDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
+        RequestedEntropies.Add(entropy);
         return _sessionToReturn;
     }
 

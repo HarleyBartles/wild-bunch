@@ -18,6 +18,7 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal("Ranger Vale", session.Player.Name);
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
         Assert.Equal(TravelDifficulty.Normal, session.TravelDifficulty);
+        Assert.Equal(AdventureRandomnessPolicy.Standard, session.Entropy);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(8, session.Player.Inventory.Items.Count);
         Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
@@ -183,6 +184,7 @@ public sealed class SeededNewGameFactoryTests
         var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedCode);
 
         Assert.Equal(TravelDifficulty.Easy, session.TravelDifficulty);
+        Assert.Equal(AdventureRandomnessPolicy.Boring, session.Entropy);
         Assert.Null(session.Player.Inventory.GetHorseState());
         Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
         Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
@@ -201,6 +203,8 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeFirst.TravelRandomness.Mode);
         Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeSecond.TravelRandomness.Mode);
+        Assert.Equal(AdventureRandomnessPolicy.Standard, runtimeFirst.Entropy);
+        Assert.Equal(AdventureRandomnessPolicy.Standard, runtimeSecond.Entropy);
         Assert.NotEqual(runtimeFirst.TravelRandomness.Salt, runtimeSecond.TravelRandomness.Salt);
 
         var boringDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
