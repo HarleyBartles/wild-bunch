@@ -1508,13 +1508,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Succeeded("You study the wanted posters again, but find nothing new.", sessionChanged: true);
         }
 
-        var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.NoticeBoard);
+        var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
         var clue = CaseFile.RevealNextPublicClue(publicClue =>
             IsPlayerKnownClue(publicClue)
-            && (
-                publicClue.SourceKind is null
-                || publicClue.SourceKind == InvestigationSourceKind.NoticeBoard
-                || publicClue.SourceKind == InvestigationSourceKind.SheriffRecords));
+            && publicClue.SourceKind == InvestigationSourceKind.SheriffWarrants);
 
         if (warrant is null && clue is null)
         {
@@ -1612,16 +1609,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You inspect the notice board again, but nothing new has been posted.", sessionChanged: true);
         }
 
-        var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.NoticeBoard);
+        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.NoticeBoard);
 
-        if (warrant is null)
+        if (clue is null)
         {
             RecordCaseUpdate("You inspect the notice board, but find nothing new.");
             return CaseInvestigationResult.Succeeded("You inspect the notice board, but find nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You inspect the notice board and copy down a wanted notice for {warrant.TargetName}.");
-        return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a wanted notice.", sessionChanged: true);
+        RecordCaseUpdate($"You inspect the notice board and uncover a civic notice: {DescribeClueLead(clue.Description)}.");
+        return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a civic notice.", sessionChanged: true);
     }
 
     public CaseInvestigationResult CheckSheriffRecords()
@@ -1631,24 +1628,24 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var sheriffRecordsSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.SheriffRecords);
+        var sheriffRecordsSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.LocalRecords);
 
         if (CurrentTown.CheckSource(sheriffRecordsSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
         {
-            RecordCaseUpdate("You check the sheriff records again, but find nothing new.");
-            return CaseInvestigationResult.Succeeded("You check the sheriff records again, but find nothing new.", sessionChanged: true);
+            RecordCaseUpdate("You check the local records again, but find nothing new.");
+            return CaseInvestigationResult.Succeeded("You check the local records again, but find nothing new.", sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.SheriffRecords);
+        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.LocalRecords);
 
         if (clue is null)
         {
-            RecordCaseUpdate("You check the sheriff records, but find nothing new.");
-            return CaseInvestigationResult.Succeeded("You check the sheriff records, but find nothing new.", sessionChanged: true);
+            RecordCaseUpdate("You check the local records, but find nothing new.");
+            return CaseInvestigationResult.Succeeded("You check the local records, but find nothing new.", sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You check the sheriff records and uncover a public lead: {DescribeClueLead(clue.Description)}.");
-        return CaseInvestigationResult.Succeeded("You check the sheriff records and uncover a public lead.", sessionChanged: true);
+        RecordCaseUpdate($"You check the local records and uncover a public lead: {DescribeClueLead(clue.Description)}.");
+        return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true);
     }
 
     public void RecordCaseUpdate(string message, bool advanceClock = true)

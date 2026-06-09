@@ -24,8 +24,8 @@ gameplay, domain
 
 ## Context
 
-Investigation sources such as telegraph leads, local gossip, notice boards, and
-sheriff records are town-visit scoped interactions. The game should remember
+Investigation sources such as telegraph leads, local gossip, notice boards,
+local records, and wanted posters are town-visit scoped interactions. The game should remember
 which sources were used in the current town while allowing the same action to be
 fresh again after travel.
 

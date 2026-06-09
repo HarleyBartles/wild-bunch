@@ -169,7 +169,7 @@ public sealed class GetJournalHandlerTests
                         InvestigationTargetKind.Suspected,
                         Array.Empty<OutlawGangId>(),
                         null,
-                        InvestigationSourceKind.NoticeBoard),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for a string of robberies near the county line.")
             });
 

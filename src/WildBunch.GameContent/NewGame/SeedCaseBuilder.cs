@@ -171,7 +171,7 @@ internal static class SeedCaseBuilder
                 InvestigationTargetKind.GangMember,
                 "notice board",
                 "Public wanted poster",
-                InvestigationSourceKind.NoticeBoard,
+                InvestigationSourceKind.SheriffWarrants,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
@@ -187,7 +187,7 @@ internal static class SeedCaseBuilder
                 InvestigationTargetKind.Suspected,
                 "sheriff record",
                 "Public notice",
-                InvestigationSourceKind.SheriffRecords,
+                InvestigationSourceKind.LocalRecords,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
@@ -307,8 +307,8 @@ internal static class SeedCaseBuilder
     {
         var publicWarrants = new List<Warrant>
         {
-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings.", InvestigationSourceKind.NoticeBoard),
-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.", InvestigationSourceKind.SheriffRecords)
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings.", InvestigationSourceKind.SheriffWarrants),
+            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.", InvestigationSourceKind.SheriffWarrants)
         };
 
         publicWarrants.AddRange(CreateTownSpecificPublicWarrants(
@@ -361,7 +361,7 @@ internal static class SeedCaseBuilder
                 InvestigationTargetKind.GangMember,
                 "notice board",
                 "Public wanted poster",
-                InvestigationSourceKind.NoticeBoard,
+                InvestigationSourceKind.SheriffWarrants,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
@@ -378,7 +378,7 @@ internal static class SeedCaseBuilder
                 InvestigationTargetKind.Suspected,
                 "sheriff record",
                 "Public notice",
-                InvestigationSourceKind.SheriffRecords,
+                InvestigationSourceKind.LocalRecords,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
@@ -420,7 +420,7 @@ internal static class SeedCaseBuilder
                 profile,
                 source,
                 $"Wanted for offenses reported out of {town.Name}.",
-                InvestigationSourceKind.NoticeBoard));
+                InvestigationSourceKind.SheriffWarrants));
 
             extraTownIndex++;
         }

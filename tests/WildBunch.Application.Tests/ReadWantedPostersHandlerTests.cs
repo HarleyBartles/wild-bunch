@@ -145,7 +145,7 @@ public sealed class ReadWantedPostersHandlerTests
                     "A posted notice links Grey Jay to a rider with a faded blue scarf.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.NoticeBoard,
+                    InvestigationSourceKind.SheriffWarrants,
                     source: "notice board",
                     context: "Public wanted poster",
                     anchors: new ClueAnchors(
@@ -168,7 +168,7 @@ public sealed class ReadWantedPostersHandlerTests
                         InvestigationTargetKind.TrueCulprit,
                         [OutlawGangIds.WildBunch],
                         OutlawGangIds.WildBunch,
-                        InvestigationSourceKind.NoticeBoard),
+                        InvestigationSourceKind.SheriffWarrants),
                     "Wanted for a Wild Bunch robbery.")
             });
 

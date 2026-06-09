@@ -38,7 +38,7 @@ public sealed class GameApiInvestigationActionsTests
         Assert.Contains(noticeBoardResult.CurrentJournal.CaseFile.KnownWarrants, warrant => warrant.Summary.Contains("Wild Bunch", StringComparison.OrdinalIgnoreCase));
         Assert.Empty(noticeBoardResult.CurrentJournal.CaseFile.DiscoveredSuspects);
 
-        var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/sheriff-records/check", content: null);
+        var sheriffRecordsResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/local-records/check", content: null);
 
         Assert.Equal(HttpStatusCode.OK, sheriffRecordsResponse.StatusCode);
 

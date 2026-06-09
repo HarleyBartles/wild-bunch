@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createGame,
-  checkSheriffRecords,
+  checkLocalRecords,
   followTelegraphLeads,
   getAvailableActions,
   getGame,
@@ -34,7 +34,7 @@ function actionIsInspectNoticeBoard(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.InspectNoticeBoard;
 }
 
-function actionIsCheckSheriffRecords(action: AvailableActionDto) {
+function actionIsCheckLocalRecords(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.CheckSheriffRecords;
 }
 
@@ -208,8 +208,8 @@ export function useCurrentGameSession() {
     }
   }
 
-  async function handleCheckSheriffRecords() {
-    if (!gameId || !canCheckSheriffRecords) {
+  async function handleCheckLocalRecords() {
+    if (!gameId || !canCheckLocalRecords) {
       return;
     }
 
@@ -217,12 +217,12 @@ export function useCurrentGameSession() {
     setError("");
 
     try {
-      const result = await checkSheriffRecords(gameId);
+      const result = await checkLocalRecords(gameId);
       setJournal(result.currentJournal);
       await reloadCurrentGame(gameId);
       setNotice(result.message);
     } catch (exception) {
-      setError(exception instanceof Error ? exception.message : "Unable to check sheriff records.");
+      setError(exception instanceof Error ? exception.message : "Unable to check local records.");
     } finally {
       setBusyMode("idle");
     }
@@ -285,7 +285,7 @@ export function useCurrentGameSession() {
   const loading = busyMode !== "idle";
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
   const canInspectNoticeBoard = actions.some(actionIsInspectNoticeBoard);
-  const canCheckSheriffRecords = actions.some(actionIsCheckSheriffRecords);
+  const canCheckLocalRecords = actions.some(actionIsCheckLocalRecords);
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
 
@@ -305,7 +305,7 @@ export function useCurrentGameSession() {
     resetToken,
     canReadWantedPosters,
     canInspectNoticeBoard,
-    canCheckSheriffRecords,
+    canCheckLocalRecords,
     canFollowTelegraphLeads,
     canGatherLocalGossip,
     startNewGame,
@@ -314,7 +314,7 @@ export function useCurrentGameSession() {
     handleTravel,
     handleReadWantedPosters,
     handleInspectNoticeBoard,
-    handleCheckSheriffRecords,
+    handleCheckLocalRecords,
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleReset,

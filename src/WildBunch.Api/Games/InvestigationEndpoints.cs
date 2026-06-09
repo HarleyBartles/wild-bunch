@@ -13,8 +13,8 @@ public static class InvestigationEndpoints
             .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
-        games.MapPost("{id:guid}/investigations/sheriff-records/check", CheckSheriffRecordsAsync)
-            .WithName("CheckSheriffRecords")
+        games.MapPost("{id:guid}/investigations/local-records/check", CheckLocalRecordsAsync)
+            .WithName("CheckLocalRecords")
             .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
@@ -47,7 +47,7 @@ public static class InvestigationEndpoints
         }
     }
 
-    private static async Task<IResult> CheckSheriffRecordsAsync(
+    private static async Task<IResult> CheckLocalRecordsAsync(
         Guid id,
         CheckSheriffRecordsHandler handler,
         CancellationToken cancellationToken)

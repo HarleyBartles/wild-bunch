@@ -52,10 +52,10 @@ public sealed record TownSourceCatalog(IReadOnlyList<TownSourceDefinition> Defin
                 TownSourceLocality.TownLocal,
                 TownSourceRefreshPolicy.PerVisit),
             new TownSourceDefinition(
-                "town-source.sheriff-records",
-                InvestigationSourceKind.SheriffRecords,
+                "town-source.local-records",
+                InvestigationSourceKind.LocalRecords,
                 AvailableActionKind.CheckSheriffRecords,
-                "Check sheriff records",
+                "Check local records",
                 TownSourceAvailability.Baseline,
                 TownServices.None,
                 TownSourceLocality.TownLocal,

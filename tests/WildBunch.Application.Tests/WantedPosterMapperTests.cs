@@ -23,7 +23,7 @@ public sealed class WantedPosterMapperTests
                     InvestigationTargetKind.TrueCulprit,
                     [OutlawGangIds.WildBunch],
                     OutlawGangIds.WildBunch,
-                    InvestigationSourceKind.NoticeBoard),
+                    InvestigationSourceKind.SheriffWarrants),
                 "Wanted for a Wild Bunch robbery and related killings.")
         });
 

@@ -111,7 +111,7 @@ public sealed class CheckSheriffRecordsHandlerTests
                     "A sheriff note ties the rider to a rail ledger and notes a scarred left ear.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffRecords,
+                    InvestigationSourceKind.LocalRecords,
                     source: "sheriff record",
                     context: "Public notice",
                     anchors: new ClueAnchors(

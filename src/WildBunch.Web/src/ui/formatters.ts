@@ -51,7 +51,7 @@ export function formatActionKind(kind: number) {
     case 10:
       return "Inspect notice board";
     case 11:
-      return "Check sheriff records";
+      return "Check local records";
     case 12:
       return "Follow telegraph leads";
     case 13:
