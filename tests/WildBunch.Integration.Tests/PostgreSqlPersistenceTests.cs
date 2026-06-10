@@ -74,7 +74,7 @@ public sealed class PostgreSqlPersistenceTests
         await using (var verificationContext = new WildBunchDbContext(options))
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
-            Assert.Equal(8, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(9, await verificationContext.GameSessionComponents.CountAsync());
             Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
             Assert.Equal(session.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync());
         }
@@ -143,6 +143,7 @@ public sealed class PostgreSqlPersistenceTests
             Assert.Contains(componentRows, component => component.ComponentName == "caseFile");
             Assert.Contains(componentRows, component => component.ComponentName == "clock");
             Assert.Contains(componentRows, component => component.ComponentName == "pursuitState");
+            Assert.Contains(componentRows, component => component.ComponentName == "setup");
             Assert.Contains(componentRows, component => component.ComponentName == "travelRandomness");
             Assert.Contains(componentRows, component => component.ComponentName == "journey");
             Assert.All(componentRows, component => Assert.False(string.IsNullOrWhiteSpace(component.PayloadJson)));
