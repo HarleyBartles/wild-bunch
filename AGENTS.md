@@ -2,20 +2,22 @@
 
 ## Project
 - Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
-- This repo is mainline-only.
+- Workers branch from current `main` and publish work through a PR.
 - Docs index: `docs/INDEX.md`
 - Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`
 
-## Mainline-only Rule
-- Final accepted work must be on `main`.
-- Temporary worker branches are only execution surfaces.
-- Do not return `GREEN` from branch-only work.
-- If pushing `main` is blocked, return `AMBER` or `BLOCKED` with exact branch/commit evidence and the reason.
+## Branch + PR Workflow
+- Workers branch from current `main`.
+- Workers push a branch and open or return a PR.
+- The PR is the normal publication surface.
+- Direct pushes to `main` require explicit latest-turn authorization.
+- `GREEN` means PR-ready with validation and evidence, not direct-main landing.
+- Merge and landing verification are separate GPT or human steps after PR review and merge.
 
 ## Source of Truth
 - Current repo state is the source of truth.
 - Worker reports, issue comments, conversation summaries, and session notes are not proof.
-- Always report exact branch, commit, remote head, and changed files.
+- Always report exact branch, head commit, remote head, PR URL, and changed files.
 
 ## Connector / Tool Safety
 - Read-only verification must stay read-only.
@@ -37,10 +39,9 @@
 - Debug-only or temporary prototype surfaces, including the current cockpit/debug shell, may use lighter-weight coverage while they remain debug-only.
 
 ## GREEN Standard
-- `GREEN` requires implementation, validation, publication to `main`, remote head proof, a clean worktree, issue-goal conformance, and complete worker-owned cleanup proof when validation touched local workspace resources.
+- `GREEN` requires implementation, validation, a clean worktree, branch head proof, PR publication, issue-goal conformance, and complete worker-owned cleanup proof when validation touched local workspace resources.
 - Passing tests alone is not `GREEN`.
 - A commit existing is not `GREEN`.
-- A branch push is not `GREEN` in this repo.
 - If the worker started long-running helpers for validation or browser checks, `GREEN` also requires stopping or explicitly accounting for those worker-owned processes and browser sessions before return.
 - If validation touched `C:/WORK/**`, `GREEN` requires a post-cleanup proof block that accounts for worker-owned helpers, used ports, and repo/file-lock risk before the return. Missing or partial cleanup proof is `AMBER` or `BLOCKED`, not `GREEN`.
 
@@ -107,11 +108,13 @@
 ## Return Format
 - Status: `GREEN` | `AMBER` | `RED` | `BLOCKED`
 - Branch
-- Final main commit hash
-- Remote main head hash
+- Head commit hash
+- Remote branch head hash
+- PR URL
 - Changed files
 - Validation commands and results
 - Clean worktree status
 - Cleanup proof when validation touched `C:/WORK/**` or started worker-owned helpers: started helpers, stopped helpers, post-cleanup process scan, post-cleanup port scan, repo/file-lock posture, remaining known worker-owned processes
 - Issue-goal conformance notes
 - Known caveats or next recommended slice
+- Landing verification if and when the PR is merged to `main`
