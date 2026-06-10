@@ -86,6 +86,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0021 UUID-shaped setup seeds resolve to legal starting-world descriptors](ADR-0021-uuid-shaped-setup-seeds-resolve-to-legal-starting-world-descriptors.md)
 - [ADR-0022 UI browser checks are a manual evidence lane](ADR-0022-ui-browser-checks-are-a-manual-evidence-lane.md)
 - [ADR-0023 Difficulty and entropy vocabulary and fairness contract](ADR-0023-difficulty-and-entropy-vocabulary-and-fairness-contract.md)
+- [ADR-0024 Source taxonomy implications for difficulty and entropy](ADR-0024-source-taxonomy-implications-for-difficulty-and-entropy.md)
 
 ## Current Working Set
 
@@ -93,3 +94,5 @@ The initial log backfill intentionally focuses on the highest-value decisions
 called out by issue `#36`. New ADRs should be added when a decision becomes
 stable enough to survive beyond the current work slice. ADR-0023 extends the
 log with the accepted difficulty/entropy vocabulary and fairness contract.
+ADR-0024 extends the log with the source-taxonomy implications map for those
+axes.

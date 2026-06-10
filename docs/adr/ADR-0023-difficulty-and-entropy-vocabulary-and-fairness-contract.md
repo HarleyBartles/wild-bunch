@@ -16,7 +16,7 @@ architecture, gameplay, process
 
 - `depends on`: ADR-0007, ADR-0010
 - `informs`: ADR-0021
-- `related to`: ADR-0009, ADR-0013
+- `related to`: ADR-0009, ADR-0013, ADR-0024
 
 ## Context
 
