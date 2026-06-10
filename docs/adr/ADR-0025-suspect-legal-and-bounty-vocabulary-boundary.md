@@ -54,6 +54,16 @@ The current model already supports the minimum boring distinction needed for fut
 - target kind can identify a true culprit, a gang member, or an unrelated wanted criminal without turning that into case resolution;
 - hidden culprit identity stays in `CaseFile`, not in player-facing DTOs.
 
+### Display Semantics
+
+Player-facing legal surfaces should present legal facts as legal facts, not as murder-case conclusions:
+
+- wanted posters may show the target display name, aliases, legal disposition, bounty amount, issuing authority, public-safe summary text, and public-safe feature notes;
+- case-file legal sections may repeat the same warrant facts under named records or warrant summaries, but those sections must still read as legal notices and evidence threads, not as proof of murder guilt;
+- legal summaries should use player-facing wording such as `Alive only` and `Dead or alive`, not raw enum names;
+- clue relevance, warrant terms, and hidden culprit truth remain separate concerns even when the same suspect appears on multiple surfaces;
+- public read models must continue to omit `TrueCulpritId` and any equivalent hidden-truth marker.
+
 This means the next bounty-related slices can build on a stable vocabulary without inventing a second naming system or leaking case truth into legal data.
 
 ## Options Considered and Rejected

@@ -54,6 +54,7 @@ public sealed class CaseBoardMapperTests
         Assert.Equal(2500m, namedRecord.BountyAmount);
         Assert.Equal("County marshal", namedRecord.IssuingAuthority);
         Assert.Contains("Wanted for a string of robberies near the county line.", namedRecord.CrimeSummary);
+        Assert.Contains(namedRecord.SummaryLines, line => line.Contains("Dead or alive warrant", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("Grey Jay", namedRecord.RelatedLabels);
         Assert.Contains("red hat", namedRecord.RelatedLabels);
         Assert.Contains(namedRecord.SummaryLines, line => line.Contains("County marshal", StringComparison.OrdinalIgnoreCase));

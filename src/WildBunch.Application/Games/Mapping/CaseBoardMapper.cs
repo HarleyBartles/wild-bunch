@@ -137,7 +137,7 @@ public static class CaseBoardMapper
     {
         var labels = new List<string>
         {
-            $"{warrant.Terms.Disposition} warrant",
+            $"{FormatWarrantDisposition(warrant.Terms.Disposition)} warrant",
             warrant.Terms.IssuingSource,
             $"{warrant.Terms.BountyAmount:0.00} bounty"
         };
@@ -149,6 +149,14 @@ public static class CaseBoardMapper
 
         return string.Join(" - ", labels);
     }
+
+    private static string FormatWarrantDisposition(WarrantDisposition disposition)
+        => disposition switch
+        {
+            WarrantDisposition.AliveOnly => "Alive only",
+            WarrantDisposition.DeadOrAlive => "Dead or alive",
+            _ => $"Disposition {disposition}"
+        };
 
     private static string DescribeClueKind(ClueKind kind)
         => kind switch
