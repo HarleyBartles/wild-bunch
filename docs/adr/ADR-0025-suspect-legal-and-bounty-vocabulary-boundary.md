@@ -15,7 +15,7 @@ gameplay, architecture, documentation
 ## Related ADRs
 
 - `depends on`: ADR-0002, ADR-0005, ADR-0006, ADR-0007
-- `informs`: ADR-0009, ADR-0010
+- `informs`: ADR-0009, ADR-0010, ADR-0026
 
 ## Context
 
@@ -95,7 +95,7 @@ A dedicated legal-status model would be better only when the game needs a concre
 
 ## Consequences for Future Work
 
-Any future sheriff turn-in, arrest, bounty payout, or kill/alive outcome work should treat this ADR as the vocabulary baseline.
+Any future sheriff turn-in, arrest, bounty payout, or kill/alive outcome work should treat this ADR as the vocabulary baseline. ADR-0026 builds the outcome contract on top of this vocabulary without merging legal status with murder-case resolution.
 
 If later work needs a dedicated legal-state type, it should be introduced from the turn-in/outcome slice, not by retrofitting the hidden culprit model.
 
