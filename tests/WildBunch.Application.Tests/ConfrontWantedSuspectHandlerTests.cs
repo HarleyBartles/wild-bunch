@@ -12,26 +12,27 @@ using TrailId = WildBunch.Domain.World.TrailId;
 
 namespace WildBunch.Application.Tests;
 
-public sealed class TurnInToSheriffHandlerTests
+public sealed class ConfrontWantedSuspectHandlerTests
 {
     [Fact]
-    public async Task HandleAsyncReturnsPublicLegalOutcomeWithoutPersistingState()
+    public async Task HandleAsyncRecordsTheConfrontationStateAndPersistsIt()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new TurnInToSheriffHandler(repository);
+        var handler = new ConfrontWantedSuspectHandler(repository, repository);
 
-        var result = await handler.HandleAsync(new TurnInToSheriffCommand(session.Id.Value, "suspect-1", true));
+        var result = await handler.HandleAsync(new ConfrontWantedSuspectCommand(session.Id.Value, "suspect-1", WantedSuspectConfrontationChoice.Fled));
 
         Assert.True(result.Success);
-        Assert.Equal(SheriffTurnInOutcome.AcceptedAlive, result.Outcome);
-        Assert.Equal(session.Id.Value, result.CurrentSession.Id);
-        Assert.Equal("Mira Cline", result.TargetName);
-        Assert.Equal(WarrantDisposition.DeadOrAlive, result.Disposition);
-        Assert.Equal(2500m, result.BountyAmount);
-        Assert.Equal(0, repository.StoreCalls);
-        Assert.Equal(0, repository.CommitCalls);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, result.Outcome);
+        Assert.False(result.IsSecured);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, state.Outcome);
+        Assert.False(state.IsSecured);
 
         var payload = JsonSerializer.Serialize(result);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -41,9 +42,10 @@ public sealed class TurnInToSheriffHandlerTests
     private static GameSession CreateSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
         var world = new DomainWorld(
-            new[] { pinecross },
-            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, pinecross.Id, TrailRisk.Low) });
+            new[] { pinecross, connected },
+            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, connected.Id, TrailRisk.Low) });
 
         var suspects = new[]
         {
@@ -71,24 +73,9 @@ public sealed class TurnInToSheriffHandlerTests
                         InvestigationTargetKind.TrueCulprit,
                         Array.Empty<OutlawGangId>(),
                         null),
-                    "Wanted for a stage robbery."),
-                new Warrant(
-                    new WarrantId("warrant-2"),
-                    "Reno Pike",
-                    new WarrantTerms(
-                        WarrantDisposition.AliveOnly,
-                        300m,
-                        new[] { "The Magpie" },
-                        new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
-                        Array.Empty<OutlawGangId>(),
-                        null),
-                    "Wanted for cattle theft.")
+                    "Wanted for a stage robbery.")
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
-        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
-        return session;
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
     }
 }

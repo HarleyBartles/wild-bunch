@@ -17,6 +17,8 @@ public sealed class CaseFile
     private readonly ReadOnlyCollection<Warrant> _knownWarrantsView;
     private readonly List<Warrant> _publicWarrants = [];
     private readonly ReadOnlyCollection<Warrant> _publicWarrantsView;
+    private readonly List<WantedSuspectConfrontationState> _wantedSuspectConfrontations = [];
+    private readonly ReadOnlyCollection<WantedSuspectConfrontationState> _wantedSuspectConfrontationsView;
     private readonly List<SuspectTurfAssignment> _suspectTurfAssignments = [];
     private readonly ReadOnlyCollection<SuspectTurfAssignment> _suspectTurfAssignmentsView;
     private int _killerReleaseProgress;
@@ -28,7 +30,8 @@ public sealed class CaseFile
         IEnumerable<Clue> knownClues,
         IEnumerable<SuspectId>? discoveredSuspectIds = null,
         IEnumerable<Clue>? publicClues = null,
-        IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null)
+        IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null,
+        IEnumerable<WantedSuspectConfrontationState>? wantedSuspectConfrontations = null)
         : this(
             accusation,
             suspects,
@@ -37,7 +40,8 @@ public sealed class CaseFile
             knownClues,
             discoveredSuspectIds,
             publicClues,
-            suspectTurfAssignments: suspectTurfAssignments)
+            suspectTurfAssignments: suspectTurfAssignments,
+            wantedSuspectConfrontations: wantedSuspectConfrontations)
     {
     }
 
@@ -53,7 +57,8 @@ public sealed class CaseFile
         int killerReleaseProgress = 0,
         IEnumerable<Warrant>? knownWarrants = null,
         IEnumerable<Warrant>? publicWarrants = null,
-        IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null)
+        IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null,
+        IEnumerable<WantedSuspectConfrontationState>? wantedSuspectConfrontations = null)
     {
         ArgumentNullException.ThrowIfNull(suspects);
         ArgumentNullException.ThrowIfNull(knownClues);
@@ -81,6 +86,17 @@ public sealed class CaseFile
 
         _publicWarrants.AddRange((publicWarrants ?? Array.Empty<Warrant>()).DistinctBy(warrant => warrant.Id));
         _publicWarrantsView = _publicWarrants.AsReadOnly();
+
+        _wantedSuspectConfrontations.AddRange((wantedSuspectConfrontations ?? Array.Empty<WantedSuspectConfrontationState>()).DistinctBy(state => state.SuspectId));
+        foreach (var confrontation in _wantedSuspectConfrontations)
+        {
+            if (!_suspects.Any(suspect => suspect.Id.Equals(confrontation.SuspectId)))
+            {
+                throw new ArgumentException("The confrontation state does not belong to this case.", nameof(wantedSuspectConfrontations));
+            }
+        }
+
+        _wantedSuspectConfrontationsView = _wantedSuspectConfrontations.AsReadOnly();
 
         _suspectTurfAssignments.AddRange((suspectTurfAssignments ?? Array.Empty<SuspectTurfAssignment>()).DistinctBy(assignment => assignment.SuspectId));
         foreach (var assignment in _suspectTurfAssignments)
@@ -119,6 +135,8 @@ public sealed class CaseFile
     public IReadOnlyList<Warrant> KnownWarrants => _knownWarrantsView;
 
     public IReadOnlyList<Warrant> PublicWarrants => _publicWarrantsView;
+
+    public IReadOnlyList<WantedSuspectConfrontationState> WantedSuspectConfrontations => _wantedSuspectConfrontationsView;
 
     public IReadOnlyList<SuspectTurfAssignment> SuspectTurfAssignments => _suspectTurfAssignmentsView;
 
@@ -186,6 +204,37 @@ public sealed class CaseFile
 
         _knownWarrants.Add(warrant);
         return true;
+    }
+
+    public bool TryGetWantedSuspectConfrontationState(SuspectId suspectId, out WantedSuspectConfrontationState confrontationState)
+    {
+        foreach (var state in _wantedSuspectConfrontations)
+        {
+            if (state.SuspectId.Equals(suspectId))
+            {
+                confrontationState = state;
+                return true;
+            }
+        }
+
+        confrontationState = default!;
+        return false;
+    }
+
+    public void RecordWantedSuspectConfrontationState(WantedSuspectConfrontationState confrontationState)
+    {
+        ArgumentNullException.ThrowIfNull(confrontationState);
+
+        for (var i = 0; i < _wantedSuspectConfrontations.Count; i++)
+        {
+            if (_wantedSuspectConfrontations[i].SuspectId.Equals(confrontationState.SuspectId))
+            {
+                _wantedSuspectConfrontations[i] = confrontationState;
+                return;
+            }
+        }
+
+        _wantedSuspectConfrontations.Add(confrontationState);
     }
 
     public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null, bool advanceKillerReleaseProgress = false)

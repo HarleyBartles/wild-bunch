@@ -1541,6 +1541,106 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
+    public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
+        SuspectId targetSuspectId,
+        WantedSuspectConfrontationChoice choice)
+    {
+        if (IsJourneyModal())
+        {
+            return WantedSuspectConfrontationResult.Rejected(JourneyModalBlockMessage);
+        }
+
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(targetSuspectId));
+        if (targetSuspect is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected("That person is not part of this case.");
+        }
+
+        var warrant = CaseFile.KnownWarrants.FirstOrDefault(candidate => MatchesKnownWarrant(candidate, targetSuspect));
+        if (warrant is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name);
+        }
+
+        if (choice == WantedSuspectConfrontationChoice.Abandoned)
+        {
+            RecordCaseUpdate($"You back away before confronting {warrant.TargetName}.");
+            return WantedSuspectConfrontationResult.Abandoned(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                $"You back away before confronting {warrant.TargetName}.");
+        }
+
+        WantedSuspectConfrontationState? nextState = choice switch
+        {
+            WantedSuspectConfrontationChoice.Surrendered => new WantedSuspectConfrontationState(
+                targetSuspect.Id,
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive: true,
+                IsSecured: true,
+                Clock.Day,
+                Clock.Turn + 1),
+            WantedSuspectConfrontationChoice.Fled => new WantedSuspectConfrontationState(
+                targetSuspect.Id,
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                WantedSuspectConfrontationOutcome.Fled,
+                IsAlive: true,
+                IsSecured: false,
+                Clock.Day,
+                Clock.Turn + 1),
+            WantedSuspectConfrontationChoice.Killed => new WantedSuspectConfrontationState(
+                targetSuspect.Id,
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                WantedSuspectConfrontationOutcome.Killed,
+                IsAlive: false,
+                IsSecured: true,
+                Clock.Day,
+                Clock.Turn + 1),
+            _ => null
+        };
+
+        if (nextState is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected(
+                $"The confrontation choice for {targetSuspect.Name} is not supported.",
+                targetSuspect.Name,
+                warrant.Terms.Disposition);
+        }
+
+        var narration = DescribeConfrontationNarration(warrant.TargetName, choice);
+        RecordCaseUpdate(narration);
+        var resolvedState = nextState! with { Day = Clock.Day, Turn = Clock.Turn };
+        CaseFile.RecordWantedSuspectConfrontationState(resolvedState);
+
+        return choice switch
+        {
+            WantedSuspectConfrontationChoice.Surrendered => WantedSuspectConfrontationResult.Surrendered(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                narration),
+            WantedSuspectConfrontationChoice.Fled => WantedSuspectConfrontationResult.Fled(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                narration),
+            WantedSuspectConfrontationChoice.Killed => WantedSuspectConfrontationResult.Killed(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                narration),
+            WantedSuspectConfrontationChoice.Abandoned => WantedSuspectConfrontationResult.Abandoned(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                narration),
+            _ => WantedSuspectConfrontationResult.Rejected(
+                $"The confrontation choice for {targetSuspect.Name} is not supported.",
+                targetSuspect.Name,
+                warrant.Terms.Disposition)
+        };
+    }
+
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
     {
         if (IsJourneyModal())
@@ -1562,6 +1662,42 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return isAlive
                 ? SheriffTurnInResult.WrongPersonAlive($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name)
                 : SheriffTurnInResult.WrongPersonDead($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name);
+        }
+
+        if (!CaseFile.TryGetWantedSuspectConfrontationState(targetSuspectId, out var confrontationState))
+        {
+            return SheriffTurnInResult.Rejected(
+                $"You have not secured {warrant.TargetName} for turn-in yet.",
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                warrant.Terms.BountyAmount);
+        }
+
+        if (!confrontationState.IsTurnInEligible)
+        {
+            return SheriffTurnInResult.Rejected(
+                $"{warrant.TargetName} got away and is not secured for turn-in.",
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                warrant.Terms.BountyAmount);
+        }
+
+        if (isAlive && !confrontationState.IsAlive)
+        {
+            return SheriffTurnInResult.Rejected(
+                $"{warrant.TargetName} is not alive anymore.",
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                warrant.Terms.BountyAmount);
+        }
+
+        if (!isAlive && confrontationState.IsAlive)
+        {
+            return SheriffTurnInResult.Rejected(
+                $"{warrant.TargetName} was secured alive and cannot be turned in dead.",
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                warrant.Terms.BountyAmount);
         }
 
         if (isAlive)
@@ -1757,6 +1893,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             WarrantDisposition.AliveOnly => "alive-only",
             WarrantDisposition.DeadOrAlive => "dead-or-alive",
             _ => $"disposition {disposition}"
+        };
+
+    private static string DescribeConfrontationNarration(string targetName, WantedSuspectConfrontationChoice choice)
+        => choice switch
+        {
+            WantedSuspectConfrontationChoice.Surrendered => $"You confront {targetName} and bring them in alive.",
+            WantedSuspectConfrontationChoice.Fled => $"You confront {targetName}, but they get away.",
+            WantedSuspectConfrontationChoice.Killed => $"You confront {targetName} and secure the body.",
+            WantedSuspectConfrontationChoice.Abandoned => $"You back away before confronting {targetName}.",
+            _ => $"You confront {targetName}."
         };
 
     private bool PersistLatestTravelDiaryDay(
