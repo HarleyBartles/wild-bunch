@@ -1541,6 +1541,54 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
+    public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
+    {
+        if (IsJourneyModal())
+        {
+            return SheriffTurnInResult.Rejected(JourneyModalBlockMessage);
+        }
+
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(targetSuspectId));
+        if (targetSuspect is null)
+        {
+            return isAlive
+                ? SheriffTurnInResult.WrongPersonAlive("That person is not part of this case.")
+                : SheriffTurnInResult.WrongPersonDead("That person is not part of this case.");
+        }
+
+        var warrant = CaseFile.KnownWarrants.FirstOrDefault(candidate => MatchesKnownWarrant(candidate, targetSuspect));
+        if (warrant is null)
+        {
+            return isAlive
+                ? SheriffTurnInResult.WrongPersonAlive($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name)
+                : SheriffTurnInResult.WrongPersonDead($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name);
+        }
+
+        if (isAlive)
+        {
+            return SheriffTurnInResult.AcceptedAlive(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                warrant.Terms.BountyAmount,
+                $"You bring in {warrant.TargetName} alive under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.");
+        }
+
+        if (warrant.Terms.Disposition == WarrantDisposition.DeadOrAlive)
+        {
+            return SheriffTurnInResult.AcceptedDead(
+                warrant.TargetName,
+                warrant.Terms.Disposition,
+                warrant.Terms.BountyAmount,
+                $"You turn in the body of {warrant.TargetName} under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.");
+        }
+
+        return SheriffTurnInResult.Rejected(
+            $"The warrant for {warrant.TargetName} requires an alive turn-in.",
+            warrant.TargetName,
+            warrant.Terms.Disposition,
+            warrant.Terms.BountyAmount);
+    }
+
     public CaseInvestigationResult FollowTelegraphLeads()
     {
         if (IsJourneyModal())
@@ -1689,6 +1737,27 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         _travelDiaryDays[lastIndex] = update(_travelDiaryDays[lastIndex]);
         return true;
     }
+
+    private static bool MatchesKnownWarrant(Warrant warrant, Suspect targetSuspect)
+    {
+        ArgumentNullException.ThrowIfNull(warrant);
+        ArgumentNullException.ThrowIfNull(targetSuspect);
+
+        if (string.Equals(warrant.TargetName, targetSuspect.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return warrant.Terms.KnownAliases.Any(alias => string.Equals(alias, targetSuspect.Name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string DescribeWarrantDisposition(WarrantDisposition disposition)
+        => disposition switch
+        {
+            WarrantDisposition.AliveOnly => "alive-only",
+            WarrantDisposition.DeadOrAlive => "dead-or-alive",
+            _ => $"disposition {disposition}"
+        };
 
     private bool PersistLatestTravelDiaryDay(
         TravelDiaryBaselineState startingState,
