@@ -98,6 +98,33 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.False(deadResult.SessionChanged);
     }
 
+    [Fact]
+    public void SettleSheriffTurnInCreditsTheWalletAndRejectsRepeatPayouts()
+    {
+        var session = CreateSession();
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
+
+        var firstResult = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);
+        var secondResult = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);
+
+        Assert.True(firstResult.Success);
+        Assert.Equal(SheriffTurnInOutcome.AcceptedDead, firstResult.Outcome);
+        Assert.Equal(2500m, firstResult.BountyAmount);
+        Assert.True(firstResult.SessionChanged);
+        Assert.Equal(2525m, session.Player.Wallet.Cash);
+        Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.True(session.CaseFile.TryGetSheriffTurnInSettlementState(new SuspectId("suspect-1"), out var settlementState));
+        Assert.Equal("Mira Cline", settlementState.TargetName);
+        Assert.False(settlementState.IsAlive);
+        Assert.Equal(2500m, settlementState.BountyAmount);
+
+        Assert.False(secondResult.Success);
+        Assert.Equal(SheriffTurnInOutcome.Rejected, secondResult.Outcome);
+        Assert.Equal(2525m, session.Player.Wallet.Cash);
+        Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static GameSession CreateSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);

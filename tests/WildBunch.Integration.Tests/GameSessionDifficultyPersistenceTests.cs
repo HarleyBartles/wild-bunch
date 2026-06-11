@@ -113,6 +113,25 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void CaseFileSheriffTurnInSettlementStateRoundTripsThroughJsonPersistence()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var caseFile = CreateSettlementStateCaseFile();
+
+        var json = serializer.SerializeCaseFile(caseFile);
+        var reloaded = serializer.DeserializeCaseFile(json);
+
+        Assert.Contains("\"sheriffTurnInSettlements\"", json, StringComparison.Ordinal);
+        Assert.Single(reloaded.SheriffTurnInSettlements);
+        Assert.Equal(new SuspectId("suspect-1"), reloaded.SheriffTurnInSettlements[0].SuspectId);
+        Assert.Equal("Tessa Wren", reloaded.SheriffTurnInSettlements[0].TargetName);
+        Assert.False(reloaded.SheriffTurnInSettlements[0].IsAlive);
+        Assert.Equal(2500m, reloaded.SheriffTurnInSettlements[0].BountyAmount);
+        Assert.Equal(7, reloaded.SheriffTurnInSettlements[0].Day);
+        Assert.Equal(4, reloaded.SheriffTurnInSettlements[0].Turn);
+    }
+
+    [Fact]
     public void CaseFileClueAnchorsRoundTripThroughJsonPersistence()
     {
         var serializer = new GameSessionJsonSerializer();
@@ -481,6 +500,32 @@ public sealed class GameSessionDifficultyPersistenceTests
             IsSecured: false,
             Day: 6,
             Turn: 2));
+
+        return caseFile;
+    }
+
+    private static CaseFile CreateSettlementStateCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            Array.Empty<Clue>());
+
+        caseFile.RecordSheriffTurnInSettlementState(new SheriffTurnInSettlementState(
+            new SuspectId("suspect-1"),
+            "Tessa Wren",
+            WarrantDisposition.DeadOrAlive,
+            IsAlive: false,
+            BountyAmount: 2500m,
+            Day: 7,
+            Turn: 4));
 
         return caseFile;
     }

@@ -1733,6 +1733,43 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             warrant.Terms.BountyAmount);
     }
 
+    public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
+    {
+        var assessment = AssessSheriffTurnIn(targetSuspectId, isAlive);
+        if (!assessment.Success)
+        {
+            return assessment;
+        }
+
+        if (CaseFile.TryGetSheriffTurnInSettlementState(targetSuspectId, out var existingSettlement))
+        {
+            return SheriffTurnInResult.Rejected(
+                $"You have already been paid for {existingSettlement.TargetName}.",
+                existingSettlement.TargetName,
+                existingSettlement.Disposition,
+                existingSettlement.BountyAmount);
+        }
+
+        var bountyAmount = assessment.BountyAmount
+            ?? throw new InvalidOperationException("Sheriff turn-in assessment did not include a bounty amount.");
+        var targetName = assessment.TargetName
+            ?? throw new InvalidOperationException("Sheriff turn-in assessment did not include a target name.");
+        var disposition = assessment.Disposition
+            ?? throw new InvalidOperationException("Sheriff turn-in assessment did not include a disposition.");
+
+        Player.SetWallet(Player.Wallet.Adjust(bountyAmount));
+        CaseFile.RecordSheriffTurnInSettlementState(new SheriffTurnInSettlementState(
+            targetSuspectId,
+            targetName,
+            disposition,
+            isAlive,
+            bountyAmount,
+            Clock.Day,
+            Clock.Turn));
+
+        return assessment with { SessionChanged = true };
+    }
+
     public CaseInvestigationResult FollowTelegraphLeads()
     {
         if (IsJourneyModal())

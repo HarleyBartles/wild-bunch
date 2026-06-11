@@ -15,25 +15,36 @@ namespace WildBunch.Application.Tests;
 public sealed class TurnInToSheriffHandlerTests
 {
     [Fact]
-    public async Task HandleAsyncReturnsPublicLegalOutcomeWithoutPersistingState()
+    public async Task HandleAsyncSettlesBountyOnceAndPersistsTheSettlement()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new TurnInToSheriffHandler(repository);
+        var handler = new TurnInToSheriffHandler(repository, repository);
 
-        var result = await handler.HandleAsync(new TurnInToSheriffCommand(session.Id.Value, "suspect-1", true));
+        var firstResult = await handler.HandleAsync(new TurnInToSheriffCommand(session.Id.Value, "suspect-1", true));
+        var secondResult = await handler.HandleAsync(new TurnInToSheriffCommand(session.Id.Value, "suspect-1", true));
 
-        Assert.True(result.Success);
-        Assert.Equal(SheriffTurnInOutcome.AcceptedAlive, result.Outcome);
-        Assert.Equal(session.Id.Value, result.CurrentSession.Id);
-        Assert.Equal("Mira Cline", result.TargetName);
-        Assert.Equal(WarrantDisposition.DeadOrAlive, result.Disposition);
-        Assert.Equal(2500m, result.BountyAmount);
-        Assert.Equal(0, repository.StoreCalls);
-        Assert.Equal(0, repository.CommitCalls);
+        Assert.True(firstResult.Success);
+        Assert.Equal(SheriffTurnInOutcome.AcceptedAlive, firstResult.Outcome);
+        Assert.Equal(session.Id.Value, firstResult.CurrentSession.Id);
+        Assert.Equal("Mira Cline", firstResult.TargetName);
+        Assert.Equal(WarrantDisposition.DeadOrAlive, firstResult.Disposition);
+        Assert.Equal(2500m, firstResult.BountyAmount);
+        Assert.Equal(2525m, firstResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Single(repository.Sessions.Single().CaseFile.SheriffTurnInSettlements);
+        Assert.True(repository.Sessions.Single().CaseFile.SheriffTurnInSettlements[0].IsAlive);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
 
-        var payload = JsonSerializer.Serialize(result);
+        Assert.False(secondResult.Success);
+        Assert.Equal(SheriffTurnInOutcome.Rejected, secondResult.Outcome);
+        Assert.Equal(2525m, secondResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
+        Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+
+        var payload = JsonSerializer.Serialize(firstResult);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
     }

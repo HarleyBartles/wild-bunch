@@ -231,6 +231,7 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<WarrantSnapshot>? KnownWarrants,
         IReadOnlyList<WarrantSnapshot>? PublicWarrants,
         IReadOnlyList<WantedSuspectConfrontationSnapshot>? WantedSuspectConfrontations,
+        IReadOnlyList<SheriffTurnInSettlementSnapshot>? SheriffTurnInSettlements,
         IReadOnlyList<SuspectTurfAssignmentSnapshot>? SuspectTurfAssignments)
     {
         public static CaseFileSnapshot FromDomain(CaseFile caseFile)
@@ -247,6 +248,7 @@ public sealed partial class GameSessionJsonSerializer
                 caseFile.KnownWarrants.Select(WarrantSnapshot.FromDomain).ToArray(),
                 caseFile.PublicWarrants.Select(WarrantSnapshot.FromDomain).ToArray(),
                 caseFile.WantedSuspectConfrontations.Select(WantedSuspectConfrontationSnapshot.FromDomain).ToArray(),
+                caseFile.SheriffTurnInSettlements.Select(SheriffTurnInSettlementSnapshot.FromDomain).ToArray(),
                 caseFile.SuspectTurfAssignments.Select(SuspectTurfAssignmentSnapshot.FromDomain).ToArray());
 
         public static CaseFile ToDomain(CaseFileSnapshot snapshot)
@@ -264,7 +266,8 @@ public sealed partial class GameSessionJsonSerializer
                 (snapshot.KnownWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
                 (snapshot.PublicWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
                 suspectTurfAssignments: (snapshot.SuspectTurfAssignments ?? Array.Empty<SuspectTurfAssignmentSnapshot>()).Select(SuspectTurfAssignmentSnapshot.ToDomain),
-                wantedSuspectConfrontations: (snapshot.WantedSuspectConfrontations ?? Array.Empty<WantedSuspectConfrontationSnapshot>()).Select(WantedSuspectConfrontationSnapshot.ToDomain));
+                wantedSuspectConfrontations: (snapshot.WantedSuspectConfrontations ?? Array.Empty<WantedSuspectConfrontationSnapshot>()).Select(WantedSuspectConfrontationSnapshot.ToDomain),
+                sheriffTurnInSettlements: (snapshot.SheriffTurnInSettlements ?? Array.Empty<SheriffTurnInSettlementSnapshot>()).Select(SheriffTurnInSettlementSnapshot.ToDomain));
 
             return caseFile;
         }
@@ -308,6 +311,36 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.Outcome,
                 snapshot.IsAlive,
                 snapshot.IsSecured,
+                snapshot.Day,
+                snapshot.Turn);
+    }
+
+    private sealed record SheriffTurnInSettlementSnapshot(
+        string SuspectId,
+        string TargetName,
+        WarrantDisposition Disposition,
+        bool IsAlive,
+        decimal BountyAmount,
+        int Day,
+        int Turn)
+    {
+        public static SheriffTurnInSettlementSnapshot FromDomain(SheriffTurnInSettlementState state)
+            => new(
+                state.SuspectId.Value,
+                state.TargetName,
+                state.Disposition,
+                state.IsAlive,
+                state.BountyAmount,
+                state.Day,
+                state.Turn);
+
+        public static SheriffTurnInSettlementState ToDomain(SheriffTurnInSettlementSnapshot snapshot)
+            => new(
+                new SuspectId(snapshot.SuspectId),
+                snapshot.TargetName,
+                snapshot.Disposition,
+                snapshot.IsAlive,
+                snapshot.BountyAmount,
                 snapshot.Day,
                 snapshot.Turn);
     }
