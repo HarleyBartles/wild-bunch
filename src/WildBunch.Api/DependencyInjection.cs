@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<AdvanceTravelDayHandler>();
         services.AddScoped<AcknowledgeJourneyArrivalHandler>();
         services.AddScoped<ResolveJourneyEncounterHandler>();
+        services.AddScoped<ConfrontWantedSuspectHandler>();
         services.AddScoped<TurnInToSheriffHandler>();
 
         return services;

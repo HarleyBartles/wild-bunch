@@ -16,6 +16,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInReturnsAcceptedAliveForKnownDeadOrAliveWarrant()
     {
         var session = CreateSession();
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
 
@@ -35,6 +36,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInReturnsAcceptedDeadForKnownDeadOrAliveWarrant()
     {
         var session = CreateSession();
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);
 
@@ -50,6 +52,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInReturnsRejectedForDeadAliveOnlyWarrant()
     {
         var session = CreateSession();
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Killed);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-2"), isAlive: false);
 
@@ -60,6 +63,23 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Equal(300m, result.BountyAmount);
         Assert.False(result.SessionChanged);
         Assert.Contains("alive", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AssessSheriffTurnInRejectsWhenTheTargetHasFled()
+    {
+        var session = CreateSession();
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Fled);
+
+        var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        Assert.False(result.Success);
+        Assert.Equal(SheriffTurnInOutcome.Rejected, result.Outcome);
+        Assert.Equal("Mira Cline", result.TargetName);
+        Assert.Equal(WarrantDisposition.DeadOrAlive, result.Disposition);
+        Assert.Equal(2500m, result.BountyAmount);
+        Assert.False(result.SessionChanged);
+        Assert.Contains("secured", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
