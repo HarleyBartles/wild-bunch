@@ -19,6 +19,8 @@ public sealed class CaseFile
     private readonly ReadOnlyCollection<Warrant> _publicWarrantsView;
     private readonly List<WantedSuspectConfrontationState> _wantedSuspectConfrontations = [];
     private readonly ReadOnlyCollection<WantedSuspectConfrontationState> _wantedSuspectConfrontationsView;
+    private readonly List<SheriffTurnInSettlementState> _sheriffTurnInSettlements = [];
+    private readonly ReadOnlyCollection<SheriffTurnInSettlementState> _sheriffTurnInSettlementsView;
     private readonly List<SuspectTurfAssignment> _suspectTurfAssignments = [];
     private readonly ReadOnlyCollection<SuspectTurfAssignment> _suspectTurfAssignmentsView;
     private int _killerReleaseProgress;
@@ -31,7 +33,8 @@ public sealed class CaseFile
         IEnumerable<SuspectId>? discoveredSuspectIds = null,
         IEnumerable<Clue>? publicClues = null,
         IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null,
-        IEnumerable<WantedSuspectConfrontationState>? wantedSuspectConfrontations = null)
+        IEnumerable<WantedSuspectConfrontationState>? wantedSuspectConfrontations = null,
+        IEnumerable<SheriffTurnInSettlementState>? sheriffTurnInSettlements = null)
         : this(
             accusation,
             suspects,
@@ -41,7 +44,8 @@ public sealed class CaseFile
             discoveredSuspectIds,
             publicClues,
             suspectTurfAssignments: suspectTurfAssignments,
-            wantedSuspectConfrontations: wantedSuspectConfrontations)
+            wantedSuspectConfrontations: wantedSuspectConfrontations,
+            sheriffTurnInSettlements: sheriffTurnInSettlements)
     {
     }
 
@@ -58,7 +62,8 @@ public sealed class CaseFile
         IEnumerable<Warrant>? knownWarrants = null,
         IEnumerable<Warrant>? publicWarrants = null,
         IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null,
-        IEnumerable<WantedSuspectConfrontationState>? wantedSuspectConfrontations = null)
+        IEnumerable<WantedSuspectConfrontationState>? wantedSuspectConfrontations = null,
+        IEnumerable<SheriffTurnInSettlementState>? sheriffTurnInSettlements = null)
     {
         ArgumentNullException.ThrowIfNull(suspects);
         ArgumentNullException.ThrowIfNull(knownClues);
@@ -97,6 +102,17 @@ public sealed class CaseFile
         }
 
         _wantedSuspectConfrontationsView = _wantedSuspectConfrontations.AsReadOnly();
+
+        _sheriffTurnInSettlements.AddRange((sheriffTurnInSettlements ?? Array.Empty<SheriffTurnInSettlementState>()).DistinctBy(state => state.SuspectId));
+        foreach (var settlement in _sheriffTurnInSettlements)
+        {
+            if (!_suspects.Any(suspect => suspect.Id.Equals(settlement.SuspectId)))
+            {
+                throw new ArgumentException("The sheriff turn-in settlement does not belong to this case.", nameof(sheriffTurnInSettlements));
+            }
+        }
+
+        _sheriffTurnInSettlementsView = _sheriffTurnInSettlements.AsReadOnly();
 
         _suspectTurfAssignments.AddRange((suspectTurfAssignments ?? Array.Empty<SuspectTurfAssignment>()).DistinctBy(assignment => assignment.SuspectId));
         foreach (var assignment in _suspectTurfAssignments)
@@ -137,6 +153,8 @@ public sealed class CaseFile
     public IReadOnlyList<Warrant> PublicWarrants => _publicWarrantsView;
 
     public IReadOnlyList<WantedSuspectConfrontationState> WantedSuspectConfrontations => _wantedSuspectConfrontationsView;
+
+    public IReadOnlyList<SheriffTurnInSettlementState> SheriffTurnInSettlements => _sheriffTurnInSettlementsView;
 
     public IReadOnlyList<SuspectTurfAssignment> SuspectTurfAssignments => _suspectTurfAssignmentsView;
 
@@ -234,6 +252,36 @@ public sealed class CaseFile
         }
 
         _wantedSuspectConfrontations.Add(confrontationState);
+    }
+
+    public bool TryGetSheriffTurnInSettlementState(SuspectId suspectId, out SheriffTurnInSettlementState settlementState)
+    {
+        foreach (var state in _sheriffTurnInSettlements)
+        {
+            if (state.SuspectId.Equals(suspectId))
+            {
+                settlementState = state;
+                return true;
+            }
+        }
+
+        settlementState = default!;
+        return false;
+    }
+
+    public void RecordSheriffTurnInSettlementState(SheriffTurnInSettlementState settlementState)
+    {
+        ArgumentNullException.ThrowIfNull(settlementState);
+
+        for (var i = 0; i < _sheriffTurnInSettlements.Count; i++)
+        {
+            if (_sheriffTurnInSettlements[i].SuspectId.Equals(settlementState.SuspectId))
+            {
+                throw new InvalidOperationException($"Sheriff turn-in settlement already exists for {settlementState.SuspectId.Value}.");
+            }
+        }
+
+        _sheriffTurnInSettlements.Add(settlementState);
     }
 
     public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null, bool advanceKillerReleaseProgress = false)

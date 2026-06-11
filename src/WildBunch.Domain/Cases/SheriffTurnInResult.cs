@@ -33,3 +33,12 @@ public sealed record SheriffTurnInResult(
     public static SheriffTurnInResult Rejected(string message, string? targetName = null, WarrantDisposition? disposition = null, decimal? bountyAmount = null)
         => new(false, message, SheriffTurnInOutcome.Rejected, targetName, disposition, bountyAmount, false);
 }
+
+public sealed record SheriffTurnInSettlementState(
+    SuspectId SuspectId,
+    string TargetName,
+    WarrantDisposition Disposition,
+    bool IsAlive,
+    decimal BountyAmount,
+    int Day,
+    int Turn);

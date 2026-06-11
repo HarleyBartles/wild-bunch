@@ -9,10 +9,14 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class TurnInToSheriffHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
 
-    public TurnInToSheriffHandler(IGameSessionRepository gameSessionRepository)
+    public TurnInToSheriffHandler(
+        IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork)
     {
         _gameSessionRepository = gameSessionRepository;
+        _gameSessionUnitOfWork = gameSessionUnitOfWork;
     }
 
     public async Task<SheriffTurnInResultDto> HandleAsync(
@@ -23,7 +27,13 @@ public sealed class TurnInToSheriffHandler
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var result = session.AssessSheriffTurnIn(new SuspectId(command.TargetSuspectId), command.IsAlive);
+        var result = session.SettleSheriffTurnIn(new SuspectId(command.TargetSuspectId), command.IsAlive);
+
+        if (result.SessionChanged)
+        {
+            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         return new SheriffTurnInResultDto(
             result.Success,
