@@ -63,6 +63,44 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     }
 
     [Fact]
+    public void ResolveWantedSuspectConfrontationRejectsRepeatAfterKilledWithoutChangingState()
+    {
+        var session = CreateSession();
+
+        var firstResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
+        var secondResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.True(firstResult.Success);
+        Assert.False(secondResult.Success);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
+        Assert.False(secondResult.SessionChanged);
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
+        Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
+        Assert.False(state.IsAlive);
+        Assert.True(state.IsSecured);
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationRejectsRepeatAfterSurrenderedWithoutChangingState()
+    {
+        var session = CreateSession();
+
+        var firstResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+        var secondResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
+
+        Assert.True(firstResult.Success);
+        Assert.False(secondResult.Success);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
+        Assert.False(secondResult.SessionChanged);
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
+        Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, state.Outcome);
+        Assert.True(state.IsAlive);
+        Assert.True(state.IsSecured);
+    }
+
+    [Fact]
     public void ResolveWantedSuspectConfrontationRecordsFledStateAndBlocksTurnIn()
     {
         var session = CreateSession();

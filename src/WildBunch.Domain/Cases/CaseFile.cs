@@ -229,8 +229,7 @@ public sealed class CaseFile
         {
             if (_wantedSuspectConfrontations[i].SuspectId.Equals(confrontationState.SuspectId))
             {
-                _wantedSuspectConfrontations[i] = confrontationState;
-                return;
+                throw new InvalidOperationException($"Wanted suspect confrontation state already exists for {confrontationState.SuspectId.Value}.");
             }
         }
 

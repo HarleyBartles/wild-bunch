@@ -1562,6 +1562,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return WantedSuspectConfrontationResult.Rejected($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name);
         }
 
+        if (CaseFile.TryGetWantedSuspectConfrontationState(targetSuspectId, out var existingState))
+        {
+            return WantedSuspectConfrontationResult.Rejected(
+                $"{existingState.TargetName} has already been confronted.",
+                existingState.TargetName,
+                existingState.Disposition);
+        }
+
         if (choice == WantedSuspectConfrontationChoice.Abandoned)
         {
             RecordCaseUpdate($"You back away before confronting {warrant.TargetName}.");
