@@ -38,6 +38,27 @@ public sealed class StartingWorldDescriptorResolverTests
     }
 
     [Fact]
+    public void ExplicitSeedResolutionIgnoresRequestedDifficultyAndEntropy()
+    {
+        var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
+            TravelDifficulty.Easy,
+            AdventureRandomnessPolicy.Boring);
+        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(
+            StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
+
+        var baseline = StartingWorldDescriptorResolver.Resolve(
+            seedCode,
+            TravelDifficulty.Easy,
+            AdventureRandomnessPolicy.Boring);
+        var challenged = StartingWorldDescriptorResolver.Resolve(
+            seedCode,
+            TravelDifficulty.Hard,
+            AdventureRandomnessPolicy.Wild);
+
+        Assert.Equal(baseline, challenged);
+    }
+
+    [Fact]
     public void DescriptorValidationRejectsImpossibleManualEdits()
     {
         var valid = StartingWorldDescriptorResolver.CreateCanonicalDescriptor();

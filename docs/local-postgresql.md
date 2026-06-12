@@ -40,6 +40,18 @@ Initialize or start the persistent local development cluster and database:
 .\scripts\postgres-dev.ps1 setup
 ```
 
+Run the PostgreSQL validation lane with the repo-local connection string and
+tooling setup already wired in:
+
+```powershell
+.\scripts\postgres-dev.ps1 validate
+```
+
+The validation command provisions the persistent cluster if needed, exports
+`ConnectionStrings__WildBunchPostgresDb` for the child `dotnet` commands,
+restores repo-local tools, runs `dotnet ef migrations list`, and then runs
+`dotnet test WildBunch.sln`.
+
 Then launch Wild Bunch Api through Visual Studio/F5 or `dotnet run`.
 The committed launch profile supplies the repo-local connection string for the
 `http` and `https` profiles, so you do not need to set it manually for the

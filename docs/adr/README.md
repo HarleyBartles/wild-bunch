@@ -87,6 +87,8 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0022 UI browser checks are a manual evidence lane](ADR-0022-ui-browser-checks-are-a-manual-evidence-lane.md)
 - [ADR-0023 Difficulty and entropy vocabulary and fairness contract](ADR-0023-difficulty-and-entropy-vocabulary-and-fairness-contract.md)
 - [ADR-0024 Source taxonomy implications for difficulty and entropy](ADR-0024-source-taxonomy-implications-for-difficulty-and-entropy.md)
+- [ADR-0025 Suspect legal and bounty vocabulary boundary](ADR-0025-suspect-legal-and-bounty-vocabulary-boundary.md)
+- [ADR-0026 Turn-In Outcome Semantics for Bounty and Murder-Case Separation](ADR-0026-turn-in-outcome-semantics-for-bounty-and-murder-case-separation.md)
 
 ## Current Working Set
 
@@ -95,4 +97,6 @@ called out by issue `#36`. New ADRs should be added when a decision becomes
 stable enough to survive beyond the current work slice. ADR-0023 extends the
 log with the accepted difficulty/entropy vocabulary and fairness contract.
 ADR-0024 extends the log with the source-taxonomy implications map for those
-axes.
+axes. ADR-0025 extends the log with the suspect legal and bounty vocabulary
+boundary. ADR-0026 extends the log with the turn-in outcome semantics that sit
+on top of that vocabulary.

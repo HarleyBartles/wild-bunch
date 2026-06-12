@@ -15,5 +15,6 @@ public enum AvailableActionKind
     InspectNoticeBoard = 10,
     CheckSheriffRecords = 11,
     FollowTelegraphLeads = 12,
-    GatherLocalGossip = 13
+    GatherLocalGossip = 13,
+    LookAroundSaloon = 14
 }

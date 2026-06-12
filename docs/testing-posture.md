@@ -62,6 +62,12 @@ Before using the local browser route, make sure the repo-local PostgreSQL lane i
 .\scripts\postgres-dev.ps1 setup
 ```
 
+If you want the full PostgreSQL-backed validation lane in one command, use:
+
+```powershell
+.\scripts\postgres-dev.ps1 validate
+```
+
 The API launch profile already supplies `ConnectionStrings__WildBunchPostgresDb` for the normal local run path.
 
 ## References

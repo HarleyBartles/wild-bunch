@@ -7,5 +7,6 @@ public enum InvestigationSourceKind
     TelegraphLead = 2,
     LocalGossip = 3,
     StableLedger = 4,
-    SheriffWarrants = 5
+    SheriffWarrants = 5,
+    SaloonLookAround = 6
 }

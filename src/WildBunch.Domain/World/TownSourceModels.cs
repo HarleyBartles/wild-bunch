@@ -70,6 +70,15 @@ public sealed record TownSourceCatalog(IReadOnlyList<TownSourceDefinition> Defin
                 TownSourceLocality.TownLocal,
                 TownSourceRefreshPolicy.PerVisit),
             new TownSourceDefinition(
+                "town-source.saloon-look-around",
+                InvestigationSourceKind.SaloonLookAround,
+                AvailableActionKind.LookAroundSaloon,
+                "Look around saloon",
+                TownSourceAvailability.Baseline,
+                TownServices.None,
+                TownSourceLocality.TownLocal,
+                TownSourceRefreshPolicy.PerVisit),
+            new TownSourceDefinition(
                 "town-source.telegraph-leads",
                 InvestigationSourceKind.TelegraphLead,
                 AvailableActionKind.FollowTelegraphLeads,

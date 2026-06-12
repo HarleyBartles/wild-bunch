@@ -84,6 +84,22 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void LegacyFullSessionJsonWithoutWantedSuspectPresenceLedgerDefaultsToEmptyLedger()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateSession(TravelDifficulty.Normal, AdventureRandomnessPolicy.Boring);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.GoneToGround);
+
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
+        legacySnapshot.Remove("wantedSuspectPresenceLedger");
+
+        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
+
+        Assert.Empty(reloaded.WantedSuspectPresenceEntries);
+        Assert.Equal(WantedSuspectPresenceState.Unavailable, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
+    }
+
+    [Fact]
     public void CaseFileWarrantGangAffiliationFieldsRoundTripThroughJsonPersistence()
     {
         var serializer = new GameSessionJsonSerializer();
@@ -110,6 +126,43 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
         Assert.Equal(InvestigationSourceKind.LocalRecords, reloaded.PublicWarrants[1].Terms.SourceKind);
+    }
+
+    [Fact]
+    public void CaseFileWantedSuspectConfrontationStateRoundTripsThroughJsonPersistence()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var caseFile = CreateConfrontationStateCaseFile();
+
+        var json = serializer.SerializeCaseFile(caseFile);
+        var reloaded = serializer.DeserializeCaseFile(json);
+
+        Assert.Contains("\"wantedSuspectConfrontations\"", json, StringComparison.Ordinal);
+        Assert.Single(reloaded.WantedSuspectConfrontations);
+        Assert.Equal(new SuspectId("suspect-1"), reloaded.WantedSuspectConfrontations[0].SuspectId);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, reloaded.WantedSuspectConfrontations[0].Outcome);
+        Assert.False(reloaded.WantedSuspectConfrontations[0].IsSecured);
+        Assert.Equal(6, reloaded.WantedSuspectConfrontations[0].Day);
+        Assert.Equal(2, reloaded.WantedSuspectConfrontations[0].Turn);
+    }
+
+    [Fact]
+    public void CaseFileSheriffTurnInSettlementStateRoundTripsThroughJsonPersistence()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var caseFile = CreateSettlementStateCaseFile();
+
+        var json = serializer.SerializeCaseFile(caseFile);
+        var reloaded = serializer.DeserializeCaseFile(json);
+
+        Assert.Contains("\"sheriffTurnInSettlements\"", json, StringComparison.Ordinal);
+        Assert.Single(reloaded.SheriffTurnInSettlements);
+        Assert.Equal(new SuspectId("suspect-1"), reloaded.SheriffTurnInSettlements[0].SuspectId);
+        Assert.Equal("Tessa Wren", reloaded.SheriffTurnInSettlements[0].TargetName);
+        Assert.False(reloaded.SheriffTurnInSettlements[0].IsAlive);
+        Assert.Equal(2500m, reloaded.SheriffTurnInSettlements[0].BountyAmount);
+        Assert.Equal(7, reloaded.SheriffTurnInSettlements[0].Day);
+        Assert.Equal(4, reloaded.SheriffTurnInSettlements[0].Turn);
     }
 
     [Fact]
@@ -192,6 +245,19 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Equal(OutlawGangIds.WildBunch, reloaded.PublicWarrants[0].Terms.AdvancesGangPressureFor);
         Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
+    }
+
+    [Fact]
+    public void LegacyCaseFileWithoutWantedSuspectConfrontationsStillDeserializes()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var legacySnapshot = JsonNode.Parse(serializer.SerializeCaseFile(CreateConfrontationStateCaseFile()))!.AsObject();
+        legacySnapshot.Remove("wantedSuspectConfrontations");
+
+        var reloaded = serializer.DeserializeCaseFile(legacySnapshot.ToJsonString());
+
+        Assert.Empty(reloaded.WantedSuspectConfrontations);
+        Assert.Equal(new SuspectId("suspect-1"), reloaded.TrueCulpritId);
     }
 
     [Fact]
@@ -443,6 +509,59 @@ public sealed class GameSessionDifficultyPersistenceTests
             CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
             Array.Empty<Clue>(),
             publicWarrants: publicWarrants);
+    }
+
+    private static CaseFile CreateConfrontationStateCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            Array.Empty<Clue>());
+
+        caseFile.RecordWantedSuspectConfrontationState(new WantedSuspectConfrontationState(
+            new SuspectId("suspect-1"),
+            "Tessa Wren",
+            WarrantDisposition.DeadOrAlive,
+            WantedSuspectConfrontationOutcome.Fled,
+            IsAlive: true,
+            IsSecured: false,
+            Day: 6,
+            Turn: 2));
+
+        return caseFile;
+    }
+
+    private static CaseFile CreateSettlementStateCaseFile()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            Array.Empty<Clue>());
+
+        caseFile.RecordSheriffTurnInSettlementState(new SheriffTurnInSettlementState(
+            new SuspectId("suspect-1"),
+            "Tessa Wren",
+            WarrantDisposition.DeadOrAlive,
+            IsAlive: false,
+            BountyAmount: 2500m,
+            Day: 7,
+            Turn: 4));
+
+        return caseFile;
     }
 
     private static CaseFile CreateAnchoredCaseFile()

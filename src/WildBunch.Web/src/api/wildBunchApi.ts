@@ -180,3 +180,9 @@ export function gatherLocalGossip(gameId: string) {
     method: "POST",
   });
 }
+
+export function lookAroundSaloon(gameId: string) {
+  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/saloon/look-around`, {
+    method: "POST",
+  });
+}

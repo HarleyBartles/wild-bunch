@@ -65,7 +65,7 @@ public sealed partial class GameSessionJsonSerializer
                 Entropy ?? AdventureRandomnessPolicy.Standard,
                 townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
-                WantedSuspectPresenceLedger.Select(snapshot => snapshot.ToDomain()).ToArray());
+                (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
