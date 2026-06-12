@@ -28,6 +28,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, state.Outcome);
         Assert.True(state.IsAlive);
@@ -50,6 +51,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.IsSecured);
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(WantedSuspectPresenceState.SecuredDead, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
         Assert.False(state.IsAlive);
@@ -75,6 +77,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
         Assert.False(secondResult.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(WantedSuspectPresenceState.SecuredDead, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
         Assert.False(state.IsAlive);
@@ -94,6 +97,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
         Assert.False(secondResult.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, state.Outcome);
         Assert.True(state.IsAlive);
@@ -113,6 +117,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(result.IsSecured);
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Fled, state.Outcome);
         Assert.False(state.IsSecured);
@@ -138,6 +143,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
 
         var payload = JsonSerializer.Serialize(result);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
