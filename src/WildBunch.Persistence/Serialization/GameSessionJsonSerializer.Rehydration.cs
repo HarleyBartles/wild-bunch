@@ -22,6 +22,7 @@ public sealed partial class GameSessionJsonSerializer
         TownVisitState? townVisitState,
         TravelJourneySnapshot? journey,
         IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory,
+        IReadOnlyList<WantedSuspectPresenceEntry> wantedSuspectPresenceEntries,
         IReadOnlyList<TravelDiaryDayState> travelDiaryDays,
         IReadOnlyList<GameLogEntry> logEntries)
     {
@@ -38,7 +39,8 @@ public sealed partial class GameSessionJsonSerializer
             travelRandomness,
             entropy,
             townVisitState,
-            completedJourneyHistory);
+            completedJourneyHistory,
+            wantedSuspectPresenceEntries);
 
         GameSessionRehydrator.ReplaceTravelDiaryDays(session, travelDiaryDays);
         GameSessionRehydrator.ReplaceLogEntries(session, logEntries);

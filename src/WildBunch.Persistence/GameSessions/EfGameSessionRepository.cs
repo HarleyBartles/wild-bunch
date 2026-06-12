@@ -75,6 +75,15 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.CompletedJourneyHistory, _serializer.SerializeCompletedJourneyHistory(session.CompletedJourneyHistory), now);
         }
 
+        if (session.WantedSuspectPresenceEntries.Count == 0)
+        {
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.WantedSuspectPresenceLedger, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            UpsertComponent(entity.Id, GameSessionComponentNames.WantedSuspectPresenceLedger, _serializer.SerializeWantedSuspectPresenceLedger(session.WantedSuspectPresenceEntries), now);
+        }
+
         await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
     }
@@ -131,6 +140,10 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var completedJourneyHistory = completedJourneyHistoryJson is null
             ? Array.Empty<TravelJourneySnapshot>()
             : _serializer.DeserializeCompletedJourneyHistory(completedJourneyHistoryJson);
+        var wantedSuspectPresenceLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.WantedSuspectPresenceLedger);
+        var wantedSuspectPresenceEntries = wantedSuspectPresenceLedgerJson is null
+            ? Array.Empty<WantedSuspectPresenceEntry>()
+            : _serializer.DeserializeWantedSuspectPresenceLedger(wantedSuspectPresenceLedgerJson);
 
         return _serializer.RehydrateGameSession(
             store.Envelope.Id,
@@ -146,6 +159,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             townVisitState,
             journey,
             completedJourneyHistory,
+            wantedSuspectPresenceEntries,
             store.TravelDiaryDays,
             store.LogEntries);
     }

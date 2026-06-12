@@ -66,6 +66,40 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void WantedSuspectPresenceLedgerRoundTripsThroughFullSessionJsonSnapshot()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateSession(TravelDifficulty.Normal, AdventureRandomnessPolicy.Boring);
+        var suspectId = new SuspectId("suspect-1");
+
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.SecuredAlive);
+
+        var json = serializer.Serialize(session);
+        var reloaded = serializer.Deserialize(json);
+
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, reloaded.GetWantedSuspectPresenceState(suspectId));
+        Assert.Single(reloaded.WantedSuspectPresenceEntries);
+        Assert.Equal(suspectId, reloaded.WantedSuspectPresenceEntries[0].SuspectId);
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, reloaded.WantedSuspectPresenceEntries[0].State);
+    }
+
+    [Fact]
+    public void LegacyFullSessionJsonWithoutWantedSuspectPresenceLedgerDefaultsToEmptyLedger()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateSession(TravelDifficulty.Normal, AdventureRandomnessPolicy.Boring);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.GoneToGround);
+
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
+        legacySnapshot.Remove("wantedSuspectPresenceLedger");
+
+        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
+
+        Assert.Empty(reloaded.WantedSuspectPresenceEntries);
+        Assert.Equal(WantedSuspectPresenceState.Unavailable, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
+    }
+
+    [Fact]
     public void CaseFileWarrantGangAffiliationFieldsRoundTripThroughJsonPersistence()
     {
         var serializer = new GameSessionJsonSerializer();
