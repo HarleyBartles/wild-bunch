@@ -29,6 +29,7 @@ public sealed class EfGameSessionRepositoryTests
         using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture, out var unitOfWork);
         var session = CreateSession();
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
 
         await PersistAsync(repository, unitOfWork, session);
         var reloaded = await repository.GetByIdAsync(session.Id);
@@ -50,6 +51,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, reloaded.CaseFile.KillerReleaseState.RequiredPublicClues);
         Assert.Equal(session.CaseFile.DiscoveredSuspectIds, reloaded.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(session.CaseFile.Suspects[0].Profile.Aliases.Count, reloaded.CaseFile.Suspects[0].Profile.Aliases.Count);
+        Assert.Equal(WantedSuspectPresenceState.AvailableInTown, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
     }
 
     [Fact]

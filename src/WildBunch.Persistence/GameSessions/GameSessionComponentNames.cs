@@ -12,6 +12,7 @@ internal static class GameSessionComponentNames
     internal const string TownVisitState = "townVisitState";
     internal const string Journey = "journey";
     internal const string CompletedJourneyHistory = "completedJourneyHistory";
+    internal const string WantedSuspectPresenceLedger = "wantedSuspectPresenceLedger";
 }
 
 internal static class GameSessionComponentPayloads
