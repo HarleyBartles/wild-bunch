@@ -185,6 +185,55 @@ public sealed class GameSessionInvestigationActionsTests
     }
 
     [Fact]
+    public void LookAroundSaloonSurfacesOnlyAvailableWantedSuspectsOncePerVisit()
+    {
+        var session = CreateSaloonLookAroundSession();
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-2"), WantedSuspectPresenceState.SecuredAlive);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-3"), WantedSuspectPresenceState.GoneToGround);
+
+        var first = session.LookAroundSaloon();
+        var repeatSameVisit = session.LookAroundSaloon();
+
+        Assert.True(first.Success);
+        Assert.True(repeatSameVisit.Success);
+        Assert.Equal("You look around the saloon and spot Ira Flint.", first.Message);
+        Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatSameVisit.Message);
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
+        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(3, session.LogEntries.Count);
+
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
+
+        Assert.False(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
+
+        var afterReturn = session.LookAroundSaloon();
+
+        Assert.True(afterReturn.Success);
+        Assert.Equal("You look around the saloon and spot Ira Flint.", afterReturn.Message);
+        Assert.Equal(3, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void LookAroundSaloonSuppressesUnavailableWantedSuspects()
+    {
+        var session = CreateSaloonLookAroundSession();
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.SecuredDead);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-2"), WantedSuspectPresenceState.GoneToGround);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-3"), WantedSuspectPresenceState.SecuredAlive);
+
+        var result = session.LookAroundSaloon();
+
+        Assert.True(result.Success);
+        Assert.Equal("You look around the saloon, but nobody of interest is here.", result.Message);
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
+        Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(new SuspectId("suspect-4")));
+    }
+
+    [Fact]
     public void NoticeBoardAndLocalRecordsRefreshWhenReturningToAVisitedTown()
     {
         var session = CreateTownSourceRefreshableSession();
@@ -584,6 +633,34 @@ public sealed class GameSessionInvestigationActionsTests
             inventory,
             TravelDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
+    }
+
+    private static GameSession CreateSaloonLookAroundSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Saloon);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-3"), "Jonah Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: Array.Empty<Clue>());
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }
 
     private static GameSession CreateColorOnlyGossipSession()

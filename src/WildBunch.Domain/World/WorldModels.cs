@@ -115,7 +115,8 @@ public enum TownServices
     Lodging = 2,
     Doctor = 4,
     Telegraph = 8,
-    NoticeBoard = 16
+    NoticeBoard = 16,
+    Saloon = 32
 }
 
 public enum TrailRisk

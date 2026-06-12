@@ -1557,6 +1557,36 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
+    public CaseInvestigationResult LookAroundSaloon()
+    {
+        if (IsJourneyModal())
+        {
+            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
+        }
+
+        var saloonSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.SaloonLookAround);
+
+        if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
+        {
+            return CaseInvestigationResult.Failed("There is no saloon here.");
+        }
+
+        if (CurrentTown.CheckSource(saloonSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        {
+            RecordCaseUpdate("You look around the saloon again, but nobody of interest is here.");
+            return CaseInvestigationResult.Succeeded("You look around the saloon again, but nobody of interest is here.", sessionChanged: true);
+        }
+
+        if (TryGetWantedSuspectCandidateInTown(out var suspect))
+        {
+            RecordCaseUpdate($"You look around the saloon and spot {suspect.Name}.");
+            return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {suspect.Name}.", sessionChanged: true);
+        }
+
+        RecordCaseUpdate("You look around the saloon, but nobody of interest is here.");
+        return CaseInvestigationResult.Succeeded("You look around the saloon, but nobody of interest is here.", sessionChanged: true);
+    }
+
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
         SuspectId targetSuspectId,
         WantedSuspectConfrontationChoice choice)
@@ -2047,6 +2077,28 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return clue.Anchors.Subjects.Any(subject =>
             !string.IsNullOrWhiteSpace(subject.Alias)
             || !string.IsNullOrWhiteSpace(subject.Feature));
+    }
+
+    private bool TryGetWantedSuspectCandidateInTown(out Suspect suspect)
+    {
+        foreach (var candidate in CaseFile.Suspects)
+        {
+            if (!_wantedSuspectPresenceLedger.TryGetState(candidate.Id, out var presenceState))
+            {
+                continue;
+            }
+
+            if (presenceState != WantedSuspectPresenceState.AvailableInTown)
+            {
+                continue;
+            }
+
+            suspect = candidate;
+            return true;
+        }
+
+        suspect = null!;
+        return false;
     }
 
     private bool IsJourneyModal()

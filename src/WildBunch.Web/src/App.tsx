@@ -29,6 +29,7 @@ export default function App() {
     canCheckLocalRecords,
     canFollowTelegraphLeads,
     canGatherLocalGossip,
+    canLookAroundSaloon,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -38,6 +39,7 @@ export default function App() {
     handleCheckLocalRecords,
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
+    handleLookAroundSaloon,
     handleReset,
     setSession,
     setNotice,
@@ -223,6 +225,15 @@ export default function App() {
                       disabled={!gameId || loading || !canGatherLocalGossip}
                     >
                       {busyMode === "investigating" ? "Gathering..." : "Gather local gossip"}
+                    </button>
+                  ) : action.kind === AvailableActionKind.LookAroundSaloon ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={handleLookAroundSaloon}
+                      disabled={!gameId || loading || !canLookAroundSaloon}
+                    >
+                      {busyMode === "investigating" ? "Looking..." : "Look around saloon"}
                     </button>
                   ) : null}
                 </div>

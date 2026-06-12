@@ -23,6 +23,7 @@ import {
   getJournal,
   getTownStoreOffers,
   inspectNoticeBoard,
+  lookAroundSaloon,
   readWantedPosters,
   travel,
 } from "./api/wildBunchApi";
@@ -36,6 +37,7 @@ vi.mock("./api/wildBunchApi", () => ({
   getTownStoreOffers: vi.fn(),
   checkLocalRecords: vi.fn(),
   inspectNoticeBoard: vi.fn(),
+  lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
   followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
@@ -50,6 +52,7 @@ const mockedCreateGame = vi.mocked(createGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
 const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
 const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
+const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
@@ -404,6 +407,11 @@ describe("App", () => {
       message: "Gather local gossip",
       currentJournal: createJournal(),
     });
+    mockedLookAroundSaloon.mockResolvedValue({
+      success: true,
+      message: "Look around saloon",
+      currentJournal: createJournal(),
+    });
     mockedTravel.mockResolvedValue({
       success: true,
       message: "Travelled",
@@ -555,6 +563,11 @@ describe("App", () => {
     mockedGatherLocalGossip.mockResolvedValue({
       success: true,
       message: "Gather local gossip",
+      currentJournal: emptyJournal,
+    });
+    mockedLookAroundSaloon.mockResolvedValue({
+      success: true,
+      message: "Look around saloon",
       currentJournal: emptyJournal,
     });
     mockedTravel.mockResolvedValue({

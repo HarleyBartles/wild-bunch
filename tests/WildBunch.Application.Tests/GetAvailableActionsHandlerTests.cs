@@ -50,6 +50,19 @@ public sealed class GetAvailableActionsHandlerTests
     }
 
     [Fact]
+    public async Task GetAvailableActionsExposesSaloonLookAroundWhenTheTownHasASaloon()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession(TownServices.Saloon);
+        repository.Seed(session);
+        var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
+
+        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
+    }
+
+    [Fact]
     public async Task GetAvailableActionsThrowsWhenMissing()
     {
         var handler = new GetAvailableActionsHandler(new InMemoryGameSessionRepository(), new ActionAvailabilityResolver());

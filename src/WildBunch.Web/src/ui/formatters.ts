@@ -56,6 +56,8 @@ export function formatActionKind(kind: number) {
       return "Follow telegraph leads";
     case 13:
       return "Gather local gossip";
+    case 14:
+      return "Look around saloon";
     default:
       return `Action ${kind}`;
   }
@@ -137,6 +139,7 @@ export function formatServices(services: number) {
   if (services & 4) labels.push("Doctor");
   if (services & 8) labels.push("Telegraph");
   if (services & 16) labels.push("Notice board");
+  if (services & 32) labels.push("Saloon");
   return labels.length > 0 ? labels.join(", ") : "None";
 }
 

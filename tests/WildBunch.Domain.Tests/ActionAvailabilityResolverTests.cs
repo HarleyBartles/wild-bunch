@@ -42,6 +42,17 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
+    public void TownWithSaloonExposesLookAroundSaloon()
+    {
+        var session = CreateSession(TownServices.Saloon);
+        var resolver = new ActionAvailabilityResolver();
+
+        var result = resolver.Resolve(session);
+
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
+    }
+
+    [Fact]
     public void TownWithNoticeBoardExposesReadWantedPosters()
     {
         var session = CreateSession(TownServices.NoticeBoard);
@@ -109,6 +120,7 @@ public sealed class ActionAvailabilityResolverTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
@@ -132,6 +144,7 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ResolveTravelEncounter);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
