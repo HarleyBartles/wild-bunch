@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status')]
+    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status', 'validate')]
     [string]$Command = 'setup'
 )
 
@@ -19,6 +19,7 @@ $LogFile = Join-Path $LogDir 'wildbunch-dev.log'
 $Port = 5434
 $DatabaseName = 'wildbunch_dev'
 $HostName = 'localhost'
+$ValidationConnectionString = "Host=$HostName;Port=$Port;Database=$DatabaseName;Username=postgres"
 
 function Get-BinaryPath {
     param([Parameter(Mandatory)][string]$Name)
@@ -75,6 +76,33 @@ function Invoke-PostgresBinary {
     & (Get-BinaryPath $Name) @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "$Name failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Invoke-DotNetCommand {
+    param([Parameter(Mandatory)][string[]]$Arguments)
+
+    & dotnet @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet $($Arguments -join ' ') failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Invoke-WithValidationConnectionString {
+    param([Parameter(Mandatory)][scriptblock]$Action)
+
+    $previousConnectionString = $env:ConnectionStrings__WildBunchPostgresDb
+    try {
+        $env:ConnectionStrings__WildBunchPostgresDb = $ValidationConnectionString
+        & $Action
+    }
+    finally {
+        if ($null -eq $previousConnectionString) {
+            Remove-Item Env:\ConnectionStrings__WildBunchPostgresDb -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:ConnectionStrings__WildBunchPostgresDb = $previousConnectionString
+        }
     }
 }
 
@@ -187,6 +215,22 @@ function Reset-Cluster {
     }
 }
 
+function Invoke-ValidationLane {
+    Initialize-Cluster
+    Start-Cluster
+    Wait-ForReady
+    Ensure-Database
+
+    Invoke-WithValidationConnectionString {
+        Invoke-DotNetCommand @('tool', 'restore')
+        Invoke-DotNetCommand @('ef', 'migrations', 'list', '--project', 'src/WildBunch.Persistence', '--startup-project', 'src/WildBunch.Api')
+        Invoke-DotNetCommand @('test', 'WildBunch.sln')
+    }
+
+    Write-Host "PostgreSQL validation lane completed."
+    Write-Host "Connection string: $ValidationConnectionString"
+}
+
 switch ($Command) {
     'install-tools' {
         $toolingVersion = Get-ToolingVersion
@@ -252,5 +296,8 @@ switch ($Command) {
             Write-Host "Cluster exists but is not running on ${HostName}:$Port."
             Write-Host "Persistent app database '$DatabaseName' status is unavailable until the cluster is started."
         }
+    }
+    'validate' {
+        Invoke-ValidationLane
     }
 }

@@ -31,6 +31,7 @@
 - Run `dotnet test`.
 - Run `dotnet tool restore` before EF validation commands when the repo-local tool manifest is used.
 - Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api` when persistence may be affected, or as standing validation unless clearly irrelevant.
+- Run `.\scripts\postgres-dev.ps1 validate` for the repo-local PostgreSQL-backed validation lane; it provisions the persistent cluster, exports the repo-local connection string for child `dotnet` commands, restores tools, and runs the EF and test checks together.
 - Report warnings separately from failures.
 
 ## Testing Posture
