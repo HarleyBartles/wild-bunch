@@ -229,6 +229,7 @@ function Invoke-ValidationLane {
 
     Write-Host "PostgreSQL validation lane completed."
     Write-Host "Connection string: $ValidationConnectionString"
+    Write-Host "Use '.\scripts\postgres-dev.ps1 status' to check the lane and '.\scripts\postgres-dev.ps1 stop' when you want to shut it down."
 }
 
 switch ($Command) {
