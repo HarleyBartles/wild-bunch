@@ -21,6 +21,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
+    private readonly WantedSuspectPresenceLedger _wantedSuspectPresenceLedger;
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
 
@@ -37,7 +38,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         TravelRandomnessState travelRandomness,
         AdventureRandomnessPolicy entropy,
         TownVisitState? currentTownVisit,
-        IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory)
+        IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
+        IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
     {
         Id = id;
         Player = player;
@@ -62,6 +64,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         {
             _completedJourneyHistory.AddRange(completedJourneyHistory);
         }
+
+        _wantedSuspectPresenceLedger = new WantedSuspectPresenceLedger(wantedSuspectPresenceEntries);
 
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
@@ -99,6 +103,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _travelDiaryDays;
 
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
+
+    public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _wantedSuspectPresenceLedger.Entries;
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
         => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
@@ -139,7 +145,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted(),
             entropy,
             currentTownVisit: null,
-            Array.Empty<TravelJourneySnapshot>());
+            Array.Empty<TravelJourneySnapshot>(),
+            Array.Empty<WantedSuspectPresenceEntry>());
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
@@ -152,6 +159,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             TravelDifficulty.Hard => 800,
             _ => 1000
         };
+
+    public WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
+        => _wantedSuspectPresenceLedger.GetState(suspectId);
+
+    public bool TryGetWantedSuspectPresenceState(SuspectId suspectId, out WantedSuspectPresenceState state)
+        => _wantedSuspectPresenceLedger.TryGetState(suspectId, out state);
+
+    public void SetWantedSuspectPresenceState(SuspectId suspectId, WantedSuspectPresenceState state)
+        => _wantedSuspectPresenceLedger.SetState(suspectId, state);
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
