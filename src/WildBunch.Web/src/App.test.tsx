@@ -519,6 +519,80 @@ describe("App", () => {
     });
   });
 
+  it("runs the saloon look-around action and refreshes the journal state", async () => {
+    mockedGetGame.mockResolvedValue(createSession());
+    mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.LookAroundSaloon, label: "Look around saloon" },
+    ]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
+    mockedCreateGame.mockResolvedValue(createSession());
+    mockedBuyStoreItem.mockResolvedValue({
+      success: true,
+      message: "Purchased",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    mockedLookAroundSaloon.mockResolvedValue({
+      success: true,
+      message: "I spot a suspicious rider near the bar.",
+      currentJournal: createJournal(),
+    });
+    mockedInspectNoticeBoard.mockResolvedValue({
+      success: true,
+      message: "Inspect notice board",
+      currentJournal: createJournal(),
+    });
+    mockedCheckLocalRecords.mockResolvedValue({
+      success: true,
+      message: "Check local records",
+      currentJournal: createJournal(),
+    });
+    mockedFollowTelegraphLeads.mockResolvedValue({
+      success: true,
+      message: "Follow telegraph leads",
+      currentJournal: createJournal(),
+    });
+    mockedGatherLocalGossip.mockResolvedValue({
+      success: true,
+      message: "Gather local gossip",
+      currentJournal: createJournal(),
+    });
+    mockedTravel.mockResolvedValue({
+      success: true,
+      message: "Travelled",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    render(<App />);
+
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+      expect(mockedGetAvailableActions).toHaveBeenCalledWith("game-1");
+      expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(await screen.findByRole("button", { name: /look around saloon/i }));
+
+    await waitFor(() => {
+      expect(mockedLookAroundSaloon).toHaveBeenCalledWith("game-1");
+      expect(mockedGetJournal.mock.calls.length).toBeGreaterThan(1);
+    });
+
+    expect(screen.getByText("I spot a suspicious rider near the bar.")).toBeInTheDocument();
+  });
+
   it("shows a clean empty wanted-poster state when the response is empty", async () => {
     const emptyJournal = createJournal();
     emptyJournal.caseFile.wantedPosters = [];

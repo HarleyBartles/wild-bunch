@@ -637,7 +637,7 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateSaloonLookAroundSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Saloon);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },

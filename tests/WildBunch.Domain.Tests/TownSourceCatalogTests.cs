@@ -33,8 +33,8 @@ public sealed class TownSourceCatalogTests
         Assert.Equal(TownSourceRefreshPolicy.PerVisit, localGossip.RefreshPolicy);
 
         Assert.Equal("town-source.saloon-look-around", saloonLookAround.Id);
-        Assert.Equal(TownSourceAvailability.Conditional, saloonLookAround.Availability);
-        Assert.Equal(TownServices.Saloon, saloonLookAround.RequiredServices);
+        Assert.Equal(TownSourceAvailability.Baseline, saloonLookAround.Availability);
+        Assert.Equal(TownServices.None, saloonLookAround.RequiredServices);
         Assert.Equal(TownSourceLocality.TownLocal, saloonLookAround.Locality);
         Assert.Equal(TownSourceRefreshPolicy.PerVisit, saloonLookAround.RefreshPolicy);
 
@@ -54,7 +54,7 @@ public sealed class TownSourceCatalogTests
         Assert.True(townWithoutTelegraph.Sources.IsAvailable(InvestigationSourceKind.NoticeBoard, townWithoutTelegraph.Services));
         Assert.True(townWithoutTelegraph.Sources.IsAvailable(InvestigationSourceKind.LocalRecords, townWithoutTelegraph.Services));
         Assert.True(townWithoutTelegraph.Sources.IsAvailable(InvestigationSourceKind.LocalGossip, townWithoutTelegraph.Services));
-        Assert.False(townWithoutTelegraph.Sources.IsAvailable(InvestigationSourceKind.SaloonLookAround, townWithoutTelegraph.Services));
+        Assert.True(townWithoutTelegraph.Sources.IsAvailable(InvestigationSourceKind.SaloonLookAround, townWithoutTelegraph.Services));
         Assert.False(townWithoutTelegraph.Sources.IsAvailable(InvestigationSourceKind.TelegraphLead, townWithoutTelegraph.Services));
 
         Assert.True(townWithTelegraph.Sources.IsAvailable(InvestigationSourceKind.TelegraphLead, townWithTelegraph.Services));
@@ -72,13 +72,9 @@ public sealed class TownSourceCatalogTests
         Assert.Contains(withoutTelegraph, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(withoutTelegraph, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(withoutTelegraph, action => action.Kind == AvailableActionKind.GatherLocalGossip);
-        Assert.DoesNotContain(withoutTelegraph, action => action.Kind == AvailableActionKind.LookAroundSaloon);
+        Assert.Contains(withoutTelegraph, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.DoesNotContain(withoutTelegraph, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
 
-        var townWithSaloon = new Town(new TownId("current"), "Current Town", TownServices.Saloon);
-        var withSaloon = townWithSaloon.Sources.GetInvestigationActions(townWithSaloon.Services);
-
-        Assert.Contains(withSaloon, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.Contains(withTelegraph, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
         Assert.Equal(withoutTelegraph.Count + 1, withTelegraph.Count);
     }

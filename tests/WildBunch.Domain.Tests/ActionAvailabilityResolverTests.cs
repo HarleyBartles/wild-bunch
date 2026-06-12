@@ -14,6 +14,7 @@ namespace WildBunch.Domain.Tests;
 public sealed class ActionAvailabilityResolverTests
 {
     private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+
     [Fact]
     public void TownWithSuppliesAndLodgingExposesSupplyAndLodgingActions()
     {
@@ -27,6 +28,7 @@ public sealed class ActionAvailabilityResolverTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewJournal);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.StayAtLodging);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
     }
 
     [Fact]
@@ -39,17 +41,6 @@ public sealed class ActionAvailabilityResolverTests
 
         Assert.Contains(result, action => action.Kind == AvailableActionKind.SendTelegram);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
-    }
-
-    [Fact]
-    public void TownWithSaloonExposesLookAroundSaloon()
-    {
-        var session = CreateSession(TownServices.Saloon);
-        var resolver = new ActionAvailabilityResolver();
-
-        var result = resolver.Resolve(session);
-
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
     }
 
     [Fact]
@@ -75,6 +66,7 @@ public sealed class ActionAvailabilityResolverTests
         var result = resolver.Resolve(session);
 
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
@@ -207,4 +199,3 @@ public sealed class ActionAvailabilityResolverTests
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, WildBunch.Domain.Economy.Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
     }
 }
-

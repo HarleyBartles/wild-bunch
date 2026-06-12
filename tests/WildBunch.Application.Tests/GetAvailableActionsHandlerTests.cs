@@ -45,21 +45,9 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-    }
-
-    [Fact]
-    public async Task GetAvailableActionsExposesSaloonLookAroundWhenTheTownHasASaloon()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.Saloon);
-        repository.Seed(session);
-        var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
-
-        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
-
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
     }
 
     [Fact]

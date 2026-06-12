@@ -74,8 +74,8 @@ public sealed record TownSourceCatalog(IReadOnlyList<TownSourceDefinition> Defin
                 InvestigationSourceKind.SaloonLookAround,
                 AvailableActionKind.LookAroundSaloon,
                 "Look around saloon",
-                TownSourceAvailability.Conditional,
-                TownServices.Saloon,
+                TownSourceAvailability.Baseline,
+                TownServices.None,
                 TownSourceLocality.TownLocal,
                 TownSourceRefreshPolicy.PerVisit),
             new TownSourceDefinition(

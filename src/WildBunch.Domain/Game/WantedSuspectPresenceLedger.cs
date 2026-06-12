@@ -76,21 +76,6 @@ public sealed class WantedSuspectPresenceLedger
         _entries.Add(entry);
     }
 
-    public bool TryGetAvailableInTownSuspectId(out SuspectId suspectId)
-    {
-        foreach (var entry in _entries)
-        {
-            if (entry.State == WantedSuspectPresenceState.AvailableInTown)
-            {
-                suspectId = entry.SuspectId;
-                return true;
-            }
-        }
-
-        suspectId = default;
-        return false;
-    }
-
     public void ReplaceEntries(IReadOnlyList<WantedSuspectPresenceEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
