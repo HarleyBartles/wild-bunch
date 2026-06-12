@@ -1579,12 +1579,48 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (TryGetWantedSuspectCandidateInTown(out var suspect))
         {
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(suspect.Id);
             RecordCaseUpdate($"You look around the saloon and spot {suspect.Name}.");
             return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {suspect.Name}.", sessionChanged: true);
         }
 
+        CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
         RecordCaseUpdate("You look around the saloon, but nobody of interest is here.");
         return CaseInvestigationResult.Succeeded("You look around the saloon, but nobody of interest is here.", sessionChanged: true);
+    }
+
+    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect()
+    {
+        if (IsJourneyModal())
+        {
+            return WantedSuspectConfrontationResult.Rejected(JourneyModalBlockMessage);
+        }
+
+        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId;
+        if (activeSaloonSuspectId is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected("There is no wanted suspect waiting in the saloon.");
+        }
+
+        var activeSaloonSuspect = activeSaloonSuspectId.Value;
+        var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
+        if (presenceState != WantedSuspectPresenceState.AvailableInTown)
+        {
+            var staleTarget = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
+            return WantedSuspectConfrontationResult.Rejected(
+                staleTarget is null
+                    ? "That saloon suspect is no longer available."
+                    : $"{staleTarget.Name} is no longer in the saloon.",
+                staleTarget?.Name);
+        }
+
+        var result = ResolveWantedSuspectConfrontation(activeSaloonSuspect, WantedSuspectConfrontationChoice.Fled);
+        if (result.Success)
+        {
+            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
+        }
+
+        return result;
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(

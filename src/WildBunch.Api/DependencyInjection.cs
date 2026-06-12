@@ -42,12 +42,13 @@ public static class DependencyInjection
         services.AddScoped<FollowTelegraphLeadsHandler>();
         services.AddScoped<GatherLocalGossipHandler>();
         services.AddScoped<LookAroundSaloonHandler>();
+        services.AddScoped<ConfrontWantedSuspectHandler>();
+        services.AddScoped<ConfrontSaloonWantedSuspectHandler>();
         services.AddScoped<PreviewTravelHandler>();
         services.AddScoped<TravelToTownHandler>();
         services.AddScoped<AdvanceTravelDayHandler>();
         services.AddScoped<AcknowledgeJourneyArrivalHandler>();
         services.AddScoped<ResolveJourneyEncounterHandler>();
-        services.AddScoped<ConfrontWantedSuspectHandler>();
         services.AddScoped<TurnInToSheriffHandler>();
 
         return services;

@@ -687,7 +687,8 @@ public sealed partial class GameSessionJsonSerializer
         string TownId,
         int VisitNumber,
         IReadOnlyList<TownSourceVisitStateSnapshot>? SourceStates,
-        int WantedPostersLastCheckedVisitNumber)
+        int WantedPostersLastCheckedVisitNumber,
+        string? ActiveSaloonWantedSuspectId)
     {
         public static TownVisitTownStateSnapshot FromDomain(TownVisitTownState townState)
             => new(
@@ -697,14 +698,16 @@ public sealed partial class GameSessionJsonSerializer
                     .OrderBy(sourceState => sourceState.SourceKind)
                     .Select(TownSourceVisitStateSnapshot.FromDomain)
                     .ToArray(),
-                townState.WantedPostersLastCheckedVisitNumber);
+                townState.WantedPostersLastCheckedVisitNumber,
+                townState.ActiveSaloonWantedSuspectId?.Value);
 
         public TownVisitTownState ToDomain()
             => new(
                 new TownId(TownId),
                 VisitNumber,
                 SourceStates?.Select(snapshot => snapshot.ToDomain()),
-                wantedPostersSpent: WantedPostersLastCheckedVisitNumber == VisitNumber);
+                wantedPostersSpent: WantedPostersLastCheckedVisitNumber == VisitNumber,
+                activeSaloonWantedSuspectId: ActiveSaloonWantedSuspectId is null ? null : new SuspectId(ActiveSaloonWantedSuspectId));
     }
 
     private sealed record TownSourceVisitStateSnapshot(
