@@ -57,6 +57,16 @@ supplies the repo-local development connection string so F5 and `dotnet run`
 work without manually exporting `ConnectionStrings__WildBunchPostgresDb` each
 time.
 
+The repo-local PostgreSQL validation lane has a dedicated entrypoint:
+
+```powershell
+.\scripts\postgres-dev.ps1 validate
+```
+
+That command provisions the local cluster if needed, exports the repo-local
+connection string for child `dotnet` commands, restores tools, and runs the EF
+and test checks as one repeatable lane.
+
 ## Repo Placement
 
 - Unit tests live in the domain/application/game-content test projects.
