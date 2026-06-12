@@ -28,6 +28,11 @@ public static class InvestigationEndpoints
             .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapPost("{id:guid}/investigations/saloon/look-around", LookAroundSaloonAsync)
+            .WithName("LookAroundSaloon")
+            .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         return games;
     }
 
@@ -87,6 +92,22 @@ public static class InvestigationEndpoints
         try
         {
             var result = await handler.HandleAsync(new GatherLocalGossipCommand(id), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> LookAroundSaloonAsync(
+        Guid id,
+        LookAroundSaloonHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await handler.HandleAsync(new LookAroundSaloonCommand(id), cancellationToken);
             return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)

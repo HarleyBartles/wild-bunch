@@ -8,6 +8,7 @@ import {
   getJournal,
   inspectNoticeBoard,
   gatherLocalGossip,
+  lookAroundSaloon,
   readWantedPosters,
   travel,
 } from "../api/wildBunchApi";
@@ -44,6 +45,10 @@ function actionIsFollowTelegraphLeads(action: AvailableActionDto) {
 
 function actionIsGatherLocalGossip(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.GatherLocalGossip;
+}
+
+function actionIsLookAroundSaloon(action: AvailableActionDto) {
+  return action.kind === AvailableActionKind.LookAroundSaloon;
 }
 
 export function useCurrentGameSession() {
@@ -268,6 +273,26 @@ export function useCurrentGameSession() {
     }
   }
 
+  async function handleLookAroundSaloon() {
+    if (!gameId || !canLookAroundSaloon) {
+      return;
+    }
+
+    setBusyMode("investigating");
+    setError("");
+
+    try {
+      const result = await lookAroundSaloon(gameId);
+      setJournal(result.currentJournal);
+      await reloadCurrentGame(gameId);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to look around the saloon.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
   function handleReset() {
     window.localStorage.removeItem(storageKey);
     setSession(null);
@@ -288,6 +313,7 @@ export function useCurrentGameSession() {
   const canCheckLocalRecords = actions.some(actionIsCheckLocalRecords);
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
+  const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
 
   return {
     session,
@@ -308,6 +334,7 @@ export function useCurrentGameSession() {
     canCheckLocalRecords,
     canFollowTelegraphLeads,
     canGatherLocalGossip,
+    canLookAroundSaloon,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -317,6 +344,7 @@ export function useCurrentGameSession() {
     handleCheckLocalRecords,
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
+    handleLookAroundSaloon,
     handleReset,
     setSession,
     setNotice,

@@ -45,6 +45,7 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
     }

@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<CheckSheriffRecordsHandler>();
         services.AddScoped<FollowTelegraphLeadsHandler>();
         services.AddScoped<GatherLocalGossipHandler>();
+        services.AddScoped<LookAroundSaloonHandler>();
         services.AddScoped<PreviewTravelHandler>();
         services.AddScoped<TravelToTownHandler>();
         services.AddScoped<AdvanceTravelDayHandler>();
