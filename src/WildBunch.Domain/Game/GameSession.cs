@@ -1639,6 +1639,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         RecordCaseUpdate(narration);
         var resolvedState = nextState! with { Day = Clock.Day, Turn = Clock.Turn };
         CaseFile.RecordWantedSuspectConfrontationState(resolvedState);
+        UpdateWantedSuspectPresence(targetSuspectId, choice);
 
         return choice switch
         {
@@ -1663,6 +1664,22 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 targetSuspect.Name,
                 warrant.Terms.Disposition)
         };
+    }
+
+    private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
+    {
+        var nextPresenceState = choice switch
+        {
+            WantedSuspectConfrontationChoice.Surrendered => WantedSuspectPresenceState.SecuredAlive,
+            WantedSuspectConfrontationChoice.Fled => WantedSuspectPresenceState.GoneToGround,
+            WantedSuspectConfrontationChoice.Killed => WantedSuspectPresenceState.SecuredDead,
+            _ => WantedSuspectPresenceState.Unavailable
+        };
+
+        if (nextPresenceState != WantedSuspectPresenceState.Unavailable)
+        {
+            SetWantedSuspectPresenceState(suspectId, nextPresenceState);
+        }
     }
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
