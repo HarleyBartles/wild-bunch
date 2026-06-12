@@ -84,6 +84,22 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void LegacyFullSessionJsonWithoutWantedSuspectPresenceLedgerDefaultsToEmptyLedger()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateSession(TravelDifficulty.Normal, AdventureRandomnessPolicy.Boring);
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.GoneToGround);
+
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
+        legacySnapshot.Remove("wantedSuspectPresenceLedger");
+
+        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
+
+        Assert.Empty(reloaded.WantedSuspectPresenceEntries);
+        Assert.Equal(WantedSuspectPresenceState.Unavailable, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
+    }
+
+    [Fact]
     public void CaseFileWarrantGangAffiliationFieldsRoundTripThroughJsonPersistence()
     {
         var serializer = new GameSessionJsonSerializer();
