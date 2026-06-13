@@ -149,6 +149,6 @@ public static class GameSessionMapper
         var targetName = caseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonWantedSuspectId))?.Name;
         return targetName is null
             ? null
-            : new ActiveSaloonWantedSuspectDto(activeSaloonWantedSuspectId.Value.Value, targetName);
+            : new ActiveSaloonWantedSuspectDto(targetName);
     }
 }

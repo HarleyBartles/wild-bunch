@@ -450,7 +450,6 @@ export interface GameSessionDto {
 }
 
 export interface ActiveSaloonWantedSuspectDto {
-  suspectId: string;
   targetName: string;
 }
 

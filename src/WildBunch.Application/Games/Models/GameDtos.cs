@@ -23,7 +23,6 @@ public sealed record GameSessionDto(
     ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect);
 
 public sealed record ActiveSaloonWantedSuspectDto(
-    string SuspectId,
     string TargetName);
 
 public sealed record PlayerDto(

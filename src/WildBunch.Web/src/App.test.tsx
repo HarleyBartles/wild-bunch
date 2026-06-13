@@ -601,7 +601,6 @@ describe("App", () => {
     const surfacedSession: GameSessionDto = {
       ...createSession(),
       activeSaloonWantedSuspect: {
-        suspectId: "suspect-1",
         targetName: "Mira Cline",
       },
     };

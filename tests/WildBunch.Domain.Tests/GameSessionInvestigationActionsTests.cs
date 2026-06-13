@@ -658,7 +658,23 @@ public sealed class GameSessionInvestigationActionsTests
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
-            knownClues: Array.Empty<Clue>());
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-ira"),
+                    "Ira Flint",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        Array.Empty<string>(),
+                        Array.Empty<string>(),
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for stagecoach robbery.")
+            });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }

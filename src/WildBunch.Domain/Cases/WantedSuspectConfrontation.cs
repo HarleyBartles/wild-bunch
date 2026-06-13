@@ -67,6 +67,7 @@ public sealed record WantedSuspectConfrontationResult(
     public static WantedSuspectConfrontationResult Rejected(
         string message,
         string? targetName = null,
-        WarrantDisposition? disposition = null)
-        => new(false, message, WantedSuspectConfrontationOutcome.Rejected, targetName, disposition, null, null, false);
+        WarrantDisposition? disposition = null,
+        bool sessionChanged = false)
+        => new(false, message, WantedSuspectConfrontationOutcome.Rejected, targetName, disposition, null, null, sessionChanged);
 }

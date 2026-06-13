@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
@@ -1577,7 +1578,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You look around the saloon again, but nobody of interest is here.", sessionChanged: true);
         }
 
-        if (TryGetWantedSuspectCandidateInTown(out var suspect))
+        if (TryGetConfrontableWantedSuspectCandidateInTown(out var suspect))
         {
             CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(suspect.Id);
             RecordCaseUpdate($"You look around the saloon and spot {suspect.Name}.");
@@ -1606,12 +1607,36 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
         if (presenceState != WantedSuspectPresenceState.AvailableInTown)
         {
+            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
             var staleTarget = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
             return WantedSuspectConfrontationResult.Rejected(
                 staleTarget is null
                     ? "That saloon suspect is no longer available."
                     : $"{staleTarget.Name} is no longer in the saloon.",
-                staleTarget?.Name);
+                staleTarget?.Name,
+                sessionChanged: true);
+        }
+
+        if (!TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
+        {
+            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
+            var staleTarget = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
+            return WantedSuspectConfrontationResult.Rejected(
+                staleTarget is null
+                    ? "That saloon suspect is no longer available."
+                    : $"There is no wanted notice for {staleTarget.Name}.",
+                staleTarget?.Name,
+                sessionChanged: true);
+        }
+
+        if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
+        {
+            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
+            return WantedSuspectConfrontationResult.Rejected(
+                $"{existingState.TargetName} has already been confronted.",
+                existingState.TargetName,
+                activeSaloonWarrant.Terms.Disposition,
+                sessionChanged: true);
         }
 
         var result = ResolveWantedSuspectConfrontation(activeSaloonSuspect, WantedSuspectConfrontationChoice.Fled);
@@ -2031,6 +2056,19 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return warrant.Terms.KnownAliases.Any(alias => string.Equals(alias, targetSuspect.Name, StringComparison.OrdinalIgnoreCase));
     }
 
+    private bool TryGetKnownWarrantForSuspect(SuspectId suspectId, [NotNullWhen(true)] out Warrant? warrant)
+    {
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(suspectId));
+        if (targetSuspect is null)
+        {
+            warrant = null;
+            return false;
+        }
+
+        warrant = CaseFile.KnownWarrants.FirstOrDefault(candidate => MatchesKnownWarrant(candidate, targetSuspect));
+        return warrant is not null;
+    }
+
     private static string DescribeWarrantDisposition(WarrantDisposition disposition)
         => disposition switch
         {
@@ -2115,7 +2153,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             || !string.IsNullOrWhiteSpace(subject.Feature));
     }
 
-    private bool TryGetWantedSuspectCandidateInTown(out Suspect suspect)
+    private bool TryGetConfrontableWantedSuspectCandidateInTown(out Suspect suspect)
     {
         foreach (var candidate in CaseFile.Suspects)
         {
@@ -2125,6 +2163,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             }
 
             if (presenceState != WantedSuspectPresenceState.AvailableInTown)
+            {
+                continue;
+            }
+
+            if (!CaseFile.KnownWarrants.Any(warrant => MatchesKnownWarrant(warrant, candidate)))
             {
                 continue;
             }
