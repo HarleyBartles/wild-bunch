@@ -26,6 +26,7 @@ public sealed class ConfrontSaloonPersonOfInterestHandler
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        // Trust boundary: the UI supplies only public wanted-poster handles here, and this slice preserves the declared handle as-is.
         var result = session.ConfrontSaloonPersonOfInterest(command.DeclaredWantedIdentityHandle);
 
         if (result.SessionChanged)

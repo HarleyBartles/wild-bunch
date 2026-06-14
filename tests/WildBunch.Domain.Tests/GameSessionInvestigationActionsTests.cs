@@ -197,7 +197,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(first.Success);
         Assert.True(repeatSameVisit.Success);
-        Assert.Equal("You look around the saloon and spot Ira Flint.", first.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a pale scar across the left cheek.", first.Message);
         Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatSameVisit.Message);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
         Assert.Equal(2, session.Clock.Turn);
@@ -213,7 +213,7 @@ public sealed class GameSessionInvestigationActionsTests
         var afterReturn = session.LookAroundSaloon();
 
         Assert.True(afterReturn.Success);
-        Assert.Equal("You look around the saloon and spot Ira Flint.", afterReturn.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a pale scar across the left cheek.", afterReturn.Message);
         Assert.Equal(3, session.Clock.Turn);
     }
 
@@ -228,7 +228,7 @@ public sealed class GameSessionInvestigationActionsTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot Jonah Pike.", result.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a black duster.", result.Message);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
         Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(new SuspectId("suspect-4")));
     }
@@ -648,9 +648,23 @@ public sealed class GameSessionInvestigationActionsTests
 
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Ira Flint",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("a pale scar across the left cheek") }),
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
+                SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
-            new Suspect(new SuspectId("suspect-3"), "Jonah Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            new Suspect(
+                new SuspectId("suspect-3"),
+                "Jonah Pike",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("a black duster") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge)
         };
 
         var caseFile = new CaseFile(
