@@ -23,6 +23,7 @@ import {
   getJournal,
   getTownStoreOffers,
   inspectNoticeBoard,
+  confrontSaloonWantedSuspect,
   lookAroundSaloon,
   readWantedPosters,
   travel,
@@ -37,6 +38,7 @@ vi.mock("./api/wildBunchApi", () => ({
   getTownStoreOffers: vi.fn(),
   checkLocalRecords: vi.fn(),
   inspectNoticeBoard: vi.fn(),
+  confrontSaloonWantedSuspect: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
   followTelegraphLeads: vi.fn(),
@@ -52,6 +54,7 @@ const mockedCreateGame = vi.mocked(createGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
 const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
 const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
+const mockedConfrontSaloonWantedSuspect = vi.mocked(confrontSaloonWantedSuspect);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
@@ -134,6 +137,7 @@ function createSession(): GameSessionDto {
     journey: null,
     travelDiary: null,
     logEntries: [{ kind: 0, message: "Booted", day: 1, turn: 0 }],
+    activeSaloonWantedSuspect: null,
   };
 }
 
@@ -591,6 +595,107 @@ describe("App", () => {
     });
 
     expect(screen.getByText("I spot a suspicious rider near the bar.")).toBeInTheDocument();
+  });
+
+  it("shows a saloon confrontation action after a wanted suspect surfaces and clears it after the suspect flees", async () => {
+    const surfacedSession: GameSessionDto = {
+      ...createSession(),
+      activeSaloonWantedSuspect: {
+        targetName: "Mira Cline",
+      },
+    };
+    const clearedSession: GameSessionDto = {
+      ...createSession(),
+      activeSaloonWantedSuspect: null,
+    };
+
+    mockedGetGame.mockResolvedValue(clearedSession);
+    mockedGetGame.mockResolvedValueOnce(createSession());
+    mockedGetGame.mockResolvedValueOnce(surfacedSession);
+    mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.LookAroundSaloon, label: "Look around saloon" },
+    ]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
+    mockedCreateGame.mockResolvedValue(createSession());
+    mockedBuyStoreItem.mockResolvedValue({
+      success: true,
+      message: "Purchased",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    mockedLookAroundSaloon.mockResolvedValue({
+      success: true,
+      message: "Mira Cline is in the saloon.",
+      currentJournal: createJournal(),
+    });
+    mockedConfrontSaloonWantedSuspect.mockResolvedValue({
+      success: true,
+      message: "You confront Mira Cline, but they get away.",
+      outcome: 1,
+      currentSession: clearedSession,
+      targetName: "Mira Cline",
+      disposition: 1,
+      isAlive: true,
+      isSecured: false,
+      sessionChanged: true,
+    });
+    mockedInspectNoticeBoard.mockResolvedValue({
+      success: true,
+      message: "Inspect notice board",
+      currentJournal: createJournal(),
+    });
+    mockedCheckLocalRecords.mockResolvedValue({
+      success: true,
+      message: "Check local records",
+      currentJournal: createJournal(),
+    });
+    mockedFollowTelegraphLeads.mockResolvedValue({
+      success: true,
+      message: "Follow telegraph leads",
+      currentJournal: createJournal(),
+    });
+    mockedGatherLocalGossip.mockResolvedValue({
+      success: true,
+      message: "Gather local gossip",
+      currentJournal: createJournal(),
+    });
+    mockedTravel.mockResolvedValue({
+      success: true,
+      message: "Travelled",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    render(<App />);
+
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+      expect(mockedGetAvailableActions).toHaveBeenCalledWith("game-1");
+      expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(await screen.findByRole("button", { name: /look around saloon/i }));
+
+    const confrontButton = await screen.findByRole("button", { name: /confront mira cline/i });
+    await user.click(confrontButton);
+
+    await waitFor(() => {
+      expect(mockedConfrontSaloonWantedSuspect).toHaveBeenCalledWith("game-1");
+      expect(screen.queryByRole("button", { name: /confront mira cline/i })).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText("You confront Mira Cline, but they get away.")).toBeInTheDocument();
   });
 
   it("shows a clean empty wanted-poster state when the response is empty", async () => {

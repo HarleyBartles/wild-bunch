@@ -46,6 +46,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             session.CaseFile,
             session.Clock,
             session.PursuitState,
+            session.CurrentTownVisit,
             session.Journey is null ? null : session.Journey.ToSnapshot(session.TravelRules),
             session.TravelDiaryDays.ToArray(),
             session.LogEntries.ToArray()));

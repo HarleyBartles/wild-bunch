@@ -26,6 +26,10 @@ internal static class GameSessionReadStoreLoader
         var world = serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
         var entropy = entropyJson is null ? AdventureRandomnessPolicy.Standard : serializer.DeserializeSetup(entropyJson);
+        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
+        var townVisitState = townVisitStateJson is null
+            ? new TownVisitState(player.CurrentTownId)
+            : serializer.DeserializeTownVisitState(townVisitStateJson);
 
         return new GameSessionReadModel(
             store.Envelope.Id,
@@ -37,6 +41,7 @@ internal static class GameSessionReadStoreLoader
             serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile)),
             serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock)),
             serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState)),
+            townVisitState,
             GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey) is { } journeyJson
                 ? serializer.DeserializeJourneySnapshot(journeyJson)
                 : null,

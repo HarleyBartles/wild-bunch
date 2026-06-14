@@ -8,6 +8,7 @@ import {
   getJournal,
   inspectNoticeBoard,
   gatherLocalGossip,
+  confrontSaloonWantedSuspect,
   lookAroundSaloon,
   readWantedPosters,
   travel,
@@ -293,6 +294,26 @@ export function useCurrentGameSession() {
     }
   }
 
+  async function handleConfrontSaloonWantedSuspect() {
+    if (!gameId || !canConfrontSaloonWantedSuspect) {
+      return;
+    }
+
+    setBusyMode("investigating");
+    setError("");
+
+    try {
+      const result = await confrontSaloonWantedSuspect(gameId);
+      setSession(result.currentSession);
+      await reloadCurrentGame(gameId);
+      setNotice(result.message);
+    } catch (exception) {
+      setError(exception instanceof Error ? exception.message : "Unable to confront the saloon suspect.");
+    } finally {
+      setBusyMode("idle");
+    }
+  }
+
   function handleReset() {
     window.localStorage.removeItem(storageKey);
     setSession(null);
@@ -314,6 +335,7 @@ export function useCurrentGameSession() {
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
+  const canConfrontSaloonWantedSuspect = Boolean(session?.activeSaloonWantedSuspect);
 
   return {
     session,
@@ -335,6 +357,7 @@ export function useCurrentGameSession() {
     canFollowTelegraphLeads,
     canGatherLocalGossip,
     canLookAroundSaloon,
+    canConfrontSaloonWantedSuspect,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -345,6 +368,7 @@ export function useCurrentGameSession() {
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
+    handleConfrontSaloonWantedSuspect,
     handleReset,
     setSession,
     setNotice,

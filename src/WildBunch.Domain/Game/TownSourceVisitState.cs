@@ -74,10 +74,12 @@ public sealed class TownVisitTownState
         int visitNumber = 1,
         IEnumerable<TownSourceVisitState>? sourceStates = null,
         IEnumerable<InvestigationSourceKind>? spentInvestigationSources = null,
-        bool wantedPostersSpent = false)
+        bool wantedPostersSpent = false,
+        SuspectId? activeSaloonWantedSuspectId = null)
     {
         TownId = townId;
         VisitNumber = visitNumber < 1 ? 1 : visitNumber;
+        ActiveSaloonWantedSuspectId = activeSaloonWantedSuspectId;
 
         if (sourceStates is not null)
         {
@@ -108,6 +110,8 @@ public sealed class TownVisitTownState
 
     public int WantedPostersLastCheckedVisitNumber { get; private set; }
 
+    public SuspectId? ActiveSaloonWantedSuspectId { get; private set; }
+
     public IReadOnlyCollection<TownSourceVisitState> SourceStates => _sourceStates.Values.ToArray();
 
     public IReadOnlyCollection<InvestigationSourceKind> SpentInvestigationSources
@@ -117,6 +121,12 @@ public sealed class TownVisitTownState
             .ToArray();
 
     public bool WantedPostersSpent => WantedPostersLastCheckedVisitNumber == VisitNumber;
+
+    public void SetActiveSaloonWantedSuspect(SuspectId? suspectId)
+        => ActiveSaloonWantedSuspectId = suspectId;
+
+    public void ClearActiveSaloonWantedSuspect()
+        => ActiveSaloonWantedSuspectId = null;
 
     public TownSourceCheckOutcome CheckSource(TownSourceDefinition sourceDefinition)
     {
@@ -162,6 +172,7 @@ public sealed class TownVisitTownState
     public void AdvanceVisit()
     {
         VisitNumber++;
+        ClearActiveSaloonWantedSuspect();
     }
 
     public void RefreshSources(TownSourceCatalog sourceCatalog)

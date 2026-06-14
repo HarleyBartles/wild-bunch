@@ -30,6 +30,7 @@ export default function App() {
     canFollowTelegraphLeads,
     canGatherLocalGossip,
     canLookAroundSaloon,
+    canConfrontSaloonWantedSuspect,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -40,6 +41,7 @@ export default function App() {
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
+    handleConfrontSaloonWantedSuspect,
     handleReset,
     setSession,
     setNotice,
@@ -174,6 +176,22 @@ export default function App() {
             <span className="panel-subtitle">{actions.length} fetched</span>
           </div>
           <div className="stack">
+            {session?.activeSaloonWantedSuspect ? (
+              <div className="action-row">
+                <div>
+                  <strong>Wanted suspect spotted</strong>
+                  <p>{session.activeSaloonWantedSuspect.targetName} is waiting in the saloon.</p>
+                </div>
+                <button
+                  type="button"
+                  className="button"
+                  onClick={handleConfrontSaloonWantedSuspect}
+                  disabled={!gameId || loading || !canConfrontSaloonWantedSuspect}
+                >
+                  {busyMode === "investigating" ? "Confronting..." : `Confront ${session.activeSaloonWantedSuspect.targetName}`}
+                </button>
+              </div>
+            ) : null}
             {actions.length > 0 ? (
               actions.map((action) => (
                 <div key={`${action.kind}-${action.label}`} className="action-row">

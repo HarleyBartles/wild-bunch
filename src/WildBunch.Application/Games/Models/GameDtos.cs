@@ -19,7 +19,11 @@ public sealed record GameSessionDto(
     PursuitStateDto PursuitState,
     TravelJourneyDto? Journey,
     TravelDiaryDto? TravelDiary,
-    IReadOnlyList<GameLogEntryDto> LogEntries);
+    IReadOnlyList<GameLogEntryDto> LogEntries,
+    ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect);
+
+public sealed record ActiveSaloonWantedSuspectDto(
+    string TargetName);
 
 public sealed record PlayerDto(
     string Name,

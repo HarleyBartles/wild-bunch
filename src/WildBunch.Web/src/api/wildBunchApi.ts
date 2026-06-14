@@ -11,6 +11,7 @@ import type {
   TravelRequest,
   TravelPreviewResultDto,
   WantedPostersResultDto,
+  WantedSuspectConfrontationResultDto,
 } from "./types";
 
 const defaultApiBaseUrl = "http://localhost:5275";
@@ -183,6 +184,12 @@ export function gatherLocalGossip(gameId: string) {
 
 export function lookAroundSaloon(gameId: string) {
   return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/saloon/look-around`, {
+    method: "POST",
+  });
+}
+
+export function confrontSaloonWantedSuspect(gameId: string) {
+  return requestJson<WantedSuspectConfrontationResultDto>(`/api/games/${gameId}/investigations/saloon/confront`, {
     method: "POST",
   });
 }

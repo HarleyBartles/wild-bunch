@@ -16,6 +16,7 @@ public sealed record GameSessionReadModel(
     CaseFile CaseFile,
     GameClock Clock,
     PursuitState PursuitState,
+    TownVisitState TownVisitState,
     TravelJourneySnapshot? Journey,
     IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
     IReadOnlyList<GameLogEntry> LogEntries);
