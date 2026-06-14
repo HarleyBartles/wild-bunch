@@ -116,8 +116,8 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon, but nobody of interest is here.", result.Message);
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Equal("You look around the saloon and spot Mira Cline.", result.Message);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
 

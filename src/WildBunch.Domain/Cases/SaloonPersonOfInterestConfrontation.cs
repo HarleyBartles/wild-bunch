@@ -21,25 +21,25 @@ public sealed record SaloonPersonOfInterestConfrontationResult(
 {
     public static SaloonPersonOfInterestConfrontationResult Surrendered(
         string targetName,
-        WarrantDisposition disposition,
+        WarrantDisposition? disposition,
         string message)
         => new(true, message, SaloonPersonOfInterestConfrontationOutcome.Surrendered, targetName, disposition, true, true, true);
 
     public static SaloonPersonOfInterestConfrontationResult Fled(
         string targetName,
-        WarrantDisposition disposition,
+        WarrantDisposition? disposition,
         string message)
         => new(true, message, SaloonPersonOfInterestConfrontationOutcome.Fled, targetName, disposition, true, false, true);
 
     public static SaloonPersonOfInterestConfrontationResult Killed(
         string targetName,
-        WarrantDisposition disposition,
+        WarrantDisposition? disposition,
         string message)
         => new(true, message, SaloonPersonOfInterestConfrontationOutcome.Killed, targetName, disposition, false, true, true);
 
     public static SaloonPersonOfInterestConfrontationResult Abandoned(
         string targetName,
-        WarrantDisposition disposition,
+        WarrantDisposition? disposition,
         string message)
         => new(true, message, SaloonPersonOfInterestConfrontationOutcome.Abandoned, targetName, disposition, null, null, true);
 

@@ -14,9 +14,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     [Fact]
     public void LookAroundSaloonSurfacesAnActivePersonOfInterestAndRepeatLookAroundShowsNobodyElseOfInterest()
     {
-        var session = CreateSession();
+        var session = CreateSessionWithoutKnownWarrants();
         var suspectId = new SuspectId("suspect-1");
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
 
         var lookAround = session.LookAroundSaloon();
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
@@ -30,17 +29,16 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.True(confrontation.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
         Assert.Equal("Mira Cline", confrontation.TargetName);
+        Assert.Null(confrontation.Disposition);
         Assert.True(confrontation.IsAlive);
         Assert.False(confrontation.IsSecured);
-        Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(suspectId));
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontationState.Outcome);
+        Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out _));
 
         Assert.True(repeatLookAround.Success);
         Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatLookAround.Message);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
 
     [Fact]
@@ -85,15 +83,14 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     [Fact]
     public void LookAroundSaloonDoesNotSurfaceTheTrueCulprit()
     {
-        var session = CreateSession();
-        var trueCulpritId = new SuspectId("suspect-2");
-        session.SetWantedSuspectPresenceState(trueCulpritId, WantedSuspectPresenceState.AvailableInTown);
+        var session = CreateSessionWithoutKnownWarrants();
 
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon, but nobody of interest is here.", result.Message);
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal("You look around the saloon and spot Mira Cline.", result.Message);
+        Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.NotEqual(new SuspectId("suspect-2"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
 
@@ -133,6 +130,31 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                         null),
                     "Wanted for a stage robbery.")
             });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateSessionWithoutKnownWarrants()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }
