@@ -62,7 +62,7 @@ public sealed class ConfrontSaloonWantedSuspectHandlerTests
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             knownWarrants: new[]

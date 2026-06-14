@@ -75,11 +75,11 @@ public sealed class TownVisitTownState
         IEnumerable<TownSourceVisitState>? sourceStates = null,
         IEnumerable<InvestigationSourceKind>? spentInvestigationSources = null,
         bool wantedPostersSpent = false,
-        SuspectId? activeSaloonWantedSuspectId = null)
+        SuspectId? activeSaloonPersonOfInterestId = null)
     {
         TownId = townId;
         VisitNumber = visitNumber < 1 ? 1 : visitNumber;
-        ActiveSaloonWantedSuspectId = activeSaloonWantedSuspectId;
+        ActiveSaloonPersonOfInterestId = activeSaloonPersonOfInterestId;
 
         if (sourceStates is not null)
         {
@@ -110,7 +110,9 @@ public sealed class TownVisitTownState
 
     public int WantedPostersLastCheckedVisitNumber { get; private set; }
 
-    public SuspectId? ActiveSaloonWantedSuspectId { get; private set; }
+    public SuspectId? ActiveSaloonPersonOfInterestId { get; private set; }
+
+    public SuspectId? ActiveSaloonWantedSuspectId => ActiveSaloonPersonOfInterestId;
 
     public IReadOnlyCollection<TownSourceVisitState> SourceStates => _sourceStates.Values.ToArray();
 
@@ -122,11 +124,17 @@ public sealed class TownVisitTownState
 
     public bool WantedPostersSpent => WantedPostersLastCheckedVisitNumber == VisitNumber;
 
+    public void SetActiveSaloonPersonOfInterest(SuspectId? suspectId)
+        => ActiveSaloonPersonOfInterestId = suspectId;
+
+    public void ClearActiveSaloonPersonOfInterest()
+        => ActiveSaloonPersonOfInterestId = null;
+
     public void SetActiveSaloonWantedSuspect(SuspectId? suspectId)
-        => ActiveSaloonWantedSuspectId = suspectId;
+        => SetActiveSaloonPersonOfInterest(suspectId);
 
     public void ClearActiveSaloonWantedSuspect()
-        => ActiveSaloonWantedSuspectId = null;
+        => ClearActiveSaloonPersonOfInterest();
 
     public TownSourceCheckOutcome CheckSource(TownSourceDefinition sourceDefinition)
     {
@@ -172,7 +180,7 @@ public sealed class TownVisitTownState
     public void AdvanceVisit()
     {
         VisitNumber++;
-        ClearActiveSaloonWantedSuspect();
+        ClearActiveSaloonPersonOfInterest();
     }
 
     public void RefreshSources(TownSourceCatalog sourceCatalog)

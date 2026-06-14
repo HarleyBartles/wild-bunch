@@ -321,8 +321,8 @@ public sealed class GameSessionDifficultyPersistenceTests
         var json = serializer.SerializeTownVisitState(session.CurrentTownVisit);
         var reloaded = serializer.DeserializeTownVisitState(json);
 
-        Assert.Contains("\"activeSaloonWantedSuspectId\"", json, StringComparison.Ordinal);
-        Assert.Equal(new SuspectId("suspect-1"), reloaded.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Contains("\"activeSaloonPersonOfInterestId\"", json, StringComparison.Ordinal);
+        Assert.Equal(new SuspectId("suspect-1"), reloaded.CurrentTownState.ActiveSaloonPersonOfInterestId);
     }
 
     [Fact]

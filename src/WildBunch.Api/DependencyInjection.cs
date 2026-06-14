@@ -43,7 +43,7 @@ public static class DependencyInjection
         services.AddScoped<GatherLocalGossipHandler>();
         services.AddScoped<LookAroundSaloonHandler>();
         services.AddScoped<ConfrontWantedSuspectHandler>();
-        services.AddScoped<ConfrontSaloonWantedSuspectHandler>();
+        services.AddScoped<ConfrontSaloonPersonOfInterestHandler>();
         services.AddScoped<PreviewTravelHandler>();
         services.AddScoped<TravelToTownHandler>();
         services.AddScoped<AdvanceTravelDayHandler>();

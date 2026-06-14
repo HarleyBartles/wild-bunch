@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
@@ -20,7 +21,17 @@ public sealed record GameSessionDto(
     TravelJourneyDto? Journey,
     TravelDiaryDto? TravelDiary,
     IReadOnlyList<GameLogEntryDto> LogEntries,
-    ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect);
+    ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest)
+{
+    [JsonIgnore]
+    public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect
+        => ActiveSaloonPersonOfInterest is null
+            ? null
+            : new ActiveSaloonWantedSuspectDto(ActiveSaloonPersonOfInterest.TargetName);
+}
+
+public sealed record ActiveSaloonPersonOfInterestDto(
+    string TargetName);
 
 public sealed record ActiveSaloonWantedSuspectDto(
     string TargetName);

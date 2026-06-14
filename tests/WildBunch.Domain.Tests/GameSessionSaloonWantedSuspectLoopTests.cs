@@ -50,7 +50,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var afterReturn = session.LookAroundSaloon();
 
         Assert.True(afterReturn.Success);
-        Assert.Equal("You look around the saloon, but nobody of interest is here.", afterReturn.Message);
+        Assert.Equal("You look around the saloon and spot Mira Cline.", afterReturn.Message);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
     }
 
     [Fact]
-    public void ConfrontSaloonWantedSuspectClearsAStaleActiveSuspectThatIsNoLongerAvailableInTown()
+    public void ConfrontSaloonWantedSuspectKeepsAGoneToGroundPersonOfInterestEligibleForFutureSelection()
     {
         var session = CreateSession();
         var suspectId = new SuspectId("suspect-1");
@@ -78,12 +78,14 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
 
         var result = session.ConfrontSaloonWantedSuspect();
 
-        Assert.False(result.Success);
+        Assert.True(result.Success);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, result.Outcome);
         Assert.True(result.SessionChanged);
-        Assert.Contains("no longer in the saloon", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Mira Cline", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
-        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(suspectId));
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontationState.Outcome);
     }
 
     [Fact]
@@ -136,7 +138,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             knownWarrants: new[]
@@ -176,7 +178,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());

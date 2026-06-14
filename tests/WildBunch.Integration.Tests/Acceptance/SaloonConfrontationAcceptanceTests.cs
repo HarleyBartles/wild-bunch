@@ -27,7 +27,7 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.Equal(HttpStatusCode.OK, lookAroundResponse.StatusCode);
 
         var surfacedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
-        Assert.Equal(new SuspectId("suspect-1"), surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Equal(new SuspectId("suspect-1"), surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         var confrontationResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/confront", content: null);
 
@@ -45,7 +45,7 @@ public sealed class SaloonConfrontationAcceptanceTests
 
         var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
         Assert.Equal(WantedSuspectPresenceState.GoneToGround, reloadedSession.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
-        Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Single(reloadedSession.CaseFile.WantedSuspectConfrontations);
     }
 
@@ -94,7 +94,7 @@ public sealed class SaloonConfrontationAcceptanceTests
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             knownWarrants: new[]

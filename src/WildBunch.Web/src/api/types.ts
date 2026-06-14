@@ -446,7 +446,12 @@ export interface GameSessionDto {
   journey: TravelJourneyDto | null;
   travelDiary: TravelDiaryDto | null;
   logEntries: GameLogEntryDto[];
-  activeSaloonWantedSuspect: ActiveSaloonWantedSuspectDto | null;
+  activeSaloonPersonOfInterest: ActiveSaloonPersonOfInterestDto | null;
+  activeSaloonWantedSuspect?: ActiveSaloonWantedSuspectDto | null;
+}
+
+export interface ActiveSaloonPersonOfInterestDto {
+  targetName: string;
 }
 
 export interface ActiveSaloonWantedSuspectDto {
@@ -555,7 +560,7 @@ export interface GameTurnResultDto {
   travelDiary?: TravelDiaryDto | null;
 }
 
-export interface WantedSuspectConfrontationResultDto {
+export interface SaloonPersonOfInterestConfrontationResultDto {
   success: boolean;
   message: string;
   outcome: number;
@@ -566,3 +571,5 @@ export interface WantedSuspectConfrontationResultDto {
   isSecured: boolean | null;
   sessionChanged: boolean;
 }
+
+export interface WantedSuspectConfrontationResultDto extends SaloonPersonOfInterestConfrontationResultDto {}

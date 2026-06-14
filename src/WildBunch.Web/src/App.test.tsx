@@ -23,7 +23,7 @@ import {
   getJournal,
   getTownStoreOffers,
   inspectNoticeBoard,
-  confrontSaloonWantedSuspect,
+  confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
   travel,
@@ -38,7 +38,7 @@ vi.mock("./api/wildBunchApi", () => ({
   getTownStoreOffers: vi.fn(),
   checkLocalRecords: vi.fn(),
   inspectNoticeBoard: vi.fn(),
-  confrontSaloonWantedSuspect: vi.fn(),
+  confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
   followTelegraphLeads: vi.fn(),
@@ -54,7 +54,7 @@ const mockedCreateGame = vi.mocked(createGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
 const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
 const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
-const mockedConfrontSaloonWantedSuspect = vi.mocked(confrontSaloonWantedSuspect);
+const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
@@ -137,7 +137,7 @@ function createSession(): GameSessionDto {
     journey: null,
     travelDiary: null,
     logEntries: [{ kind: 0, message: "Booted", day: 1, turn: 0 }],
-    activeSaloonWantedSuspect: null,
+    activeSaloonPersonOfInterest: null,
   };
 }
 
@@ -597,16 +597,16 @@ describe("App", () => {
     expect(screen.getByText("I spot a suspicious rider near the bar.")).toBeInTheDocument();
   });
 
-  it("shows a saloon confrontation action after a wanted suspect surfaces and clears it after the suspect flees", async () => {
+  it("shows a saloon person-of-interest action after a person surfaces and clears it after the person flees", async () => {
     const surfacedSession: GameSessionDto = {
       ...createSession(),
-      activeSaloonWantedSuspect: {
+    activeSaloonPersonOfInterest: {
         targetName: "Mira Cline",
       },
     };
     const clearedSession: GameSessionDto = {
       ...createSession(),
-      activeSaloonWantedSuspect: null,
+      activeSaloonPersonOfInterest: null,
     };
 
     mockedGetGame.mockResolvedValue(clearedSession);
@@ -632,7 +632,7 @@ describe("App", () => {
       message: "Mira Cline is in the saloon.",
       currentJournal: createJournal(),
     });
-    mockedConfrontSaloonWantedSuspect.mockResolvedValue({
+    mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
       success: true,
       message: "You confront Mira Cline, but they get away.",
       outcome: 1,
@@ -691,7 +691,7 @@ describe("App", () => {
     await user.click(confrontButton);
 
     await waitFor(() => {
-      expect(mockedConfrontSaloonWantedSuspect).toHaveBeenCalledWith("game-1");
+      expect(mockedConfrontSaloonPersonOfInterest).toHaveBeenCalledWith("game-1");
       expect(screen.queryByRole("button", { name: /confront mira cline/i })).not.toBeInTheDocument();
     });
 
