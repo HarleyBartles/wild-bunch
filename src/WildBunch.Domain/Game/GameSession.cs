@@ -1581,7 +1581,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
         {
             CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id);
-            var descriptor = DescribeSaloonPersonOfInterest(suspect);
+            var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
             RecordCaseUpdate($"You look around the saloon and spot {descriptor}.");
             return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {descriptor}.", sessionChanged: true);
         }
@@ -2115,41 +2115,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             WantedSuspectConfrontationChoice.Abandoned => $"You back away before confronting {targetName}.",
             _ => $"You confront {targetName}."
         };
-
-    private string DescribeSaloonPersonOfInterest(Suspect suspect)
-    {
-        ArgumentNullException.ThrowIfNull(suspect);
-
-        if (TryGetKnownWarrantForSuspect(suspect.Id, out var warrant))
-        {
-            var warrantDescriptor = DescribeSaloonDescriptor(
-                warrant.Terms.KnownFeatures.FirstOrDefault(),
-                warrant.Terms.KnownAliases.FirstOrDefault(),
-                warrant!.Summary);
-            if (!string.IsNullOrWhiteSpace(warrantDescriptor))
-            {
-                return warrantDescriptor;
-            }
-        }
-
-        var profileDescriptor = DescribeSaloonDescriptor(
-            suspect.Profile.Aliases.FirstOrDefault().Name,
-            suspect.Profile.IdentifyingFacts.FirstOrDefault().Description,
-            suspect.Traits.Tags.FirstOrDefault().Value);
-        if (!string.IsNullOrWhiteSpace(profileDescriptor))
-        {
-            return profileDescriptor;
-        }
-
-        return "an unfamiliar person";
-    }
-
-    private static string DescribeSaloonDescriptor(params string?[] candidates)
-        => candidates
-            .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate))?
-            .Trim()
-            .TrimEnd('.', '!', '?')
-            ?? string.Empty;
 
     private bool PersistLatestTravelDiaryDay(
         TravelDiaryBaselineState startingState,
