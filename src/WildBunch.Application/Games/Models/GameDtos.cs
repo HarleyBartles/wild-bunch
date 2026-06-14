@@ -27,14 +27,14 @@ public sealed record GameSessionDto(
     public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect
         => ActiveSaloonPersonOfInterest is null
             ? null
-            : new ActiveSaloonWantedSuspectDto(ActiveSaloonPersonOfInterest.TargetName);
+            : new ActiveSaloonWantedSuspectDto(ActiveSaloonPersonOfInterest.Descriptor);
 }
 
 public sealed record ActiveSaloonPersonOfInterestDto(
-    string TargetName);
+    string Descriptor);
 
 public sealed record ActiveSaloonWantedSuspectDto(
-    string TargetName);
+    string Descriptor);
 
 public sealed record PlayerDto(
     string Name,

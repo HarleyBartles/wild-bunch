@@ -146,9 +146,66 @@ public static class GameSessionMapper
             return null;
         }
 
-        var targetName = caseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonPersonOfInterestId))?.Name;
-        return targetName is null
+        var suspect = caseFile.Suspects.FirstOrDefault(candidate => candidate.Id.Equals(activeSaloonPersonOfInterestId));
+        if (suspect is null)
+        {
+            return null;
+        }
+
+        var descriptor = DescribeSaloonPersonOfInterest(suspect, caseFile);
+        return string.IsNullOrWhiteSpace(descriptor)
             ? null
-            : new ActiveSaloonPersonOfInterestDto(targetName);
+            : new ActiveSaloonPersonOfInterestDto(descriptor);
+    }
+
+    private static string DescribeSaloonPersonOfInterest(DomainSuspect suspect, DomainCaseFile caseFile)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+        ArgumentNullException.ThrowIfNull(caseFile);
+
+        var warrantDescriptor = caseFile.KnownWarrants
+            .FirstOrDefault(warrant => MatchesKnownWarrant(warrant, suspect));
+
+        if (warrantDescriptor is not null)
+        {
+            var descriptor = FirstNonEmpty(
+                warrantDescriptor.Terms.KnownFeatures.FirstOrDefault(),
+                warrantDescriptor.Terms.KnownAliases.FirstOrDefault(),
+                warrantDescriptor.Summary);
+            if (!string.IsNullOrWhiteSpace(descriptor))
+            {
+                return TrimDescriptor(descriptor);
+            }
+        }
+
+        var profileDescriptor = FirstNonEmpty(
+            suspect.Profile.Aliases.FirstOrDefault().Name,
+            suspect.Profile.IdentifyingFacts.FirstOrDefault().Description);
+
+        if (!string.IsNullOrWhiteSpace(profileDescriptor))
+        {
+            return TrimDescriptor(profileDescriptor);
+        }
+
+        return "an unfamiliar person";
+    }
+
+    private static string FirstNonEmpty(params string?[] candidates)
+        => candidates.FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate)) ?? string.Empty;
+
+    private static string TrimDescriptor(string descriptor)
+        => descriptor.Trim().TrimEnd('.', '!', '?');
+
+    private static bool MatchesKnownWarrant(Warrant warrant, DomainSuspect targetSuspect)
+    {
+        ArgumentNullException.ThrowIfNull(warrant);
+        ArgumentNullException.ThrowIfNull(targetSuspect);
+
+        if (string.Equals(warrant.TargetName, targetSuspect.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return warrant.Terms.KnownAliases.Any(alias => string.Equals(alias, targetSuspect.Name, StringComparison.OrdinalIgnoreCase));
     }
 }

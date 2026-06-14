@@ -451,11 +451,11 @@ export interface GameSessionDto {
 }
 
 export interface ActiveSaloonPersonOfInterestDto {
-  targetName: string;
+  descriptor: string;
 }
 
 export interface ActiveSaloonWantedSuspectDto {
-  targetName: string;
+  descriptor: string;
 }
 
 export interface AvailableActionDto {
