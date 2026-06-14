@@ -228,7 +228,7 @@ public sealed class GameSessionInvestigationActionsTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon, but nobody of interest is here.", result.Message);
+        Assert.Equal("You look around the saloon and spot Jonah Pike.", result.Message);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
         Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(new SuspectId("suspect-4")));
     }

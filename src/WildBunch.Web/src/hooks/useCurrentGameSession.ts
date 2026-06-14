@@ -8,7 +8,7 @@ import {
   getJournal,
   inspectNoticeBoard,
   gatherLocalGossip,
-  confrontSaloonWantedSuspect,
+  confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
   travel,
@@ -294,8 +294,8 @@ export function useCurrentGameSession() {
     }
   }
 
-  async function handleConfrontSaloonWantedSuspect() {
-    if (!gameId || !canConfrontSaloonWantedSuspect) {
+  async function handleConfrontSaloonPersonOfInterest() {
+    if (!gameId || !canConfrontSaloonPersonOfInterest) {
       return;
     }
 
@@ -303,12 +303,12 @@ export function useCurrentGameSession() {
     setError("");
 
     try {
-      const result = await confrontSaloonWantedSuspect(gameId);
+      const result = await confrontSaloonPersonOfInterest(gameId);
       setSession(result.currentSession);
       await reloadCurrentGame(gameId);
       setNotice(result.message);
     } catch (exception) {
-      setError(exception instanceof Error ? exception.message : "Unable to confront the saloon suspect.");
+      setError(exception instanceof Error ? exception.message : "Unable to confront the person in the saloon.");
     } finally {
       setBusyMode("idle");
     }
@@ -335,7 +335,7 @@ export function useCurrentGameSession() {
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
-  const canConfrontSaloonWantedSuspect = Boolean(session?.activeSaloonWantedSuspect);
+  const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest);
 
   return {
     session,
@@ -357,7 +357,7 @@ export function useCurrentGameSession() {
     canFollowTelegraphLeads,
     canGatherLocalGossip,
     canLookAroundSaloon,
-    canConfrontSaloonWantedSuspect,
+    canConfrontSaloonPersonOfInterest,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -368,7 +368,7 @@ export function useCurrentGameSession() {
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
-    handleConfrontSaloonWantedSuspect,
+    handleConfrontSaloonPersonOfInterest,
     handleReset,
     setSession,
     setNotice,

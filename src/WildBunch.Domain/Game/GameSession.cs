@@ -1578,74 +1578,102 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded("You look around the saloon again, but nobody of interest is here.", sessionChanged: true);
         }
 
-        if (TryGetConfrontableWantedSuspectCandidateInTown(out var suspect))
+        if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
         {
-            CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(suspect.Id);
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id);
             RecordCaseUpdate($"You look around the saloon and spot {suspect.Name}.");
             return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {suspect.Name}.", sessionChanged: true);
         }
 
-        CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
+        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
         RecordCaseUpdate("You look around the saloon, but nobody of interest is here.");
         return CaseInvestigationResult.Succeeded("You look around the saloon, but nobody of interest is here.", sessionChanged: true);
     }
 
-    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect()
+    public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest()
     {
         if (IsJourneyModal())
         {
-            return WantedSuspectConfrontationResult.Rejected(JourneyModalBlockMessage);
+            return SaloonPersonOfInterestConfrontationResult.Rejected(JourneyModalBlockMessage);
         }
 
-        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId;
+        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        if (activeSaloonSuspectId is null)
+        {
+            return SaloonPersonOfInterestConfrontationResult.Rejected("There is no person of interest waiting in the saloon.");
+        }
+
+        var activeSaloonSuspect = activeSaloonSuspectId.Value;
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
+        if (targetSuspect is null)
+        {
+            CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+            return SaloonPersonOfInterestConfrontationResult.Rejected(
+                "That person of interest is no longer available.",
+                sessionChanged: true);
+        }
+
+        if (TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
+        {
+            var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
+            if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
+            {
+                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                return SaloonPersonOfInterestConfrontationResult.Rejected(
+                    $"{targetSuspect.Name} is no longer in the saloon.",
+                    targetSuspect.Name,
+                    sessionChanged: true);
+            }
+
+            if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
+            {
+                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                return SaloonPersonOfInterestConfrontationResult.Rejected(
+                    $"{existingState.TargetName} has already been confronted.",
+                    existingState.TargetName,
+                    activeSaloonWarrant.Terms.Disposition,
+                    sessionChanged: true);
+            }
+
+            var wantedResult = ResolveWantedSuspectConfrontation(activeSaloonSuspect, WantedSuspectConfrontationChoice.Fled);
+            if (wantedResult.Success)
+            {
+                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+            }
+
+            return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
+        }
+
+        var narration = DescribeConfrontationNarration(targetSuspect.Name, WantedSuspectConfrontationChoice.Fled);
+        RecordCaseUpdate(narration);
+        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+        return SaloonPersonOfInterestConfrontationResult.Fled(targetSuspect.Name, null, narration);
+    }
+
+    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect()
+    {
+        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
         if (activeSaloonSuspectId is null)
         {
             return WantedSuspectConfrontationResult.Rejected("There is no wanted suspect waiting in the saloon.");
         }
 
-        var activeSaloonSuspect = activeSaloonSuspectId.Value;
-        var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
-        if (presenceState != WantedSuspectPresenceState.AvailableInTown)
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspectId));
+        if (targetSuspect is null)
         {
-            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
-            var staleTarget = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
+            return WantedSuspectConfrontationResult.Rejected("That person is not part of this case.");
+        }
+
+        if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
+        {
+            CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
             return WantedSuspectConfrontationResult.Rejected(
-                staleTarget is null
-                    ? "That saloon suspect is no longer available."
-                    : $"{staleTarget.Name} is no longer in the saloon.",
-                staleTarget?.Name,
+                $"There is no wanted notice for {targetSuspect.Name}.",
+                targetSuspect.Name,
                 sessionChanged: true);
         }
 
-        if (!TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
-        {
-            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
-            var staleTarget = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
-            return WantedSuspectConfrontationResult.Rejected(
-                staleTarget is null
-                    ? "That saloon suspect is no longer available."
-                    : $"There is no wanted notice for {staleTarget.Name}.",
-                staleTarget?.Name,
-                sessionChanged: true);
-        }
-
-        if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
-        {
-            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
-            return WantedSuspectConfrontationResult.Rejected(
-                $"{existingState.TargetName} has already been confronted.",
-                existingState.TargetName,
-                activeSaloonWarrant.Terms.Disposition,
-                sessionChanged: true);
-        }
-
-        var result = ResolveWantedSuspectConfrontation(activeSaloonSuspect, WantedSuspectConfrontationChoice.Fled);
-        if (result.Success)
-        {
-            CurrentTownVisit.CurrentTownState.ClearActiveSaloonWantedSuspect();
-        }
-
-        return result;
+        return ResolveSaloonPersonOfInterestCompatibilityResult(ConfrontSaloonPersonOfInterest());
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
@@ -2153,21 +2181,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             || !string.IsNullOrWhiteSpace(subject.Feature));
     }
 
-    private bool TryGetConfrontableWantedSuspectCandidateInTown(out Suspect suspect)
+    private bool TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out Suspect suspect)
     {
         foreach (var candidate in CaseFile.Suspects)
         {
-            if (!_wantedSuspectPresenceLedger.TryGetState(candidate.Id, out var presenceState))
-            {
-                continue;
-            }
-
-            if (presenceState != WantedSuspectPresenceState.AvailableInTown)
-            {
-                continue;
-            }
-
-            if (!CaseFile.KnownWarrants.Any(warrant => MatchesKnownWarrant(warrant, candidate)))
+            if (!IsEligibleSaloonPersonOfInterestCandidate(candidate))
             {
                 continue;
             }
@@ -2179,6 +2197,31 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         suspect = null!;
         return false;
     }
+
+    private bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+
+        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
+        {
+            return false;
+        }
+
+        if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
+        {
+            return true;
+        }
+
+        if (!_wantedSuspectPresenceLedger.TryGetState(suspect.Id, out var presenceState))
+        {
+            return false;
+        }
+
+        return presenceState is WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround;
+    }
+
+    private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)
+        => result.ToWantedSuspectResult();
 
     private bool IsJourneyModal()
         => Journey is not null;

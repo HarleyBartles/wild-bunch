@@ -176,7 +176,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       ],
     },
     logEntries: [],
-    activeSaloonWantedSuspect: null,
+    activeSaloonPersonOfInterest: null,
     ...overrides,
   };
 }

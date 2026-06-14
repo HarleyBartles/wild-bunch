@@ -10,6 +10,7 @@ import type {
   TownStoreOffersDto,
   TravelRequest,
   TravelPreviewResultDto,
+  SaloonPersonOfInterestConfrontationResultDto,
   WantedPostersResultDto,
   WantedSuspectConfrontationResultDto,
 } from "./types";
@@ -188,8 +189,12 @@ export function lookAroundSaloon(gameId: string) {
   });
 }
 
-export function confrontSaloonWantedSuspect(gameId: string) {
-  return requestJson<WantedSuspectConfrontationResultDto>(`/api/games/${gameId}/investigations/saloon/confront`, {
+export function confrontSaloonPersonOfInterest(gameId: string) {
+  return requestJson<SaloonPersonOfInterestConfrontationResultDto>(`/api/games/${gameId}/investigations/saloon/confront`, {
     method: "POST",
   });
+}
+
+export function confrontSaloonWantedSuspect(gameId: string) {
+  return confrontSaloonPersonOfInterest(gameId) as Promise<WantedSuspectConfrontationResultDto>;
 }

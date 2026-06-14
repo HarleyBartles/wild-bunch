@@ -36,7 +36,7 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, session.TravelRules),
             session.TravelDiaryDays,
             session.LogEntries,
-            ToActiveSaloonWantedSuspectDto(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId, session.CaseFile));
+            ToActiveSaloonPersonOfInterestDto(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId, session.CaseFile));
     }
 
     public static GameSessionDto ToDto(DomainGameSessionReadModel session)
@@ -56,7 +56,7 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.TravelDifficulty)),
             session.TravelDiaryDays,
             session.LogEntries,
-            ToActiveSaloonWantedSuspectDto(session.TownVisitState.CurrentTownState.ActiveSaloonWantedSuspectId, session.CaseFile));
+            ToActiveSaloonPersonOfInterestDto(session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId, session.CaseFile));
     }
 
     private static GameSessionDto ToDto(
@@ -72,7 +72,7 @@ public static class GameSessionMapper
         TravelJourneyDto? journey,
         IReadOnlyList<DomainTravelDiaryDayState> travelDiaryDays,
         IReadOnlyList<DomainGameLogEntry> logEntries,
-        ActiveSaloonWantedSuspectDto? activeSaloonWantedSuspect)
+        ActiveSaloonPersonOfInterestDto? activeSaloonPersonOfInterest)
         => new(
             id,
             status,
@@ -87,7 +87,7 @@ public static class GameSessionMapper
             journey,
             TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(travelDifficulty)),
             logEntries.Select(ToDto).ToArray(),
-            activeSaloonWantedSuspect);
+            activeSaloonPersonOfInterest);
 
     private static PlayerDto ToDto(DomainPlayer player)
         => new(
@@ -137,18 +137,18 @@ public static class GameSessionMapper
             logEntry.Day,
             logEntry.Turn);
 
-    private static ActiveSaloonWantedSuspectDto? ToActiveSaloonWantedSuspectDto(
-        SuspectId? activeSaloonWantedSuspectId,
+    private static ActiveSaloonPersonOfInterestDto? ToActiveSaloonPersonOfInterestDto(
+        SuspectId? activeSaloonPersonOfInterestId,
         DomainCaseFile caseFile)
     {
-        if (activeSaloonWantedSuspectId is null)
+        if (activeSaloonPersonOfInterestId is null)
         {
             return null;
         }
 
-        var targetName = caseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonWantedSuspectId))?.Name;
+        var targetName = caseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonPersonOfInterestId))?.Name;
         return targetName is null
             ? null
-            : new ActiveSaloonWantedSuspectDto(targetName);
+            : new ActiveSaloonPersonOfInterestDto(targetName);
     }
 }

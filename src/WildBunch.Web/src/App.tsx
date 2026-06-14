@@ -30,7 +30,7 @@ export default function App() {
     canFollowTelegraphLeads,
     canGatherLocalGossip,
     canLookAroundSaloon,
-    canConfrontSaloonWantedSuspect,
+    canConfrontSaloonPersonOfInterest,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,
@@ -41,7 +41,7 @@ export default function App() {
     handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
-    handleConfrontSaloonWantedSuspect,
+    handleConfrontSaloonPersonOfInterest,
     handleReset,
     setSession,
     setNotice,
@@ -176,19 +176,19 @@ export default function App() {
             <span className="panel-subtitle">{actions.length} fetched</span>
           </div>
           <div className="stack">
-            {session?.activeSaloonWantedSuspect ? (
+            {session?.activeSaloonPersonOfInterest ? (
               <div className="action-row">
                 <div>
-                  <strong>Wanted suspect spotted</strong>
-                  <p>{session.activeSaloonWantedSuspect.targetName} is waiting in the saloon.</p>
+                  <strong>Person of interest spotted</strong>
+                  <p>{session.activeSaloonPersonOfInterest.targetName} is waiting in the saloon.</p>
                 </div>
                 <button
                   type="button"
                   className="button"
-                  onClick={handleConfrontSaloonWantedSuspect}
-                  disabled={!gameId || loading || !canConfrontSaloonWantedSuspect}
+                  onClick={handleConfrontSaloonPersonOfInterest}
+                  disabled={!gameId || loading || !canConfrontSaloonPersonOfInterest}
                 >
-                  {busyMode === "investigating" ? "Confronting..." : `Confront ${session.activeSaloonWantedSuspect.targetName}`}
+                  {busyMode === "investigating" ? "Confronting..." : `Confront ${session.activeSaloonPersonOfInterest.targetName}`}
                 </button>
               </div>
             ) : null}

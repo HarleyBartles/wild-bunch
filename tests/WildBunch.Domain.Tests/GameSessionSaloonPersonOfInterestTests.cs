@@ -9,115 +9,88 @@ using TrailId = WildBunch.Domain.World.TrailId;
 
 namespace WildBunch.Domain.Tests;
 
-public sealed class GameSessionSaloonWantedSuspectLoopTests
+public sealed class GameSessionSaloonPersonOfInterestTests
 {
     [Fact]
-    public void LookAroundSaloonTracksAnActiveSuspectAndConfrontingItMakesTheSuspectFlee()
+    public void LookAroundSaloonSurfacesAnActivePersonOfInterestAndRepeatLookAroundShowsNobodyElseOfInterest()
     {
-        var session = CreateSession();
+        var session = CreateSessionWithoutKnownWarrants();
         var suspectId = new SuspectId("suspect-1");
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
 
         var lookAround = session.LookAroundSaloon();
-        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
-        var confrontation = session.ConfrontSaloonWantedSuspect();
-        var repeatConfrontation = session.ConfrontSaloonWantedSuspect();
+        var confrontation = session.ConfrontSaloonPersonOfInterest();
+        var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
         Assert.Equal("You look around the saloon and spot Mira Cline.", lookAround.Message);
 
         Assert.True(confrontation.Success);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontation.Outcome);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
         Assert.Equal("Mira Cline", confrontation.TargetName);
+        Assert.Null(confrontation.Disposition);
         Assert.True(confrontation.IsAlive);
         Assert.False(confrontation.IsSecured);
-        Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(suspectId));
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
-        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontationState.Outcome);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out _));
 
-        Assert.False(repeatConfrontation.Success);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, repeatConfrontation.Outcome);
-        Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(suspectId));
-        Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.True(repeatLookAround.Success);
+        Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatLookAround.Message);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+    }
+
+    [Fact]
+    public void ConfrontSaloonPersonOfInterestRejectsWhenNoPersonOfInterestHasBeenSpotted()
+    {
+        var session = CreateSession();
+
+        var result = session.ConfrontSaloonPersonOfInterest();
+
+        Assert.False(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
+        Assert.Contains("saloon", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+    }
+
+    [Fact]
+    public void GoneToGroundWantedSuspectCanSurfaceAgainAfterReenteringTown()
+    {
+        var session = CreateSession();
+        var suspectId = new SuspectId("suspect-1");
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.GoneToGround);
+
+        var firstVisit = session.LookAroundSaloon();
+
+        Assert.True(firstVisit.Success);
+        Assert.Equal("You look around the saloon and spot Mira Cline.", firstVisit.Message);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
 
-        var afterReturn = session.LookAroundSaloon();
+        var secondVisit = session.LookAroundSaloon();
 
-        Assert.True(afterReturn.Success);
-        Assert.Equal("You look around the saloon and spot Mira Cline.", afterReturn.Message);
+        Assert.True(secondVisit.Success);
+        Assert.Equal("You look around the saloon and spot Mira Cline.", secondVisit.Message);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
     }
 
     [Fact]
-    public void ConfrontSaloonWantedSuspectRejectsWhenNoSuspectHasBeenSpotted()
-    {
-        var session = CreateSession();
-
-        var result = session.ConfrontSaloonWantedSuspect();
-
-        Assert.False(result.Success);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, result.Outcome);
-        Assert.Contains("saloon", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
-    }
-
-    [Fact]
-    public void ConfrontSaloonWantedSuspectKeepsAGoneToGroundPersonOfInterestEligibleForFutureSelection()
-    {
-        var session = CreateSession();
-        var suspectId = new SuspectId("suspect-1");
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
-        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(suspectId);
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.GoneToGround);
-
-        var result = session.ConfrontSaloonWantedSuspect();
-
-        Assert.True(result.Success);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, result.Outcome);
-        Assert.True(result.SessionChanged);
-        Assert.Contains("Mira Cline", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
-        Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(suspectId));
-        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontationState.Outcome);
-    }
-
-    [Fact]
-    public void ConfrontSaloonWantedSuspectClearsAStaleActiveSuspectThatNoLongerHasAKnownWarrant()
+    public void LookAroundSaloonDoesNotSurfaceTheTrueCulprit()
     {
         var session = CreateSessionWithoutKnownWarrants();
-        var suspectId = new SuspectId("suspect-1");
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
-        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(suspectId);
-
-        var result = session.ConfrontSaloonWantedSuspect();
-
-        Assert.False(result.Success);
-        Assert.True(result.SessionChanged);
-        Assert.Contains("wanted notice", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
-        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
-        Assert.Equal(WantedSuspectPresenceState.AvailableInTown, session.GetWantedSuspectPresenceState(suspectId));
-    }
-
-    [Fact]
-    public void LookAroundSaloonDoesNotSurfaceAWantedSuspectWithoutAKnownWarrant()
-    {
-        var session = CreateSessionWithoutKnownWarrants();
-        var suspectId = new SuspectId("suspect-1");
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
 
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
         Assert.Equal("You look around the saloon and spot Mira Cline.", result.Message);
-        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.NotEqual(new SuspectId("suspect-2"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
 
