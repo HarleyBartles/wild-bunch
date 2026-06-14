@@ -24,7 +24,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
-        Assert.Equal("You look around the saloon and spot Mira Cline.", lookAround.Message);
+        Assert.Equal("You look around the saloon and spot an unfamiliar person.", lookAround.Message);
 
         Assert.True(confrontation.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
@@ -65,7 +65,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var firstVisit = session.LookAroundSaloon();
 
         Assert.True(firstVisit.Success);
-        Assert.Equal("You look around the saloon and spot Mira Cline.", firstVisit.Message);
+        Assert.Equal("You look around the saloon and spot Raven-feather pin.", firstVisit.Message);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         session.Player.TravelTo(new TownId("connected"));
@@ -76,7 +76,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var secondVisit = session.LookAroundSaloon();
 
         Assert.True(secondVisit.Success);
-        Assert.Equal("You look around the saloon and spot Mira Cline.", secondVisit.Message);
+        Assert.Equal("You look around the saloon and spot Raven-feather pin.", secondVisit.Message);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
     }
 
@@ -88,9 +88,22 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot Mira Cline.", result.Message);
+        Assert.Equal("You look around the saloon and spot an unfamiliar person.", result.Message);
         Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.NotEqual(new SuspectId("suspect-2"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+    }
+
+    [Fact]
+    public void LookAroundSaloonUsesAPublicDescriptorWhenOneIsAvailable()
+    {
+        var session = CreateSessionWithPublicDescriptor();
+
+        var result = session.LookAroundSaloon();
+
+        Assert.True(result.Success);
+        Assert.Equal("You look around the saloon and spot Grey Jay.", result.Message);
+        Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
 
@@ -145,6 +158,38 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var suspects = new[]
         {
             new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateSessionWithPublicDescriptor()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Mira Cline",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("Wore a raven-feather pin.") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 

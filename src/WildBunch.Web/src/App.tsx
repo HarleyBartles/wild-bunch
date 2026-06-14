@@ -180,7 +180,7 @@ export default function App() {
               <div className="action-row">
                 <div>
                   <strong>Person of interest spotted</strong>
-                  <p>{session.activeSaloonPersonOfInterest.targetName} is waiting in the saloon.</p>
+                  <p>{session.activeSaloonPersonOfInterest.descriptor} is waiting in the saloon.</p>
                 </div>
                 <button
                   type="button"
@@ -188,7 +188,7 @@ export default function App() {
                   onClick={handleConfrontSaloonPersonOfInterest}
                   disabled={!gameId || loading || !canConfrontSaloonPersonOfInterest}
                 >
-                  {busyMode === "investigating" ? "Confronting..." : `Confront ${session.activeSaloonPersonOfInterest.targetName}`}
+                  {busyMode === "investigating" ? "Confronting..." : `Confront ${session.activeSaloonPersonOfInterest.descriptor}`}
                 </button>
               </div>
             ) : null}

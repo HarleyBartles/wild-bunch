@@ -146,9 +146,15 @@ public static class GameSessionMapper
             return null;
         }
 
-        var targetName = caseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonPersonOfInterestId))?.Name;
-        return targetName is null
+        var suspect = caseFile.Suspects.FirstOrDefault(candidate => candidate.Id.Equals(activeSaloonPersonOfInterestId));
+        if (suspect is null)
+        {
+            return null;
+        }
+
+        var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, caseFile);
+        return string.IsNullOrWhiteSpace(descriptor)
             ? null
-            : new ActiveSaloonPersonOfInterestDto(targetName);
+            : new ActiveSaloonPersonOfInterestDto(descriptor);
     }
 }

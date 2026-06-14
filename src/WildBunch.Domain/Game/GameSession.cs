@@ -1581,8 +1581,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
         {
             CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id);
-            RecordCaseUpdate($"You look around the saloon and spot {suspect.Name}.");
-            return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {suspect.Name}.", sessionChanged: true);
+            var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
+            RecordCaseUpdate($"You look around the saloon and spot {descriptor}.");
+            return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {descriptor}.", sessionChanged: true);
         }
 
         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();

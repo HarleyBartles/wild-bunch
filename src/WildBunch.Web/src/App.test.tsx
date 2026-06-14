@@ -600,8 +600,8 @@ describe("App", () => {
   it("shows a saloon person-of-interest action after a person surfaces and clears it after the person flees", async () => {
     const surfacedSession: GameSessionDto = {
       ...createSession(),
-    activeSaloonPersonOfInterest: {
-        targetName: "Mira Cline",
+      activeSaloonPersonOfInterest: {
+        descriptor: "Grey Jay",
       },
     };
     const clearedSession: GameSessionDto = {
@@ -629,7 +629,7 @@ describe("App", () => {
     });
     mockedLookAroundSaloon.mockResolvedValue({
       success: true,
-      message: "Mira Cline is in the saloon.",
+      message: "Grey Jay is in the saloon.",
       currentJournal: createJournal(),
     });
     mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
@@ -687,12 +687,12 @@ describe("App", () => {
 
     await user.click(await screen.findByRole("button", { name: /look around saloon/i }));
 
-    const confrontButton = await screen.findByRole("button", { name: /confront mira cline/i });
+    const confrontButton = await screen.findByRole("button", { name: /confront grey jay/i });
     await user.click(confrontButton);
 
     await waitFor(() => {
       expect(mockedConfrontSaloonPersonOfInterest).toHaveBeenCalledWith("game-1");
-      expect(screen.queryByRole("button", { name: /confront mira cline/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /confront grey jay/i })).not.toBeInTheDocument();
     });
 
     expect(screen.getByText("You confront Mira Cline, but they get away.")).toBeInTheDocument();
