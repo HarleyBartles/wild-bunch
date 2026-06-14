@@ -7,6 +7,7 @@ public sealed record WantedSuspectConfrontationResultDto(
     string Message,
     WantedSuspectConfrontationOutcome Outcome,
     GameSessionDto CurrentSession,
+    string? DeclaredWantedIdentityHandle,
     string? TargetName,
     WarrantDisposition? Disposition,
     bool? IsAlive,

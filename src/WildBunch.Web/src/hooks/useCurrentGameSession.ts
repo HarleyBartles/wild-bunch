@@ -56,6 +56,7 @@ export function useCurrentGameSession() {
   const [session, setSession] = useState<GameSessionDto | null>(null);
   const [journal, setJournal] = useState<JournalDto | null>(null);
   const [wantedPosters, setWantedPosters] = useState<WantedPosterDto[]>([]);
+  const [declaredWantedIdentityHandle, setDeclaredWantedIdentityHandle] = useState("");
   const [hasReadWantedPosters, setHasReadWantedPosters] = useState(false);
   const [actions, setActions] = useState<AvailableActionDto[]>([]);
   const [cockpitMode, setCockpitMode] = useState<CockpitMode>("home");
@@ -76,6 +77,17 @@ export function useCurrentGameSession() {
   useEffect(() => {
     setCockpitMode(session?.journey ? "travel" : "home");
   }, [session?.journey]);
+
+  useEffect(() => {
+    if (wantedPosters.length === 0) {
+      setDeclaredWantedIdentityHandle("");
+      return;
+    }
+
+    setDeclaredWantedIdentityHandle((current) =>
+      wantedPosters.some((poster) => poster.posterId === current) ? current : wantedPosters[0].posterId,
+    );
+  }, [wantedPosters]);
 
   useEffect(() => {
     const storedGameId = window.localStorage.getItem(storageKey);
@@ -107,6 +119,7 @@ export function useCurrentGameSession() {
       setSession(null);
       setJournal(null);
       setWantedPosters([]);
+      setDeclaredWantedIdentityHandle("");
       setHasReadWantedPosters(false);
       setActions([]);
       setCockpitMode("home");
@@ -120,6 +133,7 @@ export function useCurrentGameSession() {
     setBusyMode("starting");
     setError("");
     setWantedPosters([]);
+    setDeclaredWantedIdentityHandle("");
     setHasReadWantedPosters(false);
 
     try {
@@ -303,7 +317,7 @@ export function useCurrentGameSession() {
     setError("");
 
     try {
-      const result = await confrontSaloonPersonOfInterest(gameId);
+      const result = await confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle);
       setSession(result.currentSession);
       await reloadCurrentGame(gameId);
       setNotice(result.message);
@@ -319,6 +333,7 @@ export function useCurrentGameSession() {
     setSession(null);
     setJournal(null);
     setWantedPosters([]);
+    setDeclaredWantedIdentityHandle("");
     setHasReadWantedPosters(false);
     setActions([]);
     setNotice("");
@@ -335,7 +350,7 @@ export function useCurrentGameSession() {
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
-  const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest);
+  const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest && declaredWantedIdentityHandle);
 
   return {
     session,
@@ -358,6 +373,8 @@ export function useCurrentGameSession() {
     canGatherLocalGossip,
     canLookAroundSaloon,
     canConfrontSaloonPersonOfInterest,
+    declaredWantedIdentityHandle,
+    setDeclaredWantedIdentityHandle,
     startNewGame,
     reloadCurrentGame,
     handleTravelTurnResult,

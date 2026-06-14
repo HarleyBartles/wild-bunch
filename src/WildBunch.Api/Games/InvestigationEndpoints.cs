@@ -123,12 +123,15 @@ public static class InvestigationEndpoints
 
     private static async Task<IResult> ConfrontSaloonPersonOfInterestAsync(
         Guid id,
+        ConfrontSaloonPersonOfInterestRequest request,
         ConfrontSaloonPersonOfInterestHandler handler,
         CancellationToken cancellationToken)
     {
         try
         {
-            var result = await handler.HandleAsync(new ConfrontSaloonPersonOfInterestCommand(id), cancellationToken);
+            var result = await handler.HandleAsync(
+                new ConfrontSaloonPersonOfInterestCommand(id, request.DeclaredWantedIdentityHandle),
+                cancellationToken);
             return Results.Ok(result);
         }
         catch (GameSessionNotFoundException)

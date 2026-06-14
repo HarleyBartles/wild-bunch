@@ -1,3 +1,5 @@
 namespace WildBunch.Application.Games.Commands;
 
-public sealed record ConfrontSaloonPersonOfInterestCommand(Guid GameSessionId);
+public sealed record ConfrontSaloonPersonOfInterestCommand(
+    Guid GameSessionId,
+    string? DeclaredWantedIdentityHandle);

@@ -7,6 +7,7 @@ public sealed record SaloonPersonOfInterestConfrontationResultDto(
     string Message,
     SaloonPersonOfInterestConfrontationOutcome Outcome,
     GameSessionDto CurrentSession,
+    string? DeclaredWantedIdentityHandle,
     string? TargetName,
     WarrantDisposition? Disposition,
     bool? IsAlive,

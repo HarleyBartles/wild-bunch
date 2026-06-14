@@ -26,7 +26,7 @@ public sealed class ConfrontSaloonPersonOfInterestHandler
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var result = session.ConfrontSaloonPersonOfInterest();
+        var result = session.ConfrontSaloonPersonOfInterest(command.DeclaredWantedIdentityHandle);
 
         if (result.SessionChanged)
         {
@@ -39,6 +39,7 @@ public sealed class ConfrontSaloonPersonOfInterestHandler
             result.Message,
             result.Outcome,
             GameSessionMapper.ToDto(session),
+            result.DeclaredWantedIdentityHandle,
             result.TargetName,
             result.Disposition,
             result.IsAlive,

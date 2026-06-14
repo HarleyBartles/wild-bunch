@@ -526,6 +526,7 @@ describe("App", () => {
   it("runs the saloon look-around action and refreshes the journal state", async () => {
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
       { kind: AvailableActionKind.LookAroundSaloon, label: "Look around saloon" },
     ]);
     mockedGetJournal.mockResolvedValue(createJournal());
@@ -612,7 +613,9 @@ describe("App", () => {
     mockedGetGame.mockResolvedValue(clearedSession);
     mockedGetGame.mockResolvedValueOnce(createSession());
     mockedGetGame.mockResolvedValueOnce(surfacedSession);
+    mockedGetGame.mockResolvedValueOnce(surfacedSession);
     mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
       { kind: AvailableActionKind.LookAroundSaloon, label: "Look around saloon" },
     ]);
     mockedGetJournal.mockResolvedValue(createJournal());
@@ -632,11 +635,18 @@ describe("App", () => {
       message: "Grey Jay is in the saloon.",
       currentJournal: createJournal(),
     });
+    mockedReadWantedPosters.mockResolvedValue({
+      success: true,
+      message: "Read wanted posters",
+      currentJournal: createJournal(),
+      wantedPosters: [createWantedPoster()],
+    });
     mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
       success: true,
       message: "You confront Mira Cline, but they get away.",
       outcome: 1,
       currentSession: clearedSession,
+      declaredWantedIdentityHandle: "warrant-public-1",
       targetName: "Mira Cline",
       disposition: 1,
       isAlive: true,
@@ -685,14 +695,18 @@ describe("App", () => {
       expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
     });
 
+    await user.click(await screen.findByRole("button", { name: /read wanted posters/i }));
+
     await user.click(await screen.findByRole("button", { name: /look around saloon/i }));
 
-    const confrontButton = await screen.findByRole("button", { name: /confront grey jay/i });
+    const confrontButton = await screen.findByRole("button", {
+      name: /take grey jay to sheriff as mira cline/i,
+    });
     await user.click(confrontButton);
 
     await waitFor(() => {
-      expect(mockedConfrontSaloonPersonOfInterest).toHaveBeenCalledWith("game-1");
-      expect(screen.queryByRole("button", { name: /confront grey jay/i })).not.toBeInTheDocument();
+      expect(mockedConfrontSaloonPersonOfInterest).toHaveBeenCalledWith("game-1", "warrant-public-1");
+      expect(screen.queryByRole("button", { name: /take grey jay to sheriff as mira cline/i })).not.toBeInTheDocument();
     });
 
     expect(screen.getByText("You confront Mira Cline, but they get away.")).toBeInTheDocument();
