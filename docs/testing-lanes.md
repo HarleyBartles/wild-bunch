@@ -67,6 +67,17 @@ That command provisions the local cluster if needed, exports the repo-local
 connection string for child `dotnet` commands, restores tools, and runs the EF
 and test checks as one repeatable lane.
 
+For issue-specific PostgreSQL-backed acceptance or integration checks, use the
+targeted script wrapper:
+
+```powershell
+.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
+```
+
+The wrapper starts or reuses the local cluster, sets
+`ConnectionStrings__WildBunchPostgresDb` in the same process, and then runs
+`dotnet test` with the arguments you pass after `--`.
+
 ## Repo Placement
 
 - Unit tests live in the domain/application/game-content test projects.

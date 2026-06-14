@@ -1,7 +1,10 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status', 'validate')]
+    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status', 'validate', 'test')]
     [string]$Command = 'setup'
+    ,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$RemainingArguments = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,6 +107,13 @@ function Invoke-WithValidationConnectionString {
             $env:ConnectionStrings__WildBunchPostgresDb = $previousConnectionString
         }
     }
+}
+
+function Initialize-PostgresValidationLane {
+    Initialize-Cluster
+    Start-Cluster
+    Wait-ForReady
+    Ensure-Database
 }
 
 function Ensure-Directory {
@@ -216,10 +226,7 @@ function Reset-Cluster {
 }
 
 function Invoke-ValidationLane {
-    Initialize-Cluster
-    Start-Cluster
-    Wait-ForReady
-    Ensure-Database
+    Initialize-PostgresValidationLane
 
     Invoke-WithValidationConnectionString {
         Invoke-DotNetCommand @('tool', 'restore')
@@ -230,6 +237,25 @@ function Invoke-ValidationLane {
     Write-Host "PostgreSQL validation lane completed."
     Write-Host "Connection string: $ValidationConnectionString"
     Write-Host "Use '.\scripts\postgres-dev.ps1 status' to check the lane and '.\scripts\postgres-dev.ps1 stop' when you want to shut it down."
+}
+
+function Invoke-TargetedTestLane {
+    param([Parameter(Mandatory)][string[]]$Arguments)
+
+    $testArguments = $Arguments
+    if ($testArguments.Count -gt 0 -and $testArguments[0] -eq '--') {
+        $testArguments = @($testArguments[1..($testArguments.Count - 1)])
+    }
+
+    if ($testArguments.Count -eq 0) {
+        throw "Usage: .\scripts\postgres-dev.ps1 test -- <dotnet test arguments>"
+    }
+
+    Initialize-PostgresValidationLane
+
+    Invoke-WithValidationConnectionString {
+        Invoke-DotNetCommand (@('test') + $testArguments)
+    }
 }
 
 switch ($Command) {
@@ -300,5 +326,8 @@ switch ($Command) {
     }
     'validate' {
         Invoke-ValidationLane
+    }
+    'test' {
+        Invoke-TargetedTestLane -Arguments $RemainingArguments
     }
 }
