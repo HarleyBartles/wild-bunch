@@ -1643,6 +1643,42 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                         sessionChanged: true);
                 }
 
+                var hasFirearmThreatAvailable = new InventoryCapabilityResolver().Resolve(Player.Inventory, TravelRules).FirearmThreatAvailable;
+                var isDeclaredWantedIdentityForThisWarrant =
+                    !string.IsNullOrWhiteSpace(declaredWantedIdentityHandle)
+                    && string.Equals(declaredWantedIdentityHandle, activeSaloonWarrant.Id.Value, StringComparison.Ordinal);
+
+                if (hasFirearmThreatAvailable && isDeclaredWantedIdentityForThisWarrant)
+                {
+                    var armedWantedResult = ResolveWantedSuspectConfrontation(
+                        activeSaloonSuspect,
+                        WantedSuspectConfrontationChoice.Surrendered,
+                        declaredWantedIdentityHandle);
+                    if (!armedWantedResult.Success)
+                    {
+                        return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(armedWantedResult);
+                    }
+
+                    var settlementResult = SettleSheriffTurnIn(activeSaloonSuspect, isAlive: true);
+                    if (!settlementResult.Success)
+                    {
+                        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                        return SaloonPersonOfInterestConfrontationResult.Rejected(
+                            settlementResult.Message,
+                            declaredWantedIdentityHandle,
+                            activeSaloonWarrant.TargetName,
+                            activeSaloonWarrant.Terms.Disposition,
+                            sessionChanged: true);
+                    }
+
+                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                    var settlementMessage = $"{armedWantedResult.Message} The sheriff pays you ${settlementResult.BountyAmount:0.00}.";
+                    return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(armedWantedResult) with
+                    {
+                        Message = settlementMessage
+                    };
+                }
+
                 var wantedResult = ResolveWantedSuspectConfrontation(
                     activeSaloonSuspect,
                     WantedSuspectConfrontationChoice.Fled,
