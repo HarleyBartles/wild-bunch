@@ -1667,7 +1667,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     if (!settlementResult.Success)
                     {
                         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                    return SaloonPersonOfInterestConfrontationResult.Rejected(
+                        return SaloonPersonOfInterestConfrontationResult.Rejected(
                             settlementResult.Message,
                             declaredWantedIdentityHandle,
                             activeSaloonWarrant.TargetName,

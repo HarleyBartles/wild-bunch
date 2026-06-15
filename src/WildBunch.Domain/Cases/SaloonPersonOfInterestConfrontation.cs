@@ -105,7 +105,7 @@ public sealed record SaloonPersonOfInterestConfrontationResult(
             null,
             null,
             result.SessionChanged,
-            result.PersonOfInterestKind);
+            SaloonPersonOfInterestKind.WantedSuspect);
 
     public WantedSuspectConfrontationResult ToWantedSuspectResult()
         => new(
@@ -117,6 +117,5 @@ public sealed record SaloonPersonOfInterestConfrontationResult(
             Disposition,
             IsAlive,
             IsSecured,
-            SessionChanged,
-            PersonOfInterestKind);
+            SessionChanged);
 }

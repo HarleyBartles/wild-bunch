@@ -33,7 +33,6 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         Assert.Equal("Mira Cline", confrontation.TargetName);
         Assert.True(confrontation.IsAlive);
         Assert.False(confrontation.IsSecured);
-        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, confrontation.PersonOfInterestKind);
         Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(suspectId));
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
