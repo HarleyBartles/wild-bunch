@@ -5,6 +5,7 @@ import App from "./App";
 import {
   AvailableActionKind,
   JourneyStatus,
+  SaloonPersonOfInterestKind,
   WantedPosterFeatureRenderMode,
   WantedPosterFeatureSalience,
   type GameSessionDto,
@@ -603,6 +604,7 @@ describe("App", () => {
       ...createSession(),
       activeSaloonPersonOfInterest: {
         descriptor: "Grey Jay",
+        kind: SaloonPersonOfInterestKind.WantedSuspect,
       },
     };
     const clearedSession: GameSessionDto = {
@@ -656,6 +658,7 @@ describe("App", () => {
       walletBefore: null,
       walletAfter: null,
       sessionChanged: true,
+      personOfInterestKind: SaloonPersonOfInterestKind.WantedSuspect,
     });
     mockedInspectNoticeBoard.mockResolvedValue({
       success: true,
@@ -721,6 +724,7 @@ describe("App", () => {
       ...createSession(),
       activeSaloonPersonOfInterest: {
         descriptor: "a town clerk from Current Town",
+        kind: SaloonPersonOfInterestKind.Citizen,
       },
     };
     const clearedSession: GameSessionDto = {
@@ -774,6 +778,7 @@ describe("App", () => {
       walletBefore: 4,
       walletAfter: 0,
       sessionChanged: true,
+      personOfInterestKind: SaloonPersonOfInterestKind.Citizen,
     });
     mockedInspectNoticeBoard.mockResolvedValue({
       success: true,

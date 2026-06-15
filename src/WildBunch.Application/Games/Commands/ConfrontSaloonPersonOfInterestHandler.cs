@@ -49,6 +49,7 @@ public sealed class ConfrontSaloonPersonOfInterestHandler
             result.FineAmount,
             result.WalletBefore,
             result.WalletAfter,
-            result.SessionChanged);
+            result.SessionChanged,
+            result.PersonOfInterestKind);
     }
 }

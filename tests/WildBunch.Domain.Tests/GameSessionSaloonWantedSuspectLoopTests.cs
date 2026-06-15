@@ -20,6 +20,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
 
         var lookAround = session.LookAroundSaloon();
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
 
         var confrontation = session.ConfrontSaloonWantedSuspect();
         var repeatConfrontation = session.ConfrontSaloonWantedSuspect();

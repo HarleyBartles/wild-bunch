@@ -60,6 +60,47 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
         AssertDescriptorParity(session, "a stranger who is desperate");
     }
 
+    [Fact]
+    public void SaloonPersonOfInterestPathsExposeAnExplicitKindSeam()
+    {
+        var citizenSession = CreateCitizenSession();
+        citizenSession.LookAroundSaloon();
+
+        var citizenMappedSession = GameSessionMapper.ToDto(citizenSession);
+        var citizenConfrontation = citizenSession.ConfrontSaloonPersonOfInterest("warrant-1");
+
+        Assert.Equal("Citizen", ReadEnumName(citizenMappedSession.ActiveSaloonPersonOfInterest!, "Kind"));
+        Assert.Equal("Citizen", ReadEnumName(citizenConfrontation, "PersonOfInterestKind"));
+
+        var wantedSession = CreateSession(
+            suspectProfile: SuspectProfile.Empty,
+            suspectTraits: SuspectTraits.Empty,
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Grey Jay" },
+                        new[] { "Has a scar on the left cheek." },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for a stage robbery.")
+            });
+        wantedSession.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        wantedSession.LookAroundSaloon();
+
+        var wantedMappedSession = GameSessionMapper.ToDto(wantedSession);
+        var wantedConfrontation = wantedSession.ConfrontSaloonPersonOfInterest("warrant-1");
+
+        Assert.Equal("WantedSuspect", ReadEnumName(wantedMappedSession.ActiveSaloonPersonOfInterest!, "Kind"));
+        Assert.Equal("WantedSuspect", ReadEnumName(wantedConfrontation, "PersonOfInterestKind"));
+    }
+
     private static void AssertDescriptorParity(GameSession session, string expectedDescriptor)
     {
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
@@ -71,6 +112,13 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
         Assert.NotNull(mappedSession.ActiveSaloonPersonOfInterest);
         Assert.Equal(expectedDescriptor, mappedSession.ActiveSaloonPersonOfInterest!.Descriptor);
         Assert.Equal(mappedSession.ActiveSaloonPersonOfInterest.Descriptor, lookAround.Message["You look around the saloon and spot ".Length..^1]);
+    }
+
+    private static string? ReadEnumName(object target, string propertyName)
+    {
+        var property = target.GetType().GetProperty(propertyName);
+        Assert.NotNull(property);
+        return property!.GetValue(target)?.ToString();
     }
 
     private static GameSession CreateSession(
@@ -97,6 +145,25 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             knownWarrants: knownWarrants ?? Array.Empty<Warrant>());
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateCitizenSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            Array.Empty<Suspect>(),
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }

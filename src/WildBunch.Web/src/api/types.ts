@@ -452,10 +452,16 @@ export interface GameSessionDto {
 
 export interface ActiveSaloonPersonOfInterestDto {
   descriptor: string;
+  kind: SaloonPersonOfInterestKind;
 }
 
 export interface ActiveSaloonWantedSuspectDto {
   descriptor: string;
+}
+
+export enum SaloonPersonOfInterestKind {
+  Citizen = 0,
+  WantedSuspect = 1,
 }
 
 export interface AvailableActionDto {
@@ -575,6 +581,7 @@ export interface SaloonPersonOfInterestConfrontationResultDto {
   walletBefore: number | null;
   walletAfter: number | null;
   sessionChanged: boolean;
+  personOfInterestKind?: SaloonPersonOfInterestKind | null;
 }
 
 export interface WantedSuspectConfrontationResultDto extends SaloonPersonOfInterestConfrontationResultDto {}

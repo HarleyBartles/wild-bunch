@@ -39,6 +39,7 @@ public static class GameSessionMapper
             ToActiveSaloonPersonOfInterestDto(
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
                 session.CaseFile));
     }
 
@@ -62,6 +63,7 @@ public static class GameSessionMapper
             ToActiveSaloonPersonOfInterestDto(
                 session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
                 session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
                 session.CaseFile));
     }
 
@@ -146,11 +148,17 @@ public static class GameSessionMapper
     private static ActiveSaloonPersonOfInterestDto? ToActiveSaloonPersonOfInterestDto(
         SuspectId? activeSaloonPersonOfInterestId,
         string? activeSaloonPersonOfInterestDescriptor,
+        SaloonPersonOfInterestKind? activeSaloonPersonOfInterestKind,
         DomainCaseFile caseFile)
     {
         if (!string.IsNullOrWhiteSpace(activeSaloonPersonOfInterestDescriptor))
         {
-            return new ActiveSaloonPersonOfInterestDto(activeSaloonPersonOfInterestDescriptor);
+            return new ActiveSaloonPersonOfInterestDto(
+                activeSaloonPersonOfInterestDescriptor,
+                ResolveActiveSaloonPersonOfInterestKind(
+                    activeSaloonPersonOfInterestId,
+                    activeSaloonPersonOfInterestDescriptor,
+                    activeSaloonPersonOfInterestKind));
         }
 
         if (activeSaloonPersonOfInterestId is null)
@@ -167,6 +175,22 @@ public static class GameSessionMapper
         var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, caseFile);
         return string.IsNullOrWhiteSpace(descriptor)
             ? null
-            : new ActiveSaloonPersonOfInterestDto(descriptor);
+            : new ActiveSaloonPersonOfInterestDto(
+                descriptor,
+                ResolveActiveSaloonPersonOfInterestKind(
+                    activeSaloonPersonOfInterestId,
+                    descriptor,
+                    activeSaloonPersonOfInterestKind));
     }
+
+    private static SaloonPersonOfInterestKind ResolveActiveSaloonPersonOfInterestKind(
+        SuspectId? activeSaloonPersonOfInterestId,
+        string? activeSaloonPersonOfInterestDescriptor,
+        SaloonPersonOfInterestKind? activeSaloonPersonOfInterestKind)
+        => activeSaloonPersonOfInterestKind
+            ?? (activeSaloonPersonOfInterestId is not null
+                ? SaloonPersonOfInterestKind.WantedSuspect
+                : !string.IsNullOrWhiteSpace(activeSaloonPersonOfInterestDescriptor)
+                    ? SaloonPersonOfInterestKind.Citizen
+                    : throw new InvalidOperationException("A saloon person of interest kind is required."));
 }

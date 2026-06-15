@@ -25,13 +25,14 @@ public sealed record GameSessionDto(
 {
     [JsonIgnore]
     public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect
-        => ActiveSaloonPersonOfInterest is null
+        => ActiveSaloonPersonOfInterest is null || ActiveSaloonPersonOfInterest.Kind != SaloonPersonOfInterestKind.WantedSuspect
             ? null
             : new ActiveSaloonWantedSuspectDto(ActiveSaloonPersonOfInterest.Descriptor);
 }
 
 public sealed record ActiveSaloonPersonOfInterestDto(
-    string Descriptor);
+    string Descriptor,
+    SaloonPersonOfInterestKind Kind);
 
 public sealed record ActiveSaloonWantedSuspectDto(
     string Descriptor);
