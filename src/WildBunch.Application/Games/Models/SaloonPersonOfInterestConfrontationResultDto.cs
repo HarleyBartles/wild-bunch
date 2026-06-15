@@ -16,4 +16,5 @@ public sealed record SaloonPersonOfInterestConfrontationResultDto(
     decimal? FineAmount,
     decimal? WalletBefore,
     decimal? WalletAfter,
-    bool SessionChanged);
+    bool SessionChanged,
+    SaloonPersonOfInterestKind? PersonOfInterestKind = null);

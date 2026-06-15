@@ -163,6 +163,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Equal("Mira Cline", firstTurnIn.TargetName);
         Assert.True(firstTurnIn.IsAlive);
         Assert.True(firstTurnIn.IsSecured);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, firstTurnIn.PersonOfInterestKind);
         Assert.Contains("pays you $2500.00", firstTurnIn.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
@@ -211,6 +212,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.True(result.IsAlive);
         Assert.False(result.IsSecured);
         Assert.False(result.IsCitizen);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, result.PersonOfInterestKind);
         Assert.Null(result.FineAmount);
         Assert.Null(result.WalletBefore);
         Assert.Null(result.WalletAfter);
@@ -240,6 +242,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(lookAround.Success);
         Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", lookAround.Message);
+        Assert.Equal(SaloonPersonOfInterestKind.Citizen, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
         Assert.Equal(initialLogCount, session.LogEntries.Count);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
@@ -255,10 +258,12 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(result.Disposition);
         Assert.Null(result.IsAlive);
         Assert.Null(result.IsSecured);
+        Assert.Equal(SaloonPersonOfInterestKind.Citizen, result.PersonOfInterestKind);
         Assert.Equal(initialLogCount, session.LogEntries.Count);
         Assert.DoesNotContain(session.LogEntries, entry => entry.Message.Contains("town clerk", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(0m, session.Player.Wallet.Cash);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
@@ -292,6 +297,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
         Assert.Equal("a stranger with Raven-feather pin", result.TargetName);
         Assert.False(result.IsCitizen);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, result.PersonOfInterestKind);
         Assert.True(result.IsAlive);
         Assert.False(result.IsSecured);
         Assert.Equal(4m, result.FineAmount);

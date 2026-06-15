@@ -689,7 +689,8 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<TownSourceVisitStateSnapshot>? SourceStates,
         int WantedPostersLastCheckedVisitNumber,
         string? ActiveSaloonPersonOfInterestId,
-        string? ActiveSaloonPersonOfInterestDescriptor)
+        string? ActiveSaloonPersonOfInterestDescriptor,
+        SaloonPersonOfInterestKind? ActiveSaloonPersonOfInterestKind)
     {
         public static TownVisitTownStateSnapshot FromDomain(TownVisitTownState townState)
             => new(
@@ -701,7 +702,8 @@ public sealed partial class GameSessionJsonSerializer
                     .ToArray(),
                 townState.WantedPostersLastCheckedVisitNumber,
                 townState.ActiveSaloonPersonOfInterestId?.Value,
-                townState.ActiveSaloonPersonOfInterestDescriptor);
+                townState.ActiveSaloonPersonOfInterestDescriptor,
+                townState.ActiveSaloonPersonOfInterestKind);
 
         public TownVisitTownState ToDomain()
             => new(
@@ -710,7 +712,8 @@ public sealed partial class GameSessionJsonSerializer
                 SourceStates?.Select(snapshot => snapshot.ToDomain()),
                 wantedPostersSpent: WantedPostersLastCheckedVisitNumber == VisitNumber,
                 activeSaloonPersonOfInterestId: ActiveSaloonPersonOfInterestId is null ? null : new SuspectId(ActiveSaloonPersonOfInterestId),
-                activeSaloonPersonOfInterestDescriptor: ActiveSaloonPersonOfInterestDescriptor);
+                activeSaloonPersonOfInterestDescriptor: ActiveSaloonPersonOfInterestDescriptor,
+                activeSaloonPersonOfInterestKind: ActiveSaloonPersonOfInterestKind);
     }
 
     private sealed record TownSourceVisitStateSnapshot(

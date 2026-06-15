@@ -1601,6 +1601,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
         var activeSaloonPersonOfInterestDescriptor = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor;
+        var activeSaloonPersonOfInterestKind = CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind();
         if (activeSaloonSuspectId is null && activeSaloonPersonOfInterestDescriptor is null)
         {
             return SaloonPersonOfInterestConfrontationResult.Rejected("There is no person of interest waiting in the saloon.");
@@ -1616,7 +1617,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 return SaloonPersonOfInterestConfrontationResult.Rejected(
                     "That person of interest is no longer available.",
                     declaredWantedIdentityHandle,
-                    sessionChanged: true);
+                    sessionChanged: true,
+                    personOfInterestKind: activeSaloonPersonOfInterestKind);
             }
 
             if (TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
@@ -1629,7 +1631,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                         $"{targetSuspect.Name} is no longer in the saloon.",
                         declaredWantedIdentityHandle,
                         targetSuspect.Name,
-                        sessionChanged: true);
+                        sessionChanged: true,
+                        personOfInterestKind: activeSaloonPersonOfInterestKind);
                 }
 
                 if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
@@ -1640,7 +1643,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                         declaredWantedIdentityHandle,
                         existingState.TargetName,
                         activeSaloonWarrant.Terms.Disposition,
-                        sessionChanged: true);
+                        sessionChanged: true,
+                        personOfInterestKind: activeSaloonPersonOfInterestKind);
                 }
 
                 var hasFirearmThreatAvailable = new InventoryCapabilityResolver().Resolve(Player.Inventory, TravelRules).FirearmThreatAvailable;
@@ -1663,12 +1667,13 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     if (!settlementResult.Success)
                     {
                         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                        return SaloonPersonOfInterestConfrontationResult.Rejected(
+                    return SaloonPersonOfInterestConfrontationResult.Rejected(
                             settlementResult.Message,
                             declaredWantedIdentityHandle,
                             activeSaloonWarrant.TargetName,
                             activeSaloonWarrant.Terms.Disposition,
-                            sessionChanged: true);
+                            sessionChanged: true,
+                            personOfInterestKind: activeSaloonPersonOfInterestKind);
                     }
 
                     CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
@@ -1716,10 +1721,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             }
 
             CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-            return SaloonPersonOfInterestConfrontationResult.Rejected(
+                return SaloonPersonOfInterestConfrontationResult.Rejected(
                 "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
                 declaredWantedIdentityHandle,
-                sessionChanged: true);
+                sessionChanged: true,
+                personOfInterestKind: activeSaloonPersonOfInterestKind);
         }
 
         var walletBefore = Player.Wallet.Cash;
@@ -1738,7 +1744,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             citizenNarration,
             fineAmount,
             walletBefore,
-            Player.Wallet.Cash);
+            Player.Wallet.Cash,
+            isCitizen: true,
+            isAlive: null,
+            isSecured: null);
     }
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)

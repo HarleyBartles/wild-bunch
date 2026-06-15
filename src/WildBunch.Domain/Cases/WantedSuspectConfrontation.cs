@@ -39,35 +39,36 @@ public sealed record WantedSuspectConfrontationResult(
     WarrantDisposition? Disposition,
     bool? IsAlive,
     bool? IsSecured,
-    bool SessionChanged)
+    bool SessionChanged,
+    SaloonPersonOfInterestKind? PersonOfInterestKind = null)
 {
     public static WantedSuspectConfrontationResult Surrendered(
         string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Surrendered, declaredWantedIdentityHandle, targetName, disposition, true, true, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Surrendered, declaredWantedIdentityHandle, targetName, disposition, true, true, true, SaloonPersonOfInterestKind.WantedSuspect);
 
     public static WantedSuspectConfrontationResult Fled(
         string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Fled, declaredWantedIdentityHandle, targetName, disposition, true, false, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Fled, declaredWantedIdentityHandle, targetName, disposition, true, false, true, SaloonPersonOfInterestKind.WantedSuspect);
 
     public static WantedSuspectConfrontationResult Killed(
         string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Killed, declaredWantedIdentityHandle, targetName, disposition, false, true, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Killed, declaredWantedIdentityHandle, targetName, disposition, false, true, true, SaloonPersonOfInterestKind.WantedSuspect);
 
     public static WantedSuspectConfrontationResult Abandoned(
         string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Abandoned, declaredWantedIdentityHandle, targetName, disposition, null, null, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Abandoned, declaredWantedIdentityHandle, targetName, disposition, null, null, true, SaloonPersonOfInterestKind.WantedSuspect);
 
     public static WantedSuspectConfrontationResult Rejected(
         string message,
@@ -75,5 +76,5 @@ public sealed record WantedSuspectConfrontationResult(
         string? targetName = null,
         WarrantDisposition? disposition = null,
         bool sessionChanged = false)
-        => new(false, message, WantedSuspectConfrontationOutcome.Rejected, declaredWantedIdentityHandle, targetName, disposition, null, null, sessionChanged);
+        => new(false, message, WantedSuspectConfrontationOutcome.Rejected, declaredWantedIdentityHandle, targetName, disposition, null, null, sessionChanged, SaloonPersonOfInterestKind.WantedSuspect);
 }
