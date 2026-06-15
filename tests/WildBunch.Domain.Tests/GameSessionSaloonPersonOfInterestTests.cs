@@ -1,8 +1,10 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
 using Trail = WildBunch.Domain.World.Trail;
@@ -136,6 +138,53 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     }
 
     [Fact]
+    public void ConfrontSaloonPersonOfInterestPaysTheWantedBountyOnceWhenArmedAndThePublicWantedIdentityMatches()
+    {
+        var session = CreateArmedWantedSession();
+        var suspectId = new SuspectId("suspect-1");
+        var capabilityResolver = new InventoryCapabilityResolver();
+
+        Assert.True(capabilityResolver.Resolve(session.Player.Inventory).FirearmThreatAvailable);
+
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        var lookAround = session.LookAroundSaloon();
+        Assert.True(lookAround.Success);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        var firstTurnIn = session.ConfrontSaloonPersonOfInterest("warrant-public-1");
+        var repeatTurnIn = session.SettleSheriffTurnIn(suspectId, isAlive: true);
+
+        Assert.True(firstTurnIn.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Surrendered, firstTurnIn.Outcome);
+        Assert.Equal("warrant-public-1", firstTurnIn.DeclaredWantedIdentityHandle);
+        Assert.Equal("Mira Cline", firstTurnIn.TargetName);
+        Assert.True(firstTurnIn.IsAlive);
+        Assert.True(firstTurnIn.IsSecured);
+        Assert.Contains("pays you $2500.00", firstTurnIn.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
+        Assert.True(confrontationState.IsAlive);
+        Assert.True(confrontationState.IsSecured);
+        Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.True(session.CaseFile.TryGetSheriffTurnInSettlementState(suspectId, out var settlementState));
+        Assert.Equal("Mira Cline", settlementState.TargetName);
+        Assert.True(settlementState.IsAlive);
+        Assert.Equal(2500m, settlementState.BountyAmount);
+        Assert.Equal(2525m, session.Player.Wallet.Cash);
+
+        Assert.False(repeatTurnIn.Success);
+        Assert.Equal(SheriffTurnInOutcome.Rejected, repeatTurnIn.Outcome);
+        Assert.Equal(2525m, session.Player.Wallet.Cash);
+        Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Contains("already been paid", repeatTurnIn.Message, StringComparison.OrdinalIgnoreCase);
+
+        var payload = System.Text.Json.JsonSerializer.Serialize(firstTurnIn);
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void LookAroundSaloonCanSurfaceATownCitizenAndWrongDeclarationCapsTheFineAtTheAvailableWallet()
     {
         var session = CreateCitizenSession(wallet: Wallet.Starting(4m));
@@ -175,6 +224,60 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.True(repeatLookAround.Success);
         Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", repeatLookAround.Message);
         Assert.Equal(initialLogCount, session.LogEntries.Count);
+    }
+
+    private static GameSession CreateArmedWantedSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-2"),
+                "Reno Pike",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("a black duster") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-public-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Red Wren" },
+                        new[] { "Raven-feather pin" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for a stage robbery.")
+            });
+
+        var inventory = new DomainInventory(
+            new[]
+            {
+                new InventoryItem(ItemKind.Revolver, 1),
+                new InventoryItem(ItemKind.RevolverAmmo, 2)
+            });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: inventory);
     }
 
     private static GameSession CreateSession()
