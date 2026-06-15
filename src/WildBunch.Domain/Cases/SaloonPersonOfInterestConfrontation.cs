@@ -62,6 +62,18 @@ public sealed record SaloonPersonOfInterestConfrontationResult(
         decimal walletAfter)
         => new(true, message, SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, declaredWantedIdentityHandle, targetName, null, null, null, true, fineAmount, walletBefore, walletAfter, true);
 
+    public static SaloonPersonOfInterestConfrontationResult WrongWantedDeclaration(
+        string? declaredWantedIdentityHandle,
+        string targetName,
+        string message,
+        decimal fineAmount,
+        decimal walletBefore,
+        decimal walletAfter,
+        bool isCitizen,
+        bool? isAlive,
+        bool? isSecured)
+        => new(true, message, SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, declaredWantedIdentityHandle, targetName, null, isAlive, isSecured, isCitizen, fineAmount, walletBefore, walletAfter, true);
+
     public static SaloonPersonOfInterestConfrontationResult Rejected(
         string message,
         string? declaredWantedIdentityHandle = null,

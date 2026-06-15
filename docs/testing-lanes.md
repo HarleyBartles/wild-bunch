@@ -78,6 +78,10 @@ The wrapper starts or reuses the local cluster, sets
 `ConnectionStrings__WildBunchPostgresDb` in the same process, and then runs
 `dotnet test` with the arguments you pass after `--`.
 
+That wrapper is the supported repo-local PostgreSQL-backed test path. A direct
+`dotnet test` is only valid when the caller has already exported
+`ConnectionStrings__WildBunchPostgresDb` in the same shell session.
+
 ## Repo Placement
 
 - Unit tests live in the domain/application/game-content test projects.

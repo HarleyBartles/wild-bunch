@@ -229,6 +229,68 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Equal(initialLogCount, session.LogEntries.Count);
     }
 
+    [Fact]
+    public void ConfrontSaloonPersonOfInterestRejectsAWrongWantedDeclarationWithoutRevealingTheWantedIdentity()
+    {
+        var session = CreateArmedWantedSession();
+        session.Player.SetWallet(Wallet.Starting(4m));
+        var suspectId = new SuspectId("suspect-1");
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+
+        var lookAround = session.LookAroundSaloon();
+
+        Assert.True(lookAround.Success);
+        Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", lookAround.Message);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-99");
+
+        Assert.True(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal("a stranger with Raven-feather pin", result.TargetName);
+        Assert.False(result.IsCitizen);
+        Assert.True(result.IsAlive);
+        Assert.False(result.IsSecured);
+        Assert.Equal(4m, result.FineAmount);
+        Assert.Equal(4m, result.WalletBefore);
+        Assert.Equal(0m, result.WalletAfter);
+        Assert.Contains("declaration is wrong", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Mira Cline", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0m, session.Player.Wallet.Cash);
+        Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out _));
+    }
+
+    [Fact]
+    public void ConfrontSaloonPersonOfInterestDoesNotClassifyABlankDeclarationAsWrongWantedDeclaration()
+    {
+        var session = CreateArmedWantedSession();
+        session.Player.SetWallet(Wallet.Starting(4m));
+        var suspectId = new SuspectId("suspect-1");
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+
+        var lookAround = session.LookAroundSaloon();
+
+        Assert.True(lookAround.Success);
+        Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", lookAround.Message);
+
+        var result = session.ConfrontSaloonPersonOfInterest(string.Empty);
+
+        Assert.True(result.Success);
+        Assert.NotEqual(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, result.Outcome);
+        Assert.False(result.IsCitizen);
+        Assert.True(result.IsAlive);
+        Assert.False(result.IsSecured);
+        Assert.Null(result.FineAmount);
+        Assert.Equal(4m, session.Player.Wallet.Cash);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+    }
+
     private static GameSession CreateArmedWantedSession()
     {
         var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);

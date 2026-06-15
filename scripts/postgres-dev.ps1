@@ -236,6 +236,7 @@ function Invoke-ValidationLane {
 
     Write-Host "PostgreSQL validation lane completed."
     Write-Host "Connection string: $ValidationConnectionString"
+    Write-Host "Direct PostgreSQL-backed dotnet test runs must either use this lane or export ConnectionStrings__WildBunchPostgresDb themselves."
     Write-Host "Use '.\scripts\postgres-dev.ps1 status' to check the lane and '.\scripts\postgres-dev.ps1 stop' when you want to shut it down."
 }
 
@@ -256,6 +257,10 @@ function Invoke-TargetedTestLane {
     Invoke-WithValidationConnectionString {
         Invoke-DotNetCommand (@('test') + $testArguments)
     }
+
+    Write-Host "PostgreSQL targeted test lane completed."
+    Write-Host "Connection string: $ValidationConnectionString"
+    Write-Host "Direct PostgreSQL-backed dotnet test runs must either use this lane or export ConnectionStrings__WildBunchPostgresDb themselves."
 }
 
 switch ($Command) {

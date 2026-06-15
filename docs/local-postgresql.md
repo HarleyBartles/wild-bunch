@@ -52,8 +52,8 @@ The validation command provisions the persistent cluster if needed, exports
 restores repo-local tools, runs `dotnet ef migrations list`, and then runs
 `dotnet test WildBunch.sln`.
 
-For a targeted PostgreSQL-backed test run, use the script wrapper instead of a
-separate `$env:` assignment:
+For a targeted PostgreSQL-backed test run, use the repo-local script wrapper.
+That is the supported path from a fresh checkout:
 
 ```powershell
 .\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
@@ -62,6 +62,11 @@ separate `$env:` assignment:
 That route provisions or starts the persistent cluster, exports
 `ConnectionStrings__WildBunchPostgresDb` in the same process, and runs
 `dotnet test` with the arguments you pass after `--`.
+
+If you deliberately bypass the script, you must set
+`ConnectionStrings__WildBunchPostgresDb` yourself in the same shell before
+running `dotnet test`. A plain `dotnet test` without that connection string is
+not a supported PostgreSQL-backed test path in this repo.
 
 Then launch Wild Bunch Api through Visual Studio/F5 or `dotnet run`.
 The committed launch profile supplies the repo-local connection string for the
