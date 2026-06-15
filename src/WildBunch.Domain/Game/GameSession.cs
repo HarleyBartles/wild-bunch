@@ -1691,14 +1691,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
             }
 
-            var suspectNarration = DescribeConfrontationNarration(targetSuspect.Name, WantedSuspectConfrontationChoice.Fled, declaredWantedIdentityHandle);
-            RecordCaseUpdate(suspectNarration);
             CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-            return SaloonPersonOfInterestConfrontationResult.Fled(
+            return SaloonPersonOfInterestConfrontationResult.Rejected(
+                "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
                 declaredWantedIdentityHandle,
-                targetSuspect.Name,
-                null,
-                suspectNarration);
+                sessionChanged: true);
         }
 
         var walletBefore = Player.Wallet.Cash;
