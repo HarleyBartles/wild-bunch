@@ -75,11 +75,13 @@ public sealed class TownVisitTownState
         IEnumerable<TownSourceVisitState>? sourceStates = null,
         IEnumerable<InvestigationSourceKind>? spentInvestigationSources = null,
         bool wantedPostersSpent = false,
-        SuspectId? activeSaloonPersonOfInterestId = null)
+        SuspectId? activeSaloonPersonOfInterestId = null,
+        string? activeSaloonPersonOfInterestDescriptor = null)
     {
         TownId = townId;
         VisitNumber = visitNumber < 1 ? 1 : visitNumber;
         ActiveSaloonPersonOfInterestId = activeSaloonPersonOfInterestId;
+        ActiveSaloonPersonOfInterestDescriptor = activeSaloonPersonOfInterestDescriptor;
 
         if (sourceStates is not null)
         {
@@ -112,6 +114,8 @@ public sealed class TownVisitTownState
 
     public SuspectId? ActiveSaloonPersonOfInterestId { get; private set; }
 
+    public string? ActiveSaloonPersonOfInterestDescriptor { get; private set; }
+
     public SuspectId? ActiveSaloonWantedSuspectId => ActiveSaloonPersonOfInterestId;
 
     public IReadOnlyCollection<TownSourceVisitState> SourceStates => _sourceStates.Values.ToArray();
@@ -125,10 +129,28 @@ public sealed class TownVisitTownState
     public bool WantedPostersSpent => WantedPostersLastCheckedVisitNumber == VisitNumber;
 
     public void SetActiveSaloonPersonOfInterest(SuspectId? suspectId)
-        => ActiveSaloonPersonOfInterestId = suspectId;
+    {
+        ActiveSaloonPersonOfInterestId = suspectId;
+        ActiveSaloonPersonOfInterestDescriptor = null;
+    }
+
+    public void SetActiveSaloonPersonOfInterest(SuspectId? suspectId, string? descriptor)
+    {
+        ActiveSaloonPersonOfInterestId = suspectId;
+        ActiveSaloonPersonOfInterestDescriptor = descriptor;
+    }
+
+    public void SetActiveSaloonCitizenPersonOfInterest(string descriptor)
+    {
+        ActiveSaloonPersonOfInterestId = null;
+        ActiveSaloonPersonOfInterestDescriptor = descriptor;
+    }
 
     public void ClearActiveSaloonPersonOfInterest()
-        => ActiveSaloonPersonOfInterestId = null;
+    {
+        ActiveSaloonPersonOfInterestId = null;
+        ActiveSaloonPersonOfInterestDescriptor = null;
+    }
 
     public void SetActiveSaloonWantedSuspect(SuspectId? suspectId)
         => SetActiveSaloonPersonOfInterest(suspectId);

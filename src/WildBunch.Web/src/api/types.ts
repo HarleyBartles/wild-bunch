@@ -570,6 +570,10 @@ export interface SaloonPersonOfInterestConfrontationResultDto {
   disposition: number | null;
   isAlive: boolean | null;
   isSecured: boolean | null;
+  isCitizen: boolean | null;
+  fineAmount: number | null;
+  walletBefore: number | null;
+  walletAfter: number | null;
   sessionChanged: boolean;
 }
 

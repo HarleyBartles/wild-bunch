@@ -45,6 +45,10 @@ public sealed class ConfrontSaloonPersonOfInterestHandler
             result.Disposition,
             result.IsAlive,
             result.IsSecured,
+            result.IsCitizen,
+            result.FineAmount,
+            result.WalletBefore,
+            result.WalletAfter,
             result.SessionChanged);
     }
 }

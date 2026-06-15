@@ -36,7 +36,10 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, session.TravelRules),
             session.TravelDiaryDays,
             session.LogEntries,
-            ToActiveSaloonPersonOfInterestDto(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId, session.CaseFile));
+            ToActiveSaloonPersonOfInterestDto(
+                session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
+                session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                session.CaseFile));
     }
 
     public static GameSessionDto ToDto(DomainGameSessionReadModel session)
@@ -56,7 +59,10 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.TravelDifficulty)),
             session.TravelDiaryDays,
             session.LogEntries,
-            ToActiveSaloonPersonOfInterestDto(session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId, session.CaseFile));
+            ToActiveSaloonPersonOfInterestDto(
+                session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
+                session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                session.CaseFile));
     }
 
     private static GameSessionDto ToDto(
@@ -139,8 +145,14 @@ public static class GameSessionMapper
 
     private static ActiveSaloonPersonOfInterestDto? ToActiveSaloonPersonOfInterestDto(
         SuspectId? activeSaloonPersonOfInterestId,
+        string? activeSaloonPersonOfInterestDescriptor,
         DomainCaseFile caseFile)
     {
+        if (!string.IsNullOrWhiteSpace(activeSaloonPersonOfInterestDescriptor))
+        {
+            return new ActiveSaloonPersonOfInterestDto(activeSaloonPersonOfInterestDescriptor);
+        }
+
         if (activeSaloonPersonOfInterestId is null)
         {
             return null;

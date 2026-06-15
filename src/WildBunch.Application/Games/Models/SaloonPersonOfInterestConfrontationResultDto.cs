@@ -12,4 +12,8 @@ public sealed record SaloonPersonOfInterestConfrontationResultDto(
     WarrantDisposition? Disposition,
     bool? IsAlive,
     bool? IsSecured,
+    bool? IsCitizen,
+    decimal? FineAmount,
+    decimal? WalletBefore,
+    decimal? WalletAfter,
     bool SessionChanged);

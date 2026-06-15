@@ -651,6 +651,10 @@ describe("App", () => {
       disposition: 1,
       isAlive: true,
       isSecured: false,
+      isCitizen: false,
+      fineAmount: null,
+      walletBefore: null,
+      walletAfter: null,
       sessionChanged: true,
     });
     mockedInspectNoticeBoard.mockResolvedValue({
@@ -710,6 +714,124 @@ describe("App", () => {
     });
 
     expect(screen.getByText("You confront Mira Cline, but they get away.")).toBeInTheDocument();
+  });
+
+  it("shows the citizen fine and wallet change after a wrong declaration in the saloon", async () => {
+    const surfacedSession: GameSessionDto = {
+      ...createSession(),
+      activeSaloonPersonOfInterest: {
+        descriptor: "a town clerk from Current Town",
+      },
+    };
+    const clearedSession: GameSessionDto = {
+      ...createSession(),
+      activeSaloonPersonOfInterest: null,
+    };
+
+    mockedGetGame.mockResolvedValue(clearedSession);
+    mockedGetGame.mockResolvedValueOnce(createSession());
+    mockedGetGame.mockResolvedValueOnce(surfacedSession);
+    mockedGetGame.mockResolvedValueOnce(surfacedSession);
+    mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+      { kind: AvailableActionKind.LookAroundSaloon, label: "Look around saloon" },
+    ]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
+    mockedCreateGame.mockResolvedValue(createSession());
+    mockedBuyStoreItem.mockResolvedValue({
+      success: true,
+      message: "Purchased",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    mockedLookAroundSaloon.mockResolvedValue({
+      success: true,
+      message: "You look around the saloon and spot a town clerk from Current Town.",
+      currentJournal: createJournal(),
+    });
+    mockedReadWantedPosters.mockResolvedValue({
+      success: true,
+      message: "Read wanted posters",
+      currentJournal: createJournal(),
+      wantedPosters: [createWantedPoster()],
+    });
+    mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
+      success: true,
+      message: "You bring a town clerk from Current Town to the sheriff, but the declaration is wrong. The sheriff releases them and fines you $4.00.",
+      outcome: 5,
+      currentSession: clearedSession,
+      declaredWantedIdentityHandle: "warrant-public-1",
+      targetName: "a town clerk from Current Town",
+      disposition: null,
+      isAlive: null,
+      isSecured: null,
+      isCitizen: true,
+      fineAmount: 4,
+      walletBefore: 4,
+      walletAfter: 0,
+      sessionChanged: true,
+    });
+    mockedInspectNoticeBoard.mockResolvedValue({
+      success: true,
+      message: "Inspect notice board",
+      currentJournal: createJournal(),
+    });
+    mockedCheckLocalRecords.mockResolvedValue({
+      success: true,
+      message: "Check local records",
+      currentJournal: createJournal(),
+    });
+    mockedFollowTelegraphLeads.mockResolvedValue({
+      success: true,
+      message: "Follow telegraph leads",
+      currentJournal: createJournal(),
+    });
+    mockedGatherLocalGossip.mockResolvedValue({
+      success: true,
+      message: "Gather local gossip",
+      currentJournal: createJournal(),
+    });
+    mockedTravel.mockResolvedValue({
+      success: true,
+      message: "Travelled",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    render(<App />);
+
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+      expect(mockedGetAvailableActions).toHaveBeenCalledWith("game-1");
+      expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(await screen.findByRole("button", { name: /read wanted posters/i }));
+
+    await user.click(await screen.findByRole("button", { name: /look around saloon/i }));
+
+    const confrontButton = await screen.findByRole("button", {
+      name: /take a town clerk from current town to sheriff as mira cline/i,
+    });
+    await user.click(confrontButton);
+
+    await waitFor(() => {
+      expect(mockedConfrontSaloonPersonOfInterest).toHaveBeenCalledWith("game-1", "warrant-public-1");
+      expect(screen.queryByRole("button", { name: /take a town clerk from current town to sheriff as mira cline/i })).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText("You bring a town clerk from Current Town to the sheriff, but the declaration is wrong. The sheriff releases them and fines you $4.00. Wallet $4.00 -> $0.00.")).toBeInTheDocument();
   });
 
   it("shows a clean empty wanted-poster state when the response is empty", async () => {

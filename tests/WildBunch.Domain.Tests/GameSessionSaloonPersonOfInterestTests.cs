@@ -1,4 +1,5 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -134,6 +135,48 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-2"), out _));
     }
 
+    [Fact]
+    public void LookAroundSaloonCanSurfaceATownCitizenAndWrongDeclarationCapsTheFineAtTheAvailableWallet()
+    {
+        var session = CreateCitizenSession(wallet: Wallet.Starting(4m));
+        var initialLogCount = session.LogEntries.Count;
+
+        var lookAround = session.LookAroundSaloon();
+
+        Assert.True(lookAround.Success);
+        Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", lookAround.Message);
+        Assert.Equal(initialLogCount, session.LogEntries.Count);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-1");
+
+        Assert.True(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal("You bring a town clerk from Current Town to the sheriff, but the declaration is wrong. The sheriff releases them and fines you $4.00.", result.Message);
+        Assert.True(result.IsCitizen);
+        Assert.Equal(4m, result.FineAmount);
+        Assert.Equal(4m, result.WalletBefore);
+        Assert.Equal(0m, result.WalletAfter);
+        Assert.Null(result.Disposition);
+        Assert.Null(result.IsAlive);
+        Assert.Null(result.IsSecured);
+        Assert.Equal(initialLogCount, session.LogEntries.Count);
+        Assert.DoesNotContain(session.LogEntries, entry => entry.Message.Contains("town clerk", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(0m, session.Player.Wallet.Cash);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
+
+        var repeatLookAround = session.LookAroundSaloon();
+
+        Assert.True(repeatLookAround.Success);
+        Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", repeatLookAround.Message);
+        Assert.Equal(initialLogCount, session.LogEntries.Count);
+    }
+
     private static GameSession CreateSession()
     {
         var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
@@ -179,6 +222,25 @@ public sealed class GameSessionSaloonPersonOfInterestTests
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateCitizenSession(Wallet? wallet = null)
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            Array.Empty<Suspect>(),
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet ?? Wallet.Starting(25m), inventory: null);
     }
 
     private static GameSession CreateSessionWithoutKnownWarrants()

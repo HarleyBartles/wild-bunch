@@ -5,6 +5,7 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -79,10 +80,66 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.Contains("\"targetName\":\"Mira Cline\"", json, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task PostSaloonLookAroundThenConfrontCitizenAppliesAWalletCappedFineAndKeepsTheCitizenReusable()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateAuthenticatedClient();
+
+        var createdSession = await SeedSessionWithCitizenSaloonPersonOfInterestAsync(factory);
+
+        var lookAroundResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/look-around", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, lookAroundResponse.StatusCode);
+
+        var surfacedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
+        Assert.Equal("a town clerk from Current Town", surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.Null(surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        var confrontationResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/investigations/saloon/confront",
+            new
+            {
+                declaredWantedIdentityHandle = "warrant-1"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, confrontationResponse.StatusCode);
+
+        var result = await confrontationResponse.Content.ReadFromJsonAsync<SaloonPersonOfInterestConfrontationResultDto>();
+        Assert.NotNull(result);
+        Assert.True(result!.Success);
+        Assert.True(result.IsCitizen);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal(4m, result.FineAmount);
+        Assert.Equal(4m, result.WalletBefore);
+        Assert.Equal(0m, result.WalletAfter);
+        Assert.Equal("a town clerk from Current Town", result.TargetName);
+        Assert.Null(result.CurrentSession.ActiveSaloonPersonOfInterest);
+        Assert.Equal(0m, result.CurrentSession.Inventory.Wallet.Cash);
+
+        var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
+        Assert.Equal(0m, reloadedSession.Player.Wallet.Cash);
+        Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+    }
+
     private static async Task<GameSessionDto> SeedSessionWithAvailableSaloonSuspectAsync(PostgreSqlApiFactory factory)
     {
         var session = CreateSession();
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+
+        using var scope = factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        await repository.StoreAsync(session);
+        await unitOfWork.CommitAsync();
+
+        return GameSessionMapper.ToDto(session);
+    }
+
+    private static async Task<GameSessionDto> SeedSessionWithCitizenSaloonPersonOfInterestAsync(PostgreSqlApiFactory factory)
+    {
+        var session = CreateCitizenSession();
 
         using var scope = factory.Services.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
@@ -145,5 +202,24 @@ public sealed class SaloonConfrontationAcceptanceTests
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+    }
+
+    private static GameSession CreateCitizenSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new World(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            Array.Empty<Suspect>(),
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, Wallet.Starting(4m), inventory: null);
     }
 }

@@ -18,6 +18,7 @@ namespace WildBunch.Domain.Game;
 public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
+    private const decimal CitizenDeclarationFine = 10m;
 
     private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
@@ -1580,15 +1581,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
         {
-            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id);
             var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id, descriptor);
             RecordCaseUpdate($"You look around the saloon and spot {descriptor}.");
             return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {descriptor}.", sessionChanged: true);
         }
 
-        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-        RecordCaseUpdate("You look around the saloon, but nobody of interest is here.");
-        return CaseInvestigationResult.Succeeded("You look around the saloon, but nobody of interest is here.", sessionChanged: true);
+        var citizenDescriptor = DescribeTownCitizen(CurrentTown);
+        CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(citizenDescriptor);
+        return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {citizenDescriptor}.", sessionChanged: true);
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
@@ -1599,66 +1600,88 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        if (activeSaloonSuspectId is null)
+        var activeSaloonPersonOfInterestDescriptor = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor;
+        if (activeSaloonSuspectId is null && activeSaloonPersonOfInterestDescriptor is null)
         {
             return SaloonPersonOfInterestConfrontationResult.Rejected("There is no person of interest waiting in the saloon.");
         }
 
-        var activeSaloonSuspect = activeSaloonSuspectId.Value;
-        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
-        if (targetSuspect is null)
+        if (activeSaloonSuspectId is not null)
         {
+            var activeSaloonSuspect = activeSaloonSuspectId.Value;
+            var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
+            if (targetSuspect is null)
+            {
+                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                return SaloonPersonOfInterestConfrontationResult.Rejected(
+                    "That person of interest is no longer available.",
+                    declaredWantedIdentityHandle,
+                    sessionChanged: true);
+            }
+
+            if (TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
+            {
+                var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
+                if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
+                {
+                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                    return SaloonPersonOfInterestConfrontationResult.Rejected(
+                        $"{targetSuspect.Name} is no longer in the saloon.",
+                        declaredWantedIdentityHandle,
+                        targetSuspect.Name,
+                        sessionChanged: true);
+                }
+
+                if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
+                {
+                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                    return SaloonPersonOfInterestConfrontationResult.Rejected(
+                        $"{existingState.TargetName} has already been confronted.",
+                        declaredWantedIdentityHandle,
+                        existingState.TargetName,
+                        activeSaloonWarrant.Terms.Disposition,
+                        sessionChanged: true);
+                }
+
+                var wantedResult = ResolveWantedSuspectConfrontation(
+                    activeSaloonSuspect,
+                    WantedSuspectConfrontationChoice.Fled,
+                    declaredWantedIdentityHandle);
+                if (wantedResult.Success)
+                {
+                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                }
+
+                return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
+            }
+
+            var suspectNarration = DescribeConfrontationNarration(targetSuspect.Name, WantedSuspectConfrontationChoice.Fled, declaredWantedIdentityHandle);
+            RecordCaseUpdate(suspectNarration);
             CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-            return SaloonPersonOfInterestConfrontationResult.Rejected(
-                "That person of interest is no longer available.",
+            return SaloonPersonOfInterestConfrontationResult.Fled(
                 declaredWantedIdentityHandle,
-                sessionChanged: true);
+                targetSuspect.Name,
+                null,
+                suspectNarration);
         }
 
-        if (TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
+        var walletBefore = Player.Wallet.Cash;
+        var fineAmount = Math.Min(CitizenDeclarationFine, walletBefore);
+        if (fineAmount > 0m)
         {
-            var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
-            if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
-            {
-                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                return SaloonPersonOfInterestConfrontationResult.Rejected(
-                    $"{targetSuspect.Name} is no longer in the saloon.",
-                    declaredWantedIdentityHandle,
-                    targetSuspect.Name,
-                    sessionChanged: true);
-            }
-
-            if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
-            {
-                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                return SaloonPersonOfInterestConfrontationResult.Rejected(
-                    $"{existingState.TargetName} has already been confronted.",
-                    declaredWantedIdentityHandle,
-                    existingState.TargetName,
-                    activeSaloonWarrant.Terms.Disposition,
-                    sessionChanged: true);
-            }
-
-            var wantedResult = ResolveWantedSuspectConfrontation(
-                activeSaloonSuspect,
-                WantedSuspectConfrontationChoice.Fled,
-                declaredWantedIdentityHandle);
-            if (wantedResult.Success)
-            {
-                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-            }
-
-            return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
+            Player.SetWallet(Player.Wallet.Adjust(-fineAmount));
         }
 
-        var narration = DescribeConfrontationNarration(targetSuspect.Name, WantedSuspectConfrontationChoice.Fled, declaredWantedIdentityHandle);
-        RecordCaseUpdate(narration);
+        var citizenTargetName = activeSaloonPersonOfInterestDescriptor ?? throw new InvalidOperationException("A citizen person of interest descriptor is required.");
         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-        return SaloonPersonOfInterestConfrontationResult.Fled(
+        var citizenNarration = $"You bring {citizenTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
+        return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
             declaredWantedIdentityHandle,
-            targetSuspect.Name,
-            null,
-            narration);
+            citizenTargetName,
+            citizenNarration,
+            fineAmount,
+            walletBefore,
+            Player.Wallet.Cash);
     }
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
@@ -2210,6 +2233,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private static string DescribeClueLead(string description)
         => description.Trim().TrimEnd('.', '!', '?');
+
+    private static string DescribeTownCitizen(TownAggregate town)
+        => $"a town clerk from {town.TownName}";
 
     private static bool IsPlayerKnownClue(Clue clue)
     {
