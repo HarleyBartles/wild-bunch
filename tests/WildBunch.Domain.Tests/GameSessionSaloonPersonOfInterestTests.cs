@@ -188,6 +188,49 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     }
 
     [Fact]
+    public void ConfrontSaloonPersonOfInterestFleesBeforeSheriffWhenTheCorrectWantedIdentityIsDeclaredWithoutAFirearm()
+    {
+        var session = CreateUnarmedWantedSession();
+        var suspectId = new SuspectId("suspect-1");
+        var capabilityResolver = new InventoryCapabilityResolver();
+
+        Assert.False(capabilityResolver.Resolve(session.Player.Inventory).FirearmThreatAvailable);
+
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        var lookAround = session.LookAroundSaloon();
+        Assert.True(lookAround.Success);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-public-1");
+        var payload = System.Text.Json.JsonSerializer.Serialize(result);
+
+        Assert.True(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, result.Outcome);
+        Assert.Equal("warrant-public-1", result.DeclaredWantedIdentityHandle);
+        Assert.Equal("Mira Cline", result.TargetName);
+        Assert.True(result.IsAlive);
+        Assert.False(result.IsSecured);
+        Assert.False(result.IsCitizen);
+        Assert.Null(result.FineAmount);
+        Assert.Null(result.WalletBefore);
+        Assert.Null(result.WalletAfter);
+        Assert.Contains("get away", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("sheriff", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Reno Pike", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out var confrontationState));
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontationState.Outcome);
+        Assert.True(confrontationState.IsAlive);
+        Assert.False(confrontationState.IsSecured);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.False(session.CaseFile.TryGetSheriffTurnInSettlementState(suspectId, out _));
+    }
+
+    [Fact]
     public void LookAroundSaloonCanSurfaceATownCitizenAndWrongDeclarationCapsTheFineAtTheAvailableWallet()
     {
         var session = CreateCitizenSession(wallet: Wallet.Starting(4m));
@@ -343,6 +386,53 @@ public sealed class GameSessionSaloonPersonOfInterestTests
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: inventory);
+    }
+
+    private static GameSession CreateUnarmedWantedSession()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("trail-1"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-2"),
+                "Reno Pike",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("a black duster") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-public-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Red Wren" },
+                        new[] { "Raven-feather pin" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for a stage robbery.")
+            });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
     }
 
     private static GameSession CreateSession()
