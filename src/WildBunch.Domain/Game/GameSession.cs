@@ -1721,7 +1721,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             }
 
             CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                return SaloonPersonOfInterestConfrontationResult.Rejected(
+            return SaloonPersonOfInterestConfrontationResult.Rejected(
                 "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
                 declaredWantedIdentityHandle,
                 sessionChanged: true,
