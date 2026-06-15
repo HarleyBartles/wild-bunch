@@ -86,6 +86,7 @@ internal static class GameSessionReadStoreLoader
             caseFile.GetDiscoveredSuspects(),
             caseFile.KnownClues.ToArray(),
             caseFile.KnownWarrants.ToArray(),
+            caseFile.SheriffTurnInSettlements.ToArray(),
             logEntries);
     }
 

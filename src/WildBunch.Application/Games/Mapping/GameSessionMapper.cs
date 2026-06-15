@@ -129,7 +129,7 @@ public static class GameSessionMapper
             caseFile.OpeningLead.Description,
             CaseReadMapper.ToDto(caseFile.KillerReleaseState),
             caseFile.GetDiscoveredSuspects().Select(ToDto).ToArray(),
-            CaseBoardMapper.ToDto(caseFile.KnownClues, caseFile.KnownWarrants),
+            CaseBoardMapper.ToDto(caseFile.KnownClues, caseFile.KnownWarrants, caseFile.SheriffTurnInSettlements),
             caseFile.KnownClues.Select(CaseReadMapper.ToDto).ToArray());
 
     private static DiscoveredSuspectDto ToDto(DomainSuspect suspect)

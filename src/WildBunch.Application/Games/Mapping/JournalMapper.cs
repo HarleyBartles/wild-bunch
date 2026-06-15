@@ -11,6 +11,8 @@ public static class JournalMapper
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
+        var activeWarrants = ExcludeCapturedWarrants(snapshot.KnownWarrants, snapshot.SheriffTurnInSettlements);
+
         return new JournalDto(
             snapshot.SessionId,
             snapshot.Status,
@@ -21,12 +23,28 @@ public static class JournalMapper
                 CaseReadMapper.ToDto(snapshot.KillerReleaseState),
                 snapshot.CaseSummary,
                 snapshot.DiscoveredSuspects.Select(ToDto).ToArray(),
-                CaseBoardMapper.ToDto(snapshot.KnownClues, snapshot.KnownWarrants),
+                CaseBoardMapper.ToDto(snapshot.KnownClues, snapshot.KnownWarrants, snapshot.SheriffTurnInSettlements),
                 snapshot.KnownClues.Select(CaseReadMapper.ToDto).ToArray(),
-                snapshot.KnownWarrants.Select(ToDto).ToArray(),
-                WantedPosterMapper.ToDto(snapshot.KnownWarrants)),
+                activeWarrants.Select(ToDto).ToArray(),
+                WantedPosterMapper.ToDto(activeWarrants)),
             snapshot.LogEntries.Select(ToDto).ToArray());
     }
+
+    private static IReadOnlyList<Warrant> ExcludeCapturedWarrants(
+        IReadOnlyList<Warrant> warrants,
+        IReadOnlyList<SheriffTurnInSettlementState> sheriffTurnInSettlements)
+    {
+        var capturedTargetNames = sheriffTurnInSettlements
+            .Select(settlement => Normalize(settlement.TargetName))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return warrants
+            .Where(warrant => !capturedTargetNames.Contains(Normalize(warrant.TargetName)))
+            .ToArray();
+    }
+
+    private static string Normalize(string value)
+        => string.Join(" ", value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
 
     private static DiscoveredSuspectDto ToDto(Suspect suspect)
         => new(

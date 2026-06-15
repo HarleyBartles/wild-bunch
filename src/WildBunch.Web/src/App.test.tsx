@@ -311,6 +311,93 @@ function createJournal(): JournalDto {
   };
 }
 
+function createCapturedJournal(): JournalDto {
+  const journal = createJournal();
+
+  journal.caseFile.caseBoard.namedRecords = [
+    {
+      ...journal.caseFile.caseBoard.namedRecords[0],
+      displayName: "Gus Mercer",
+      status: 3,
+      evidenceIds: ["warrant-gus", "clue-1"],
+      summaryLines: ["Captured alive on day 5, turn 2. Sheriff paid $2,500.50."],
+    },
+    {
+      id: "record-mabel",
+      displayName: "Mabel Quinn",
+      kind: 4,
+      status: 2,
+      resolvedToDisplayName: null,
+      evidenceIds: ["warrant-mabel", "clue-2"],
+      summaryLines: ["Dead or alive warrant - Silver Creek Sheriff - 300.00 bounty"],
+      relatedLabels: ["The Magpie"],
+      knownAliases: ["The Magpie"],
+      distinguishingFeatures: ["Mismatched spurs"],
+      warrantDisposition: 1,
+      bountyAmount: 300,
+      issuingAuthority: "Silver Creek Sheriff",
+      crimeSummary: "Wanted for cattle theft.",
+    },
+  ];
+  journal.caseFile.caseBoard.evidenceItems = [
+    {
+      id: "clue-2",
+      kindLabel: "Contradiction",
+      summary: "The witness says the rider wore a blue coat, not the brown coat listed on the warrant.",
+      sourceLabel: "Telegraph lead",
+      identityBearing: true,
+      anchors: {
+        subjects: [{ label: "Blue coat rider", alias: null, feature: "Blue coat", fact: "Witness memory" }],
+        locations: [{ label: "Depot road", place: null, route: "South spur" }],
+        times: [{ recency: 2, day: 4, turn: null }],
+        directions: [{ label: "Southbound", movement: "Rode away", route: null }],
+      },
+      handleIds: [],
+    },
+  ];
+  journal.caseFile.knownWarrants = [
+    ...journal.caseFile.knownWarrants,
+    {
+      targetName: "Mabel Quinn",
+      summary: "Wanted for cattle theft.",
+      issuingSource: "Silver Creek Sheriff",
+      disposition: 1,
+      bountyAmount: 300,
+    },
+  ];
+  journal.caseFile.wantedPosters = [
+    ...journal.caseFile.wantedPosters,
+    createWantedPoster({
+      posterId: "warrant-mabel",
+      targetDisplayName: "Mabel Quinn",
+      aliases: ["The Magpie"],
+      legalTerms: {
+        disposition: 1,
+        bountyAmount: 300,
+        issuingAuthority: "Silver Creek Sheriff",
+      },
+      quickView: {
+        headlineNameOrAlias: "Mabel Quinn",
+        headlineFeatureOrDescriptor: "Mismatched spurs",
+        pocketCheckDescriptor: "Dead or alive, $300.00 bounty",
+      },
+      details: {
+        summary: "Wanted for cattle theft.",
+        publicOrigin: "Silver Creek Sheriff",
+        features: [
+          {
+            text: "Mismatched spurs",
+            salience: WantedPosterFeatureSalience.Headline,
+            renderMode: WantedPosterFeatureRenderMode.TextOnly,
+          },
+        ],
+      },
+    }),
+  ];
+
+  return journal;
+}
+
 function createStoreOffers(): TownStoreOffersDto {
   return {
     townId: "t-town",
@@ -837,6 +924,104 @@ describe("App", () => {
     });
 
     expect(screen.getByText("You bring a town clerk from Current Town to the sheriff, but the declaration is wrong. The sheriff releases them and fines you $4.00. Wallet $4.00 -> $0.00.")).toBeInTheDocument();
+  });
+
+  it("keeps captured wanted identities compact and out of active case-file clutter", async () => {
+    const capturedJournal = createCapturedJournal();
+
+    mockedGetGame.mockResolvedValue(createSession());
+    mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+    ]);
+    mockedGetJournal.mockResolvedValue(capturedJournal);
+    mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
+    mockedCreateGame.mockResolvedValue(createSession());
+    mockedBuyStoreItem.mockResolvedValue({
+      success: true,
+      message: "Purchased",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    mockedReadWantedPosters.mockResolvedValue({
+      success: true,
+      message: "Read wanted posters",
+      currentJournal: capturedJournal,
+      wantedPosters: capturedJournal.caseFile.wantedPosters,
+    });
+    mockedInspectNoticeBoard.mockResolvedValue({
+      success: true,
+      message: "Inspect notice board",
+      currentJournal: capturedJournal,
+    });
+    mockedCheckLocalRecords.mockResolvedValue({
+      success: true,
+      message: "Check local records",
+      currentJournal: capturedJournal,
+    });
+    mockedFollowTelegraphLeads.mockResolvedValue({
+      success: true,
+      message: "Follow telegraph leads",
+      currentJournal: capturedJournal,
+    });
+    mockedGatherLocalGossip.mockResolvedValue({
+      success: true,
+      message: "Gather local gossip",
+      currentJournal: capturedJournal,
+    });
+    mockedLookAroundSaloon.mockResolvedValue({
+      success: true,
+      message: "Look around saloon",
+      currentJournal: capturedJournal,
+    });
+    mockedTravel.mockResolvedValue({
+      success: true,
+      message: "Travelled",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    render(<App />);
+
+    const user = userEvent.setup();
+
+    await waitFor(() => {
+      expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(await screen.findByRole("button", { name: /open case file/i }));
+    const dialog = await screen.findByRole("dialog", { name: /investigation board/i });
+    const dialogScope = within(dialog);
+
+    expect(dialogScope.getAllByRole("heading", { name: "Gus Mercer" }).length).toBeGreaterThanOrEqual(1);
+    expect(dialogScope.getAllByText("Captured").length).toBeGreaterThanOrEqual(1);
+    expect(dialogScope.getAllByText("Captured alive on day 5, turn 2. Sheriff paid $2,500.50.").length).toBeGreaterThanOrEqual(1);
+
+    const warrantsSection = dialogScope.getByRole("heading", { name: "Warrants" }).closest("article");
+    expect(warrantsSection).not.toBeNull();
+    const warrantsScope = within(warrantsSection as HTMLElement);
+    expect(warrantsScope.queryByRole("heading", { name: "Gus Mercer" })).not.toBeInTheDocument();
+    expect(warrantsScope.getByRole("heading", { name: "Mabel Quinn" })).toBeInTheDocument();
+
+    const evidenceSection = dialogScope.getByRole("heading", { name: "Evidence stack" }).closest("article");
+    expect(evidenceSection).not.toBeNull();
+    const evidenceScope = within(evidenceSection as HTMLElement);
+    expect(evidenceScope.queryByText("A boot print with Gus Mercer's ranch brand was found near the creek.")).not.toBeInTheDocument();
+    expect(evidenceScope.getByText("The witness says the rider wore a blue coat, not the brown coat listed on the warrant.")).toBeInTheDocument();
+
+    const wantedPosterSection = dialogScope.getByRole("heading", { name: "Wanted posters" }).closest("article");
+    expect(wantedPosterSection).not.toBeNull();
+    const wantedPosterScope = within(wantedPosterSection as HTMLElement);
+    expect(wantedPosterScope.queryByRole("heading", { name: "Gus Mercer" })).not.toBeInTheDocument();
+    expect(wantedPosterScope.getByRole("heading", { name: "Mabel Quinn" })).toBeInTheDocument();
+    expect(dialogScope.queryByText("trueCulpritId")).not.toBeInTheDocument();
   });
 
   it("shows a clean empty wanted-poster state when the response is empty", async () => {
