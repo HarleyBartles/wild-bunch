@@ -1679,6 +1679,30 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     };
                 }
 
+                if (hasFirearmThreatAvailable)
+                {
+                    var wantedWalletBefore = Player.Wallet.Cash;
+                    var wantedFineAmount = Math.Min(CitizenDeclarationFine, wantedWalletBefore);
+                    if (wantedFineAmount > 0m)
+                    {
+                        Player.SetWallet(Player.Wallet.Adjust(-wantedFineAmount));
+                    }
+
+                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                    var publicTargetName = activeSaloonPersonOfInterestDescriptor ?? "the person of interest";
+                    var wrongDeclarationMessage = $"You bring {publicTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${wantedFineAmount:0.00}.";
+                    return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
+                        declaredWantedIdentityHandle,
+                        publicTargetName,
+                        wrongDeclarationMessage,
+                        wantedFineAmount,
+                        wantedWalletBefore,
+                        Player.Wallet.Cash,
+                        isCitizen: false,
+                        isAlive: true,
+                        isSecured: false);
+                }
+
                 var wantedResult = ResolveWantedSuspectConfrontation(
                     activeSaloonSuspect,
                     WantedSuspectConfrontationChoice.Fled,
