@@ -5,7 +5,10 @@ namespace WildBunch.Application.Games.Mapping;
 
 public static class CaseBoardMapper
 {
-    public static CaseBoardDto ToDto(IReadOnlyList<Clue> clues, IReadOnlyList<Warrant> warrants)
+    public static CaseBoardDto ToDto(
+        IReadOnlyList<Clue> clues,
+        IReadOnlyList<Warrant> warrants,
+        IReadOnlyList<SheriffTurnInSettlementState>? sheriffTurnInSettlements = null)
     {
         ArgumentNullException.ThrowIfNull(clues);
         ArgumentNullException.ThrowIfNull(warrants);
@@ -13,6 +16,9 @@ public static class CaseBoardMapper
         var looseLeads = new Dictionary<string, HandleBuilder>(StringComparer.OrdinalIgnoreCase);
         var namedRecords = new Dictionary<string, HandleBuilder>(StringComparer.OrdinalIgnoreCase);
         var evidenceItems = new List<CaseEvidenceItemDto>(clues.Count);
+        var capturedSettlements = (sheriffTurnInSettlements ?? Array.Empty<SheriffTurnInSettlementState>())
+            .GroupBy(settlement => Normalize(settlement.TargetName), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
 
         foreach (var clue in clues)
         {
@@ -40,13 +46,19 @@ public static class CaseBoardMapper
         foreach (var warrant in warrants)
         {
             var namedRecord = GetOrCreate(namedRecords, CaseIdentityKind.WarrantTarget, warrant.TargetName, warrant.TargetName);
-            namedRecord.Status = CaseIdentityStatus.Resolved;
+            var isCaptured = capturedSettlements.TryGetValue(Normalize(warrant.TargetName), out var capturedSettlement);
+            namedRecord.Status = isCaptured ? CaseIdentityStatus.Captured : CaseIdentityStatus.Resolved;
             namedRecord.AddEvidence(warrant.Id.Value);
             namedRecord.AddSummaryLine(DescribeWarrantSummary(warrant));
             namedRecord.WarrantDisposition = warrant.Terms.Disposition;
             namedRecord.BountyAmount = warrant.Terms.BountyAmount;
             namedRecord.IssuingAuthority = warrant.Terms.IssuingSource;
             namedRecord.CrimeSummary = warrant.Summary;
+
+            if (capturedSettlement is not null)
+            {
+                namedRecord.AddSummaryLine(DescribeCapturedSummary(capturedSettlement));
+            }
 
             foreach (var alias in warrant.Terms.KnownAliases)
             {
@@ -63,6 +75,11 @@ public static class CaseBoardMapper
             }
         }
 
+        var capturedEvidenceIds = namedRecords.Values
+            .Where(record => record.Status == CaseIdentityStatus.Captured)
+            .SelectMany(record => record.EvidenceIds)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         return new CaseBoardDto(
             namedRecords.Values
                 .Select(builder => builder.ToDto())
@@ -73,7 +90,9 @@ public static class CaseBoardMapper
                 .Select(builder => builder.ToDto())
                 .OrderBy(record => record.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToArray(),
-            evidenceItems);
+            evidenceItems
+                .Where(evidence => !(evidence.IdentityBearing && capturedEvidenceIds.Contains(evidence.Id)))
+                .ToArray());
     }
 
     private static void ResolveLooseLead(
@@ -148,6 +167,12 @@ public static class CaseBoardMapper
         }
 
         return string.Join(" - ", labels);
+    }
+
+    private static string DescribeCapturedSummary(SheriffTurnInSettlementState settlement)
+    {
+        var capturedState = settlement.IsAlive ? "Captured alive" : "Captured dead";
+        return $"{capturedState} on day {settlement.Day}, turn {settlement.Turn}. Sheriff paid ${settlement.BountyAmount:0.00}.";
     }
 
     private static string FormatWarrantDisposition(WarrantDisposition disposition)

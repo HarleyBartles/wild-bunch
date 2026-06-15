@@ -23,6 +23,8 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+const capturedCaseIdentityStatus = 3;
+
 function formatClueRecency(recency: number) {
   switch (recency) {
     case 1:
@@ -294,26 +296,59 @@ function Card({
 export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProps) {
   const activeJournal = journal;
 
-  const trailClues = useMemo(() => {
+  const capturedWantedTargetNames = useMemo(() => {
+    if (!activeJournal) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      activeJournal.caseFile.caseBoard.namedRecords
+        .filter((record) => record.status === capturedCaseIdentityStatus)
+        .map((record) => normalizeText(record.displayName)),
+    );
+  }, [activeJournal]);
+
+  const visibleKnownClues = useMemo(() => {
     if (!activeJournal) {
       return [];
     }
 
-    const explicitTrailClues = activeJournal.caseFile.knownClues.filter((clue) => clue.kind === 4);
+    const activeEvidenceIds = new Set(activeJournal.caseFile.caseBoard.evidenceItems.map((evidence) => evidence.id));
+    return activeJournal.caseFile.knownClues.filter((clue) => activeEvidenceIds.has(clue.id));
+  }, [activeJournal]);
+
+  const activeKnownWarrants = useMemo(() => {
+    if (!activeJournal) {
+      return [];
+    }
+
+    return activeJournal.caseFile.knownWarrants.filter(
+      (warrant) => !capturedWantedTargetNames.has(normalizeText(warrant.targetName)),
+    );
+  }, [activeJournal, capturedWantedTargetNames]);
+
+  const activeWantedPosters = useMemo(() => {
+    if (!activeJournal) {
+      return [];
+    }
+
+    return activeJournal.caseFile.wantedPosters.filter(
+      (poster) => !capturedWantedTargetNames.has(normalizeText(poster.targetDisplayName)),
+    );
+  }, [activeJournal, capturedWantedTargetNames]);
+
+  const trailClues = useMemo(() => {
+    const explicitTrailClues = visibleKnownClues.filter((clue) => clue.kind === 4);
     if (explicitTrailClues.length > 0) {
       return explicitTrailClues;
     }
 
-    return activeJournal.caseFile.knownClues.slice(0, 3);
-  }, [activeJournal]);
+    return visibleKnownClues.slice(0, 3);
+  }, [visibleKnownClues]);
 
   const contradictionClues = useMemo(() => {
-    if (!activeJournal) {
-      return [];
-    }
-
-    return activeJournal.caseFile.knownClues.filter((clue) => clue.kind === 9);
-  }, [activeJournal]);
+    return visibleKnownClues.filter((clue) => clue.kind === 9);
+  }, [visibleKnownClues]);
 
   const visibleDiscoveredSuspects = useMemo<DiscoveredSuspectCard[]>(() => {
     if (!activeJournal) {
@@ -384,7 +419,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
       <Section
         title="Culprit trail"
         subtitle={
-          caseJournal.caseFile.knownClues.some((clue) => clue.kind === 4)
+          visibleKnownClues.some((clue) => clue.kind === 4)
             ? "Clues tagged directly as culprit trail."
             : "No clue is explicitly tagged as culprit trail yet, so this board shows the strongest known leads."
         }
@@ -524,8 +559,8 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
 
       <Section title="Warrants" subtitle="Known warrants and their safe terms.">
         <div className="stack">
-          {caseJournal.caseFile.knownWarrants.length > 0 ? (
-            caseJournal.caseFile.knownWarrants.map((warrant) => (
+          {activeKnownWarrants.length > 0 ? (
+            activeKnownWarrants.map((warrant) => (
               <Card key={`${warrant.targetName}-${warrant.issuingSource}`} title={warrant.targetName}>
                 <p>
                   <strong>Bounty:</strong> {formatBounty(warrant.bountyAmount)}
@@ -566,7 +601,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         </div>
       </Section>
 
-      <WantedPosterSurface wantedPosters={caseJournal.caseFile.wantedPosters} />
+      <WantedPosterSurface wantedPosters={activeWantedPosters} />
 
       <Section title="Deductions and contradictions" subtitle="A safe comparison board for known facts and unresolved links." wide>
         <div className="case-modal__deductions">
@@ -576,7 +611,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           <dl className="stat-list case-modal__stats">
             <div>
               <dt>Clues</dt>
-              <dd>{caseJournal.caseFile.knownClues.length}</dd>
+              <dd>{visibleKnownClues.length}</dd>
             </div>
             <div>
               <dt>Suspects</dt>
@@ -584,7 +619,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             </div>
             <div>
               <dt>Warrants</dt>
-              <dd>{caseJournal.caseFile.knownWarrants.length}</dd>
+              <dd>{activeKnownWarrants.length}</dd>
             </div>
             <div>
               <dt>Contradictions</dt>

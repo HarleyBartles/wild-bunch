@@ -197,6 +197,8 @@ export function formatCaseIdentityStatus(status: number) {
       return "Possible match";
     case 2:
       return "Resolved";
+    case 3:
+      return "Captured";
     default:
       return `Status ${status}`;
   }

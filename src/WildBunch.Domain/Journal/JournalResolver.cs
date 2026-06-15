@@ -24,6 +24,7 @@ public sealed class JournalResolver
             session.CaseFile.GetDiscoveredSuspects(),
             session.CaseFile.KnownClues.ToArray(),
             session.CaseFile.KnownWarrants.ToArray(),
+            session.CaseFile.SheriffTurnInSettlements.ToArray(),
             session.LogEntries.ToArray());
     }
 }

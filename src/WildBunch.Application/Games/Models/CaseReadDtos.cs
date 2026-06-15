@@ -45,7 +45,8 @@ public enum CaseIdentityStatus
 {
     Unresolved = 0,
     PossibleMatch = 1,
-    Resolved = 2
+    Resolved = 2,
+    Captured = 3
 }
 
 public sealed record CaseBoardDto(

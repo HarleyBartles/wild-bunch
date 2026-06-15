@@ -18,4 +18,5 @@ public sealed record JournalSnapshot(
     IReadOnlyList<Suspect> DiscoveredSuspects,
     IReadOnlyList<Clue> KnownClues,
     IReadOnlyList<Warrant> KnownWarrants,
+    IReadOnlyList<SheriffTurnInSettlementState> SheriffTurnInSettlements,
     IReadOnlyList<GameLogEntry> LogEntries);
