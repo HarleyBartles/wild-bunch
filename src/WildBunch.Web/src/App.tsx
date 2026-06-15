@@ -15,6 +15,9 @@ export default function App() {
   const {
     session,
     journal,
+    wantedPosters,
+    declaredWantedIdentityHandle,
+    setDeclaredWantedIdentityHandle,
     actions,
     gameId,
     currentTown,
@@ -55,6 +58,8 @@ export default function App() {
     gameId,
     currentTown?.id,
   );
+  const selectedWantedPoster =
+    wantedPosters.find((poster) => poster.posterId === declaredWantedIdentityHandle) ?? wantedPosters[0] ?? null;
 
   async function handleBuyOffer(offer: TownStoreOffersDto["offers"][number], quantity: number) {
     if (!gameId || !currentTown?.id) {
@@ -181,6 +186,24 @@ export default function App() {
                 <div>
                   <strong>Person of interest spotted</strong>
                   <p>{session.activeSaloonPersonOfInterest.descriptor} is waiting in the saloon.</p>
+                  {wantedPosters.length > 0 ? (
+                    <label className="field" style={{ marginTop: "0.75rem" }}>
+                      <span>Declare wanted identity</span>
+                      <select
+                        value={declaredWantedIdentityHandle}
+                        onChange={(event) => setDeclaredWantedIdentityHandle(event.target.value)}
+                        disabled={loading}
+                      >
+                        {wantedPosters.map((poster) => (
+                          <option key={poster.posterId} value={poster.posterId}>
+                            {poster.targetDisplayName}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <p className="muted">Read wanted posters to choose the identity you want to declare.</p>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -188,7 +211,11 @@ export default function App() {
                   onClick={handleConfrontSaloonPersonOfInterest}
                   disabled={!gameId || loading || !canConfrontSaloonPersonOfInterest}
                 >
-                  {busyMode === "investigating" ? "Confronting..." : `Confront ${session.activeSaloonPersonOfInterest.descriptor}`}
+                  {busyMode === "investigating"
+                    ? "Taking in..."
+                    : selectedWantedPoster
+                      ? `Take ${session.activeSaloonPersonOfInterest.descriptor} to sheriff as ${selectedWantedPoster.targetDisplayName}`
+                      : `Take ${session.activeSaloonPersonOfInterest.descriptor} to sheriff`}
                 </button>
               </div>
             ) : null}

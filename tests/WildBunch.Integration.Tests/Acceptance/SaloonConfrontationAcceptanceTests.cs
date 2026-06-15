@@ -29,13 +29,19 @@ public sealed class SaloonConfrontationAcceptanceTests
         var surfacedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
         Assert.Equal(new SuspectId("suspect-1"), surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
-        var confrontationResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/confront", content: null);
+        var confrontationResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/investigations/saloon/confront",
+            new
+            {
+                declaredWantedIdentityHandle = "warrant-1"
+            });
 
         Assert.Equal(HttpStatusCode.OK, confrontationResponse.StatusCode);
 
         var result = await confrontationResponse.Content.ReadFromJsonAsync<WantedSuspectConfrontationResultDto>();
         Assert.NotNull(result);
         Assert.True(result!.Success);
+        Assert.Equal("warrant-1", result.DeclaredWantedIdentityHandle);
         Assert.Equal("Mira Cline", result.TargetName);
         Assert.Equal(WantedSuspectConfrontationOutcome.Fled, result.Outcome);
         Assert.True(result.IsAlive);
@@ -47,6 +53,30 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.Equal(WantedSuspectPresenceState.GoneToGround, reloadedSession.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Single(reloadedSession.CaseFile.WantedSuspectConfrontations);
+    }
+
+    [Fact]
+    public async Task PostSaloonConfrontWithDeclaredWantedIdentityReturnsTheDeclaredHandleAlongsideTheTrueTarget()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateAuthenticatedClient();
+
+        var createdSession = await SeedSessionWithAvailableSaloonSuspectAsync(factory);
+
+        await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/look-around", content: null);
+
+        var confrontationResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/investigations/saloon/confront",
+            new
+            {
+                declaredWantedIdentityHandle = "warrant-1"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, confrontationResponse.StatusCode);
+
+        var json = await confrontationResponse.Content.ReadAsStringAsync();
+        Assert.Contains("\"declaredWantedIdentityHandle\":\"warrant-1\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"targetName\":\"Mira Cline\"", json, StringComparison.Ordinal);
     }
 
     private static async Task<GameSessionDto> SeedSessionWithAvailableSaloonSuspectAsync(PostgreSqlApiFactory factory)

@@ -40,6 +40,7 @@ public sealed class ConfrontWantedSuspectHandler
             result.Message,
             result.Outcome,
             GameSessionMapper.ToDto(session),
+            result.DeclaredWantedIdentityHandle,
             result.TargetName,
             result.Disposition,
             result.IsAlive,

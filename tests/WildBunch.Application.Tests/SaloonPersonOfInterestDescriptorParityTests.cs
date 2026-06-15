@@ -27,7 +27,7 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
                         WarrantDisposition.DeadOrAlive,
                         2500m,
                         new[] { "Grey Jay" },
-                        new[] { "Raven-feather pin" },
+                        new[] { "Has a scar on the left cheek." },
                         "Dodge City Marshal",
                         InvestigationTargetKind.TrueCulprit,
                         Array.Empty<OutlawGangId>(),
@@ -35,7 +35,7 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
                     "Wanted for a stage robbery.")
             });
 
-        AssertDescriptorParity(session, "Raven-feather pin");
+        AssertDescriptorParity(session, "a stranger with a scar on the left cheek");
     }
 
     [Fact]
@@ -43,11 +43,11 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
     {
         var session = CreateSession(
             suspectProfile: new SuspectProfile(
-                new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
-                Array.Empty<SuspectIdentityFact>()),
+                Array.Empty<SuspectAlias>(),
+                new[] { new SuspectIdentityFact("a brass buckle with a cracked star engraving") }),
             suspectTraits: SuspectTraits.Empty);
 
-        AssertDescriptorParity(session, "Grey Jay");
+        AssertDescriptorParity(session, "a stranger with a brass buckle with a cracked star engraving");
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
             suspectProfile: SuspectProfile.Empty,
             suspectTraits: SuspectTraits.FromTags(SuspectTraitTags.Desperate));
 
-        AssertDescriptorParity(session, "Desperate");
+        AssertDescriptorParity(session, "a stranger who is desperate");
     }
 
     private static void AssertDescriptorParity(GameSession session, string expectedDescriptor)

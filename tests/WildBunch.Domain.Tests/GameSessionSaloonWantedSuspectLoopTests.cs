@@ -25,7 +25,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var repeatConfrontation = session.ConfrontSaloonWantedSuspect();
 
         Assert.True(lookAround.Success);
-        Assert.Equal("You look around the saloon and spot Raven-feather pin.", lookAround.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", lookAround.Message);
 
         Assert.True(confrontation.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontation.Outcome);
@@ -50,7 +50,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var afterReturn = session.LookAroundSaloon();
 
         Assert.True(afterReturn.Success);
-        Assert.Equal("You look around the saloon and spot Raven-feather pin.", afterReturn.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", afterReturn.Message);
     }
 
     [Fact]

@@ -34,6 +34,7 @@ public sealed record WantedSuspectConfrontationResult(
     bool Success,
     string Message,
     WantedSuspectConfrontationOutcome Outcome,
+    string? DeclaredWantedIdentityHandle,
     string? TargetName,
     WarrantDisposition? Disposition,
     bool? IsAlive,
@@ -41,33 +42,38 @@ public sealed record WantedSuspectConfrontationResult(
     bool SessionChanged)
 {
     public static WantedSuspectConfrontationResult Surrendered(
+        string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Surrendered, targetName, disposition, true, true, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Surrendered, declaredWantedIdentityHandle, targetName, disposition, true, true, true);
 
     public static WantedSuspectConfrontationResult Fled(
+        string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Fled, targetName, disposition, true, false, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Fled, declaredWantedIdentityHandle, targetName, disposition, true, false, true);
 
     public static WantedSuspectConfrontationResult Killed(
+        string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Killed, targetName, disposition, false, true, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Killed, declaredWantedIdentityHandle, targetName, disposition, false, true, true);
 
     public static WantedSuspectConfrontationResult Abandoned(
+        string? declaredWantedIdentityHandle,
         string targetName,
         WarrantDisposition disposition,
         string message)
-        => new(true, message, WantedSuspectConfrontationOutcome.Abandoned, targetName, disposition, null, null, true);
+        => new(true, message, WantedSuspectConfrontationOutcome.Abandoned, declaredWantedIdentityHandle, targetName, disposition, null, null, true);
 
     public static WantedSuspectConfrontationResult Rejected(
         string message,
+        string? declaredWantedIdentityHandle = null,
         string? targetName = null,
         WarrantDisposition? disposition = null,
         bool sessionChanged = false)
-        => new(false, message, WantedSuspectConfrontationOutcome.Rejected, targetName, disposition, null, null, sessionChanged);
+        => new(false, message, WantedSuspectConfrontationOutcome.Rejected, declaredWantedIdentityHandle, targetName, disposition, null, null, sessionChanged);
 }

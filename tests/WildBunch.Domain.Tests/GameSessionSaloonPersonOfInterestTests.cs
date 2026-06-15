@@ -24,7 +24,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
-        Assert.Equal("You look around the saloon and spot an unfamiliar person.", lookAround.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", lookAround.Message);
 
         Assert.True(confrontation.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
@@ -65,7 +65,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var firstVisit = session.LookAroundSaloon();
 
         Assert.True(firstVisit.Success);
-        Assert.Equal("You look around the saloon and spot Raven-feather pin.", firstVisit.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", firstVisit.Message);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         session.Player.TravelTo(new TownId("connected"));
@@ -76,7 +76,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var secondVisit = session.LookAroundSaloon();
 
         Assert.True(secondVisit.Success);
-        Assert.Equal("You look around the saloon and spot Raven-feather pin.", secondVisit.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", secondVisit.Message);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
     }
 
@@ -88,7 +88,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot an unfamiliar person.", result.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", result.Message);
         Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.NotEqual(new SuspectId("suspect-2"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
@@ -102,9 +102,36 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot Grey Jay.", result.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", result.Message);
         Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+    }
+
+    [Fact]
+    public void ConfrontSaloonPersonOfInterestPreservesTheDeclaredWantedIdentitySeparatelyFromTheActivePersonOfInterest()
+    {
+        var session = CreateSessionWithPublicDescriptor();
+        var activePersonOfInterest = new SuspectId("suspect-1");
+        var declaredWantedIdentityHandle = "public-warrant-99";
+
+        var lookAround = session.LookAroundSaloon();
+
+        Assert.True(lookAround.Success);
+        Assert.Equal(activePersonOfInterest, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+
+        Assert.True(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, result.Outcome);
+        Assert.Equal(declaredWantedIdentityHandle, result.DeclaredWantedIdentityHandle);
+        Assert.Equal("Mira Cline", result.TargetName);
+        Assert.True(result.IsAlive);
+        Assert.False(result.IsSecured);
+        Assert.Null(result.Disposition);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(activePersonOfInterest, out _));
+        Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-2"), out _));
     }
 
     private static GameSession CreateSession()
@@ -118,7 +145,14 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var suspects = new[]
         {
             new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
-            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            new Suspect(
+                new SuspectId("suspect-2"),
+                "Reno Pike",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("a black duster") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge)
         };
 
         var caseFile = new CaseFile(
@@ -157,7 +191,14 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Mira Cline",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 
@@ -186,8 +227,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                 new SuspectId("suspect-1"),
                 "Mira Cline",
                 new SuspectProfile(
-                    new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
-                    new[] { new SuspectIdentityFact("Wore a raven-feather pin.") }),
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)

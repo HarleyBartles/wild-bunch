@@ -1591,11 +1591,11 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return CaseInvestigationResult.Succeeded("You look around the saloon, but nobody of interest is here.", sessionChanged: true);
     }
 
-    public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest()
+    public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
     {
         if (IsJourneyModal())
         {
-            return SaloonPersonOfInterestConfrontationResult.Rejected(JourneyModalBlockMessage);
+            return SaloonPersonOfInterestConfrontationResult.Rejected(JourneyModalBlockMessage, declaredWantedIdentityHandle);
         }
 
         var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
@@ -1611,6 +1611,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
             return SaloonPersonOfInterestConfrontationResult.Rejected(
                 "That person of interest is no longer available.",
+                declaredWantedIdentityHandle,
                 sessionChanged: true);
         }
 
@@ -1622,6 +1623,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
                 return SaloonPersonOfInterestConfrontationResult.Rejected(
                     $"{targetSuspect.Name} is no longer in the saloon.",
+                    declaredWantedIdentityHandle,
                     targetSuspect.Name,
                     sessionChanged: true);
             }
@@ -1631,12 +1633,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
                 return SaloonPersonOfInterestConfrontationResult.Rejected(
                     $"{existingState.TargetName} has already been confronted.",
+                    declaredWantedIdentityHandle,
                     existingState.TargetName,
                     activeSaloonWarrant.Terms.Disposition,
                     sessionChanged: true);
             }
 
-            var wantedResult = ResolveWantedSuspectConfrontation(activeSaloonSuspect, WantedSuspectConfrontationChoice.Fled);
+            var wantedResult = ResolveWantedSuspectConfrontation(
+                activeSaloonSuspect,
+                WantedSuspectConfrontationChoice.Fled,
+                declaredWantedIdentityHandle);
             if (wantedResult.Success)
             {
                 CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
@@ -1645,24 +1651,32 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
         }
 
-        var narration = DescribeConfrontationNarration(targetSuspect.Name, WantedSuspectConfrontationChoice.Fled);
+        var narration = DescribeConfrontationNarration(targetSuspect.Name, WantedSuspectConfrontationChoice.Fled, declaredWantedIdentityHandle);
         RecordCaseUpdate(narration);
         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-        return SaloonPersonOfInterestConfrontationResult.Fled(targetSuspect.Name, null, narration);
+        return SaloonPersonOfInterestConfrontationResult.Fled(
+            declaredWantedIdentityHandle,
+            targetSuspect.Name,
+            null,
+            narration);
     }
 
-    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect()
+    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
     {
         var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
         if (activeSaloonSuspectId is null)
         {
-            return WantedSuspectConfrontationResult.Rejected("There is no wanted suspect waiting in the saloon.");
+            return WantedSuspectConfrontationResult.Rejected(
+                "There is no wanted suspect waiting in the saloon.",
+                declaredWantedIdentityHandle);
         }
 
         var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspectId));
         if (targetSuspect is null)
         {
-            return WantedSuspectConfrontationResult.Rejected("That person is not part of this case.");
+            return WantedSuspectConfrontationResult.Rejected(
+                "That person is not part of this case.",
+                declaredWantedIdentityHandle);
         }
 
         if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
@@ -1670,49 +1684,59 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
             return WantedSuspectConfrontationResult.Rejected(
                 $"There is no wanted notice for {targetSuspect.Name}.",
+                declaredWantedIdentityHandle,
                 targetSuspect.Name,
                 sessionChanged: true);
         }
 
-        return ResolveSaloonPersonOfInterestCompatibilityResult(ConfrontSaloonPersonOfInterest());
+        return ResolveSaloonPersonOfInterestCompatibilityResult(ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle));
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
         SuspectId targetSuspectId,
-        WantedSuspectConfrontationChoice choice)
+        WantedSuspectConfrontationChoice choice,
+        string? declaredWantedIdentityHandle = null)
     {
         if (IsJourneyModal())
         {
-            return WantedSuspectConfrontationResult.Rejected(JourneyModalBlockMessage);
+            return WantedSuspectConfrontationResult.Rejected(JourneyModalBlockMessage, declaredWantedIdentityHandle);
         }
 
         var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(targetSuspectId));
         if (targetSuspect is null)
         {
-            return WantedSuspectConfrontationResult.Rejected("That person is not part of this case.");
+            return WantedSuspectConfrontationResult.Rejected(
+                "That person is not part of this case.",
+                declaredWantedIdentityHandle);
         }
 
         var warrant = CaseFile.KnownWarrants.FirstOrDefault(candidate => MatchesKnownWarrant(candidate, targetSuspect));
         if (warrant is null)
         {
-            return WantedSuspectConfrontationResult.Rejected($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name);
+            return WantedSuspectConfrontationResult.Rejected(
+                $"There is no wanted notice for {targetSuspect.Name}.",
+                declaredWantedIdentityHandle,
+                targetSuspect.Name);
         }
 
         if (CaseFile.TryGetWantedSuspectConfrontationState(targetSuspectId, out var existingState))
         {
             return WantedSuspectConfrontationResult.Rejected(
                 $"{existingState.TargetName} has already been confronted.",
+                declaredWantedIdentityHandle,
                 existingState.TargetName,
                 existingState.Disposition);
         }
 
         if (choice == WantedSuspectConfrontationChoice.Abandoned)
         {
-            RecordCaseUpdate($"You back away before confronting {warrant.TargetName}.");
+            var abandonNarration = DescribeConfrontationNarration(warrant.TargetName, choice, declaredWantedIdentityHandle);
+            RecordCaseUpdate(abandonNarration);
             return WantedSuspectConfrontationResult.Abandoned(
+                declaredWantedIdentityHandle,
                 warrant.TargetName,
                 warrant.Terms.Disposition,
-                $"You back away before confronting {warrant.TargetName}.");
+                abandonNarration);
         }
 
         WantedSuspectConfrontationState? nextState = choice switch
@@ -1751,11 +1775,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return WantedSuspectConfrontationResult.Rejected(
                 $"The confrontation choice for {targetSuspect.Name} is not supported.",
+                declaredWantedIdentityHandle,
                 targetSuspect.Name,
                 warrant.Terms.Disposition);
         }
 
-        var narration = DescribeConfrontationNarration(warrant.TargetName, choice);
+        var narration = DescribeConfrontationNarration(warrant.TargetName, choice, declaredWantedIdentityHandle);
         RecordCaseUpdate(narration);
         var resolvedState = nextState! with { Day = Clock.Day, Turn = Clock.Turn };
         CaseFile.RecordWantedSuspectConfrontationState(resolvedState);
@@ -1764,23 +1789,28 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         return choice switch
         {
             WantedSuspectConfrontationChoice.Surrendered => WantedSuspectConfrontationResult.Surrendered(
+                declaredWantedIdentityHandle,
                 warrant.TargetName,
                 warrant.Terms.Disposition,
                 narration),
             WantedSuspectConfrontationChoice.Fled => WantedSuspectConfrontationResult.Fled(
+                declaredWantedIdentityHandle,
                 warrant.TargetName,
                 warrant.Terms.Disposition,
                 narration),
             WantedSuspectConfrontationChoice.Killed => WantedSuspectConfrontationResult.Killed(
+                declaredWantedIdentityHandle,
                 warrant.TargetName,
                 warrant.Terms.Disposition,
                 narration),
             WantedSuspectConfrontationChoice.Abandoned => WantedSuspectConfrontationResult.Abandoned(
+                declaredWantedIdentityHandle,
                 warrant.TargetName,
                 warrant.Terms.Disposition,
                 narration),
             _ => WantedSuspectConfrontationResult.Rejected(
                 $"The confrontation choice for {targetSuspect.Name} is not supported.",
+                declaredWantedIdentityHandle,
                 targetSuspect.Name,
                 warrant.Terms.Disposition)
         };
@@ -2106,14 +2136,27 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             _ => $"disposition {disposition}"
         };
 
-    private static string DescribeConfrontationNarration(string targetName, WantedSuspectConfrontationChoice choice)
+    private static string DescribeConfrontationNarration(
+        string targetName,
+        WantedSuspectConfrontationChoice choice,
+        string? declaredWantedIdentityHandle = null)
         => choice switch
         {
-            WantedSuspectConfrontationChoice.Surrendered => $"You confront {targetName} and bring them in alive.",
-            WantedSuspectConfrontationChoice.Fled => $"You confront {targetName}, but they get away.",
-            WantedSuspectConfrontationChoice.Killed => $"You confront {targetName} and secure the body.",
-            WantedSuspectConfrontationChoice.Abandoned => $"You back away before confronting {targetName}.",
-            _ => $"You confront {targetName}."
+            WantedSuspectConfrontationChoice.Surrendered => declaredWantedIdentityHandle is null
+                ? $"You confront {targetName} and bring them in alive."
+                : $"You confront {targetName} as {declaredWantedIdentityHandle} and bring them in alive.",
+            WantedSuspectConfrontationChoice.Fled => declaredWantedIdentityHandle is null
+                ? $"You confront {targetName}, but they get away."
+                : $"You confront {targetName} as {declaredWantedIdentityHandle}, but they get away.",
+            WantedSuspectConfrontationChoice.Killed => declaredWantedIdentityHandle is null
+                ? $"You confront {targetName} and secure the body."
+                : $"You confront {targetName} as {declaredWantedIdentityHandle} and secure the body.",
+            WantedSuspectConfrontationChoice.Abandoned => declaredWantedIdentityHandle is null
+                ? $"You back away before confronting {targetName}."
+                : $"You back away before confronting {targetName} as {declaredWantedIdentityHandle}.",
+            _ => declaredWantedIdentityHandle is null
+                ? $"You confront {targetName}."
+                : $"You confront {targetName} as {declaredWantedIdentityHandle}."
         };
 
     private bool PersistLatestTravelDiaryDay(

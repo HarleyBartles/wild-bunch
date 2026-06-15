@@ -12,41 +12,62 @@ public static class SaloonPersonOfInterestDescriptor
         var warrantDescriptor = caseFile.KnownWarrants.FirstOrDefault(warrant => MatchesKnownWarrant(warrant, suspect));
         if (warrantDescriptor is not null)
         {
-            var descriptor = FirstNonEmpty(
-                warrantDescriptor.Terms.KnownFeatures.FirstOrDefault(),
-                warrantDescriptor.Terms.KnownAliases.FirstOrDefault(),
-                warrantDescriptor.Summary);
+            var descriptor = warrantDescriptor.Terms.KnownFeatures.FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(descriptor))
             {
-                return TrimDescriptor(descriptor);
+                return FormatPublicDescriptor(descriptor);
             }
         }
 
-        var profileDescriptor = FirstNonEmpty(
-            suspect.Profile.Aliases.FirstOrDefault().Name,
-            suspect.Profile.IdentifyingFacts.FirstOrDefault().Description);
+        var profileDescriptor = suspect.Profile.IdentifyingFacts.FirstOrDefault().Description;
         if (!string.IsNullOrWhiteSpace(profileDescriptor))
         {
-            return TrimDescriptor(profileDescriptor);
+            return FormatPublicDescriptor(profileDescriptor);
         }
 
         var traitDescriptor = suspect.Traits.Tags.FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(traitDescriptor.Value))
         {
-            return FormatTraitDescriptor(traitDescriptor.Value);
+            return FormatPublicTraitDescriptor(FormatTraitDescriptor(traitDescriptor.Value));
         }
 
         return "an unfamiliar person";
     }
 
-    private static string FirstNonEmpty(params string?[] candidates)
-        => candidates.FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate)) ?? string.Empty;
-
     private static string TrimDescriptor(string descriptor)
         => descriptor.Trim().TrimEnd('.', '!', '?');
 
+    private static string FormatPublicDescriptor(string descriptor)
+        => $"a stranger with {NormalizeFeatureDescriptor(TrimDescriptor(descriptor))}";
+
+    private static string NormalizeFeatureDescriptor(string descriptor)
+    {
+        foreach (var (prefix, replacement) in new[]
+        {
+            ("has a ", "a "),
+            ("has an ", "an "),
+            ("wore a ", "a "),
+            ("wore an ", "an "),
+            ("wears a ", "a "),
+            ("wears an ", "an "),
+            ("wearing a ", "a "),
+            ("wearing an ", "an "),
+        })
+        {
+            if (descriptor.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return replacement + descriptor[prefix.Length..];
+            }
+        }
+
+        return descriptor;
+    }
+
     private static string FormatTraitDescriptor(string traitTag)
         => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(traitTag.Trim().Replace('-', ' '));
+
+    private static string FormatPublicTraitDescriptor(string descriptor)
+        => $"a stranger who is {descriptor.ToLowerInvariant()}";
 
     private static bool MatchesKnownWarrant(Warrant warrant, Suspect targetSuspect)
     {

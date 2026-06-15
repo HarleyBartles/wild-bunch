@@ -189,12 +189,15 @@ export function lookAroundSaloon(gameId: string) {
   });
 }
 
-export function confrontSaloonPersonOfInterest(gameId: string) {
+export function confrontSaloonPersonOfInterest(gameId: string, declaredWantedIdentityHandle: string) {
   return requestJson<SaloonPersonOfInterestConfrontationResultDto>(`/api/games/${gameId}/investigations/saloon/confront`, {
     method: "POST",
+    body: JSON.stringify({
+      declaredWantedIdentityHandle,
+    }),
   });
 }
 
-export function confrontSaloonWantedSuspect(gameId: string) {
-  return confrontSaloonPersonOfInterest(gameId) as Promise<WantedSuspectConfrontationResultDto>;
+export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdentityHandle: string) {
+  return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle) as Promise<WantedSuspectConfrontationResultDto>;
 }

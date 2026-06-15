@@ -565,6 +565,7 @@ export interface SaloonPersonOfInterestConfrontationResultDto {
   message: string;
   outcome: number;
   currentSession: GameSessionDto;
+  declaredWantedIdentityHandle: string | null;
   targetName: string | null;
   disposition: number | null;
   isAlive: boolean | null;
