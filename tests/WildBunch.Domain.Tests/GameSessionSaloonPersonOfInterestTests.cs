@@ -139,11 +139,13 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     public void LookAroundSaloonCanSurfaceATownCitizenAndWrongDeclarationCapsTheFineAtTheAvailableWallet()
     {
         var session = CreateCitizenSession(wallet: Wallet.Starting(4m));
+        var initialLogCount = session.LogEntries.Count;
 
         var lookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
         Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", lookAround.Message);
+        Assert.Equal(initialLogCount, session.LogEntries.Count);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         var result = session.ConfrontSaloonPersonOfInterest("warrant-1");
@@ -158,6 +160,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(result.Disposition);
         Assert.Null(result.IsAlive);
         Assert.Null(result.IsSecured);
+        Assert.Equal(initialLogCount, session.LogEntries.Count);
+        Assert.DoesNotContain(session.LogEntries, entry => entry.Message.Contains("town clerk", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(0m, session.Player.Wallet.Cash);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
@@ -170,6 +174,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(repeatLookAround.Success);
         Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", repeatLookAround.Message);
+        Assert.Equal(initialLogCount, session.LogEntries.Count);
     }
 
     private static GameSession CreateSession()

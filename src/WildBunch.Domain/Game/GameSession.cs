@@ -1589,7 +1589,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         var citizenDescriptor = DescribeTownCitizen(CurrentTown);
         CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(citizenDescriptor);
-        RecordCaseUpdate($"You look around the saloon and spot {citizenDescriptor}.");
         return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {citizenDescriptor}.", sessionChanged: true);
     }
 
@@ -1676,7 +1675,6 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var citizenTargetName = activeSaloonPersonOfInterestDescriptor ?? throw new InvalidOperationException("A citizen person of interest descriptor is required.");
         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
         var citizenNarration = $"You bring {citizenTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
-        RecordCaseUpdate(citizenNarration);
         return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
             declaredWantedIdentityHandle,
             citizenTargetName,
