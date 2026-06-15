@@ -24,7 +24,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
-        Assert.Equal("You look around the saloon and spot a stranger with a brass buckle with a cracked star engraving.", lookAround.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", lookAround.Message);
 
         Assert.True(confrontation.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
@@ -88,7 +88,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot a stranger with a brass buckle with a cracked star engraving.", result.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", result.Message);
         Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.NotEqual(new SuspectId("suspect-2"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
@@ -102,7 +102,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot a stranger with a brass buckle with a cracked star engraving.", result.Message);
+        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", result.Message);
         Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
@@ -196,7 +196,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                 "Mira Cline",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("a brass buckle with a cracked star engraving") }),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
@@ -228,7 +228,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                 "Mira Cline",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("a brass buckle with a cracked star engraving") }),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
