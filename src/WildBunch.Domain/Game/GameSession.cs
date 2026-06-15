@@ -1679,7 +1679,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     };
                 }
 
-                if (hasFirearmThreatAvailable)
+                if (hasFirearmThreatAvailable && !string.IsNullOrWhiteSpace(declaredWantedIdentityHandle))
                 {
                     var wantedWalletBefore = Player.Wallet.Cash;
                     var wantedFineAmount = Math.Min(CitizenDeclarationFine, wantedWalletBefore);
