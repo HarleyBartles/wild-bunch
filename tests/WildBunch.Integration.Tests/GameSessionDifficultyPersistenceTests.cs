@@ -326,6 +326,21 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void TownVisitStateActiveSaloonCitizenRoundTripsThroughJsonPersistence()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateTownVisitSession();
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest("a town clerk from Current Town");
+
+        var json = serializer.SerializeTownVisitState(session.CurrentTownVisit);
+        var reloaded = serializer.DeserializeTownVisitState(json);
+
+        Assert.Contains("\"activeSaloonPersonOfInterestDescriptor\"", json, StringComparison.Ordinal);
+        Assert.Null(reloaded.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal("a town clerk from Current Town", reloaded.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+    }
+
+    [Fact]
     public void LegacyTownVisitSnapshotWithoutTownStatesStillDeserializes()
     {
         var serializer = new GameSessionJsonSerializer();

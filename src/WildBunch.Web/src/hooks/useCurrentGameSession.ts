@@ -52,6 +52,10 @@ function actionIsLookAroundSaloon(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.LookAroundSaloon;
 }
 
+function formatMoney(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+
 export function useCurrentGameSession() {
   const [session, setSession] = useState<GameSessionDto | null>(null);
   const [journal, setJournal] = useState<JournalDto | null>(null);
@@ -320,7 +324,11 @@ export function useCurrentGameSession() {
       const result = await confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle);
       setSession(result.currentSession);
       await reloadCurrentGame(gameId);
-      setNotice(result.message);
+      const notice =
+        result.fineAmount !== null && result.walletBefore !== null && result.walletAfter !== null
+          ? `${result.message} Wallet ${formatMoney(result.walletBefore)} -> ${formatMoney(result.walletAfter)}.`
+          : result.message;
+      setNotice(notice);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : "Unable to confront the person in the saloon.");
     } finally {
