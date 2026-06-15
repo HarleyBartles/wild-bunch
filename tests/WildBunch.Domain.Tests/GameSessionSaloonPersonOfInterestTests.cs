@@ -22,21 +22,23 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         var lookAround = session.LookAroundSaloon();
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        var logCountBeforeConfront = session.LogEntries.Count;
 
         var confrontation = session.ConfrontSaloonPersonOfInterest();
+        var logCountAfterConfront = session.LogEntries.Count;
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
         Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", lookAround.Message);
 
-        Assert.True(confrontation.Success);
-        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
-        Assert.Equal("Mira Cline", confrontation.TargetName);
-        Assert.Null(confrontation.Disposition);
-        Assert.True(confrontation.IsAlive);
-        Assert.False(confrontation.IsSecured);
+        Assert.False(confrontation.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, confrontation.Outcome);
+        Assert.Contains("wanted identity", confrontation.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("passed", confrontation.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out _));
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(logCountBeforeConfront, logCountAfterConfront);
 
         Assert.True(repeatLookAround.Success);
         Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatLookAround.Message);
@@ -111,7 +113,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     }
 
     [Fact]
-    public void ConfrontSaloonPersonOfInterestPreservesTheDeclaredWantedIdentitySeparatelyFromTheActivePersonOfInterest()
+    public void ConfrontSaloonPersonOfInterestRejectsWhenNoKnownWantedIdentityCanBeDeclared()
     {
         var session = CreateSessionWithPublicDescriptor();
         var activePersonOfInterest = new SuspectId("suspect-1");
@@ -121,18 +123,19 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(lookAround.Success);
         Assert.Equal(activePersonOfInterest, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        var logCountBeforeConfront = session.LogEntries.Count;
 
         var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
 
-        Assert.True(result.Success);
-        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, result.Outcome);
+        Assert.False(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
         Assert.Equal(declaredWantedIdentityHandle, result.DeclaredWantedIdentityHandle);
-        Assert.Equal("Mira Cline", result.TargetName);
-        Assert.True(result.IsAlive);
-        Assert.False(result.IsSecured);
-        Assert.Null(result.Disposition);
+        Assert.Contains("wanted identity", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("passed", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(logCountBeforeConfront, session.LogEntries.Count);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(activePersonOfInterest, out _));
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-2"), out _));
     }
