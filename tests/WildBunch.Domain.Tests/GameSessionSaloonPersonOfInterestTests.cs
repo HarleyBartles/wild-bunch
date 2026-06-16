@@ -281,7 +281,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     public void ConfrontSaloonPersonOfInterestRejectsAWrongWantedDeclarationWithoutRevealingTheWantedIdentity()
     {
         var session = CreateArmedWantedSession();
-        session.Player.SetWallet(Wallet.Starting(4m));
+        session.Player.AdjustCash(4m - session.Player.Wallet.Cash);
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
 
@@ -316,7 +316,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     public void ConfrontSaloonPersonOfInterestDoesNotClassifyABlankDeclarationAsWrongWantedDeclaration()
     {
         var session = CreateArmedWantedSession();
-        session.Player.SetWallet(Wallet.Starting(4m));
+        session.Player.AdjustCash(4m - session.Player.Wallet.Cash);
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
 
