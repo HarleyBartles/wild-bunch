@@ -1649,8 +1649,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
                 var hasFirearmThreatAvailable = new InventoryCapabilityResolver().Resolve(Player.Inventory, TravelRules).FirearmThreatAvailable;
                 var isDeclaredWantedIdentityForThisWarrant =
-                    !string.IsNullOrWhiteSpace(declaredWantedIdentityHandle)
-                    && string.Equals(declaredWantedIdentityHandle, activeSaloonWarrant.Id.Value, StringComparison.Ordinal);
+                    BountyDeclarationMatchPolicy.MatchesDeclaredWantedIdentity(declaredWantedIdentityHandle, activeSaloonWarrant);
 
                 if (hasFirearmThreatAvailable && isDeclaredWantedIdentityForThisWarrant)
                 {
