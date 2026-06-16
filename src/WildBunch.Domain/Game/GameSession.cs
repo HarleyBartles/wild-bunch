@@ -248,14 +248,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return string.Empty;
         }
 
-        var horseState = Player.Inventory.GetHorseState();
+        var horseState = Player.GetHorseState();
         if (horseState is null)
         {
             return string.Empty;
         }
 
         var nextHorseState = horseState.IncreaseExhaustion(exhaustionIncrease);
-        Player.Inventory.SetHorseState(nextHorseState);
+        Player.SetHorseState(nextHorseState);
         Journey!.SetHorseState(nextHorseState);
 
         if (Journey.TravelMode == TravelMode.Mounted && !nextHorseState.CanProvideMountedTravelFor(TravelRules))
@@ -273,42 +273,42 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (trailEvent.WalletDelta != 0m)
         {
-            Player.SetWallet(Player.Wallet.Adjust(trailEvent.WalletDelta));
+            Player.AdjustCash(trailEvent.WalletDelta);
         }
 
         if (trailEvent.FoodDelta != 0)
         {
             if (trailEvent.FoodDelta > 0)
             {
-                Player.Inventory.AddItem(ItemKind.Food, trailEvent.FoodDelta);
+                Player.AddItem(ItemKind.Food, trailEvent.FoodDelta);
                 Journey!.AdjustFood(trailEvent.FoodDelta);
             }
             else
             {
                 var foodLoss = Math.Abs(trailEvent.FoodDelta);
-                Player.Inventory.RemoveQuantity(ItemKind.Food, foodLoss);
+                Player.RemoveQuantity(ItemKind.Food, foodLoss);
                 Journey!.AdjustFood(trailEvent.FoodDelta);
             }
         }
 
         if (trailEvent.CanteenChargeDelta != 0)
         {
-            var canteenState = Player.Inventory.GetCanteenState();
+            var canteenState = Player.GetCanteenState();
             if (canteenState is not null)
             {
                 var nextCanteenState = canteenState.AdjustCharges(trailEvent.CanteenChargeDelta);
-                Player.Inventory.SetCanteenState(nextCanteenState);
+                Player.SetCanteenState(nextCanteenState);
                 Journey!.SetCanteenCharges(nextCanteenState.Charges);
             }
         }
 
         if (trailEvent.HorseHungerDelta != 0 || trailEvent.HorseThirstDelta != 0 || trailEvent.HorseExhaustionDelta != 0)
         {
-            var horseState = Player.Inventory.GetHorseState();
+            var horseState = Player.GetHorseState();
             if (horseState is not null)
             {
                 horseState = ApplyHorseDelta(horseState, trailEvent);
-                Player.Inventory.SetHorseState(horseState);
+                Player.SetHorseState(horseState);
                 Journey!.SetHorseState(horseState);
             }
         }
@@ -324,9 +324,9 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var horseLossMessage = string.Empty;
-        if (Journey!.TravelMode == TravelMode.Mounted && Player.Inventory.GetHorseState()?.CanProvideMountedTravelFor(TravelRules) == false)
+        if (Journey!.TravelMode == TravelMode.Mounted && Player.GetHorseState()?.CanProvideMountedTravelFor(TravelRules) == false)
         {
-            horseLossMessage = DescribeHorseLoss(Player.Inventory.GetHorseState(), TravelRules);
+            horseLossMessage = DescribeHorseLoss(Player.GetHorseState(), TravelRules);
             Journey.RecalculatePacing(TravelMode.Foot);
         }
 
@@ -392,14 +392,14 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
     private void RefillCanteenAfterArrival()
     {
-        var canteenState = Player.Inventory.GetCanteenState();
+        var canteenState = Player.GetCanteenState();
         if (canteenState is null || canteenState.Charges >= canteenState.Capacity)
         {
             return;
         }
 
         var refilledCanteen = CanteenState.Full(canteenState.Capacity);
-        Player.Inventory.SetCanteenState(refilledCanteen);
+        Player.SetCanteenState(refilledCanteen);
         Journey!.SetCanteenCharges(refilledCanteen.Charges);
     }
 
@@ -434,15 +434,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.DelayDays,
             startingResources);
 
-        var capabilities = new InventoryCapabilityResolver().Resolve(Player.Inventory, TravelRules);
+        var capabilities = Player.GetCapabilities(TravelRules);
         if (Journey.TravelMode == TravelMode.Mounted && !capabilities.MountedTravelAvailable)
         {
             Journey.RecalculatePacing(TravelMode.Foot);
         }
 
-        if (Player.Inventory.GetQuantity(ItemKind.Food) > 0)
+        if (Player.GetQuantity(ItemKind.Food) > 0)
         {
-            Player.Inventory.RemoveQuantity(ItemKind.Food, 1);
+            Player.RemoveQuantity(ItemKind.Food, 1);
             Journey.ConsumeFood();
         }
         else
@@ -453,20 +453,20 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
             Journey.Preview.RouteProfile.Terrain,
             Journey.Preview.RouteProfile.WaterFeature,
-            Player.Inventory.GetHorseState(),
-            Player.Inventory.GetCanteenState(),
-            Player.Inventory.GetQuantity(ItemKind.HorseFeed),
+            Player.GetHorseState(),
+            Player.GetCanteenState(),
+            Player.GetQuantity(ItemKind.HorseFeed),
             TravelRules);
 
         if (upkeep.HorseFeedConsumed > 0)
         {
-            Player.Inventory.RemoveQuantity(ItemKind.HorseFeed, upkeep.HorseFeedConsumed);
+            Player.RemoveQuantity(ItemKind.HorseFeed, upkeep.HorseFeedConsumed);
             Journey.ConsumeHorseFeed(upkeep.HorseFeedConsumed);
         }
 
         if (upkeep.CanteenState is not null)
         {
-            Player.Inventory.SetCanteenState(upkeep.CanteenState);
+            Player.SetCanteenState(upkeep.CanteenState);
             Journey.SetCanteenCharges(upkeep.CanteenState.Charges);
         }
         else
@@ -476,7 +476,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (upkeep.HorseState is not null)
         {
-            Player.Inventory.SetHorseState(upkeep.HorseState);
+            Player.SetHorseState(upkeep.HorseState);
             Journey.SetHorseState(upkeep.HorseState);
         }
 
@@ -708,7 +708,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var routeProfile = Journey.Preview.RouteProfile;
-        var horseState = Player.Inventory.GetHorseState();
+        var horseState = Player.GetHorseState();
         var recentTrailEventKinds = _travelDiaryDays
             .Select(day => day.TrailEvent?.Kind)
             .Where(kind => kind is not null)
@@ -1018,8 +1018,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 Journey.RemainingDays,
                 Player.Health,
                 Player.Wallet.Cash,
-                Player.Inventory.GetQuantity(ItemKind.RevolverAmmo),
-                Player.Inventory.GetQuantity(ItemKind.RifleAmmo),
+                Player.GetQuantity(ItemKind.RevolverAmmo),
+                Player.GetQuantity(ItemKind.RifleAmmo),
                 PursuitState.Heat));
         var roll = forcedRoll ?? JourneyEncounterResolutionEngine.Roll(rollSeed, "resolution");
         var dayEntries = new List<string>();
@@ -1031,7 +1031,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 var plan = JourneyEncounterResolutionEngine.ResolveRun(
                     encounter,
                     Journey.TravelMode,
-                    Player.Inventory.GetHorseState(),
+                    Player.GetHorseState(),
                     Player.Health,
                     TravelRules,
                     roll);
@@ -1080,10 +1080,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
             case "fight":
             {
-                var availableRevolverAmmo = Player.Inventory.GetQuantity(ItemKind.RevolverAmmo);
-                var availableRifleAmmo = Player.Inventory.GetQuantity(ItemKind.RifleAmmo);
+                var availableRevolverAmmo = Player.GetQuantity(ItemKind.RevolverAmmo);
+                var availableRifleAmmo = Player.GetQuantity(ItemKind.RifleAmmo);
                 var availableAmmo = availableRevolverAmmo + availableRifleAmmo;
-                var hasKnife = Player.Inventory.HasItem(ItemKind.Knife);
+                var hasKnife = Player.HasItem(ItemKind.Knife);
                 if (availableAmmo == 0 && !hasKnife)
                 {
                     return JourneyEncounterResolutionResult.Failed("You need a knife or firearm ammo to stand and fight.", Journey.Status, Journey.ToSnapshot(TravelRules));
@@ -1151,15 +1151,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     bribeOffer = 0m;
                 }
 
-                if (!Player.Wallet.CanAfford(bribeOffer))
+                if (!Player.CanAfford(bribeOffer))
                 {
                     return JourneyEncounterResolutionResult.Failed($"You need ${bribeOffer:0.00} to bribe your way through.", Journey.Status, Journey.ToSnapshot(TravelRules));
                 }
 
-                var availableFood = Player.Inventory.GetQuantity(ItemKind.Food);
-                var availableHorseFeed = Player.Inventory.GetQuantity(ItemKind.HorseFeed);
-                var availableRevolverAmmo = Player.Inventory.GetQuantity(ItemKind.RevolverAmmo);
-                var availableRifleAmmo = Player.Inventory.GetQuantity(ItemKind.RifleAmmo);
+                var availableFood = Player.GetQuantity(ItemKind.Food);
+                var availableHorseFeed = Player.GetQuantity(ItemKind.HorseFeed);
+                var availableRevolverAmmo = Player.GetQuantity(ItemKind.RevolverAmmo);
+                var availableRifleAmmo = Player.GetQuantity(ItemKind.RifleAmmo);
                 var plan = JourneyEncounterResolutionEngine.ResolveBribe(
                     encounter,
                     Player.Wallet.Cash,
@@ -1173,12 +1173,12 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
 
                 if (plan.WalletDelta != 0m)
                 {
-                    Player.SetWallet(Player.Wallet.Adjust(plan.WalletDelta));
+                    Player.AdjustCash(plan.WalletDelta);
                 }
 
                 if (plan.StolenItemKind is not null && plan.StolenItemQuantity > 0)
                 {
-                    Player.Inventory.RemoveQuantity(plan.StolenItemKind.Value, plan.StolenItemQuantity);
+                    Player.RemoveQuantity(plan.StolenItemKind.Value, plan.StolenItemQuantity);
                 }
 
                 if (plan.HealthDelta != 0)
@@ -1495,7 +1495,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var totalPrice = offer.Price * quantity;
-        if (!Player.Wallet.CanAfford(totalPrice))
+        if (!Player.CanAfford(totalPrice))
         {
             return StorePurchaseResult.Failed("Not enough cash.");
         }
@@ -1505,9 +1505,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return StorePurchaseResult.Failed(inventoryFailureMessage);
         }
 
-        var nextWallet = Player.Wallet.Spend(totalPrice);
-        Player.Inventory.AddItem(offer.ItemKind, quantity);
-        Player.SetWallet(nextWallet);
+        Player.SpendCash(totalPrice);
+        Player.AddItem(offer.ItemKind, quantity);
 
         var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
         AddLogEntry(GameLogEntryKind.Purchase, $"Purchased {quantityLabel} for ${totalPrice:0.00}.");
@@ -1647,7 +1646,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                         personOfInterestKind: activeSaloonPersonOfInterestKind);
                 }
 
-                var hasFirearmThreatAvailable = new InventoryCapabilityResolver().Resolve(Player.Inventory, TravelRules).FirearmThreatAvailable;
+                var hasFirearmThreatAvailable = Player.GetCapabilities(TravelRules).FirearmThreatAvailable;
                 var isDeclaredWantedIdentityForThisWarrant =
                     BountyDeclarationMatchPolicy.MatchesDeclaredWantedIdentity(declaredWantedIdentityHandle, activeSaloonWarrant);
 
@@ -1689,7 +1688,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                     var wantedFineAmount = BountySettlementPolicy.CalculateCappedFine(wantedWalletBefore, CitizenDeclarationFine);
                     if (wantedFineAmount > 0m)
                     {
-                        Player.SetWallet(Player.Wallet.Adjust(-wantedFineAmount));
+                        Player.AdjustCash(-wantedFineAmount);
                     }
 
                     CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
@@ -1731,7 +1730,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, CitizenDeclarationFine);
         if (fineAmount > 0m)
         {
-            Player.SetWallet(Player.Wallet.Adjust(-fineAmount));
+            Player.AdjustCash(-fineAmount);
         }
 
         var citizenTargetName = activeSaloonPersonOfInterestDescriptor ?? throw new InvalidOperationException("A citizen person of interest descriptor is required.");
@@ -2025,7 +2024,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return rejectionResult;
         }
 
-        Player.SetWallet(Player.Wallet.Adjust(settlementState.BountyAmount));
+        Player.AdjustCash(settlementState.BountyAmount);
         CaseFile.RecordSheriffTurnInSettlementState(settlementState);
 
         return assessment with { SessionChanged = true };
@@ -2367,7 +2366,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 return false;
             }
 
-            if (Player.Inventory.HasItem(ItemKind.Horse))
+            if (Player.HasItem(ItemKind.Horse))
             {
                 failureMessage = "Horse already exists in inventory.";
                 return false;
@@ -2383,7 +2382,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return false;
         }
 
-        if (!IsStackableItemKind(offer.ItemKind) && Player.Inventory.HasItem(offer.ItemKind))
+        if (!IsStackableItemKind(offer.ItemKind) && Player.HasItem(offer.ItemKind))
         {
             failureMessage = $"{offer.ItemKind} already exists in inventory.";
             return false;
@@ -2403,8 +2402,8 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             requestedBullets = 1;
         }
 
-        var availableRevolverAmmo = Player.Inventory.GetQuantity(ItemKind.RevolverAmmo);
-        var availableRifleAmmo = Player.Inventory.GetQuantity(ItemKind.RifleAmmo);
+        var availableRevolverAmmo = Player.GetQuantity(ItemKind.RevolverAmmo);
+        var availableRifleAmmo = Player.GetQuantity(ItemKind.RifleAmmo);
         var availableAmmo = availableRevolverAmmo + availableRifleAmmo;
         if (availableAmmo <= 0)
         {
@@ -2414,15 +2413,15 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         var bulletsToSpend = Math.Min(Math.Clamp(requestedBullets, 1, 6), availableAmmo);
         var spent = 0;
 
-        while (spent < bulletsToSpend && Player.Inventory.GetQuantity(ItemKind.RevolverAmmo) > 0)
+        while (spent < bulletsToSpend && Player.GetQuantity(ItemKind.RevolverAmmo) > 0)
         {
-            Player.Inventory.RemoveQuantity(ItemKind.RevolverAmmo, 1);
+            Player.RemoveQuantity(ItemKind.RevolverAmmo, 1);
             spent++;
         }
 
-        while (spent < bulletsToSpend && Player.Inventory.GetQuantity(ItemKind.RifleAmmo) > 0)
+        while (spent < bulletsToSpend && Player.GetQuantity(ItemKind.RifleAmmo) > 0)
         {
-            Player.Inventory.RemoveQuantity(ItemKind.RifleAmmo, 1);
+            Player.RemoveQuantity(ItemKind.RifleAmmo, 1);
             spent++;
         }
 
