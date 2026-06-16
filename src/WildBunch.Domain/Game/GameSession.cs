@@ -1686,7 +1686,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
                 if (hasFirearmThreatAvailable && !string.IsNullOrWhiteSpace(declaredWantedIdentityHandle))
                 {
                     var wantedWalletBefore = Player.Wallet.Cash;
-                    var wantedFineAmount = Math.Min(CitizenDeclarationFine, wantedWalletBefore);
+                    var wantedFineAmount = BountySettlementPolicy.CalculateCappedFine(wantedWalletBefore, CitizenDeclarationFine);
                     if (wantedFineAmount > 0m)
                     {
                         Player.SetWallet(Player.Wallet.Adjust(-wantedFineAmount));
@@ -1728,7 +1728,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var walletBefore = Player.Wallet.Cash;
-        var fineAmount = Math.Min(CitizenDeclarationFine, walletBefore);
+        var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, CitizenDeclarationFine);
         if (fineAmount > 0m)
         {
             Player.SetWallet(Player.Wallet.Adjust(-fineAmount));
@@ -2012,31 +2012,21 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
             return assessment;
         }
 
-        if (CaseFile.TryGetSheriffTurnInSettlementState(targetSuspectId, out var existingSettlement))
+        if (!BountySettlementPolicy.TryCreateSheriffTurnInSettlementState(
+                CaseFile,
+                assessment,
+                targetSuspectId,
+                isAlive,
+                Clock.Day,
+                Clock.Turn,
+                out var settlementState,
+                out var rejectionResult))
         {
-            return SheriffTurnInResult.Rejected(
-                $"You have already been paid for {existingSettlement.TargetName}.",
-                existingSettlement.TargetName,
-                existingSettlement.Disposition,
-                existingSettlement.BountyAmount);
+            return rejectionResult;
         }
 
-        var bountyAmount = assessment.BountyAmount
-            ?? throw new InvalidOperationException("Sheriff turn-in assessment did not include a bounty amount.");
-        var targetName = assessment.TargetName
-            ?? throw new InvalidOperationException("Sheriff turn-in assessment did not include a target name.");
-        var disposition = assessment.Disposition
-            ?? throw new InvalidOperationException("Sheriff turn-in assessment did not include a disposition.");
-
-        Player.SetWallet(Player.Wallet.Adjust(bountyAmount));
-        CaseFile.RecordSheriffTurnInSettlementState(new SheriffTurnInSettlementState(
-            targetSuspectId,
-            targetName,
-            disposition,
-            isAlive,
-            bountyAmount,
-            Clock.Day,
-            Clock.Turn));
+        Player.SetWallet(Player.Wallet.Adjust(settlementState.BountyAmount));
+        CaseFile.RecordSheriffTurnInSettlementState(settlementState);
 
         return assessment with { SessionChanged = true };
     }
