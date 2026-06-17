@@ -108,7 +108,7 @@ public sealed partial class GameSession
                     if (hasFirearmThreatAvailable && !string.IsNullOrWhiteSpace(declaredWantedIdentityHandle))
                     {
                         var wantedWalletBefore = _session.Player.Wallet.Cash;
-                        var wantedFineAmount = BountySettlementPolicy.CalculateCappedFine(wantedWalletBefore, 10m);
+                        var wantedFineAmount = BountySettlementPolicy.CalculateCappedFine(wantedWalletBefore, GameSession.CitizenDeclarationFine);
                         if (wantedFineAmount > 0m)
                         {
                             _session.Player.AdjustCash(-wantedFineAmount);
@@ -150,7 +150,7 @@ public sealed partial class GameSession
             }
 
             var walletBefore = _session.Player.Wallet.Cash;
-            var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, 10m);
+            var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, GameSession.CitizenDeclarationFine);
             if (fineAmount > 0m)
             {
                 _session.Player.AdjustCash(-fineAmount);
