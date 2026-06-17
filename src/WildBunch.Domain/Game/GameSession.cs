@@ -15,7 +15,7 @@ namespace WildBunch.Domain.Game;
 /// Mutable live play-state aggregate root.
 /// Command handlers load and persist this root through <see cref="WildBunch.Application.Abstractions.IGameSessionRepository"/>.
 /// </summary>
-public sealed class GameSession : WildBunch.Domain.IAggregateRoot
+public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
     private const decimal CitizenDeclarationFine = 10m;
@@ -26,6 +26,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly WantedSuspectPresenceLedger _wantedSuspectPresenceLedger;
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
+    private readonly BountyLoopCoordinator _bountyLoopCoordinator;
 
     private GameSession(
         GameSessionId id,
@@ -61,6 +62,7 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         _currentTown.PrimeCurrentTown();
+        _bountyLoopCoordinator = new BountyLoopCoordinator(this);
 
         if (completedJourneyHistory is not null)
         {
@@ -1592,316 +1594,16 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
-    {
-        if (IsJourneyModal())
-        {
-            return SaloonPersonOfInterestConfrontationResult.Rejected(JourneyModalBlockMessage, declaredWantedIdentityHandle);
-        }
-
-        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        var activeSaloonPersonOfInterestDescriptor = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor;
-        var activeSaloonPersonOfInterestKind = CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind();
-        if (activeSaloonSuspectId is null && activeSaloonPersonOfInterestDescriptor is null)
-        {
-            return SaloonPersonOfInterestConfrontationResult.Rejected("There is no person of interest waiting in the saloon.");
-        }
-
-        if (activeSaloonSuspectId is not null)
-        {
-            var activeSaloonSuspect = activeSaloonSuspectId.Value;
-            var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
-            if (targetSuspect is null)
-            {
-                CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                return SaloonPersonOfInterestConfrontationResult.Rejected(
-                    "That person of interest is no longer available.",
-                    declaredWantedIdentityHandle,
-                    sessionChanged: true,
-                    personOfInterestKind: activeSaloonPersonOfInterestKind);
-            }
-
-            if (TryGetKnownWarrantForSuspect(activeSaloonSuspect, out var activeSaloonWarrant))
-            {
-                var presenceState = GetWantedSuspectPresenceState(activeSaloonSuspect);
-                if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
-                {
-                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                    return SaloonPersonOfInterestConfrontationResult.Rejected(
-                        $"{targetSuspect.Name} is no longer in the saloon.",
-                        declaredWantedIdentityHandle,
-                        targetSuspect.Name,
-                        sessionChanged: true,
-                        personOfInterestKind: activeSaloonPersonOfInterestKind);
-                }
-
-                if (CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
-                {
-                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                    return SaloonPersonOfInterestConfrontationResult.Rejected(
-                        $"{existingState.TargetName} has already been confronted.",
-                        declaredWantedIdentityHandle,
-                        existingState.TargetName,
-                        activeSaloonWarrant.Terms.Disposition,
-                        sessionChanged: true,
-                        personOfInterestKind: activeSaloonPersonOfInterestKind);
-                }
-
-                var hasFirearmThreatAvailable = Player.GetCapabilities(TravelRules).FirearmThreatAvailable;
-                var isDeclaredWantedIdentityForThisWarrant =
-                    BountyDeclarationMatchPolicy.MatchesDeclaredWantedIdentity(declaredWantedIdentityHandle, activeSaloonWarrant);
-
-                if (hasFirearmThreatAvailable && isDeclaredWantedIdentityForThisWarrant)
-                {
-                    var armedWantedResult = ResolveWantedSuspectConfrontation(
-                        activeSaloonSuspect,
-                        WantedSuspectConfrontationChoice.Surrendered,
-                        declaredWantedIdentityHandle);
-                    if (!armedWantedResult.Success)
-                    {
-                        return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(armedWantedResult);
-                    }
-
-                    var settlementResult = SettleSheriffTurnIn(activeSaloonSuspect, isAlive: true);
-                    if (!settlementResult.Success)
-                    {
-                        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                        return SaloonPersonOfInterestConfrontationResult.Rejected(
-                            settlementResult.Message,
-                            declaredWantedIdentityHandle,
-                            activeSaloonWarrant.TargetName,
-                            activeSaloonWarrant.Terms.Disposition,
-                            sessionChanged: true,
-                            personOfInterestKind: activeSaloonPersonOfInterestKind);
-                    }
-
-                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                    var settlementMessage = $"{armedWantedResult.Message} The sheriff pays you ${settlementResult.BountyAmount:0.00}.";
-                    return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(armedWantedResult) with
-                    {
-                        Message = settlementMessage
-                    };
-                }
-
-                if (hasFirearmThreatAvailable && !string.IsNullOrWhiteSpace(declaredWantedIdentityHandle))
-                {
-                    var wantedWalletBefore = Player.Wallet.Cash;
-                    var wantedFineAmount = BountySettlementPolicy.CalculateCappedFine(wantedWalletBefore, CitizenDeclarationFine);
-                    if (wantedFineAmount > 0m)
-                    {
-                        Player.AdjustCash(-wantedFineAmount);
-                    }
-
-                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                    var publicTargetName = activeSaloonPersonOfInterestDescriptor ?? "the person of interest";
-                    var wrongDeclarationMessage = $"You bring {publicTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${wantedFineAmount:0.00}.";
-                    return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
-                        declaredWantedIdentityHandle,
-                        publicTargetName,
-                        wrongDeclarationMessage,
-                        wantedFineAmount,
-                        wantedWalletBefore,
-                        Player.Wallet.Cash,
-                        isCitizen: false,
-                        isAlive: true,
-                        isSecured: false);
-                }
-
-                var wantedResult = ResolveWantedSuspectConfrontation(
-                    activeSaloonSuspect,
-                    WantedSuspectConfrontationChoice.Fled,
-                    declaredWantedIdentityHandle);
-                if (wantedResult.Success)
-                {
-                    CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-                }
-
-                return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
-            }
-
-            CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-            return SaloonPersonOfInterestConfrontationResult.Rejected(
-                "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
-                declaredWantedIdentityHandle,
-                sessionChanged: true,
-                personOfInterestKind: activeSaloonPersonOfInterestKind);
-        }
-
-        var walletBefore = Player.Wallet.Cash;
-        var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, CitizenDeclarationFine);
-        if (fineAmount > 0m)
-        {
-            Player.AdjustCash(-fineAmount);
-        }
-
-        var citizenTargetName = activeSaloonPersonOfInterestDescriptor ?? throw new InvalidOperationException("A citizen person of interest descriptor is required.");
-        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-        var citizenNarration = $"You bring {citizenTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
-        return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
-            declaredWantedIdentityHandle,
-            citizenTargetName,
-            citizenNarration,
-            fineAmount,
-            walletBefore,
-            Player.Wallet.Cash,
-            isCitizen: true,
-            isAlive: null,
-            isSecured: null);
-    }
+        => _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
-    {
-        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        if (activeSaloonSuspectId is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "There is no wanted suspect waiting in the saloon.",
-                declaredWantedIdentityHandle);
-        }
-
-        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspectId));
-        if (targetSuspect is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "That person is not part of this case.",
-                declaredWantedIdentityHandle);
-        }
-
-        if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
-        {
-            CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
-            return WantedSuspectConfrontationResult.Rejected(
-                $"There is no wanted notice for {targetSuspect.Name}.",
-                declaredWantedIdentityHandle,
-                targetSuspect.Name,
-                sessionChanged: true);
-        }
-
-        return ResolveSaloonPersonOfInterestCompatibilityResult(ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle));
-    }
+        => _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
         SuspectId targetSuspectId,
         WantedSuspectConfrontationChoice choice,
         string? declaredWantedIdentityHandle = null)
-    {
-        if (IsJourneyModal())
-        {
-            return WantedSuspectConfrontationResult.Rejected(JourneyModalBlockMessage, declaredWantedIdentityHandle);
-        }
-
-        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(targetSuspectId));
-        if (targetSuspect is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "That person is not part of this case.",
-                declaredWantedIdentityHandle);
-        }
-
-        var warrant = CaseFile.KnownWarrants.FirstOrDefault(candidate => MatchesKnownWarrant(candidate, targetSuspect));
-        if (warrant is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                $"There is no wanted notice for {targetSuspect.Name}.",
-                declaredWantedIdentityHandle,
-                targetSuspect.Name);
-        }
-
-        if (CaseFile.TryGetWantedSuspectConfrontationState(targetSuspectId, out var existingState))
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                $"{existingState.TargetName} has already been confronted.",
-                declaredWantedIdentityHandle,
-                existingState.TargetName,
-                existingState.Disposition);
-        }
-
-        if (choice == WantedSuspectConfrontationChoice.Abandoned)
-        {
-            var abandonNarration = DescribeConfrontationNarration(warrant.TargetName, choice, declaredWantedIdentityHandle);
-            RecordCaseUpdate(abandonNarration);
-            return WantedSuspectConfrontationResult.Abandoned(
-                declaredWantedIdentityHandle,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                abandonNarration);
-        }
-
-        WantedSuspectConfrontationState? nextState = choice switch
-        {
-            WantedSuspectConfrontationChoice.Surrendered => new WantedSuspectConfrontationState(
-                targetSuspect.Id,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                WantedSuspectConfrontationOutcome.Surrendered,
-                IsAlive: true,
-                IsSecured: true,
-                Clock.Day,
-                Clock.Turn + 1),
-            WantedSuspectConfrontationChoice.Fled => new WantedSuspectConfrontationState(
-                targetSuspect.Id,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                WantedSuspectConfrontationOutcome.Fled,
-                IsAlive: true,
-                IsSecured: false,
-                Clock.Day,
-                Clock.Turn + 1),
-            WantedSuspectConfrontationChoice.Killed => new WantedSuspectConfrontationState(
-                targetSuspect.Id,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                WantedSuspectConfrontationOutcome.Killed,
-                IsAlive: false,
-                IsSecured: true,
-                Clock.Day,
-                Clock.Turn + 1),
-            _ => null
-        };
-
-        if (nextState is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                $"The confrontation choice for {targetSuspect.Name} is not supported.",
-                declaredWantedIdentityHandle,
-                targetSuspect.Name,
-                warrant.Terms.Disposition);
-        }
-
-        var narration = DescribeConfrontationNarration(warrant.TargetName, choice, declaredWantedIdentityHandle);
-        RecordCaseUpdate(narration);
-        var resolvedState = nextState! with { Day = Clock.Day, Turn = Clock.Turn };
-        CaseFile.RecordWantedSuspectConfrontationState(resolvedState);
-        UpdateWantedSuspectPresence(targetSuspectId, choice);
-
-        return choice switch
-        {
-            WantedSuspectConfrontationChoice.Surrendered => WantedSuspectConfrontationResult.Surrendered(
-                declaredWantedIdentityHandle,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                narration),
-            WantedSuspectConfrontationChoice.Fled => WantedSuspectConfrontationResult.Fled(
-                declaredWantedIdentityHandle,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                narration),
-            WantedSuspectConfrontationChoice.Killed => WantedSuspectConfrontationResult.Killed(
-                declaredWantedIdentityHandle,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                narration),
-            WantedSuspectConfrontationChoice.Abandoned => WantedSuspectConfrontationResult.Abandoned(
-                declaredWantedIdentityHandle,
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                narration),
-            _ => WantedSuspectConfrontationResult.Rejected(
-                $"The confrontation choice for {targetSuspect.Name} is not supported.",
-                declaredWantedIdentityHandle,
-                targetSuspect.Name,
-                warrant.Terms.Disposition)
-        };
-    }
+        => _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
 
     private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
     {
@@ -1920,115 +1622,10 @@ public sealed class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
-    {
-        if (IsJourneyModal())
-        {
-            return SheriffTurnInResult.Rejected(JourneyModalBlockMessage);
-        }
-
-        var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(targetSuspectId));
-        if (targetSuspect is null)
-        {
-            return isAlive
-                ? SheriffTurnInResult.WrongPersonAlive("That person is not part of this case.")
-                : SheriffTurnInResult.WrongPersonDead("That person is not part of this case.");
-        }
-
-        var warrant = CaseFile.KnownWarrants.FirstOrDefault(candidate => MatchesKnownWarrant(candidate, targetSuspect));
-        if (warrant is null)
-        {
-            return isAlive
-                ? SheriffTurnInResult.WrongPersonAlive($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name)
-                : SheriffTurnInResult.WrongPersonDead($"There is no wanted notice for {targetSuspect.Name}.", targetSuspect.Name);
-        }
-
-        if (!CaseFile.TryGetWantedSuspectConfrontationState(targetSuspectId, out var confrontationState))
-        {
-            return SheriffTurnInResult.Rejected(
-                $"You have not secured {warrant.TargetName} for turn-in yet.",
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                warrant.Terms.BountyAmount);
-        }
-
-        if (!confrontationState.IsTurnInEligible)
-        {
-            return SheriffTurnInResult.Rejected(
-                $"{warrant.TargetName} got away and is not secured for turn-in.",
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                warrant.Terms.BountyAmount);
-        }
-
-        if (isAlive && !confrontationState.IsAlive)
-        {
-            return SheriffTurnInResult.Rejected(
-                $"{warrant.TargetName} is not alive anymore.",
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                warrant.Terms.BountyAmount);
-        }
-
-        if (!isAlive && confrontationState.IsAlive)
-        {
-            return SheriffTurnInResult.Rejected(
-                $"{warrant.TargetName} was secured alive and cannot be turned in dead.",
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                warrant.Terms.BountyAmount);
-        }
-
-        if (isAlive)
-        {
-            return SheriffTurnInResult.AcceptedAlive(
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                warrant.Terms.BountyAmount,
-                $"You bring in {warrant.TargetName} alive under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.");
-        }
-
-        if (warrant.Terms.Disposition == WarrantDisposition.DeadOrAlive)
-        {
-            return SheriffTurnInResult.AcceptedDead(
-                warrant.TargetName,
-                warrant.Terms.Disposition,
-                warrant.Terms.BountyAmount,
-                $"You turn in the body of {warrant.TargetName} under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.");
-        }
-
-        return SheriffTurnInResult.Rejected(
-            $"The warrant for {warrant.TargetName} requires an alive turn-in.",
-            warrant.TargetName,
-            warrant.Terms.Disposition,
-            warrant.Terms.BountyAmount);
-    }
+        => _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
-    {
-        var assessment = AssessSheriffTurnIn(targetSuspectId, isAlive);
-        if (!assessment.Success)
-        {
-            return assessment;
-        }
-
-        if (!BountySettlementPolicy.TryCreateSheriffTurnInSettlementState(
-                CaseFile,
-                assessment,
-                targetSuspectId,
-                isAlive,
-                Clock.Day,
-                Clock.Turn,
-                out var settlementState,
-                out var rejectionResult))
-        {
-            return rejectionResult;
-        }
-
-        Player.AdjustCash(settlementState.BountyAmount);
-        CaseFile.RecordSheriffTurnInSettlementState(settlementState);
-
-        return assessment with { SessionChanged = true };
-    }
+        => _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
 
     public CaseInvestigationResult FollowTelegraphLeads()
     {
