@@ -1,0 +1,14 @@
+interface:
+  display_name: Wild Bunch Browser Game
+  short_description: Bridge Wild Bunch to the browser-game stack and QA flow
+  default_prompt: Apply the Wild Bunch browser-game stack guidance and verify it with
+    browser evidence.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
