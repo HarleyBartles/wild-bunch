@@ -1,0 +1,13 @@
+interface:
+  display_name: Linear Codex Dispatch
+  short_description: Route coding dispatch through Linear and Codex Cloud with a golden
+    gate before delegation.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

@@ -1,0 +1,14 @@
+interface:
+  display_name: Crew Buster
+  short_description: Interrogate plans, route choices, and failure modes with the Crew lenses before action.
+  brand_color: '#4B5563'
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+  default_prompt: Use $crew-buster to check route, authority, and fallback before action.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

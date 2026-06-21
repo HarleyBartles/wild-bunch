@@ -1,0 +1,13 @@
+interface:
+  display_name: Crew
+  short_description: GPT-wide Crew thinking doctrine for route, authority, fallback,
+    and receipt reasoning.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

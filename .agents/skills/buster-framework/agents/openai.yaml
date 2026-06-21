@@ -1,0 +1,11 @@
+interface:
+  display_name: Buster Framework
+  short_description: Generic mechanics for pre-action buster gates.
+  default_prompt: Use $buster-framework when designing, running, repairing, or interpreting a buster gate before GPT acts, dispatches, mutates a durable surface, or treats a claim as resolved.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

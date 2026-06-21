@@ -1,0 +1,1214 @@
+﻿{
+    "issue":  "BUNCH-74",
+    "repo":  "HarleyBartles/wild-bunch",
+    "source_root":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins",
+    "destination_root":  "C:\\WORK\\codex-lanes\\codex-b\\wild-bunch\\.agents\\skills",
+    "generated_at":  "2026-06-21T20:01:27.4887410+01:00",
+    "installed_count":  61,
+    "installed":  [
+                      {
+                          "skill":  "accessibility",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\accessibility",
+                          "destination_path":  ".agents\\skills\\accessibility",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "ambiguity-buster",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\ambiguity-buster",
+                          "destination_path":  ".agents\\skills\\ambiguity-buster",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "CHANGELOG.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "api-design-patterns",
+                          "category":  "API support",
+                          "source_pack_path":  "api-contracts-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\api-contracts-pack\\skills\\api-design-patterns",
+                          "destination_path":  ".agents\\skills\\api-design-patterns",
+                          "file_count":  3,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\design-process.md",
+                                        "SKILL.md",
+                                        "validation\\rubric.yaml"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "OpenAPI and API design support for contract-shaped work"
+                      },
+                      {
+                          "skill":  "architecture-decision-records",
+                          "category":  "Architecture support",
+                          "source_pack_path":  "architecture-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\architecture-pack\\skills\\architecture-decision-records",
+                          "destination_path":  ".agents\\skills\\architecture-decision-records",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Architecture decisions, backend shape, and deployment/runtime patterns"
+                      },
+                      {
+                          "skill":  "backend-patterns",
+                          "category":  "Architecture support",
+                          "source_pack_path":  "architecture-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\architecture-pack\\skills\\backend-patterns",
+                          "destination_path":  ".agents\\skills\\backend-patterns",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Architecture decisions, backend shape, and deployment/runtime patterns"
+                      },
+                      {
+                          "skill":  "boring-loop",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "repo-worker-base\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\repo-worker-base\\skills\\boring-loop",
+                          "destination_path":  ".agents\\skills\\boring-loop",
+                          "file_count":  5,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "decisions.json",
+                                        "decisions.md",
+                                        "intake.json",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "browser-qa",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\browser-qa",
+                          "destination_path":  ".agents\\skills\\browser-qa",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "buster-framework",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\buster-framework",
+                          "destination_path":  ".agents\\skills\\buster-framework",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "CHANGELOG.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "clean-architecture",
+                          "category":  ".NET / backend",
+                          "source_pack_path":  "dotnet-kit\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\dotnet-kit\\skills\\clean-architecture",
+                          "destination_path":  ".agents\\skills\\clean-architecture",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Clean architecture, DDD, EF Core, C# style, and backend testing"
+                      },
+                      {
+                          "skill":  "connector-safety",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "repo-worker-base\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\repo-worker-base\\skills\\connector-safety",
+                          "destination_path":  ".agents\\skills\\connector-safety",
+                          "file_count":  6,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "CHANGELOG.md",
+                                        "decisions.json",
+                                        "decisions.md",
+                                        "intake.json",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "crew",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\crew",
+                          "destination_path":  ".agents\\skills\\crew",
+                          "file_count":  8,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "CHANGELOG.md",
+                                        "references\\crew-roles.md",
+                                        "references\\golden-plan-contract.md",
+                                        "references\\tps-handoffs.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "crew-buster",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\crew-buster",
+                          "destination_path":  ".agents\\skills\\crew-buster",
+                          "file_count":  7,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "CHANGELOG.md",
+                                        "references\\crew-lenses.md",
+                                        "references\\output-modes.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "database-design-patterns",
+                          "category":  "Architecture support",
+                          "source_pack_path":  "architecture-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\architecture-pack\\skills\\database-design-patterns",
+                          "destination_path":  ".agents\\skills\\database-design-patterns",
+                          "file_count":  7,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\core-principles.md",
+                                        "references\\indexing-strategies.md",
+                                        "references\\partitioning-patterns.md",
+                                        "references\\query-optimization.md",
+                                        "references\\replication-patterns.md",
+                                        "references\\schema-design-patterns.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Architecture decisions, backend shape, and deployment/runtime patterns"
+                      },
+                      {
+                          "skill":  "ddd",
+                          "category":  ".NET / backend",
+                          "source_pack_path":  "dotnet-kit\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\dotnet-kit\\skills\\ddd",
+                          "destination_path":  ".agents\\skills\\ddd",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Clean architecture, DDD, EF Core, C# style, and backend testing"
+                      },
+                      {
+                          "skill":  "design-system",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\design-system",
+                          "destination_path":  ".agents\\skills\\design-system",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "docker-patterns",
+                          "category":  "Architecture support",
+                          "source_pack_path":  "architecture-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\architecture-pack\\skills\\docker-patterns",
+                          "destination_path":  ".agents\\skills\\docker-patterns",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Architecture decisions, backend shape, and deployment/runtime patterns"
+                      },
+                      {
+                          "skill":  "e2e-testing",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\e2e-testing",
+                          "destination_path":  ".agents\\skills\\e2e-testing",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "ef-core",
+                          "category":  ".NET / backend",
+                          "source_pack_path":  "dotnet-kit\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\dotnet-kit\\skills\\ef-core",
+                          "destination_path":  ".agents\\skills\\ef-core",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Clean architecture, DDD, EF Core, C# style, and backend testing"
+                      },
+                      {
+                          "skill":  "event-driven-architecture",
+                          "category":  "Architecture support",
+                          "source_pack_path":  "architecture-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\architecture-pack\\skills\\event-driven-architecture",
+                          "destination_path":  ".agents\\skills\\event-driven-architecture",
+                          "file_count":  9,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\best-practices.md",
+                                        "references\\choreography-orchestration.md",
+                                        "references\\cqrs.md",
+                                        "references\\event-fundamentals.md",
+                                        "references\\event-sourcing.md",
+                                        "references\\eventual-consistency.md",
+                                        "references\\message-brokers.md",
+                                        "references\\saga-pattern.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Architecture decisions, backend shape, and deployment/runtime patterns"
+                      },
+                      {
+                          "skill":  "game-playtest",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\game-playtest",
+                          "destination_path":  ".agents\\skills\\game-playtest",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "game-studio",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\game-studio",
+                          "destination_path":  ".agents\\skills\\game-studio",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "game-ui-frontend",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\game-ui-frontend",
+                          "destination_path":  ".agents\\skills\\game-ui-frontend",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "github-operations",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "repo-worker-base\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\repo-worker-base\\skills\\github-operations",
+                          "destination_path":  ".agents\\skills\\github-operations",
+                          "file_count":  8,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "decisions.json",
+                                        "decisions.md",
+                                        "intake.json",
+                                        "references\\pr-review-writes.md",
+                                        "references\\source-route-posture.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "github-superpowers",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "superpowers-plus\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\superpowers-plus\\skills\\github-superpowers",
+                          "destination_path":  ".agents\\skills\\github-superpowers",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "hexagonal-architecture",
+                          "category":  "Architecture support",
+                          "source_pack_path":  "architecture-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\architecture-pack\\skills\\hexagonal-architecture",
+                          "destination_path":  ".agents\\skills\\hexagonal-architecture",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Architecture decisions, backend shape, and deployment/runtime patterns"
+                      },
+                      {
+                          "skill":  "interaction-design",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "codex-cortex\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\codex-cortex\\skills\\interaction-design",
+                          "destination_path":  ".agents\\skills\\interaction-design",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\state-patterns.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "invariant-buster",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\invariant-buster",
+                          "destination_path":  ".agents\\skills\\invariant-buster",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "CHANGELOG.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "linear",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\linear",
+                          "destination_path":  ".agents\\skills\\linear",
+                          "file_count":  10,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "CHANGELOG.md",
+                                        "LICENSE.txt",
+                                        "NOTICE.txt",
+                                        "references\\connector-compatibility.md",
+                                        "references\\upstream-openai-linear.md",
+                                        "references\\version-history.md",
+                                        "references\\wild-bunch-linear-overlay.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "linear-issue-compactor",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\linear-issue-compactor",
+                          "destination_path":  ".agents\\skills\\linear-issue-compactor",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "references\\partition-patterns.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "linear-superpowers",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "superpowers-plus\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\superpowers-plus\\skills\\linear-superpowers",
+                          "destination_path":  ".agents\\skills\\linear-superpowers",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "make-interfaces-feel-better",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\make-interfaces-feel-better",
+                          "destination_path":  ".agents\\skills\\make-interfaces-feel-better",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "modern-csharp",
+                          "category":  ".NET / backend",
+                          "source_pack_path":  "dotnet-kit\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\dotnet-kit\\skills\\modern-csharp",
+                          "destination_path":  ".agents\\skills\\modern-csharp",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Clean architecture, DDD, EF Core, C# style, and backend testing"
+                      },
+                      {
+                          "skill":  "openapi-specification",
+                          "category":  "API support",
+                          "source_pack_path":  "api-contracts-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\api-contracts-pack\\skills\\openapi-specification",
+                          "destination_path":  ".agents\\skills\\openapi-specification",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\spec-patterns.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "OpenAPI and API design support for contract-shaped work"
+                      },
+                      {
+                          "skill":  "owasp-top-10",
+                          "category":  "Security support",
+                          "source_pack_path":  "security-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\security-pack\\skills\\owasp-top-10",
+                          "destination_path":  ".agents\\skills\\owasp-top-10",
+                          "file_count":  13,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\assessment-workflow.md",
+                                        "references\\authentication-failures.md",
+                                        "references\\broken-access-control.md",
+                                        "references\\cryptographic-failures.md",
+                                        "references\\injection.md",
+                                        "references\\insecure-design.md",
+                                        "references\\integrity-failures.md",
+                                        "references\\logging-monitoring.md",
+                                        "references\\prevention-strategies.md",
+                                        "references\\security-misconfiguration.md",
+                                        "references\\ssrf.md",
+                                        "references\\vulnerable-components.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Secure coding, security review, scanning, and threat modeling"
+                      },
+                      {
+                          "skill":  "phaser-2d-game",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\phaser-2d-game",
+                          "destination_path":  ".agents\\skills\\phaser-2d-game",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "react-patterns",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\react-patterns",
+                          "destination_path":  ".agents\\skills\\react-patterns",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "react-testing",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\react-testing",
+                          "destination_path":  ".agents\\skills\\react-testing",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "react-three-fiber-game",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\react-three-fiber-game",
+                          "destination_path":  ".agents\\skills\\react-three-fiber-game",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "repo-worker-base",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "repo-worker-base\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\repo-worker-base\\skills\\repo-worker-base",
+                          "destination_path":  ".agents\\skills\\repo-worker-base",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "secure-coding-practices",
+                          "category":  "Security support",
+                          "source_pack_path":  "security-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\security-pack\\skills\\secure-coding-practices",
+                          "destination_path":  ".agents\\skills\\secure-coding-practices",
+                          "file_count":  9,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\authentication.md",
+                                        "references\\cryptography.md",
+                                        "references\\dependencies.md",
+                                        "references\\error-handling.md",
+                                        "references\\input-validation.md",
+                                        "references\\output-encoding.md",
+                                        "references\\secure-defaults.md",
+                                        "SKILL.md",
+                                        "validation\\rubric.yaml"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Secure coding, security review, scanning, and threat modeling"
+                      },
+                      {
+                          "skill":  "security-review",
+                          "category":  "Security support",
+                          "source_pack_path":  "security-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\security-pack\\skills\\security-review",
+                          "destination_path":  ".agents\\skills\\security-review",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\cloud-infrastructure-security.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Secure coding, security review, scanning, and threat modeling"
+                      },
+                      {
+                          "skill":  "security-scan",
+                          "category":  "Security support",
+                          "source_pack_path":  "security-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\security-pack\\skills\\security-scan",
+                          "destination_path":  ".agents\\skills\\security-scan",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Secure coding, security review, scanning, and threat modeling"
+                      },
+                      {
+                          "skill":  "security-testing-patterns",
+                          "category":  "Security support",
+                          "source_pack_path":  "security-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\security-pack\\skills\\security-testing-patterns",
+                          "destination_path":  ".agents\\skills\\security-testing-patterns",
+                          "file_count":  8,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\api-security.md",
+                                        "references\\automation-pipeline.md",
+                                        "references\\dast.md",
+                                        "references\\fuzzing.md",
+                                        "references\\penetration-testing.md",
+                                        "references\\sast.md",
+                                        "references\\sca.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Secure coding, security review, scanning, and threat modeling"
+                      },
+                      {
+                          "skill":  "session-buster",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\session-buster",
+                          "destination_path":  ".agents\\skills\\session-buster",
+                          "file_count":  7,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "CHANGELOG.md",
+                                        "references\\rooms-mostly-session-pattern.md",
+                                        "references\\session-buster-template.yaml",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "session-buster-ingress",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\session-buster-ingress",
+                          "destination_path":  ".agents\\skills\\session-buster-ingress",
+                          "file_count":  5,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "CHANGELOG.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "sprite-pipeline",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\sprite-pipeline",
+                          "destination_path":  ".agents\\skills\\sprite-pipeline",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "testing",
+                          "category":  ".NET / backend",
+                          "source_pack_path":  "dotnet-kit\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\dotnet-kit\\skills\\testing",
+                          "destination_path":  ".agents\\skills\\testing",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Clean architecture, DDD, EF Core, C# style, and backend testing"
+                      },
+                      {
+                          "skill":  "threat-modeling-techniques",
+                          "category":  "Security support",
+                          "source_pack_path":  "security-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\security-pack\\skills\\threat-modeling-techniques",
+                          "destination_path":  ".agents\\skills\\threat-modeling-techniques",
+                          "file_count":  12,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "references\\attack-trees.md",
+                                        "references\\data-flow-diagrams.md",
+                                        "references\\dread-scoring.md",
+                                        "references\\mitigation-strategies.md",
+                                        "references\\stride-disclosure.md",
+                                        "references\\stride-dos.md",
+                                        "references\\stride-elevation.md",
+                                        "references\\stride-repudiation.md",
+                                        "references\\stride-spoofing.md",
+                                        "references\\stride-tampering.md",
+                                        "references\\tools-and-process.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Secure coding, security review, scanning, and threat modeling"
+                      },
+                      {
+                          "skill":  "three-webgl-game",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\three-webgl-game",
+                          "destination_path":  ".agents\\skills\\three-webgl-game",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "unslop-superpowers",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "superpowers-plus\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\superpowers-plus\\skills\\unslop-superpowers",
+                          "destination_path":  ".agents\\skills\\unslop-superpowers",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      },
+                      {
+                          "skill":  "ux-review",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "frontend-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\frontend-pack\\skills\\ux-review",
+                          "destination_path":  ".agents\\skills\\ux-review",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "vertical-slice",
+                          "category":  ".NET / backend",
+                          "source_pack_path":  "dotnet-kit\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\dotnet-kit\\skills\\vertical-slice",
+                          "destination_path":  ".agents\\skills\\vertical-slice",
+                          "file_count":  1,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Clean architecture, DDD, EF Core, C# style, and backend testing"
+                      },
+                      {
+                          "skill":  "web-3d-asset-pipeline",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\web-3d-asset-pipeline",
+                          "destination_path":  ".agents\\skills\\web-3d-asset-pipeline",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "webapp-testing",
+                          "category":  "Frontend support",
+                          "source_pack_path":  "codex-cortex\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\codex-cortex\\skills\\webapp-testing",
+                          "destination_path":  ".agents\\skills\\webapp-testing",
+                          "file_count":  6,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "examples\\console_logging.py",
+                                        "examples\\element_discovery.py",
+                                        "examples\\static_html_automation.py",
+                                        "LICENSE.txt",
+                                        "scripts\\with_server.py",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Accessibility, browser QA, UI design, interaction, React, and web app testing"
+                      },
+                      {
+                          "skill":  "web-game-foundations",
+                          "category":  "Game studio / browser-game",
+                          "source_pack_path":  "game-studio\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\game-studio\\skills\\web-game-foundations",
+                          "destination_path":  ".agents\\skills\\web-game-foundations",
+                          "file_count":  2,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Browser-game foundations, playtesting, and 2D/3D web game support"
+                      },
+                      {
+                          "skill":  "wild-bunch-browser-game",
+                          "category":  "Wild Bunch project",
+                          "source_pack_path":  "wild-bunch-project-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\wild-bunch-project-pack\\skills\\wild-bunch-browser-game",
+                          "destination_path":  ".agents\\skills\\wild-bunch-browser-game",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "references\\browser-game-stack.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Wild Bunch doctrine, domain modeling, browser-game posture, and worker verification"
+                      },
+                      {
+                          "skill":  "wild-bunch-domain-modeling",
+                          "category":  "Wild Bunch project",
+                          "source_pack_path":  "wild-bunch-project-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\wild-bunch-project-pack\\skills\\wild-bunch-domain-modeling",
+                          "destination_path":  ".agents\\skills\\wild-bunch-domain-modeling",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "references\\domain-model.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Wild Bunch doctrine, domain modeling, browser-game posture, and worker verification"
+                      },
+                      {
+                          "skill":  "wild-bunch-dotnet-architecture",
+                          "category":  "Wild Bunch project",
+                          "source_pack_path":  "wild-bunch-project-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\wild-bunch-project-pack\\skills\\wild-bunch-dotnet-architecture",
+                          "destination_path":  ".agents\\skills\\wild-bunch-dotnet-architecture",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "references\\dotnet-architecture.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Wild Bunch doctrine, domain modeling, browser-game posture, and worker verification"
+                      },
+                      {
+                          "skill":  "wild-bunch-project-doctrine",
+                          "category":  "Wild Bunch project",
+                          "source_pack_path":  "wild-bunch-project-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\wild-bunch-project-pack\\skills\\wild-bunch-project-doctrine",
+                          "destination_path":  ".agents\\skills\\wild-bunch-project-doctrine",
+                          "file_count":  5,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "references\\difficulty-entropy-seeded-world-setup.md",
+                                        "references\\repo-posture.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Wild Bunch doctrine, domain modeling, browser-game posture, and worker verification"
+                      },
+                      {
+                          "skill":  "wild-bunch-worker-verification",
+                          "category":  "Wild Bunch project",
+                          "source_pack_path":  "wild-bunch-project-pack\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\wild-bunch-project-pack\\skills\\wild-bunch-worker-verification",
+                          "destination_path":  ".agents\\skills\\wild-bunch-worker-verification",
+                          "file_count":  4,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "references\\verification-checklist.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Wild Bunch doctrine, domain modeling, browser-game posture, and worker verification"
+                      },
+                      {
+                          "skill":  "worker-dispatch-linear",
+                          "category":  "Repo control plane",
+                          "source_pack_path":  "house-skills\\skills",
+                          "source_path":  "C:\\WORK\\codex-lanes\\codex-b\\agent-asset-marketplace\\codex-marketplace\\plugins\\house-skills\\skills\\worker-dispatch-linear",
+                          "destination_path":  ".agents\\skills\\worker-dispatch-linear",
+                          "file_count":  11,
+                          "entrypoint_normalization":  "SKILL.md preserved",
+                          "files":  [
+                                        "agents\\openai.yaml",
+                                        "assets\\icon.svg",
+                                        "CHANGELOG.md",
+                                        "references\\devin-campaign-shape.md",
+                                        "references\\external-worker-handoff.md",
+                                        "references\\golden-gate.md",
+                                        "references\\issue-readiness.md",
+                                        "references\\legacy-plan-b.md",
+                                        "references\\state-machine.md",
+                                        "references\\version-history.md",
+                                        "SKILL.md"
+                                    ],
+                          "omitted_files":  [
+
+                                            ],
+                          "classification":  "required",
+                          "purpose":  "Workflow selection, Linear, GitHub, worker coordination, and repo hygiene"
+                      }
+                  ],
+    "omitted":  [
+                    {
+                        "skill":  "agent-browser",
+                        "reason":  "Explicitly excluded by the issue; no install requested."
+                    }
+                ]
+}
