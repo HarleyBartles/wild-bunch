@@ -627,7 +627,148 @@ h1 {
   }
 }
 
+/* ===== UI v0.1 shell: HUD, nav, route outlet ===== */
+
+.v0-1-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hud {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  padding: 10px 24px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(18px);
+}
+
+.hud-metric {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hud-metric strong {
+  font-size: 0.92rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-metric small {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.shell-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15, 17, 21, 0.7);
+}
+
+.shell-nav__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shell-nav__group--dev {
+  margin-left: auto;
+  padding-left: 12px;
+  border-left: 1px dashed var(--border-strong);
+}
+
+.shell-nav__link {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.shell-nav__link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.shell-nav__link--active {
+  color: var(--accent-strong);
+  border-color: var(--border-strong);
+  background: rgba(223, 159, 79, 0.12);
+}
+
+.shell-nav__link--dev {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.shell-nav__link--dev:hover {
+  color: var(--text);
+}
+
+.route-outlet {
+  flex: 1;
+  padding: 24px;
+}
+
+.route {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .route {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
+  .hud {
+    padding: 8px 14px;
+    gap: 6px 12px;
+  }
+
+  .shell-nav {
+    padding: 8px 14px;
+  }
+
+  .shell-nav__group--dev {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    width: 100%;
+    border-top: 1px dashed var(--border-strong);
+    padding-top: 8px;
+  }
+
+  .route-outlet {
+    padding: 14px;
+  }
+
   .app-shell {
     padding: 16px;
   }
