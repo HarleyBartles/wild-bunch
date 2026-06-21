@@ -89,6 +89,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0024 Source taxonomy implications for difficulty and entropy](ADR-0024-source-taxonomy-implications-for-difficulty-and-entropy.md)
 - [ADR-0025 Suspect legal and bounty vocabulary boundary](ADR-0025-suspect-legal-and-bounty-vocabulary-boundary.md)
 - [ADR-0026 Turn-In Outcome Semantics for Bounty and Murder-Case Separation](ADR-0026-turn-in-outcome-semantics-for-bounty-and-murder-case-separation.md)
+- [ADR-0027 UI v1 SPA shell, hash routing, and player/debug separation](ADR-0027-ui-v1-spa-shell-routing-and-player-debug-separation.md)
 
 ## Current Working Set
 

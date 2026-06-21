@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import App from "./App";
+import { DebugCockpitRoute } from "./routes/DebugCockpitRoute";
+import { GameSessionProvider } from "./state/GameSessionContext";
 import {
   AvailableActionKind,
   JourneyStatus,
@@ -453,7 +454,7 @@ function createWantedPoster(overrides: Partial<WantedPosterDto> = {}): WantedPos
   };
 }
 
-describe("App", () => {
+describe("Debug cockpit", () => {
   it("hydrates the current session from local storage and loads store offers for the current town", async () => {
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
@@ -516,7 +517,11 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    render(
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>,
+    );
 
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
@@ -666,7 +671,11 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    render(
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>,
+    );
 
     const user = userEvent.setup();
 
@@ -779,7 +788,11 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    render(
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>,
+    );
 
     const user = userEvent.setup();
 
@@ -899,7 +912,11 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    render(
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>,
+    );
 
     const user = userEvent.setup();
 
@@ -988,7 +1005,11 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    render(
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>,
+    );
 
     const user = userEvent.setup();
 
@@ -1087,7 +1108,11 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    render(
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>,
+    );
 
     const user = userEvent.setup();
 
