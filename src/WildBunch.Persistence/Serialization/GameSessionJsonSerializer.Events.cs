@@ -35,6 +35,7 @@ public sealed partial class GameSessionJsonSerializer
     {
         nameof(GameStarted) => typeof(GameStarted),
         nameof(StoreItemPurchased) => typeof(StoreItemPurchased),
+        nameof(InvestigationPerformed) => typeof(InvestigationPerformed),
         _ => throw new InvalidOperationException($"Unknown domain event type: {eventType}")
     };
 

@@ -185,6 +185,58 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         Assert.IsType<StoreItemPurchased>(events[0]);
     }
 
+    /// <summary>
+    /// Proves that <see cref="InvestigationPerformed"/> events are serialized, persisted,
+    /// and deserialized through the DB-backed event stream. Without the
+    /// <see cref="GameSessionJsonSerializer.ResolveEventType"/> mapping for
+    /// <see cref="InvestigationPerformed"/>, <see cref="EfGameSessionRepository.GetEventStreamAsync"/>
+    /// would throw "Unknown domain event type: InvestigationPerformed".
+    /// </summary>
+    [Fact]
+    public async Task GetEventStreamAsync_ReturnsInvestigationPerformed_AfterPersistedInvestigation()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+
+        // 1. Create + store + commit (GameStarted)
+        var session = CreateSession();
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+        session.MarkEventsCommitted();
+
+        // 2. Reload + perform investigation + store + commit (InvestigationPerformed)
+        var loaded = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(loaded);
+        var investigationResult = loaded!.GatherLocalGossip();
+        Assert.True(investigationResult.Success);
+        Assert.True(investigationResult.SessionChanged);
+        Assert.Single(loaded.UncommittedEvents);
+        Assert.IsType<InvestigationPerformed>(loaded.UncommittedEvents[0]);
+
+        await repo.StoreAsync(loaded);
+        await uow.CommitAsync();
+
+        // 3. Verify the stored event row has the correct type name
+        var storedEvents = await dbContext.StoredEvents.AsNoTracking()
+            .Where(e => e.StreamId == session.Id.Value)
+            .OrderBy(e => e.Sequence)
+            .ToArrayAsync();
+        Assert.Equal(2, storedEvents.Length);
+        Assert.Equal("GameStarted", storedEvents[0].EventType);
+        Assert.Equal("InvestigationPerformed", storedEvents[1].EventType);
+
+        // 4. GetEventStreamAsync must deserialize both events without throwing
+        var events = await repo.GetEventStreamAsync(session.Id);
+        Assert.Equal(2, events.Count);
+        Assert.IsType<GameStarted>(events[0]);
+        var investigationEvent = Assert.IsType<InvestigationPerformed>(events[1]);
+        Assert.Equal(InvestigationSourceKind.LocalGossip, investigationEvent.SourceKind);
+    }
+
     [Fact]
     public async Task ReplayFromEvents_ReconstructsSameStateAsSnapshotLoad()
     {

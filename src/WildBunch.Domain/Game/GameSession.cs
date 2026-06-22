@@ -280,14 +280,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         RecordCaseUpdate(e.Message, advanceClock: e.AdvanceClock);
 
-        if (e.Clue is not null)
+        if (e.ClueId is not null)
         {
-            CaseFile.RevealClue(e.Clue);
+            CaseFile.RevealClueById(e.ClueId.Value);
         }
 
-        if (e.Warrant is not null)
+        if (e.WarrantId is not null)
         {
-            CaseFile.RevealWarrant(e.Warrant);
+            CaseFile.RevealWarrantById(e.WarrantId.Value);
         }
 
         _version++;
@@ -1708,8 +1708,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 SourceKind = InvestigationSourceKind.SheriffWarrants,
                 TownId = CurrentTown.TownId,
                 Message = msg,
-                Clue = clue,
-                Warrant = warrant
+                ClueId = clue?.Id,
+                WarrantId = warrant?.Id
             };
             Apply(e);
             _uncommittedEvents.Add(e);
@@ -1724,7 +1724,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 SourceKind = InvestigationSourceKind.SheriffWarrants,
                 TownId = CurrentTown.TownId,
                 Message = msg,
-                Warrant = warrant
+                WarrantId = warrant?.Id
             };
             Apply(e);
             _uncommittedEvents.Add(e);
@@ -1737,7 +1737,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SourceKind = InvestigationSourceKind.SheriffWarrants,
             TownId = CurrentTown.TownId,
             Message = clueOnlyMsg,
-            Clue = clue
+            ClueId = clue?.Id
         };
         Apply(clueOnlyEvent);
         _uncommittedEvents.Add(clueOnlyEvent);
@@ -1859,7 +1859,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SourceKind = InvestigationSourceKind.TelegraphLead,
             TownId = CurrentTown.TownId,
             Message = foundMsg,
-            Clue = clue
+            ClueId = clue?.Id
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
@@ -1909,7 +1909,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SourceKind = InvestigationSourceKind.LocalGossip,
             TownId = CurrentTown.TownId,
             Message = foundMsg,
-            Clue = clue
+            ClueId = clue?.Id
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
@@ -1959,7 +1959,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SourceKind = InvestigationSourceKind.NoticeBoard,
             TownId = CurrentTown.TownId,
             Message = foundMsg,
-            Clue = clue
+            ClueId = clue?.Id
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
@@ -2009,7 +2009,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SourceKind = InvestigationSourceKind.LocalRecords,
             TownId = CurrentTown.TownId,
             Message = foundMsg,
-            Clue = clue
+            ClueId = clue?.Id
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);

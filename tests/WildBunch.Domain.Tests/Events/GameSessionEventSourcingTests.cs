@@ -277,7 +277,7 @@ public class GameSessionEventSourcingTests
         // The replayed session must have discovered the clue from the event
         Assert.Equal(session.CaseFile.KnownClues.Count, rehydrated.CaseFile.KnownClues.Count);
         Assert.Equal(session.CaseFile.PublicClues.Count, rehydrated.CaseFile.PublicClues.Count);
-        var revealedClueId = investigationEvents.OfType<InvestigationPerformed>().Single().Clue!.Id;
+        var revealedClueId = investigationEvents.OfType<InvestigationPerformed>().Single().ClueId!.Value;
         Assert.Contains(rehydrated.CaseFile.KnownClues, c => c.Id.Equals(revealedClueId));
         Assert.DoesNotContain(rehydrated.CaseFile.PublicClues, c => c.Id.Equals(revealedClueId));
     }

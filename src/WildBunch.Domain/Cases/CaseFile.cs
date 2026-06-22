@@ -406,6 +406,22 @@ public sealed class CaseFile
         DiscoverClue(clue);
     }
 
+    /// <summary>
+    /// Reveals a public clue by ID. Used by <see cref="GameSession.Apply(InvestigationPerformed)"/>
+    /// during event replay, where the event carries only the clue ID (not the full domain object).
+    /// The clue is looked up from <see cref="PublicClues"/> by ID. If the clue is not in the
+    /// public pool (e.g., already revealed), this is an idempotent no-op.
+    /// </summary>
+    public void RevealClueById(ClueId clueId)
+    {
+        ArgumentNullException.ThrowIfNull(clueId);
+        var clue = _publicClues.FirstOrDefault(c => c.Id.Equals(clueId));
+        if (clue is not null)
+        {
+            RevealClue(clue);
+        }
+    }
+
     public void RevealWarrant(Warrant warrant)
     {
         ArgumentNullException.ThrowIfNull(warrant);
@@ -417,6 +433,22 @@ public sealed class CaseFile
         var index = _publicWarrants.FindIndex(w => w.Id.Equals(warrant.Id));
         if (index >= 0) _publicWarrants.RemoveAt(index);
         DiscoverWarrant(warrant);
+    }
+
+    /// <summary>
+    /// Reveals a public warrant by ID. Used by <see cref="GameSession.Apply(InvestigationPerformed)"/>
+    /// during event replay, where the event carries only the warrant ID (not the full domain object).
+    /// The warrant is looked up from <see cref="PublicWarrants"/> by ID. If the warrant is not in
+    /// the public pool (e.g., already revealed), this is an idempotent no-op.
+    /// </summary>
+    public void RevealWarrantById(WarrantId warrantId)
+    {
+        ArgumentNullException.ThrowIfNull(warrantId);
+        var warrant = _publicWarrants.FirstOrDefault(w => w.Id.Equals(warrantId));
+        if (warrant is not null)
+        {
+            RevealWarrant(warrant);
+        }
     }
 
     public bool TryGetSuspectTurf(SuspectId suspectId, out TownId turfTownId)

@@ -215,12 +215,8 @@ public static class TestSessionFactory
             originalCase.OpeningLead,
             knownClues: Array.Empty<Clue>(),
             discoveredSuspectIds: originalCase.DiscoveredSuspectIds,
-            publicClues: originalCase.PublicClues.Count > 0
-                ? ReconstructPublicClues(originalCase)
-                : Array.Empty<Clue>(),
-            publicWarrants: originalCase.PublicWarrants.Count > 0
-                ? ReconstructPublicWarrants(originalCase)
-                : null);
+            publicClues: ReconstructPublicClues(originalCase),
+            publicWarrants: ReconstructPublicWarrants(originalCase));
     }
 
     private static IEnumerable<Clue> ReconstructPublicClues(CaseFile originalCase)

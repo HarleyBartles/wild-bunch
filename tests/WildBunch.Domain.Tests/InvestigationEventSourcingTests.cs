@@ -20,8 +20,8 @@ public sealed class InvestigationEventSourcingTests
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
         Assert.Equal(InvestigationSourceKind.LocalGossip, e.SourceKind);
-        Assert.NotNull(e.Clue);
-        Assert.Null(e.Warrant);
+        Assert.NotNull(e.ClueId);
+        Assert.Null(e.WarrantId);
     }
 
     [Fact]
@@ -36,8 +36,8 @@ public sealed class InvestigationEventSourcingTests
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
         Assert.Equal(InvestigationSourceKind.LocalGossip, e.SourceKind);
-        Assert.Null(e.Clue);
-        Assert.Null(e.Warrant);
+        Assert.Null(e.ClueId);
+        Assert.Null(e.WarrantId);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class InvestigationEventSourcingTests
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
         Assert.Equal(InvestigationSourceKind.TelegraphLead, e.SourceKind);
-        Assert.NotNull(e.Clue);
+        Assert.NotNull(e.ClueId);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class InvestigationEventSourcingTests
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
         Assert.Equal(InvestigationSourceKind.NoticeBoard, e.SourceKind);
-        Assert.NotNull(e.Clue);
+        Assert.NotNull(e.ClueId);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class InvestigationEventSourcingTests
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
         Assert.Equal(InvestigationSourceKind.LocalRecords, e.SourceKind);
-        Assert.NotNull(e.Clue);
+        Assert.NotNull(e.ClueId);
     }
 
     [Fact]
@@ -101,8 +101,8 @@ public sealed class InvestigationEventSourcingTests
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
         Assert.Equal(InvestigationSourceKind.SheriffWarrants, e.SourceKind);
-        Assert.NotNull(e.Warrant);
-        Assert.NotNull(e.Clue);
+        Assert.NotNull(e.WarrantId);
+        Assert.NotNull(e.ClueId);
     }
 
     [Fact]
@@ -116,8 +116,8 @@ public sealed class InvestigationEventSourcingTests
         Assert.True(result.SessionChanged);
         Assert.Single(session.UncommittedEvents);
         var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
-        Assert.Null(e.Warrant);
-        Assert.Null(e.Clue);
+        Assert.Null(e.WarrantId);
+        Assert.Null(e.ClueId);
     }
 
     [Fact]
