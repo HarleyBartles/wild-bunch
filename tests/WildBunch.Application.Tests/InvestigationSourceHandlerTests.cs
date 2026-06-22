@@ -46,6 +46,7 @@ public sealed class InvestigationSourceHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.NoticeBoard);
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new FollowTelegraphLeadsHandler(repository, repository, new JournalResolver());
 
