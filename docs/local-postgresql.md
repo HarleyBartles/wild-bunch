@@ -13,6 +13,9 @@ unspecified machine-global cluster or data directory.
 - Persistent local app database: `wildbunch_dev`
 - Host and port: `localhost:5434`
 - Connection-string name: `ConnectionStrings:WildBunchPostgresDb`
+- Service ownership: the persistent main checkout (the repo root that owns the
+  shared `.git` directory) owns the running cluster, tooling, and data dir.
+  Worktrees reuse `localhost:5434` and do not provision their own cluster.
 
 The persistent local development database is the database Wild Bunch uses when
 Harley runs the app locally. It should survive app restarts until the explicit
@@ -34,7 +37,21 @@ Check or document the pinned tooling first:
 .\scripts\postgres-dev.ps1 install-tools
 ```
 
-Initialize or start the persistent local development cluster and database:
+Ensure the shared local PostgreSQL service is running (starts it if down, reuses
+it if already healthy):
+
+```powershell
+.\scripts\postgres-dev.ps1 ensure
+```
+
+`ensure` is the normal worker entry point before PostgreSQL-dependent tests or
+local app launch. It is idempotent: if the shared service on `localhost:5434` is
+already healthy, it returns immediately without restarting. The service is owned
+by the persistent main checkout, so workers in any worktree reuse the same
+running cluster and the same `wildbunch_dev` app database.
+
+If you need the older full-provision verb (same effect when the cluster is down),
+`setup` remains available:
 
 ```powershell
 .\scripts\postgres-dev.ps1 setup
@@ -87,6 +104,22 @@ Check whether the local cluster is running and the app database exists:
 .\scripts\postgres-dev.ps1 status
 ```
 
+## Shared Service and Worker Cleanup
+
+The local PostgreSQL service is a shared, long-lived developer service owned by
+the persistent main checkout. It is not per-run setup/teardown.
+
+- Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests or
+  local app launch. It reuses a healthy service and only starts one when down.
+- Normal worker cleanup must **not** stop the shared service. A later worker or
+  worktree expects to reuse it.
+- `stop` and `reset` are manual/destructive. Use them only when you explicitly
+  intend to shut down or recreate the shared service, or when Harley asks.
+- Worktrees reuse `localhost:5434` and the main checkout's tooling and data dir.
+  A worktree does not provision its own cluster. If `ensure` reports missing
+  tooling, install PostgreSQL tooling into the main checkout's
+  `.local/postgresql16` (see `install-tools`), not the worktree's.
+
 ## Reset
 
 Reset is explicit and destructive to the persistent local development database
@@ -99,10 +132,13 @@ only:
 Use reset only when you intend to recreate the persistent local app database.
 It does not touch temporary integration-test databases.
 
+Reset is manual and not part of normal worker cleanup. Do not run `reset` from a
+worker lane unless you explicitly intend to recreate the shared service.
+
 ## Local Launch Flow
 
 1. `.\scripts\postgres-dev.ps1 install-tools`
-2. `.\scripts\postgres-dev.ps1 setup`
+2. `.\scripts\postgres-dev.ps1 ensure`
 3. Launch `WildBunch.Api` via Visual Studio/F5 or:
 
 ```powershell
