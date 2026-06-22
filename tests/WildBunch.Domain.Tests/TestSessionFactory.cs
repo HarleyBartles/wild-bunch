@@ -193,4 +193,52 @@ public static class TestSessionFactory
 
         session.StartJourney(preview);
     }
+
+    /// <summary>
+    /// Creates a FRESH baseline <see cref="CaseFile"/> from the same template used to create
+    /// the session, before any investigation mutations. The public clues that were in the
+    /// session's original CaseFile are in <see cref="CaseFile.PublicClues"/> and NOT in
+    /// <see cref="CaseFile.KnownClues"/>. Used for replay tests that must prove the event
+    /// replay path discovers clues from events (not from the already-mutated session state).
+    /// </summary>
+    public static CaseFile CreateBaselineCaseFileFor(GameSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        // Reconstruct the baseline CaseFile with the same suspects, true culprit, opening lead,
+        // and public clues/warrants — but with empty known clues/warrants (pre-investigation state).
+        var originalCase = session.CaseFile;
+        return new CaseFile(
+            accusation: null,
+            originalCase.Suspects,
+            originalCase.TrueCulpritId,
+            originalCase.OpeningLead,
+            knownClues: Array.Empty<Clue>(),
+            discoveredSuspectIds: originalCase.DiscoveredSuspectIds,
+            publicClues: originalCase.PublicClues.Count > 0
+                ? ReconstructPublicClues(originalCase)
+                : Array.Empty<Clue>(),
+            publicWarrants: originalCase.PublicWarrants.Count > 0
+                ? ReconstructPublicWarrants(originalCase)
+                : null);
+    }
+
+    private static IEnumerable<Clue> ReconstructPublicClues(CaseFile originalCase)
+    {
+        // The public clues that remain in the session are the un-revealed ones.
+        // For a baseline, we need ALL public clues (including ones already revealed).
+        // Since we can't recover revealed clues from the mutated session, we use
+        // the KnownClues as the clues that were originally public and are now known.
+        // This reconstructs the original public pool: known clues (that came from public) + remaining public.
+        var knownFromPublic = originalCase.KnownClues
+            .Where(c => c.SourceKind.HasValue)
+            .ToList();
+        return knownFromPublic.Concat(originalCase.PublicClues).ToList();
+    }
+
+    private static IEnumerable<Warrant> ReconstructPublicWarrants(CaseFile originalCase)
+    {
+        // Same logic as clues: known warrants (from public) + remaining public warrants.
+        return originalCase.KnownWarrants.Concat(originalCase.PublicWarrants).ToList();
+    }
 }

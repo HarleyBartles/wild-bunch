@@ -232,6 +232,56 @@ public class GameSessionEventSourcingTests
                 events));
     }
 
+    [Fact]
+    public void RehydrateFromEvents_Reconstructs_Investigation_State()
+    {
+        // Create a session with a public clue. The factory calls MarkEventsCommitted(),
+        // so we need to get the GameStarted event by creating a fresh session for events.
+        // Approach: create the session, perform the investigation, collect ALL events
+        // (GameStarted + InvestigationPerformed) by creating a parallel session for events.
+        var session = TestSessionFactory.CreateWithPublicClue(
+            InvestigationSourceKind.LocalGossip, "A dusty boot print.");
+
+        // Perform investigation (produces InvestigationPerformed event)
+        session.GatherLocalGossip();
+        var investigationEvents = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        // Build the full event stream: GameStarted + InvestigationPerformed
+        // We reconstruct the GameStarted event from the session's initial state
+        var gameStartedEvent = new GameStarted
+        {
+            PlayerName = session.Player.Name,
+            StartingTownId = session.Player.CurrentTownId,
+            StartingTownName = session.World.GetTown(session.Player.CurrentTownId).Name,
+            StartingHealth = session.Player.Health,
+            StartingWallet = 25m,
+            StartingInventoryItems = Array.Empty<InventoryItem>(),
+            Difficulty = session.TravelDifficulty,
+            TravelRandomness = session.TravelRandomness,
+            Entropy = session.Entropy
+        };
+        var allEvents = new List<IDomainEvent> { gameStartedEvent };
+        allEvents.AddRange(investigationEvents);
+
+        // Create a FRESH baseline CaseFile with the same public clue (not yet revealed)
+        var freshBaselineCaseFile = TestSessionFactory.CreateBaselineCaseFileFor(session);
+
+        // Replay from events into the FRESH baseline
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id,
+            session.World,
+            freshBaselineCaseFile,
+            allEvents);
+
+        // The replayed session must have discovered the clue from the event
+        Assert.Equal(session.CaseFile.KnownClues.Count, rehydrated.CaseFile.KnownClues.Count);
+        Assert.Equal(session.CaseFile.PublicClues.Count, rehydrated.CaseFile.PublicClues.Count);
+        var revealedClueId = investigationEvents.OfType<InvestigationPerformed>().Single().Clue!.Id;
+        Assert.Contains(rehydrated.CaseFile.KnownClues, c => c.Id.Equals(revealedClueId));
+        Assert.DoesNotContain(rehydrated.CaseFile.PublicClues, c => c.Id.Equals(revealedClueId));
+    }
+
     private sealed record UnknownTestEvent : IDomainEvent;
 
     private static GameSession CreateSession(
