@@ -8,6 +8,11 @@ live
 
 - 2026-06-01 - live: the repo documents PostgreSQL as the local development
   database and the provider/storage validation lane.
+- 2026-06-22 - live: the local PostgreSQL service is now a shared, long-lived
+  developer service owned by the persistent main checkout and reused across
+  workers/worktrees. `scripts/postgres-dev.ps1 ensure` is the documented
+  idempotent entry point; normal worker cleanup must not stop the shared
+  service. See BUNCH-76.
 
 ## Decision Type
 
@@ -91,8 +96,12 @@ otherwise.
 
 ## Implementation Status or Plan
 
-Live. The local PostgreSQL docs and testing-lane docs already describe the
-convention and the validation posture.
+Live. The local PostgreSQL docs and testing-lane docs describe the convention and
+the validation posture. As of BUNCH-76 (2026-06-22), the service is shared and
+owned by the persistent main checkout: `scripts/postgres-dev.ps1 ensure`
+idempotently reuses a healthy service or starts one when down, worktrees borrow
+the main checkout's tooling and data dir via `git rev-parse --git-common-dir`
+resolution, and normal worker cleanup must not stop the shared service.
 
 ## Related Stable Source Surfaces
 
