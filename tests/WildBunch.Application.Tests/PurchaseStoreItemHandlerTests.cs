@@ -21,6 +21,7 @@ public sealed class PurchaseStoreItemHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
@@ -46,6 +47,7 @@ public sealed class PurchaseStoreItemHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
@@ -70,6 +72,7 @@ public sealed class PurchaseStoreItemHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
@@ -93,6 +96,7 @@ public sealed class PurchaseStoreItemHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 
@@ -115,6 +119,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         StartJourney(session);
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
 

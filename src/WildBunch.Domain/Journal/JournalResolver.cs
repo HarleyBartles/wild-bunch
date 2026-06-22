@@ -1,5 +1,9 @@
 using WildBunch.Domain.Game;
 
+// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The journal resolver
+// still reads it for backward-compatible journal output. Do not add new consumers.
+#pragma warning disable CS0618
+
 namespace WildBunch.Domain.Journal;
 
 public sealed class JournalResolver

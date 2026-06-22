@@ -8,6 +8,10 @@ using DomainGameSessionReadModel = WildBunch.Application.Games.Models.GameSessio
 using DomainPlayer = WildBunch.Domain.Game.Player;
 using DomainPursuitState = WildBunch.Domain.Game.PursuitState;
 using WildBunch.Domain.Game;
+
+// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The mapper still
+// reads it for backward-compatible DTO output. Do not add new LogEntries consumers.
+#pragma warning disable CS0618
 using WildBunch.Domain.Travel;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;

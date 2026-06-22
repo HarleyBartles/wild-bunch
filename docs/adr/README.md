@@ -90,6 +90,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0025 Suspect legal and bounty vocabulary boundary](ADR-0025-suspect-legal-and-bounty-vocabulary-boundary.md)
 - [ADR-0026 Turn-In Outcome Semantics for Bounty and Murder-Case Separation](ADR-0026-turn-in-outcome-semantics-for-bounty-and-murder-case-separation.md)
 - [ADR-0027 UI v0.1 SPA shell, routing, and player/debug separation](ADR-0027-ui-v0-1-spa-shell-routing-and-player-debug-separation.md)
+- [ADR-0028 Onion, DDD, CQRS, Event Sourcing, and projections posture](ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md)
 
 ## Current Working Set
 
@@ -100,4 +101,7 @@ log with the accepted difficulty/entropy vocabulary and fairness contract.
 ADR-0024 extends the log with the source-taxonomy implications map for those
 axes. ADR-0025 extends the log with the suspect legal and bounty vocabulary
 boundary. ADR-0026 extends the log with the turn-in outcome semantics that sit
-on top of that vocabulary.
+on top of that vocabulary. ADR-0028 extends the log with the true event-sourcing
+posture: typed domain events, command-produces-event-then-applies, replay,
+optimistic concurrency, snapshot as cache, safe projections, and the
+single-repository-port persistence path.

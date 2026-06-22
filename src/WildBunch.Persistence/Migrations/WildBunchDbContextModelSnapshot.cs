@@ -77,10 +77,16 @@ namespace WildBunch.Persistence.Migrations
                     b.Property<int>("SchemaVersion")
                         .HasColumnType("integer");
 
+                    b.Property<long?>("SnapshotVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
+
+                    b.Property<long>("StreamVersion")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("TravelDifficulty")
                         .HasColumnType("integer");
@@ -119,6 +125,49 @@ namespace WildBunch.Persistence.Migrations
                     b.ToTable("GameSessionLogEntries", (string)null);
                 });
 
+            modelBuilder.Entity("WildBunch.Persistence.GameSessions.StoredEventEntity", b =>
+                {
+                    b.Property<Guid>("StreamId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("CausationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("SchemaVersion")
+                        .HasColumnType("integer");
+
+                    b.HasKey("StreamId", "Sequence");
+
+                    b.HasIndex("EventId")
+                        .IsUnique();
+
+                    b.HasIndex("StreamId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("GameSessionStoredEvents", (string)null);
+                });
+
             modelBuilder.Entity("WildBunch.Persistence.GameSessions.GameSessionComponentEntity", b =>
                 {
                     b.HasOne("WildBunch.Persistence.GameSessions.GameSessionEntity", "Session")
@@ -152,11 +201,24 @@ namespace WildBunch.Persistence.Migrations
                     b.Navigation("Session");
                 });
 
+            modelBuilder.Entity("WildBunch.Persistence.GameSessions.StoredEventEntity", b =>
+                {
+                    b.HasOne("WildBunch.Persistence.GameSessions.GameSessionEntity", "Session")
+                        .WithMany("StoredEvents")
+                        .HasForeignKey("StreamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("WildBunch.Persistence.GameSessions.GameSessionEntity", b =>
                 {
                     b.Navigation("Components");
 
                     b.Navigation("LogEntries");
+
+                    b.Navigation("StoredEvents");
 
                     b.Navigation("TravelDiaryDays");
                 });

@@ -13,6 +13,7 @@ public static class GameEndpoints
         games.MapTownStoreEndpoints();
         games.MapWantedPosterEndpoints();
         games.MapTravelEndpoints();
+        games.MapProjectionEndpoints();
 
         return app;
     }

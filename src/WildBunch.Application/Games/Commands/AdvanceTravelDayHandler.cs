@@ -28,7 +28,7 @@ public sealed class AdvanceTravelDayHandler
 
         if (result.Success || result.Journey is not null)
         {
-            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
             await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 

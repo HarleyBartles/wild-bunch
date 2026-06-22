@@ -4,23 +4,21 @@ using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Game;
 using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Application.Games.Commands;
 
-public sealed class PurchaseStoreItemHandler
+public sealed class PurchaseStoreItemHandler : GameSessionCommandHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
-    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
     private readonly TownStoreCatalogResolver _storeCatalogResolver;
 
     public PurchaseStoreItemHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
         TownStoreCatalogResolver storeCatalogResolver)
+        : base(gameSessionRepository, gameSessionUnitOfWork)
     {
-        _gameSessionRepository = gameSessionRepository;
-        _gameSessionUnitOfWork = gameSessionUnitOfWork;
         _storeCatalogResolver = storeCatalogResolver;
     }
 
@@ -30,56 +28,53 @@ public sealed class PurchaseStoreItemHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var sessionId = new GameSessionId(command.GameSessionId);
 
-        var townId = new TownId(command.TownId);
-        if (!session.World.TryGetTown(townId, out var town))
+        return await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
-            throw new TownNotFoundException(townId);
-        }
+            var townId = new TownId(command.TownId);
+            if (!session.World.TryGetTown(townId, out var town))
+            {
+                throw new TownNotFoundException(townId);
+            }
 
-        if (session.Player.CurrentTownId != townId)
-        {
-            return new GameTurnResultDto(
-                false,
-                "You must be in that town to buy there.",
-                GameSessionMapper.ToDto(session));
-        }
+            if (session.Player.CurrentTownId != townId)
+            {
+                return new GameTurnResultDto(
+                    false,
+                    "You must be in that town to buy there.",
+                    GameSessionMapper.ToDto(session));
+            }
 
-        var catalog = _storeCatalogResolver.Resolve(town!);
-        var offer = catalog.Offers.FirstOrDefault(candidate =>
-            command.VendorType.HasValue
-            && command.ItemKind.HasValue
-            && candidate.VendorType == command.VendorType.Value
-            && candidate.ItemKind == command.ItemKind.Value);
+            var catalog = _storeCatalogResolver.Resolve(town!);
+            var offer = catalog.Offers.FirstOrDefault(candidate =>
+                command.VendorType.HasValue
+                && command.ItemKind.HasValue
+                && candidate.VendorType == command.VendorType.Value
+                && candidate.ItemKind == command.ItemKind.Value);
 
-        if (offer is null || offer.Availability != StoreOfferAvailability.Available)
-        {
-            return new GameTurnResultDto(
-                false,
-                "That store offer is not available in this town.",
-                GameSessionMapper.ToDto(session));
-        }
+            if (offer is null || offer.Availability != StoreOfferAvailability.Available)
+            {
+                return new GameTurnResultDto(
+                    false,
+                    "That store offer is not available in this town.",
+                    GameSessionMapper.ToDto(session));
+            }
 
-        if (command.Quantity < 1)
-        {
-            return new GameTurnResultDto(
-                false,
-                "Quantity must be at least 1.",
-                GameSessionMapper.ToDto(session));
-        }
+            if (command.Quantity < 1)
+            {
+                return new GameTurnResultDto(
+                    false,
+                    "Quantity must be at least 1.",
+                    GameSessionMapper.ToDto(session));
+            }
 
-        var purchaseResult = session.Purchase(offer, command.Quantity);
-        if (purchaseResult.Success)
-        {
-            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
-            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-        }
+            var purchaseResult = session.Purchase(offer, command.Quantity);
 
-        return GameTurnResultFactory.Create(
-            purchaseResult.Success,
-            purchaseResult.Message,
-            session);
+            return GameTurnResultFactory.Create(
+                purchaseResult.Success,
+                purchaseResult.Message,
+                session);
+        }, cancellationToken).ConfigureAwait(false);
     }
 }

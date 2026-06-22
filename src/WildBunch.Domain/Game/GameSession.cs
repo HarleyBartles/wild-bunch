@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -9,7 +10,18 @@ using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
 using WildBunch.Domain.WantedPosters;
 
+// GameSession contains both migrated (event-sourced) and non-migrated (direct-mutation)
+// flows per ADR-0028. The non-migrated flows still call AddLogEntry, which is [Obsolete]
+// (projection-legacy). These call sites are known legacy and will be migrated flow-by-flow
+// in follow-up issues. Do not add new AddLogEntry call sites; use typed domain events instead.
+#pragma warning disable CS0618
+
 namespace WildBunch.Domain.Game;
+
+// Event-sourced flows (migrated): StartNew, Purchase.
+// Direct-mutation flows (not-yet-migrated): all others.
+// See ADR-0028 and follow-up issues for the migration path.
+// Do not add new direct-mutation command methods; use the event-sourced pattern.
 
 /// <summary>
 /// Mutable live play-state aggregate root.
@@ -27,6 +39,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
+
+    private readonly List<IDomainEvent> _uncommittedEvents = [];
+    private int _version;
 
     private GameSession(
         GameSessionId id,
@@ -102,6 +117,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
 
+    [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
     public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _travelDiaryDays;
@@ -109,6 +125,26 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
 
     public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _wantedSuspectPresenceLedger.Entries;
+
+    /// <summary>
+    /// Events produced by command methods but not yet committed to the event stream.
+    /// The handler collects these before calling <see cref="MarkEventsCommitted"/>.
+    /// </summary>
+    public IReadOnlyList<IDomainEvent> UncommittedEvents => _uncommittedEvents;
+
+    /// <summary>
+    /// Number of events applied (committed + uncommitted). Used for optimistic concurrency.
+    /// </summary>
+    public int Version => _version;
+
+    /// <summary>
+    /// Clears uncommitted events after the event store has committed them.
+    /// State is unchanged.
+    /// </summary>
+    internal void MarkEventsCommitted()
+    {
+        _uncommittedEvents.Clear();
+    }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
         => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
@@ -130,15 +166,40 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var resolvedTownId = startingTownId ?? world.Towns.First().Id;
         var startingTown = world.GetTown(resolvedTownId);
-        var player = new Player(
+        var resolvedTravelRandomness = travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted();
+        var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
+        var resolvedInventory = inventory ?? DomainInventory.Empty();
+        var startingHealth = StartingHealthFor(travelDifficulty);
+
+        // Build the typed domain event from the resolved starting values.
+        var e = new GameStarted
+        {
+            PlayerName = playerName,
+            StartingTownId = startingTown.Id,
+            StartingTownName = startingTown.Name,
+            StartingHealth = startingHealth,
+            StartingWallet = resolvedWallet.Cash,
+            StartingInventoryItems = resolvedInventory.Items.ToArray(),
+            Difficulty = travelDifficulty,
+            TravelRandomness = resolvedTravelRandomness,
+            Entropy = entropy
+        };
+
+        // Construct a placeholder session (like RehydrateFromEvents).
+        // Apply(GameStarted) is the single mutation path — it sets Player,
+        // Status, TravelDifficulty, TravelRandomness, and Entropy from the event.
+        // The constructor only sets world/caseFile/clock/pursuit references that
+        // are external inputs, not event-derived state.
+        var placeholderPlayer = new Player(
             playerName,
             startingTown.Id,
-            health: StartingHealthFor(travelDifficulty),
-            wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m),
-            inventory ?? DomainInventory.Empty());
+            health: startingHealth,
+            resolvedWallet,
+            resolvedInventory);
+
         var session = new GameSession(
             GameSessionId.New(),
-            player,
+            placeholderPlayer,
             world,
             caseFile,
             new PursuitState(),
@@ -146,11 +207,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             GameStatus.Active,
             journey: null,
             travelDifficulty,
-            travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted(),
+            resolvedTravelRandomness,
             entropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
+
+        // Apply the event through the single mutation path (same as replay).
+        session.Apply(e);
+        session._uncommittedEvents.Add(e);
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
@@ -163,6 +228,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             TravelDifficulty.Hard => 800,
             _ => 1000
         };
+
+    /// <summary>
+    /// Applies a <see cref="GameStarted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the start-new-game flow.
+    /// </summary>
+    private void Apply(GameStarted e)
+    {
+        var inventory = new DomainInventory(e.StartingInventoryItems);
+        Player = new Player(
+            e.PlayerName,
+            e.StartingTownId,
+            health: e.StartingHealth,
+            WildBunch.Domain.Economy.Wallet.Starting(e.StartingWallet),
+            inventory);
+        Status = GameStatus.Active;
+        TravelDifficulty = e.Difficulty;
+        TravelRandomness = e.TravelRandomness;
+        Entropy = e.Entropy;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="StoreItemPurchased"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the purchase flow.
+    /// </summary>
+    private void Apply(StoreItemPurchased e)
+    {
+        Player.SpendCash(e.TotalPrice);
+        Player.AddItem(e.ItemKind, e.Quantity);
+        _version++;
+    }
 
     public WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
         => _wantedSuspectPresenceLedger.GetState(suspectId);
@@ -1507,8 +1603,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return StorePurchaseResult.Failed(inventoryFailureMessage);
         }
 
-        Player.SpendCash(totalPrice);
-        Player.AddItem(offer.ItemKind, quantity);
+        // Produce typed domain event and apply it (event-sourced mutation path)
+        var e = new StoreItemPurchased
+        {
+            TownId = CurrentTown.TownId,
+            ItemKind = offer.ItemKind,
+            DisplayName = offer.DisplayName,
+            Quantity = quantity,
+            UnitPrice = offer.Price,
+            TotalPrice = totalPrice,
+            WalletAfter = Player.Wallet.Cash - totalPrice
+        };
+        Apply(e);
+        _uncommittedEvents.Add(e);
 
         var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
         AddLogEntry(GameLogEntryKind.Purchase, $"Purchased {quantityLabel} for ${totalPrice:0.00}.");
@@ -1877,6 +1984,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _travelDiaryDays.AddRange(travelDiaryDays);
     }
 
+    [Obsolete("AddLogEntry is projection-legacy per ADR-0028. Use typed domain events and IDomainEventProjector instead.")]
     private void AddLogEntry(GameLogEntryKind kind, string message)
     {
         _logEntries.Add(new GameLogEntry(kind, message, Clock.Day, Clock.Turn));

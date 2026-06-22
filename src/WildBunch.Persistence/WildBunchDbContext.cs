@@ -18,6 +18,8 @@ public sealed class WildBunchDbContext : DbContext
 
     public DbSet<GameSessionDiaryDayEntity> GameSessionDiaryDays => Set<GameSessionDiaryDayEntity>();
 
+    public DbSet<StoredEventEntity> StoredEvents => Set<StoredEventEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(WildBunchDbContext).Assembly);

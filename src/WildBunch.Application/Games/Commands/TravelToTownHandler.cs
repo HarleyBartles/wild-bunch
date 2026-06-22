@@ -41,7 +41,7 @@ public sealed class TravelToTownHandler
         {
             var startResult = session.StartJourney(previewResult.Preview);
 
-            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
             await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
             return GameTurnResultFactory.Create(

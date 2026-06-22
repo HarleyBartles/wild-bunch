@@ -87,4 +87,15 @@ internal static class GameSessionRehydrator
 
         field.SetValue(target, value);
     }
+
+    /// <summary>
+    /// Sets the session's stream version when loading from snapshot.
+    /// The snapshot is at version N; the session must know its version
+    /// so the next command's optimistic concurrency check works.
+    /// See ADR-0028.
+    /// </summary>
+    public static void SetVersion(GameSession session, int version)
+    {
+        SetBackingField(session, "_version", version);
+    }
 }

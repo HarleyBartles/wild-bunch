@@ -78,6 +78,7 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - Domain and Application should not depend on Persistence/EF implementation details.
 - Persistence adapts the domain, not the other way around.
 - Keep runtime session persistence JSON snapshot-oriented unless a later source-backed decision says otherwise.
+- Event sourcing posture (typed domain events, `Apply` as the mutation path, replay, optimistic concurrency, snapshot as cache, safe projections) is recorded in ADR-0028.
 
 ## SOLID, DRY, and Overloaded Surfaces
 

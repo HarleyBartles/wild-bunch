@@ -6,6 +6,9 @@ using WildBunch.Domain.World;
 using WildBunch.Application.Games.Models;
 using WildBunch.Persistence.Serialization;
 
+// LogEntries is [Obsolete] (projection-legacy per ADR-0028).
+#pragma warning disable CS0618
+
 namespace WildBunch.Persistence.GameSessions;
 
 internal static class GameSessionReadStoreLoader
