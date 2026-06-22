@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status', 'validate', 'test')]
+    [ValidateSet('install-tools', 'ensure', 'setup', 'start', 'stop', 'reset', 'status', 'validate', 'test')]
     [string]$Command = 'setup'
     ,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -10,7 +10,39 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+function Resolve-PersistentRepoRoot {
+    $scriptDir = (Resolve-Path $PSScriptRoot).Path
+    $fallbackRoot = (Resolve-Path (Join-Path $scriptDir '..')).Path
+
+    $gitPath = (Get-Command git -ErrorAction SilentlyContinue)
+    if ($null -eq $gitPath) {
+        return $fallbackRoot
+    }
+
+    $commonDir = $null
+    try {
+        $commonDir = (& git rev-parse --git-common-dir 2>$null)
+        if ($LASTEXITCODE -ne 0) { $commonDir = $null }
+    }
+    catch {
+        $commonDir = $null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($commonDir)) {
+        return $fallbackRoot
+    }
+
+    try {
+        $commonDirFull = (Resolve-Path $commonDir -ErrorAction Stop).Path
+        $persistentRoot = (Resolve-Path (Join-Path $commonDirFull '..') -ErrorAction Stop).Path
+        return $persistentRoot
+    }
+    catch {
+        return $fallbackRoot
+    }
+}
+
+$RepoRoot = Resolve-PersistentRepoRoot
 $PostgreSqlVersion = '16.14'
 $PostgreSqlDownloadPage = 'https://www.postgresql.org/download/windows/'
 $LocalRoot = Join-Path $RepoRoot '.local\postgresql16'
@@ -54,6 +86,7 @@ function Get-ToolingVersion {
 function Write-ToolingInstructions {
     $toolingPath = Join-Path $RepoRoot '.local\postgresql16'
     Write-Host "PostgreSQL tooling is expected at $toolingPath and pinned to version $PostgreSqlVersion."
+    Write-Host "This is the persistent main checkout's tooling root, shared across worktrees."
     Write-Host "If the binaries are missing, download the Windows installer from $PostgreSqlDownloadPage, install PostgreSQL $PostgreSqlVersion into $toolingPath, and rerun this command."
 }
 
@@ -237,7 +270,7 @@ function Invoke-ValidationLane {
     Write-Host "PostgreSQL validation lane completed."
     Write-Host "Connection string: $ValidationConnectionString"
     Write-Host "Direct PostgreSQL-backed dotnet test runs must either use this lane or export ConnectionStrings__WildBunchPostgresDb themselves."
-    Write-Host "Use '.\scripts\postgres-dev.ps1 status' to check the lane and '.\scripts\postgres-dev.ps1 stop' when you want to shut it down."
+    Write-Host "Use '.\scripts\postgres-dev.ps1 status' to check the shared service. Do not stop it during normal worker cleanup; it is reused by other workers and worktrees."
 }
 
 function Invoke-TargetedTestLane {
@@ -292,6 +325,15 @@ switch ($Command) {
         Wait-ForReady
         Ensure-Database
         Write-Host "Persistent local development database started."
+    }
+    'ensure' {
+        Initialize-Cluster
+        Start-Cluster
+        Wait-ForReady
+        Ensure-Database
+        Write-Host "Shared local PostgreSQL service is ready on ${HostName}:$Port."
+        Write-Host "Service owned by persistent checkout: $RepoRoot"
+        Write-Host "Reuse this service from any worktree; do not stop it during normal worker cleanup."
     }
     'stop' {
         Stop-Cluster

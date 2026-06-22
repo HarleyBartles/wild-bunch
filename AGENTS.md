@@ -31,9 +31,10 @@
 - Run `dotnet test`.
 - Run `dotnet tool restore` before EF validation commands when the repo-local tool manifest is used.
 - Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api` when persistence may be affected, or as standing validation unless clearly irrelevant.
+- Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests or validation to reuse the shared local service (idempotent: no-op when already healthy).
 - Run `.\scripts\postgres-dev.ps1 validate` for the repo-local PostgreSQL-backed validation lane; it provisions the persistent cluster, exports the repo-local connection string for child `dotnet` commands, restores tools, and runs the EF and test checks together.
 - For targeted PostgreSQL-backed tests, use `.\scripts\postgres-dev.ps1 test -- <dotnet test args>` so the script sets `ConnectionStrings__WildBunchPostgresDb` in the same process before invoking `dotnet test`; do not rely on a standalone `$env:` assignment in a separate command.
-- Use `.\scripts\postgres-dev.ps1 status` to check whether the lane is already running, `setup` or `validate` to provision it, `reset` for the destructive local app-database reset path, and `stop` to cleanly shut down the repo-local cluster after validation.
+- Use `.\scripts\postgres-dev.ps1 status` to check whether the lane is already running, `setup` or `validate` to provision it, and `reset` for the destructive local app-database reset path. `stop` and `reset` are manual/destructive; do not stop the shared service during normal worker cleanup.
 - If PostgreSQL port `5434` is closed or connection setup fails, report the exact command and output after running the repo-local setup/status lane instead of treating it as a product regression.
 - Report warnings separately from failures.
 
@@ -105,6 +106,7 @@
 ## Worker Environment
 - The worker environment uses PowerShell, so do not use `&&` for command chaining.
 - Run commands separately or use PowerShell-safe sequencing when multiple commands are needed.
+- The local PostgreSQL dev service (`localhost:5434`) is a shared, long-lived developer service owned by the persistent main checkout. Do not stop it during normal worker cleanup. `.\scripts\postgres-dev.ps1 stop` and `reset` are manual/destructive and only for explicit service lifecycle ownership or when Harley asks. Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests; it reuses a healthy service and only starts one when down.
 - When you start worker-owned API servers, Vite dev servers, test servers, browsers, watch processes, or other long-running helpers, record what you started and clean them up before returning `GREEN` unless you explicitly return `AMBER` or `BLOCKED` with exact process/port evidence.
 - When validation touches `C:/WORK/**`, verify cleanup from the workspace perspective before returning `GREEN`: account for likely worker-owned server, browser, watcher, and test-helper processes; include process id, process name, and command line for anything stopped or left running; check every port used during validation, including alternate Vite preview/dev ports; and state repo/file-lock posture. If handle tooling is unavailable, say so and provide the process/command-line fallback proof.
 - A later user finding a worker-owned helper from the validation run after `GREEN` falsifies the cleanup lane, even if the product slice itself was correct.

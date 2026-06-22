@@ -57,7 +57,17 @@ supplies the repo-local development connection string so F5 and `dotnet run`
 work without manually exporting `ConnectionStrings__WildBunchPostgresDb` each
 time.
 
-The repo-local PostgreSQL validation lane has a dedicated entrypoint:
+Before any PostgreSQL-backed test lane, ensure the shared local service is up:
+
+```powershell
+.\scripts\postgres-dev.ps1 ensure
+```
+
+`ensure` reuses a healthy service and only starts one when down. The service is
+shared across workers and worktrees; do not stop it during normal worker cleanup.
+
+The repo-local PostgreSQL validation lane then reuses that shared service and
+exports the repo-local connection string for the child `dotnet` commands:
 
 ```powershell
 .\scripts\postgres-dev.ps1 validate
@@ -67,8 +77,9 @@ That command provisions the local cluster if needed, exports the repo-local
 connection string for child `dotnet` commands, restores tools, and runs the EF
 and test checks as one repeatable lane.
 
-For issue-specific PostgreSQL-backed acceptance or integration checks, use the
-targeted script wrapper:
+For issue-specific PostgreSQL-backed acceptance or integration checks, ensure the
+shared service first (`.\scripts\postgres-dev.ps1 ensure`), then use the targeted
+script wrapper:
 
 ```powershell
 .\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
@@ -81,6 +92,11 @@ The wrapper starts or reuses the local cluster, sets
 That wrapper is the supported repo-local PostgreSQL-backed test path. A direct
 `dotnet test` is only valid when the caller has already exported
 `ConnectionStrings__WildBunchPostgresDb` in the same shell session.
+
+Normal worker cleanup must not stop the shared local PostgreSQL service. `stop`
+and `reset` are manual/destructive and only for explicit service lifecycle
+ownership. See [Local PostgreSQL](local-postgresql.md) for the full shared-service
+convention.
 
 ## Repo Placement
 
