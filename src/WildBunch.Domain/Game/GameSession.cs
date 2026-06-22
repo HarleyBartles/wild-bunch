@@ -10,6 +10,12 @@ using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
 using WildBunch.Domain.WantedPosters;
 
+// GameSession contains both migrated (event-sourced) and non-migrated (direct-mutation)
+// flows per ADR-0028. The non-migrated flows still call AddLogEntry, which is [Obsolete]
+// (projection-legacy). These call sites are known legacy and will be migrated flow-by-flow
+// in follow-up issues. Do not add new AddLogEntry call sites; use typed domain events instead.
+#pragma warning disable CS0618
+
 namespace WildBunch.Domain.Game;
 
 // Event-sourced flows (migrated): StartNew, Purchase.
@@ -111,6 +117,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
 
+    [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
     public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _travelDiaryDays;
@@ -164,8 +171,26 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var resolvedInventory = inventory ?? DomainInventory.Empty();
         var startingHealth = StartingHealthFor(travelDifficulty);
 
-        // Construct the initial Player (construction, not mutation of existing state)
-        var player = new Player(
+        // Build the typed domain event from the resolved starting values.
+        var e = new GameStarted
+        {
+            PlayerName = playerName,
+            StartingTownId = startingTown.Id,
+            StartingTownName = startingTown.Name,
+            StartingHealth = startingHealth,
+            StartingWallet = resolvedWallet.Cash,
+            StartingInventoryItems = resolvedInventory.Items.ToArray(),
+            Difficulty = travelDifficulty,
+            TravelRandomness = resolvedTravelRandomness,
+            Entropy = entropy
+        };
+
+        // Construct a placeholder session (like RehydrateFromEvents).
+        // Apply(GameStarted) is the single mutation path — it sets Player,
+        // Status, TravelDifficulty, TravelRandomness, and Entropy from the event.
+        // The constructor only sets world/caseFile/clock/pursuit references that
+        // are external inputs, not event-derived state.
+        var placeholderPlayer = new Player(
             playerName,
             startingTown.Id,
             health: startingHealth,
@@ -174,7 +199,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var session = new GameSession(
             GameSessionId.New(),
-            player,
+            placeholderPlayer,
             world,
             caseFile,
             new PursuitState(),
@@ -188,23 +213,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
 
-        // Produce typed domain event and record it.
-        // The constructor already set up the initial state (construction, not mutation).
-        // Apply(GameStarted) is used during replay from RehydrateFromEvents.
-        var e = new GameStarted
-        {
-            PlayerName = playerName,
-            StartingTownId = startingTown.Id,
-            StartingTownName = startingTown.Name,
-            StartingHealth = startingHealth,
-            StartingWallet = resolvedWallet.Cash,
-            StartingInventoryItems = resolvedInventory.Items.ToArray(),
-            Difficulty = travelDifficulty,
-            TravelRandomness = resolvedTravelRandomness,
-            Entropy = entropy
-        };
+        // Apply the event through the single mutation path (same as replay).
+        session.Apply(e);
         session._uncommittedEvents.Add(e);
-        session._version++;
 
         session.AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {startingTown.Name}.");
         return session;
@@ -1973,6 +1984,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _travelDiaryDays.AddRange(travelDiaryDays);
     }
 
+    [Obsolete("AddLogEntry is projection-legacy per ADR-0028. Use typed domain events and IDomainEventProjector instead.")]
     private void AddLogEntry(GameLogEntryKind kind, string message)
     {
         _logEntries.Add(new GameLogEntry(kind, message, Clock.Day, Clock.Turn));

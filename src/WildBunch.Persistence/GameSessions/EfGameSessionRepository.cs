@@ -6,6 +6,10 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Persistence.Serialization;
 
+// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The repository still
+// persists and loads it for backward compatibility. Do not add new LogEntries consumers.
+#pragma warning disable CS0618
+
 namespace WildBunch.Persistence.GameSessions;
 
 public sealed class EfGameSessionRepository : IGameSessionRepository
@@ -173,11 +177,34 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Load post-snapshot events when the snapshot is behind the stream version.
+        // This implements the snapshot + replay load path from ADR-0028.
+        IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();
+        if (envelope.SnapshotVersion < envelope.StreamVersion)
+        {
+            var storedEvents = await _dbContext.StoredEvents.AsNoTracking()
+                .Where(e => e.StreamId == id.Value && e.Sequence > envelope.SnapshotVersion)
+                .OrderBy(e => e.Sequence)
+                .ToArrayAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (storedEvents.Length > 0)
+            {
+                var events = new IDomainEvent[storedEvents.Length];
+                for (var i = 0; i < storedEvents.Length; i++)
+                {
+                    events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
+                }
+                postSnapshotEvents = events;
+            }
+        }
+
         return new GameSessionStore(
             envelope,
             components,
             logEntries,
-            diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray());
+            diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
+            postSnapshotEvents);
     }
 
     private GameSession ToAggregate(GameSessionStore store)
@@ -224,6 +251,15 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Set the stream version from the snapshot so the next command's
         // optimistic concurrency check works. See ADR-0028.
         GameSessionRehydrator.SetVersion(session, (int)store.Envelope.StreamVersion);
+
+        // If the snapshot is behind the stream version, replay post-snapshot events
+        // through Apply (the single mutation path). This implements the
+        // snapshot + replay load path from ADR-0028.
+        if (store.PostSnapshotEvents.Count > 0)
+        {
+            session.ApplyCommittedEvents(store.PostSnapshotEvents);
+        }
+
         return session;
     }
 
@@ -342,5 +378,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<GameLogEntry> LogEntries,
-        IReadOnlyList<TravelDiaryDayState> TravelDiaryDays);
+        IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
+        IReadOnlyList<IDomainEvent> PostSnapshotEvents);
 }

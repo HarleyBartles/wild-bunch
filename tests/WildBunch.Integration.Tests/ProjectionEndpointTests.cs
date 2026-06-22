@@ -51,19 +51,18 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
     }
 
     [Fact]
-    public async Task GetAuditProjection_ReturnsProjectionFromEventStream()
+    public async Task GetAuditProjection_IsNotExposedOnPlayerFacingApi()
     {
+        // Per ADR-0028 §10, full audit is a developer/replay surface, not player-facing.
+        // The audit endpoint was removed from the normal game API route group.
+        // This test proves the endpoint is no longer reachable.
         var createResponse = await _client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
         createResponse.EnsureSuccessStatusCode();
         var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
         Assert.NotNull(created);
 
         var auditResponse = await _client.GetAsync($"/api/games/{created!.Id}/projections/audit");
-        Assert.Equal(HttpStatusCode.OK, auditResponse.StatusCode);
-        var audit = await auditResponse.Content.ReadFromJsonAsync<FullAuditProjection>();
-        Assert.NotNull(audit);
-        Assert.NotEmpty(audit!.Entries);
-        Assert.Equal("GameStarted", audit.Entries[0].EventType);
+        Assert.Equal(HttpStatusCode.NotFound, auditResponse.StatusCode);
     }
 
     [Fact]

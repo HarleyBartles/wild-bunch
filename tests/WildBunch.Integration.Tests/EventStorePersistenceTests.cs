@@ -244,6 +244,78 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         Assert.Null(entity);
     }
 
+    /// <summary>
+    /// Proves the real cross-DbContext race: two separate scopes (each with its own
+    /// DbContext) both load the session at the same version, both produce an event
+    /// (so both try to append at sequence N+1), both stage (passing the stage-time
+    /// check because neither has committed yet), the first commits successfully, and
+    /// the second's commit fails at the database unique index backstop. The UoW must
+    /// translate that DbUpdateException to ConcurrencyException so the handler can
+    /// reload and retry. See ADR-0028 §7 (Optimistic concurrency).
+    /// </summary>
+    [Fact]
+    public async Task CommitAsync_TranslatesUniqueIndexViolation_ToConcurrencyException_OnCrossDbContextRace()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+
+        // Seed: create and commit a session in a throwaway scope.
+        GameSessionId sessionId;
+        using (var seedScope = services.CreateScope())
+        {
+            var seedRepo = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var seedUow = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+            var session = CreateSession();
+            sessionId = session.Id;
+            await seedRepo.StoreAsync(session);
+            await seedUow.CommitAsync();
+            session.MarkEventsCommitted();
+        }
+
+        // Two concurrent requests: each gets its own scope/DbContext.
+        using var scope1 = services.CreateScope();
+        using var scope2 = services.CreateScope();
+        {
+            var repo1 = scope1.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var uow1 = scope1.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+            var repo2 = scope2.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var uow2 = scope2.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+            // Both load the session at version 1 (same StreamVersion in their own DbContexts).
+            var copy1 = await repo1.GetByIdAsync(sessionId);
+            var copy2 = await repo2.GetByIdAsync(sessionId);
+            Assert.NotNull(copy1);
+            Assert.NotNull(copy2);
+            Assert.Equal(1, copy1!.Version);
+            Assert.Equal(1, copy2!.Version);
+
+            // Both produce a purchase event → both try to append at sequence 2.
+            var resolver = new TownStoreCatalogResolver();
+            var offer1 = resolver.Resolve(copy1.World.GetTown(copy1.Player.CurrentTownId))
+                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId))
+                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            copy1.Purchase(offer1, 1);
+            copy2.Purchase(offer2, 1);
+
+            // Both stage BEFORE either commits. Both pass the stage-time check
+            // because neither DbContext has seen the other's commit yet — the DB
+            // still has StreamVersion=1 for both queries inside StoreAsync.
+            await repo1.StoreAsync(copy1);
+            await repo2.StoreAsync(copy2);
+
+            // First request commits successfully.
+            await uow1.CommitAsync();
+            copy1.MarkEventsCommitted();
+
+            // Second request's commit fails at the unique index on (StreamId, Sequence)
+            // because sequence 2 already exists. The UoW must translate this
+            // DbUpdateException to ConcurrencyException so the handler can retry.
+            var thrown = await Assert.ThrowsAsync<ConcurrencyException>(() => uow2.CommitAsync());
+            Assert.Contains("Concurrency conflict", thrown.Message, StringComparison.Ordinal);
+        }
+    }
+
     private static ServiceProvider CreateServices(string connectionString)
     {
         var services = new ServiceCollection();

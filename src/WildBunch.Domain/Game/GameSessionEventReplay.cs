@@ -98,4 +98,19 @@ public sealed partial class GameSession
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
     }
+
+    /// <summary>
+    /// Applies committed events that occurred after the snapshot was taken.
+    /// Used by the repository load path when SnapshotVersion &lt; StreamVersion.
+    /// Events are applied through Apply (the single mutation path) but are
+    /// not added to UncommittedEvents (they are already committed history).
+    /// </summary>
+    internal void ApplyCommittedEvents(IReadOnlyList<IDomainEvent> events)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        foreach (var e in events)
+        {
+            ApplyEvent(this, e);
+        }
+    }
 }

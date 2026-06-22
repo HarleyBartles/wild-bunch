@@ -1,6 +1,9 @@
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 
+// LogEntries is [Obsolete] (projection-legacy per ADR-0028).
+#pragma warning disable CS0618
+
 namespace WildBunch.Persistence.Serialization;
 
 public sealed partial class GameSessionJsonSerializer

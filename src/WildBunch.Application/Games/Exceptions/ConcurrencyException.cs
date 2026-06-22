@@ -17,6 +17,19 @@ public sealed class ConcurrencyException : InvalidOperationException
         ActualVersion = actualVersion;
     }
 
+    /// <summary>
+    /// Creates a ConcurrencyException from a database-level unique constraint violation
+    /// during event append. The exact expected/actual versions may not be known at the
+    /// DB layer; the handler will reload and retry regardless.
+    /// </summary>
+    public ConcurrencyException(string message)
+        : base(message)
+    {
+        GameSessionId = default;
+        ExpectedVersion = -1;
+        ActualVersion = -1;
+    }
+
     public GameSessionId GameSessionId { get; }
     public int ExpectedVersion { get; }
     public int ActualVersion { get; }
