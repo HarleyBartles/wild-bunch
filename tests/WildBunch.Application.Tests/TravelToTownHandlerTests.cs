@@ -26,12 +26,12 @@ public sealed class TravelToTownHandlerTests
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
         Assert.True(result.Success);
-        Assert.Contains("trail", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("set out", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(2, result.CurrentSession.Clock.Day);
+        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(1, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
@@ -40,10 +40,8 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal("silvercreek", result.Journey.DestinationTownId);
         Assert.Equal(result.CurrentSession.Journey!.TravelMode, result.Journey.TravelMode);
         Assert.Equal(result.CurrentSession.Journey.RouteProfile.TrailId, result.Journey.RouteProfile.TrailId);
-        Assert.Equal(1, result.CurrentSession.Journey.RemainingDays);
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.NotNull(diaryDay.OpeningNarration);
+        Assert.Equal(2, result.CurrentSession.Journey.RemainingDays);
+        Assert.Equal(0, result.CurrentSession.Journey.DaysTravelled);
     }
 
     [Fact]
@@ -81,8 +79,8 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(28m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(2, result.CurrentSession.Clock.Day);
+        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(1, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
     }

@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import App from "./App";
+import { DebugCockpitRoute } from "../routes/DebugCockpitRoute";
+import { GameSessionProvider } from "../state/GameSessionProvider";
 import {
   AvailableActionKind,
   JourneyStatus,
@@ -12,7 +14,7 @@ import {
   type JournalDto,
   type TownStoreOffersDto,
   type WantedPosterDto,
-} from "./api/types";
+} from "../api/types";
 import {
   buyStoreItem,
   checkLocalRecords,
@@ -28,9 +30,9 @@ import {
   lookAroundSaloon,
   readWantedPosters,
   travel,
-} from "./api/wildBunchApi";
+} from "../api/wildBunchApi";
 
-vi.mock("./api/wildBunchApi", () => ({
+vi.mock("../api/wildBunchApi", () => ({
   buyStoreItem: vi.fn(),
   createGame: vi.fn(),
   getAvailableActions: vi.fn(),
@@ -67,6 +69,24 @@ afterEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
 });
+
+function renderInProvider() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  render(
+    <QueryClientProvider client={queryClient}>
+      <GameSessionProvider>
+        <DebugCockpitRoute />
+      </GameSessionProvider>
+    </QueryClientProvider>,
+  );
+  return { queryClient };
+}
 
 function createSession(): GameSessionDto {
   return {
@@ -453,7 +473,7 @@ function createWantedPoster(overrides: Partial<WantedPosterDto> = {}): WantedPos
   };
 }
 
-describe("App", () => {
+describe("DebugCockpitRoute", () => {
   it("hydrates the current session from local storage and loads store offers for the current town", async () => {
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
@@ -516,7 +536,7 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    renderInProvider();
 
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
@@ -666,7 +686,7 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    renderInProvider();
 
     const user = userEvent.setup();
 
@@ -779,7 +799,7 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    renderInProvider();
 
     const user = userEvent.setup();
 
@@ -899,7 +919,7 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    renderInProvider();
 
     const user = userEvent.setup();
 
@@ -988,7 +1008,7 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    renderInProvider();
 
     const user = userEvent.setup();
 
@@ -1087,7 +1107,7 @@ describe("App", () => {
 
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    render(<App />);
+    renderInProvider();
 
     const user = userEvent.setup();
 

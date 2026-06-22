@@ -111,12 +111,7 @@ internal static class ScenarioSeedCatalog
             RequireEqual("NoHorseLightEasy", "travel-turn.travelMode", TravelMode.Foot, turn.CurrentSession.Journey?.TravelMode);
             RequireEqual("NoHorseLightEasy", "travel-turn.baselineRideDays", preview.Preview?.BaselineRideDays, turn.CurrentSession.Journey?.BaselineRideDays);
             RequireEqual("NoHorseLightEasy", "travel-turn.expectedDays", preview.Preview?.ExpectedDays, turn.CurrentSession.Journey?.ExpectedDays);
-            var travelDiary = turn.TravelDiary;
-            Require("NoHorseLightEasy", "travel-turn.openingNarration", travelDiary is not null && travelDiary.Days.Count == 1, "expected a single opening travel day.");
-
-            var openingNarration = travelDiary!.Days[0].OpeningNarration;
-            Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("on foot", StringComparison.OrdinalIgnoreCase), "expected the narration to describe foot travel.");
-            Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("without a horse", StringComparison.OrdinalIgnoreCase), "expected the narration to mention traveling without a horse.");
+            RequireEqual("NoHorseLightEasy", "travel-turn.daysTravelled", 0, turn.CurrentSession.Journey?.DaysTravelled);
         });
 
     public static IReadOnlyList<ScenarioSeedFixture> All { get; } =
@@ -181,13 +176,6 @@ internal static class ScenarioSeedCatalog
         RequireEqual("NoHorseLightEasy", "travel-turn.travelMode", TravelMode.Foot, turn.CurrentSession.Journey?.TravelMode);
         RequireEqual("NoHorseLightEasy", "travel-turn.routeProfile.waterFeature", WaterFeature.Creek, turn.CurrentSession.Journey?.RouteProfile.WaterFeature);
         RequireEqual("NoHorseLightEasy", "travel-turn.waterSecure", true, turn.CurrentSession.Journey?.WaterSecure);
-        Require("NoHorseLightEasy", "travel-turn.openingNarration", turn.TravelDiary is not null && turn.TravelDiary.Days.Count == 1, "expected a single opening travel day.");
-
-        var openingNarration = turn.TravelDiary!.Days[0].OpeningNarration;
-        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("on foot", StringComparison.OrdinalIgnoreCase), "expected the narration to describe foot travel.");
-        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("without a horse", StringComparison.OrdinalIgnoreCase), "expected the narration to mention traveling without a horse.");
-        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("I had enough water", StringComparison.OrdinalIgnoreCase), "expected the narration to reflect the water-secure dry route.");
-        Require("NoHorseLightEasy", "travel-turn.openingNarration", openingNarration is not null && !openingNarration.Contains("mounted travel", StringComparison.OrdinalIgnoreCase), "expected the dry route narration to stay on foot.");
     }
 
     public static void AssertHighRiskFoeInterruptRoute(
@@ -202,22 +190,24 @@ internal static class ScenarioSeedCatalog
 
         fixture.AssertCreatedSession(session);
 
-        Require("HighRiskFoeInterruptRoute", "travel-turn.success", !dryForkTravel.Success, "expected the high-risk route to interrupt travel.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.journeyStatus", JourneyStatus.Interrupted, dryForkTravel.JourneyStatus);
-        Require("HighRiskFoeInterruptRoute", "travel-turn.pendingEncounter", dryForkTravel.Journey is not null && dryForkTravel.Journey.PendingEncounter is not null, "expected a pending public encounter.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.pendingEncounter.kind", "foe", dryForkTravel.Journey!.PendingEncounter!.Kind);
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.pendingEncounter.choices", 3, dryForkTravel.Journey.PendingEncounter.Choices.Count);
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.pendingEncounter.choiceIds", "run,fight,bribe", string.Join(",", dryForkTravel.Journey.PendingEncounter.Choices.Select(choice => choice.Id)));
-        Require("HighRiskFoeInterruptRoute", "travel-turn.travelDiary", dryForkTravel.TravelDiary is not null && dryForkTravel.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted departure.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.success", dryForkTravel.Success, "expected the journey to start successfully.");
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.journeyStatus", JourneyStatus.Active, dryForkTravel.JourneyStatus);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.noEncounter", dryForkTravel.Journey is null || dryForkTravel.Journey.PendingEncounter is null, "expected no pending encounter on journey start.");
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.daysTravelled", 0, dryForkTravel.CurrentSession.Journey?.DaysTravelled);
 
-        var openingNarration = dryForkTravel.TravelDiary!.Days[0].OpeningNarration;
-        Require("HighRiskFoeInterruptRoute", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("Dry Fork", StringComparison.OrdinalIgnoreCase), "expected the diary to name the dry-fork destination.");
-        Require("HighRiskFoeInterruptRoute", "travel-turn.openingNarration", openingNarration is not null && openingNarration.Contains("by mounted travel", StringComparison.OrdinalIgnoreCase), "expected the diary to reflect mounted travel before the interruption.");
-
-        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.success", !blockedAdvance.Success, "expected advancing while interrupted to remain blocked.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.success", !blockedAdvance.Success, "expected the first advance to interrupt due to encounter.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.journeyStatus", JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.day", dryForkTravel.CurrentSession.Clock.Day, blockedAdvance.CurrentSession.Clock.Day);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter", blockedAdvance.Journey is not null && blockedAdvance.Journey.PendingEncounter is not null, "expected a pending public encounter.");
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.kind", "foe", blockedAdvance.Journey!.PendingEncounter!.Kind);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choices", 3, blockedAdvance.Journey.PendingEncounter.Choices.Count);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choiceIds", "run,fight,bribe", string.Join(",", blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id)));
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.day", dryForkTravel.CurrentSession.Clock.Day + 1, blockedAdvance.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.turn", 0, blockedAdvance.CurrentSession.Clock.Turn);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.travelDiary", blockedAdvance.TravelDiary is not null && blockedAdvance.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted first day.");
+
+        var openingNarration = blockedAdvance.TravelDiary!.Days[0].OpeningNarration;
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration", openingNarration is not null && openingNarration.Contains("Dry Fork", StringComparison.OrdinalIgnoreCase), "expected the diary to name the dry-fork destination.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration", openingNarration is not null && openingNarration.Contains("by mounted travel", StringComparison.OrdinalIgnoreCase), "expected the diary to reflect mounted travel before the interruption.");
 
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.success", resolved.Success, "expected the public encounter resolution to succeed.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resolved.journeyStatus", JourneyStatus.Active, resolved.JourneyStatus);

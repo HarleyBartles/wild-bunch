@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGame, previewTravel } from "./wildBunchApi";
+import { createGame, previewTravel } from "../api/wildBunchApi";
 
 afterEach(() => {
   vi.unstubAllGlobals();
