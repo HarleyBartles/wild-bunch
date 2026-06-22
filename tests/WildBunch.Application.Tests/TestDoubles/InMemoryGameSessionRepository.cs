@@ -1,5 +1,6 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 
@@ -9,6 +10,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
 {
     private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
     private readonly Dictionary<GameSessionId, GameSession> _pendingSessions = new();
+    private readonly Dictionary<GameSessionId, List<IDomainEvent>> _eventStreams = new();
 
     public int StoreCalls { get; private set; }
 
@@ -72,11 +74,29 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult<JournalSnapshot?>(snapshot with { LogEntries = slicedEntries });
     }
 
-    public Task StoreAsync(GameSession session, CancellationToken cancellationToken = default)
+    public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
     {
         StoreCalls++;
         _pendingSessions[session.Id] = session;
+        if (session.UncommittedEvents.Count > 0)
+        {
+            if (!_eventStreams.TryGetValue(session.Id, out var stream))
+            {
+                stream = [];
+                _eventStreams[session.Id] = stream;
+            }
+            stream.AddRange(session.UncommittedEvents);
+        }
         return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)
+    {
+        if (!_eventStreams.TryGetValue(id, out var stream))
+        {
+            return Task.FromResult<IReadOnlyList<IDomainEvent>>(Array.Empty<IDomainEvent>());
+        }
+        return Task.FromResult<IReadOnlyList<IDomainEvent>>(stream.Skip((int)fromVersion).ToArray());
     }
 
     public Task CommitAsync(CancellationToken cancellationToken = default)

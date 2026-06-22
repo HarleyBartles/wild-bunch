@@ -73,7 +73,7 @@ public sealed class PurchaseStoreItemHandler
         var purchaseResult = session.Purchase(offer, command.Quantity);
         if (purchaseResult.Success)
         {
-            await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
+            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
             await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 

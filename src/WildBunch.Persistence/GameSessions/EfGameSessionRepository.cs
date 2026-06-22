@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Exceptions;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Persistence.Serialization;
@@ -25,29 +27,62 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         return store is null ? null : ToAggregate(store);
     }
 
-    public async Task StoreAsync(GameSession session, CancellationToken cancellationToken = default)
+    public async Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         var now = DateTime.UtcNow;
         var entity = await _dbContext.GameSessions.SingleOrDefaultAsync(existing => existing.Id == session.Id.Value, cancellationToken).ConfigureAwait(false);
 
-        if (entity is null)
+        var isNew = entity is null;
+        if (isNew)
         {
             entity = new GameSessionEntity
             {
                 Id = session.Id.Value,
                 CreatedAtUtc = now,
-                SchemaVersion = SchemaVersion
+                SchemaVersion = SchemaVersion,
+                StreamVersion = 0
             };
             _dbContext.GameSessions.Add(entity);
         }
 
-        entity.UpdatedAtUtc = now;
+        // Optimistic concurrency check: the persisted stream version must match
+        // the session's committed version (Version - UncommittedEvents.Count).
+        var expectedVersion = session.Version - session.UncommittedEvents.Count;
+        if (!isNew && entity!.StreamVersion != expectedVersion)
+        {
+            throw new ConcurrencyException(session.Id, expectedVersion, (int)entity.StreamVersion);
+        }
+
+        entity!.UpdatedAtUtc = now;
         entity.Status = session.Status.ToString();
         entity.TravelDifficulty = (int)session.TravelDifficulty;
         entity.SchemaVersion = SchemaVersion;
 
+        // Append uncommitted events to the event stream
+        if (session.UncommittedEvents.Count > 0)
+        {
+            var nextSequence = entity.StreamVersion + 1;
+            foreach (var e in session.UncommittedEvents)
+            {
+                _dbContext.StoredEvents.Add(new StoredEventEntity
+                {
+                    StreamId = entity.Id,
+                    Sequence = nextSequence++,
+                    EventId = Guid.NewGuid(),
+                    OccurredAtUtc = now,
+                    EventType = e.GetType().Name,
+                    PayloadJson = _serializer.SerializeEvent(e),
+                    CorrelationId = correlationId,
+                    SchemaVersion = SchemaVersion
+                });
+            }
+            entity.StreamVersion = session.Version;
+            entity.SnapshotVersion = session.Version;
+        }
+
+        // Stage snapshot upsert (cache)
         UpsertComponent(entity.Id, GameSessionComponentNames.Player, _serializer.SerializePlayer(session.Player), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.World, _serializer.SerializeWorld(session.World), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.CaseFile, _serializer.SerializeCaseFile(session.CaseFile), now);
@@ -86,6 +121,29 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
+
+        // NO SaveChangesAsync here — the UoW commits.
+    }
+
+    public async Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)
+    {
+        var storedEvents = await _dbContext.StoredEvents.AsNoTracking()
+            .Where(e => e.StreamId == id.Value && e.Sequence > fromVersion)
+            .OrderBy(e => e.Sequence)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (storedEvents.Length == 0)
+        {
+            return Array.Empty<IDomainEvent>();
+        }
+
+        var events = new IDomainEvent[storedEvents.Length];
+        for (var i = 0; i < storedEvents.Length; i++)
+        {
+            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
+        }
+        return events;
     }
 
     private async Task<GameSessionStore?> LoadStoreAsync(GameSessionId id, CancellationToken cancellationToken)
@@ -145,7 +203,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             ? Array.Empty<WantedSuspectPresenceEntry>()
             : _serializer.DeserializeWantedSuspectPresenceLedger(wantedSuspectPresenceLedgerJson);
 
-        return _serializer.RehydrateGameSession(
+        var session = _serializer.RehydrateGameSession(
             store.Envelope.Id,
             Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
             (TravelDifficulty)store.Envelope.TravelDifficulty,
@@ -162,6 +220,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             wantedSuspectPresenceEntries,
             store.TravelDiaryDays,
             store.LogEntries);
+
+        // Set the stream version from the snapshot so the next command's
+        // optimistic concurrency check works. See ADR-0028.
+        GameSessionRehydrator.SetVersion(session, (int)store.Envelope.StreamVersion);
+        return session;
     }
 
     private void UpsertComponent(Guid sessionId, string componentName, string payloadJson, DateTime now)

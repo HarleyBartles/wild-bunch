@@ -29,6 +29,11 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
         builder.Property(e => e.SchemaVersion)
             .IsRequired();
 
+        builder.Property(e => e.StreamVersion)
+            .IsRequired();
+
+        builder.Property(e => e.SnapshotVersion);
+
         builder.HasMany(e => e.Components)
             .WithOne(e => e.Session)
             .HasForeignKey(e => e.SessionId)
@@ -42,6 +47,11 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
         builder.HasMany(e => e.TravelDiaryDays)
             .WithOne(e => e.Session)
             .HasForeignKey(e => e.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(e => e.StoredEvents)
+            .WithOne(e => e.Session)
+            .HasForeignKey(e => e.StreamId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

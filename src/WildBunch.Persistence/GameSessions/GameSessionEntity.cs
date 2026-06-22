@@ -14,9 +14,15 @@ public sealed class GameSessionEntity
 
     public int SchemaVersion { get; set; }
 
+    public long StreamVersion { get; set; }
+
+    public long? SnapshotVersion { get; set; }
+
     public ICollection<GameSessionComponentEntity> Components { get; set; } = [];
 
     public ICollection<GameSessionLogEntryEntity> LogEntries { get; set; } = [];
 
     public ICollection<GameSessionDiaryDayEntity> TravelDiaryDays { get; set; } = [];
+
+    public ICollection<StoredEventEntity> StoredEvents { get; set; } = [];
 }
