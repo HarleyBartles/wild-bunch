@@ -2,6 +2,7 @@ using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Queries;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Journal;
@@ -50,6 +51,11 @@ public static class DependencyInjection
         services.AddScoped<AcknowledgeJourneyArrivalHandler>();
         services.AddScoped<ResolveJourneyEncounterHandler>();
         services.AddScoped<TurnInToSheriffHandler>();
+
+        // Projection projectors (safe read-model derivations from event stream)
+        services.AddSingleton<HudProjector>();
+        services.AddSingleton<DiaryProjector>();
+        services.AddSingleton<FullAuditProjector>();
 
         return services;
     }
