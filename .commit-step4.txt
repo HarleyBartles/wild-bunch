@@ -1,0 +1,36 @@
+BUNCH-77: Step 4 projection contracts + reference projectors + tests
+
+Adds projection contracts and reference projectors for the four projection
+types defined in ADR-0028:
+
+Projection contracts (Application.Projections):
+- IProjectionResult: marker interface for projection results
+- IDomainEventProjector: projector interface for deriving read-model
+  projections from typed domain events. Pure functions, no aggregate mutation.
+- DiaryProjection + DiaryEntry: player travel diary
+- HudProjection + HudInventoryItem: player-facing HUD state
+- CaseFileViewProjection: detective case file view
+- FullAuditProjection + AuditEntry: complete event log
+
+Reference projectors:
+- HudProjector: derives HUD state from GameStarted + StoreItemPurchased
+- DiaryProjector: derives diary entries from events
+- FullAuditProjector: produces audit entry per event with summary
+- CaseFileViewProjector: projects from seed case file + events (case file
+  content is static world content, not decision data in events)
+
+Tests prove:
+- HudProjector produces active HUD with starting state from GameStarted
+- HudProjector updates wallet and inventory from StoreItemPurchased
+- DiaryProjector produces arrival entry from GameStarted
+- DiaryProjector adds diary entry from StoreItemPurchased
+- FullAuditProjector produces entry per event with correct sequence
+- CaseFileViewProjector produces view from seed case file
+- Projectors are idempotent (pure functions, no mutation)
+- HudProjector handles empty event stream
+
+All 417 tests pass (202 + 88 + 37 + 90).
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
