@@ -86,6 +86,7 @@ function Get-ToolingVersion {
 function Write-ToolingInstructions {
     $toolingPath = Join-Path $RepoRoot '.local\postgresql16'
     Write-Host "PostgreSQL tooling is expected at $toolingPath and pinned to version $PostgreSqlVersion."
+    Write-Host "This is the persistent main checkout's tooling root, shared across worktrees."
     Write-Host "If the binaries are missing, download the Windows installer from $PostgreSqlDownloadPage, install PostgreSQL $PostgreSqlVersion into $toolingPath, and rerun this command."
 }
 
