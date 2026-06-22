@@ -32,9 +32,14 @@ function Resolve-PersistentRepoRoot {
         return $fallbackRoot
     }
 
-    $commonDirFull = (Resolve-Path $commonDir).Path
-    $persistentRoot = (Resolve-Path (Join-Path $commonDirFull '..')).Path
-    return $persistentRoot
+    try {
+        $commonDirFull = (Resolve-Path $commonDir -ErrorAction Stop).Path
+        $persistentRoot = (Resolve-Path (Join-Path $commonDirFull '..') -ErrorAction Stop).Path
+        return $persistentRoot
+    }
+    catch {
+        return $fallbackRoot
+    }
 }
 
 $RepoRoot = Resolve-PersistentRepoRoot
