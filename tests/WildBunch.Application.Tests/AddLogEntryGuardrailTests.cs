@@ -4,10 +4,12 @@ namespace WildBunch.Application.Tests;
 
 public sealed class AddLogEntryGuardrailTests
 {
-    // Known count of AddLogEntry references in GameSession.cs as of BUNCH-78 Phase 1.
-    // This includes the method definition itself (private void AddLogEntry(...) at ~line 1988)
-    // plus 18 call sites. Do not increase this number without explicit architecture approval.
-    // AddLogEntry is [Obsolete] projection-legacy per ADR-0028.
+    // Known count of AddLogEntry references in GameSession.cs after BUNCH-78 Phase 2.
+    // This includes the method definition itself (private void AddLogEntry(...))
+    // plus 18 call sites. The 5 migrated investigation methods now use RecordCaseUpdate
+    // (which calls AddLogEntry internally) via Apply(InvestigationPerformed), so no new
+    // direct AddLogEntry call sites were added. Do not increase this number without
+    // explicit architecture approval. AddLogEntry is [Obsolete] projection-legacy per ADR-0028.
     private const int KnownLegacyAddLogEntryCallSiteCount = 19;
 
     private static string FindRepoRoot()
