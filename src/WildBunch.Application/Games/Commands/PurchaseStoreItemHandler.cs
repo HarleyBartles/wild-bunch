@@ -3,6 +3,7 @@ using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using TownId = WildBunch.Domain.World.TownId;
@@ -12,14 +13,20 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class PurchaseStoreItemHandler : GameSessionCommandHandler
 {
     private readonly TownStoreCatalogResolver _storeCatalogResolver;
+    private readonly HudProjector _hudProjector;
+    private readonly DiaryProjector _diaryProjector;
 
     public PurchaseStoreItemHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
-        TownStoreCatalogResolver storeCatalogResolver)
+        TownStoreCatalogResolver storeCatalogResolver,
+        HudProjector hudProjector,
+        DiaryProjector diaryProjector)
         : base(gameSessionRepository, gameSessionUnitOfWork)
     {
         _storeCatalogResolver = storeCatalogResolver;
+        _hudProjector = hudProjector;
+        _diaryProjector = diaryProjector;
     }
 
     public async Task<GameTurnResultDto> HandleAsync(
@@ -30,7 +37,7 @@ public sealed class PurchaseStoreItemHandler : GameSessionCommandHandler
 
         var sessionId = new GameSessionId(command.GameSessionId);
 
-        return await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
+        var result = await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
             var townId = new TownId(command.TownId);
             if (!session.World.TryGetTown(townId, out var town))
@@ -76,5 +83,19 @@ public sealed class PurchaseStoreItemHandler : GameSessionCommandHandler
                 purchaseResult.Message,
                 session);
         }, cancellationToken).ConfigureAwait(false);
+
+        var events = await GameSessionRepository.GetEventStreamAsync(sessionId, 0, cancellationToken)
+            .ConfigureAwait(false);
+        var hud = _hudProjector.Project(events) with { SessionId = command.GameSessionId };
+        var diary = _diaryProjector.Project(events) with { SessionId = command.GameSessionId };
+
+        return result with
+        {
+            CurrentSession = result.CurrentSession with
+            {
+                HudProjection = hud,
+                DiaryProjection = diary
+            }
+        };
     }
 }
