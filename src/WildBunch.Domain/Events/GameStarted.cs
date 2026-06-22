@@ -1,3 +1,4 @@
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
@@ -13,6 +14,7 @@ public sealed record GameStarted : IDomainEvent
     public required string StartingTownName { get; init; }
     public required int StartingHealth { get; init; }
     public required decimal StartingWallet { get; init; }
+    public required IReadOnlyList<InventoryItem> StartingInventoryItems { get; init; }
     public required TravelDifficulty Difficulty { get; init; }
     public required TravelRandomnessState TravelRandomness { get; init; }
     public required AdventureRandomnessPolicy Entropy { get; init; }

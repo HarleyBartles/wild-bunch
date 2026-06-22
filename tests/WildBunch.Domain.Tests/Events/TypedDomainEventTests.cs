@@ -137,6 +137,7 @@ public class TypedDomainEventTests
         StartingTownName = "Dodge City",
         StartingHealth = 1000,
         StartingWallet = 25m,
+        StartingInventoryItems = Array.Empty<InventoryItem>(),
         Difficulty = TravelDifficulty.Normal,
         TravelRandomness = TravelRandomnessState.CreateDeterministic("test-salt"),
         Entropy = AdventureRandomnessPolicy.Standard
