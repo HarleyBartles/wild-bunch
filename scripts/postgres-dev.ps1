@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('install-tools', 'setup', 'start', 'stop', 'reset', 'status', 'validate', 'test')]
+    [ValidateSet('install-tools', 'ensure', 'setup', 'start', 'stop', 'reset', 'status', 'validate', 'test')]
     [string]$Command = 'setup'
     ,
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -324,6 +324,15 @@ switch ($Command) {
         Wait-ForReady
         Ensure-Database
         Write-Host "Persistent local development database started."
+    }
+    'ensure' {
+        Initialize-Cluster
+        Start-Cluster
+        Wait-ForReady
+        Ensure-Database
+        Write-Host "Shared local PostgreSQL service is ready on ${HostName}:$Port."
+        Write-Host "Service owned by persistent checkout: $RepoRoot"
+        Write-Host "Reuse this service from any worktree; do not stop it during normal worker cleanup."
     }
     'stop' {
         Stop-Cluster
