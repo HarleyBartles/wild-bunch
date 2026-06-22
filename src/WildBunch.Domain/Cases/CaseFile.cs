@@ -370,6 +370,55 @@ public sealed class CaseFile
         return null;
     }
 
+    public Clue? PeekNextPublicClue(Func<Clue, bool> canReveal)
+    {
+        ArgumentNullException.ThrowIfNull(canReveal);
+        foreach (var clue in _publicClues)
+        {
+            if (!canReveal(clue)) continue;
+            if (_knownClues.Any(existing => existing.Id.Equals(clue.Id))) continue;
+            return clue;
+        }
+        return null;
+    }
+
+    public Warrant? PeekNextPublicWarrant(InvestigationSourceKind? sourceKind = null)
+    {
+        foreach (var warrant in _publicWarrants)
+        {
+            if (sourceKind.HasValue && warrant.Terms.SourceKind != sourceKind) continue;
+            if (_knownWarrants.Any(existing => existing.Id.Equals(warrant.Id))) continue;
+            return warrant;
+        }
+        return null;
+    }
+
+    public void RevealClue(Clue clue)
+    {
+        ArgumentNullException.ThrowIfNull(clue);
+        for (var i = _publicClues.Count - 1; i >= 0; i--)
+        {
+            if (_knownClues.Any(existing => existing.Id.Equals(_publicClues[i].Id)))
+                _publicClues.RemoveAt(i);
+        }
+        var index = _publicClues.FindIndex(c => c.Id.Equals(clue.Id));
+        if (index >= 0) _publicClues.RemoveAt(index);
+        DiscoverClue(clue);
+    }
+
+    public void RevealWarrant(Warrant warrant)
+    {
+        ArgumentNullException.ThrowIfNull(warrant);
+        for (var i = _publicWarrants.Count - 1; i >= 0; i--)
+        {
+            if (_knownWarrants.Any(existing => existing.Id.Equals(_publicWarrants[i].Id)))
+                _publicWarrants.RemoveAt(i);
+        }
+        var index = _publicWarrants.FindIndex(w => w.Id.Equals(warrant.Id));
+        if (index >= 0) _publicWarrants.RemoveAt(index);
+        DiscoverWarrant(warrant);
+    }
+
     public bool TryGetSuspectTurf(SuspectId suspectId, out TownId turfTownId)
     {
         foreach (var assignment in _suspectTurfAssignments)
