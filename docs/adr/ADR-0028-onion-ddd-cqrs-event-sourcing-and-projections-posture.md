@@ -2,11 +2,12 @@
 
 ## Status
 
-`planned`
+`live`
 
 ## Dated Status History
 
 - 2026-06-22 - planned: ADR-0028 records the true event-sourcing posture for the migrated representative slice (start new game, purchase store item). Promotion to `live` follows after the migrated slice is proven by tests and the implementation steps land.
+- 2026-06-22 - live: The migrated slice (start new game, purchase store item) is proven by tests. Typed domain events, event-sourced GameSession, persistence event store with optimistic concurrency, projection contracts and reference projectors, handler orchestration, and API bridge safe projections are all implemented and tested. GameLogEntry is demoted to projection-legacy.
 
 ## Decision Type
 

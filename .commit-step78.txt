@@ -1,0 +1,25 @@
+BUNCH-77: Steps 7-8 demote GameLogEntry to projection-legacy + consolidated E2E tests + ADR promotion
+
+Step 7: Demote GameLogEntry to projection-legacy
+- GameSessionLogEntryEntity annotated as projection-legacy per ADR-0028
+- The authoritative source of game history is the event stream (StoredEventEntity)
+- New projection consumers should derive from the event stream via
+  IDomainEventProjector, not from the legacy table
+- Tests prove FullAuditProjection and DiaryProjection supersede legacy log entries
+  for event-sourced flows
+
+Step 8: Consolidated end-to-end tests + ADR promotion
+- EventSourcingEndToEndTests: capstone proof for ADR-0028
+  - FullFlow_CreateStoreReloadCommandStoreReplayProject: proves the complete
+    event-sourcing flow from create to project
+  - FullFlow_ReplayFromEvents_MatchesSnapshotLoad: proves replay-from-events
+    produces identical state to snapshot load
+  - FullFlow_ConcurrencyConflict_PreventsDoubleAppend: proves optimistic
+    concurrency prevents lost updates
+- ADR-0028 promoted from planned to live
+
+All 431 tests pass (202 + 95 + 37 + 97). EF migration validation passes.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
