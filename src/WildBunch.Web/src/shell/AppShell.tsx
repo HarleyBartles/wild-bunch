@@ -1,59 +1,26 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Hud } from "./Hud";
-
-interface NavEntry {
-  to: string;
-  label: string;
-  dev?: boolean;
-}
-
-const navEntries: NavEntry[] = [
-  { to: "/", label: "Camp" },
-  { to: "/hunt", label: "Hunt" },
-  { to: "/case", label: "Case file" },
-  { to: "/wanted", label: "Wanted" },
-  { to: "/trail", label: "Trail" },
-  { to: "/debug", label: "Dev tools", dev: true },
-];
+import { GlobalOverlays } from "../flow/GlobalOverlays";
 
 function ShellChrome() {
   const path = useRouterState({ select: (state) => state.location.pathname });
+  const isDebug = path === "/debug";
 
   return (
-    <div className="v0-1-shell">
+    <div className="v0-1-shell v0-1-shell--flow">
       <Hud />
-      <nav className="shell-nav" aria-label="Game navigation">
-        <ul className="shell-nav__group">
-          {navEntries
-            .filter((entry) => !entry.dev)
-            .map((entry) => (
-              <li key={entry.to}>
-                <Link
-                  to={entry.to}
-                  className={`shell-nav__link${path === entry.to ? " shell-nav__link--active" : ""}`}
-                  aria-current={path === entry.to ? "page" : undefined}
-                >
-                  {entry.label}
-                </Link>
-              </li>
-            ))}
-        </ul>
-        <ul className="shell-nav__group shell-nav__group--dev">
-          {navEntries
-            .filter((entry) => entry.dev)
-            .map((entry) => (
-              <li key={entry.to}>
-                <Link
-                  to={entry.to}
-                  className={`shell-nav__link shell-nav__link--dev${path === entry.to ? " shell-nav__link--active" : ""}`}
-                  aria-current={path === entry.to ? "page" : undefined}
-                >
-                  {entry.label}
-                </Link>
-              </li>
-            ))}
-        </ul>
-      </nav>
+      <div className="shell-overlay-bar">
+        <GlobalOverlays />
+        <nav className="shell-dev-nav" aria-label="Developer tools">
+          <Link
+            to="/debug"
+            className={`shell-nav__link shell-nav__link--dev${isDebug ? " shell-nav__link--active" : ""}`}
+            aria-current={isDebug ? "page" : undefined}
+          >
+            Dev tools
+          </Link>
+        </nav>
+      </div>
       <main className="route-outlet" aria-live="polite">
         <div className="route">
           <Outlet />

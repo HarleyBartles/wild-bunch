@@ -39,18 +39,17 @@ public sealed class TravelToTownHandler
 
         if (previewResult.Success && previewResult.Preview is not null)
         {
-            session.StartJourney(previewResult.Preview);
-            var travelResult = session.AdvanceJourneyDay();
+            var startResult = session.StartJourney(previewResult.Preview);
 
             await _gameSessionRepository.StoreAsync(session, cancellationToken).ConfigureAwait(false);
             await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
             return GameTurnResultFactory.Create(
-                travelResult.Success,
-                travelResult.Message,
+                startResult.Success,
+                startResult.Message,
                 session,
-                travelResult.Status,
-                travelResult.Journey);
+                startResult.Status,
+                startResult.Journey);
         }
 
         return GameTurnResultFactory.Create(

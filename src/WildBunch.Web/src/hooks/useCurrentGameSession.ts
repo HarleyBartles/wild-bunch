@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  acknowledgeTravelArrival,
   createGame,
   checkLocalRecords,
   followTelegraphLeads,
@@ -152,6 +153,19 @@ export function useCurrentGameSession() {
     },
     onError: (exception: unknown) => {
       setError(exception instanceof Error ? exception.message : "Unable to travel.");
+    },
+  });
+
+  const acknowledgeArrivalMutation = useMutation({
+    mutationFn: () => acknowledgeTravelArrival(gameId as string),
+    onSuccess: async (result) => {
+      queryClient.setQueryData(["session", gameId], result.currentSession);
+      await invalidateGameQueries(gameId as string);
+      setNotice(result.message);
+      setError("");
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to acknowledge arrival.");
     },
   });
 
@@ -318,6 +332,13 @@ export function useCurrentGameSession() {
     [gameId, travelMutation],
   );
 
+  const handleAcknowledgeArrival = useCallback(async () => {
+    if (!gameId) {
+      return;
+    }
+    await acknowledgeArrivalMutation.mutateAsync();
+  }, [gameId, acknowledgeArrivalMutation]);
+
   const handleReadWantedPosters = useCallback(async () => {
     if (!gameId || !canReadWantedPosters) {
       return;
@@ -422,6 +443,7 @@ export function useCurrentGameSession() {
     reloadCurrentGame,
     handleTravelTurnResult,
     handleTravel,
+    handleAcknowledgeArrival,
     handleReadWantedPosters,
     handleInspectNoticeBoard,
     handleCheckLocalRecords,

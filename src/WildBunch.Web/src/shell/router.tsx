@@ -1,44 +1,17 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { AppShell } from "./AppShell";
-import { CampRoute } from "../routes/CampRoute";
-import { CaseFileRoute } from "../routes/CaseFileRoute";
+import { GameFlowRouter } from "../flow/GameFlowRouter";
 import { DebugCockpitRoute } from "../routes/DebugCockpitRoute";
-import { HuntRoute } from "../routes/HuntRoute";
-import { TrailRoute } from "../routes/TrailRoute";
-import { WantedRoute } from "../routes/WantedRoute";
+import { Outlet } from "@tanstack/react-router";
 
 const rootRoute = createRootRoute({
   component: AppShell,
 });
 
-const campRoute = createRoute({
+const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: CampRoute,
-});
-
-const huntRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/hunt",
-  component: HuntRoute,
-});
-
-const caseFileRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/case",
-  component: CaseFileRoute,
-});
-
-const wantedRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/wanted",
-  component: WantedRoute,
-});
-
-const trailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/trail",
-  component: TrailRoute,
+  component: GameFlowRouter,
 });
 
 const debugRoute = createRoute({
@@ -48,11 +21,7 @@ const debugRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  campRoute,
-  huntRoute,
-  caseFileRoute,
-  wantedRoute,
-  trailRoute,
+  indexRoute,
   debugRoute,
 ]);
 
@@ -67,4 +36,4 @@ declare module "@tanstack/react-router" {
   }
 }
 
-export type { rootRoute, campRoute, huntRoute, caseFileRoute, wantedRoute, trailRoute, debugRoute };
+export type { rootRoute, indexRoute, debugRoute };

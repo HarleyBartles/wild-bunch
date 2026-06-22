@@ -800,3 +800,364 @@ h1 {
     padding: 18px;
   }
 }
+
+/* ===== UI v1 flow shell: overlay bar, flow surfaces, place cards ===== */
+
+.v0-1-shell--flow {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-overlay-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15, 17, 21, 0.6);
+}
+
+.global-overlay-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.overlay-button {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.overlay-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(223, 159, 79, 0.08);
+}
+
+.overlay-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.shell-dev-nav {
+  display: flex;
+  gap: 6px;
+}
+
+/* ----- Flow surfaces ----- */
+
+.flow-surface {
+  display: grid;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.flow-surface--pre-session {
+  max-width: 720px;
+  align-content: start;
+  padding: 8px 0 24px;
+}
+
+.flow-surface--town-hub,
+.flow-surface--place,
+.flow-surface--travel-prep,
+.flow-surface--trail,
+.flow-surface--arrival {
+  padding: 8px 0 24px;
+  align-content: start;
+}
+
+.flow-hero {
+  display: grid;
+  gap: 8px;
+  padding: 28px 0 4px;
+}
+
+.flow-hero h1 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  line-height: 0.96;
+  color: var(--text);
+}
+
+.flow-hero__lead {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+.flow-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(95, 159, 111, 0.16);
+  border: 1px solid rgba(95, 159, 111, 0.22);
+  color: #c8e6cd;
+}
+
+.flow-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(240, 126, 110, 0.14);
+  border: 1px solid rgba(240, 126, 110, 0.26);
+  color: #ffe4de;
+}
+
+/* ----- Town hub ----- */
+
+.town-hub-header {
+  display: grid;
+  gap: 4px;
+  padding: 20px 0 4px;
+}
+
+.town-hub-header h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.town-hub-lead {
+  margin: 0;
+  color: var(--muted);
+}
+
+.town-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.place-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.place-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.place-card--trailhead {
+  border-color: rgba(223, 159, 79, 0.3);
+  background: linear-gradient(180deg, rgba(29, 23, 16, 0.98), rgba(18, 14, 10, 0.98));
+}
+
+.place-card__icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.place-card__body {
+  display: grid;
+  gap: 4px;
+}
+
+.place-card__body h3 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.place-card__body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+/* ----- Place surfaces (Store, Sheriff, Saloon) ----- */
+
+.place-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0 4px;
+}
+
+.place-header h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+}
+
+.back-button {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.back-button:hover {
+  border-color: var(--accent);
+}
+
+.place-body {
+  display: grid;
+  gap: 16px;
+}
+
+/* ----- Button variants ----- */
+
+.button--primary {
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent));
+  border-color: rgba(239, 195, 126, 0.55);
+}
+
+.button--secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* ----- Form fields ----- */
+
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field select,
+.field input {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+/* ----- Travel prep ----- */
+
+.travel-prep-body {
+  display: grid;
+  gap: 16px;
+}
+
+.travel-prep-ride {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.travel-prep-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.destination-route {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.destination-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.destination-meta span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* ----- Trail flow ----- */
+
+.trail-lock-banner {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(223, 159, 79, 0.25);
+  background: rgba(223, 159, 79, 0.06);
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+/* ----- Arrival ----- */
+
+.arrival-card {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  max-width: 560px;
+}
+
+.arrival-card h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+}
+
+.arrival-lead {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ----- 14-inch viewport constraint ----- */
+/* Target ~1366px width (common 14" laptop) with comfortable reading width */
+
+@media (max-width: 1366px) {
+  .flow-surface {
+    max-width: 960px;
+  }
+
+  .town-hub-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .flow-surface {
+    max-width: 100%;
+  }
+
+  .town-hub-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .shell-overlay-bar {
+    padding: 8px 14px;
+  }
+}

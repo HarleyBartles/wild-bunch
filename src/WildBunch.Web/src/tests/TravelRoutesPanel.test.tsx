@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { GameSessionDto } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
-import { TravelRoutesPanel } from "./TravelRoutesPanel";
+import { TravelRoutesPanel } from "../components/TravelRoutesPanel";
 
 vi.mock("../api/wildBunchApi", () => ({
   previewTravel: vi.fn(),

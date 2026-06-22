@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCanonicalSeedState, decodeGameSetupSeed, encodeGameSetupSeed, withRandomSeed } from "./gameSetupSeedCodec";
+import { createCanonicalSeedState, decodeGameSetupSeed, encodeGameSetupSeed, withRandomSeed } from "../ui/gameSetupSeedCodec";
 
 afterEach(() => {
   vi.restoreAllMocks();

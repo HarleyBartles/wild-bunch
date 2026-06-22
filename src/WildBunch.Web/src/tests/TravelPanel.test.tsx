@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { TravelPanel } from "./TravelPanel";
+import { TravelPanel } from "../components/TravelPanel";
 import { acknowledgeTravelArrival, advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
 import type { GameSessionDto, GameTurnResultDto } from "../api/types";
 

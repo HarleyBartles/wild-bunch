@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DebugCockpitRoute } from "./routes/DebugCockpitRoute";
-import { GameSessionProvider } from "./state/GameSessionProvider";
+import { DebugCockpitRoute } from "../routes/DebugCockpitRoute";
+import { GameSessionProvider } from "../state/GameSessionProvider";
 import {
   AvailableActionKind,
   JourneyStatus,
@@ -14,7 +14,7 @@ import {
   type JournalDto,
   type TownStoreOffersDto,
   type WantedPosterDto,
-} from "./api/types";
+} from "../api/types";
 import {
   buyStoreItem,
   checkLocalRecords,
@@ -30,9 +30,9 @@ import {
   lookAroundSaloon,
   readWantedPosters,
   travel,
-} from "./api/wildBunchApi";
+} from "../api/wildBunchApi";
 
-vi.mock("./api/wildBunchApi", () => ({
+vi.mock("../api/wildBunchApi", () => ({
   buyStoreItem: vi.fn(),
   createGame: vi.fn(),
   getAvailableActions: vi.fn(),

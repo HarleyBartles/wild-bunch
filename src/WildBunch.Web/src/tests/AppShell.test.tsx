@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { router } from "./router";
+import { router } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
 import {
@@ -230,21 +230,16 @@ describe("AppShell", () => {
     expect(within(hud).getByText("Day 5, Turn 2")).toBeInTheDocument();
   });
 
-  it("defaults to the Camp route and shows the start-hunt surface", async () => {
+  it("defaults to the flow router and shows the pre-session surface", async () => {
     primeMocks();
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     renderShell();
 
-    await waitFor(() => {
-      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
-    });
-
-    expect(await screen.findByRole("heading", { name: /current session/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start new game/i })).toBeInTheDocument();
   });
 
-  it("navigates to the Case file route and renders the case surface", async () => {
+  it("opens the Case file overlay and renders the case surface", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -255,14 +250,13 @@ describe("AppShell", () => {
       expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("link", { name: /^case file$/i }));
+    await user.click(screen.getByRole("button", { name: /^case file$/i }));
 
     expect(await screen.findByRole("heading", { name: /^case file$/i })).toBeInTheDocument();
-    expect(screen.getByText(/read-only summary of player-known clues/i)).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/case");
+    expect(screen.getByText(/player-known facts and does not guess at hidden truth/i)).toBeInTheDocument();
   });
 
-  it("navigates to the Wanted route and renders the wanted-poster surface", async () => {
+  it("opens the Activity log overlay and renders the log surface", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -273,10 +267,9 @@ describe("AppShell", () => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("link", { name: /^wanted$/i }));
+    await user.click(screen.getByRole("button", { name: /activity log/i }));
 
-    expect(await screen.findByRole("heading", { name: /wanted posters/i, level: 2 })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/wanted");
+    expect(await screen.findByRole("heading", { name: /activity log/i })).toBeInTheDocument();
   });
 
   it("exposes a separated Dev tools route that hosts the relocated cockpit", async () => {
