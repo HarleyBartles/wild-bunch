@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 
 namespace WildBunch.Application.Tests;
@@ -10,7 +11,8 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
 
@@ -34,7 +36,8 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", WildBunch.Domain.Travel.TravelDifficulty.Easy));
 
@@ -46,7 +49,8 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", Entropy: WildBunch.Domain.Travel.AdventureRandomnessPolicy.Boring));
 
@@ -58,10 +62,30 @@ public sealed class StartNewGameHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository, repository);
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", SetupSeedCode: "not-a-uuid"));
 
         Assert.Equal("not-a-uuid", factory.RequestedSetupSeedCodes.Single());
+    }
+
+    [Fact]
+    public async Task StartNewGameReturnsDtoWithHudAndDiaryProjections()
+    {
+        var factory = new StubNewGameFactory();
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
+
+        var result = await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
+
+        Assert.NotNull(result.HudProjection);
+        Assert.Equal("Ranger Vale", result.HudProjection!.PlayerName);
+        Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, result.HudProjection.Status);
+        Assert.NotNull(result.DiaryProjection);
+        Assert.NotEmpty(result.DiaryProjection!.Entries);
+        Assert.Equal(result.Id, result.HudProjection.SessionId);
+        Assert.Equal(result.Id, result.DiaryProjection.SessionId);
     }
 }
