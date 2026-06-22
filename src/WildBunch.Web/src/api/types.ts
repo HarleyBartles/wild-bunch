@@ -418,6 +418,37 @@ export interface GameLogEntryDto {
   turn: number;
 }
 
+export interface HudProjection {
+  sessionId: string;
+  status: GameStatus;
+  playerName: string;
+  health: number;
+  walletCash: number;
+  currentTownId: string;
+  currentTownName: string;
+  inventoryItems: HudInventoryItem[];
+}
+
+export interface HudInventoryItem {
+  itemKind: ItemKind;
+  quantity: number;
+}
+
+export interface DiaryProjection {
+  sessionId: string;
+  day: number;
+  turn: number;
+  currentTownId: string;
+  currentTownName: string;
+  entries: DiaryEntry[];
+}
+
+export interface DiaryEntry {
+  day: number;
+  turn: number;
+  summary: string;
+}
+
 export interface JourneyTrailEventDto {
   id: JourneyTrailEventId;
   kind: JourneyTrailEventKind;
@@ -448,6 +479,8 @@ export interface GameSessionDto {
   logEntries: GameLogEntryDto[];
   activeSaloonPersonOfInterest: ActiveSaloonPersonOfInterestDto | null;
   activeSaloonWantedSuspect?: ActiveSaloonWantedSuspectDto | null;
+  hudProjection?: HudProjection | null;
+  diaryProjection?: DiaryProjection | null;
 }
 
 export interface ActiveSaloonPersonOfInterestDto {
