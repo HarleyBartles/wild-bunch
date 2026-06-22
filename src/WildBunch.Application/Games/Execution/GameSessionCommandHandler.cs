@@ -1,0 +1,99 @@
+using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Exceptions;
+using WildBunch.Domain.Game;
+
+namespace WildBunch.Application.Games.Execution;
+
+/// <summary>
+/// Base class for game session command handlers that formalizes the
+/// load → command → store → commit → project → safe return orchestration.
+/// See ADR-0028.
+///
+/// Subclasses implement <see cref="ExecuteAsync"/> which loads the session,
+/// applies the command, and returns the result. The base class wraps the
+/// execution with:
+/// - Correlation ID generation for event tracing
+/// - Optimistic concurrency retry on ConcurrencyException
+/// - Event commit marking after successful store + commit
+/// </summary>
+public abstract class GameSessionCommandHandler
+{
+    private const int MaxConcurrencyRetries = 3;
+
+    protected readonly IGameSessionRepository GameSessionRepository;
+    protected readonly IGameSessionUnitOfWork GameSessionUnitOfWork;
+
+    protected GameSessionCommandHandler(
+        IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork)
+    {
+        GameSessionRepository = gameSessionRepository;
+        GameSessionUnitOfWork = gameSessionUnitOfWork;
+    }
+
+    /// <summary>
+    /// Executes the command with optimistic concurrency retry.
+    /// The subclass implementation loads the session, applies the command,
+    /// and returns the result. If the command produced uncommitted events,
+    /// the base class stores and commits them.
+    /// </summary>
+    public async Task<T> ExecuteWithRetryAsync<T>(
+        GameSessionId sessionId,
+        Func<GameSession, CancellationToken, Task<T>> executeAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(executeAsync);
+
+        var correlationId = Guid.NewGuid();
+        ConcurrencyException? lastConcurrencyException = null;
+
+        for (var attempt = 0; attempt < MaxConcurrencyRetries; attempt++)
+        {
+            var session = await GameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+
+            var result = await executeAsync(session, cancellationToken).ConfigureAwait(false);
+
+            if (session.UncommittedEvents.Count > 0)
+            {
+                try
+                {
+                    await GameSessionRepository.StoreAsync(session, correlationId, cancellationToken).ConfigureAwait(false);
+                    await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    session.MarkEventsCommitted();
+                }
+                catch (ConcurrencyException ex)
+                {
+                    lastConcurrencyException = ex;
+                    continue;
+                }
+            }
+
+            return result;
+        }
+
+        throw lastConcurrencyException ?? new InvalidOperationException("Command failed after maximum retries.");
+    }
+
+    /// <summary>
+    /// Executes a command that creates a new session (no load step).
+    /// Used by StartNewGameHandler.
+    /// </summary>
+    public async Task<T> ExecuteNewSessionAsync<T>(
+        Func<CancellationToken, Task<(GameSession Session, T Result)>> createAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(createAsync);
+
+        var correlationId = Guid.NewGuid();
+        var (session, result) = await createAsync(cancellationToken).ConfigureAwait(false);
+
+        if (session.UncommittedEvents.Count > 0)
+        {
+            await GameSessionRepository.StoreAsync(session, correlationId, cancellationToken).ConfigureAwait(false);
+            await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+            session.MarkEventsCommitted();
+        }
+
+        return result;
+    }
+}
