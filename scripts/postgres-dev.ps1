@@ -10,7 +10,34 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+function Resolve-PersistentRepoRoot {
+    $scriptDir = (Resolve-Path $PSScriptRoot).Path
+    $fallbackRoot = (Resolve-Path (Join-Path $scriptDir '..')).Path
+
+    $gitPath = (Get-Command git -ErrorAction SilentlyContinue)
+    if ($null -eq $gitPath) {
+        return $fallbackRoot
+    }
+
+    $commonDir = $null
+    try {
+        $commonDir = (& git rev-parse --git-common-dir 2>$null)
+        if ($LASTEXITCODE -ne 0) { $commonDir = $null }
+    }
+    catch {
+        $commonDir = $null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($commonDir)) {
+        return $fallbackRoot
+    }
+
+    $commonDirFull = (Resolve-Path $commonDir).Path
+    $persistentRoot = (Resolve-Path (Join-Path $commonDirFull '..')).Path
+    return $persistentRoot
+}
+
+$RepoRoot = Resolve-PersistentRepoRoot
 $PostgreSqlVersion = '16.14'
 $PostgreSqlDownloadPage = 'https://www.postgresql.org/download/windows/'
 $LocalRoot = Join-Path $RepoRoot '.local\postgresql16'
