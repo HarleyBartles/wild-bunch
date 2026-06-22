@@ -316,6 +316,67 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         }
     }
 
+    /// <summary>
+    /// Proves the snapshot + replay load path sets the aggregate version correctly
+    /// when the snapshot lags behind the stream version. The repository must set the
+    /// aggregate version to SnapshotVersion before replaying post-snapshot events,
+    /// so that after replay Version == StreamVersion (not StreamVersion + replayedCount).
+    /// See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
+    ///
+    /// Without the fix (setting version to SnapshotVersion before replay), the loaded
+    /// aggregate would have Version = StreamVersion + postSnapshotEventCount, which
+    /// corrupts the next optimistic concurrency check.
+    /// </summary>
+    [Fact]
+    public async Task GetByIdAsync_WithLaggingSnapshot_LoadsAggregateWithVersionEqualToStreamVersion()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+
+        // Seed: create + commit (v1), then reload + purchase + commit (v2).
+        // After this, SnapshotVersion == StreamVersion == 2 in the DB.
+        GameSessionId sessionId;
+        using (var seedScope = services.CreateScope())
+        {
+            var seedRepo = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var seedUow = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+            var session = CreateSession();
+            sessionId = session.Id;
+            await seedRepo.StoreAsync(session);
+            await seedUow.CommitAsync();
+            session.MarkEventsCommitted();
+
+            var loaded = await seedRepo.GetByIdAsync(sessionId);
+            var resolver = new TownStoreCatalogResolver();
+            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            loaded.Purchase(offer, 1);
+            await seedRepo.StoreAsync(loaded);
+            await seedUow.CommitAsync();
+        }
+
+        // Force a lagging snapshot: set SnapshotVersion back to 1 while
+        // StreamVersion stays at 2. This simulates a snapshot that was not
+        // refreshed after the last event append.
+        using (var adminScope = services.CreateScope())
+        {
+            var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+            var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
+            entity.SnapshotVersion = 1;
+            await adminDb.SaveChangesAsync();
+        }
+
+        // Load through the repository. The snapshot is at version 1, the stream
+        // is at version 2, so one post-snapshot event (StoreItemPurchased) must be
+        // replayed. The loaded aggregate's Version must equal StreamVersion (2),
+        // not StreamVersion + 1 (3) which would be the bug.
+        using var loadScope = services.CreateScope();
+        var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var loaded2 = await loadRepo.GetByIdAsync(sessionId);
+        Assert.NotNull(loaded2);
+        Assert.Equal(2, loaded2!.Version);
+    }
+
     private static ServiceProvider CreateServices(string connectionString)
     {
         var services = new ServiceCollection();

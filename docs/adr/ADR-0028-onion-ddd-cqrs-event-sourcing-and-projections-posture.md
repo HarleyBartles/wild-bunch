@@ -41,7 +41,7 @@ ADR-0014 records DDD + Onion + CQRS + repositories + UoW. ADR-0020 records aggre
 
 ## Decision Summary
 
-Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, CQRS command/query handlers, true Event Sourcing for session history, and a projection/read-model taxonomy for player-facing outputs. Typed domain events are plain records owned by Domain; the persistence envelope is infrastructure. Command methods validate intent, produce typed domain facts, and apply them through `Apply` methods that mutate state. Replay reconstructs state from events. Append uses optimistic concurrency. Snapshots are cache. Projections derive from typed events via pattern matching. The player-facing API exposes safe projections only (diary + HUD); raw events, payloads, and audit are not player-facing.
+Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, CQRS command/query handlers, true Event Sourcing for session history, and a projection/read-model taxonomy for player-facing outputs. Typed domain events are plain records owned by Domain; the persistence envelope is infrastructure. Command methods validate intent, produce typed domain facts, and apply them through `Apply` methods that mutate state. Replay reconstructs state from events. Append uses optimistic concurrency. Snapshots are cache. Projections derive from typed events via pattern matching. The BUNCH-77 API bridge exposes safe projections (diary + HUD) via query endpoints; raw events, payloads, and audit are not player-facing. Command response DTOs are preserved legacy shapes during migration and do not yet include projection output inline (see §10).
 
 ## Detailed Decision Breakdown
 
@@ -92,9 +92,10 @@ Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, 
    - **Full audit** — exhaustive technical/session history. Developer/replay surface, **not player-facing**.
 
 10. **API safety.**
-    - Player-facing command responses expose **diary and HUD projections only**.
-    - Raw domain events, raw payloads, full audit entries, and case-file internal truth are **not** exposed to player-facing API responses.
+    - The BUNCH-77 API bridge is projection **query endpoints** (`GET /api/games/{id}/projections/hud` and `GET /api/games/{id}/projections/diary`) serving safe projections derived from the event stream, plus **preserved legacy command DTOs** (`GameSessionDto` / `GameTurnResultDto`) during migration. The legacy command DTOs still expose `LogEntries` (projection-legacy, `[Obsolete]`) and do not yet include HUD/diary projection output inline.
+    - Raw domain events, raw payloads, full audit entries, and case-file internal truth are **not** exposed to player-facing API responses. The full audit projection is a developer/replay surface and is **not** exposed on the normal game API.
     - The existing `Message` field is preserved for backward compatibility.
+    - A follow-up issue should migrate the command response DTOs to include safe diary/HUD projection output and drop `LogEntries` from player-facing command responses. Until that follow-up lands, the durable ADR records this transitional state honestly: command responses are legacy DTOs, not projection-only.
     - Hidden culprit boundaries (ADR-0007) are preserved. The case file view projection exposes only public clues and warrants, never hidden truth.
 
 11. **Transport posture.** SignalR/server push (when introduced) is a transport for projected events, not source truth. Polling remains the reconciliation path.

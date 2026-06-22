@@ -248,14 +248,21 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             store.TravelDiaryDays,
             store.LogEntries);
 
-        // Set the stream version from the snapshot so the next command's
-        // optimistic concurrency check works. See ADR-0028.
-        GameSessionRehydrator.SetVersion(session, (int)store.Envelope.StreamVersion);
+        // Set the aggregate version so that after any post-snapshot replay the
+        // version equals StreamVersion. Each Apply call inside
+        // ApplyCommittedEvents increments _version by 1, so we start from
+        // SnapshotVersion (the snapshot's version) and replay
+        // (StreamVersion - SnapshotVersion) events, ending at StreamVersion.
+        // When the snapshot is current (SnapshotVersion == StreamVersion), there
+        // are no post-snapshot events and SetVersion(StreamVersion) is correct.
+        // See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
+        var hasPostSnapshotEvents = store.PostSnapshotEvents.Count > 0;
+        var initialVersion = hasPostSnapshotEvents
+            ? (int)store.Envelope.SnapshotVersion
+            : (int)store.Envelope.StreamVersion;
+        GameSessionRehydrator.SetVersion(session, initialVersion);
 
-        // If the snapshot is behind the stream version, replay post-snapshot events
-        // through Apply (the single mutation path). This implements the
-        // snapshot + replay load path from ADR-0028.
-        if (store.PostSnapshotEvents.Count > 0)
+        if (hasPostSnapshotEvents)
         {
             session.ApplyCommittedEvents(store.PostSnapshotEvents);
         }
