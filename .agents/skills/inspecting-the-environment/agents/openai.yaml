@@ -1,0 +1,11 @@
+interface:
+  display_name: Inspecting the Environment
+  short_description: Discover environment constraints that can change the next action before proceeding.
+  default_prompt: Use /inspecting-the-environment to check shell syntax, worktree state, repo state, path style, CLI availability, auth, connectors, mutation authority, and protected surfaces before taking action.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
