@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
@@ -21,7 +22,8 @@ public sealed class TravelToTownHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new TravelToTownHandler(repository, repository, new TravelResolver());
+        var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
@@ -49,8 +51,10 @@ public sealed class TravelToTownHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
+        session.MarkEventsCommitted();
         repository.Seed(session);
-        var handler = new TravelToTownHandler(repository, repository, new TravelResolver());
+        var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "dryridge"));
 
@@ -70,7 +74,8 @@ public sealed class TravelToTownHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(emptyInventory: true);
         repository.Seed(session);
-        var handler = new TravelToTownHandler(repository, repository, new TravelResolver());
+        var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 

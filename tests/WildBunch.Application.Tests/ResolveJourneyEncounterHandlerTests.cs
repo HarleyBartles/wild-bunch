@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -19,8 +20,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession();
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
@@ -41,8 +44,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession();
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Single(advanceResult.TravelDiary!.Days);
@@ -61,8 +66,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession();
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
@@ -85,8 +92,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
@@ -107,8 +116,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
@@ -131,8 +142,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession();
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);
@@ -153,8 +166,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateHighRiskSession();
         repository.Seed(session);
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository);
-        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository);
+        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
+        var resolveHandler = new ResolveJourneyEncounterHandler(repository, repository,
+            new HudProjector(), new DiaryProjector());
 
         var advanceResult = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, advanceResult.JourneyStatus);

@@ -2,42 +2,58 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.Application.Projections;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Application.Games.Commands;
 
-public sealed class AdvanceTravelDayHandler
+public sealed class AdvanceTravelDayHandler : GameSessionCommandHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
-    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
+    private readonly HudProjector _hudProjector;
+    private readonly DiaryProjector _diaryProjector;
 
     public AdvanceTravelDayHandler(
         IGameSessionRepository gameSessionRepository,
-        IGameSessionUnitOfWork gameSessionUnitOfWork)
+        IGameSessionUnitOfWork gameSessionUnitOfWork,
+        HudProjector hudProjector,
+        DiaryProjector diaryProjector)
+        : base(gameSessionRepository, gameSessionUnitOfWork)
     {
-        _gameSessionRepository = gameSessionRepository;
-        _gameSessionUnitOfWork = gameSessionUnitOfWork;
+        _hudProjector = hudProjector;
+        _diaryProjector = diaryProjector;
     }
 
     public async Task<GameTurnResultDto> HandleAsync(AdvanceTravelDayCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var result = session.AdvanceJourneyDay();
+        var sessionId = new GameSessionId(command.GameSessionId);
 
-        if (result.Success || result.Journey is not null)
+        var result = await ExecuteWithRetryAsync(sessionId, (session, ct) =>
         {
-            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-        }
+            var advanceResult = session.AdvanceJourneyDay();
 
-        return GameTurnResultFactory.Create(
-            result.Success,
-            result.Message,
-            session,
-            result.Status,
-            result.Journey,
-            result.TrailEvent);
+            return Task.FromResult(GameTurnResultFactory.Create(
+                advanceResult.Success,
+                advanceResult.Message,
+                session,
+                advanceResult.Status,
+                advanceResult.Journey,
+                advanceResult.TrailEvent));
+        }, cancellationToken).ConfigureAwait(false);
+
+        var events = await GameSessionRepository.GetEventStreamAsync(sessionId, 0, cancellationToken)
+            .ConfigureAwait(false);
+        var hud = _hudProjector.Project(events) with { SessionId = command.GameSessionId };
+        var diary = _diaryProjector.Project(events) with { SessionId = command.GameSessionId };
+
+        return result with
+        {
+            CurrentSession = result.CurrentSession with
+            {
+                HudProjection = hud,
+                DiaryProjection = diary
+            }
+        };
     }
 }
