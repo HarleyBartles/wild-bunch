@@ -49,7 +49,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(2, session.Clock.Day);
-        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.Equal(3, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Equal(0, session.Journey.PendingEncounter.HiddenState!.Annoyance);
         Assert.Equal(1250, session.Player.Health);
         Assert.Equal(25m, session.Player.Wallet.Cash);
-        Assert.Equal(5, session.PursuitState.Heat);
+        Assert.Equal(4, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(11m, session.Player.Wallet.Cash);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.Equal(3, session.PursuitState.Heat);
     }
 
     [Fact]

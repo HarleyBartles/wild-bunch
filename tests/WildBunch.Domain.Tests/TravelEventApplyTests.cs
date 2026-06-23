@@ -131,6 +131,7 @@ public sealed class TravelEventApplyTests
             TrailEventKind = JourneyTrailEventKind.Lucky,
             TrailEventId = JourneyTrailEventId.LuckyCoinCache,
             WalletDelta = 4m,
+            WalletCash = walletBefore + 4m,
             FoodDelta = -1,
             CanteenChargeDelta = 0,
             HorseHungerDelta = 0,
@@ -138,6 +139,7 @@ public sealed class TravelEventApplyTests
             HorseExhaustionDelta = 0,
             DelayDays = 0,
             HeatIncrease = 1,
+            PursuitHeat = session.PursuitState.Heat + 1,
             TravelModeChangedTo = null,
             DiaryMessage = "I uncovered a hidden cache of trail coins and pocketed $4.00.",
             HorseLostMessage = ""

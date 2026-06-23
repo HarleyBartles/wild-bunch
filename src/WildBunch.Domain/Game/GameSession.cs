@@ -497,21 +497,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     /// <summary>
     /// Applies a <see cref="TrailEventApplied"/> event. JourneySnapshot is ABSOLUTE.
-    /// WalletDelta, FoodDelta, CanteenChargeDelta and HeatIncrease are ADDITIVE.
+    /// WalletCash and PursuitHeat are ABSOLUTE — Apply sets player wallet and pursuit heat directly.
+    /// Food/canteen/horse are synced ABSOLUTE from the journey snapshot.
     /// Horse/delay/mode fields are informational (journey snapshot is the source of truth).
     /// See ADR-0028 and BUNCH-83.
     /// </summary>
     internal void Apply(TrailEventApplied e)
     {
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
-        if (e.WalletDelta != 0m)
-            Player.AdjustCash(e.WalletDelta);
-        if (e.FoodDelta != 0)
-            ApplyFoodDelta(e.FoodDelta);
-        if (e.CanteenChargeDelta != 0)
-            ApplyCanteenChargeDelta(e.CanteenChargeDelta);
-        if (e.HeatIncrease != 0)
-            PursuitState.IncreaseHeat(e.HeatIncrease);
+        Player.SetCash(e.WalletCash);
+        PursuitState.SetHeat(e.PursuitHeat);
+        SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
         RecordTravelUpdate(e.DiaryMessage);
         if (!string.IsNullOrEmpty(e.HorseLostMessage))
             RecordTravelUpdate(e.HorseLostMessage);
@@ -853,9 +849,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         ArgumentNullException.ThrowIfNull(trailEvent);
 
-        // Journey-internal state updates (captured ABSOLUTE in snapshot).
+        // Direct player mutations (same as pre-migration code).
+        // Apply(TrailEventApplied) sets wallet/heat ABSOLUTE and syncs food/canteen/horse
+        // from the journey snapshot, so command-path and replay converge.
+        if (trailEvent.WalletDelta != 0m)
+        {
+            Player.AdjustCash(trailEvent.WalletDelta);
+        }
+
         if (trailEvent.FoodDelta != 0)
         {
+            ApplyFoodDelta(trailEvent.FoodDelta);
             Journey!.AdjustFood(trailEvent.FoodDelta);
         }
 
@@ -865,6 +869,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             if (canteenState is not null)
             {
                 var nextCanteenState = canteenState.AdjustCharges(trailEvent.CanteenChargeDelta);
+                Player.SetCanteenState(nextCanteenState);
                 Journey!.SetCanteenCharges(nextCanteenState.Charges);
             }
         }
@@ -875,8 +880,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             if (horseState is not null)
             {
                 horseState = ApplyHorseDelta(horseState, trailEvent);
+                Player.SetHorseState(horseState);
                 Journey!.SetHorseState(horseState);
             }
+        }
+
+        if (trailEvent.HeatIncrease != 0)
+        {
+            PursuitState.IncreaseHeat(trailEvent.HeatIncrease);
         }
 
         if (trailEvent.DelayDays != 0)
@@ -904,6 +915,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             TrailEventKind = trailEvent.Kind,
             TrailEventId = trailEvent.Id,
             WalletDelta = trailEvent.WalletDelta,
+            WalletCash = Player.Wallet.Cash,
             FoodDelta = trailEvent.FoodDelta,
             CanteenChargeDelta = trailEvent.CanteenChargeDelta,
             HorseHungerDelta = trailEvent.HorseHungerDelta,
@@ -911,6 +923,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             HorseExhaustionDelta = trailEvent.HorseExhaustionDelta,
             DelayDays = trailEvent.DelayDays,
             HeatIncrease = trailEvent.HeatIncrease,
+            PursuitHeat = PursuitState.Heat,
             TravelModeChangedTo = travelModeChangedTo,
             DiaryMessage = fullDiaryMessage,
             HorseLostMessage = horseLossMessage

@@ -37,6 +37,17 @@ public sealed class Player
         Wallet = Wallet.Adjust(amount);
     }
 
+    /// <summary>
+    /// Sets wallet cash to an absolute value. Used by event-sourced Apply methods
+    /// that carry the absolute cash (e.g. TrailEventApplied) so command-path
+    /// direct mutations and replay-path event applications converge.
+    /// See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void SetCash(decimal value)
+    {
+        Wallet = new Wallet(value);
+    }
+
     public void SpendCash(decimal amount)
     {
         Wallet = Wallet.Spend(amount);
