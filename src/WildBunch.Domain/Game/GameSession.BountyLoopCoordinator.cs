@@ -410,6 +410,11 @@ public sealed partial class GameSession
 
         public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
         {
+            // Enter SheriffOffice context BEFORE assessment. This emits a TownActionContextEntered
+            // event if the context changed (advances turn). Even rejected turn-ins produce the
+            // context event — going to the sheriff's office takes time regardless of outcome.
+            _session.EnterActionContext(TownActionContext.SheriffOffice);
+
             var assessment = AssessSheriffTurnIn(targetSuspectId, isAlive);
             if (!assessment.Success)
             {
@@ -429,8 +434,18 @@ public sealed partial class GameSession
                 return rejectionResult;
             }
 
-            _session.Player.AdjustCash(settlementState.BountyAmount);
-            _session.CaseFile.RecordSheriffTurnInSettlementState(settlementState);
+            var settledEvent = new SheriffTurnInSettled
+            {
+                TargetSuspectId = targetSuspectId,
+                TargetName = assessment.TargetName!,
+                Disposition = assessment.Disposition!.Value,
+                IsAlive = isAlive,
+                BountyAmount = settlementState.BountyAmount,
+                Message = assessment.Message!,
+                Day = settlementState.Day,
+                Turn = settlementState.Turn
+            };
+            _session.ProduceEvent(settledEvent);
 
             return assessment with { SessionChanged = true };
         }

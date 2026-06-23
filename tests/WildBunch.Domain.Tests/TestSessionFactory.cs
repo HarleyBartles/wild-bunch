@@ -228,6 +228,21 @@ public static class TestSessionFactory
     }
 
     /// <summary>
+    /// Creates a session with a warranted suspect that has been confronted and secured alive.
+    /// The suspect is in Surrendered confrontation state, ready for sheriff turn-in.
+    /// Used by BUNCH-80 sheriff turn-in event-sourcing tests.
+    /// </summary>
+    public static GameSession CreateWithSecuredSuspect()
+    {
+        var session = CreateWithWarrantedSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.ResolveWantedSuspectConfrontation(
+            new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
     /// Creates a session with a single public clue matching the given source kind.
     /// The clue is in <see cref="CaseFile.PublicClues"/> and NOT in <see cref="CaseFile.KnownClues"/>.
     /// The town supports NoticeBoard, Telegraph, and Lodging services.

@@ -229,6 +229,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case WantedSuspectConfronted wc:
                 Apply(wc);
                 break;
+            case SheriffTurnInSettled ts:
+                Apply(ts);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -301,6 +304,25 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CaseFile.RecordWantedSuspectConfrontationState(confrontationState);
             UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
         }
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="SheriffTurnInSettled"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the sheriff turn-in flow: it adjusts
+    /// the player's wallet by the bounty amount and records the settlement state.
+    /// Clock advancement is handled by EnterActionContext(SheriffOffice).
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(SheriffTurnInSettled e)
+    {
+        Player.AdjustCash(e.BountyAmount);
+
+        var settlementState = new SheriffTurnInSettlementState(
+            e.TargetSuspectId, e.TargetName, e.Disposition,
+            e.IsAlive, e.BountyAmount, e.Day, e.Turn);
+        CaseFile.RecordSheriffTurnInSettlementState(settlementState);
 
         _version++;
     }

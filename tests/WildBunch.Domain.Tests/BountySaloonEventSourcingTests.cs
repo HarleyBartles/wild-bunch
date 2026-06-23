@@ -225,4 +225,61 @@ public sealed class BountySaloonEventSourcingTests
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(turnBefore, state.Turn);
     }
+
+    // --- Task 4: SheriffTurnInSettled event + SettleSheriffTurnIn ---
+
+    [Fact]
+    public void SettleSheriffTurnInProducesSettledEvent()
+    {
+        var session = TestSessionFactory.CreateWithSecuredSuspect();
+        // Pre-enter Saloon context (as the confrontation flow would do)
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+
+        var result = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        // Two events: TownActionContextEntered(SheriffOffice) + SheriffTurnInSettled
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<SheriffTurnInSettled>(session.UncommittedEvents[1]);
+        Assert.Equal(new SuspectId("suspect-1"), e.TargetSuspectId);
+        Assert.True(e.BountyAmount > 0);
+    }
+
+    [Fact]
+    public void SettleSheriffTurnIn_AdvancesTurn_WhenEnteringSheriffContextFromSaloon()
+    {
+        var session = TestSessionFactory.CreateWithSecuredSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+        var turnBefore = session.Clock.Turn;
+
+        session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        // Turn advances — context change from Saloon to SheriffOffice
+        Assert.Equal(turnBefore + 1, session.Clock.Turn);
+        Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void SettleSheriffTurnIn_Rejected_StillProducesContextEvent()
+    {
+        var session = TestSessionFactory.CreateWithWarrantedSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+        var turnBefore = session.Clock.Turn;
+
+        // Try to turn in a suspect that hasn't been confronted/secured
+        var result = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        // Turn-in is rejected (suspect not secured), but the player still went to the sheriff's office
+        Assert.False(result.Success);
+        Assert.Equal(turnBefore + 1, session.Clock.Turn);
+        Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
+        // Context event is in the stream even though no settlement event follows
+        Assert.Contains(session.UncommittedEvents, e => e is TownActionContextEntered);
+        Assert.DoesNotContain(session.UncommittedEvents, e => e is SheriffTurnInSettled);
+    }
 }
