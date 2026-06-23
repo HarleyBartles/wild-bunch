@@ -109,6 +109,9 @@ public sealed partial class GameSession
             case SheriffTurnInSettled ts:
                 session.Apply(ts);
                 break;
+            case SaloonPersonOfInterestConfronted sc:
+                session.Apply(sc);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }

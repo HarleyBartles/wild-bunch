@@ -282,4 +282,54 @@ public sealed class BountySaloonEventSourcingTests
         Assert.Contains(session.UncommittedEvents, e => e is TownActionContextEntered);
         Assert.DoesNotContain(session.UncommittedEvents, e => e is SheriffTurnInSettled);
     }
+
+    // --- Task 5: SaloonPersonOfInterestConfronted event + ConfrontSaloonPersonOfInterest ---
+
+    [Fact]
+    public void ConfrontCitizenWithWrongDeclarationProducesConfrontedEvent()
+    {
+        var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+
+        Assert.True(result.Success);
+        var confrontedEvent = session.UncommittedEvents.OfType<SaloonPersonOfInterestConfronted>().Single();
+        Assert.True(confrontedEvent.IsCitizen);
+        Assert.True(confrontedEvent.FineAmount > 0);
+    }
+
+    [Fact]
+    public void ConfrontArmedCorrectDeclarationProducesConfrontedAndSettledEvents()
+    {
+        var session = TestSessionFactory.CreateWithArmedCorrectDeclarationSetup();
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-public-1");
+
+        Assert.True(result.Success);
+        Assert.Contains(session.UncommittedEvents, e => e is WantedSuspectConfronted);
+        Assert.Contains(session.UncommittedEvents, e => e is SheriffTurnInSettled);
+        Assert.Contains(session.UncommittedEvents, e => e is SaloonPersonOfInterestConfronted);
+    }
+
+    [Fact]
+    public void ConfrontSaloonPerson_DoesNotAdvanceTurn_WhenAlreadyInSaloonContext()
+    {
+        var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
+        var turnAfterLookAround = session.Clock.Turn;
+
+        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+
+        Assert.Equal(turnAfterLookAround, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void ConfrontSaloonPerson_NoPersonOfInterest_DoesNotProduceEvent()
+    {
+        var session = TestSessionFactory.CreateWithNoConfrontableSaloonSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+
+        Assert.False(result.Success);
+        Assert.Empty(session.UncommittedEvents);
+    }
 }

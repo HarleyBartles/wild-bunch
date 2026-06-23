@@ -243,6 +243,87 @@ public static class TestSessionFactory
     }
 
     /// <summary>
+    /// Creates a session with an active citizen saloon person of interest (no suspects,
+    /// LookAroundSaloon called to set a citizen POI). Used by BUNCH-80 saloon confrontation
+    /// event-sourcing tests.
+    /// </summary>
+    public static GameSession CreateWithActiveCitizenSaloonPerson()
+    {
+        var session = CreateWithNoConfrontableSaloonSuspect();
+        session.LookAroundSaloon();
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
+    /// Creates a session with an active wanted-suspect saloon person of interest, a known
+    /// warrant with identity handle "warrant-public-1", and a firearm threat available
+    /// (Revolver + RevolverAmmo in inventory). The suspect is set as AvailableInTown and
+    /// LookAroundSaloon is called to set the active saloon person. Declaring "warrant-public-1"
+    /// triggers the armed+correct confrontation path. Used by BUNCH-80 saloon confrontation
+    /// event-sourcing tests.
+    /// </summary>
+    public static GameSession CreateWithArmedCorrectDeclarationSetup()
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(
+                new SuspectId("suspect-2"),
+                "Reno Pike",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("a black duster") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-public-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Red Wren" },
+                        new[] { "Raven-feather pin" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for a stage robbery.")
+            });
+
+        var inventory = new DomainInventory(
+            new[]
+            {
+                new InventoryItem(ItemKind.Revolver, 1),
+                new InventoryItem(ItemKind.RevolverAmmo, 2)
+            });
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: inventory, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        session.LookAroundSaloon();
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
     /// Creates a session with a single public clue matching the given source kind.
     /// The clue is in <see cref="CaseFile.PublicClues"/> and NOT in <see cref="CaseFile.KnownClues"/>.
     /// The town supports NoticeBoard, Telegraph, and Lodging services.

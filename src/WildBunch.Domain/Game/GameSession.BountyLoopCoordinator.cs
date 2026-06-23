@@ -36,7 +36,12 @@ public sealed partial class GameSession
                 var targetSuspect = _session.CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(activeSaloonSuspect));
                 if (targetSuspect is null)
                 {
-                    _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                    ProduceSaloonConfrontedEvent(
+                        "That person of interest is no longer available.",
+                        declaredWantedIdentityHandle,
+                        targetName: "the person of interest",
+                        personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                        outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected);
                     return SaloonPersonOfInterestConfrontationResult.Rejected(
                         "That person of interest is no longer available.",
                         declaredWantedIdentityHandle,
@@ -49,7 +54,12 @@ public sealed partial class GameSession
                     var presenceState = _session.GetWantedSuspectPresenceState(activeSaloonSuspect);
                     if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
                     {
-                        _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                        ProduceSaloonConfrontedEvent(
+                            $"{targetSuspect.Name} is no longer in the saloon.",
+                            declaredWantedIdentityHandle,
+                            targetName: targetSuspect.Name,
+                            personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                            outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected);
                         return SaloonPersonOfInterestConfrontationResult.Rejected(
                             $"{targetSuspect.Name} is no longer in the saloon.",
                             declaredWantedIdentityHandle,
@@ -60,7 +70,12 @@ public sealed partial class GameSession
 
                     if (_session.CaseFile.TryGetWantedSuspectConfrontationState(activeSaloonSuspect, out var existingState))
                     {
-                        _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                        ProduceSaloonConfrontedEvent(
+                            $"{existingState.TargetName} has already been confronted.",
+                            declaredWantedIdentityHandle,
+                            targetName: existingState.TargetName,
+                            personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                            outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected);
                         return SaloonPersonOfInterestConfrontationResult.Rejected(
                             $"{existingState.TargetName} has already been confronted.",
                             declaredWantedIdentityHandle,
@@ -88,7 +103,12 @@ public sealed partial class GameSession
                         var settlementResult = SettleSheriffTurnIn(activeSaloonSuspect, isAlive: true);
                         if (!settlementResult.Success)
                         {
-                            _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                            ProduceSaloonConfrontedEvent(
+                                settlementResult.Message,
+                                declaredWantedIdentityHandle,
+                                targetName: activeSaloonWarrant.TargetName,
+                                personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                                outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected);
                             return SaloonPersonOfInterestConfrontationResult.Rejected(
                                 settlementResult.Message,
                                 declaredWantedIdentityHandle,
@@ -98,8 +118,16 @@ public sealed partial class GameSession
                                 personOfInterestKind: activeSaloonPersonOfInterestKind);
                         }
 
-                        _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
                         var settlementMessage = $"{armedWantedResult.Message} The sheriff pays you ${settlementResult.BountyAmount:0.00}.";
+                        ProduceSaloonConfrontedEvent(
+                            settlementMessage,
+                            declaredWantedIdentityHandle,
+                            targetSuspectId: activeSaloonSuspect,
+                            targetName: activeSaloonWarrant.TargetName,
+                            personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                            outcome: SaloonPersonOfInterestConfrontationOutcome.Surrendered,
+                            isAlive: true,
+                            isSecured: true);
                         return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(armedWantedResult) with
                         {
                             Message = settlementMessage
@@ -110,21 +138,27 @@ public sealed partial class GameSession
                     {
                         var wantedWalletBefore = _session.Player.Wallet.Cash;
                         var wantedFineAmount = BountySettlementPolicy.CalculateCappedFine(wantedWalletBefore, GameSession.CitizenDeclarationFine);
-                        if (wantedFineAmount > 0m)
-                        {
-                            _session.Player.AdjustCash(-wantedFineAmount);
-                        }
-
-                        _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
                         var publicTargetName = activeSaloonPersonOfInterestDescriptor ?? "the person of interest";
                         var wrongDeclarationMessage = $"You bring {publicTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${wantedFineAmount:0.00}.";
+
+                        ProduceSaloonConfrontedEvent(
+                            wrongDeclarationMessage,
+                            declaredWantedIdentityHandle,
+                            targetName: publicTargetName,
+                            personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                            outcome: SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
+                            fineAmount: wantedFineAmount,
+                            walletBefore: wantedWalletBefore,
+                            isCitizen: false,
+                            isAlive: true,
+                            isSecured: false);
                         return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
                             declaredWantedIdentityHandle,
                             publicTargetName,
                             wrongDeclarationMessage,
                             wantedFineAmount,
                             wantedWalletBefore,
-                            _session.Player.Wallet.Cash,
+                            _session.Player.Wallet.Cash - wantedFineAmount,
                             isCitizen: false,
                             isAlive: true,
                             isSecured: false);
@@ -136,13 +170,26 @@ public sealed partial class GameSession
                         declaredWantedIdentityHandle);
                     if (wantedResult.Success)
                     {
-                        _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                        ProduceSaloonConfrontedEvent(
+                            wantedResult.Message,
+                            declaredWantedIdentityHandle,
+                            targetSuspectId: activeSaloonSuspect,
+                            targetName: activeSaloonWarrant.TargetName,
+                            personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                            outcome: SaloonPersonOfInterestConfrontationOutcome.Fled,
+                            isAlive: true,
+                            isSecured: false);
                     }
 
                     return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(wantedResult);
                 }
 
-                _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                ProduceSaloonConfrontedEvent(
+                    "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
+                    declaredWantedIdentityHandle,
+                    targetName: targetSuspect.Name,
+                    personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                    outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected);
                 return SaloonPersonOfInterestConfrontationResult.Rejected(
                     "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
                     declaredWantedIdentityHandle,
@@ -152,24 +199,64 @@ public sealed partial class GameSession
 
             var walletBefore = _session.Player.Wallet.Cash;
             var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, GameSession.CitizenDeclarationFine);
-            if (fineAmount > 0m)
-            {
-                _session.Player.AdjustCash(-fineAmount);
-            }
-
             var citizenTargetName = activeSaloonPersonOfInterestDescriptor ?? throw new InvalidOperationException("A citizen person of interest descriptor is required.");
-            _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
             var citizenNarration = $"You bring {citizenTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
+
+            ProduceSaloonConfrontedEvent(
+                citizenNarration,
+                declaredWantedIdentityHandle,
+                targetName: citizenTargetName,
+                personOfInterestKind: SaloonPersonOfInterestKind.Citizen,
+                outcome: SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
+                fineAmount: fineAmount,
+                walletBefore: walletBefore,
+                isCitizen: true);
             return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
                 declaredWantedIdentityHandle,
                 citizenTargetName,
                 citizenNarration,
                 fineAmount,
                 walletBefore,
-                _session.Player.Wallet.Cash,
+                walletBefore - fineAmount,
                 isCitizen: true,
                 isAlive: null,
                 isSecured: null);
+        }
+
+        /// <summary>
+        /// Produces a <see cref="SaloonPersonOfInterestConfronted"/> event via the session's
+        /// event-sourcing pipeline. The Apply method clears the active saloon person and
+        /// applies any fine. WalletAfter is computed from WalletBefore - FineAmount.
+        /// </summary>
+        private void ProduceSaloonConfrontedEvent(
+            string message,
+            string? declaredWantedIdentityHandle,
+            SuspectId? targetSuspectId = null,
+            string targetName = "",
+            SaloonPersonOfInterestKind personOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+            SaloonPersonOfInterestConfrontationOutcome outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected,
+            bool? isAlive = null,
+            bool? isSecured = null,
+            decimal? fineAmount = null,
+            decimal? walletBefore = null,
+            bool isCitizen = false)
+        {
+            var e = new SaloonPersonOfInterestConfronted
+            {
+                Message = message,
+                TargetSuspectId = targetSuspectId,
+                TargetName = targetName,
+                PersonOfInterestKind = personOfInterestKind,
+                Outcome = outcome,
+                IsAlive = isAlive,
+                IsSecured = isSecured,
+                FineAmount = fineAmount,
+                WalletBefore = walletBefore,
+                WalletAfter = fineAmount is { } fine && walletBefore is { } before ? before - fine : walletBefore,
+                DeclaredWantedIdentityHandle = declaredWantedIdentityHandle,
+                IsCitizen = isCitizen
+            };
+            _session.ProduceEvent(e);
         }
 
         public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
@@ -192,7 +279,13 @@ public sealed partial class GameSession
 
             if (!_session.TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
             {
-                _session.CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+                ProduceSaloonConfrontedEvent(
+                    $"There is no wanted notice for {targetSuspect.Name}.",
+                    declaredWantedIdentityHandle,
+                    targetSuspectId: targetSuspect.Id,
+                    targetName: targetSuspect.Name,
+                    personOfInterestKind: SaloonPersonOfInterestKind.WantedSuspect,
+                    outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected);
                 return WantedSuspectConfrontationResult.Rejected(
                     $"There is no wanted notice for {targetSuspect.Name}.",
                     declaredWantedIdentityHandle,

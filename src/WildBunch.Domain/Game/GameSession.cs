@@ -232,6 +232,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case SheriffTurnInSettled ts:
                 Apply(ts);
                 break;
+            case SaloonPersonOfInterestConfronted sc:
+                Apply(sc);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -323,6 +326,26 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             e.TargetSuspectId, e.TargetName, e.Disposition,
             e.IsAlive, e.BountyAmount, e.Day, e.Turn);
         CaseFile.RecordSheriffTurnInSettlementState(settlementState);
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="SaloonPersonOfInterestConfronted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the saloon person confrontation flow:
+    /// it clears the active saloon person of interest and optionally fines the player.
+    /// No RecordCaseUpdate call — log entries come from delegated WantedSuspectConfronted
+    /// events. Clock advancement is handled by EnterActionContext (already in Saloon context).
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(SaloonPersonOfInterestConfronted e)
+    {
+        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+
+        if (e.FineAmount is { } fine && fine > 0m)
+        {
+            Player.AdjustCash(-fine);
+        }
 
         _version++;
     }
