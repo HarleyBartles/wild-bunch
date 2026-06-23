@@ -295,7 +295,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         // 2. Reload + LookAroundSaloon (enters Saloon context) + store + commit
         var loaded = await repo.GetByIdAsync(session.Id);
-        loaded!.LookAroundSaloon();
+        var lookResult = loaded!.LookAroundSaloon();
+        Assert.True(lookResult.Success, $"LookAroundSaloon failed: {lookResult.Message}");
         await repo.StoreAsync(loaded);
         await uow.CommitAsync();
 

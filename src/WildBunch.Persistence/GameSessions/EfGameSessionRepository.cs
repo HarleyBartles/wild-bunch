@@ -95,6 +95,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         UpsertComponent(entity.Id, GameSessionComponentNames.Setup, _serializer.SerializeSetup(session.Entropy), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.TravelRandomness, _serializer.SerializeTravelRandomness(session.TravelRandomness), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.TownVisitState, _serializer.SerializeTownVisitState(session.CurrentTownVisit), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.CurrentActionContext, _serializer.SerializeCurrentActionContext(session.CurrentActionContext), now);
 
         if (session.Journey is null)
         {
@@ -229,6 +230,10 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var wantedSuspectPresenceEntries = wantedSuspectPresenceLedgerJson is null
             ? Array.Empty<WantedSuspectPresenceEntry>()
             : _serializer.DeserializeWantedSuspectPresenceLedger(wantedSuspectPresenceLedgerJson);
+        var currentActionContextJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CurrentActionContext);
+        var currentActionContext = currentActionContextJson is null
+            ? TownActionContext.None
+            : _serializer.DeserializeCurrentActionContext(currentActionContextJson);
 
         var session = _serializer.RehydrateGameSession(
             store.Envelope.Id,
@@ -261,6 +266,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             ? (int)store.Envelope.SnapshotVersion
             : (int)store.Envelope.StreamVersion;
         GameSessionRehydrator.SetVersion(session, initialVersion);
+
+        // Set CurrentActionContext from snapshot. If there are post-snapshot events,
+        // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).
+        // When the snapshot is current, this restores the persisted context.
+        GameSessionRehydrator.SetCurrentActionContext(session, currentActionContext);
 
         if (hasPostSnapshotEvents)
         {
