@@ -2,23 +2,21 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 
 namespace WildBunch.Application.Games.Commands;
 
-public sealed class LookAroundSaloonHandler
+public sealed class LookAroundSaloonHandler : GameSessionCommandHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
-    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
     private readonly JournalResolver _journalResolver;
 
     public LookAroundSaloonHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
         JournalResolver journalResolver)
+        : base(gameSessionRepository, gameSessionUnitOfWork)
     {
-        _gameSessionRepository = gameSessionRepository;
-        _gameSessionUnitOfWork = gameSessionUnitOfWork;
         _journalResolver = journalResolver;
     }
 
@@ -27,21 +25,15 @@ public sealed class LookAroundSaloonHandler
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
+        var sessionId = new GameSessionId(command.GameSessionId);
 
-        var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        var actionResult = session.LookAroundSaloon();
-
-        if (actionResult.SessionChanged)
+        return await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
-            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        return new InvestigationActionResultDto(
-            actionResult.Success,
-            actionResult.Message,
-            JournalMapper.ToDto(_journalResolver.Resolve(session)));
+            var actionResult = session.LookAroundSaloon();
+            return new InvestigationActionResultDto(
+                actionResult.Success,
+                actionResult.Message,
+                JournalMapper.ToDto(_journalResolver.Resolve(session)));
+        }, cancellationToken).ConfigureAwait(false);
     }
 }
