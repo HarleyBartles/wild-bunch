@@ -94,6 +94,9 @@ public sealed partial class GameSession
             case StoreItemPurchased p:
                 session.Apply(p);
                 break;
+            case InvestigationPerformed ip:
+                session.Apply(ip);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }

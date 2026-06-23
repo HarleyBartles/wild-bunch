@@ -40,6 +40,11 @@ public sealed class DiaryProjector : IDomainEventProjector<DiaryProjection>
                     turn++;
                     entries.Add(new DiaryEntry(day, turn, $"Bought supplies at the general store."));
                     break;
+
+                case InvestigationPerformed ip:
+                    turn++;
+                    entries.Add(new DiaryEntry(day, turn, ip.Message));
+                    break;
             }
         }
 

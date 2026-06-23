@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
@@ -21,7 +22,9 @@ public sealed record GameSessionDto(
     TravelJourneyDto? Journey,
     TravelDiaryDto? TravelDiary,
     IReadOnlyList<GameLogEntryDto> LogEntries,
-    ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest)
+    ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest,
+    HudProjection? HudProjection = null,
+    DiaryProjection? DiaryProjection = null)
 {
     [JsonIgnore]
     public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect

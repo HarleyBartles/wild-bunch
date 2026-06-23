@@ -60,6 +60,7 @@ public sealed class ReadWantedPostersHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.None);
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
@@ -90,6 +91,7 @@ public sealed class ReadWantedPostersHandlerTests
         var session = CreateSession(TownServices.NoticeBoard);
         StartJourney(session);
         session.Journey!.MarkCompleted();
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 

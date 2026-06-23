@@ -272,4 +272,37 @@ public sealed class ProjectionTests
         Assert.Equal(0m, hud.WalletCash);
         Assert.Empty(hud.InventoryItems);
     }
+
+    [Fact]
+    public void DiaryProjector_InvestigationPerformed_AddsDiaryEntryWithMessage()
+    {
+        var projector = new DiaryProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("dustvale"),
+                StartingTownName = "Dustvale",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                Difficulty = TravelDifficulty.Normal,
+                TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
+                Entropy = AdventureRandomnessPolicy.Standard
+            },
+            new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.LocalGossip,
+                TownId = new TownId("dustvale"),
+                Message = "You ask around for local gossip and uncover a public lead: a dusty boot print."
+            }
+        };
+
+        var projection = projector.Project(events);
+
+        Assert.Equal(2, projection.Entries.Count);
+        Assert.Contains(projection.Entries, e => e.Summary.Contains("public lead"));
+        Assert.Equal(1, projection.Entries[1].Turn);
+    }
 }

@@ -370,6 +370,87 @@ public sealed class CaseFile
         return null;
     }
 
+    public Clue? PeekNextPublicClue(Func<Clue, bool> canReveal)
+    {
+        ArgumentNullException.ThrowIfNull(canReveal);
+        foreach (var clue in _publicClues)
+        {
+            if (!canReveal(clue)) continue;
+            if (_knownClues.Any(existing => existing.Id.Equals(clue.Id))) continue;
+            return clue;
+        }
+        return null;
+    }
+
+    public Warrant? PeekNextPublicWarrant(InvestigationSourceKind? sourceKind = null)
+    {
+        foreach (var warrant in _publicWarrants)
+        {
+            if (sourceKind.HasValue && warrant.Terms.SourceKind != sourceKind) continue;
+            if (_knownWarrants.Any(existing => existing.Id.Equals(warrant.Id))) continue;
+            return warrant;
+        }
+        return null;
+    }
+
+    public void RevealClue(Clue clue)
+    {
+        ArgumentNullException.ThrowIfNull(clue);
+        for (var i = _publicClues.Count - 1; i >= 0; i--)
+        {
+            if (_knownClues.Any(existing => existing.Id.Equals(_publicClues[i].Id)))
+                _publicClues.RemoveAt(i);
+        }
+        var index = _publicClues.FindIndex(c => c.Id.Equals(clue.Id));
+        if (index >= 0) _publicClues.RemoveAt(index);
+        DiscoverClue(clue);
+    }
+
+    /// <summary>
+    /// Reveals a public clue by ID. Used by <see cref="GameSession.Apply(InvestigationPerformed)"/>
+    /// during event replay, where the event carries only the clue ID (not the full domain object).
+    /// The clue is looked up from <see cref="PublicClues"/> by ID. If the clue is not in the
+    /// public pool (e.g., already revealed), this is an idempotent no-op.
+    /// </summary>
+    public void RevealClueById(ClueId clueId)
+    {
+        ArgumentNullException.ThrowIfNull(clueId);
+        var clue = _publicClues.FirstOrDefault(c => c.Id.Equals(clueId));
+        if (clue is not null)
+        {
+            RevealClue(clue);
+        }
+    }
+
+    public void RevealWarrant(Warrant warrant)
+    {
+        ArgumentNullException.ThrowIfNull(warrant);
+        for (var i = _publicWarrants.Count - 1; i >= 0; i--)
+        {
+            if (_knownWarrants.Any(existing => existing.Id.Equals(_publicWarrants[i].Id)))
+                _publicWarrants.RemoveAt(i);
+        }
+        var index = _publicWarrants.FindIndex(w => w.Id.Equals(warrant.Id));
+        if (index >= 0) _publicWarrants.RemoveAt(index);
+        DiscoverWarrant(warrant);
+    }
+
+    /// <summary>
+    /// Reveals a public warrant by ID. Used by <see cref="GameSession.Apply(InvestigationPerformed)"/>
+    /// during event replay, where the event carries only the warrant ID (not the full domain object).
+    /// The warrant is looked up from <see cref="PublicWarrants"/> by ID. If the warrant is not in
+    /// the public pool (e.g., already revealed), this is an idempotent no-op.
+    /// </summary>
+    public void RevealWarrantById(WarrantId warrantId)
+    {
+        ArgumentNullException.ThrowIfNull(warrantId);
+        var warrant = _publicWarrants.FirstOrDefault(w => w.Id.Equals(warrantId));
+        if (warrant is not null)
+        {
+            RevealWarrant(warrant);
+        }
+    }
+
     public bool TryGetSuspectTurf(SuspectId suspectId, out TownId turfTownId)
     {
         foreach (var assignment in _suspectTurfAssignments)

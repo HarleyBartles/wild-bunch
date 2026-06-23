@@ -260,6 +260,39 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _version++;
     }
 
+    /// <summary>
+    /// Applies an <see cref="InvestigationPerformed"/> event to mutate session state.
+    /// This is the event-sourced mutation path for investigation flows: it marks the
+    /// investigation source as spent for the current visit, advances the clock, reveals
+    /// the clue and/or warrant carried by the event, and appends the case-update log
+    /// entry. See ADR-0028.
+    /// </summary>
+    private void Apply(InvestigationPerformed e)
+    {
+        if (e.SourceKind == InvestigationSourceKind.SheriffWarrants)
+        {
+            CurrentTown.CheckWantedPosters();
+        }
+        else
+        {
+            CurrentTown.CheckSource(e.SourceKind);
+        }
+
+        RecordCaseUpdate(e.Message, advanceClock: e.AdvanceClock);
+
+        if (e.ClueId is not null)
+        {
+            CaseFile.RevealClueById(e.ClueId.Value);
+        }
+
+        if (e.WarrantId is not null)
+        {
+            CaseFile.RevealWarrantById(e.WarrantId.Value);
+        }
+
+        _version++;
+    }
+
     public WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
         => _wantedSuspectPresenceLedger.GetState(suspectId);
 
@@ -1634,36 +1667,80 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
-        if (CurrentTown.CheckWantedPosters() == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTownVisit.WantedPostersSpent)
         {
-            RecordCaseUpdate("You study the wanted posters again, but find nothing new.");
-            return ReadWantedPostersResult.Succeeded("You study the wanted posters again, but find nothing new.", sessionChanged: true);
+            var msg = "You study the wanted posters again, but find nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.SheriffWarrants,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var warrant = CaseFile.RevealNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
-        var clue = CaseFile.RevealNextPublicClue(publicClue =>
+        var warrant = CaseFile.PeekNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
+        var clue = CaseFile.PeekNextPublicClue(publicClue =>
             IsPlayerKnownClue(publicClue)
             && publicClue.SourceKind == InvestigationSourceKind.SheriffWarrants);
 
         if (warrant is null && clue is null)
         {
-            RecordCaseUpdate("You study the wanted posters, but find nothing new.");
-            return ReadWantedPostersResult.Succeeded("You study the wanted posters, but find nothing new.", sessionChanged: true);
+            var msg = "You study the wanted posters, but find nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.SheriffWarrants,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
         }
 
         if (warrant is not null && clue is not null)
         {
-            RecordCaseUpdate($"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}, noting a public lead: {DescribeClueLead(clue.Description)}.");
+            var msg = $"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}, noting a public lead: {DescribeClueLead(clue.Description)}.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.SheriffWarrants,
+                TownId = CurrentTown.TownId,
+                Message = msg,
+                ClueId = clue?.Id,
+                WarrantId = warrant?.Id
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
             return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a wanted notice and a public lead.", sessionChanged: true);
         }
 
         if (warrant is not null)
         {
-            RecordCaseUpdate($"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}.");
-            return ReadWantedPostersResult.Succeeded($"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}.", sessionChanged: true);
+            var msg = $"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.SheriffWarrants,
+                TownId = CurrentTown.TownId,
+                Message = msg,
+                WarrantId = warrant?.Id
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You study the wanted posters and note a public lead: {DescribeClueLead(clue!.Description)}.");
+        var clueOnlyMsg = $"You study the wanted posters and note a public lead: {DescribeClueLead(clue!.Description)}.";
+        var clueOnlyEvent = new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.SheriffWarrants,
+            TownId = CurrentTown.TownId,
+            Message = clueOnlyMsg,
+            ClueId = clue?.Id
+        };
+        Apply(clueOnlyEvent);
+        _uncommittedEvents.Add(clueOnlyEvent);
         return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1741,28 +1818,51 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var telegraphLeadSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.TelegraphLead);
-
         if (!CurrentTown.IsAvailable(InvestigationSourceKind.TelegraphLead))
         {
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
 
-        if (CurrentTown.CheckSource(telegraphLeadSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead))
         {
-            RecordCaseUpdate("You ask after telegraph leads again, but no new wire has come in.");
-            return CaseInvestigationResult.Succeeded("You ask after telegraph leads again, but no new wire has come in.", sessionChanged: true);
+            var msg = "You ask after telegraph leads again, but no new wire has come in.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.TelegraphLead,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.TelegraphLead);
 
         if (clue is null)
         {
-            RecordCaseUpdate("You follow the telegraph leads, but find nothing new.");
-            return CaseInvestigationResult.Succeeded("You follow the telegraph leads, but find nothing new.", sessionChanged: true);
+            var msg = "You follow the telegraph leads, but find nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.TelegraphLead,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.");
+        var foundMsg = $"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.";
+        var foundEvent = new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.TelegraphLead,
+            TownId = CurrentTown.TownId,
+            Message = foundMsg,
+            ClueId = clue?.Id
+        };
+        Apply(foundEvent);
+        _uncommittedEvents.Add(foundEvent);
         return CaseInvestigationResult.Succeeded("You follow the telegraph leads and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1773,23 +1873,46 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var localGossipSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.LocalGossip);
-
-        if (CurrentTown.CheckSource(localGossipSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip))
         {
-            RecordCaseUpdate("You ask around again, but hear nothing new.");
-            return CaseInvestigationResult.Succeeded("You ask around again, but hear nothing new.", sessionChanged: true);
+            var msg = "You ask around again, but hear nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.LocalGossip,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.LocalGossip);
+        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalGossip);
 
         if (clue is null)
         {
-            RecordCaseUpdate("You ask around for local gossip, but hear nothing new.");
-            return CaseInvestigationResult.Succeeded("You ask around for local gossip, but hear nothing new.", sessionChanged: true);
+            var msg = "You ask around for local gossip, but hear nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.LocalGossip,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You ask around for local gossip and uncover a public lead: {DescribeClueLead(clue.Description)}.");
+        var foundMsg = $"You ask around for local gossip and uncover a public lead: {DescribeClueLead(clue.Description)}.";
+        var foundEvent = new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.LocalGossip,
+            TownId = CurrentTown.TownId,
+            Message = foundMsg,
+            ClueId = clue?.Id
+        };
+        Apply(foundEvent);
+        _uncommittedEvents.Add(foundEvent);
         return CaseInvestigationResult.Succeeded("You ask around for local gossip and uncover a public lead.", sessionChanged: true);
     }
 
@@ -1800,23 +1923,46 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var noticeBoardSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.NoticeBoard);
-
-        if (CurrentTown.CheckSource(noticeBoardSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard))
         {
-            RecordCaseUpdate("You inspect the notice board again, but nothing new has been posted.");
-            return CaseInvestigationResult.Succeeded("You inspect the notice board again, but nothing new has been posted.", sessionChanged: true);
+            var msg = "You inspect the notice board again, but nothing new has been posted.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.NoticeBoard,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(InvestigationSourceKind.NoticeBoard);
+        var clue = CaseFile.PeekNextPublicClue(c => c.SourceKind == InvestigationSourceKind.NoticeBoard);
 
         if (clue is null)
         {
-            RecordCaseUpdate("You inspect the notice board, but find nothing new.");
-            return CaseInvestigationResult.Succeeded("You inspect the notice board, but find nothing new.", sessionChanged: true);
+            var msg = "You inspect the notice board, but find nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.NoticeBoard,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You inspect the notice board and uncover a civic notice: {DescribeClueLead(clue.Description)}.");
+        var foundMsg = $"You inspect the notice board and uncover a civic notice: {DescribeClueLead(clue.Description)}.";
+        var foundEvent = new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.NoticeBoard,
+            TownId = CurrentTown.TownId,
+            Message = foundMsg,
+            ClueId = clue?.Id
+        };
+        Apply(foundEvent);
+        _uncommittedEvents.Add(foundEvent);
         return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a civic notice.", sessionChanged: true);
     }
 
@@ -1827,23 +1973,46 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var sheriffRecordsSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.LocalRecords);
-
-        if (CurrentTown.CheckSource(sheriffRecordsSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords))
         {
-            RecordCaseUpdate("You check the local records again, but find nothing new.");
-            return CaseInvestigationResult.Succeeded("You check the local records again, but find nothing new.", sessionChanged: true);
+            var msg = "You check the local records again, but find nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.LocalRecords,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var clue = CaseFile.RevealNextPublicClue(clue => IsPlayerKnownClue(clue) && clue.SourceKind == InvestigationSourceKind.LocalRecords);
+        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalRecords);
 
         if (clue is null)
         {
-            RecordCaseUpdate("You check the local records, but find nothing new.");
-            return CaseInvestigationResult.Succeeded("You check the local records, but find nothing new.", sessionChanged: true);
+            var msg = "You check the local records, but find nothing new.";
+            var e = new InvestigationPerformed
+            {
+                SourceKind = InvestigationSourceKind.LocalRecords,
+                TownId = CurrentTown.TownId,
+                Message = msg
+            };
+            Apply(e);
+            _uncommittedEvents.Add(e);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        RecordCaseUpdate($"You check the local records and uncover a public lead: {DescribeClueLead(clue.Description)}.");
+        var foundMsg = $"You check the local records and uncover a public lead: {DescribeClueLead(clue.Description)}.";
+        var foundEvent = new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.LocalRecords,
+            TownId = CurrentTown.TownId,
+            Message = foundMsg,
+            ClueId = clue?.Id
+        };
+        Apply(foundEvent);
+        _uncommittedEvents.Add(foundEvent);
         return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true);
     }
 

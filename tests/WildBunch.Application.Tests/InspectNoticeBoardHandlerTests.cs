@@ -67,6 +67,7 @@ public sealed class InspectNoticeBoardHandlerTests
         var session = CreateSession(TownServices.NoticeBoard);
         StartJourney(session);
         session.Journey!.MarkCompleted();
+        session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new InspectNoticeBoardHandler(repository, repository, new JournalResolver());
 

@@ -1,5 +1,6 @@
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -23,7 +24,8 @@ public sealed class PurchaseStoreItemHandlerTests
         var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -49,7 +51,8 @@ public sealed class PurchaseStoreItemHandlerTests
         var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -74,7 +77,8 @@ public sealed class PurchaseStoreItemHandlerTests
         var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -98,7 +102,8 @@ public sealed class PurchaseStoreItemHandlerTests
         var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
+            new HudProjector(), new DiaryProjector());
 
         await Assert.ThrowsAsync<TownNotFoundException>(() => handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -121,7 +126,8 @@ public sealed class PurchaseStoreItemHandlerTests
         StartJourney(session);
         session.MarkEventsCommitted();
         repository.Seed(session);
-        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver());
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
+            new HudProjector(), new DiaryProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -138,6 +144,32 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(JourneyStatus.Active, result.CurrentSession.Journey!.Status);
         Assert.Equal(2, result.CurrentSession.LogEntries.Count);
+    }
+
+    [Fact]
+    public async Task PurchaseReturnsDtoWithHudAndDiaryProjections()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession();
+        session.MarkEventsCommitted();
+        repository.Seed(session);
+        var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
+            new HudProjector(), new DiaryProjector());
+
+        var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
+            session.Id.Value,
+            "pinecross",
+            StoreVendorType.GeneralStore,
+            DomainItemKind.Food,
+            2));
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.CurrentSession.HudProjection);
+        Assert.Equal(21m, result.CurrentSession.HudProjection!.WalletCash);
+        Assert.NotNull(result.CurrentSession.DiaryProjection);
+        Assert.NotEmpty(result.CurrentSession.DiaryProjection!.Entries);
+        Assert.Equal(session.Id.Value, result.CurrentSession.HudProjection.SessionId);
+        Assert.Equal(session.Id.Value, result.CurrentSession.DiaryProjection.SessionId);
     }
 
     private static GameSession CreateSession()
