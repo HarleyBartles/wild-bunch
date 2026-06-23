@@ -723,12 +723,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return TravelJourneyStepResult.Failed("You are already on the trail.");
         }
 
-        Journey = TravelJourney.Start(preview, _nextJourneySequence++, BuildJourneyOpeningNarration(preview));
-        _travelDiaryDays.Clear();
+        var newJourney = TravelJourney.Start(preview, _nextJourneySequence, BuildJourneyOpeningNarration(preview));
         var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
-        AddLogEntry(
-            GameLogEntryKind.Travel,
-            startMessage);
+        ProduceEvent(new JourneyStarted
+        {
+            JourneySnapshot = newJourney.ToSnapshot(TravelRules),
+            DiaryMessage = startMessage
+        });
 
         return new TravelJourneyStepResult(
             true,
@@ -736,7 +737,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             startMessage,
             startMessage,
             0,
-            Journey.ToSnapshot(TravelRules));
+            Journey!.ToSnapshot(TravelRules));
     }
 
     public TravelJourneyStepResult AdvanceJourneyDay()
