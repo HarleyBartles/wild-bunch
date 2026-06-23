@@ -452,12 +452,47 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         if (e.HealthDelta != 0)
             Player.AdjustHealth(e.HealthDelta);
-        if (e.PursuitHeatDelta != 0)
-            PursuitState.IncreaseHeat(e.PursuitHeatDelta);
+        PursuitState.SetHeat(e.PursuitHeat);
+        // Player food/canteen/horse feed/horse state are set ABSOLUTE from the journey
+        // snapshot. On the command path, direct mutations in PrepareTravelDayAdvance
+        // already set these values, so these are no-ops. On replay, they set the
+        // correct values from the snapshot. See ADR-0028 and BUNCH-83.
+        SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
         RecordTravelUpdate(e.DiaryMessage);
         if (!string.IsNullOrEmpty(e.HorseLostMessage))
             RecordTravelUpdate(e.HorseLostMessage);
         _version++;
+    }
+
+    /// <summary>
+    /// Sets player food, canteen, horse feed, and horse state to match the journey
+    /// snapshot. Used by Apply(TravelDayAdvanced) to converge command and replay paths.
+    /// On the command path, these are no-ops (player state already matches).
+    /// On replay, they set the correct values from the authoritative snapshot.
+    /// </summary>
+    private void SyncPlayerFromJourneySnapshot(TravelJourneySnapshot snapshot)
+    {
+        var foodDelta = snapshot.AvailableFood - Player.GetQuantity(ItemKind.Food);
+        if (foodDelta != 0)
+            ApplyFoodDelta(foodDelta);
+
+        var canteen = Player.GetCanteenState();
+        if (canteen is not null && canteen.Charges != snapshot.AvailableCanteenCharges)
+            Player.SetCanteenState(new CanteenState(
+                Math.Min(canteen.Capacity, snapshot.AvailableCanteenCharges),
+                canteen.Capacity));
+
+        var horseFeedDelta = snapshot.AvailableHorseFeed - Player.GetQuantity(ItemKind.HorseFeed);
+        if (horseFeedDelta != 0)
+        {
+            if (horseFeedDelta > 0)
+                Player.AddItem(ItemKind.HorseFeed, horseFeedDelta);
+            else
+                Player.RemoveQuantity(ItemKind.HorseFeed, -horseFeedDelta);
+        }
+
+        if (snapshot.HorseState is { } horseState)
+            Player.SetHorseState(horseState);
     }
 
     /// <summary>
@@ -811,28 +846,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return string.Empty;
     }
 
-    private TrailEventApplicationResult ApplyTrailEvent(JourneyTrailEventState trailEvent)
+    private TrailEventApplicationResult ApplyTrailEvent(
+        JourneyTrailEventState trailEvent,
+        string prefixHorseLostMessage,
+        string encounterMessage)
     {
         ArgumentNullException.ThrowIfNull(trailEvent);
 
-        if (trailEvent.WalletDelta != 0m)
-        {
-            Player.AdjustCash(trailEvent.WalletDelta);
-        }
-
+        // Journey-internal state updates (captured ABSOLUTE in snapshot).
         if (trailEvent.FoodDelta != 0)
         {
-            if (trailEvent.FoodDelta > 0)
-            {
-                Player.AddItem(ItemKind.Food, trailEvent.FoodDelta);
-                Journey!.AdjustFood(trailEvent.FoodDelta);
-            }
-            else
-            {
-                var foodLoss = Math.Abs(trailEvent.FoodDelta);
-                Player.RemoveQuantity(ItemKind.Food, foodLoss);
-                Journey!.AdjustFood(trailEvent.FoodDelta);
-            }
+            Journey!.AdjustFood(trailEvent.FoodDelta);
         }
 
         if (trailEvent.CanteenChargeDelta != 0)
@@ -841,7 +865,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             if (canteenState is not null)
             {
                 var nextCanteenState = canteenState.AdjustCharges(trailEvent.CanteenChargeDelta);
-                Player.SetCanteenState(nextCanteenState);
                 Journey!.SetCanteenCharges(nextCanteenState.Charges);
             }
         }
@@ -852,7 +875,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             if (horseState is not null)
             {
                 horseState = ApplyHorseDelta(horseState, trailEvent);
-                Player.SetHorseState(horseState);
                 Journey!.SetHorseState(horseState);
             }
         }
@@ -862,17 +884,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Journey!.AddDelayDays(trailEvent.DelayDays);
         }
 
-        if (trailEvent.HeatIncrease != 0)
-        {
-            PursuitState.IncreaseHeat(trailEvent.HeatIncrease);
-        }
-
         var horseLossMessage = string.Empty;
+        TravelMode? travelModeChangedTo = null;
         if (Journey!.TravelMode == TravelMode.Mounted && Player.GetHorseState()?.CanProvideMountedTravelFor(TravelRules) == false)
         {
             horseLossMessage = DescribeHorseLoss(Player.GetHorseState(), TravelRules);
             Journey.RecalculatePacing(TravelMode.Foot);
+            travelModeChangedTo = TravelMode.Foot;
         }
+
+        var fullDiaryMessage = PrependHorseLossMessage(
+            CombineHorseLossMessage(prefixHorseLostMessage, horseLossMessage),
+            encounterMessage);
+
+        var postEventSnapshot = Journey.ToSnapshot(TravelRules);
+        ProduceEvent(new TrailEventApplied
+        {
+            JourneySnapshot = postEventSnapshot,
+            TrailEventKind = trailEvent.Kind,
+            TrailEventId = trailEvent.Id,
+            WalletDelta = trailEvent.WalletDelta,
+            FoodDelta = trailEvent.FoodDelta,
+            CanteenChargeDelta = trailEvent.CanteenChargeDelta,
+            HorseHungerDelta = trailEvent.HorseHungerDelta,
+            HorseThirstDelta = trailEvent.HorseThirstDelta,
+            HorseExhaustionDelta = trailEvent.HorseExhaustionDelta,
+            DelayDays = trailEvent.DelayDays,
+            HeatIncrease = trailEvent.HeatIncrease,
+            TravelModeChangedTo = travelModeChangedTo,
+            DiaryMessage = fullDiaryMessage,
+            HorseLostMessage = horseLossMessage
+        });
 
         return new TrailEventApplicationResult(horseLossMessage);
     }
@@ -921,10 +963,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             throw new InvalidOperationException("A journey is required to complete arrival handling.");
         }
 
+        // Journey-internal state transition only. Player town/canteen mutations
+        // flow through Apply(JourneyCompleted) so command and replay paths match.
         Journey.MarkCompleted();
-        Player.TravelTo(Journey.Preview.DestinationTownId);
-        RefreshTownVisit(Journey.Preview.DestinationTownId);
-        RefillCanteenAfterArrival();
         return Journey.ToSnapshot(TravelRules);
     }
 
@@ -963,7 +1004,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var refilledCanteen = CanteenState.Full(canteenState.Capacity);
         Player.SetCanteenState(refilledCanteen);
-        Journey!.SetCanteenCharges(refilledCanteen.Charges);
     }
 
     private TravelResourceSnapshot CaptureTravelResources()
@@ -1003,14 +1043,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.RecalculatePacing(TravelMode.Foot);
         }
 
+        // Player food consumption — direct mutation (same as pre-migration code).
+        // Apply(TravelDayAdvanced) sets player state ABSOLUTE from the journey snapshot,
+        // so command-path direct mutations and replay-path event applications converge.
         if (Player.GetQuantity(ItemKind.Food) > 0)
         {
             Player.RemoveQuantity(ItemKind.Food, 1);
             Journey.ConsumeFood();
-        }
-        else
-        {
-            AddLogEntry(GameLogEntryKind.Travel, "My food is gone, but the trail keeps moving.");
         }
 
         var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
@@ -1050,32 +1089,54 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Journey.RecalculatePacing(TravelMode.Foot);
         }
 
+        // Clock advance is ABSOLUTE via the event (Day = Clock.Day + 1).
+        // The clock is advanced directly here so trail event log entries capture the
+        // correct day. Apply(TravelDayAdvanced) sets the clock ABSOLUTE for replay.
+        // On the command path, Clock.Set(e.Day, 0) is a no-op (clock already at newDay).
+        var newDay = Clock.Day + 1;
         Clock.AdvanceTravelDay();
         var progress = Journey.AdvanceOneDay();
-        PursuitState.IncreaseHeat(Math.Max(1, (int)Journey.Preview.RouteProfile.Risk));
+        var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
+        PursuitState.IncreaseHeat(heatIncrease);
 
         var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
         Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
 
-        return new TravelDayAdvanceState(startingState, horseLostMessage, progress);
+        return new TravelDayAdvanceState(
+            startingState,
+            horseLostMessage,
+            progress,
+            newDay,
+            PursuitState.Heat);
     }
 
     private TravelJourneyStepResult HandleInterruptedTravelDay(
-        TravelDiaryBaselineState startingState,
-        string horseLostMessage,
+        TravelDayAdvanceState travelDay,
         JourneyEncounterState pendingEncounter,
         JourneyTrailEventState? lastTrailEvent,
         List<string> dayEntries)
     {
+        var horseLostMessage = travelDay.HorseLostMessage;
         var encounterMessage = PrependHorseLossMessage(horseLostMessage, pendingEncounter.Message);
         dayEntries.Add(encounterMessage);
         dayEntries.Add("I could run, fight, or bribe my way through.");
-        AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
 
         var interruptedSnapshot = Journey!.ToSnapshot(TravelRules);
+        ProduceEvent(new TravelDayAdvanced
+        {
+            Day = travelDay.NewDay,
+            JourneySnapshot = interruptedSnapshot,
+            HealthDelta = 0,
+            PursuitHeat = travelDay.PursuitHeat,
+
+            DayOutcome = TravelDayOutcome.Interrupted,
+            DiaryMessage = encounterMessage,
+            HorseLostMessage = horseLostMessage
+        });
+
         AppendTravelDiaryDay(
             interruptedSnapshot,
-            startingState,
+            travelDay.StartingState,
             pendingEncounter: pendingEncounter,
             entries: dayEntries);
 
@@ -1092,27 +1153,45 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     private TravelJourneyStepResult HandleCompletedTravelDay(
-        TravelDiaryBaselineState startingState,
-        string horseLostMessage,
+        TravelDayAdvanceState travelDay,
         JourneyTrailEventState? lastTrailEvent,
         List<string> dayEntries,
         JourneyProgress progress)
     {
+        var horseLostMessage = travelDay.HorseLostMessage;
         var destinationTownName = Journey!.Preview.DestinationTownName;
-        var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
+        var destinationTownId = Journey.Preview.DestinationTownId;
         var completedSnapshot = CompleteJourneyAtDestination();
         var completionMessage = horseLostMessage.Length == 0
             ? $"You reach {destinationTownName}."
             : $"{horseLostMessage} You reach {destinationTownName}.";
-        AddLogEntry(
-            GameLogEntryKind.Travel,
-            horseLostMessage.Length == 0
-                ? $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s)."
-                : $"{horseLostMessage} You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).");
+        var arrivalMessage = horseLostMessage.Length == 0
+            ? $"You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s)."
+            : $"{horseLostMessage} You reach {destinationTownName} after {completedSnapshot.DaysTravelled} trail day(s).";
+
+        ProduceEvent(new TravelDayAdvanced
+        {
+            Day = travelDay.NewDay,
+            JourneySnapshot = completedSnapshot,
+            HealthDelta = 0,
+            PursuitHeat = travelDay.PursuitHeat,
+
+            DayOutcome = TravelDayOutcome.Completed,
+            DiaryMessage = arrivalMessage,
+            HorseLostMessage = horseLostMessage
+        });
+
+        ProduceEvent(new JourneyCompleted
+        {
+            JourneySnapshot = completedSnapshot,
+            DestinationTownId = destinationTownId,
+            DestinationTownName = destinationTownName,
+            DiaryMessage = string.Empty
+        });
 
         AppendTravelDiaryDay(
             completedSnapshot,
-            startingState,
+            travelDay.StartingState,
             trailEvent: lastTrailEvent,
             entries: dayEntries.Count == 0 ? null : dayEntries);
         Journey!.SetCurrentDayPlan(null);
@@ -1124,26 +1203,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             horseLostMessage.Length == 0
                 ? $"You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s)."
                 : $"{horseLostMessage} You reach {destinationTownName} after {progress.RideDayDistanceTravelled:0.##} ride-day unit(s).",
-            heatIncrease,
+            travelDay.PursuitHeat,
             completedSnapshot,
             lastTrailEvent);
     }
 
     private TravelJourneyStepResult HandleOngoingTravelDay(
-        TravelDiaryBaselineState startingState,
-        string horseLostMessage,
+        TravelDayAdvanceState travelDay,
         JourneyTrailEventState? lastTrailEvent,
         List<string> dayEntries,
         TravelJourneySnapshot journeySnapshot)
     {
+        var horseLostMessage = travelDay.HorseLostMessage;
         var ongoingMessage = horseLostMessage.Length == 0
             ? $"One trail day passes. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey!.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}."
             : $"{horseLostMessage} One trail day passes on foot. {journeySnapshot.RemainingRideDayDistance:0.##} ride-day unit(s) remain and {Journey!.RemainingDays} day(s) remain on the route. {DescribeCanteenCoverage(journeySnapshot)}.";
-        AddLogEntry(GameLogEntryKind.Travel, ongoingMessage);
+
+        ProduceEvent(new TravelDayAdvanced
+        {
+            Day = travelDay.NewDay,
+            JourneySnapshot = journeySnapshot,
+            HealthDelta = 0,
+            PursuitHeat = travelDay.PursuitHeat,
+
+            DayOutcome = TravelDayOutcome.Ongoing,
+            DiaryMessage = ongoingMessage,
+            HorseLostMessage = horseLostMessage
+        });
 
         AppendTravelDiaryDay(
             journeySnapshot,
-            startingState,
+            travelDay.StartingState,
             trailEvent: lastTrailEvent,
             entries: dayEntries.Count == 0 ? null : dayEntries);
         Journey!.SetCurrentDayPlan(null);
@@ -1153,7 +1243,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             JourneyStatus.Active,
             ongoingMessage,
             ongoingMessage,
-            Math.Max(1, (int)Journey.Preview.RouteProfile.Risk),
+            travelDay.PursuitHeat,
             journeySnapshot,
             lastTrailEvent);
     }
@@ -1206,8 +1296,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 var pendingEncounter = currentEncounter.PendingEncounter!;
                 Journey.MarkInterrupted(pendingEncounter);
                 return HandleInterruptedTravelDay(
-                    travelDay.StartingState,
-                    travelDay.HorseLostMessage,
+                    travelDay,
                     pendingEncounter,
                     lastTrailEvent,
                     dayEntries);
@@ -1215,17 +1304,22 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
             if (currentEncounter.TrailEvent is not null)
             {
-                var trailEventApplication = ApplyTrailEvent(currentEncounter.TrailEvent);
+                var trailEventApplication = ApplyTrailEvent(
+                    currentEncounter.TrailEvent,
+                    travelDay.HorseLostMessage,
+                    currentEncounter.Message);
                 var trailEventMessage = PrependHorseLossMessage(
                     CombineHorseLossMessage(travelDay.HorseLostMessage, trailEventApplication.HorseLossMessage),
                     currentEncounter.Message);
                 dayEntries.Add(trailEventMessage);
-                AddLogEntry(GameLogEntryKind.Travel, trailEventMessage);
                 lastTrailEvent = currentEncounter.TrailEvent;
             }
             else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
             {
                 dayEntries.Add(currentEncounter.Message);
+                // Narration-only encounters (no TrailEvent) don't produce a typed event.
+                // The log entry is projection-legacy per ADR-0028 and is not reproduced
+                // on replay. Trail events log via Apply(TrailEventApplied) → RecordTravelUpdate.
                 AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
             }
 
@@ -1234,8 +1328,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var journeySnapshot = Journey.ToSnapshot(TravelRules);
         return travelDay.Progress.Completed
-            ? HandleCompletedTravelDay(travelDay.StartingState, travelDay.HorseLostMessage, lastTrailEvent, dayEntries, travelDay.Progress)
-            : HandleOngoingTravelDay(travelDay.StartingState, travelDay.HorseLostMessage, lastTrailEvent, dayEntries, journeySnapshot);
+            ? HandleCompletedTravelDay(travelDay, lastTrailEvent, dayEntries, travelDay.Progress)
+            : HandleOngoingTravelDay(travelDay, lastTrailEvent, dayEntries, journeySnapshot);
     }
 
     public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
@@ -1251,12 +1345,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var completedSnapshot = Journey.ToSnapshot(TravelRules);
-        ArchiveCompletedJourney(completedSnapshot);
-        Journey = null;
+        var arrivalMessage = $"You step into {completedSnapshot.DestinationTownName} and put the trail behind you.";
+        ProduceEvent(new JourneyArrivalAcknowledged
+        {
+            JourneySequence = completedSnapshot.JourneySequence,
+            JourneySnapshot = completedSnapshot,
+            DiaryMessage = string.Empty
+        });
 
         return new JourneyArrivalAcknowledgementResult(
             true,
-            $"You step into {completedSnapshot.DestinationTownName} and put the trail behind you.",
+            arrivalMessage,
             completedSnapshot);
     }
 
@@ -1827,15 +1926,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
             if (currentEncounter.TrailEvent is not null)
             {
-                var trailEventApplication = ApplyTrailEvent(currentEncounter.TrailEvent);
+                var trailEventApplication = ApplyTrailEvent(
+                    currentEncounter.TrailEvent,
+                    prefixHorseLostMessage: string.Empty,
+                    currentEncounter.Message);
                 var encounterMessage = PrependHorseLossMessage(trailEventApplication.HorseLossMessage, currentEncounter.Message);
-                AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
                 dayEntries.Add(encounterMessage);
             }
             else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
             {
-                AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
                 dayEntries.Add(currentEncounter.Message);
+                AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
             }
 
             Journey.AdvanceCurrentDayPlan();
@@ -1963,7 +2064,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private sealed record TravelDayAdvanceState(
         TravelDiaryBaselineState StartingState,
         string HorseLostMessage,
-        JourneyProgress Progress);
+        JourneyProgress Progress,
+        int NewDay,
+        int PursuitHeat);
 
     public JourneyEncounterResolutionResult ResolveJourneyEncounter(string choiceId)
         => ResolveJourneyEncounter(choiceId, bulletSpend: null, bribeAmount: null, forcedRoll: null);

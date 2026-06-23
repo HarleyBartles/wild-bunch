@@ -60,7 +60,7 @@ public sealed class TravelEventApplyTests
             Day = 2,
             JourneySnapshot = advancedSnapshot,
             HealthDelta = 0,
-            PursuitHeatDelta = 1,
+            PursuitHeat = 1,
             DayOutcome = TravelDayOutcome.Completed,
             DiaryMessage = "Day passes.",
             HorseLostMessage = ""
@@ -95,14 +95,14 @@ public sealed class TravelEventApplyTests
             Day = 2,
             JourneySnapshot = startSnapshot,
             HealthDelta = -2,
-            PursuitHeatDelta = 3,
+            PursuitHeat = 3,
             DayOutcome = TravelDayOutcome.Ongoing,
             DiaryMessage = "Day passes.",
             HorseLostMessage = ""
         });
 
         Assert.Equal(healthBefore - 2, session.Player.Health);
-        Assert.Equal(heatBefore + 3, session.PursuitState.Heat);
+        Assert.Equal(3, session.PursuitState.Heat);
     }
 
     [Fact]
