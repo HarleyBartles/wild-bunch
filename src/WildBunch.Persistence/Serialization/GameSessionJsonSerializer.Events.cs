@@ -41,6 +41,12 @@ public sealed partial class GameSessionJsonSerializer
         nameof(WantedSuspectConfronted) => typeof(WantedSuspectConfronted),
         nameof(SheriffTurnInSettled) => typeof(SheriffTurnInSettled),
         nameof(SaloonPersonOfInterestConfronted) => typeof(SaloonPersonOfInterestConfronted),
+        nameof(JourneyStarted) => typeof(JourneyStarted),
+        nameof(TravelDayAdvanced) => typeof(TravelDayAdvanced),
+        nameof(TrailEventApplied) => typeof(TrailEventApplied),
+        nameof(JourneyEncounterResolved) => typeof(JourneyEncounterResolved),
+        nameof(JourneyCompleted) => typeof(JourneyCompleted),
+        nameof(JourneyArrivalAcknowledged) => typeof(JourneyArrivalAcknowledged),
         _ => throw new InvalidOperationException($"Unknown domain event type: {eventType}")
     };
 

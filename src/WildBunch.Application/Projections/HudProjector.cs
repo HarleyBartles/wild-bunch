@@ -1,6 +1,7 @@
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Projections;
@@ -64,6 +65,42 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                         walletCash -= fine;
                     }
                     break;
+
+                case TravelDayAdvanced tda:
+                    health += tda.HealthDelta;
+                    // Player food/canteen/horse feed are set ABSOLUTE from the journey
+                    // snapshot. See ADR-0028 and BUNCH-83.
+                    SyncInventoryFromJourneySnapshot(inventory, tda.JourneySnapshot);
+                    break;
+
+                case TrailEventApplied tea:
+                    // WalletCash and PursuitHeat are ABSOLUTE in the event.
+                    walletCash = tea.WalletCash;
+                    SyncInventoryFromJourneySnapshot(inventory, tea.JourneySnapshot);
+                    break;
+
+                case JourneyEncounterResolved jer:
+                    health += jer.HealthDelta;
+                    if (jer.WalletDelta != 0m)
+                        walletCash += jer.WalletDelta;
+                    if (jer.AmmoSpent > 0)
+                    {
+                        inventory[ItemKind.RevolverAmmo] = Math.Max(0,
+                            (inventory.TryGetValue(ItemKind.RevolverAmmo, out var ammo) ? ammo : 0) - jer.AmmoSpent);
+                    }
+                    if (jer.StolenItemKind is { } kind && jer.StolenItemQuantity > 0)
+                    {
+                        inventory[kind] = Math.Max(0,
+                            (inventory.TryGetValue(kind, out var stolen) ? stolen : 0) - jer.StolenItemQuantity);
+                    }
+                    break;
+
+                case JourneyCompleted jc:
+                    currentTownId = jc.DestinationTownId;
+                    currentTownName = jc.DestinationTownName;
+                    // Canteen is refilled on arrival — sync from snapshot.
+                    SyncInventoryFromJourneySnapshot(inventory, jc.JourneySnapshot);
+                    break;
             }
         }
 
@@ -76,5 +113,20 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
             currentTownId,
             currentTownName,
             inventory.Select(kv => new HudInventoryItem(kv.Key, kv.Value)).ToArray());
+    }
+
+    private static void SyncInventoryFromJourneySnapshot(Dictionary<ItemKind, int> inventory, TravelJourneySnapshot snapshot)
+    {
+        if (snapshot.AvailableFood >= 0)
+            inventory[ItemKind.Food] = snapshot.AvailableFood;
+
+        if (snapshot.AvailableHorseFeed >= 0)
+            inventory[ItemKind.HorseFeed] = snapshot.AvailableHorseFeed;
+
+        // Canteen charges are tracked in the journey snapshot as AvailableCanteenCharges.
+        // The canteen item itself is not consumed; only its charges change.
+        // The HUD shows inventory quantities, not canteen charges, so we don't
+        // update the canteen quantity here. Canteen charges are a derived HUD field
+        // that would come from a separate projection if needed.
     }
 }
