@@ -100,13 +100,14 @@ internal static class GameSessionRehydrator
     }
 
     /// <summary>
-    /// Sets the session's CurrentActionContext when loading from snapshot.
-    /// This is also reconstructed from event replay via Apply(TownActionContextEntered).
-    /// Both paths (snapshot load + event replay) must produce the same value.
-    /// See ADR-0028 and BUNCH-80.
+    /// Sets the session's CurrentActionContext and the town it was entered in when loading
+    /// from snapshot. These are also reconstructed from event replay via
+    /// Apply(TownActionContextEntered). Both paths (snapshot load + event replay) must
+    /// produce the same values. See ADR-0028 and BUNCH-80.
     /// </summary>
-    public static void SetCurrentActionContext(GameSession session, TownActionContext context)
+    public static void SetCurrentActionContext(GameSession session, TownActionContext context, TownId? townId)
     {
         SetBackingField(session, "<CurrentActionContext>k__BackingField", context);
+        SetBackingField(session, "<CurrentActionContextTownId>k__BackingField", townId);
     }
 }

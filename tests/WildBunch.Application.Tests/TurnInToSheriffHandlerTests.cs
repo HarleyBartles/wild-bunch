@@ -99,6 +99,7 @@ public sealed class TurnInToSheriffHandlerTests
             });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
         return session;
     }

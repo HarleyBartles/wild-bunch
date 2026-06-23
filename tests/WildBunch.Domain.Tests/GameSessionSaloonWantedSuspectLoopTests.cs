@@ -45,8 +45,10 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         var afterReturn = session.LookAroundSaloon();
 
@@ -74,6 +76,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var session = CreateSession();
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
         session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(suspectId);
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.GoneToGround);
 

@@ -251,4 +251,54 @@ public sealed class ClockTurnCorrectionTests
         Assert.Equal(turnAfterFirst, session.Clock.Turn);
         Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
     }
+
+    [Fact]
+    public void TownChange_ResetsActionContextSoReenteringSameContextAdvancesTime()
+    {
+        // Regression test for BUNCH-80 review feedback: CurrentActionContext is scoped
+        // to the current town. After travelling away and back, re-entering the same
+        // context (e.g. Saloon) must advance time, not be suppressed by the prior
+        // town's context.
+        var session = TestSessionFactory.CreateDefault();
+        session.LookAroundSaloon(); // enters Saloon, advances turn 0 → 1
+        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+
+        // Simulate travel: leave town and come back
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
+        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
+
+        session.Player.TravelTo(new TownId("current"));
+        session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
+        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
+
+        // Re-entering Saloon in the same town after a round-trip must advance time
+        session.LookAroundSaloon();
+        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void TownChange_DifferentTownSaloonAdvancesTimeIndependently()
+    {
+        // Regression test for BUNCH-80 review feedback: entering Saloon in Town A
+        // must not suppress time advancement when entering Saloon in Town B.
+        var session = TestSessionFactory.CreateDefault();
+        session.LookAroundSaloon(); // enters Saloon in "current", advances turn 0 → 1
+        Assert.Equal(1, session.Clock.Turn);
+
+        // Travel to a different town that also has a saloon
+        session.Player.TravelTo(new TownId("connected"));
+        session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
+        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
+
+        // Entering Saloon in the new town must advance time, not be suppressed
+        session.LookAroundSaloon();
+        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+    }
 }

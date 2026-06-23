@@ -16,6 +16,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRecordsSurrenderedState()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
 
@@ -26,7 +27,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.IsAlive);
         Assert.True(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: Saloon context entry advances turn; confrontation itself does not
         Assert.Single(session.CaseFile.WantedSuspectConfrontations);
         Assert.Equal(WantedSuspectPresenceState.SecuredAlive, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
@@ -42,6 +43,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRecordsKilledStateAndKeepsDeadTurnInSeparate()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
@@ -50,7 +52,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(result.IsAlive);
         Assert.True(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: Saloon context entry advances turn; confrontation itself does not
         Assert.Equal(WantedSuspectPresenceState.SecuredDead, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
@@ -68,6 +70,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsRepeatAfterKilledWithoutChangingState()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
 
         var firstResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
         var secondResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
@@ -76,7 +79,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(secondResult.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
         Assert.False(secondResult.SessionChanged);
-        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: Saloon context entry advances turn; confrontation itself does not
         Assert.Equal(WantedSuspectPresenceState.SecuredDead, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
@@ -88,6 +91,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsRepeatAfterSurrenderedWithoutChangingState()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
 
         var firstResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
         var secondResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
@@ -96,7 +100,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(secondResult.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
         Assert.False(secondResult.SessionChanged);
-        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: Saloon context entry advances turn; confrontation itself does not
         Assert.Equal(WantedSuspectPresenceState.SecuredAlive, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, state.Outcome);
@@ -108,6 +112,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRecordsFledStateAndBlocksTurnIn()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Fled);
 
@@ -116,7 +121,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.IsAlive);
         Assert.False(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: Saloon context entry advances turn; confrontation itself does not
         Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Fled, state.Outcome);
@@ -133,6 +138,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationTreatsAbandonedAsNoResolution()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Abandoned);
 
@@ -141,7 +147,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.Null(result.IsAlive);
         Assert.Null(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: Saloon context entry advances turn; confrontation itself does not
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
 
@@ -153,12 +159,17 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsBlockersWithoutMutatingState()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
         StartJourney(session);
         session.Journey!.MarkCompleted();
 
         var journeyBlocked = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
-        var missingWarrant = CreateSession().ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Fled);
-        var invalidSuspect = CreateSession().ResolveWantedSuspectConfrontation(new SuspectId("suspect-unknown"), WantedSuspectConfrontationChoice.Killed);
+        var missingWarrantSession = CreateSession();
+        missingWarrantSession.EnterActionContext(TownActionContext.Saloon);
+        var missingWarrant = missingWarrantSession.ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Fled);
+        var invalidSuspectSession = CreateSession();
+        invalidSuspectSession.EnterActionContext(TownActionContext.Saloon);
+        var invalidSuspect = invalidSuspectSession.ResolveWantedSuspectConfrontation(new SuspectId("suspect-unknown"), WantedSuspectConfrontationChoice.Killed);
 
         Assert.False(journeyBlocked.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, journeyBlocked.Outcome);
@@ -169,6 +180,43 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, missingWarrant.Outcome);
         Assert.False(invalidSuspect.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, invalidSuspect.Outcome);
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationRejectsDirectCallWithoutActiveContext()
+    {
+        // BUNCH-80 review feedback: direct confrontation must not bypass the active
+        // context/POI precondition. Without entering a POI/location context first
+        // (e.g. via LookAroundSaloon which enters Saloon), the direct confrontation
+        // route must be rejected as an out-of-context free action.
+        var session = CreateSession();
+        session.MarkEventsCommitted();
+
+        var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.False(result.Success);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, result.Outcome);
+        Assert.False(result.SessionChanged);
+        Assert.Empty(session.UncommittedEvents);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Contains("confrontation context", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationSucceedsWhenSaloonContextIsActive()
+    {
+        // BUNCH-80 review feedback: when the session IS in an active POI context
+        // (e.g. Saloon via LookAroundSaloon), the direct confrontation route is valid
+        // and does not advance time (same-context action).
+        var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon);
+        var turnBefore = session.Clock.Turn;
+
+        var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(turnBefore, session.Clock.Turn); // confrontation itself does not advance time
     }
 
     private static GameSession CreateSession()

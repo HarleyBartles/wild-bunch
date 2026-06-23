@@ -23,6 +23,7 @@ public sealed class BountySettlementPolicyTests
     public void TryCreateSheriffTurnInSettlementStateRejectsDuplicates()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
         var firstAssessment = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);

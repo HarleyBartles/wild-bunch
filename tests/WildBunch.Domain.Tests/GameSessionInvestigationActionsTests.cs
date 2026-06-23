@@ -135,8 +135,10 @@ public sealed class GameSessionInvestigationActionsTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         Assert.Equal(new TownId("current"), session.CurrentTownVisit.TownId);
         Assert.False(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
@@ -169,8 +171,10 @@ public sealed class GameSessionInvestigationActionsTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         Assert.Equal(new TownId("current"), session.CurrentTownVisit.TownId);
         Assert.False(session.CurrentTownVisit.WantedPostersSpent);
@@ -205,8 +209,10 @@ public sealed class GameSessionInvestigationActionsTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         Assert.False(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
 
@@ -214,7 +220,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(afterReturn.Success);
         Assert.Equal("You look around the saloon and spot a stranger with a pale scar across the left cheek.", afterReturn.Message);
-        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: same Saloon context, no turn advance
+        Assert.Equal(2, session.Clock.Turn); // BUNCH-80: town change resets context, so re-entering Saloon advances time
     }
 
     [Fact]
@@ -252,8 +258,10 @@ public sealed class GameSessionInvestigationActionsTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         var afterReturnNoticeBoard = session.InspectNoticeBoard();
         var afterReturnLocalRecords = session.CheckSheriffRecords();

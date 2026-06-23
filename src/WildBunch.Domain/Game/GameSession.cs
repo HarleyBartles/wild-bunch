@@ -155,18 +155,33 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public TownActionContext CurrentActionContext { get; private set; } = TownActionContext.None;
 
     /// <summary>
+    /// The town in which the <see cref="CurrentActionContext"/> was entered. A context is
+    /// scoped to its town: entering <see cref="TownActionContext.Saloon"/> in Town A does not
+    /// suppress time advancement when entering Saloon in Town B. Event-sourced alongside
+    /// <see cref="CurrentActionContext"/> via <see cref="Apply(TownActionContextEntered)"/>.
+    /// </summary>
+    public TownId? CurrentActionContextTownId { get; private set; }
+
+    /// <summary>
     /// Enters an action context within the current town. If the context is different from the
-    /// current one, emits a <see cref="TownActionContextEntered"/> event that advances the turn
-    /// and records the resulting context/clock state. If the same context, no event and no turn
-    /// advance. <see cref="TownActionContext.None"/> never produces an event.
-    /// This is event-sourced: the event carries the resulting Day/Turn/TimeOfDay so replay
+    /// current one, or if the current town differs from the town the current context was entered
+    /// in, emits a <see cref="TownActionContextEntered"/> event that advances the turn and
+    /// records the resulting context/town/clock state. If the same context in the same town, no
+    /// event and no turn advance. <see cref="TownActionContext.None"/> never produces an event.
+    /// This is event-sourced: the event carries the resulting Day/Turn/TimeOfDay/TownId so replay
     /// reconstructs the exact same state. <see cref="EnterActionContext"/> does NOT call
     /// <see cref="GameClock.Advance"/> directly — <see cref="Apply(TownActionContextEntered)"/>
     /// sets the clock from the event via <see cref="GameClock.Set"/>.
     /// </summary>
     public bool EnterActionContext(TownActionContext context)
     {
-        if (context == TownActionContext.None || context == CurrentActionContext)
+        if (context == TownActionContext.None)
+        {
+            return false;
+        }
+
+        // Same context only suppresses time advancement if it was entered in the same town.
+        if (context == CurrentActionContext && CurrentTown.TownId.Equals(CurrentActionContextTownId))
         {
             return false;
         }
@@ -183,6 +198,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var e = new TownActionContextEntered
         {
             Context = context,
+            TownId = CurrentTown.TownId,
             Day = newDay,
             Turn = newTurn,
             TimeOfDay = (TimeOfDay)newTurn
@@ -249,6 +265,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(TownActionContextEntered e)
     {
         CurrentActionContext = e.Context;
+        CurrentActionContextTownId = e.TownId;
         Clock.Set(e.Day, e.Turn);
         _version++;
     }
@@ -723,6 +740,25 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         var currentTown = World.GetTown(townId);
         _currentTown.EnterTown(currentTown);
+        // The action context is scoped to the current town. When the town changes
+        // (including a round-trip back to the same town), the context resets so that
+        // re-entering a location in the new town advances time. This is a direct
+        // mutation because travel/journey is not yet event-sourced; the context
+        // reset is a side effect of the town change, not a gameplay event.
+        // See BUNCH-80 review feedback on town-scoped CurrentActionContext.
+        ResetActionContextForTownChange();
+    }
+
+    /// <summary>
+    /// Resets <see cref="CurrentActionContext"/> and <see cref="CurrentActionContextTownId"/>
+    /// to None/null. Called by <see cref="RefreshTownVisit"/> when the current town changes.
+    /// Also available for test helpers that simulate town changes via
+    /// <see cref="TownVisitState.Reset"/> directly.
+    /// </summary>
+    internal void ResetActionContextForTownChange()
+    {
+        CurrentActionContext = TownActionContext.None;
+        CurrentActionContextTownId = null;
     }
 
     private void RefillCanteenAfterArrival()

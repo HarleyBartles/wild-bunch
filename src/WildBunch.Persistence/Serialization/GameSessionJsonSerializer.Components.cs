@@ -107,14 +107,18 @@ public sealed partial class GameSessionJsonSerializer
         return snapshot.ToDomain();
     }
 
-    public string SerializeCurrentActionContext(TownActionContext context)
-        => JsonSerializer.Serialize(context, Options);
+    public string SerializeCurrentActionContext(TownActionContext context, TownId? townId)
+        => JsonSerializer.Serialize(new CurrentActionContextSnapshot(context, townId?.Value), Options);
 
-    public TownActionContext DeserializeCurrentActionContext(string json)
+    public (TownActionContext context, TownId? townId) DeserializeCurrentActionContext(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        return Deserialize<TownActionContext>(json);
+        var snapshot = Deserialize<CurrentActionContextSnapshot>(json);
+        TownId? townId = snapshot.TownId is null ? null : new TownId(snapshot.TownId);
+        return (snapshot.Context, townId);
     }
+
+    private sealed record CurrentActionContextSnapshot(TownActionContext Context, string? TownId);
 
     private sealed record PlayerSnapshot(
         string Name,

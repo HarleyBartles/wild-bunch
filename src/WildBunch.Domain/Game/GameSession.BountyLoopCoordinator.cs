@@ -306,6 +306,20 @@ public sealed partial class GameSession
                 return WantedSuspectConfrontationResult.Rejected(GameSession.JourneyModalBlockMessage, declaredWantedIdentityHandle);
             }
 
+            // BUNCH-80 review feedback: direct confrontation must not bypass the active
+            // context/POI precondition. The confrontation itself is a same-context action
+            // and does not advance time, but it is only valid when the session is already
+            // in an active POI/location context (e.g. Saloon via LookAroundSaloon). This
+            // prevents the direct application command route from becoming an out-of-context
+            // free action. Future non-saloon POI locations will also set a non-None context
+            // before calling this method, so this check does not hard-block them.
+            if (_session.CurrentActionContext == TownActionContext.None)
+            {
+                return WantedSuspectConfrontationResult.Rejected(
+                    "You must be in an active confrontation context to confront a wanted suspect.",
+                    declaredWantedIdentityHandle);
+            }
+
             var targetSuspect = _session.CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(targetSuspectId));
             if (targetSuspect is null)
             {
@@ -506,12 +520,14 @@ public sealed partial class GameSession
             // Enter SheriffOffice context BEFORE assessment. This emits a TownActionContextEntered
             // event if the context changed (advances turn). Even rejected turn-ins produce the
             // context event — going to the sheriff's office takes time regardless of outcome.
-            _session.EnterActionContext(TownActionContext.SheriffOffice);
+            // Track whether the context entry mutated the session so rejected results can
+            // truthfully report SessionChanged. See BUNCH-80 review feedback.
+            var contextChanged = _session.EnterActionContext(TownActionContext.SheriffOffice);
 
             var assessment = AssessSheriffTurnIn(targetSuspectId, isAlive);
             if (!assessment.Success)
             {
-                return assessment;
+                return contextChanged ? assessment.WithSessionChanged() : assessment;
             }
 
             if (!BountySettlementPolicy.TryCreateSheriffTurnInSettlementState(
@@ -524,7 +540,7 @@ public sealed partial class GameSession
                     out var settlementState,
                     out var rejectionResult))
             {
-                return rejectionResult;
+                return contextChanged ? rejectionResult.WithSessionChanged() : rejectionResult;
             }
 
             var settledEvent = new SheriffTurnInSettled

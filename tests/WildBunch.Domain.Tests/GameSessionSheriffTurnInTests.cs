@@ -1,5 +1,6 @@
 using System.Text.Json;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -16,6 +17,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInReturnsAcceptedAliveForKnownDeadOrAliveWarrant()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon);
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
@@ -36,6 +38,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInReturnsAcceptedDeadForKnownDeadOrAliveWarrant()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon);
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);
@@ -52,6 +55,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInReturnsRejectedForDeadAliveOnlyWarrant()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon);
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Killed);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-2"), isAlive: false);
@@ -69,6 +73,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void AssessSheriffTurnInRejectsWhenTheTargetHasFled()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon);
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Fled);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
@@ -102,6 +107,7 @@ public sealed class GameSessionSheriffTurnInTests
     public void SettleSheriffTurnInCreditsTheWalletAndRejectsRepeatPayouts()
     {
         var session = CreateSession();
+        session.EnterActionContext(TownActionContext.Saloon);
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
         var firstResult = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);
@@ -123,6 +129,65 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Equal(2525m, session.Player.Wallet.Cash);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
         Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SettleSheriffTurnInRejectedAttemptProducesContextEventAndReportsSessionChanged()
+    {
+        // BUNCH-80 review feedback: rejected sheriff turn-in attempts enter SheriffOffice,
+        // which produces a TownActionContextEntered event and mutates clock/context even
+        // when no SheriffTurnInSettled event follows. The returned result must truthfully
+        // report SessionChanged when the context event was produced.
+        var session = CreateSession();
+        session.MarkEventsCommitted();
+        // Start in Saloon context (simulates prior LookAroundSaloon)
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+        var turnBeforeSettle = session.Clock.Turn;
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+
+        // SettleSheriffTurnIn for a suspect with no confrontation state — will be rejected,
+        // but entering SheriffOffice context produces a TownActionContextEntered event.
+        var result = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        // The turn-in itself is rejected (no confrontation state)
+        Assert.False(result.Success);
+        Assert.Equal(SheriffTurnInOutcome.Rejected, result.Outcome);
+
+        // The context changed from Saloon to SheriffOffice, producing a TownActionContextEntered event
+        Assert.True(result.SessionChanged, "Rejected turn-in with context change must report SessionChanged = true");
+        Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
+        Assert.Equal(turnBeforeSettle + 1, session.Clock.Turn);
+
+        // The TownActionContextEntered(SheriffOffice) event must be in uncommitted events
+        var contextEvent = session.UncommittedEvents.OfType<TownActionContextEntered>().Single();
+        Assert.Equal(TownActionContext.SheriffOffice, contextEvent.Context);
+        Assert.Equal(session.Clock.Day, contextEvent.Day);
+        Assert.Equal(session.Clock.Turn, contextEvent.Turn);
+
+        // No SheriffTurnInSettled event should be produced for a rejected turn-in
+        Assert.DoesNotContain(session.UncommittedEvents, e => e is SheriffTurnInSettled);
+    }
+
+    [Fact]
+    public void SettleSheriffTurnInRejectedAttemptInSameContextDoesNotReportSessionChanged()
+    {
+        // BUNCH-80 review feedback: when the session is already in SheriffOffice context,
+        // a rejected turn-in does not produce a new TownActionContextEntered event and
+        // must not report SessionChanged = true.
+        var session = CreateSession();
+        session.MarkEventsCommitted();
+        // Already in SheriffOffice context
+        session.EnterActionContext(TownActionContext.SheriffOffice);
+        session.MarkEventsCommitted();
+        var turnBefore = session.Clock.Turn;
+
+        var result = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        Assert.False(result.Success);
+        Assert.False(result.SessionChanged, "Rejected turn-in in same context must not report SessionChanged");
+        Assert.Equal(turnBefore, session.Clock.Turn);
+        Assert.Empty(session.UncommittedEvents);
     }
 
     private static GameSession CreateSession()
