@@ -17,8 +17,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (Saloon) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Equal(InvestigationSourceKind.LocalGossip, e.SourceKind);
         Assert.NotNull(e.ClueId);
         Assert.Null(e.WarrantId);
@@ -33,8 +35,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (Saloon) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Equal(InvestigationSourceKind.LocalGossip, e.SourceKind);
         Assert.Null(e.ClueId);
         Assert.Null(e.WarrantId);
@@ -50,8 +54,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (TelegraphOffice) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Equal(InvestigationSourceKind.TelegraphLead, e.SourceKind);
         Assert.NotNull(e.ClueId);
     }
@@ -66,8 +72,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (TownSquare) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Equal(InvestigationSourceKind.NoticeBoard, e.SourceKind);
         Assert.NotNull(e.ClueId);
     }
@@ -82,8 +90,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (SheriffOffice) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Equal(InvestigationSourceKind.LocalRecords, e.SourceKind);
         Assert.NotNull(e.ClueId);
     }
@@ -98,8 +108,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (SheriffOffice) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Equal(InvestigationSourceKind.SheriffWarrants, e.SourceKind);
         Assert.NotNull(e.WarrantId);
         Assert.NotNull(e.ClueId);
@@ -114,8 +126,10 @@ public sealed class InvestigationEventSourcingTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        Assert.Single(session.UncommittedEvents);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        // TownActionContextEntered (SheriffOffice) + InvestigationPerformed
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
         Assert.Null(e.WarrantId);
         Assert.Null(e.ClueId);
     }
@@ -193,7 +207,7 @@ public sealed class InvestigationEventSourcingTests
 
         session.GatherLocalGossip();
 
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.Single());
+        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents.OfType<InvestigationPerformed>().Single());
         Assert.Equal(new TownId("current"), e.TownId);
     }
 }

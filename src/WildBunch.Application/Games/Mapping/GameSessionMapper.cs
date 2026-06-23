@@ -94,7 +94,7 @@ public static class GameSessionMapper
             ToDto(world),
             ToDto(caseFile),
             InventoryMapper.ToDto(player, TravelRulesProfile.For(travelDifficulty)),
-            new GameClockDto(clock.Day, clock.Turn),
+            new GameClockDto(clock.Day, clock.Turn, clock.TimeOfDay.ToString()),
             new PursuitStateDto(pursuitState.Heat),
             journey,
             TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(travelDifficulty)),

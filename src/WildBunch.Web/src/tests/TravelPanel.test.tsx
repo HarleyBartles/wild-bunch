@@ -82,7 +82,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         rifleUsable: false,
       },
     },
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     pursuitState: { heat: 1 },
     journey: {
       originTownId: "t-town",

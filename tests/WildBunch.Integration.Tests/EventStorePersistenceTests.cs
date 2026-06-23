@@ -208,33 +208,102 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         await uow.CommitAsync();
         session.MarkEventsCommitted();
 
-        // 2. Reload + perform investigation + store + commit (InvestigationPerformed)
+        // 2. Reload + perform investigation + store + commit (TownActionContextEntered + InvestigationPerformed)
         var loaded = await repo.GetByIdAsync(session.Id);
         Assert.NotNull(loaded);
         var investigationResult = loaded!.GatherLocalGossip();
         Assert.True(investigationResult.Success);
         Assert.True(investigationResult.SessionChanged);
-        Assert.Single(loaded.UncommittedEvents);
-        Assert.IsType<InvestigationPerformed>(loaded.UncommittedEvents[0]);
+        // GatherLocalGossip now enters Saloon context first (TownActionContextEntered),
+        // then produces InvestigationPerformed — 2 uncommitted events
+        Assert.Equal(2, loaded.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(loaded.UncommittedEvents[0]);
+        Assert.IsType<InvestigationPerformed>(loaded.UncommittedEvents[1]);
 
         await repo.StoreAsync(loaded);
         await uow.CommitAsync();
 
-        // 3. Verify the stored event row has the correct type name
+        // 3. Verify the stored event rows have the correct type names
         var storedEvents = await dbContext.StoredEvents.AsNoTracking()
             .Where(e => e.StreamId == session.Id.Value)
             .OrderBy(e => e.Sequence)
             .ToArrayAsync();
-        Assert.Equal(2, storedEvents.Length);
+        Assert.Equal(3, storedEvents.Length);
         Assert.Equal("GameStarted", storedEvents[0].EventType);
-        Assert.Equal("InvestigationPerformed", storedEvents[1].EventType);
+        Assert.Equal("TownActionContextEntered", storedEvents[1].EventType);
+        Assert.Equal("InvestigationPerformed", storedEvents[2].EventType);
 
-        // 4. GetEventStreamAsync must deserialize both events without throwing
+        // 4. GetEventStreamAsync must deserialize all events without throwing
         var events = await repo.GetEventStreamAsync(session.Id);
-        Assert.Equal(2, events.Count);
+        Assert.Equal(3, events.Count);
         Assert.IsType<GameStarted>(events[0]);
-        var investigationEvent = Assert.IsType<InvestigationPerformed>(events[1]);
+        Assert.IsType<TownActionContextEntered>(events[1]);
+        var investigationEvent = Assert.IsType<InvestigationPerformed>(events[2]);
         Assert.Equal(InvestigationSourceKind.LocalGossip, investigationEvent.SourceKind);
+    }
+
+    [Fact]
+    public async Task GetEventStreamAsync_ReturnsBountySaloonEvents_AfterPersisted()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+        // 1. Create + store + commit (GameStarted)
+        var session = CreateSessionWithWarrantedSaloonSuspect();
+        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+        session.MarkEventsCommitted();
+
+        // 2. Reload + LookAroundSaloon + store + commit
+        var loaded = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(loaded);
+        var lookResult = loaded!.LookAroundSaloon();
+        Assert.True(lookResult.Success);
+        // TownActionContextEntered + SaloonPersonOfInterestSpotted
+        Assert.Equal(2, loaded.UncommittedEvents.Count);
+
+        await repo.StoreAsync(loaded);
+        await uow.CommitAsync();
+
+        // 3. Verify the event stream deserializes correctly
+        var events = await repo.GetEventStreamAsync(session.Id);
+        Assert.Equal(3, events.Count);
+        Assert.IsType<GameStarted>(events[0]);
+        Assert.IsType<TownActionContextEntered>(events[1]);
+        var spottedEvent = Assert.IsType<SaloonPersonOfInterestSpotted>(events[2]);
+        Assert.Equal(InvestigationSourceKind.SaloonLookAround, spottedEvent.SourceKind);
+    }
+
+    [Fact]
+    public async Task SnapshotLoad_PreservesCurrentActionContext()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+        // 1. Create + store + commit
+        var session = CreateSessionWithWarrantedSaloonSuspect();
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+        session.MarkEventsCommitted();
+
+        // 2. Reload + LookAroundSaloon (enters Saloon context) + store + commit
+        var loaded = await repo.GetByIdAsync(session.Id);
+        var lookResult = loaded!.LookAroundSaloon();
+        Assert.True(lookResult.Success, $"LookAroundSaloon failed: {lookResult.Message}");
+        await repo.StoreAsync(loaded);
+        await uow.CommitAsync();
+
+        // 3. Reload from snapshot — CurrentActionContext should be Saloon
+        var reloaded = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(TownActionContext.Saloon, reloaded!.CurrentActionContext);
     }
 
     [Fact]
@@ -468,5 +537,49 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+    }
+
+    private static GameSession CreateSessionWithWarrantedSaloonSuspect()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.None);
+        var world = new DomainWorld(
+            new[] { pinecross, redmesa },
+            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Mira Cline",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            null, suspects, new SuspectId("suspect-2"),
+            CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive, 2500m,
+                        new[] { "Red Wren" }, new[] { "Raven-feather pin" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(), null),
+                    "Wanted for a stage robbery.")
+            });
+
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 }

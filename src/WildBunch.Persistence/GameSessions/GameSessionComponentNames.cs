@@ -13,6 +13,7 @@ internal static class GameSessionComponentNames
     internal const string Journey = "journey";
     internal const string CompletedJourneyHistory = "completedJourneyHistory";
     internal const string WantedSuspectPresenceLedger = "wantedSuspectPresenceLedger";
+    internal const string CurrentActionContext = "currentActionContext";
 }
 
 internal static class GameSessionComponentPayloads

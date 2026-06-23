@@ -74,7 +74,7 @@ public sealed class PostgreSqlPersistenceTests
         await using (var verificationContext = new WildBunchDbContext(options))
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
-            Assert.Equal(9, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(10, await verificationContext.GameSessionComponents.CountAsync());
             Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
             Assert.Equal(session.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync());
         }

@@ -3,20 +3,17 @@ using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Application.Games.Commands;
 
-public sealed class TurnInToSheriffHandler
+public sealed class TurnInToSheriffHandler : GameSessionCommandHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
-    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
-
     public TurnInToSheriffHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork)
+        : base(gameSessionRepository, gameSessionUnitOfWork)
     {
-        _gameSessionRepository = gameSessionRepository;
-        _gameSessionUnitOfWork = gameSessionUnitOfWork;
     }
 
     public async Task<SheriffTurnInResultDto> HandleAsync(
@@ -24,24 +21,20 @@ public sealed class TurnInToSheriffHandler
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
+        var sessionId = new GameSessionId(command.GameSessionId);
 
-        var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var result = session.SettleSheriffTurnIn(new SuspectId(command.TargetSuspectId), command.IsAlive);
-
-        if (result.SessionChanged)
+        return await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
-            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-        }
+            var result = session.SettleSheriffTurnIn(new SuspectId(command.TargetSuspectId), command.IsAlive);
 
-        return new SheriffTurnInResultDto(
-            result.Success,
-            result.Message,
-            result.Outcome,
-            GameSessionMapper.ToDto(session),
-            result.TargetName,
-            result.Disposition,
-            result.BountyAmount);
+            return new SheriffTurnInResultDto(
+                result.Success,
+                result.Message,
+                result.Outcome,
+                GameSessionMapper.ToDto(session),
+                result.TargetName,
+                result.Disposition,
+                result.BountyAmount);
+        }, cancellationToken).ConfigureAwait(false);
     }
 }

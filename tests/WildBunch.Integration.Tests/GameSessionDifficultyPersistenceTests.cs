@@ -287,8 +287,10 @@ public sealed class GameSessionDifficultyPersistenceTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         var afterReturnResult = session.FollowTelegraphLeads();
         Assert.True(afterReturnResult.Success);

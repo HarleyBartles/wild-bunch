@@ -8,6 +8,7 @@
 
 - 2026-06-22 - planned: ADR-0028 records the true event-sourcing posture for the migrated representative slice (start new game, purchase store item). Promotion to `live` follows after the migrated slice is proven by tests and the implementation steps land.
 - 2026-06-22 - live: The migrated slice (start new game, purchase store item) is proven by tests. Typed domain events, event-sourced GameSession, persistence event store with optimistic concurrency, projection contracts and reference projectors, handler orchestration, and API bridge safe projections are all implemented and tested. GameLogEntry is demoted to projection-legacy.
+- 2026-06-23 - live (BUNCH-80): Bounty/saloon flows migrated to event sourcing. 5 new event types (TownActionContextEntered, SaloonPersonOfInterestSpotted, WantedSuspectConfronted, SheriffTurnInSettled, SaloonPersonOfInterestConfronted). Clock/turn correction: RecordCaseUpdate decoupled from clock, TimeOfDay enum added, TownActionContext-based turn advancement via EnterActionContext. 5 handlers migrated to GameSessionCommandHandler. DiaryProjector, HudProjector, CaseFileViewProjector updated. 5 event types registered in persistence deserializer. CurrentActionContext persisted in snapshot. TimeOfDay added to GameClockDto and frontend display.
 
 ## Decision Type
 
@@ -102,7 +103,7 @@ Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, 
 
 12. **`GameLogEntry` demotion.** `GameLogEntry` and `AddLogEntry` are `[Obsolete]` legacy projection-only output. New domain code does not add `AddLogEntry` call sites. A `LegacyLogProjector` derives `GameLogEntry`-shaped rows from typed events for future DTO switching. Note: `LegacyLogProjector` is referenced in this ADR but not yet implemented in source as of BUNCH-78. It remains a future implementation item.
 
-13. **Migrated slice scope.** This campaign migrates two flows (start new game, purchase store item) as true event sourcing. Other flows remain on the existing direct-mutation path, clearly marked as not-yet-migrated, with follow-up issues to extend the pattern. A narrower true event-sourced implementation is preferable to a broad event-looking bridge.
+13. **Migrated slice scope.** This campaign migrates two flows (start new game, purchase store item) as true event sourcing. BUNCH-80 extends the migrated slice to bounty/saloon flows (LookAroundSaloon, ConfrontSaloonPersonOfInterest, ConfrontSaloonWantedSuspect, ResolveWantedSuspectConfrontation, SettleSheriffTurnIn, plus 5 investigation methods that now produce TownActionContextEntered events). 5 new event types: `TownActionContextEntered`, `SaloonPersonOfInterestSpotted`, `WantedSuspectConfronted`, `SheriffTurnInSettled`, `SaloonPersonOfInterestConfronted`. Clock/turn correction: `RecordCaseUpdate` is decoupled from the clock; `TimeOfDay` enum added as a naming layer over `Turn` (0-3); `EnterActionContext` produces replayable `TownActionContextEntered` events that advance the turn. Other flows (travel/journey, case completion) remain on the existing direct-mutation path, clearly marked as not-yet-migrated, with follow-up issues to extend the pattern. A narrower true event-sourced implementation is preferable to a broad event-looking bridge.
 
 ## Options Considered and Rejected
 
@@ -166,6 +167,13 @@ Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, 
 - Step 6: API bridge safe projections.
 - Step 7: `GameLogEntry` demotion.
 - Step 8: consolidated tests and validation, ADR promotion to `live`.
+- BUNCH-80 Step 1: 5 new typed domain events (TownActionContextEntered, SaloonPersonOfInterestSpotted, WantedSuspectConfronted, SheriffTurnInSettled, SaloonPersonOfInterestConfronted) + Apply methods + TimeOfDay enum + TownActionContext + EnterActionContext + RecordCaseUpdate decoupling.
+- BUNCH-80 Step 2: DiaryProjector, HudProjector, CaseFileViewProjector updated for bounty/saloon events.
+- BUNCH-80 Step 3: 5 event types registered in persistence deserializer; CurrentActionContext persisted in snapshot.
+- BUNCH-80 Step 4: 5 bounty/saloon handlers migrated to GameSessionCommandHandler orchestration.
+- BUNCH-80 Step 5: TimeOfDay added to GameClockDto + frontend display.
+- BUNCH-80 Step 6: Hidden-truth boundary tests for 5 new event types.
+- Remaining non-migrated flows: travel/journey (12+ AddLogEntry sites), case completion (1). LegacyLogProjector still not implemented (deferred to follow-up). LogEntries still in DTOs for backward compatibility.
 
 ## Related Stable Source Surfaces
 

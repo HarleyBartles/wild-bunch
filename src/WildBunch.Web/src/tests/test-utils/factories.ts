@@ -49,7 +49,7 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
         rifleUsable: false,
       },
     },
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Evening" },
     pursuitState: { heat: 1 },
     journey: null,
     travelDiary: null,
@@ -66,7 +66,7 @@ export function createJournal(overrides: Partial<JournalDto> = {}): JournalDto {
   return {
     id: "game-1",
     status: 0,
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Evening" },
     currentTown: { id: "t-town", name: "Tumbleweed" },
     caseFile: {
       accusationId: null,

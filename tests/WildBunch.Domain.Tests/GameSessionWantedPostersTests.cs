@@ -46,7 +46,7 @@ public sealed class GameSessionWantedPostersTests
 
         Assert.True(first.Success);
         Assert.True(second.Success);
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first ReadWantedPosters advances turn (same context)
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues);

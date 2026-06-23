@@ -146,6 +146,258 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _uncommittedEvents.Clear();
     }
 
+    /// <summary>
+    /// The action context the player is currently in within the current town.
+    /// Event-sourced: mutated only by <see cref="Apply(TownActionContextEntered)"/> via
+    /// <see cref="EnterActionContext"/>. Persisted in the session snapshot and reconstructed
+    /// from event replay. See ADR-0028 and BUNCH-80 clock/turn correction.
+    /// </summary>
+    public TownActionContext CurrentActionContext { get; private set; } = TownActionContext.None;
+
+    /// <summary>
+    /// The town in which the <see cref="CurrentActionContext"/> was entered. A context is
+    /// scoped to its town: entering <see cref="TownActionContext.Saloon"/> in Town A does not
+    /// suppress time advancement when entering Saloon in Town B. Event-sourced alongside
+    /// <see cref="CurrentActionContext"/> via <see cref="Apply(TownActionContextEntered)"/>.
+    /// </summary>
+    public TownId? CurrentActionContextTownId { get; private set; }
+
+    /// <summary>
+    /// Enters an action context within the current town. If the context is different from the
+    /// current one, or if the current town differs from the town the current context was entered
+    /// in, emits a <see cref="TownActionContextEntered"/> event that advances the turn and
+    /// records the resulting context/town/clock state. If the same context in the same town, no
+    /// event and no turn advance. <see cref="TownActionContext.None"/> never produces an event.
+    /// This is event-sourced: the event carries the resulting Day/Turn/TimeOfDay/TownId so replay
+    /// reconstructs the exact same state. <see cref="EnterActionContext"/> does NOT call
+    /// <see cref="GameClock.Advance"/> directly — <see cref="Apply(TownActionContextEntered)"/>
+    /// sets the clock from the event via <see cref="GameClock.Set"/>.
+    /// </summary>
+    public bool EnterActionContext(TownActionContext context)
+    {
+        if (context == TownActionContext.None)
+        {
+            return false;
+        }
+
+        // Same context only suppresses time advancement if it was entered in the same town.
+        if (context == CurrentActionContext && CurrentTown.TownId.Equals(CurrentActionContextTownId))
+        {
+            return false;
+        }
+
+        // Compute resulting clock state (do NOT mutate Clock directly — Apply does that).
+        var newTurn = Clock.Turn + 1;
+        var newDay = Clock.Day;
+        if (newTurn >= 4)
+        {
+            newDay++;
+            newTurn = 0;
+        }
+
+        var e = new TownActionContextEntered
+        {
+            Context = context,
+            TownId = CurrentTown.TownId,
+            Day = newDay,
+            Turn = newTurn,
+            TimeOfDay = (TimeOfDay)newTurn
+        };
+        ProduceEvent(e);
+        return true;
+    }
+
+    /// <summary>
+    /// Named predicate expressing the invariant for direct wanted-suspect confrontation:
+    /// confrontation itself does not advance time and is only valid when the player is
+    /// already in an appropriate active POI/location context. For this first version the
+    /// only supported confrontation context is the saloon POI loop, which requires:
+    /// <list type="number">
+    /// <item><see cref="CurrentActionContext"/> is <see cref="TownActionContext.Saloon"/>.</item>
+    /// <item>The saloon context was entered in the current town
+    /// (<see cref="CurrentActionContextTownId"/> matches <see cref="CurrentTown"/>).</item>
+    /// <item>The current town visit has an active saloon person of interest matching
+    /// <paramref name="targetSuspectId"/>.</item>
+    /// </list>
+    /// Future non-saloon POI locations should extend this helper rather than weakening the
+    /// call-site check to "any non-None context." See BUNCH-80 review feedback.
+    /// </summary>
+    public bool CanConfrontWantedSuspectInCurrentContext(SuspectId targetSuspectId)
+    {
+        if (CurrentActionContext != TownActionContext.Saloon)
+        {
+            return false;
+        }
+
+        if (CurrentActionContextTownId is null || !CurrentActionContextTownId.Equals(CurrentTown.TownId))
+        {
+            return false;
+        }
+
+        var activeSaloonPoiId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        return activeSaloonPoiId is not null && activeSaloonPoiId.Equals(targetSuspectId);
+    }
+
+    /// <summary>
+    /// Produces a typed domain event: applies it through the single mutation path (Apply)
+    /// and adds it to <see cref="UncommittedEvents"/>. Used by command methods and
+    /// <see cref="EnterActionContext"/>. This is the canonical event-sourcing produce step.
+    /// </summary>
+    internal void ProduceEvent<T>(T e) where T : IDomainEvent
+    {
+        ApplyProducedEvent(e);
+        _uncommittedEvents.Add(e);
+    }
+
+    /// <summary>
+    /// Dispatches a produced event to the appropriate Apply overload. Mirrors the replay
+    /// dispatcher in <see cref="GameSessionEventReplay.ApplyEvent"/> so command-path and
+    /// replay-path mutation stay identical. Throws for unknown event types.
+    /// </summary>
+    private void ApplyProducedEvent(IDomainEvent e)
+    {
+        switch (e)
+        {
+            case GameStarted gs:
+                Apply(gs);
+                break;
+            case StoreItemPurchased p:
+                Apply(p);
+                break;
+            case InvestigationPerformed ip:
+                Apply(ip);
+                break;
+            case TownActionContextEntered tc:
+                Apply(tc);
+                break;
+            case SaloonPersonOfInterestSpotted sp:
+                Apply(sp);
+                break;
+            case WantedSuspectConfronted wc:
+                Apply(wc);
+                break;
+            case SheriffTurnInSettled ts:
+                Apply(ts);
+                break;
+            case SaloonPersonOfInterestConfronted sc:
+                Apply(sc);
+                break;
+            default:
+                throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
+        }
+    }
+
+    /// <summary>
+    /// Applies a <see cref="TownActionContextEntered"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the clock/context correction: it sets both
+    /// <see cref="CurrentActionContext"/> and <see cref="Clock"/> from the event so that
+    /// command execution and replay produce identical state. See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(TownActionContextEntered e)
+    {
+        CurrentActionContext = e.Context;
+        CurrentActionContextTownId = e.TownId;
+        Clock.Set(e.Day, e.Turn);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="SaloonPersonOfInterestSpotted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the saloon look-around flow: it marks the
+    /// saloon source as spent, appends the case-update log entry (if RecordLog), and sets the
+    /// active saloon person of interest. Clock advancement is handled by EnterActionContext.
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(SaloonPersonOfInterestSpotted e)
+    {
+        CurrentTown.CheckSource(e.SourceKind);
+
+        if (e.RecordLog)
+        {
+            RecordCaseUpdate(e.Message);
+        }
+
+        if (e.SuspectId is not null && e.Descriptor is not null)
+        {
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(e.SuspectId.Value, e.Descriptor);
+        }
+        else if (e.Descriptor is not null)
+        {
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(e.Descriptor);
+        }
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="WantedSuspectConfronted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the wanted-suspect confrontation flow:
+    /// it appends the case-update log entry, records the confrontation state (for non-abandoned
+    /// outcomes), and updates the wanted-suspect presence ledger. Clock advancement is handled
+    /// by EnterActionContext. The Clock.Turn + 1 offset is removed — confrontation state
+    /// records Clock.Turn directly. See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(WantedSuspectConfronted e)
+    {
+        RecordCaseUpdate(e.Message);
+
+        if (e.Outcome is not WantedSuspectConfrontationOutcome.Abandoned)
+        {
+            var confrontationState = new WantedSuspectConfrontationState(
+                e.TargetSuspectId,
+                e.TargetName,
+                e.Disposition,
+                e.Outcome,
+                e.IsAlive,
+                e.IsSecured,
+                Clock.Day,
+                Clock.Turn);
+            CaseFile.RecordWantedSuspectConfrontationState(confrontationState);
+            UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
+        }
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="SheriffTurnInSettled"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the sheriff turn-in flow: it adjusts
+    /// the player's wallet by the bounty amount and records the settlement state.
+    /// Clock advancement is handled by EnterActionContext(SheriffOffice).
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(SheriffTurnInSettled e)
+    {
+        Player.AdjustCash(e.BountyAmount);
+
+        var settlementState = new SheriffTurnInSettlementState(
+            e.TargetSuspectId, e.TargetName, e.Disposition,
+            e.IsAlive, e.BountyAmount, e.Day, e.Turn);
+        CaseFile.RecordSheriffTurnInSettlementState(settlementState);
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="SaloonPersonOfInterestConfronted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the saloon person confrontation flow:
+    /// it clears the active saloon person of interest and optionally fines the player.
+    /// No RecordCaseUpdate call — log entries come from delegated WantedSuspectConfronted
+    /// events. Clock advancement is handled by EnterActionContext (already in Saloon context).
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(SaloonPersonOfInterestConfronted e)
+    {
+        CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
+
+        if (e.FineAmount is { } fine && fine > 0m)
+        {
+            Player.AdjustCash(-fine);
+        }
+
+        _version++;
+    }
+
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
         => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
 
@@ -278,7 +530,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTown.CheckSource(e.SourceKind);
         }
 
-        RecordCaseUpdate(e.Message, advanceClock: e.AdvanceClock);
+        RecordCaseUpdate(e.Message);
 
         if (e.ClueId is not null)
         {
@@ -519,6 +771,25 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         var currentTown = World.GetTown(townId);
         _currentTown.EnterTown(currentTown);
+        // The action context is scoped to the current town. When the town changes
+        // (including a round-trip back to the same town), the context resets so that
+        // re-entering a location in the new town advances time. This is a direct
+        // mutation because travel/journey is not yet event-sourced; the context
+        // reset is a side effect of the town change, not a gameplay event.
+        // See BUNCH-80 review feedback on town-scoped CurrentActionContext.
+        ResetActionContextForTownChange();
+    }
+
+    /// <summary>
+    /// Resets <see cref="CurrentActionContext"/> and <see cref="CurrentActionContextTownId"/>
+    /// to None/null. Called by <see cref="RefreshTownVisit"/> when the current town changes.
+    /// Also available for test helpers that simulate town changes via
+    /// <see cref="TownVisitState.Reset"/> directly.
+    /// </summary>
+    internal void ResetActionContextForTownChange()
+    {
+        CurrentActionContext = TownActionContext.None;
+        CurrentActionContextTownId = null;
     }
 
     private void RefillCanteenAfterArrival()
@@ -1667,6 +1938,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
+        EnterActionContext(TownActionContext.SheriffOffice);
+
         if (CurrentTownVisit.WantedPostersSpent)
         {
             var msg = "You study the wanted posters again, but find nothing new.";
@@ -1751,30 +2024,61 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var saloonSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.SaloonLookAround);
-
         if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
         {
             return CaseInvestigationResult.Failed("There is no saloon here.");
         }
 
-        if (CurrentTown.CheckSource(saloonSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        // Enter saloon context AFTER availability check, BEFORE local action resolution.
+        // Emits TownActionContextEntered event if context changed (advances turn).
+        // If no saloon exists, we already returned above — no context event, no turn advance.
+        EnterActionContext(TownActionContext.Saloon);
+
+        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))
         {
-            RecordCaseUpdate("You look around the saloon again, but nobody of interest is here.");
-            return CaseInvestigationResult.Succeeded("You look around the saloon again, but nobody of interest is here.", sessionChanged: true);
+            var repeatMessage = "You look around the saloon again, but nobody of interest is here.";
+            var repeatEvent = new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = CurrentTown.TownId,
+                Message = repeatMessage,
+                RecordLog = true
+            };
+            ProduceEvent(repeatEvent);
+            return CaseInvestigationResult.Succeeded(repeatMessage, sessionChanged: true);
         }
 
         if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
         {
             var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
-            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id, descriptor);
-            RecordCaseUpdate($"You look around the saloon and spot {descriptor}.");
-            return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {descriptor}.", sessionChanged: true);
+            var spotMessage = $"You look around the saloon and spot {descriptor}.";
+            var spotEvent = new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = CurrentTown.TownId,
+                Message = spotMessage,
+                SuspectId = suspect.Id,
+                Descriptor = descriptor,
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                RecordLog = true
+            };
+            ProduceEvent(spotEvent);
+            return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
         }
 
         var citizenDescriptor = DescribeTownCitizen(CurrentTown);
-        CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(citizenDescriptor);
-        return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {citizenDescriptor}.", sessionChanged: true);
+        var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
+        var citizenEvent = new SaloonPersonOfInterestSpotted
+        {
+            SourceKind = InvestigationSourceKind.SaloonLookAround,
+            TownId = CurrentTown.TownId,
+            Message = citizenMessage,
+            Descriptor = citizenDescriptor,
+            PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+            RecordLog = false
+        };
+        ProduceEvent(citizenEvent);
+        return CaseInvestigationResult.Succeeded(citizenMessage, sessionChanged: true);
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
@@ -1822,6 +2126,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
+
+        EnterActionContext(TownActionContext.TelegraphOffice);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead))
         {
@@ -1873,6 +2179,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
+        EnterActionContext(TownActionContext.Saloon);
+
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip))
         {
             var msg = "You ask around again, but hear nothing new.";
@@ -1922,6 +2230,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
+
+        EnterActionContext(TownActionContext.TownSquare);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard))
         {
@@ -1973,6 +2283,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
+        EnterActionContext(TownActionContext.SheriffOffice);
+
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords))
         {
             var msg = "You check the local records again, but find nothing new.";
@@ -2016,13 +2328,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true);
     }
 
-    public void RecordCaseUpdate(string message, bool advanceClock = true)
+    public void RecordCaseUpdate(string message)
     {
-        if (advanceClock)
-        {
-            Clock.Advance();
-        }
-
         AddLogEntry(GameLogEntryKind.CaseUpdate, message);
     }
 

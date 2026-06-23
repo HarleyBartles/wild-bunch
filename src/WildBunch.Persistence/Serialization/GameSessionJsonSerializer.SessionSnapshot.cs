@@ -1,5 +1,6 @@
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
 
 // LogEntries is [Obsolete] (projection-legacy per ADR-0028).
 #pragma warning disable CS0618
@@ -20,6 +21,8 @@ public sealed partial class GameSessionJsonSerializer
         CaseFileSnapshot CaseFile,
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
+        TownActionContext CurrentActionContext,
+        string? CurrentActionContextTownId,
         JourneySnapshot? Journey,
         IReadOnlyList<JourneySnapshot>? CompletedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceSnapshot> WantedSuspectPresenceLedger,
@@ -39,6 +42,8 @@ public sealed partial class GameSessionJsonSerializer
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
+                session.CurrentActionContext,
+                session.CurrentActionContextTownId?.Value,
                 session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot(session.TravelRules)),
                 session.CompletedJourneyHistory.Select(JourneySnapshot.FromDomain).ToArray(),
                 session.WantedSuspectPresenceEntries.Select(WantedSuspectPresenceSnapshot.FromDomain).ToArray(),
@@ -70,6 +75,8 @@ public sealed partial class GameSessionJsonSerializer
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
+            TownId? contextTownId = CurrentActionContextTownId is null ? null : new TownId(CurrentActionContextTownId);
+            GameSessionRehydrator.SetCurrentActionContext(session, CurrentActionContext, contextTownId);
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             return session;

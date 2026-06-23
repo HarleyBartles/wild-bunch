@@ -75,8 +75,10 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         var secondVisit = session.LookAroundSaloon();
 
@@ -267,8 +269,10 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
+        session.ResetActionContextForTownChange();
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
+        session.ResetActionContextForTownChange();
 
         var repeatLookAround = session.LookAroundSaloon();
 

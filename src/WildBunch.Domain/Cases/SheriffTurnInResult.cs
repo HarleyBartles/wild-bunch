@@ -32,6 +32,15 @@ public sealed record SheriffTurnInResult(
 
     public static SheriffTurnInResult Rejected(string message, string? targetName = null, WarrantDisposition? disposition = null, decimal? bountyAmount = null)
         => new(false, message, SheriffTurnInOutcome.Rejected, targetName, disposition, bountyAmount, false);
+
+    /// <summary>
+    /// Returns a copy of this result with <see cref="SessionChanged"/> set to true.
+    /// Used by <see cref="GameSession.SettleSheriffTurnIn"/> when a rejected turn-in still
+    /// mutated the session via a <see cref="TownActionContextEntered"/> event (entering
+    /// SheriffOffice takes time even when the turn-in is rejected). See BUNCH-80 review feedback.
+    /// </summary>
+    public SheriffTurnInResult WithSessionChanged()
+        => this with { SessionChanged = true };
 }
 
 public sealed record SheriffTurnInSettlementState(

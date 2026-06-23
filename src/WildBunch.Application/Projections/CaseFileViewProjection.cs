@@ -13,4 +13,6 @@ public sealed record CaseFileViewProjection(
     string CaseSummary,
     IReadOnlyList<Suspect> DiscoveredSuspects,
     IReadOnlyList<Clue> KnownClues,
-    IReadOnlyList<Warrant> KnownWarrants) : IProjectionResult;
+    IReadOnlyList<Warrant> KnownWarrants,
+    IReadOnlyList<WantedSuspectConfrontationState> Confrontations,
+    IReadOnlyList<SheriffTurnInSettlementState> Settlements) : IProjectionResult;
