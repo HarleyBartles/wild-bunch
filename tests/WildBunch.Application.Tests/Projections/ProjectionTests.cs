@@ -487,4 +487,78 @@ public sealed class ProjectionTests
         // log entries come from delegated WantedSuspectConfronted/SheriffTurnInSettled events
         Assert.DoesNotContain(diary.Entries, e => e.Summary.Contains("Wrong declaration"));
     }
+
+    // --- BUNCH-80: HudProjector wallet changes from bounty/saloon events ---
+
+    [Fact]
+    public void HudProjector_SheriffTurnInSettled_AddsBountyToWallet()
+    {
+        var projector = new HudProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 10m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                Difficulty = TravelDifficulty.Normal,
+                TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
+                Entropy = AdventureRandomnessPolicy.Standard
+            },
+            new SheriffTurnInSettled
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                IsAlive = true,
+                BountyAmount = 50m,
+                Message = "The sheriff pays you $50.00.",
+                Day = 1,
+                Turn = 1
+            }
+        };
+
+        var hud = projector.Project(events);
+
+        Assert.Equal(60m, hud.WalletCash);
+    }
+
+    [Fact]
+    public void HudProjector_SaloonPersonOfInterestConfronted_WithFine_SetsWalletAfter()
+    {
+        var projector = new HudProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 100m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                Difficulty = TravelDifficulty.Normal,
+                TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
+                Entropy = AdventureRandomnessPolicy.Standard
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "Wrong declaration.",
+                TargetName = "the stranger",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
+                FineAmount = 25m,
+                WalletBefore = 100m,
+                WalletAfter = 75m,
+                IsCitizen = true
+            }
+        };
+
+        var hud = projector.Project(events);
+
+        Assert.Equal(75m, hud.WalletCash);
+    }
 }

@@ -49,6 +49,21 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     walletCash = sp.WalletAfter;
                     inventory[sp.ItemKind] = (inventory.TryGetValue(sp.ItemKind, out var qty) ? qty : 0) + sp.Quantity;
                     break;
+
+                case SheriffTurnInSettled st:
+                    walletCash += st.BountyAmount;
+                    break;
+
+                case SaloonPersonOfInterestConfronted sc:
+                    if (sc.WalletAfter is { } walletAfter)
+                    {
+                        walletCash = walletAfter;
+                    }
+                    else if (sc.FineAmount is { } fine)
+                    {
+                        walletCash -= fine;
+                    }
+                    break;
             }
         }
 
