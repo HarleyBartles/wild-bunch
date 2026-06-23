@@ -561,4 +561,109 @@ public sealed class ProjectionTests
 
         Assert.Equal(75m, hud.WalletCash);
     }
+
+    // --- BUNCH-80: CaseFileViewProjector confrontation/settlement state ---
+
+    [Fact]
+    public void CaseFileViewProjector_WantedSuspectConfronted_AddsConfrontationToProjection()
+    {
+        var projector = new CaseFileViewProjector();
+        var suspectId = new SuspectId("suspect-1");
+        var suspects = new[]
+        {
+            new Suspect(suspectId, "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var events = new IDomainEvent[]
+        {
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = suspectId,
+                TargetName = "Ira Flint",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Surrendered,
+                Outcome = WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true,
+                Message = "You confront Ira Flint. He surrenders."
+            }
+        };
+
+        var view = projector.Project(Guid.NewGuid(), caseFile, events);
+
+        Assert.Contains(view.Confrontations, c => c.SuspectId.Equals(suspectId));
+        Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, view.Confrontations.Single().Outcome);
+    }
+
+    [Fact]
+    public void CaseFileViewProjector_SheriffTurnInSettled_AddsSettlementToProjection()
+    {
+        var projector = new CaseFileViewProjector();
+        var suspectId = new SuspectId("suspect-1");
+        var suspects = new[]
+        {
+            new Suspect(suspectId, "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var events = new IDomainEvent[]
+        {
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = suspectId,
+                TargetName = "Ira Flint",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Surrendered,
+                Outcome = WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true,
+                Message = "You confront Ira Flint. He surrenders."
+            },
+            new SheriffTurnInSettled
+            {
+                TargetSuspectId = suspectId,
+                TargetName = "Ira Flint",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                IsAlive = true,
+                BountyAmount = 50m,
+                Message = "The sheriff pays you $50.00.",
+                Day = 1,
+                Turn = 1
+            }
+        };
+
+        var view = projector.Project(Guid.NewGuid(), caseFile, events);
+
+        Assert.Contains(view.Settlements, s => s.SuspectId.Equals(suspectId));
+        Assert.Equal(50m, view.Settlements.Single().BountyAmount);
+    }
+
+    [Fact]
+    public void CaseFileViewProjector_WantedSuspectConfrontedAbandoned_DoesNotAddConfrontation()
+    {
+        var projector = new CaseFileViewProjector();
+        var suspectId = new SuspectId("suspect-1");
+        var suspects = new[]
+        {
+            new Suspect(suspectId, "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var events = new IDomainEvent[]
+        {
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = suspectId,
+                TargetName = "Ira Flint",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Abandoned,
+                Outcome = WantedSuspectConfrontationOutcome.Abandoned,
+                IsAlive = true,
+                IsSecured = false,
+                Message = "You let the opportunity pass."
+            }
+        };
+
+        var view = projector.Project(Guid.NewGuid(), caseFile, events);
+
+        Assert.Empty(view.Confrontations);
+    }
 }

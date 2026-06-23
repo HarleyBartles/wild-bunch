@@ -24,19 +24,55 @@ public sealed class CaseFileViewProjector
         ArgumentNullException.ThrowIfNull(seedCaseFile);
         ArgumentNullException.ThrowIfNull(events);
 
-        // The case file view starts from the seed and is updated by events.
-        // Currently, no events mutate the case file view (clue/journal flows are
-        // not yet event-sourced). This projector is the contract for when they are.
         string? accusationId = null;
         var discoveredSuspects = seedCaseFile.Suspects.ToList();
         var knownClues = seedCaseFile.KnownClues.ToList();
         var knownWarrants = seedCaseFile.KnownWarrants.ToList();
+        var confrontations = new List<WantedSuspectConfrontationState>();
+        var settlements = new List<SheriffTurnInSettlementState>();
+        var revealedClueIds = new HashSet<ClueId>();
+        var revealedWarrantIds = new HashSet<WarrantId>();
 
         foreach (var e in events)
         {
-            // Future event types (ClueDiscovered, SuspectAccused, etc.) will update
-            // the projection here. For now, the seed case file is the projection.
-            _ = e;
+            switch (e)
+            {
+                case InvestigationPerformed ip:
+                    if (ip.ClueId is { } clueId) revealedClueIds.Add(clueId);
+                    if (ip.WarrantId is { } warrantId) revealedWarrantIds.Add(warrantId);
+                    break;
+
+                case WantedSuspectConfronted wc:
+                    if (wc.Outcome is not WantedSuspectConfrontationOutcome.Abandoned)
+                    {
+                        confrontations.Add(new WantedSuspectConfrontationState(
+                            wc.TargetSuspectId, wc.TargetName, wc.Disposition,
+                            wc.Outcome, wc.IsAlive, wc.IsSecured, 0, 0));
+                    }
+                    break;
+
+                case SheriffTurnInSettled st:
+                    settlements.Add(new SheriffTurnInSettlementState(
+                        st.TargetSuspectId, st.TargetName, st.Disposition,
+                        st.IsAlive, st.BountyAmount, st.Day, st.Turn));
+                    break;
+            }
+        }
+
+        // If clues/warrants were revealed via events, filter the seed by revealed IDs.
+        // If no events revealed clues/warrants, keep the seed (backward compatibility).
+        if (revealedClueIds.Count > 0)
+        {
+            knownClues = seedCaseFile.KnownClues
+                .Where(c => revealedClueIds.Contains(c.Id))
+                .ToList();
+        }
+
+        if (revealedWarrantIds.Count > 0)
+        {
+            knownWarrants = seedCaseFile.KnownWarrants
+                .Where(w => revealedWarrantIds.Contains(w.Id))
+                .ToList();
         }
 
         return new CaseFileViewProjection(
@@ -45,6 +81,8 @@ public sealed class CaseFileViewProjector
             seedCaseFile.OpeningLead.Description,
             discoveredSuspects,
             knownClues,
-            knownWarrants);
+            knownWarrants,
+            confrontations,
+            settlements);
     }
 }
