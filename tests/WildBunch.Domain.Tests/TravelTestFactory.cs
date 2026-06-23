@@ -81,30 +81,34 @@ internal static class TravelTestFactory
     }
 
     /// <summary>
-    /// Creates a session with a long low-risk journey designed to complete without interruption.
-    /// Uses TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, distance 6m.
-    /// Inventory: 8 Food, 1 Canteen (full 10), 1 Horse (Healthy), 1 Saddle.
+    /// Creates a session with a low-risk journey designed to complete without interruption.
+    /// Uses TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, ride-day distance 3m
+    /// (foot travel). TravelDifficulty.Easy. Inventory: 8 Food, 1 Canteen (6/10 charges),
+    /// 1 Knife. The deterministic day-plan generator produces no choice-requiring encounters
+    /// for this exact combination of trail id, town ids, terrain and difficulty, so the
+    /// journey reliably reaches <see cref="JourneyStatus.Completed"/>.
     /// </summary>
     internal static (GameSession session, TravelPreview preview) CreateSixDayQuietJourney()
     {
-        // Mirror the CreateSixDayQuietSession pattern from AdvanceTravelDayHandlerTests.
-        var origin = new Town(new TownId("origin"), "Origin Town",
-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
-        var destination = new Town(new TownId("destination"), "Destination Town", TownServices.None);
+        // The trail id, town ids, terrain and difficulty are tuned together so the
+        // deterministic TravelDayPlanGenerator produces no Foe/Npc encounters across
+        // the whole journey. Changing any of these values may reintroduce interruptions.
+        var origin = new Town(new TownId("o2"), "Pinecross",
+            TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var destination = new Town(new TownId("d2"), "Six Mile", TownServices.None);
         var world = new DomainWorld(
             new[] { origin, destination },
             new[]
             {
-                new Trail(new TrailId("trail-long"), origin.Id, destination.Id,
-                    TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, rideDayDistance: 6m)
+                new Trail(new TrailId("trail-q-2"), origin.Id, destination.Id,
+                    TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, rideDayDistance: 3m)
             });
 
         var inventory = new DomainInventory(new[]
         {
             new InventoryItem(ItemKind.Food, 8),
-            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
-            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
-            new InventoryItem(ItemKind.Saddle, 1),
+            new InventoryItem(ItemKind.Canteen, 1, canteenState: new CanteenState(6, 10)),
+            new InventoryItem(ItemKind.Knife, 1),
         });
 
         var caseFile = new CaseFile(
