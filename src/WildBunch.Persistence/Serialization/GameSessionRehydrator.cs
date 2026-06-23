@@ -98,4 +98,15 @@ internal static class GameSessionRehydrator
     {
         SetBackingField(session, "_version", version);
     }
+
+    /// <summary>
+    /// Sets the session's CurrentActionContext when loading from snapshot.
+    /// This is also reconstructed from event replay via Apply(TownActionContextEntered).
+    /// Both paths (snapshot load + event replay) must produce the same value.
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    public static void SetCurrentActionContext(GameSession session, TownActionContext context)
+    {
+        SetBackingField(session, "<CurrentActionContext>k__BackingField", context);
+    }
 }

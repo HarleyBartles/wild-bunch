@@ -20,6 +20,7 @@ public sealed partial class GameSessionJsonSerializer
         CaseFileSnapshot CaseFile,
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
+        TownActionContext CurrentActionContext,
         JourneySnapshot? Journey,
         IReadOnlyList<JourneySnapshot>? CompletedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceSnapshot> WantedSuspectPresenceLedger,
@@ -39,6 +40,7 @@ public sealed partial class GameSessionJsonSerializer
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
+                session.CurrentActionContext,
                 session.Journey is null ? null : JourneySnapshot.FromDomain(session.Journey.ToSnapshot(session.TravelRules)),
                 session.CompletedJourneyHistory.Select(JourneySnapshot.FromDomain).ToArray(),
                 session.WantedSuspectPresenceEntries.Select(WantedSuspectPresenceSnapshot.FromDomain).ToArray(),
@@ -70,6 +72,7 @@ public sealed partial class GameSessionJsonSerializer
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
+            GameSessionRehydrator.SetCurrentActionContext(session, CurrentActionContext);
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             return session;
