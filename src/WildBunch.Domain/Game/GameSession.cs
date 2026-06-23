@@ -282,6 +282,24 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case SaloonPersonOfInterestConfronted sc:
                 Apply(sc);
                 break;
+            case JourneyStarted js:
+                Apply(js);
+                break;
+            case TravelDayAdvanced tda:
+                Apply(tda);
+                break;
+            case TrailEventApplied tea:
+                Apply(tea);
+                break;
+            case JourneyEncounterResolved jer:
+                Apply(jer);
+                break;
+            case JourneyCompleted jc:
+                Apply(jc);
+                break;
+            case JourneyArrivalAcknowledged jaa:
+                Apply(jaa);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -396,6 +414,148 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         _version++;
+    }
+
+    /// <summary>
+    /// Records a travel-kind log entry. This is the travel equivalent of
+    /// <see cref="RecordCaseUpdate"/> and is called from the travel Apply methods
+    /// so that diary/audit accumulation stays consistent between command and replay paths.
+    /// See ADR-0028 and BUNCH-83.
+    /// </summary>
+    private void RecordTravelUpdate(string message)
+    {
+        if (!string.IsNullOrWhiteSpace(message))
+            AddLogEntry(GameLogEntryKind.Travel, message);
+    }
+
+    /// <summary>
+    /// Applies a <see cref="JourneyStarted"/> event. JourneySnapshot is ABSOLUTE —
+    /// Apply sets <see cref="Journey"/> from it. See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void Apply(JourneyStarted e)
+    {
+        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+        _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
+        _travelDiaryDays.Clear();
+        RecordTravelUpdate(e.DiaryMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="TravelDayAdvanced"/> event. Day is ABSOLUTE — Apply calls
+    /// <see cref="GameClock.Set"/>. JourneySnapshot is ABSOLUTE. HealthDelta and
+    /// PursuitHeatDelta are ADDITIVE. See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void Apply(TravelDayAdvanced e)
+    {
+        Clock.Set(e.Day, turn: 0);
+        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+        if (e.HealthDelta != 0)
+            Player.AdjustHealth(e.HealthDelta);
+        if (e.PursuitHeatDelta != 0)
+            PursuitState.IncreaseHeat(e.PursuitHeatDelta);
+        RecordTravelUpdate(e.DiaryMessage);
+        if (!string.IsNullOrEmpty(e.HorseLostMessage))
+            RecordTravelUpdate(e.HorseLostMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="TrailEventApplied"/> event. JourneySnapshot is ABSOLUTE.
+    /// WalletDelta, FoodDelta, CanteenChargeDelta and HeatIncrease are ADDITIVE.
+    /// Horse/delay/mode fields are informational (journey snapshot is the source of truth).
+    /// See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void Apply(TrailEventApplied e)
+    {
+        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+        if (e.WalletDelta != 0m)
+            Player.AdjustCash(e.WalletDelta);
+        if (e.FoodDelta != 0)
+            ApplyFoodDelta(e.FoodDelta);
+        if (e.CanteenChargeDelta != 0)
+            ApplyCanteenChargeDelta(e.CanteenChargeDelta);
+        if (e.HeatIncrease != 0)
+            PursuitState.IncreaseHeat(e.HeatIncrease);
+        RecordTravelUpdate(e.DiaryMessage);
+        if (!string.IsNullOrEmpty(e.HorseLostMessage))
+            RecordTravelUpdate(e.HorseLostMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="JourneyEncounterResolved"/> event. JourneySnapshot is ABSOLUTE.
+    /// HealthDelta, WalletDelta, AmmoSpent, StolenItem and PursuitHeatDelta are ADDITIVE.
+    /// See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void Apply(JourneyEncounterResolved e)
+    {
+        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+        if (e.HealthDelta != 0)
+            Player.AdjustHealth(e.HealthDelta);
+        if (e.WalletDelta != 0m)
+            Player.AdjustCash(e.WalletDelta);
+        if (e.AmmoSpent > 0)
+            SpendFirearmAmmo(e.AmmoSpent);
+        if (e.StolenItemKind is { } kind && e.StolenItemQuantity > 0)
+            Player.RemoveQuantity(kind, e.StolenItemQuantity);
+        if (e.PursuitHeatDelta != 0)
+            PursuitState.IncreaseHeat(e.PursuitHeatDelta);
+        RecordTravelUpdate(e.DiaryMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="JourneyCompleted"/> event. DestinationTownId is ABSOLUTE —
+    /// Apply sets player town. JourneySnapshot is ABSOLUTE. Arrival side effects
+    /// (town visit refresh, canteen refill) are deterministic and applied here so
+    /// command and replay paths stay identical. See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void Apply(JourneyCompleted e)
+    {
+        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+        Player.TravelTo(e.DestinationTownId);
+        RefreshTownVisit(e.DestinationTownId);
+        RefillCanteenAfterArrival();
+        RecordTravelUpdate(e.DiaryMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="JourneyArrivalAcknowledged"/> event. Apply archives the
+    /// current journey into <see cref="CompletedJourneyHistory"/> and clears the active
+    /// journey. See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void Apply(JourneyArrivalAcknowledged e)
+    {
+        _completedJourneyHistory.Add(e.JourneySnapshot);
+        Journey = null;
+        RecordTravelUpdate(e.DiaryMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Adjusts player food by a signed delta. Positive deltas add food; negative
+    /// deltas remove food. Used by travel Apply methods for additive food deltas.
+    /// </summary>
+    private void ApplyFoodDelta(int foodDelta)
+    {
+        if (foodDelta > 0)
+            Player.AddItem(ItemKind.Food, foodDelta);
+        else if (foodDelta < 0)
+            Player.RemoveQuantity(ItemKind.Food, -foodDelta);
+    }
+
+    /// <summary>
+    /// Adjusts player canteen charges by a signed delta. Used by travel Apply methods
+    /// for additive canteen charge deltas.
+    /// </summary>
+    private void ApplyCanteenChargeDelta(int canteenChargeDelta)
+    {
+        var canteen = Player.GetCanteenState();
+        if (canteen is null)
+            return;
+        Player.SetCanteenState(canteen.AdjustCharges(canteenChargeDelta));
     }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)

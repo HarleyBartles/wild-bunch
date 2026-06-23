@@ -21,7 +21,7 @@ public sealed record TrailEventApplied : IDomainEvent
     public required int HorseThirstDelta { get; init; }
     public required int HorseExhaustionDelta { get; init; }
     public required int DelayDays { get; init; }
-    public required decimal HeatIncrease { get; init; }
+    public required int HeatIncrease { get; init; }
     public required TravelMode? TravelModeChangedTo { get; init; }
     public required string DiaryMessage { get; init; }
     public required string HorseLostMessage { get; init; }

@@ -21,7 +21,7 @@ public sealed record JourneyEncounterResolved : IDomainEvent
     public required int AmmoSpent { get; init; }
     public required ItemKind? StolenItemKind { get; init; }
     public required int StolenItemQuantity { get; init; }
-    public required decimal PursuitHeatDelta { get; init; }
+    public required int PursuitHeatDelta { get; init; }
     public required int HorseExhaustionDelta { get; init; }
     public required bool ContinuedOnFoot { get; init; }
     public required TravelJourneySnapshot JourneySnapshot { get; init; }

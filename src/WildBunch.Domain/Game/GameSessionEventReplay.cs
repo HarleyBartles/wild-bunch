@@ -112,6 +112,24 @@ public sealed partial class GameSession
             case SaloonPersonOfInterestConfronted sc:
                 session.Apply(sc);
                 break;
+            case JourneyStarted js:
+                session.Apply(js);
+                break;
+            case TravelDayAdvanced tda:
+                session.Apply(tda);
+                break;
+            case TrailEventApplied tea:
+                session.Apply(tea);
+                break;
+            case JourneyEncounterResolved jer:
+                session.Apply(jer);
+                break;
+            case JourneyCompleted jc:
+                session.Apply(jc);
+                break;
+            case JourneyArrivalAcknowledged jaa:
+                session.Apply(jaa);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }

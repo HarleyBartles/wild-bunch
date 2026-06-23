@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -33,6 +34,50 @@ internal static class TravelTestFactory
         var session = TestSessionFactory.CreateDefault();
         var preview = ResolvePreview(session, new TownId("connected"));
         return (session, preview);
+    }
+
+    /// <summary>
+    /// Creates an EasyShortJourney session and captures the <see cref="GameStarted"/> event
+    /// before it is committed. Used by replay-equality tests that need the full event stream.
+    /// </summary>
+    internal static (GameSession session, TravelPreview preview, GameStarted gameStarted)
+        CreateEasyShortJourneyWithGameStarted()
+    {
+        var (session, preview) = CreateEasyShortJourney();
+        var gameStarted = RecaptureGameStarted(session);
+        return (session, preview, gameStarted);
+    }
+
+    /// <summary>
+    /// Creates a SixDayQuietJourney session and captures the <see cref="GameStarted"/> event
+    /// before it is committed. Used by replay-equality tests that need the full event stream.
+    /// </summary>
+    internal static (GameSession session, TravelPreview preview, GameStarted gameStarted)
+        CreateSixDayQuietJourneyWithGameStarted()
+    {
+        var (session, preview) = CreateSixDayQuietJourney();
+        var gameStarted = RecaptureGameStarted(session);
+        return (session, preview, gameStarted);
+    }
+
+    /// <summary>
+    /// Recaptures the <see cref="GameStarted"/> event for a session by re-running
+    /// <see cref="GameSession.StartNew"/> with the same world/case-file/inventory seed.
+    /// The factory sessions already commit GameStarted, so replay tests must prepend it
+    /// to the event stream manually.
+    /// </summary>
+    private static GameStarted RecaptureGameStarted(GameSession session)
+    {
+        var seed = GameSession.StartNew(
+            session.Player.Name,
+            session.World,
+            TestSessionFactory.CreateBaselineCaseFileFor(session),
+            session.Player.CurrentTownId,
+            session.Player.Wallet,
+            session.Player.Inventory,
+            session.TravelDifficulty,
+            session.TravelRandomness);
+        return Assert.IsType<GameStarted>(seed.UncommittedEvents.Single());
     }
 
     /// <summary>

@@ -15,7 +15,7 @@ public sealed record TravelDayAdvanced : IDomainEvent
     public required int Day { get; init; }
     public required TravelJourneySnapshot JourneySnapshot { get; init; }
     public required int HealthDelta { get; init; }
-    public required decimal PursuitHeatDelta { get; init; }
+    public required int PursuitHeatDelta { get; init; }
     public required TravelDayOutcome DayOutcome { get; init; }
     public required string DiaryMessage { get; init; }
     public required string HorseLostMessage { get; init; }
