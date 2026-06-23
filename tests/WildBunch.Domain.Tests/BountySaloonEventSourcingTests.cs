@@ -332,4 +332,53 @@ public sealed class BountySaloonEventSourcingTests
         Assert.False(result.Success);
         Assert.Empty(session.UncommittedEvents);
     }
+
+    // --- Hidden-truth boundary tests ---
+
+    [Fact]
+    public void BountySaloonEvents_DoNotCarryHiddenTruthFields()
+    {
+        // Verify that none of the 5 new event types have properties named
+        // TrueCulpritId, LinkedSuspectIds, TargetKind, or KillerReleaseState
+        var eventTypes = new[]
+        {
+            typeof(TownActionContextEntered),
+            typeof(SaloonPersonOfInterestSpotted),
+            typeof(WantedSuspectConfronted),
+            typeof(SheriffTurnInSettled),
+            typeof(SaloonPersonOfInterestConfronted)
+        };
+
+        var forbiddenNames = new[] { "TrueCulpritId", "LinkedSuspectIds", "TargetKind", "KillerReleaseState" };
+
+        foreach (var type in eventTypes)
+        {
+            foreach (var prop in type.GetProperties())
+            {
+                Assert.DoesNotContain(prop.Name, forbiddenNames);
+            }
+        }
+    }
+
+    [Fact]
+    public void BountySaloonEventJson_DoesNotContainHiddenTruthFields()
+    {
+        var events = new IDomainEvent[]
+        {
+            new TownActionContextEntered { Context = TownActionContext.Saloon, Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning },
+            new SaloonPersonOfInterestSpotted { SourceKind = InvestigationSourceKind.SaloonLookAround, TownId = new TownId("current"), Message = "test", RecordLog = true },
+            new WantedSuspectConfronted { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, Choice = WantedSuspectConfrontationChoice.Surrendered, Outcome = WantedSuspectConfrontationOutcome.Surrendered, IsAlive = true, IsSecured = true, Message = "test" },
+            new SheriffTurnInSettled { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, IsAlive = true, BountyAmount = 50m, Message = "test", Day = 1, Turn = 1 },
+            new SaloonPersonOfInterestConfronted { Message = "test", TargetName = "stranger", PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen, Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, IsCitizen = true }
+        };
+
+        foreach (var e in events)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(e, e.GetType());
+            Assert.DoesNotContain("trueCulpritId", json, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("linkedSuspectIds", json, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("targetKind", json, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("killerReleaseState", json, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 }
