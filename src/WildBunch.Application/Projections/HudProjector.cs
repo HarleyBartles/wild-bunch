@@ -80,9 +80,8 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     break;
 
                 case JourneyEncounterResolved jer:
-                    health += jer.HealthDelta;
-                    if (jer.WalletDelta != 0m)
-                        walletCash += jer.WalletDelta;
+                    health = jer.PlayerHealth;
+                    walletCash = jer.WalletCash;
                     if (jer.AmmoSpent > 0)
                     {
                         inventory[ItemKind.RevolverAmmo] = Math.Max(0,

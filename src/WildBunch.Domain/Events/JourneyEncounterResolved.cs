@@ -8,20 +8,21 @@ namespace WildBunch.Domain.Events;
 /// Resolved=false means the encounter persists (failed attempt) — hidden state changes
 /// are captured in JourneySnapshot.PendingEncounter.HiddenState.
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it.
-/// HealthDelta, WalletDelta, AmmoSpent, StolenItem are ADDITIVE — Apply applies to player.
-/// PursuitHeatDelta is ADDITIVE — Apply adds to pursuit heat.
+/// PlayerHealth and WalletCash are ABSOLUTE — Apply sets them from the event.
+/// AmmoSpent and StolenItem are ADDITIVE — Apply applies them to the player.
+/// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it.
 /// </summary>
 public sealed record JourneyEncounterResolved : IDomainEvent
 {
     public required string ChoiceId { get; init; }
     public required string ChoiceLabel { get; init; }
     public required bool Resolved { get; init; }
-    public required int HealthDelta { get; init; }
-    public required decimal WalletDelta { get; init; }
+    public required int PlayerHealth { get; init; }
+    public required decimal WalletCash { get; init; }
     public required int AmmoSpent { get; init; }
     public required ItemKind? StolenItemKind { get; init; }
     public required int StolenItemQuantity { get; init; }
-    public required int PursuitHeatDelta { get; init; }
+    public required int PursuitHeat { get; init; }
     public required int HorseExhaustionDelta { get; init; }
     public required bool ContinuedOnFoot { get; init; }
     public required TravelJourneySnapshot JourneySnapshot { get; init; }

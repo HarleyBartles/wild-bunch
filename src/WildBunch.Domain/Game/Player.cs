@@ -97,4 +97,14 @@ public sealed class Player
     {
         Health += amount;
     }
+
+    /// <summary>
+    /// Sets health ABSOLUTELY. Used by Apply methods that carry absolute health
+    /// snapshots so command-path direct mutations and replay-path event
+    /// applications converge. See ADR-0028 and BUNCH-83.
+    /// </summary>
+    internal void SetHealth(int value)
+    {
+        Health = value;
+    }
 }
