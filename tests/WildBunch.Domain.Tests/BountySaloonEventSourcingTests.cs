@@ -159,8 +159,9 @@ public sealed class BountySaloonEventSourcingTests
     public void ResolveWantedSuspectConfrontationSurrenderedProducesEvent()
     {
         var session = TestSessionFactory.CreateWithWarrantedSuspect();
-        // Pre-enter Saloon context (as LookAroundSaloon would do)
+        // Pre-enter Saloon context (as LookAroundSaloon would do) and set active POI
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.MarkEventsCommitted();
 
         var result = session.ResolveWantedSuspectConfrontation(
@@ -182,6 +183,7 @@ public sealed class BountySaloonEventSourcingTests
     {
         var session = TestSessionFactory.CreateWithWarrantedSuspect();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.MarkEventsCommitted();
         var turnBefore = session.Clock.Turn;
 
@@ -197,6 +199,7 @@ public sealed class BountySaloonEventSourcingTests
     {
         var session = TestSessionFactory.CreateWithWarrantedSuspect();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.MarkEventsCommitted();
 
         var result = session.ResolveWantedSuspectConfrontation(
@@ -216,6 +219,7 @@ public sealed class BountySaloonEventSourcingTests
     {
         var session = TestSessionFactory.CreateWithWarrantedSuspect();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.MarkEventsCommitted();
         var turnBefore = session.Clock.Turn;
 

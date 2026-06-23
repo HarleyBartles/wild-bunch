@@ -18,6 +18,7 @@ public sealed class GameSessionSheriffTurnInTests
     {
         var session = CreateSession();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
@@ -39,6 +40,7 @@ public sealed class GameSessionSheriffTurnInTests
     {
         var session = CreateSession();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);
@@ -56,6 +58,7 @@ public sealed class GameSessionSheriffTurnInTests
     {
         var session = CreateSession();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-2"));
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Killed);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-2"), isAlive: false);
@@ -74,6 +77,7 @@ public sealed class GameSessionSheriffTurnInTests
     {
         var session = CreateSession();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Fled);
 
         var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
@@ -108,6 +112,7 @@ public sealed class GameSessionSheriffTurnInTests
     {
         var session = CreateSession();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
         var firstResult = session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: false);

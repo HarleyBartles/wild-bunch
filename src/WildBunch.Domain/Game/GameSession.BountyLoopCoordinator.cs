@@ -307,16 +307,16 @@ public sealed partial class GameSession
             }
 
             // BUNCH-80 review feedback: direct confrontation must not bypass the active
-            // context/POI precondition. The confrontation itself is a same-context action
-            // and does not advance time, but it is only valid when the session is already
-            // in an active POI/location context (e.g. Saloon via LookAroundSaloon). This
-            // prevents the direct application command route from becoming an out-of-context
-            // free action. Future non-saloon POI locations will also set a non-None context
-            // before calling this method, so this check does not hard-block them.
-            if (_session.CurrentActionContext == TownActionContext.None)
+            // POI/location precondition. The confrontation itself is a same-context action
+            // and does not advance time, but it is only valid when the player is already in
+            // an appropriate active POI context with the target present. For this first
+            // version that means the saloon POI loop. The rule lives behind
+            // <see cref="GameSession.CanConfrontWantedSuspectInCurrentContext"/> so future
+            // non-saloon POI locations can extend it without weakening the call-site check.
+            if (!_session.CanConfrontWantedSuspectInCurrentContext(targetSuspectId))
             {
                 return WantedSuspectConfrontationResult.Rejected(
-                    "You must be in an active confrontation context to confront a wanted suspect.",
+                    "You can only confront a wanted suspect who is present in your current location.",
                     declaredWantedIdentityHandle);
             }
 

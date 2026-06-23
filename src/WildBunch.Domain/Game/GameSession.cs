@@ -208,6 +208,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Named predicate expressing the invariant for direct wanted-suspect confrontation:
+    /// confrontation itself does not advance time and is only valid when the player is
+    /// already in an appropriate active POI/location context. For this first version the
+    /// only supported confrontation context is the saloon POI loop, which requires:
+    /// <list type="number">
+    /// <item><see cref="CurrentActionContext"/> is <see cref="TownActionContext.Saloon"/>.</item>
+    /// <item>The saloon context was entered in the current town
+    /// (<see cref="CurrentActionContextTownId"/> matches <see cref="CurrentTown"/>).</item>
+    /// <item>The current town visit has an active saloon person of interest matching
+    /// <paramref name="targetSuspectId"/>.</item>
+    /// </list>
+    /// Future non-saloon POI locations should extend this helper rather than weakening the
+    /// call-site check to "any non-None context." See BUNCH-80 review feedback.
+    /// </summary>
+    public bool CanConfrontWantedSuspectInCurrentContext(SuspectId targetSuspectId)
+    {
+        if (CurrentActionContext != TownActionContext.Saloon)
+        {
+            return false;
+        }
+
+        if (CurrentActionContextTownId is null || !CurrentActionContextTownId.Equals(CurrentTown.TownId))
+        {
+            return false;
+        }
+
+        var activeSaloonPoiId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        return activeSaloonPoiId is not null && activeSaloonPoiId.Equals(targetSuspectId);
+    }
+
+    /// <summary>
     /// Produces a typed domain event: applies it through the single mutation path (Apply)
     /// and adds it to <see cref="UncommittedEvents"/>. Used by command methods and
     /// <see cref="EnterActionContext"/>. This is the canonical event-sourcing produce step.

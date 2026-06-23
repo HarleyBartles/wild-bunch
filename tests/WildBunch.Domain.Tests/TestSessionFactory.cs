@@ -236,6 +236,8 @@ public static class TestSessionFactory
     {
         var session = CreateWithWarrantedSuspect();
         session.EnterActionContext(TownActionContext.Saloon);
+        // BUNCH-80: confrontation requires an active saloon POI matching the target
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.ResolveWantedSuspectConfrontation(
             new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
         session.MarkEventsCommitted();

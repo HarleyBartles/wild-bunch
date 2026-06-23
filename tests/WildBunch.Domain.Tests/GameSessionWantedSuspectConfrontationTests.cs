@@ -16,7 +16,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRecordsSurrenderedState()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
 
@@ -43,7 +44,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRecordsKilledStateAndKeepsDeadTurnInSeparate()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
 
@@ -70,7 +72,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsRepeatAfterKilledWithoutChangingState()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
 
         var firstResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
         var secondResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
@@ -91,7 +94,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsRepeatAfterSurrenderedWithoutChangingState()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
 
         var firstResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
         var secondResult = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Killed);
@@ -112,7 +116,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRecordsFledStateAndBlocksTurnIn()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Fled);
 
@@ -138,7 +143,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationTreatsAbandonedAsNoResolution()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Abandoned);
 
@@ -159,16 +165,19 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsBlockersWithoutMutatingState()
     {
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1")); // BUNCH-80: confrontation requires active saloon POI matching target
         StartJourney(session);
         session.Journey!.MarkCompleted();
 
         var journeyBlocked = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
         var missingWarrantSession = CreateSession();
         missingWarrantSession.EnterActionContext(TownActionContext.Saloon);
+        missingWarrantSession.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-2"));
         var missingWarrant = missingWarrantSession.ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Fled);
         var invalidSuspectSession = CreateSession();
         invalidSuspectSession.EnterActionContext(TownActionContext.Saloon);
+        invalidSuspectSession.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-unknown"));
         var invalidSuspect = invalidSuspectSession.ResolveWantedSuspectConfrontation(new SuspectId("suspect-unknown"), WantedSuspectConfrontationChoice.Killed);
 
         Assert.False(journeyBlocked.Success);
@@ -199,17 +208,43 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(result.SessionChanged);
         Assert.Empty(session.UncommittedEvents);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
-        Assert.Contains("confrontation context", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("current location", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void ResolveWantedSuspectConfrontationSucceedsWhenSaloonContextIsActive()
+    public void ResolveWantedSuspectConfrontationRejectsAfterUnrelatedContext()
     {
-        // BUNCH-80 review feedback: when the session IS in an active POI context
-        // (e.g. Saloon via LookAroundSaloon), the direct confrontation route is valid
-        // and does not advance time (same-context action).
+        // BUNCH-80 review feedback: "any non-None context" is not enough. After an
+        // unrelated town-context action (e.g. SheriffOffice, TownSquare, TelegraphOffice),
+        // the direct confrontation route must still be rejected because the player is
+        // not in an active saloon POI context.
         var session = CreateSession();
+        session.MarkEventsCommitted();
+
+        // Enter SheriffOffice (an unrelated context) — should NOT satisfy the precondition
+        session.EnterActionContext(TownActionContext.SheriffOffice);
+        var turnBefore = session.Clock.Turn;
+
+        var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.False(result.Success);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, result.Outcome);
+        Assert.False(result.SessionChanged);
+        Assert.Equal(turnBefore, session.Clock.Turn); // confrontation itself does not advance time
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Contains("current location", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationSucceedsWhenSaloonContextAndActivePoiMatch()
+    {
+        // BUNCH-80 review feedback: when the session is in Saloon context for the current
+        // town AND the active saloon POI matches the target suspect, the direct
+        // confrontation route is valid and does not advance time (same-context action).
+        var session = CreateSession();
+        session.MarkEventsCommitted();
         session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         var turnBefore = session.Clock.Turn;
 
         var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
@@ -217,6 +252,25 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(turnBefore, session.Clock.Turn); // confrontation itself does not advance time
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationRejectsWhenSaloonContextHasNoMatchingPoi()
+    {
+        // BUNCH-80 review feedback: Saloon context alone is not enough — the active
+        // saloon POI must match the target suspect. Confronting suspect-2 when the
+        // active POI is suspect-1 must be rejected.
+        var session = CreateSession();
+        session.MarkEventsCommitted();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
+
+        var result = session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-2"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.False(result.Success);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, result.Outcome);
+        Assert.False(result.SessionChanged);
+        Assert.Contains("current location", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     private static GameSession CreateSession()

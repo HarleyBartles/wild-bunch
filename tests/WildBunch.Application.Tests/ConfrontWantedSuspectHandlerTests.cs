@@ -19,7 +19,8 @@ public sealed class ConfrontWantedSuspectHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
-        session.EnterActionContext(TownActionContext.Saloon); // BUNCH-80: confrontation requires active POI context
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         repository.Seed(session);
         var handler = new ConfrontWantedSuspectHandler(repository, repository);
 
