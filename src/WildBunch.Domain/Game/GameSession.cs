@@ -146,6 +146,101 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _uncommittedEvents.Clear();
     }
 
+    /// <summary>
+    /// The action context the player is currently in within the current town.
+    /// Event-sourced: mutated only by <see cref="Apply(TownActionContextEntered)"/> via
+    /// <see cref="EnterActionContext"/>. Persisted in the session snapshot and reconstructed
+    /// from event replay. See ADR-0028 and BUNCH-80 clock/turn correction.
+    /// </summary>
+    public TownActionContext CurrentActionContext { get; private set; } = TownActionContext.None;
+
+    /// <summary>
+    /// Enters an action context within the current town. If the context is different from the
+    /// current one, emits a <see cref="TownActionContextEntered"/> event that advances the turn
+    /// and records the resulting context/clock state. If the same context, no event and no turn
+    /// advance. <see cref="TownActionContext.None"/> never produces an event.
+    /// This is event-sourced: the event carries the resulting Day/Turn/TimeOfDay so replay
+    /// reconstructs the exact same state. <see cref="EnterActionContext"/> does NOT call
+    /// <see cref="GameClock.Advance"/> directly — <see cref="Apply(TownActionContextEntered)"/>
+    /// sets the clock from the event via <see cref="GameClock.Set"/>.
+    /// </summary>
+    public bool EnterActionContext(TownActionContext context)
+    {
+        if (context == TownActionContext.None || context == CurrentActionContext)
+        {
+            return false;
+        }
+
+        // Compute resulting clock state (do NOT mutate Clock directly — Apply does that).
+        var newTurn = Clock.Turn + 1;
+        var newDay = Clock.Day;
+        if (newTurn >= 4)
+        {
+            newDay++;
+            newTurn = 0;
+        }
+
+        var e = new TownActionContextEntered
+        {
+            Context = context,
+            Day = newDay,
+            Turn = newTurn,
+            TimeOfDay = (TimeOfDay)newTurn
+        };
+        ProduceEvent(e);
+        return true;
+    }
+
+    /// <summary>
+    /// Produces a typed domain event: applies it through the single mutation path (Apply)
+    /// and adds it to <see cref="UncommittedEvents"/>. Used by command methods and
+    /// <see cref="EnterActionContext"/>. This is the canonical event-sourcing produce step.
+    /// </summary>
+    internal void ProduceEvent<T>(T e) where T : IDomainEvent
+    {
+        ApplyProducedEvent(e);
+        _uncommittedEvents.Add(e);
+    }
+
+    /// <summary>
+    /// Dispatches a produced event to the appropriate Apply overload. Mirrors the replay
+    /// dispatcher in <see cref="GameSessionEventReplay.ApplyEvent"/> so command-path and
+    /// replay-path mutation stay identical. Throws for unknown event types.
+    /// </summary>
+    private void ApplyProducedEvent(IDomainEvent e)
+    {
+        switch (e)
+        {
+            case GameStarted gs:
+                Apply(gs);
+                break;
+            case StoreItemPurchased p:
+                Apply(p);
+                break;
+            case InvestigationPerformed ip:
+                Apply(ip);
+                break;
+            case TownActionContextEntered tc:
+                Apply(tc);
+                break;
+            default:
+                throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
+        }
+    }
+
+    /// <summary>
+    /// Applies a <see cref="TownActionContextEntered"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the clock/context correction: it sets both
+    /// <see cref="CurrentActionContext"/> and <see cref="Clock"/> from the event so that
+    /// command execution and replay produce identical state. See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(TownActionContextEntered e)
+    {
+        CurrentActionContext = e.Context;
+        Clock.Set(e.Day, e.Turn);
+        _version++;
+    }
+
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
         => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
 
@@ -278,7 +373,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTown.CheckSource(e.SourceKind);
         }
 
-        RecordCaseUpdate(e.Message, advanceClock: e.AdvanceClock);
+        RecordCaseUpdate(e.Message);
 
         if (e.ClueId is not null)
         {
@@ -2016,13 +2111,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true);
     }
 
-    public void RecordCaseUpdate(string message, bool advanceClock = true)
+    public void RecordCaseUpdate(string message)
     {
-        if (advanceClock)
-        {
-            Clock.Advance();
-        }
-
         AddLogEntry(GameLogEntryKind.CaseUpdate, message);
     }
 

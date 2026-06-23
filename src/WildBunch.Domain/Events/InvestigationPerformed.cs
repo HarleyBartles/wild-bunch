@@ -19,5 +19,4 @@ public sealed record InvestigationPerformed : IDomainEvent
     public required string Message { get; init; }
     public ClueId? ClueId { get; init; }
     public WarrantId? WarrantId { get; init; }
-    public bool AdvanceClock { get; init; } = true;
 }

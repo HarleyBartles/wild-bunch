@@ -21,6 +21,51 @@ namespace WildBunch.Domain.Tests;
 public static class TestSessionFactory
 {
     /// <summary>
+    /// Creates a default session in the starting town with no journey active and no
+    /// investigation sources spent. Used by clock/turn correction and event-sourcing
+    /// tests that need a clean baseline session with CurrentActionContext = None.
+    /// </summary>
+    public static GameSession CreateDefault()
+    {
+        var town = new Town(new TownId("current"), "Current Town",
+            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline",
+                SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: Array.Empty<Clue>());
+
+        var inventory = new DomainInventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 4),
+            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
+            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
+            new InventoryItem(ItemKind.Saddle, 1)
+        });
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
     /// Creates a session with a single public clue matching the given source kind.
     /// The clue is in <see cref="CaseFile.PublicClues"/> and NOT in <see cref="CaseFile.KnownClues"/>.
     /// The town supports NoticeBoard, Telegraph, and Lodging services.
