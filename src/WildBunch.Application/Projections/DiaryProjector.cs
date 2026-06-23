@@ -36,14 +36,37 @@ public sealed class DiaryProjector : IDomainEventProjector<DiaryProjection>
                     entries.Add(new DiaryEntry(day, turn, $"Arrived in {gs.StartingTownName}. The hunt begins."));
                     break;
 
+                case TownActionContextEntered tc:
+                    // Track time from the context event — this is the event-sourced clock
+                    // state, not a local counter. See ADR-0028 and BUNCH-80.
+                    day = tc.Day;
+                    turn = tc.Turn;
+                    break;
+
                 case StoreItemPurchased sp:
-                    turn++;
                     entries.Add(new DiaryEntry(day, turn, $"Bought supplies at the general store."));
                     break;
 
                 case InvestigationPerformed ip:
-                    turn++;
                     entries.Add(new DiaryEntry(day, turn, ip.Message));
+                    break;
+
+                case SaloonPersonOfInterestSpotted sp:
+                    if (sp.RecordLog)
+                        entries.Add(new DiaryEntry(day, turn, sp.Message));
+                    break;
+
+                case WantedSuspectConfronted wc:
+                    entries.Add(new DiaryEntry(day, turn, wc.Message));
+                    break;
+
+                case SheriffTurnInSettled st:
+                    entries.Add(new DiaryEntry(day, turn, st.Message));
+                    break;
+
+                case SaloonPersonOfInterestConfronted:
+                    // No diary entry from this event — log entries come from delegated
+                    // WantedSuspectConfronted/SheriffTurnInSettled events.
                     break;
             }
         }
