@@ -152,4 +152,77 @@ public sealed class BountySaloonEventSourcingTests
         gameStarted = Assert.IsType<GameStarted>(session.UncommittedEvents.Single());
         return session;
     }
+
+    // --- Task 3: WantedSuspectConfronted event + ResolveWantedSuspectConfrontation ---
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationSurrenderedProducesEvent()
+    {
+        var session = TestSessionFactory.CreateWithWarrantedSuspect();
+        // Pre-enter Saloon context (as LookAroundSaloon would do)
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+
+        var result = session.ResolveWantedSuspectConfrontation(
+            new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        // Single event: WantedSuspectConfronted (no context event — already in Saloon)
+        Assert.Single(session.UncommittedEvents);
+        var e = Assert.IsType<WantedSuspectConfronted>(session.UncommittedEvents.Single());
+        Assert.Equal(new SuspectId("suspect-1"), e.TargetSuspectId);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, e.Outcome);
+        Assert.True(e.IsAlive);
+        Assert.True(e.IsSecured);
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontation_DoesNotAdvanceTurn_WhenAlreadyInSaloonContext()
+    {
+        var session = TestSessionFactory.CreateWithWarrantedSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+        var turnBefore = session.Clock.Turn;
+
+        session.ResolveWantedSuspectConfrontation(
+            new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        // Turn does NOT advance — already in Saloon context
+        Assert.Equal(turnBefore, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontationAbandonedProducesEventWithoutConfrontationState()
+    {
+        var session = TestSessionFactory.CreateWithWarrantedSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+
+        var result = session.ResolveWantedSuspectConfrontation(
+            new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Abandoned);
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Single(session.UncommittedEvents);
+        var e = Assert.IsType<WantedSuspectConfronted>(session.UncommittedEvents.Single());
+        Assert.Equal(WantedSuspectConfrontationOutcome.Abandoned, e.Outcome);
+        // Abandoned does not record confrontation state
+        Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out _));
+    }
+
+    [Fact]
+    public void ResolveWantedSuspectConfrontation_RecordsClockTurnWithoutPlusOneOffset()
+    {
+        var session = TestSessionFactory.CreateWithWarrantedSuspect();
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.MarkEventsCommitted();
+        var turnBefore = session.Clock.Turn;
+
+        session.ResolveWantedSuspectConfrontation(
+            new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+
+        Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
+        Assert.Equal(turnBefore, state.Turn);
+    }
 }

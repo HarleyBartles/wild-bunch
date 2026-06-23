@@ -226,6 +226,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case SaloonPersonOfInterestSpotted sp:
                 Apply(sp);
                 break;
+            case WantedSuspectConfronted wc:
+                Apply(wc);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -267,6 +270,36 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         else if (e.Descriptor is not null)
         {
             CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(e.Descriptor);
+        }
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="WantedSuspectConfronted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the wanted-suspect confrontation flow:
+    /// it appends the case-update log entry, records the confrontation state (for non-abandoned
+    /// outcomes), and updates the wanted-suspect presence ledger. Clock advancement is handled
+    /// by EnterActionContext. The Clock.Turn + 1 offset is removed — confrontation state
+    /// records Clock.Turn directly. See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(WantedSuspectConfronted e)
+    {
+        RecordCaseUpdate(e.Message);
+
+        if (e.Outcome is not WantedSuspectConfrontationOutcome.Abandoned)
+        {
+            var confrontationState = new WantedSuspectConfrontationState(
+                e.TargetSuspectId,
+                e.TargetName,
+                e.Disposition,
+                e.Outcome,
+                e.IsAlive,
+                e.IsSecured,
+                Clock.Day,
+                Clock.Turn);
+            CaseFile.RecordWantedSuspectConfrontationState(confrontationState);
+            UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
         }
 
         _version++;

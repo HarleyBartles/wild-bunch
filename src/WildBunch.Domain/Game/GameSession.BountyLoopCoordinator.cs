@@ -1,4 +1,5 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
 
 namespace WildBunch.Domain.Game;
 
@@ -241,7 +242,19 @@ public sealed partial class GameSession
             if (choice == WantedSuspectConfrontationChoice.Abandoned)
             {
                 var abandonNarration = GameSession.DescribeConfrontationNarration(warrant.TargetName, choice, declaredWantedIdentityHandle);
-                _session.RecordCaseUpdate(abandonNarration);
+                var abandonEvent = new WantedSuspectConfronted
+                {
+                    TargetSuspectId = targetSuspectId,
+                    TargetName = warrant.TargetName,
+                    Disposition = warrant.Terms.Disposition,
+                    Choice = WantedSuspectConfrontationChoice.Abandoned,
+                    Outcome = WantedSuspectConfrontationOutcome.Abandoned,
+                    IsAlive = true,
+                    IsSecured = false,
+                    Message = abandonNarration,
+                    DeclaredWantedIdentityHandle = declaredWantedIdentityHandle
+                };
+                _session.ProduceEvent(abandonEvent);
                 return WantedSuspectConfrontationResult.Abandoned(
                     declaredWantedIdentityHandle,
                     warrant.TargetName,
@@ -249,39 +262,15 @@ public sealed partial class GameSession
                     abandonNarration);
             }
 
-            WantedSuspectConfrontationState? nextState = choice switch
+            var (isAlive, isSecured) = choice switch
             {
-                WantedSuspectConfrontationChoice.Surrendered => new WantedSuspectConfrontationState(
-                    targetSuspect.Id,
-                    warrant.TargetName,
-                    warrant.Terms.Disposition,
-                    WantedSuspectConfrontationOutcome.Surrendered,
-                    IsAlive: true,
-                    IsSecured: true,
-                    _session.Clock.Day,
-                    _session.Clock.Turn + 1),
-                WantedSuspectConfrontationChoice.Fled => new WantedSuspectConfrontationState(
-                    targetSuspect.Id,
-                    warrant.TargetName,
-                    warrant.Terms.Disposition,
-                    WantedSuspectConfrontationOutcome.Fled,
-                    IsAlive: true,
-                    IsSecured: false,
-                    _session.Clock.Day,
-                    _session.Clock.Turn + 1),
-                WantedSuspectConfrontationChoice.Killed => new WantedSuspectConfrontationState(
-                    targetSuspect.Id,
-                    warrant.TargetName,
-                    warrant.Terms.Disposition,
-                    WantedSuspectConfrontationOutcome.Killed,
-                    IsAlive: false,
-                    IsSecured: true,
-                    _session.Clock.Day,
-                    _session.Clock.Turn + 1),
-                _ => null
+                WantedSuspectConfrontationChoice.Surrendered => (true, true),
+                WantedSuspectConfrontationChoice.Fled => (true, false),
+                WantedSuspectConfrontationChoice.Killed => (false, true),
+                _ => ((bool?)null, (bool?)null)
             };
 
-            if (nextState is null)
+            if (isAlive is null)
             {
                 return WantedSuspectConfrontationResult.Rejected(
                     $"The confrontation choice for {targetSuspect.Name} is not supported.",
@@ -291,10 +280,19 @@ public sealed partial class GameSession
             }
 
             var narration = GameSession.DescribeConfrontationNarration(warrant.TargetName, choice, declaredWantedIdentityHandle);
-            _session.RecordCaseUpdate(narration);
-            var resolvedState = nextState! with { Day = _session.Clock.Day, Turn = _session.Clock.Turn };
-            _session.CaseFile.RecordWantedSuspectConfrontationState(resolvedState);
-            _session.UpdateWantedSuspectPresence(targetSuspectId, choice);
+            var confrontationEvent = new WantedSuspectConfronted
+            {
+                TargetSuspectId = targetSuspectId,
+                TargetName = warrant.TargetName,
+                Disposition = warrant.Terms.Disposition,
+                Choice = choice,
+                Outcome = (WantedSuspectConfrontationOutcome)choice,
+                IsAlive = isAlive!.Value,
+                IsSecured = isSecured!.Value,
+                Message = narration,
+                DeclaredWantedIdentityHandle = declaredWantedIdentityHandle
+            };
+            _session.ProduceEvent(confrontationEvent);
 
             return choice switch
             {
