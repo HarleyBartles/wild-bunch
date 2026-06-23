@@ -223,6 +223,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case TownActionContextEntered tc:
                 Apply(tc);
                 break;
+            case SaloonPersonOfInterestSpotted sp:
+                Apply(sp);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -238,6 +241,34 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         CurrentActionContext = e.Context;
         Clock.Set(e.Day, e.Turn);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="SaloonPersonOfInterestSpotted"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the saloon look-around flow: it marks the
+    /// saloon source as spent, appends the case-update log entry (if RecordLog), and sets the
+    /// active saloon person of interest. Clock advancement is handled by EnterActionContext.
+    /// See ADR-0028 and BUNCH-80.
+    /// </summary>
+    private void Apply(SaloonPersonOfInterestSpotted e)
+    {
+        CurrentTown.CheckSource(e.SourceKind);
+
+        if (e.RecordLog)
+        {
+            RecordCaseUpdate(e.Message);
+        }
+
+        if (e.SuspectId is not null && e.Descriptor is not null)
+        {
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(e.SuspectId.Value, e.Descriptor);
+        }
+        else if (e.Descriptor is not null)
+        {
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(e.Descriptor);
+        }
+
         _version++;
     }
 
@@ -1846,30 +1877,61 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        var saloonSource = CurrentTown.GetRequiredSourceDefinition(InvestigationSourceKind.SaloonLookAround);
-
         if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
         {
             return CaseInvestigationResult.Failed("There is no saloon here.");
         }
 
-        if (CurrentTown.CheckSource(saloonSource) == TownSourceCheckOutcome.RepeatNoNewInfo)
+        // Enter saloon context AFTER availability check, BEFORE local action resolution.
+        // Emits TownActionContextEntered event if context changed (advances turn).
+        // If no saloon exists, we already returned above — no context event, no turn advance.
+        EnterActionContext(TownActionContext.Saloon);
+
+        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))
         {
-            RecordCaseUpdate("You look around the saloon again, but nobody of interest is here.");
-            return CaseInvestigationResult.Succeeded("You look around the saloon again, but nobody of interest is here.", sessionChanged: true);
+            var repeatMessage = "You look around the saloon again, but nobody of interest is here.";
+            var repeatEvent = new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = CurrentTown.TownId,
+                Message = repeatMessage,
+                RecordLog = true
+            };
+            ProduceEvent(repeatEvent);
+            return CaseInvestigationResult.Succeeded(repeatMessage, sessionChanged: true);
         }
 
         if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
         {
             var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
-            CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(suspect.Id, descriptor);
-            RecordCaseUpdate($"You look around the saloon and spot {descriptor}.");
-            return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {descriptor}.", sessionChanged: true);
+            var spotMessage = $"You look around the saloon and spot {descriptor}.";
+            var spotEvent = new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = CurrentTown.TownId,
+                Message = spotMessage,
+                SuspectId = suspect.Id,
+                Descriptor = descriptor,
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                RecordLog = true
+            };
+            ProduceEvent(spotEvent);
+            return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
         }
 
         var citizenDescriptor = DescribeTownCitizen(CurrentTown);
-        CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(citizenDescriptor);
-        return CaseInvestigationResult.Succeeded($"You look around the saloon and spot {citizenDescriptor}.", sessionChanged: true);
+        var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
+        var citizenEvent = new SaloonPersonOfInterestSpotted
+        {
+            SourceKind = InvestigationSourceKind.SaloonLookAround,
+            TownId = CurrentTown.TownId,
+            Message = citizenMessage,
+            Descriptor = citizenDescriptor,
+            PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+            RecordLog = false
+        };
+        ProduceEvent(citizenEvent);
+        return CaseInvestigationResult.Succeeded(citizenMessage, sessionChanged: true);
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)

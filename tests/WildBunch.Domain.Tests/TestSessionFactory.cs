@@ -66,6 +66,119 @@ public static class TestSessionFactory
     }
 
     /// <summary>
+    /// Creates a session with a confrontable saloon suspect (a suspect with an identifying
+    /// fact but no known warrants). LookAroundSaloon will spot this suspect as a wanted-suspect
+    /// person of interest. Used by BUNCH-80 bounty/saloon event-sourcing tests.
+    /// </summary>
+    public static GameSession CreateWithConfrontableSaloonSuspect()
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Mira Cline",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
+    /// Creates a session with no confrontable saloon suspects (empty suspects list).
+    /// LookAroundSaloon will spot a citizen person of interest instead.
+    /// Used by BUNCH-80 bounty/saloon event-sourcing tests.
+    /// </summary>
+    public static GameSession CreateWithNoConfrontableSaloonSuspect()
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            Array.Empty<Suspect>(),
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
+    /// Creates a session where the current town has no saloon source available.
+    /// LookAroundSaloon will fail with "There is no saloon here."
+    /// Used by BUNCH-80 bounty/saloon event-sourcing tests.
+    /// </summary>
+    public static GameSession CreateWithNoSaloon()
+    {
+        // SaloonLookAround is Baseline availability (always available). To make it unavailable,
+        // we replace it with a Conditional definition requiring Telegraph service, then use a
+        // town without Telegraph. This makes IsAvailable return false without removing the
+        // source from the catalog (which would cause GetRequiredDefinition to throw).
+        var noSaloonCatalog = new TownSourceCatalog(
+            TownSourceCatalog.Default.Definitions
+                .Select(d => d.Kind == InvestigationSourceKind.SaloonLookAround
+                    ? d with { Availability = TownSourceAvailability.Conditional, RequiredServices = TownServices.Telegraph }
+                    : d)
+                .ToArray());
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None, noSaloonCatalog);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
     /// Creates a session with a single public clue matching the given source kind.
     /// The clue is in <see cref="CaseFile.PublicClues"/> and NOT in <see cref="CaseFile.KnownClues"/>.
     /// The town supports NoticeBoard, Telegraph, and Lodging services.

@@ -100,6 +100,9 @@ public sealed partial class GameSession
             case TownActionContextEntered tc:
                 session.Apply(tc);
                 break;
+            case SaloonPersonOfInterestSpotted sp:
+                session.Apply(sp);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
