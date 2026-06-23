@@ -158,7 +158,7 @@ public sealed partial class GameSession
                             wrongDeclarationMessage,
                             wantedFineAmount,
                             wantedWalletBefore,
-                            _session.Player.Wallet.Cash - wantedFineAmount,
+                            wantedWalletBefore - wantedFineAmount,
                             isCitizen: false,
                             isAlive: true,
                             isSecured: false);

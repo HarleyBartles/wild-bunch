@@ -64,6 +64,7 @@ export interface ResolveJourneyEncounterRequest {
 export interface GameClockDto {
   day: number;
   turn: number;
+  timeOfDay: string;
 }
 
 export interface PursuitStateDto {

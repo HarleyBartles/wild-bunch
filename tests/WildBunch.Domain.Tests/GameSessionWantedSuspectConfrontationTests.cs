@@ -26,7 +26,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.IsAlive);
         Assert.True(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
         Assert.Single(session.CaseFile.WantedSuspectConfrontations);
         Assert.Equal(WantedSuspectPresenceState.SecuredAlive, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
@@ -50,7 +50,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(result.IsAlive);
         Assert.True(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
         Assert.Equal(WantedSuspectPresenceState.SecuredDead, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
@@ -76,7 +76,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(secondResult.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
         Assert.False(secondResult.SessionChanged);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
         Assert.Equal(WantedSuspectPresenceState.SecuredDead, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Killed, state.Outcome);
@@ -96,7 +96,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.False(secondResult.Success);
         Assert.Equal(WantedSuspectConfrontationOutcome.Rejected, secondResult.Outcome);
         Assert.False(secondResult.SessionChanged);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
         Assert.Equal(WantedSuspectPresenceState.SecuredAlive, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, state.Outcome);
@@ -116,7 +116,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.True(result.IsAlive);
         Assert.False(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
         Assert.Equal(WantedSuspectPresenceState.GoneToGround, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.True(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-1"), out var state));
         Assert.Equal(WantedSuspectConfrontationOutcome.Fled, state.Outcome);
@@ -141,7 +141,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
         Assert.Null(result.IsAlive);
         Assert.Null(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Equal(1, session.Clock.Turn);
+        Assert.Equal(0, session.Clock.Turn); // BUNCH-80: confrontation no longer advances turn directly;
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
 

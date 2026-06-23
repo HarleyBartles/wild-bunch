@@ -199,7 +199,7 @@ function renderWarrantFacts(record: {
 }
 
 function formatClockContext(journal: JournalDto) {
-  return `Day ${journal.clock.day}, turn ${journal.clock.turn} in ${journal.currentTown.name}`;
+  return `Day ${journal.clock.day}, ${journal.clock.timeOfDay} in ${journal.currentTown.name}`;
 }
 
 function formatBounty(amount: number) {
@@ -406,7 +406,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           <div>
             <dt>Time</dt>
             <dd>
-              Day {caseJournal.clock.day}, turn {caseJournal.clock.turn}
+              Day {caseJournal.clock.day}, {caseJournal.clock.timeOfDay}
             </dd>
           </div>
           <div>

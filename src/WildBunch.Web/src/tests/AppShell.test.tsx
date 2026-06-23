@@ -122,7 +122,7 @@ function createSession(): GameSessionDto {
         rifleUsable: false,
       },
     },
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     pursuitState: { heat: 1 },
     journey: null,
     travelDiary: null,
@@ -135,7 +135,7 @@ function createJournal(): JournalDto {
   return {
     id: "game-1",
     status: 0,
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     currentTown: { id: "t-town", name: "Tumbleweed" },
     caseFile: {
       accusationId: null,
@@ -227,7 +227,7 @@ describe("AppShell", () => {
 
     const hud = await screen.findByRole("banner", { name: /game status/i });
     expect(within(hud).getByText("Ruth")).toBeInTheDocument();
-    expect(within(hud).getByText("Day 5, Turn 2")).toBeInTheDocument();
+    expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
   });
 
   it("defaults to the flow router and shows the pre-session surface", async () => {

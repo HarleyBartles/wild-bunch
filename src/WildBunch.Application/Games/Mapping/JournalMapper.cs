@@ -20,7 +20,7 @@ public static class JournalMapper
         return new JournalDto(
             snapshot.SessionId,
             snapshot.Status,
-            new GameClockDto(snapshot.Day, snapshot.Turn),
+            new GameClockDto(snapshot.Day, snapshot.Turn, ((TimeOfDay)snapshot.Turn).ToString()),
             new JournalTownDto(snapshot.CurrentTownId.Value, snapshot.CurrentTownName),
             new JournalCaseFileDto(
                 snapshot.OpeningLead,

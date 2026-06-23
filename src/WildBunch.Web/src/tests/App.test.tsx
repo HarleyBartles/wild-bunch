@@ -153,7 +153,7 @@ function createSession(): GameSessionDto {
         rifleUsable: false,
       },
     },
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     pursuitState: { heat: 1 },
     journey: null,
     travelDiary: null,
@@ -166,7 +166,7 @@ function createJournal(): JournalDto {
   return {
     id: "game-1",
     status: 0,
-    clock: { day: 5, turn: 2 },
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     currentTown: { id: "t-town", name: "Tumbleweed" },
     caseFile: {
       accusationId: null,
@@ -340,7 +340,7 @@ function createCapturedJournal(): JournalDto {
       displayName: "Gus Mercer",
       status: 3,
       evidenceIds: ["warrant-gus", "clue-1"],
-      summaryLines: ["Captured alive on day 5, turn 2. Sheriff paid $2,500.50."],
+      summaryLines: ["Captured alive on Day 5, Morning. Sheriff paid $2,500.50."],
     },
     {
       id: "record-mabel",
@@ -563,7 +563,7 @@ describe("DebugCockpitRoute", () => {
     expect(screen.getByRole("heading", { name: /investigation board/i })).toBeInTheDocument();
     expect(dialogScope.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
     expect(dialogScope.getByText("The trail went cold outside town.")).toBeInTheDocument();
-    expect(dialogScope.getByText("Day 5, turn 2")).toBeInTheDocument();
+    expect(dialogScope.getByText("Day 5, Morning")).toBeInTheDocument();
     expect(dialogScope.getByText("Tumbleweed")).toBeInTheDocument();
     expect(dialogScope.getByText("At large")).toBeInTheDocument();
     expect(dialogScope.getAllByText("Gus Mercer").length).toBeGreaterThanOrEqual(5);
@@ -1022,7 +1022,7 @@ describe("DebugCockpitRoute", () => {
 
     expect(dialogScope.getAllByRole("heading", { name: "Gus Mercer" }).length).toBeGreaterThanOrEqual(1);
     expect(dialogScope.getAllByText("Captured").length).toBeGreaterThanOrEqual(1);
-    expect(dialogScope.getAllByText("Captured alive on day 5, turn 2. Sheriff paid $2,500.50.").length).toBeGreaterThanOrEqual(1);
+    expect(dialogScope.getAllByText("Captured alive on Day 5, Morning. Sheriff paid $2,500.50.").length).toBeGreaterThanOrEqual(1);
 
     const warrantsSection = dialogScope.getByRole("heading", { name: "Warrants" }).closest("article");
     expect(warrantsSection).not.toBeNull();

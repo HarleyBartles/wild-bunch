@@ -25,7 +25,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(first.Success);
         Assert.True(second.Success);
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Empty(session.CaseFile.KnownClues);
@@ -43,7 +43,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(first.Success);
         Assert.True(second.Success);
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
@@ -60,7 +60,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(first.Success);
         Assert.True(second.Success);
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
@@ -77,7 +77,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(first.Success);
         Assert.True(second.Success);
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
         Assert.Equal(3, session.LogEntries.Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
@@ -200,7 +200,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal("You look around the saloon and spot a stranger with a pale scar across the left cheek.", first.Message);
         Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatSameVisit.Message);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
-        Assert.Equal(2, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first LookAroundSaloon advances turn (same context)
         Assert.Equal(3, session.LogEntries.Count);
 
         session.Player.TravelTo(new TownId("connected"));
@@ -214,7 +214,7 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(afterReturn.Success);
         Assert.Equal("You look around the saloon and spot a stranger with a pale scar across the left cheek.", afterReturn.Message);
-        Assert.Equal(3, session.Clock.Turn);
+        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: same Saloon context, no turn advance
     }
 
     [Fact]

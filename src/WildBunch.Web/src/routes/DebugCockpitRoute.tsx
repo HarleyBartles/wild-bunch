@@ -57,7 +57,7 @@ export function DebugCockpitRoute() {
             <small>Status</small>
           </span>
           <span className="metric">
-            <strong>{session ? `Day ${session.clock.day}, Turn ${session.clock.turn}` : "-"}</strong>
+            <strong>{session ? `Day ${session.clock.day}, ${session.clock.timeOfDay}` : "-"}</strong>
             <small>Clock</small>
           </span>
         </div>

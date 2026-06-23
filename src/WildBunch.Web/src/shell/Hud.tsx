@@ -30,7 +30,7 @@ export function Hud() {
         <small>Player</small>
       </span>
       <span className="hud-metric">
-        <strong>{`Day ${session.clock.day}, Turn ${session.clock.turn}`}</strong>
+        <strong>{`Day ${session.clock.day}, ${session.clock.timeOfDay}`}</strong>
         <small>Clock</small>
       </span>
       <span className="hud-metric">

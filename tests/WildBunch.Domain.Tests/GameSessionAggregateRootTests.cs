@@ -25,7 +25,9 @@ public sealed class GameSessionAggregateRootTests
 
         session.RecordCaseUpdate("A public lead is noted.");
 
-        Assert.Equal(beforeTurn + 1, session.Clock.Turn);
+        // RecordCaseUpdate is decoupled from the clock (BUNCH-80 Task 1).
+        // It only adds a log entry — turn advancement is handled by EnterActionContext.
+        Assert.Equal(beforeTurn, session.Clock.Turn);
         Assert.Equal(beforeLogCount + 1, session.LogEntries.Count);
         Assert.Equal("A public lead is noted.", session.LogEntries[^1].Message);
     }
