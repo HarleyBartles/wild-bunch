@@ -1871,6 +1871,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed("There are no wanted posters here.");
         }
 
+        EnterActionContext(TownActionContext.SheriffOffice);
+
         if (CurrentTownVisit.WantedPostersSpent)
         {
             var msg = "You study the wanted posters again, but find nothing new.";
@@ -2058,6 +2060,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
 
+        EnterActionContext(TownActionContext.TelegraphOffice);
+
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead))
         {
             var msg = "You ask after telegraph leads again, but no new wire has come in.";
@@ -2107,6 +2111,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
+
+        EnterActionContext(TownActionContext.Saloon);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip))
         {
@@ -2158,6 +2164,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
+        EnterActionContext(TownActionContext.TownSquare);
+
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard))
         {
             var msg = "You inspect the notice board again, but nothing new has been posted.";
@@ -2207,6 +2215,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
+
+        EnterActionContext(TownActionContext.SheriffOffice);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords))
         {

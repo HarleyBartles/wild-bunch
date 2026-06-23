@@ -194,4 +194,61 @@ public sealed class ClockTurnCorrectionTests
         Assert.Equal(2, clock.Turn);
         Assert.Equal(TimeOfDay.Evening, clock.TimeOfDay);
     }
+
+    // --- Task 6: Investigation method context entry ---
+
+    [Fact]
+    public void CheckSheriffRecords_EntersSheriffOfficeContext_AndAdvancesTurn()
+    {
+        var session = TestSessionFactory.CreateDefault();
+        var turnBefore = session.Clock.Turn;
+        session.CheckSheriffRecords();
+        Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
+        Assert.Equal(turnBefore + 1, session.Clock.Turn);
+    }
+
+    [Fact]
+    public void FollowTelegraphLeads_EntersTelegraphOfficeContext()
+    {
+        var session = TestSessionFactory.CreateDefault();
+        session.FollowTelegraphLeads();
+        Assert.Equal(TownActionContext.TelegraphOffice, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void GatherLocalGossip_EntersSaloonContext()
+    {
+        var session = TestSessionFactory.CreateDefault();
+        session.GatherLocalGossip();
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void InspectNoticeBoard_EntersTownSquareContext()
+    {
+        var session = TestSessionFactory.CreateDefault();
+        session.InspectNoticeBoard();
+        Assert.Equal(TownActionContext.TownSquare, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void ReadWantedPosters_EntersSheriffOfficeContext()
+    {
+        var session = TestSessionFactory.CreateDefault();
+        session.ReadWantedPosters();
+        Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void TwoSheriffActionsInSameContext_DoNotAdvanceTurnTwice()
+    {
+        var session = TestSessionFactory.CreateDefault();
+        session.CheckSheriffRecords(); // enters SheriffOffice, advances turn
+        var turnAfterFirst = session.Clock.Turn;
+
+        // ReadWantedPosters is also a SheriffOffice action — same context, no turn advance
+        session.ReadWantedPosters();
+        Assert.Equal(turnAfterFirst, session.Clock.Turn);
+        Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
+    }
 }
