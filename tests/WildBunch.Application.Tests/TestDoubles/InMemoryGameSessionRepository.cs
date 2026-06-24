@@ -1,5 +1,6 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Models;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
@@ -32,6 +33,10 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
     public Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
     {
         _sessions.TryGetValue(id, out var session);
+        if (session is not null && _eventStreams.TryGetValue(id, out var stream))
+        {
+            session.SetCommittedEvents(stream);
+        }
         return Task.FromResult(session);
     }
 
@@ -68,7 +73,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             return Task.FromResult<JournalSnapshot?>(null);
         }
 
-        var snapshot = new JournalResolver().Resolve(session);
+        var snapshot = new JournalResolver().Resolve(session, new JournalLogProjector().Project(session.AllEvents));
         var logEntries = snapshot.LogEntries.Skip(Math.Max(0, skip));
         var slicedEntries = take.HasValue ? logEntries.Take(Math.Max(0, take.Value)).ToArray() : logEntries.ToArray();
         return Task.FromResult<JournalSnapshot?>(snapshot with { LogEntries = slicedEntries });

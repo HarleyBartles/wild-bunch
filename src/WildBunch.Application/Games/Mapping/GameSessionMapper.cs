@@ -9,8 +9,11 @@ using DomainPlayer = WildBunch.Domain.Game.Player;
 using DomainPursuitState = WildBunch.Domain.Game.PursuitState;
 using WildBunch.Domain.Game;
 
-// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The mapper still
-// reads it for backward-compatible DTO output. Do not add new LogEntries consumers.
+// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The read-model
+// mapper still reads it for backward-compatible DTO output because the read
+// model's LogEntries are already projection-backed (populated by
+// GameSessionReadStoreLoader via JournalLogProjector). The domain-session
+// mapper projects from AllEvents via JournalLogProjector (BUNCH-86).
 #pragma warning disable CS0618
 using WildBunch.Domain.Travel;
 using DomainWorld = WildBunch.Domain.World.World;
@@ -27,6 +30,11 @@ public static class GameSessionMapper
     {
         ArgumentNullException.ThrowIfNull(session);
 
+        // BUNCH-86: project log entries from the event stream via JournalLogProjector
+        // instead of scraping aggregate session.LogEntries. AllEvents = committed
+        // (from load) + uncommitted (from current command).
+        var logEntries = GameSessionLogProjection.Project(session);
+
         return ToDto(
             session.Id.Value,
             session.Status,
@@ -39,7 +47,7 @@ public static class GameSessionMapper
             session.PursuitState,
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, session.TravelRules),
             session.TravelDiaryDays,
-            session.LogEntries,
+            logEntries,
             ToActiveSaloonPersonOfInterestDto(
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,

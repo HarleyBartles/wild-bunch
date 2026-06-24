@@ -75,7 +75,6 @@ public sealed class PostgreSqlPersistenceTests
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
             Assert.Equal(10, await verificationContext.GameSessionComponents.CountAsync());
-            Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
             Assert.Equal(session.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync());
         }
     }
@@ -151,14 +150,14 @@ public sealed class PostgreSqlPersistenceTests
             var journeyComponent = Assert.Single(componentRows, component => component.ComponentName == "journey");
             Assert.Contains("\"status\": 2", journeyComponent.PayloadJson, StringComparison.Ordinal);
 
-            var logRows = await verificationContext.GameSessionLogEntries
+            // After BUNCH-86, log entries are derived from the event stream via
+            // JournalLogProjector, not stored in a GameSessionLogEntries table.
+            // Verify the event stream has events (the projector derives log entries from these).
+            var eventCount = await verificationContext.StoredEvents
                 .AsNoTracking()
-                .Where(entry => entry.SessionId == session.Id.Value)
-                .OrderBy(entry => entry.Sequence)
-                .ToArrayAsync();
-
-            Assert.Equal(Enumerable.Range(0, logRows.Length), logRows.Select(entry => entry.Sequence));
-            Assert.Equal(session.LogEntries.Select(entry => entry.Message), logRows.Select(entry => entry.Message));
+                .Where(e => e.StreamId == session.Id.Value)
+                .CountAsync();
+            Assert.True(eventCount > 0);
 
             var diaryRows = await verificationContext.GameSessionDiaryDays
                 .AsNoTracking()

@@ -37,7 +37,7 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
-    public void StoreItemPurchased_ProducesNoLogEntry_MatchingLegacyApply()
+    public void StoreItemPurchased_ProducesPurchaseEntry_MatchingLegacyCommandPath()
     {
         var projector = new JournalLogProjector();
         var events = new IDomainEvent[]
@@ -56,9 +56,37 @@ public sealed class JournalLogProjectorTests
         };
         var log = projector.Project(events);
 
-        // Only the opening entry — purchase adds no legacy log entry.
-        Assert.Single(log);
-        Assert.Equal(GameLogEntryKind.Opening, log[0].Kind);
+        // Opening + purchase entry
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.Purchase, log[1].Kind);
+        Assert.Equal("Purchased 2 Trail Biscuits for $4.00.", log[1].Message);
+        Assert.Equal(1, log[1].Day);
+        Assert.Equal(0, log[1].Turn);
+    }
+
+    [Fact]
+    public void StoreItemPurchased_SingleQuantity_UsesDisplayNameWithoutQuantityPrefix()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new StoreItemPurchased
+            {
+                TownId = new TownId("pinecross"),
+                ItemKind = ItemKind.Canteen,
+                DisplayName = "Canteen",
+                Quantity = 1,
+                UnitPrice = 3m,
+                TotalPrice = 3m,
+                WalletAfter = 22m
+            }
+        };
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.Purchase, log[1].Kind);
+        Assert.Equal("Purchased Canteen for $3.00.", log[1].Message);
     }
 
     [Fact]

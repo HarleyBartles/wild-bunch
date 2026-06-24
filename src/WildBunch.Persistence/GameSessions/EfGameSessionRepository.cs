@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -19,6 +20,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
+    private readonly JournalLogProjector _journalLogProjector = new();
 
     public EfGameSessionRepository(WildBunchDbContext dbContext, GameSessionJsonSerializer serializer)
     {
@@ -125,7 +127,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.WantedSuspectPresenceLedger, _serializer.SerializeWantedSuspectPresenceLedger(session.WantedSuspectPresenceEntries), now);
         }
 
-        await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
 
         // NO SaveChangesAsync here — the UoW commits.
@@ -165,13 +166,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToDictionaryAsync(component => component.ComponentName, cancellationToken)
             .ConfigureAwait(false);
 
-        var logEntries = await _dbContext.GameSessionLogEntries.AsNoTracking()
-            .Where(entry => entry.SessionId == id.Value)
-            .OrderBy(entry => entry.Sequence)
-            .Select(entry => new GameLogEntry(entry.Kind, entry.Message, entry.Day, entry.Turn))
-            .ToArrayAsync(cancellationToken)
-            .ConfigureAwait(false);
-
         var diaryDays = await _dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
             .OrderBy(day => day.Sequence)
@@ -179,26 +173,39 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Load post-snapshot events when the snapshot is behind the stream version.
-        // This implements the snapshot + replay load path from ADR-0028.
+        // Load all events for log-entry projection and post-snapshot replay.
+        // After BUNCH-86, LogEntries are derived from the event stream via
+        // JournalLogProjector, replacing the legacy log entries table.
+        var allStoredEvents = await _dbContext.StoredEvents.AsNoTracking()
+            .Where(e => e.StreamId == id.Value)
+            .OrderBy(e => e.Sequence)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var allEvents = new IDomainEvent[allStoredEvents.Length];
+        for (var i = 0; i < allStoredEvents.Length; i++)
+        {
+            allEvents[i] = _serializer.DeserializeEvent(allStoredEvents[i].EventType, allStoredEvents[i].PayloadJson);
+        }
+
+        // Project only the snapshot-prefix events for aggregate LogEntries
+        // rehydration. Post-snapshot events are replayed via ApplyCommittedEvents
+        // in ToAggregate, and Apply(...) methods append their own log entries via
+        // AddLogEntry/RecordCaseUpdate/RecordTravelUpdate. If we projected the
+        // full stream here, post-snapshot entries would be duplicated after
+        // replay. See BUNCH-86.
+        var snapshotEvents = allEvents
+            .Take((int)envelope.SnapshotVersion)
+            .ToArray();
+        var logEntries = _journalLogProjector.Project(snapshotEvents);
+
+        // Post-snapshot events for state replay (subset of allEvents).
         IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();
         if (envelope.SnapshotVersion < envelope.StreamVersion)
         {
-            var storedEvents = await _dbContext.StoredEvents.AsNoTracking()
-                .Where(e => e.StreamId == id.Value && e.Sequence > envelope.SnapshotVersion)
-                .OrderBy(e => e.Sequence)
-                .ToArrayAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            if (storedEvents.Length > 0)
-            {
-                var events = new IDomainEvent[storedEvents.Length];
-                for (var i = 0; i < storedEvents.Length; i++)
-                {
-                    events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
-                }
-                postSnapshotEvents = events;
-            }
+            postSnapshotEvents = allEvents
+                .Skip((int)envelope.SnapshotVersion)
+                .ToArray();
         }
 
         return new GameSessionStore(
@@ -206,7 +213,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             components,
             logEntries,
             diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
-            postSnapshotEvents);
+            postSnapshotEvents,
+            allEvents);
     }
 
     private GameSession ToAggregate(GameSessionStore store)
@@ -286,6 +294,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             session.ApplyCommittedEvents(store.PostSnapshotEvents);
         }
 
+        // Set committed events for projection-backed read paths (BUNCH-86).
+        // AllEvents = committed + uncommitted, used by JournalLogProjector
+        // to derive log entries without scraping session.LogEntries.
+        session.SetCommittedEvents(store.AllEvents);
+
         return session;
     }
 
@@ -318,48 +331,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (component is not null)
         {
             _dbContext.GameSessionComponents.Remove(component);
-        }
-    }
-
-    private async Task SyncLogEntriesAsync(Guid sessionId, IReadOnlyList<GameLogEntry> logEntries, CancellationToken cancellationToken)
-    {
-        var existing = await _dbContext.GameSessionLogEntries
-            .Where(entry => entry.SessionId == sessionId)
-            .OrderBy(entry => entry.Sequence)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var commonCount = Math.Min(existing.Count, logEntries.Count);
-        for (var index = 0; index < commonCount; index++)
-        {
-            var current = existing[index];
-            var desired = logEntries[index];
-            if (current.Kind != desired.Kind || current.Message != desired.Message || current.Day != desired.Day || current.Turn != desired.Turn)
-            {
-                current.Kind = desired.Kind;
-                current.Message = desired.Message;
-                current.Day = desired.Day;
-                current.Turn = desired.Turn;
-            }
-        }
-
-        for (var index = existing.Count; index < logEntries.Count; index++)
-        {
-            var desired = logEntries[index];
-            _dbContext.GameSessionLogEntries.Add(new GameSessionLogEntryEntity
-            {
-                SessionId = sessionId,
-                Sequence = index,
-                Kind = desired.Kind,
-                Message = desired.Message,
-                Day = desired.Day,
-                Turn = desired.Turn
-            });
-        }
-
-        for (var index = logEntries.Count; index < existing.Count; index++)
-        {
-            _dbContext.GameSessionLogEntries.Remove(existing[index]);
         }
     }
 
@@ -405,5 +376,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<GameLogEntry> LogEntries,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
-        IReadOnlyList<IDomainEvent> PostSnapshotEvents);
+        IReadOnlyList<IDomainEvent> PostSnapshotEvents,
+        IReadOnlyList<IDomainEvent> AllEvents);
 }

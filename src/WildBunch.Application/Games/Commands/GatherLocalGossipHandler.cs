@@ -33,7 +33,7 @@ public sealed class GatherLocalGossipHandler : GameSessionCommandHandler
             return new InvestigationActionResultDto(
                 actionResult.Success,
                 actionResult.Message,
-                JournalMapper.ToDto(_journalResolver.Resolve(session)));
+                JournalMapper.ToDto(_journalResolver.Resolve(session, GameSessionLogProjection.Project(session))));
         }, cancellationToken).ConfigureAwait(false);
     }
 }

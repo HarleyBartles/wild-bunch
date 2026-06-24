@@ -36,8 +36,9 @@ public sealed class JournalLogProjector
                     turn = tc.Turn;
                     break;
 
-                case StoreItemPurchased:
-                    // Legacy Apply adds no log entry for purchases.
+                case StoreItemPurchased p:
+                    var purchaseQuantityLabel = p.Quantity == 1 ? p.DisplayName : $"{p.Quantity} {p.DisplayName}";
+                    entries.Add(new GameLogEntry(GameLogEntryKind.Purchase, $"Purchased {purchaseQuantityLabel} for ${p.TotalPrice:0.00}.", day, turn));
                     break;
 
                 case InvestigationPerformed ip:

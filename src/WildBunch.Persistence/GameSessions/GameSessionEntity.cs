@@ -20,8 +20,6 @@ public sealed class GameSessionEntity
 
     public ICollection<GameSessionComponentEntity> Components { get; set; } = [];
 
-    public ICollection<GameSessionLogEntryEntity> LogEntries { get; set; } = [];
-
     public ICollection<GameSessionDiaryDayEntity> TravelDiaryDays { get; set; } = [];
 
     public ICollection<StoredEventEntity> StoredEvents { get; set; } = [];

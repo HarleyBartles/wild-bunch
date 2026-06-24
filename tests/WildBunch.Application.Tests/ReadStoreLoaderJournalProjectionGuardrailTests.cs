@@ -1,15 +1,13 @@
 namespace WildBunch.Application.Tests;
 
 /// <summary>
-/// Source-inspection guardrail proving the BUNCH-84 read-path switch landed and the
-/// command-load compatibility read was left untouched.
+/// Source-inspection guardrail proving the BUNCH-84/BUNCH-86 read-path and command-load
+/// switches both landed and the GameSessionLogEntries table is fully removed.
 /// - GameSessionReadStoreLoader (journal/session read-model read path) must NOT query
-///   GameSessionLogEntries after BUNCH-84; it derives LogEntries from StoredEvents via
-///   JournalLogProjector.
-/// - EfGameSessionRepository (command-load path) MUST still query GameSessionLogEntries
-///   as bounded compatibility surface; its table read is deferred to the write-path-removal
-///   follow-up and must not be removed in this slice.
-/// See ADR-0028 and BUNCH-84.
+///   GameSessionLogEntries; it derives LogEntries from StoredEvents via JournalLogProjector.
+/// - EfGameSessionRepository (command-load path) must NOT query GameSessionLogEntries
+///   after BUNCH-86; it also derives LogEntries from StoredEvents via JournalLogProjector.
+/// See ADR-0028, BUNCH-84, and BUNCH-86.
 /// </summary>
 public sealed class ReadStoreLoaderJournalProjectionGuardrailTests
 {
@@ -48,7 +46,7 @@ public sealed class ReadStoreLoaderJournalProjectionGuardrailTests
     }
 
     [Fact]
-    public void EfGameSessionRepository_StillQueriesGameSessionLogEntriesTable_AsBoundedCompatibilitySurface()
+    public void EfGameSessionRepository_NoLongerQueriesGameSessionLogEntriesTable()
     {
         var repoRoot = FindRepoRoot();
         var repoPath = Path.Combine(repoRoot, "src", "WildBunch.Persistence", "GameSessions", "EfGameSessionRepository.cs");
@@ -56,11 +54,10 @@ public sealed class ReadStoreLoaderJournalProjectionGuardrailTests
 
         var source = File.ReadAllText(repoPath);
 
-        // The command-load path intentionally retains the GameSessionLogEntries table read
-        // as bounded compatibility surface (deferred to the write-path-removal follow-up).
-        // If this assertion fails, the command-load compatibility read was removed outside
-        // BUNCH-84 scope — investigate before updating this test.
-        // Literal source-string check (not regex) for consistency with the read-loader guardrail.
-        Assert.Contains("GameSessionLogEntries", source);
+        // After BUNCH-86, the command-load path derives LogEntries from the event
+        // stream via JournalLogProjector, matching the read-store loader. The
+        // GameSessionLogEntries table is fully removed.
+        Assert.DoesNotContain("GameSessionLogEntries", source);
+        Assert.Contains("JournalLogProjector", source);
     }
 }

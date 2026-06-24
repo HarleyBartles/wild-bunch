@@ -18,7 +18,7 @@ public sealed class JournalResolverTests
         var session = CreateSession();
         var resolver = new JournalResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(session, session.LogEntries);
 
         Assert.Equal(session.Id.Value, result.SessionId);
         Assert.Equal(session.Status, result.Status);
@@ -45,7 +45,7 @@ public sealed class JournalResolverTests
         session.CaseFile.DiscoverSuspect(new SuspectId("suspect-2"));
         var resolver = new JournalResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(session, session.LogEntries);
 
         Assert.Single(result.DiscoveredSuspects);
         Assert.Equal("suspect-2", result.DiscoveredSuspects[0].Id.Value);
@@ -66,7 +66,7 @@ public sealed class JournalResolverTests
         var beforeSuspectCount = session.CaseFile.Suspects.Count;
         var beforeClueCount = session.CaseFile.KnownClues.Count;
 
-        _ = resolver.Resolve(session);
+        _ = resolver.Resolve(session, session.LogEntries);
 
         Assert.Equal(beforeTownId, session.Player.CurrentTownId);
         Assert.Equal(beforeDay, session.Clock.Day);

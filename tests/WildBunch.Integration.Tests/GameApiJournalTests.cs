@@ -69,6 +69,38 @@ public sealed class GameApiJournalTests
     }
 
     [Fact]
+    public async Task GetJournalAfterPurchaseIncludesPurchaseLogEntry()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(createdSession);
+
+        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+
+        var buyResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/towns/pinecross/store/buy",
+            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
+        var buyResult = await buyResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+        Assert.NotNull(buyResult);
+        Assert.True(buyResult!.Success);
+
+        var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
+        Assert.Equal(HttpStatusCode.OK, journalResponse.StatusCode);
+
+        var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
+        Assert.NotNull(journal);
+        Assert.Contains(journal!.LogEntries, entry => entry.Kind == GameLogEntryKind.Purchase);
+        var purchaseEntry = journal.LogEntries.Single(entry => entry.Kind == GameLogEntryKind.Purchase);
+        Assert.Equal("Purchased 2 Food for $4.00.", purchaseEntry.Message);
+    }
+
+    [Fact]
     public async Task GetJournalAfterTravelReflectsUpdatedState()
     {
         using var factory = new PostgreSqlApiFactory();

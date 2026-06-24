@@ -33,7 +33,7 @@ public sealed class ReadWantedPostersHandler : GameSessionCommandHandler
             return new WantedPostersResultDto(
                 actionResult.Success,
                 actionResult.Message,
-                JournalMapper.ToDto(_journalResolver.Resolve(session)),
+                JournalMapper.ToDto(_journalResolver.Resolve(session, GameSessionLogProjection.Project(session))),
                 WantedPosterMapper.ToDto(session.CaseFile.KnownWarrants));
         }, cancellationToken).ConfigureAwait(false);
     }

@@ -1,6 +1,8 @@
 using WildBunch.Application.Projections;
+using WildBunch.Domain.Economy;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 
 namespace WildBunch.Domain.Tests;
@@ -59,6 +61,31 @@ public sealed class JournalLogProjectorEquivalenceTests
         Assert.True(resolved.Success);
         var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
 
+        var projected = new JournalLogProjector().Project(events);
+
+        Assert.Equal(session.LogEntries.Count, projected.Count);
+        for (var i = 0; i < session.LogEntries.Count; i++)
+        {
+            Assert.Equal(session.LogEntries[i].Kind, projected[i].Kind);
+            Assert.Equal(session.LogEntries[i].Message, projected[i].Message);
+            Assert.Equal(session.LogEntries[i].Day, projected[i].Day);
+            Assert.Equal(session.LogEntries[i].Turn, projected[i].Turn);
+        }
+    }
+
+    [Fact]
+    public void Purchase_ProjectedLogMatchesCommandPathLogEntriesExactly()
+    {
+        var (session, preview, gameStarted) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+
+        var resolver = new TownStoreCatalogResolver();
+        var town = session.World.GetTown(session.Player.CurrentTownId);
+        var offer = resolver.Resolve(town)
+            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == ItemKind.Food);
+
+        session.Purchase(offer, 2);
+
+        var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
         var projected = new JournalLogProjector().Project(events);
 
         Assert.Equal(session.LogEntries.Count, projected.Count);

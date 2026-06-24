@@ -2,6 +2,7 @@ using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 using WildBunch.Domain.World;
@@ -88,8 +89,18 @@ public sealed class GetJournalHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
-        session.RecordCaseUpdate("Second entry");
-        session.RecordCaseUpdate("Third entry");
+        session.ProduceEvent(new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.LocalRecords,
+            TownId = session.Player.CurrentTownId,
+            Message = "Second entry"
+        });
+        session.ProduceEvent(new InvestigationPerformed
+        {
+            SourceKind = InvestigationSourceKind.LocalRecords,
+            TownId = session.Player.CurrentTownId,
+            Message = "Third entry"
+        });
         repository.Seed(session);
         var handler = new GetJournalHandler(repository);
 
@@ -98,7 +109,7 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(1, repository.LastJournalSkip);
         Assert.Equal(1, repository.LastJournalTake);
         Assert.Single(result.LogEntries);
-        Assert.Equal(session.LogEntries[1].Message, result.LogEntries[0].Message);
+        Assert.Equal("Second entry", result.LogEntries[0].Message);
     }
 
     [Fact]

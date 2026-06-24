@@ -29,7 +29,6 @@ public sealed class MigrationTests
             Assert.True(await context.Database.CanConnectAsync());
             Assert.Equal(0, await context.GameSessions.CountAsync());
             Assert.Equal(0, await context.GameSessionComponents.CountAsync());
-            Assert.Equal(0, await context.GameSessionLogEntries.CountAsync());
             Assert.Equal(0, await context.GameSessionDiaryDays.CountAsync());
         }
 
@@ -58,7 +57,6 @@ public sealed class MigrationTests
                     .OrderBy(component => component.ComponentName)
                     .Select(component => component.ComponentName)
                     .ToArrayAsync());
-            Assert.Equal(session.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync());
             Assert.Equal(0, await verificationContext.GameSessionDiaryDays.CountAsync());
         }
 
