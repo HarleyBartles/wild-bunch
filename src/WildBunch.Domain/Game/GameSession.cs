@@ -705,6 +705,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         Player.SpendCash(e.TotalPrice);
         Player.AddItem(e.ItemKind, e.Quantity);
+        var quantityLabel = e.Quantity == 1 ? e.DisplayName : $"{e.Quantity} {e.DisplayName}";
+        AddLogEntry(GameLogEntryKind.Purchase, $"Purchased {quantityLabel} for ${e.TotalPrice:0.00}.");
         _version++;
     }
 
@@ -2308,7 +2310,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _uncommittedEvents.Add(e);
 
         var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
-        AddLogEntry(GameLogEntryKind.Purchase, $"Purchased {quantityLabel} for ${totalPrice:0.00}.");
         return StorePurchaseResult.Succeeded($"Purchased {quantityLabel} for ${totalPrice:0.00}.");
     }
 
