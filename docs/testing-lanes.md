@@ -87,7 +87,11 @@ script wrapper:
 
 The wrapper starts or reuses the local cluster, sets
 `ConnectionStrings__WildBunchPostgresDb` in the same process, and then runs
-`dotnet test` with the arguments you pass after `--`.
+`dotnet test` with the arguments you pass after `--`. The wrapper tolerates
+whether the caller includes the `dotnet test` prefix: both
+`.\scripts\postgres-dev.ps1 test -- --no-build` and
+`.\scripts\postgres-dev.ps1 test -- dotnet test --no-build` run the same
+effective command.
 
 That wrapper is the supported repo-local PostgreSQL-backed test path. A direct
 `dotnet test` is only valid when the caller has already exported

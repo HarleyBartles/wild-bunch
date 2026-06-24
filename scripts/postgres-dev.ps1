@@ -285,6 +285,14 @@ function Invoke-TargetedTestLane {
         throw "Usage: .\scripts\postgres-dev.ps1 test -- <dotnet test arguments>"
     }
 
+    # Normalize: tolerate callers who include 'dotnet test' in the args.
+    # Both '.\scripts\postgres-dev.ps1 test -- --no-build' and
+    # '.\scripts\postgres-dev.ps1 test -- dotnet test --no-build' should run
+    # the same effective 'dotnet test --no-build' command.
+    if ($testArguments.Count -ge 2 -and $testArguments[0] -eq 'dotnet' -and $testArguments[1] -eq 'test') {
+        $testArguments = @($testArguments[2..($testArguments.Count - 1)])
+    }
+
     Initialize-PostgresValidationLane
 
     Invoke-WithValidationConnectionString {
