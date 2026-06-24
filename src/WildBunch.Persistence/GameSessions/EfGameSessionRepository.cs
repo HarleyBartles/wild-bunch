@@ -204,7 +204,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             components,
             logEntries,
             diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
-            postSnapshotEvents);
+            postSnapshotEvents,
+            allEvents);
     }
 
     private GameSession ToAggregate(GameSessionStore store)
@@ -284,6 +285,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             session.ApplyCommittedEvents(store.PostSnapshotEvents);
         }
 
+        // Set committed events for projection-backed read paths (BUNCH-86).
+        // AllEvents = committed + uncommitted, used by JournalLogProjector
+        // to derive log entries without scraping session.LogEntries.
+        session.SetCommittedEvents(store.AllEvents);
+
         return session;
     }
 
@@ -361,5 +367,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<GameLogEntry> LogEntries,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
-        IReadOnlyList<IDomainEvent> PostSnapshotEvents);
+        IReadOnlyList<IDomainEvent> PostSnapshotEvents,
+        IReadOnlyList<IDomainEvent> AllEvents);
 }

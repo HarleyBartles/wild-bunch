@@ -41,6 +41,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
+    private readonly List<IDomainEvent> _committedEvents = [];
     private int _version;
 
     private GameSession(
@@ -133,16 +134,58 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<IDomainEvent> UncommittedEvents => _uncommittedEvents;
 
     /// <summary>
+    /// Events committed to the event stream that were used to load/replay this session.
+    /// Set by the repository during load. Used by <see cref="AllEvents"/> for projection.
+    /// </summary>
+    internal IReadOnlyList<IDomainEvent> CommittedEvents => _committedEvents;
+
+    /// <summary>
+    /// The full event stream: committed events (from load) followed by uncommitted
+    /// events (from the current command). This is the projection source for
+    /// projection-backed read paths (JournalLogProjector). See ADR-0028 and BUNCH-86.
+    /// </summary>
+    public IReadOnlyList<IDomainEvent> AllEvents
+    {
+        get
+        {
+            if (_uncommittedEvents.Count == 0)
+            {
+                return _committedEvents;
+            }
+
+            var combined = new List<IDomainEvent>(_committedEvents.Count + _uncommittedEvents.Count);
+            combined.AddRange(_committedEvents);
+            combined.AddRange(_uncommittedEvents);
+            return combined;
+        }
+    }
+
+    /// <summary>
+    /// Sets the committed events loaded from the event stream. Called by the
+    /// repository during load. See ADR-0028 and BUNCH-86.
+    /// </summary>
+    internal void SetCommittedEvents(IReadOnlyList<IDomainEvent> events)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        _committedEvents.Clear();
+        _committedEvents.AddRange(events);
+    }
+
+    /// <summary>
     /// Number of events applied (committed + uncommitted). Used for optimistic concurrency.
     /// </summary>
     public int Version => _version;
 
     /// <summary>
-    /// Clears uncommitted events after the event store has committed them.
+    /// Transfers uncommitted events to committed events after the event store has
+    /// committed them. This keeps <see cref="AllEvents"/> correct for projection-backed
+    /// read paths that run after commit (e.g., in-memory test doubles). The real
+    /// repository re-sets committed events from the event store on next load.
     /// State is unchanged.
     /// </summary>
     internal void MarkEventsCommitted()
     {
+        _committedEvents.AddRange(_uncommittedEvents);
         _uncommittedEvents.Clear();
     }
 

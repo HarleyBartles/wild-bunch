@@ -1,16 +1,19 @@
 using WildBunch.Domain.Game;
 
-// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The journal resolver
-// still reads it for backward-compatible journal output. Do not add new consumers.
-#pragma warning disable CS0618
-
 namespace WildBunch.Domain.Journal;
 
 public sealed class JournalResolver
 {
-    public JournalSnapshot Resolve(GameSession session)
+    /// <summary>
+    /// Resolves a journal snapshot from the session state and projection-backed
+    /// log entries. The caller must project log entries from the event stream
+    /// via JournalLogProjector (Application.Projections) — do not pass
+    /// session.LogEntries (projection-legacy per ADR-0028). See BUNCH-86.
+    /// </summary>
+    public JournalSnapshot Resolve(GameSession session, IReadOnlyList<GameLogEntry> logEntries)
     {
         ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(logEntries);
 
         var currentTown = session.World.GetTown(session.Player.CurrentTownId);
 
@@ -29,6 +32,6 @@ public sealed class JournalResolver
             session.CaseFile.KnownClues.ToArray(),
             session.CaseFile.KnownWarrants.ToArray(),
             session.CaseFile.SheriffTurnInSettlements.ToArray(),
-            session.LogEntries.ToArray());
+            logEntries.ToArray());
     }
 }
