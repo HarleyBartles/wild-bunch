@@ -39,11 +39,6 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
             .HasForeignKey(e => e.SessionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(e => e.LogEntries)
-            .WithOne(e => e.Session)
-            .HasForeignKey(e => e.SessionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         builder.HasMany(e => e.TravelDiaryDays)
             .WithOne(e => e.Session)
             .HasForeignKey(e => e.SessionId)

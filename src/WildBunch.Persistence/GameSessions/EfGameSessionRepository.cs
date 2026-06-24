@@ -127,7 +127,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.WantedSuspectPresenceLedger, _serializer.SerializeWantedSuspectPresenceLedger(session.WantedSuspectPresenceEntries), now);
         }
 
-        await SyncLogEntriesAsync(entity.Id, session.LogEntries, cancellationToken).ConfigureAwait(false);
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
 
         // NO SaveChangesAsync here — the UoW commits.
@@ -317,48 +316,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (component is not null)
         {
             _dbContext.GameSessionComponents.Remove(component);
-        }
-    }
-
-    private async Task SyncLogEntriesAsync(Guid sessionId, IReadOnlyList<GameLogEntry> logEntries, CancellationToken cancellationToken)
-    {
-        var existing = await _dbContext.GameSessionLogEntries
-            .Where(entry => entry.SessionId == sessionId)
-            .OrderBy(entry => entry.Sequence)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var commonCount = Math.Min(existing.Count, logEntries.Count);
-        for (var index = 0; index < commonCount; index++)
-        {
-            var current = existing[index];
-            var desired = logEntries[index];
-            if (current.Kind != desired.Kind || current.Message != desired.Message || current.Day != desired.Day || current.Turn != desired.Turn)
-            {
-                current.Kind = desired.Kind;
-                current.Message = desired.Message;
-                current.Day = desired.Day;
-                current.Turn = desired.Turn;
-            }
-        }
-
-        for (var index = existing.Count; index < logEntries.Count; index++)
-        {
-            var desired = logEntries[index];
-            _dbContext.GameSessionLogEntries.Add(new GameSessionLogEntryEntity
-            {
-                SessionId = sessionId,
-                Sequence = index,
-                Kind = desired.Kind,
-                Message = desired.Message,
-                Day = desired.Day,
-                Turn = desired.Turn
-            });
-        }
-
-        for (var index = logEntries.Count; index < existing.Count; index++)
-        {
-            _dbContext.GameSessionLogEntries.Remove(existing[index]);
         }
     }
 

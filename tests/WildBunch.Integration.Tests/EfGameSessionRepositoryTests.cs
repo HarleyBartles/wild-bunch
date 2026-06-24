@@ -423,7 +423,10 @@ public sealed class EfGameSessionRepositoryTests
         Assert.DoesNotContain("true culprit", System.Text.Json.JsonSerializer.Serialize(journalRead), StringComparison.OrdinalIgnoreCase);
 
         await using var verificationContext = fixture.CreateContext();
-        Assert.Equal(loaded.LogEntries.Count, await verificationContext.GameSessionLogEntries.CountAsync(entry => entry.SessionId == session.Id.Value));
+        // After BUNCH-86, log entries are derived from the event stream via
+        // JournalLogProjector, not stored in a GameSessionLogEntries table.
+        // Verify the event stream has events rather than checking a log table.
+        Assert.True(await verificationContext.StoredEvents.AnyAsync(e => e.StreamId == session.Id.Value));
         Assert.Equal(loaded.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync(day => day.SessionId == session.Id.Value));
     }
 

@@ -14,8 +14,6 @@ public sealed class WildBunchDbContext : DbContext
 
     public DbSet<GameSessionComponentEntity> GameSessionComponents => Set<GameSessionComponentEntity>();
 
-    public DbSet<GameSessionLogEntryEntity> GameSessionLogEntries => Set<GameSessionLogEntryEntity>();
-
     public DbSet<GameSessionDiaryDayEntity> GameSessionDiaryDays => Set<GameSessionDiaryDayEntity>();
 
     public DbSet<StoredEventEntity> StoredEvents => Set<StoredEventEntity>();
