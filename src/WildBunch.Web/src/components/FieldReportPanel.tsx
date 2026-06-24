@@ -43,7 +43,7 @@ export function FieldReportPanel({
             <dd>{session.player.health.toLocaleString()}</dd>
           </div>
           <div>
-            <dt>Heat</dt>
+            <dt>Lawman heat</dt>
             <dd>{session.pursuitState.heat}</dd>
           </div>
         </dl>

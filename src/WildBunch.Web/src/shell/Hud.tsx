@@ -56,7 +56,7 @@ export function Hud({ onOpenJournal }: HudProps) {
       </span>
       <span className="hud-metric">
         <strong>{heat}</strong>
-        <small>Heat</small>
+        <small>Lawman heat</small>
       </span>
       <span className="hud-metric">
         <strong>{statusLabel}</strong>

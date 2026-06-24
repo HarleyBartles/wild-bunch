@@ -63,7 +63,7 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
             <span>Food Δ {formatSignedNumber(day.trailEvent.foodDelta)}</span>
             <span>Canteen Δ {formatSignedNumber(day.trailEvent.canteenChargeDelta)}</span>
             <span>Delay Δ {formatSignedNumber(day.trailEvent.delayDays)}</span>
-            <span>Heat Δ {formatSignedNumber(day.trailEvent.heatIncrease)}</span>
+            <span>Lawman heat Δ {formatSignedNumber(day.trailEvent.heatIncrease)}</span>
             {hasHorseState ? <span>Horse hunger Δ {formatSignedNumber(day.trailEvent.horseHungerDelta)}</span> : null}
             {hasHorseState ? <span>Horse thirst Δ {formatSignedNumber(day.trailEvent.horseThirstDelta)}</span> : null}
             {hasHorseState ? <span>Horse exhaustion Δ {formatSignedNumber(day.trailEvent.horseExhaustionDelta)}</span> : null}
@@ -79,7 +79,7 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
             <span>Health Δ {formatSignedNumber(day.encounterResolution.healthDelta)}</span>
             <span>Wallet Δ {formatSignedNumber(day.encounterResolution.walletDelta, 2)}</span>
             <span>Ammo Δ {formatSignedNumber(-day.encounterResolution.ammoSpent)}</span>
-            <span>Heat Δ {formatSignedNumber(day.encounterResolution.heatIncrease)}</span>
+            <span>Lawman heat Δ {formatSignedNumber(day.encounterResolution.heatIncrease)}</span>
             {hasHorseState ? <span>Horse exhaustion Δ {formatSignedNumber(day.encounterResolution.horseExhaustionDelta)}</span> : null}
           </TrailNoteMeta>
         </ResolutionNote>
@@ -113,7 +113,7 @@ function renderDayMeta(day: TravelDiaryDayDto) {
     `Food ${day.currentFood} (${formatSignedNumber(day.foodDelta)})`,
     `Canteen ${day.currentCanteenCharges} (${formatSignedNumber(day.canteenChargeDelta)})`,
     `Ammo ${day.currentAmmo} (${formatSignedNumber(-day.ammoSpent)})`,
-    `Heat ${day.currentHeat} (${formatSignedNumber(day.heatIncrease)})`,
+    `Lawman heat ${day.currentHeat} (${formatSignedNumber(day.heatIncrease)})`,
   ];
 
   if (hasHorseState) {
