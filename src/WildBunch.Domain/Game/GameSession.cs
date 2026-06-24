@@ -935,6 +935,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             }
         }
 
+        // Trail-event heat guard: stays for future noisy/witnessed trail events.
+        // Current bad-luck events (washout, dust storm, spooked horse, hard miles)
+        // carry HeatIncrease=0 because they are private hardship, not noisy/visible.
+        // See ADR-0029.
         if (trailEvent.HeatIncrease != 0)
         {
             PursuitState.IncreaseHeat(trailEvent.HeatIncrease);
@@ -1159,9 +1163,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var newDay = Clock.Day + 1;
         Clock.AdvanceTravelDay();
         var progress = Journey.AdvanceOneDay();
-        var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
-        PursuitState.IncreaseHeat(heatIncrease);
 
+        // Heat is future lawman pressure, not trail danger — travel no longer
+        // raises heat from route risk. See ADR-0029.
         var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
         Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
 
@@ -1774,6 +1778,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     ? ApplyEncounterHorsePressure(plan.HorseExhaustionDelta)
                     : string.Empty;
 
+                // Encounter run: visible/noisy incident that draws future lawman attention. See ADR-0029.
                 PursuitState.IncreaseHeat(plan.HeatIncrease);
 
                 var runMessage = PrependHorseLossMessage(horseLossMessage, plan.Message);
@@ -1855,6 +1860,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     Player.AdjustHealth(plan.HealthDelta);
                 }
 
+                // Encounter fight: visible/noisy incident that draws future lawman attention. See ADR-0029.
                 if (plan.HeatIncrease != 0)
                 {
                     PursuitState.IncreaseHeat(plan.HeatIncrease);
@@ -1951,6 +1957,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     Player.AdjustHealth(plan.HealthDelta);
                 }
 
+                // Encounter bribe: visible/noisy incident that draws future lawman attention. See ADR-0029.
                 if (plan.HeatIncrease != 0)
                 {
                     PursuitState.IncreaseHeat(plan.HeatIncrease);
