@@ -2,6 +2,16 @@ using WildBunch.Domain.Inventory;
 
 namespace WildBunch.Domain.Travel;
 
+/// <summary>
+/// Tuning knobs for travel difficulty. Heat-increase fields represent noise
+/// from visible/noisy/witnessed behavior that draws future lawman attention
+/// (ADR-0029), not trail danger. <see cref="TrailEventHeatIncrease"/> is a
+/// reserved knob for future noisy/witnessed trail events — no current trail
+/// event wires it in. <see cref="EncounterRunMountedHeatIncrease"/>,
+/// <see cref="EncounterRunFootHeatIncrease"/>, and
+/// <see cref="EncounterFightHeatIncrease"/> apply to encounter resolutions
+/// (run/fight) which are visible/noisy incidents.
+/// </summary>
 public sealed record TravelRulesProfile(
     TravelDifficulty Difficulty,
     int CanteenCapacity,

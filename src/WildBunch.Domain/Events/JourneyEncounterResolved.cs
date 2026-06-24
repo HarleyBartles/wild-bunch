@@ -10,7 +10,7 @@ namespace WildBunch.Domain.Events;
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it.
 /// PlayerHealth and WalletCash are ABSOLUTE — Apply sets them from the event.
 /// AmmoSpent and StolenItem are ADDITIVE — Apply applies them to the player.
-/// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it.
+/// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it (future lawman pressure from visible/noisy encounters; see ADR-0029).
 /// AdditionalDiaryMessages carries narration-only encounter messages from the
 /// continued day plan after resolution. Apply logs each via RecordTravelUpdate.
 /// </summary>

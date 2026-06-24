@@ -26,6 +26,12 @@ internal static class JourneyEncounterResolutionEngine
         public bool SessionChanged => true;
     }
 
+    /// <summary>
+    /// Creates a foe profile for a trail encounter. <see cref="PursuitHeatBand"/>
+    /// (Hunted/Hot) makes foes tougher and bribes pricier because a hot player
+    /// draws more aggressive/greedy riders — this is lawman-pressure-shaped
+    /// attention, not trail danger. See ADR-0029.
+    /// </summary>
     public static JourneyFoeProfile CreateFoeProfile(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, string seed)
     {
         ArgumentNullException.ThrowIfNull(context);

@@ -23,6 +23,13 @@ public enum HorseConditionBand
     Critical = 4
 }
 
+/// <summary>
+/// Banded view of <see cref="WildBunch.Domain.Game.PursuitState.Heat"/> used
+/// by the travel day plan generator and encounter engine. Higher bands mean
+/// more lawman attention is following the player, which draws tougher/more-
+/// greedy trail foes. This is future lawman pressure, not trail danger.
+/// See ADR-0029.
+/// </summary>
 public enum PursuitHeatBand
 {
     Calm = 0,
