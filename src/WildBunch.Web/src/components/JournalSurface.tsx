@@ -46,14 +46,27 @@ function formatJournalClock(journal: JournalDto) {
 }
 
 function formatEntryClock(entry: GameLogEntryDto) {
-  return `Turn ${entry.turn}`;
+  return `Note ${entry.turn + 1}`;
+}
+
+function formatJournalKind(kind: GameLogEntryDto["kind"]) {
+  switch (kind) {
+    case 0:
+      return "Opening note";
+    case 1:
+      return "Trail note";
+    case 2:
+      return "Case note";
+    default:
+      return formatLogKind(kind);
+  }
 }
 
 function JournalEntryCard({ entry }: { entry: GameLogEntryDto }) {
   return (
     <article className="journal-entry">
       <div className="journal-entry__meta">
-        <span className="tag journal-entry__kind">{formatLogKind(entry.kind)}</span>
+        <span className="tag journal-entry__kind">{formatJournalKind(entry.kind)}</span>
         <span className="journal-entry__clock">
           Day {entry.day}, {formatEntryClock(entry)}
         </span>
@@ -86,15 +99,15 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
   const groups = useMemo(() => groupEntriesByDay(entries), [entries]);
 
   if (loading) {
-    return <div className="case-modal__state">Loading the latest journal...</div>;
+    return <div className="case-modal__state">Opening the trail journal...</div>;
   }
 
   if (error) {
-    return <div className="case-modal__state">{error || "Load a game to inspect the journal."}</div>;
+    return <div className="case-modal__state">{error || "Load a game to read the trail journal."}</div>;
   }
 
   if (!journal) {
-    return <div className="case-modal__state">Load a game to inspect the journal.</div>;
+    return <div className="case-modal__state">Load a game to read the trail journal.</div>;
   }
 
   return (
@@ -102,28 +115,28 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
       <div className="case-modal__section-head journal-surface__head">
         <div>
           <h3>Journal</h3>
-          <p className="panel-subtitle">A readable, player-safe timeline of what the hunt has made public.</p>
+          <p className="panel-subtitle">A trail journal kept in the rider&apos;s own words.</p>
         </div>
         <p className="journal-surface__clock">{formatJournalClock(journal)}</p>
       </div>
 
       <div className="journal-summary">
         <article className="journal-summary__card">
-          <p className="eyebrow">Current town</p>
+          <p className="eyebrow">Camped at</p>
           <strong>{journal.currentTown.name}</strong>
           <p>
             Day {journal.clock.day}, {journal.clock.timeOfDay}
           </p>
         </article>
         <article className="journal-summary__card">
-          <p className="eyebrow">Case summary</p>
+          <p className="eyebrow">Case note</p>
           <strong>{journal.caseFile.caseSummary}</strong>
           <p>{journal.caseFile.caseState.statusText}</p>
         </article>
         <article className="journal-summary__card">
-          <p className="eyebrow">Entries</p>
+          <p className="eyebrow">Trail notes</p>
           <strong>{entries.length}</strong>
-          <p>{entries.length === 1 ? "entry recorded" : "entries recorded"}</p>
+          <p>{entries.length === 1 ? "note in ink" : "notes in ink"}</p>
         </article>
       </div>
 
@@ -131,7 +144,7 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
         {groups.length > 0 ? (
           groups.map((group) => <JournalDaySection key={group.day} group={group} />)
         ) : (
-          <p className="muted">Journal entries will appear here as the hunt unfolds.</p>
+          <p className="muted">No notes yet. The trail is still being written.</p>
         )}
       </div>
     </section>
