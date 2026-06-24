@@ -175,7 +175,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // Load all events for log-entry projection and post-snapshot replay.
         // After BUNCH-86, LogEntries are derived from the event stream via
-        // JournalLogProjector, replacing the GameSessionLogEntries table.
+        // JournalLogProjector, replacing the legacy log entries table.
         var allStoredEvents = await _dbContext.StoredEvents.AsNoTracking()
             .Where(e => e.StreamId == id.Value)
             .OrderBy(e => e.Sequence)
