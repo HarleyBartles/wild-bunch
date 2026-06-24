@@ -64,7 +64,6 @@ export function GlobalOverlays() {
         open={openOverlay === "journal"}
         eyebrow="Journal"
         title="Journal"
-        description="Trail notes from the saddlebag."
         onClose={() => setOpenOverlay(null)}
       >
         <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={journal?.logEntries ?? []} />

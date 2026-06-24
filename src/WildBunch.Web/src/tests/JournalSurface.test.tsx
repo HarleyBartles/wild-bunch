@@ -18,9 +18,8 @@ describe("JournalSurface", () => {
 
     render(<JournalSurface journal={journal} loading={false} error="" />);
 
-    expect(screen.getByRole("heading", { name: /journal/i })).toBeInTheDocument();
     expect(screen.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
-    expect(screen.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Day 5, Morning in Tumbleweed" })).toBeInTheDocument();
     expect(screen.getByText("Day 1")).toBeInTheDocument();
     expect(screen.getByText("Day 5")).toBeInTheDocument();
     expect(screen.getByText("Day 6")).toBeInTheDocument();

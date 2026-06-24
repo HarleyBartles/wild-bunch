@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import type { GameLogEntryDto, JournalDto } from "../api/types";
-import { formatLogKind } from "../ui/formatters";
 
 interface JournalSurfaceProps {
   journal: JournalDto | null;
@@ -45,23 +44,6 @@ function formatJournalClock(journal: JournalDto) {
   return `Day ${journal.clock.day}, ${journal.clock.timeOfDay} in ${journal.currentTown.name}`;
 }
 
-function formatEntryClock(entry: GameLogEntryDto) {
-  return `Note ${entry.turn + 1}`;
-}
-
-function formatJournalKind(kind: GameLogEntryDto["kind"]) {
-  switch (kind) {
-    case 0:
-      return "Opening note";
-    case 1:
-      return "Trail note";
-    case 2:
-      return "Case note";
-    default:
-      return formatLogKind(kind);
-  }
-}
-
 function formatJournalEntryMessage(message: string) {
   const openingMatch = message.match(/^The hunt begins in (.+)\.$/);
   if (openingMatch) {
@@ -74,12 +56,6 @@ function formatJournalEntryMessage(message: string) {
 function JournalEntryCard({ entry }: { entry: GameLogEntryDto }) {
   return (
     <article className="journal-entry">
-      <div className="journal-entry__meta">
-        <span className="tag journal-entry__kind">{formatJournalKind(entry.kind)}</span>
-        <span className="journal-entry__clock">
-          Day {entry.day}, {formatEntryClock(entry)}
-        </span>
-      </div>
       <p className="journal-entry__message">{formatJournalEntryMessage(entry.message)}</p>
     </article>
   );
@@ -121,11 +97,7 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
   return (
     <section className="case-modal__section case-modal__section--wide journal-surface">
       <div className="case-modal__section-head journal-surface__head">
-        <div>
-          <h3>Journal</h3>
-          <p className="panel-subtitle">Trail notes from the saddlebag.</p>
-        </div>
-        <p className="journal-surface__clock">{formatJournalClock(journal)}</p>
+        <h3 className="journal-surface__clock">{formatJournalClock(journal)}</h3>
       </div>
 
       <div className="journal-timeline">
