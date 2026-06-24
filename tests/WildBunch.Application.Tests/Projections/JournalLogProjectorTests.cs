@@ -37,31 +37,6 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
-    public void StoreItemPurchased_ProducesNoLogEntry_MatchingLegacyApply()
-    {
-        var projector = new JournalLogProjector();
-        var events = new IDomainEvent[]
-        {
-            GameStartedEvent(),
-            new StoreItemPurchased
-            {
-                TownId = new TownId("pinecross"),
-                ItemKind = ItemKind.Food,
-                DisplayName = "Trail Biscuits",
-                Quantity = 2,
-                UnitPrice = 2m,
-                TotalPrice = 4m,
-                WalletAfter = 21m
-            }
-        };
-        var log = projector.Project(events);
-
-        // Only the opening entry — purchase adds no legacy log entry.
-        Assert.Single(log);
-        Assert.Equal(GameLogEntryKind.Opening, log[0].Kind);
-    }
-
-    [Fact]
     public void StoreItemPurchased_ProducesPurchaseEntry_MatchingLegacyCommandPath()
     {
         var projector = new JournalLogProjector();
