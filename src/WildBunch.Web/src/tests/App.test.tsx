@@ -547,8 +547,8 @@ describe("DebugCockpitRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /current session/i })).toBeInTheDocument();
     expect(screen.getByText("Tumbleweed (t-town)")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /log/i })).toBeInTheDocument();
-    expect(screen.getByText("Booted")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /log/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Booted")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /store offers/i })).toBeInTheDocument();
     expect(screen.getByText("Food $2.00")).toBeInTheDocument();
 
@@ -629,6 +629,9 @@ describe("DebugCockpitRoute", () => {
     await waitFor(() => {
       expect(dialog).not.toBeInTheDocument();
     });
+
+    expect(screen.queryByRole("button", { name: /journal/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /journal/i })).not.toBeInTheDocument();
   });
 
   it("runs the saloon look-around action and refreshes the journal state", async () => {

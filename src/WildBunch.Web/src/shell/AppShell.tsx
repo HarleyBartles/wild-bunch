@@ -1,16 +1,18 @@
+import { useState } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Hud } from "./Hud";
-import { GlobalOverlays } from "../flow/GlobalOverlays";
+import { GlobalOverlays, type OverlayKind } from "../flow/GlobalOverlays";
 
 function ShellChrome() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const isDebug = path === "/debug";
+  const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
 
   return (
     <div className="v0-1-shell v0-1-shell--flow">
-      <Hud />
+      <Hud onOpenJournal={() => setOpenOverlay("journal")} />
       <div className="shell-overlay-bar">
-        <GlobalOverlays />
+        <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
         <nav className="shell-dev-nav" aria-label="Developer tools">
           <Link
             to="/debug"

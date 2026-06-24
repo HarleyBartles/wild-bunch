@@ -256,20 +256,26 @@ describe("AppShell", () => {
     expect(screen.getByText(/player-known facts and does not guess at hidden truth/i)).toBeInTheDocument();
   });
 
-  it("opens the Activity log overlay and renders the log surface", async () => {
+  it("opens the Journal overlay and renders the journal surface", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     renderShell();
 
     const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("button", { name: /activity log/i }));
+    await user.click(within(hud).getByRole("button", { name: /journal/i }));
 
-    expect(await screen.findByRole("heading", { name: /activity log/i })).toBeInTheDocument();
+    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
+    const journalScope = within(journalDialog);
+    expect(journalScope.getByRole("heading", { level: 2, name: /^journal$/i })).toBeInTheDocument();
+    expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+    expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
   });
 
   it("exposes a separated Dev tools route that hosts the relocated cockpit", async () => {

@@ -4,7 +4,7 @@ interface CockpitOverlayFrameProps {
   open: boolean;
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   onClose: () => void;
   children: ReactNode;
 }
@@ -49,14 +49,22 @@ export function CockpitOverlayFrame({ open, eyebrow, title, description, onClose
         }
       }}
     >
-      <section className="case-modal" role="dialog" aria-modal="true" aria-labelledby="cockpit-surface-title" aria-describedby="cockpit-surface-description">
+      <section
+        className="case-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cockpit-surface-title"
+        aria-describedby={description ? "cockpit-surface-description" : undefined}
+      >
         <header className="case-modal__header">
           <div>
             <p className="eyebrow">{eyebrow}</p>
             <h2 id="cockpit-surface-title">{title}</h2>
-            <p id="cockpit-surface-description" className="panel-subtitle">
-              {description}
-            </p>
+            {description ? (
+              <p id="cockpit-surface-description" className="panel-subtitle">
+                {description}
+              </p>
+            ) : null}
           </div>
           <button ref={closeButtonRef} type="button" className="button button--ghost" onClick={onClose}>
             Close

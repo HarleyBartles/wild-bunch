@@ -1,7 +1,11 @@
 import { formatGameStatus } from "../ui/formatters";
 import { useGameSession } from "../state/useGameSession";
 
-export function Hud() {
+interface HudProps {
+  onOpenJournal: () => void;
+}
+
+export function Hud({ onOpenJournal }: HudProps) {
   const { session, currentTown, cockpitMode } = useGameSession();
 
   if (!session) {
@@ -15,6 +19,11 @@ export function Hud() {
           <strong>-</strong>
           <small>Camp</small>
         </span>
+        <div className="hud-actions">
+          <button type="button" className="hud-action" disabled>
+            Journal
+          </button>
+        </div>
       </header>
     );
   }
@@ -53,6 +62,15 @@ export function Hud() {
         <strong>{statusLabel}</strong>
         <small>Status</small>
       </span>
+      <div className="hud-actions">
+        <button
+          type="button"
+          className="hud-action"
+          onClick={onOpenJournal}
+        >
+          Journal
+        </button>
+      </div>
     </header>
   );
 }
