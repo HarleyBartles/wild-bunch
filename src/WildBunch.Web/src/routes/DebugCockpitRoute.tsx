@@ -3,7 +3,7 @@ import { CaseFileSurface } from "../components/CaseFileSurface";
 import { AvailableActionsPanel } from "../components/AvailableActionsPanel";
 import { CockpitOverlayFrame } from "../components/CockpitOverlayFrame";
 import { FieldReportPanel } from "../components/FieldReportPanel";
-import { LogPanel } from "../components/LogPanel";
+import { JournalSurface } from "../components/JournalSurface";
 import { StartGamePanel } from "../components/StartGamePanel";
 import { TravelRoutesPanel } from "../components/TravelRoutesPanel";
 import { formatGameStatus } from "../ui/formatters";
@@ -29,9 +29,10 @@ export function DebugCockpitRoute() {
     storeOffersLoading,
     handleBuyOffer,
   } = useGameSession();
-  const [isCaseFileOpen, setIsCaseFileOpen] = useState(false);
-  const openCaseFile = useCallback(() => setIsCaseFileOpen(true), []);
-  const closeCaseFile = useCallback(() => setIsCaseFileOpen(false), []);
+  const [openSurface, setOpenSurface] = useState<"case-file" | "journal" | null>(null);
+  const openCaseFile = useCallback(() => setOpenSurface("case-file"), []);
+  const openJournal = useCallback(() => setOpenSurface("journal"), []);
+  const closeSurface = useCallback(() => setOpenSurface(null), []);
 
   const gameStateLabel = session
     ? `${formatGameStatus(session.status)} | ${cockpitMode === "travel" ? "Travel diary" : "Cockpit"}`
@@ -79,8 +80,16 @@ export function DebugCockpitRoute() {
               <button
                 type="button"
                 className="button button--ghost"
+                onClick={openJournal}
+                disabled={!journal && !loading}
+              >
+                Open journal
+              </button>
+              <button
+                type="button"
+                className="button button--ghost"
                 onClick={() => {
-                  setIsCaseFileOpen(false);
+                  setOpenSurface(null);
                   handleReset();
                 }}
               >
@@ -121,17 +130,26 @@ export function DebugCockpitRoute() {
 
         <TravelRoutesPanel gameId={gameId ?? session?.id ?? null} session={session} busy={loading} onTravel={handleTravel} />
 
-        <LogPanel journal={journal} sessionLogEntries={session?.logEntries ?? []} />
       </main>
 
       <CockpitOverlayFrame
-        open={isCaseFileOpen}
+        open={openSurface === "case-file"}
         eyebrow="Case file"
         title="Investigation board"
         description="A read-only summary of player-known clues, suspects, and warrants."
-        onClose={closeCaseFile}
+        onClose={closeSurface}
       >
         <CaseFileSurface journal={journal} loading={loading} error={error} />
+      </CockpitOverlayFrame>
+
+      <CockpitOverlayFrame
+        open={openSurface === "journal"}
+        eyebrow="Journal"
+        title="Journal"
+        description="A read-only timeline of player-visible events from the hunt."
+        onClose={closeSurface}
+      >
+        <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={session?.logEntries ?? []} />
       </CockpitOverlayFrame>
     </div>
   );

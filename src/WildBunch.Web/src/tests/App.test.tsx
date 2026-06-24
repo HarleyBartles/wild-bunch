@@ -547,8 +547,8 @@ describe("DebugCockpitRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /current session/i })).toBeInTheDocument();
     expect(screen.getByText("Tumbleweed (t-town)")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /log/i })).toBeInTheDocument();
-    expect(screen.getByText("Booted")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /log/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Booted")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /store offers/i })).toBeInTheDocument();
     expect(screen.getByText("Food $2.00")).toBeInTheDocument();
 
@@ -629,6 +629,18 @@ describe("DebugCockpitRoute", () => {
     await waitFor(() => {
       expect(dialog).not.toBeInTheDocument();
     });
+
+    await user.click(screen.getByRole("button", { name: /open journal/i }));
+
+    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
+    const journalScope = within(journalDialog);
+    expect(journalScope.getByRole("heading", { level: 2, name: /journal/i })).toBeInTheDocument();
+    expect(journalScope.getByText("Booted")).toBeInTheDocument();
+    expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+    expect(journalScope.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
+    expect(journalScope.queryByText("trueCulpritId")).not.toBeInTheDocument();
+    expect(journalScope.queryByText("killerReleaseState")).not.toBeInTheDocument();
+    expect(journalScope.queryByText("clue-1")).not.toBeInTheDocument();
   });
 
   it("runs the saloon look-around action and refreshes the journal state", async () => {

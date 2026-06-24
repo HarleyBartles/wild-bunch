@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { CockpitOverlayFrame } from "../components/CockpitOverlayFrame";
 import { CaseFileSurface } from "../components/CaseFileSurface";
+import { JournalSurface } from "../components/JournalSurface";
 import { WantedPosterSurface } from "../components/WantedPosterSurface";
-import { LogPanel } from "../components/LogPanel";
 import { useGameSession } from "../state/useGameSession";
 
-export type OverlayKind = "case-file" | "wanted" | "activity-log" | null;
+export type OverlayKind = "case-file" | "wanted" | "journal" | null;
 
 export function GlobalOverlays() {
-  const { journal, wantedPosters, session, loading, error } = useGameSession();
+  const { journal, wantedPosters, loading, error } = useGameSession();
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
 
   return (
@@ -33,10 +33,10 @@ export function GlobalOverlays() {
         <button
           type="button"
           className="overlay-button"
-          onClick={() => setOpenOverlay("activity-log")}
-          disabled={!session}
+          onClick={() => setOpenOverlay("journal")}
+          disabled={!journal && !loading}
         >
-          Activity log
+          Journal
         </button>
       </div>
 
@@ -61,13 +61,13 @@ export function GlobalOverlays() {
       </CockpitOverlayFrame>
 
       <CockpitOverlayFrame
-        open={openOverlay === "activity-log"}
+        open={openOverlay === "journal"}
         eyebrow="Journal"
-        title="Activity log"
-        description="Recent events from the trail."
+        title="Journal"
+        description="A read-only timeline of player-visible events from the hunt."
         onClose={() => setOpenOverlay(null)}
       >
-        <LogPanel journal={journal} sessionLogEntries={session?.logEntries ?? []} />
+        <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={journal?.logEntries ?? []} />
       </CockpitOverlayFrame>
     </>
   );
