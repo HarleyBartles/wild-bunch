@@ -630,17 +630,8 @@ describe("DebugCockpitRoute", () => {
       expect(dialog).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /open journal/i }));
-
-    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
-    const journalScope = within(journalDialog);
-    expect(journalScope.getByRole("heading", { level: 2, name: /journal/i })).toBeInTheDocument();
-    expect(journalScope.getByText("Booted")).toBeInTheDocument();
-    expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
-    expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
-    expect(journalScope.queryByText("trueCulpritId")).not.toBeInTheDocument();
-    expect(journalScope.queryByText("killerReleaseState")).not.toBeInTheDocument();
-    expect(journalScope.queryByText("clue-1")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /journal/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /journal/i })).not.toBeInTheDocument();
   });
 
   it("runs the saloon look-around action and refreshes the journal state", async () => {

@@ -3,7 +3,6 @@ import { CaseFileSurface } from "../components/CaseFileSurface";
 import { AvailableActionsPanel } from "../components/AvailableActionsPanel";
 import { CockpitOverlayFrame } from "../components/CockpitOverlayFrame";
 import { FieldReportPanel } from "../components/FieldReportPanel";
-import { JournalSurface } from "../components/JournalSurface";
 import { StartGamePanel } from "../components/StartGamePanel";
 import { TravelRoutesPanel } from "../components/TravelRoutesPanel";
 import { formatGameStatus } from "../ui/formatters";
@@ -29,9 +28,8 @@ export function DebugCockpitRoute() {
     storeOffersLoading,
     handleBuyOffer,
   } = useGameSession();
-  const [openSurface, setOpenSurface] = useState<"case-file" | "journal" | null>(null);
+  const [openSurface, setOpenSurface] = useState<"case-file" | null>(null);
   const openCaseFile = useCallback(() => setOpenSurface("case-file"), []);
-  const openJournal = useCallback(() => setOpenSurface("journal"), []);
   const closeSurface = useCallback(() => setOpenSurface(null), []);
 
   const gameStateLabel = session
@@ -76,14 +74,6 @@ export function DebugCockpitRoute() {
                 disabled={!journal && !loading}
               >
                 Open case file
-              </button>
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={openJournal}
-                disabled={!journal && !loading}
-              >
-                Open journal
               </button>
               <button
                 type="button"
@@ -140,15 +130,6 @@ export function DebugCockpitRoute() {
         onClose={closeSurface}
       >
         <CaseFileSurface journal={journal} loading={loading} error={error} />
-      </CockpitOverlayFrame>
-
-      <CockpitOverlayFrame
-        open={openSurface === "journal"}
-        eyebrow="Journal"
-        title="Journal"
-        onClose={closeSurface}
-      >
-        <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={session?.logEntries ?? []} />
       </CockpitOverlayFrame>
     </div>
   );

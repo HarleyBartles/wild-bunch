@@ -263,11 +263,13 @@ describe("AppShell", () => {
     renderShell();
 
     const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("button", { name: /journal/i }));
+    await user.click(within(hud).getByRole("button", { name: /journal/i }));
 
     const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
     const journalScope = within(journalDialog);

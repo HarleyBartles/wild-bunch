@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { CockpitOverlayFrame } from "../components/CockpitOverlayFrame";
 import { CaseFileSurface } from "../components/CaseFileSurface";
 import { JournalSurface } from "../components/JournalSurface";
@@ -7,9 +6,13 @@ import { useGameSession } from "../state/useGameSession";
 
 export type OverlayKind = "case-file" | "wanted" | "journal" | null;
 
-export function GlobalOverlays() {
+interface GlobalOverlaysProps {
+  openOverlay: OverlayKind;
+  onOpenOverlay: (overlay: OverlayKind) => void;
+}
+
+export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
   const { journal, wantedPosters, loading, error } = useGameSession();
-  const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
 
   return (
     <>
@@ -17,7 +20,7 @@ export function GlobalOverlays() {
         <button
           type="button"
           className="overlay-button"
-          onClick={() => setOpenOverlay("case-file")}
+          onClick={() => onOpenOverlay("case-file")}
           disabled={!journal}
         >
           Case file
@@ -25,18 +28,10 @@ export function GlobalOverlays() {
         <button
           type="button"
           className="overlay-button"
-          onClick={() => setOpenOverlay("wanted")}
+          onClick={() => onOpenOverlay("wanted")}
           disabled={wantedPosters.length === 0}
         >
           Wanted
-        </button>
-        <button
-          type="button"
-          className="overlay-button"
-          onClick={() => setOpenOverlay("journal")}
-          disabled={!journal && !loading}
-        >
-          Journal
         </button>
       </div>
 
@@ -45,7 +40,7 @@ export function GlobalOverlays() {
         eyebrow="Investigation"
         title="Case file"
         description="Clues, suspects, and evidence."
-        onClose={() => setOpenOverlay(null)}
+        onClose={() => onOpenOverlay(null)}
       >
         <CaseFileSurface journal={journal} loading={loading} error={error} />
       </CockpitOverlayFrame>
@@ -55,7 +50,7 @@ export function GlobalOverlays() {
         eyebrow="Sheriff Office"
         title="Wanted posters"
         description="Posters read from town notice boards."
-        onClose={() => setOpenOverlay(null)}
+        onClose={() => onOpenOverlay(null)}
       >
         <WantedPosterSurface wantedPosters={wantedPosters} />
       </CockpitOverlayFrame>
@@ -64,7 +59,7 @@ export function GlobalOverlays() {
         open={openOverlay === "journal"}
         eyebrow="Journal"
         title="Journal"
-        onClose={() => setOpenOverlay(null)}
+        onClose={() => onOpenOverlay(null)}
       >
         <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={journal?.logEntries ?? []} />
       </CockpitOverlayFrame>

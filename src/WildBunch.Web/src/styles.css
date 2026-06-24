@@ -732,6 +732,40 @@ h1 {
   backdrop-filter: blur(18px);
 }
 
+.hud-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.hud-action {
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: transform 150ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out;
+}
+
+.hud-action:hover:not(:disabled),
+.hud-action:focus-visible:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(223, 159, 79, 0.1);
+}
+
+.hud-action:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.hud-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .hud-metric {
   display: grid;
   gap: 2px;
@@ -833,6 +867,15 @@ h1 {
   .hud {
     padding: 8px 14px;
     gap: 6px 12px;
+  }
+
+  .hud-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .hud-action {
+    width: 100%;
   }
 
   .shell-nav {
