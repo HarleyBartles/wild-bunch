@@ -5,6 +5,7 @@
 - Workers branch from current `main` and publish work through a PR.
 - Docs index: `docs/INDEX.md`
 - Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`
+- Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`
 
 ## Branch + PR Workflow
 - Workers branch from current `main`.
