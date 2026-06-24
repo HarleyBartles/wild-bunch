@@ -17,7 +17,9 @@
 - Do NOT change hidden culprit truth, clue flow, wanted-poster flow, wallet, inventory, horse, saddle, travel-day rules, or saloon flows unless source inspection proves a direct heat hanger-on. (BUNCH-85 guardrails)
 - Keep mutation through `GameSession` or the existing aggregate route. (AGENTS.md architecture guardrails)
 - Do NOT rename broad persisted or public identifiers unless preflight proves the migration is contained and safe. (BUNCH-85 guardrails — preflight proves rename is NOT worth it; see Decision A.)
-- Preserve current player-facing behavior except for the one approved wording/semantic clarification in Decision B. (BUNCH-85 guardrails)
+- Preserve current player-facing behavior except for the approved wording/semantic clarifications in Decision B. (BUNCH-85 guardrails)
+- Do NOT claim travel cools heat by distance in this slice. Travel no longer increases heat from route risk; active travel cooling is deferred to a follow-up issue. (Harley correction, 2026-06-24)
+- Trail-event heat increases must be audited: keep heat increases only where the event is plausibly noisy, visible, witnessed, or attention-generating. Private hardship or generic route danger events must not raise lawman heat. (Harley correction, 2026-06-24)
 - Worker environment is PowerShell — no `&&` chaining. (AGENTS.md)
 - Repo-local database artifacts live under repo-root `.local/`, never under `src/`. (AGENTS.md)
 - Dev database drop/recreate is allowed when a snapshot/schema shape changes. (AGENTS.md)
@@ -34,8 +36,8 @@
 
 **A2. GameSession mutation paths that add heat:**
 - `src/WildBunch.Domain/Game/GameSession.cs:1162-1163` — **THE TRAIL-DANGER MECHANIC.** `PrepareTravelDayAdvance` does `var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk); PursuitState.IncreaseHeat(heatIncrease);` — raises heat by route risk (1-3) every travel day. This directly implements "heat = route/trail danger" and contradicts the issue's core design decision.
-- `src/WildBunch.Domain/Game/GameSession.cs:938-940` — `ApplyTrailEvent` raises heat by `trailEvent.HeatIncrease` (from bad-luck trail events: washout, dust storm, spooked horse, hard miles). Defensible as "noisy/visible trail event raises lawman attention" but currently undocumented.
-- `src/WildBunch.Domain/Game/GameSession.cs:1777` (run), `:1858-1860` (fight), `:1954-1956` (bribe) — encounter resolution raises heat by `plan.HeatIncrease`. Defensible as "noisy encounter raises lawman attention" but currently undocumented.
+- `src/WildBunch.Domain/Game/GameSession.cs:938-940` — `ApplyTrailEvent` raises heat by `trailEvent.HeatIncrease` (from bad-luck trail events: washout, dust storm, spooked horse, hard miles). **AUDIT RESULT (Harley correction):** all four bad-luck trail events are private hardship / generic route difficulty — none are noisy, visible, witnessed, or attention-generating. All four drop their `heatIncrease` in this slice. The `ApplyTrailEvent` guard (`if (trailEvent.HeatIncrease != 0)`) stays for future noisy/witnessed trail events.
+- `src/WildBunch.Domain/Game/GameSession.cs:1777` (run), `:1858-1860` (fight), `:1954-1956` (bribe) — encounter resolution raises heat by `plan.HeatIncrease`. **AUDIT RESULT:** these are visible/noisy incidents (running from a rider, fighting, bribing) and stay, framed as noise that draws future lawman attention.
 
 **A3. Travel preview/journey logic implying heat = trail danger:**
 - `src/WildBunch.Domain/Game/GameSession.cs:1162` (above) — route risk drives heat. This is the only place where route risk is wired to heat.
@@ -109,8 +111,10 @@
 **Decision A: Identifier renaming — RECOMMEND KEEP STABLE.**
 `PursuitState`, `PursuitHeat`, `PursuitHeatBand`, `PursuitStateDto`, `pursuitState` component name. "Pursuit" is close to "lawman pursuit pressure" and not actively misleading as trail danger. Renaming `pursuitState` (persisted DB component) would force an EF migration or dev-DB reset with no clear semantic payoff. The issue allows retaining ambiguous identifiers if "explicitly justified as retained compatibility or low-value-to-rename." This plan retains them and justifies via XML docs + ADR. **If Harley wants a rename (e.g. `LawmanPressureState`), say so on the PR and I'll add a rename task with a dev-DB reset.**
 
-**Decision B: Tiny behavior correction — RECOMMEND APPROVE.**
-Remove the per-travel-day route-risk heat increase at `GameSession.cs:1162-1163` (`var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk); PursuitState.IncreaseHeat(heatIncrease);`). This is the one mechanic that directly implements "heat = trail/route danger" and contradicts the issue's core design decision ("Heat is not current route danger" / "Travel should reduce or cool town/lawman pressure rather than imply trail pursuit encounters"). Trail-event and encounter heat increases stay (reframed as noise from visible/noisy events). Travel no longer raises heat just for being on a risky route. This is a tiny, contained mechanic change. **If Harley wants pure-semantic-only (keep the per-day increase, just document it), say so on the PR and I'll drop Task 3 and adjust the affected tests to keep their current values.**
+**Decision B: Tiny behavior corrections — APPROVED by Harley 2026-06-24.**
+1. Remove the per-travel-day route-risk heat increase at `GameSession.cs:1162-1163` (`var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk); PursuitState.IncreaseHeat(heatIncrease);`). Travel no longer raises heat just for being on a risky route. Active travel cooling is deferred to a follow-up issue — this slice does NOT claim travel cools heat by distance.
+2. Remove `heatIncrease` from all four bad-luck trail events (washout, dust-choked outfit, spooked horse, hard miles) in `TrailEventCatalog.cs` and `TravelDayPlanGenerator.Context.cs`. These are private hardship / generic route difficulty, not noisy/visible/witnessed incidents. The `TrailEventHeatIncrease` field stays in `TravelRulesProfile` as a reserved knob for future noisy/witnessed trail events.
+3. Keep encounter run/fight/bribe heat increases — these are visible/noisy incidents that draw future lawman attention.
 
 ---
 
@@ -125,6 +129,8 @@ Remove the per-travel-day route-risk heat increase at `GameSession.cs:1162-1163`
 - `src/WildBunch.Domain/Travel/TravelRulesProfile.cs` — add doc comments to heat-increase fields.
 - `src/WildBunch.Domain/Travel/JourneyEncounterResolutionEngine.cs` — add doc comment on `PursuitHeatBand` effect.
 - `src/WildBunch.Domain/Game/GameSession.cs` — add doc comments on heat mutation sites; remove per-day risk increase (Task 3).
+- `src/WildBunch.Domain/Travel/TrailEventCatalog.cs` — remove `heatIncrease` from all bad-luck trail events (Task 3).
+- `src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs` — remove `heatIncrease` from all bad-luck encounter candidates (Task 3).
 - `src/WildBunch.Web/src/shell/Hud.tsx` — change "Heat" label to "Lawman heat".
 - `src/WildBunch.Web/src/components/FieldReportPanel.tsx` — change "Heat" label to "Lawman heat".
 - `src/WildBunch.Web/src/components/travel/TravelDiaryDayCard.tsx` — change "Heat" labels to "Lawman heat" (Δ and current).
@@ -155,11 +161,11 @@ Remove the per-travel-day route-risk heat increase at `GameSession.cs:1162-1163`
 - Modify: `docs/adr/README.md:94` (add to backfill list)
 
 **Interfaces:**
-- Produces: ADR-0029 documenting the heat = future lawman pressure decision, the retained identifier justification, and the per-day-risk-increase removal.
+- Produces: ADR-0029 documenting the heat = future lawman pressure decision, the retained identifier justification, the per-day-risk-increase removal, and the trail-event heat audit.
 
 - [ ] **Step 1: Write ADR-0029**
 
-Create `docs/adr/ADR-0029-heat-is-future-lawman-pressure-not-trail-danger.md` with: Status `live` (dated 2026-06-24), Decision type `gameplay` + `architecture`, Context (current heat model behaved as trail danger via per-day route-risk increase; no ADR defined heat's meaning), Decision (heat = future lawman pursuit pressure generated by noisy/visible behavior and cooled by distance; remove per-day route-risk heat increase; retain `PursuitState`/`PursuitHeat`/`PursuitHeatBand` identifiers as low-value-to-rename with clarifying docs; trail-event/encounter heat increases remain as noise from visible events; lawman system stays a seam), Consequences (travel no longer raises heat for route danger; characterization tests updated), References (BUNCH-85, ADR-0013, ADR-0020, ADR-0028).
+Create `docs/adr/ADR-0029-heat-is-future-lawman-pressure-not-trail-danger.md` with: Status `live` (dated 2026-06-24), Decision type `gameplay` + `architecture`, Context (current heat model behaved as trail danger via per-day route-risk increase and private-hardship trail-event heat increases; no ADR defined heat's meaning), Decision (heat = future lawman pursuit pressure generated by noisy/visible/witnessed behavior; travel no longer increases heat from route risk — active travel cooling is deferred to a follow-up issue and is NOT claimed in this slice; remove per-day route-risk heat increase; remove heat increases from private-hardship trail events (washout, dust storm, spooked horse, hard miles) since they are not noisy/visible/witnessed; retain encounter run/fight/bribe heat increases as visible/noisy incidents; retain `PursuitState`/`PursuitHeat`/`PursuitHeatBand` identifiers as low-value-to-rename with clarifying docs; `TrailEventHeatIncrease` field stays as a reserved knob for future noisy/witnessed trail events; lawman system stays a seam), Consequences (travel no longer raises heat for route danger; private-hardship trail events no longer raise heat; characterization tests updated), References (BUNCH-85, ADR-0013, ADR-0020, ADR-0028).
 
 - [ ] **Step 2: Add ADR-0029 to `docs/adr/README.md`**
 
@@ -244,21 +250,24 @@ git commit -m "BUNCH-85: document heat as future lawman pressure (domain + event
 
 ---
 
-## Task 3: Remove per-travel-day route-risk heat increase (Decision B — requires approval)
+## Task 3: Remove per-travel-day route-risk heat increase + trail-event heat from private-hardship events (Decision B — APPROVED)
 
 **Files:**
 - Modify: `src/WildBunch.Domain/Game/GameSession.cs:1159-1173` (`PrepareTravelDayAdvance`)
-- Modify: `src/WildBunch.Domain/Game/GameSession.cs` — add doc comments on remaining heat mutation sites (trail event, encounter run/fight/bribe).
+- Modify: `src/WildBunch.Domain/Game/GameSession.cs` — add doc comments on remaining heat mutation sites (encounter run/fight/bribe only; trail-event site stays as a guard for future noisy events).
+- Modify: `src/WildBunch.Domain/Travel/TrailEventCatalog.cs:43-72` — remove `heatIncrease` from all 3 bad-luck trail events.
+- Modify: `src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs:639-705` — remove `heatIncrease` from all 4 bad-luck encounter candidates.
 
 **Interfaces:**
 - Consumes: ADR-0029 (Task 1).
-- Produces: travel no longer raises heat for route risk; `TravelDayAdvanceState.PursuitHeat` reflects only pre-existing heat (trail events/encounters still raise heat at their own sites).
-
-**APPROVAL GATE:** This task implements Decision B. Do NOT execute until Harley approves on the PR. If Harley chooses pure-semantic-only, skip this task and adjust Task 5 to keep current heat values.
+- Produces: travel no longer raises heat for route risk; bad-luck trail events (private hardship) no longer raise heat; encounter run/fight/bribe heat stays; `TravelDayAdvanceState.PursuitHeat` reflects only pre-existing heat.
 
 - [ ] **Step 1: Write the failing guardrail test**
 
-Create `tests/WildBunch.Domain.Tests/HeatSemanticGuardrailTests.cs` with a test that starts a session, begins a journey on a moderate-risk route, advances one quiet travel day (no trail event, no encounter), and asserts `session.PursuitState.Heat == 0` (heat did NOT rise from route risk alone). Also assert that a trail event that carries `HeatIncrease` still raises heat (preserved behavior).
+Create `tests/WildBunch.Domain.Tests/HeatSemanticGuardrailTests.cs` with tests that:
+(a) Start a session, begin a journey on a moderate-risk route, advance one quiet travel day (no trail event, no encounter), and assert `session.PursuitState.Heat == 0` (heat did NOT rise from route risk alone).
+(b) Assert that a bad-luck trail event (e.g. washout) does NOT raise heat (private hardship).
+(c) Assert that encounter run/fight/bribe still raises heat (visible/noisy incident — preserved behavior).
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -272,22 +281,28 @@ In `src/WildBunch.Domain/Game/GameSession.cs` `PrepareTravelDayAdvance`, remove:
 var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
 PursuitState.IncreaseHeat(heatIncrease);
 ```
-Update `TravelDayAdvanceState` construction to pass `PursuitState.Heat` (current heat, unchanged by the day advance itself). Trail-event and encounter heat increases remain at their own sites.
+`TravelDayAdvanceState` construction at line 1173 already passes `PursuitState.Heat` — with the increase removed, this is now the unchanged heat. No other change needed.
 
-- [ ] **Step 4: Add doc comments on remaining heat mutation sites**
+- [ ] **Step 4: Remove heatIncrease from all bad-luck trail events**
 
-At `GameSession.cs:938-940` (trail event), `:1777` (run), `:1858-1860` (fight), `:1954-1956` (bribe): add a one-line comment noting these raise heat because the event/encounter is noisy/visible and draws future lawman attention (ADR-0029), not because of trail danger.
+In `src/WildBunch.Domain/Travel/TrailEventCatalog.cs`, remove `heatIncrease: travelRulesProfile.TrailEventHeatIncrease` from the 3 `CreateBadLuck` calls (lines 48, 61, 71). The `heatIncrease` parameter defaults to 0 in `CreateBadLuck`.
 
-- [ ] **Step 5: Run guardrail test to verify it passes**
+In `src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs`, remove `heatIncrease: travelRulesProfile.TrailEventHeatIncrease` from the 4 `CreateBadLuck` calls in `CreateUnluckyEncounter` (lines 650, 669, 685, 701).
+
+- [ ] **Step 5: Add doc comments on remaining heat mutation sites**
+
+At `GameSession.cs:1777` (run), `:1858-1860` (fight), `:1954-1956` (bribe): add a one-line comment noting these raise heat because the encounter is a visible/noisy incident that draws future lawman attention (ADR-0029). At `GameSession.cs:938-940` (trail event guard): add a comment noting this guard stays for future noisy/witnessed trail events but current bad-luck events carry `HeatIncrease=0`.
+
+- [ ] **Step 6: Run guardrail test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~HeatSemanticGuardrailTests"`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```powershell
 git add src/WildBunch.Domain tests/WildBunch.Domain.Tests/HeatSemanticGuardrailTests.cs
-git commit -m "BUNCH-85: remove per-day route-risk heat increase (heat is not trail danger)"
+git commit -m "BUNCH-85: remove route-risk heat + private-hardship trail-event heat (heat is not trail danger)"
 ```
 
 ---
