@@ -30,11 +30,33 @@ internal static partial class TravelDayPlanGenerator
             return new TravelDayPlanState(context.DayNumber, Array.Empty<TravelDayEncounterState>(), CurrentEncounterIndex: 0, IsComplete: true);
         }
 
+        // Boring mode suppresses foe/npc encounters (which interrupt the journey
+        // and require player choices). Lucky/unlucky/quiet/resource/environmental
+        // categories still fire because they produce trail events and resource
+        // outcomes that are part of the route experience, not adversarial
+        // interruptions. This makes Boring mode a real game mechanic: a
+        // peaceful/test play mode where the trail still has weather and luck
+        // but no lawman/foe pressure. See ADR-0029.
+        var boringMode = context.Entropy == AdventureRandomnessPolicy.Boring;
+
+        if (encounterCount == 0)
+        {
+            return new TravelDayPlanState(context.DayNumber, Array.Empty<TravelDayEncounterState>(), CurrentEncounterIndex: 0, IsComplete: true);
+        }
+
         var encounters = new List<TravelDayEncounterState>(encounterCount);
         for (var slot = 0; slot < encounterCount; slot++)
         {
             var slotSeed = ComposeSeed(baseSeed, $"slot:{slot}");
             var category = SelectCategory(context, Roll(slotSeed, "category"));
+
+            // In Boring mode, replace foe/npc with quiet so the journey
+            // never interrupts from adversarial encounters.
+            if (boringMode && category is TravelDayEncounterCategory.Foe or TravelDayEncounterCategory.Npc)
+            {
+                category = TravelDayEncounterCategory.Quiet;
+            }
+
             encounters.Add(CreateEncounter(context, rules, context.DayNumber, slot, category, slotSeed));
         }
 

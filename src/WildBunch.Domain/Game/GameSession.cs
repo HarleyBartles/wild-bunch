@@ -1492,7 +1492,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             recentEncounterCategories,
             HasHorse: horseState is not null && !horseState.IsDeadFor(TravelRules),
             TravelRandomness.Mode,
-            TravelRandomness.Salt);
+            TravelRandomness.Salt,
+            Entropy);
     }
 
     private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)

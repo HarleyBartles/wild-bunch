@@ -73,7 +73,8 @@ public sealed record TravelDayGenerationContext(
     IReadOnlyList<TravelDayEncounterCategory> RecentEncounterCategories,
     bool HasHorse,
     TravelRandomnessMode RandomnessMode,
-    string RandomnessSalt)
+    string RandomnessSalt,
+    AdventureRandomnessPolicy Entropy = AdventureRandomnessPolicy.Standard)
 {
     public bool WaterSecure => WaterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
 

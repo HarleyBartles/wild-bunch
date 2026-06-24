@@ -2,7 +2,7 @@ using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
 
-internal enum SeedWorldVariant
+public enum SeedWorldVariant
 {
     Canonical = 0,
     Frontier = 1,
@@ -74,7 +74,9 @@ internal static class SeedWorldCatalog
         new("holloway", "Holloway", TownServices.Doctor, TownServices.Doctor | TownServices.NoticeBoard, TownServices.Doctor),
         new("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor, TownServices.Supplies | TownServices.Doctor, TownServices.Supplies | TownServices.Doctor | TownServices.NoticeBoard),
         new("dryfork", "Dry Fork", TownServices.None, TownServices.None, TownServices.None),
-        new("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph, TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph, TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph)
+        new("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph, TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph, TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph),
+        new("hardpan", "Hardpan", TownServices.None, TownServices.None, TownServices.None),
+        new("openpass", "Open Pass", TownServices.None, TownServices.None, TownServices.None)
     ];
 
     private static readonly SeedTrailDefinition[] Trails =
@@ -85,7 +87,9 @@ internal static class SeedWorldCatalog
         new("trail-red-dry", "redmesa", "dryfork", TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 5m)),
         new("trail-hollow-sage", "holloway", "sagewell", TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.River, 3m)),
         new("trail-sage-ember", "sagewell", "emberfall", TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Mountains, WaterFeature.Spring, 5m)),
-        new("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 5m))
+        new("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 5m)),
+        new("trail-pine-hardpan", "pinecross", "hardpan", TrailRisk.Low, new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 3m)),
+        new("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m))
     ];
 
     public static World CreateWorld(SeedWorldVariant variant)

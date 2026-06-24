@@ -32,8 +32,8 @@ public sealed class SeededNewGameFactoryTests
         Assert.True(capabilities.GunfightCapable);
         Assert.True(capabilities.RevolverUsable);
         Assert.False(capabilities.RifleUsable);
-        Assert.Equal(6, session.World.Towns.Count);
-        Assert.Equal(7, session.World.Trails.Count);
+        Assert.Equal(8, session.World.Towns.Count);
+        Assert.Equal(9, session.World.Trails.Count);
         Assert.Contains(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("redmesa")));
         Assert.DoesNotContain(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("dryfork")));
         Assert.Equal(7, session.CaseFile.Suspects.Count);

@@ -64,6 +64,7 @@
 - Travel, journey, and encounter DTO mapping should live in `TravelMapper`; `GameSessionMapper` should delegate rather than duplicate that shape.
 - Wallet and Inventory are concrete player state; avoid generic supplies.
 - Hidden culprit truth remains internal.
+- The culprit is always a gang member. Any gang member can be the culprit. Which one is encoded in the UUID seed. Do not mark gang members as culprit-ineligible unless they are associated characters who are not part of the gang.
 - Clue, journal, and wanted-poster flows stay stable unless directly in scope.
 - Horse and saddle are separate inventory concepts.
 - Mounted travel requires a living/non-lame horse plus saddle.
@@ -89,6 +90,20 @@
 - No opportunistic broad refactors.
 - No unrelated feature work.
 - If a needed design decision is missing, return `BLOCKED` or `AMBER` rather than inventing broad architecture.
+
+## UUID Seed Codec
+- The game-start UUID is the single encoding of all starting world state: towns, trails, world variant, difficulty, entropy, loadout, cash, culprit identity, and later additions (gang members, warrants, etc.).
+- `StartingWorldDescriptorResolver.Resolve(Guid)` decodes UUID → world descriptor. `StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor)` encodes world descriptor → UUID via round-trip search.
+- Both directions must stay in sync. When you add a new field to the starting world state (new town, new trail, new loadout option, new difficulty, new entropy level, new world variant, new case-file parameter, anything that changes what a player starts with):
+  1. Add the field to `StartingWorldDescriptor` and the codec in `GameSetupSeedCodec.cs`.
+  2. Add the field to the descriptor signature in `StartingWorldDescriptorSeedMixer.CreateDescriptorSignature` so `CreateRepresentativeSeedCode` can round-trip it.
+  3. Update `SeedWorldCatalog` if the field is a new town or trail.
+  4. Update `SeedWorldBuilderTests` snapshot assertions to include the new town/trail/field.
+  5. Update `SeededNewGameFactoryTests` count assertions if town/trail counts changed.
+  6. Run the round-trip guardrail test to verify the codec still resolves both ways.
+- Do NOT store UUIDs in test fixtures or libraries. Store descriptors and derive UUIDs on the fly via `CreateRepresentativeSeedCode`. Stored UUIDs go stale when the codec evolves; descriptors are compile-time checked.
+- Do NOT create test sessions by bypassing the seed system with hand-built worlds unless the test is specifically about resource mechanics (canteen math, horse exhaustion) and uses Boring mode to suppress encounters. For encounter, trail-event, and journey tests, go through the seed system.
+- The UUID has 128 bits of bandwidth. As fields are added, fewer UUIDs map to each descriptor shape — this is expected and fine. `CreateRepresentativeSeedCode` searches until it finds a match.
 
 ## Modular Excitement Doctrine
 - Modular player excitement is achieved through boring implementation.
