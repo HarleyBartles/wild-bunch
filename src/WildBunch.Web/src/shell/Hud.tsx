@@ -67,7 +67,6 @@ export function Hud({ onOpenJournal }: HudProps) {
           type="button"
           className="hud-action"
           onClick={onOpenJournal}
-          disabled={!session && cockpitMode !== "travel"}
         >
           Journal
         </button>

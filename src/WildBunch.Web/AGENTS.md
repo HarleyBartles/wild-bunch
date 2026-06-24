@@ -1,5 +1,5 @@
 # Wild Bunch Web
 
-Use the design note at [`docs/journal-ui-design-notes.md`](docs/journal-ui-design-notes.md) when touching the Journal surface, HUD placement, or related reference overlays.
+Use the design note at [`docs/play-surface-ui-guidance.md`](docs/play-surface-ui-guidance.md) when touching player-facing game surfaces, HUD placement, or related reference overlays.
 
-Keep the Journal as an in-world player surface, not a cockpit dashboard. If a UI label, counter, or callout does not help the player read the page as a journal, cut it.
+Keep player-facing game surfaces as in-world, player-usable surfaces, not cockpit dashboards or product chrome. If a label, counter, or callout does not help the player read the surface, cut it.
