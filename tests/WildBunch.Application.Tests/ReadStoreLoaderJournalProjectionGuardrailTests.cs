@@ -39,12 +39,12 @@ public sealed class ReadStoreLoaderJournalProjectionGuardrailTests
 
         // After BUNCH-84 the read-store loader derives LogEntries from StoredEvents via
         // JournalLogProjector and must not query the GameSessionLogEntries table.
-        // Check for actual EF query references (dbContext.GameSessionLogEntries), not just
-        // the string in comments.
-        Assert.DoesNotMatch(@"dbContext\.GameSessionLogEntries", source);
+        // Literal source-string check (not regex) so the guardrail reliably catches the
+        // exact EF query reference if it is reintroduced.
+        Assert.DoesNotContain("dbContext.GameSessionLogEntries", source);
         // It must reference the projector and StoredEvents to prove the switch landed.
-        Assert.Matches("JournalLogProjector", source);
-        Assert.Matches("StoredEvents", source);
+        Assert.Contains("JournalLogProjector", source);
+        Assert.Contains("StoredEvents", source);
     }
 
     [Fact]
@@ -60,6 +60,7 @@ public sealed class ReadStoreLoaderJournalProjectionGuardrailTests
         // as bounded compatibility surface (deferred to the write-path-removal follow-up).
         // If this assertion fails, the command-load compatibility read was removed outside
         // BUNCH-84 scope — investigate before updating this test.
-        Assert.Matches("GameSessionLogEntries", source);
+        // Literal source-string check (not regex) for consistency with the read-loader guardrail.
+        Assert.Contains("GameSessionLogEntries", source);
     }
 }
