@@ -68,6 +68,43 @@ public sealed class DiaryProjector : IDomainEventProjector<DiaryProjection>
                     // No diary entry from this event — log entries come from delegated
                     // WantedSuspectConfronted/SheriffTurnInSettled events.
                     break;
+
+                case JourneyStarted js:
+                    if (!string.IsNullOrEmpty(js.DiaryMessage))
+                        entries.Add(new DiaryEntry(day, turn, js.DiaryMessage));
+                    break;
+
+                case TravelDayAdvanced tda:
+                    day = tda.Day;
+                    if (!string.IsNullOrEmpty(tda.DiaryMessage))
+                        entries.Add(new DiaryEntry(day, turn, tda.DiaryMessage));
+                    if (!string.IsNullOrEmpty(tda.HorseLostMessage))
+                        entries.Add(new DiaryEntry(day, turn, tda.HorseLostMessage));
+                    break;
+
+                case TrailEventApplied tea:
+                    if (!string.IsNullOrEmpty(tea.DiaryMessage))
+                        entries.Add(new DiaryEntry(day, turn, tea.DiaryMessage));
+                    if (!string.IsNullOrEmpty(tea.HorseLostMessage))
+                        entries.Add(new DiaryEntry(day, turn, tea.HorseLostMessage));
+                    break;
+
+                case JourneyEncounterResolved jer:
+                    if (!string.IsNullOrEmpty(jer.DiaryMessage))
+                        entries.Add(new DiaryEntry(day, turn, jer.DiaryMessage));
+                    break;
+
+                case JourneyCompleted jc:
+                    currentTownId = jc.DestinationTownId;
+                    currentTownName = jc.DestinationTownName;
+                    if (!string.IsNullOrEmpty(jc.DiaryMessage))
+                        entries.Add(new DiaryEntry(day, turn, jc.DiaryMessage));
+                    break;
+
+                case JourneyArrivalAcknowledged jaa:
+                    if (!string.IsNullOrEmpty(jaa.DiaryMessage))
+                        entries.Add(new DiaryEntry(day, turn, jaa.DiaryMessage));
+                    break;
             }
         }
 

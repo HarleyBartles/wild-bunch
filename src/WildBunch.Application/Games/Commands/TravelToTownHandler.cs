@@ -2,47 +2,61 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.Application.Projections;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Application.Games.Commands;
 
-public sealed class TravelToTownHandler
+public sealed class TravelToTownHandler : GameSessionCommandHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
-    private readonly IGameSessionUnitOfWork _gameSessionUnitOfWork;
     private readonly TravelResolver _travelResolver;
+    private readonly HudProjector _hudProjector;
+    private readonly DiaryProjector _diaryProjector;
 
     public TravelToTownHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
-        TravelResolver travelResolver)
+        TravelResolver travelResolver,
+        HudProjector hudProjector,
+        DiaryProjector diaryProjector)
+        : base(gameSessionRepository, gameSessionUnitOfWork)
     {
-        _gameSessionRepository = gameSessionRepository;
-        _gameSessionUnitOfWork = gameSessionUnitOfWork;
         _travelResolver = travelResolver;
+        _hudProjector = hudProjector;
+        _diaryProjector = diaryProjector;
     }
 
     public async Task<GameTurnResultDto> HandleAsync(TravelToTownCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var sessionId = new WildBunch.Domain.Game.GameSessionId(command.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        var destinationTownId = new TownId(command.DestinationTownId);
-        var previewResult = _travelResolver.PreviewJourney(
-            session.World,
-            session.Player.CurrentTownId,
-            destinationTownId,
-            session.Player.Inventory,
-            session.TravelRules);
+        var sessionId = new GameSessionId(command.GameSessionId);
 
-        if (previewResult.Success && previewResult.Preview is not null)
+        // Preview generation is INSIDE the retry lambda because it depends on
+        // mutable session state (inventory, current town). On retry, the session
+        // is reloaded and the preview must be regenerated with fresh state.
+        // See ADR-0028 and BUNCH-83 Phase 3 Task 4.
+        var result = await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
-            var startResult = session.StartJourney(previewResult.Preview);
+            var destinationTownId = new TownId(command.DestinationTownId);
+            var previewResult = _travelResolver.PreviewJourney(
+                session.World,
+                session.Player.CurrentTownId,
+                destinationTownId,
+                session.Player.Inventory,
+                session.TravelRules);
 
-            await _gameSessionRepository.StoreAsync(session, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await _gameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+            if (!previewResult.Success || previewResult.Preview is null)
+            {
+                return GameTurnResultFactory.Create(
+                    previewResult.Success,
+                    previewResult.Message,
+                    session);
+            }
+
+            var startResult = session.StartJourney(previewResult.Preview);
 
             return GameTurnResultFactory.Create(
                 startResult.Success,
@@ -50,11 +64,20 @@ public sealed class TravelToTownHandler
                 session,
                 startResult.Status,
                 startResult.Journey);
-        }
+        }, cancellationToken).ConfigureAwait(false);
 
-        return GameTurnResultFactory.Create(
-            previewResult.Success,
-            previewResult.Message,
-            session);
+        var events = await GameSessionRepository.GetEventStreamAsync(sessionId, 0, cancellationToken)
+            .ConfigureAwait(false);
+        var hud = _hudProjector.Project(events) with { SessionId = command.GameSessionId };
+        var diary = _diaryProjector.Project(events) with { SessionId = command.GameSessionId };
+
+        return result with
+        {
+            CurrentSession = result.CurrentSession with
+            {
+                HudProjection = hud,
+                DiaryProjection = diary
+            }
+        };
     }
 }

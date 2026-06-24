@@ -138,6 +138,7 @@ public sealed class InvestigationEventSourcingTests
     public void InvestigationFailedDoesNotProduceEvent()
     {
         var session = TestSessionFactory.CreateWithActiveJourney();
+        session.MarkEventsCommitted();
 
         var result = session.GatherLocalGossip();
 
