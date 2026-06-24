@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using WildBunch.Application.Projections;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 using WildBunch.Domain.Travel;
@@ -116,12 +118,23 @@ internal static class GameSessionReadStoreLoader
             .ToDictionaryAsync(component => component.ComponentName, cancellationToken)
             .ConfigureAwait(false);
 
-        var logEntries = await dbContext.GameSessionLogEntries.AsNoTracking()
-            .Where(entry => entry.SessionId == id.Value)
-            .OrderBy(entry => entry.Sequence)
-            .Select(entry => new GameLogEntry(entry.Kind, entry.Message, entry.Day, entry.Turn))
+        // BUNCH-84: derive LogEntries from the event stream via JournalLogProjector
+        // instead of reading the GameSessionLogEntries table. The table write
+        // (SyncLogEntriesAsync) and the command-load table read
+        // (EfGameSessionRepository.LoadStoreAsync) remain as bounded compatibility
+        // surface until AddLogEntry is removed from Apply in a follow-up.
+        var storedEvents = await dbContext.StoredEvents.AsNoTracking()
+            .Where(e => e.StreamId == id.Value)
+            .OrderBy(e => e.Sequence)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var domainEvents = new IDomainEvent[storedEvents.Length];
+        for (var i = 0; i < storedEvents.Length; i++)
+        {
+            domainEvents[i] = serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
+        }
+        var logEntries = new JournalLogProjector().Project(domainEvents);
 
         var diaryDays = await dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
