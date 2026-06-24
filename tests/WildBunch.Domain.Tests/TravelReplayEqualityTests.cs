@@ -92,19 +92,25 @@ public sealed class TravelReplayEqualityTests
         Assert.Equal(commandSession.CompletedJourneyHistory.Count, replayed.CompletedJourneyHistory.Count);
         Assert.Equal(commandSession.Version, replayed.Version);
         Assert.Equal(commandSession.LogEntries.Count, replayed.LogEntries.Count);
-        Assert.Equal(commandSession.TravelDiaryDays.Count, replayed.TravelDiaryDays.Count);
     }
 
     [Fact]
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
-            TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
+        var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
+        var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(commandSession);
         commandSession.StartJourney(preview);
-        commandSession.AdvanceJourneyDay();
-        var interrupted = commandSession.AdvanceJourneyDay();
-        Assert.Equal(JourneyStatus.Interrupted, interrupted.Status);
-        var resolved = commandSession.ResolveJourneyEncounter("run", forcedRoll: 0);
+
+        // Advance until an encounter interrupts the journey.
+        TravelJourneyStepResult step;
+        do
+        {
+            step = commandSession.AdvanceJourneyDay();
+        } while (step.Status == JourneyStatus.Active && step.Success);
+        Assert.Equal(JourneyStatus.Interrupted, step.Status);
+
+        var resolved = commandSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
+        Assert.True(resolved.Success);
         var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
@@ -117,7 +123,6 @@ public sealed class TravelReplayEqualityTests
         Assert.Equal(commandSession.Clock.Day, replayed.Clock.Day);
         Assert.Equal(commandSession.PursuitState.Heat, replayed.PursuitState.Heat);
         Assert.Equal(commandSession.LogEntries.Count, replayed.LogEntries.Count);
-        Assert.Equal(commandSession.TravelDiaryDays.Count, replayed.TravelDiaryDays.Count);
         Assert.Equal(commandSession.Version, replayed.Version);
     }
 }

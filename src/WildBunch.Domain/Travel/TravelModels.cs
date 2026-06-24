@@ -18,7 +18,8 @@ public sealed record JourneyEncounterResolutionResult(
     bool SessionChanged,
     JourneyStatus Status,
     string Message,
-    TravelJourneySnapshot? Journey = null)
+    TravelJourneySnapshot? Journey = null,
+    IReadOnlyList<string>? AdditionalDiaryMessages = null)
 {
     public static JourneyEncounterResolutionResult Failed(string message, JourneyStatus status, TravelJourneySnapshot? journey = null)
         => new(false, false, status, message, journey);

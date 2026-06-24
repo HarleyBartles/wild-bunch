@@ -44,7 +44,7 @@ internal static class TravelTestFactory
         CreateEasyShortJourneyWithGameStarted()
     {
         var (session, preview) = CreateEasyShortJourney();
-        var gameStarted = RecaptureGameStarted(session);
+        var gameStarted = RecaptureGameStartedForReplay(session);
         return (session, preview, gameStarted);
     }
 
@@ -56,7 +56,7 @@ internal static class TravelTestFactory
         CreateSixDayQuietJourneyWithGameStarted()
     {
         var (session, preview) = CreateSixDayQuietJourney();
-        var gameStarted = RecaptureGameStarted(session);
+        var gameStarted = RecaptureGameStartedForReplay(session);
         return (session, preview, gameStarted);
     }
 
@@ -66,7 +66,7 @@ internal static class TravelTestFactory
     /// The factory sessions already commit GameStarted, so replay tests must prepend it
     /// to the event stream manually.
     /// </summary>
-    private static GameStarted RecaptureGameStarted(GameSession session)
+    internal static GameStarted RecaptureGameStartedForReplay(GameSession session)
     {
         var seed = GameSession.StartNew(
             session.Player.Name,

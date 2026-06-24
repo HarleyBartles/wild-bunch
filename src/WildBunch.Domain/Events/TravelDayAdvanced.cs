@@ -9,6 +9,8 @@ namespace WildBunch.Domain.Events;
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it.
 /// HealthDelta is ADDITIVE — Apply adds to player health.
 /// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it.
+/// AdditionalDiaryMessages carries narration-only encounter messages that don't
+/// produce a typed TrailEventApplied event. Apply logs each via RecordTravelUpdate.
 /// </summary>
 public sealed record TravelDayAdvanced : IDomainEvent
 {
@@ -19,4 +21,5 @@ public sealed record TravelDayAdvanced : IDomainEvent
     public required TravelDayOutcome DayOutcome { get; init; }
     public required string DiaryMessage { get; init; }
     public required string HorseLostMessage { get; init; }
+    public IReadOnlyList<string> AdditionalDiaryMessages { get; init; } = [];
 }

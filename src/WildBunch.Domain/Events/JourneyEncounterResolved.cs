@@ -11,6 +11,8 @@ namespace WildBunch.Domain.Events;
 /// PlayerHealth and WalletCash are ABSOLUTE — Apply sets them from the event.
 /// AmmoSpent and StolenItem are ADDITIVE — Apply applies them to the player.
 /// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it.
+/// AdditionalDiaryMessages carries narration-only encounter messages from the
+/// continued day plan after resolution. Apply logs each via RecordTravelUpdate.
 /// </summary>
 public sealed record JourneyEncounterResolved : IDomainEvent
 {
@@ -29,4 +31,5 @@ public sealed record JourneyEncounterResolved : IDomainEvent
     public required string DiaryMessage { get; init; }
     public required bool DayCompleted { get; init; }
     public required bool JourneyCompleted { get; init; }
+    public IReadOnlyList<string> AdditionalDiaryMessages { get; init; } = [];
 }
