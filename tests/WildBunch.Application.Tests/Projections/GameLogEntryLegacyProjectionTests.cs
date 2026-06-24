@@ -106,14 +106,14 @@ public sealed class GameLogEntryLegacyProjectionTests
 
     /// <summary>
     /// Projector behavior: JournalLogProjector reproduces the legacy GameLogEntry
-    /// sequence for a mixed event stream, and (unlike DiaryProjector) adds no entry
-    /// for StoreItemPurchased — matching the legacy Apply(StoreItemPurchased) which
-    /// records no log entry. This is a projector behavior test, not a table-removal
+    /// sequence for a mixed event stream, including a Purchase entry for
+    /// StoreItemPurchased — matching Apply(StoreItemPurchased) which records the
+    /// purchase log entry. This is a projector behavior test, not a table-removal
     /// proof; the read-path switch is proven by
     /// ReadStoreLoaderJournalProjectionGuardrailTests.
     /// </summary>
     [Fact]
-    public void JournalLogProjector_ReproducesLegacyLogSequence_AndSkipsPurchaseEntries()
+    public void JournalLogProjector_ReproducesLegacyLogSequence_IncludesPurchaseEntries()
     {
         var projector = new JournalLogProjector();
         var events = new IDomainEvent[]
@@ -137,13 +137,17 @@ public sealed class GameLogEntryLegacyProjectionTests
 
         var log = projector.Project(events);
 
-        // Opening + case update only; StoreItemPurchased adds no legacy log entry.
-        Assert.Equal(2, log.Count);
+        // Opening + case update + purchase entry.
+        Assert.Equal(3, log.Count);
         Assert.Equal(GameLogEntryKind.Opening, log[0].Kind);
         Assert.Equal("The hunt begins in Pinecross.", log[0].Message);
         Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
         Assert.Equal("A public lead is noted.", log[1].Message);
         Assert.Equal(1, log[1].Day);
         Assert.Equal(1, log[1].Turn);
+        Assert.Equal(GameLogEntryKind.Purchase, log[2].Kind);
+        Assert.Equal("Purchased Trail Biscuits for $2.00.", log[2].Message);
+        Assert.Equal(1, log[2].Day);
+        Assert.Equal(1, log[2].Turn);
     }
 }
