@@ -49,7 +49,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(2, session.Clock.Day);
-        Assert.Equal(3, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -57,6 +57,10 @@ public sealed class TravelEncounterResolutionCharacterizationTests
     {
         var (session, preview) = TravelTestFactory.CreateHighRiskJourney();
         session.StartJourney(preview);
+        // Simulate prior noisy behavior (e.g. a fight in the previous town) so
+        // the PursuitHeatBand is Hot and the day-plan generator produces a Foe
+        // encounter. Heat from travel alone was removed in BUNCH-85 / ADR-0029.
+        session.PursuitState.IncreaseHeat(3);
         AdvanceUntilInterrupted(session);
 
         var result = session.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 99UL);
@@ -72,6 +76,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Equal(0, session.Journey.PendingEncounter.HiddenState!.Annoyance);
         Assert.Equal(1250, session.Player.Health);
         Assert.Equal(25m, session.Player.Wallet.Cash);
+        // 3 (simulated prior heat) + 1 (failed mounted run on Easy: EncounterRunMountedHeatIncrease + 1 = 0 + 1)
         Assert.Equal(4, session.PursuitState.Heat);
     }
 
@@ -94,7 +99,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(11m, session.Player.Wallet.Cash);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(3, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -102,6 +107,11 @@ public sealed class TravelEncounterResolutionCharacterizationTests
     {
         var (session, preview) = TravelTestFactory.CreateHighRiskJourney();
         session.StartJourney(preview);
+        // Simulate prior noisy behavior (e.g. a fight in the previous town) so
+        // the PursuitHeatBand is Hot and the day-plan generator produces a Foe
+        // encounter with the original bribe threshold. Heat from travel alone
+        // was removed in BUNCH-85 / ADR-0029.
+        session.PursuitState.IncreaseHeat(3);
         AdvanceUntilInterrupted(session);
 
         // First bribe attempt — non-insulting amount (5m > 4.9m insult threshold)

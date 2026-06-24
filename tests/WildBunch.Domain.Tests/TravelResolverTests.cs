@@ -135,6 +135,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(2);
 
         var result = session.AdvanceJourneyDay();
 
@@ -153,6 +154,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(2);
 
         var result = session.AdvanceJourneyDay();
 
@@ -193,6 +195,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("silvercreek"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -271,6 +274,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -291,6 +295,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryspring"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -344,6 +349,7 @@ public sealed class TravelResolverTests
         Assert.Contains(preview.Warnings, warning => warning.Contains("poor grazing", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(preview.Warnings, warning => warning.Contains("two canteen charges per day", StringComparison.OrdinalIgnoreCase));
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -510,6 +516,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(3);
 
         var result = session.AdvanceJourneyDay();
 
@@ -555,6 +562,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(3);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
         session.Journey!.MarkInterrupted(CreateFoeEncounter());
@@ -585,6 +593,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(3);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
         session.Journey!.MarkInterrupted(CreateFoeEncounter());
@@ -627,6 +636,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat(3);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
         session.Journey!.MarkInterrupted(CreateFoeEncounter());

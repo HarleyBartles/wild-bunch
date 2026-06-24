@@ -41,15 +41,17 @@ public sealed class TravelResourceTrackingCharacterizationTests
     }
 
     [Fact]
-    public void AdvanceJourneyDay_IncreasesPursuitHeatExactly()
+    public void AdvanceJourneyDay_DoesNotRaiseHeatFromRouteRiskAlone()
     {
+        // Heat is future lawman pressure, not trail danger — travel no longer
+        // raises heat from route risk. See ADR-0029.
         var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
         session.StartJourney(preview);
         Assert.Equal(0, session.PursuitState.Heat);
 
         session.AdvanceJourneyDay();
 
-        Assert.Equal(1, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -95,12 +97,12 @@ public sealed class TravelResourceTrackingCharacterizationTests
         Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
         Assert.Equal(4, session.Journey.DaysTravelled);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(29m, session.Player.Wallet.Cash);
-        Assert.Equal(6, session.Journey.FoodRemaining);
-        Assert.Equal(6, session.Player.Inventory.GetQuantity(ItemKind.Food));
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(4, session.Journey.FoodRemaining);
+        Assert.Equal(4, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(5, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
-        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(4, session.TravelDiaryDays.Count);
         Assert.Equal(new TownId("d2"), session.Player.CurrentTownId);
     }
@@ -138,11 +140,12 @@ public sealed class TravelResourceTrackingCharacterizationTests
 
         // Per-day captured values for CreateSixDayQuietJourney.
         // Indexed by day number (1-based). The journey completes on day 4.
-        var expectedFoodRemaining = new[] { 7, 6, 5, 6 };
+        var expectedFoodRemaining = new[] { 7, 6, 5, 4 };
         var expectedHealth = new[] { 1250, 1250, 1250, 1250 };
-        var expectedHeat = new[] { 1, 2, 3, 4 };
+        // Heat stays 0 — travel no longer raises heat from route risk. See ADR-0029.
+        var expectedHeat = new[] { 0, 0, 0, 0 };
         var expectedClockDay = new[] { 2, 3, 4, 5 };
-        var expectedCash = new[] { 25m, 29m, 29m, 29m };
+        var expectedCash = new[] { 25m, 25m, 25m, 25m };
         var expectedTravelDiaryDays = new[] { 1, 2, 3, 4 };
         var expectedStatus = new[]
         {
@@ -173,11 +176,11 @@ public sealed class TravelResourceTrackingCharacterizationTests
         Assert.Equal(JourneyStatus.Completed, result.Status);
         Assert.Equal(4, dayCount);
         Assert.Equal(4, session.Journey!.DaysTravelled);
-        Assert.Equal(6, session.Journey.FoodRemaining);
+        Assert.Equal(4, session.Journey.FoodRemaining);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(5, session.Clock.Day);
-        Assert.Equal(29m, session.Player.Wallet.Cash);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(4, session.TravelDiaryDays.Count);
 
         var ackResult = session.AcknowledgeJourneyArrival();

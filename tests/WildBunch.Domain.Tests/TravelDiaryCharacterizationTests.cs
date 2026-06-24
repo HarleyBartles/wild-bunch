@@ -96,14 +96,14 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(0, day.HorseThirstDelta);
         Assert.Equal(0, day.HorseExhaustionDelta);
         Assert.Equal(0, day.DelayDays);
-        Assert.Equal(1, day.HeatIncrease);
+        Assert.Equal(0, day.HeatIncrease);
         Assert.Equal(1250, day.CurrentHealth);
         Assert.Equal(29m, day.CurrentWallet);
         Assert.Equal(3, day.CurrentFood);
         Assert.Equal(0, day.CurrentHorseFeed);
         Assert.Equal(10, day.CurrentCanteenCharges);
         Assert.Equal(0, day.CurrentAmmo);
-        Assert.Equal(1, day.CurrentHeat);
+        Assert.Equal(0, day.CurrentHeat);
         Assert.Empty(day.Warnings);
         Assert.Equal(HorseTravelState.Healthy, day.HorseStateBefore);
         Assert.Equal(HorseTravelState.Healthy, day.HorseStateAfter);
@@ -145,18 +145,15 @@ public sealed class TravelDiaryCharacterizationTests
         var travelLogs = session.LogEntries
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
-        Assert.Equal(3, travelLogs.Count);
+        Assert.Equal(2, travelLogs.Count);
         Assert.Equal(
             "You set out from Pinecross toward Six Mile on foot. The route is 3 ride-day unit(s) and should take 4 day(s). The canteen has 2 spare charge(s) and can absorb 2 delay day(s).",
             travelLogs[0].Message);
         Assert.Equal(2, travelLogs[1].Day);
         Assert.Equal(0, travelLogs[1].Turn);
-        Assert.Equal("I found a seep under the rocks and topped off my canteen by 2 charge(s).", travelLogs[1].Message);
-        Assert.Equal(2, travelLogs[2].Day);
-        Assert.Equal(0, travelLogs[2].Turn);
         Assert.Equal(
-            "One trail day passes. 2.25 ride-day unit(s) remain and 3 day(s) remain on the route. The canteen has 4 spare charge(s) and can absorb 4 delay day(s).",
-            travelLogs[2].Message);
+            "One trail day passes. 2.25 ride-day unit(s) remain and 3 day(s) remain on the route. The canteen has 2 spare charge(s) and can absorb 2 delay day(s).",
+            travelLogs[1].Message);
     }
 
     [Fact]
@@ -184,31 +181,29 @@ public sealed class TravelDiaryCharacterizationTests
             day.OpeningNarration);
         Assert.Null(day.JourneyBeat);
         Assert.Null(day.ResourceBeat);
-        Assert.Single(day.Entries);
-        Assert.Equal("I found a seep under the rocks and topped off my canteen by 2 charge(s).", day.Entries[0]);
+        Assert.Empty(day.Entries);
         Assert.Equal(0, day.HealthDelta);
         Assert.Equal(0m, day.WalletDelta);
         Assert.Equal(-1, day.FoodDelta);
         Assert.Equal(0, day.HorseFeedDelta);
-        Assert.Equal(1, day.CanteenChargeDelta);
+        Assert.Equal(-1, day.CanteenChargeDelta);
         Assert.Equal(0, day.AmmoSpent);
         Assert.Equal(0, day.HorseHungerDelta);
         Assert.Equal(0, day.HorseThirstDelta);
         Assert.Equal(0, day.HorseExhaustionDelta);
         Assert.Equal(0, day.DelayDays);
-        Assert.Equal(1, day.HeatIncrease);
+        Assert.Equal(0, day.HeatIncrease);
         Assert.Equal(1250, day.CurrentHealth);
         Assert.Equal(25m, day.CurrentWallet);
         Assert.Equal(7, day.CurrentFood);
         Assert.Equal(0, day.CurrentHorseFeed);
-        Assert.Equal(7, day.CurrentCanteenCharges);
+        Assert.Equal(5, day.CurrentCanteenCharges);
         Assert.Equal(0, day.CurrentAmmo);
-        Assert.Equal(1, day.CurrentHeat);
+        Assert.Equal(0, day.CurrentHeat);
         Assert.Equal(4, day.Warnings.Count);
         Assert.Null(day.HorseStateBefore);
         Assert.Null(day.HorseStateAfter);
-        Assert.NotNull(day.TrailEvent);
-        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, day.TrailEvent!.Id);
+        Assert.Null(day.TrailEvent);
         Assert.Null(day.PendingEncounter);
         Assert.Null(day.EncounterResolution);
     }
@@ -231,24 +226,22 @@ public sealed class TravelDiaryCharacterizationTests
         var travelLogs = session.LogEntries
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
-        Assert.Equal(9, travelLogs.Count);
+        Assert.Equal(7, travelLogs.Count);
         Assert.Equal(
             "You set out from Pinecross toward Six Mile on foot. The route is 3 ride-day unit(s) and should take 4 day(s). The canteen has 2 spare charge(s) and can absorb 2 delay day(s).",
             travelLogs[0].Message);
-        Assert.Equal("I found a seep under the rocks and topped off my canteen by 2 charge(s).", travelLogs[1].Message);
         Assert.Equal(
-            "One trail day passes. 2.25 ride-day unit(s) remain and 3 day(s) remain on the route. The canteen has 4 spare charge(s) and can absorb 4 delay day(s).",
-            travelLogs[2].Message);
-        Assert.Equal("I uncovered a hidden cache of trail coins and pocketed $4.00.", travelLogs[3].Message);
+            "One trail day passes. 2.25 ride-day unit(s) remain and 3 day(s) remain on the route. The canteen has 2 spare charge(s) and can absorb 2 delay day(s).",
+            travelLogs[1].Message);
+        Assert.Equal("I caught a seep in the rocks and topped off the canteen by 2 charge(s).", travelLogs[2].Message);
         Assert.Equal(
             "One trail day passes. 1.5 ride-day unit(s) remain and 2 day(s) remain on the route. The canteen has 4 spare charge(s) and can absorb 4 delay day(s).",
-            travelLogs[4].Message);
-        Assert.Equal("The weather keeps the trail honest and the dust keeps my eyes narrowed.", travelLogs[5].Message);
+            travelLogs[3].Message);
+        Assert.Equal("I caught a seep in the rocks and topped off the canteen by 2 charge(s).", travelLogs[4].Message);
         Assert.Equal(
-            "One trail day passes. 0.75 ride-day unit(s) remain and 1 day(s) remain on the route. The canteen has 4 spare charge(s) and can absorb 4 delay day(s).",
-            travelLogs[6].Message);
-        Assert.Equal("I found a little extra food and picked up 2 meal(s).", travelLogs[7].Message);
-        Assert.Equal("You reach Six Mile after 4 trail day(s).", travelLogs[8].Message);
+            "One trail day passes. 0.75 ride-day unit(s) remain and 1 day(s) remain on the route. The canteen has 6 spare charge(s) and can absorb 6 delay day(s).",
+            travelLogs[5].Message);
+        Assert.Equal("You reach Six Mile after 4 trail day(s).", travelLogs[6].Message);
     }
 
     [Fact]
@@ -256,7 +249,9 @@ public sealed class TravelDiaryCharacterizationTests
     {
         var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
         session.StartJourney(preview);
-
+        // Heat stays 0 throughout — travel no longer raises heat from route risk.
+        // The day-plan seed changed from Wary/Hot progression to Calm throughout,
+        // so the deterministic day plan changed. See ADR-0029.
         TravelJourneyStepResult result;
         do
         {
@@ -266,7 +261,7 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(JourneyStatus.Completed, result.Status);
         Assert.Equal(4, session.TravelDiaryDays.Count);
 
-        // Day 1 — LuckyWaterSeep, Active
+        // Day 1 — quiet (no trail event), Active
         var day1 = session.TravelDiaryDays[0];
         Assert.Equal(1, day1.DayNumber);
         Assert.Equal(TravelMode.Foot, day1.StartingTravelMode);
@@ -276,22 +271,20 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(2.25m, day1.RemainingRideDayDistance);
         Assert.Equal(4, day1.StartingDaysRemaining);
         Assert.Equal(3, day1.RemainingDays);
-        Assert.Single(day1.Entries);
-        Assert.Equal("I found a seep under the rocks and topped off my canteen by 2 charge(s).", day1.Entries[0]);
+        Assert.Empty(day1.Entries);
         Assert.Equal(0, day1.HealthDelta);
         Assert.Equal(0m, day1.WalletDelta);
         Assert.Equal(-1, day1.FoodDelta);
-        Assert.Equal(1, day1.CanteenChargeDelta);
-        Assert.Equal(1, day1.HeatIncrease);
+        Assert.Equal(-1, day1.CanteenChargeDelta);
+        Assert.Equal(0, day1.HeatIncrease);
         Assert.Equal(1250, day1.CurrentHealth);
         Assert.Equal(25m, day1.CurrentWallet);
         Assert.Equal(7, day1.CurrentFood);
-        Assert.Equal(7, day1.CurrentCanteenCharges);
-        Assert.Equal(1, day1.CurrentHeat);
-        Assert.NotNull(day1.TrailEvent);
-        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, day1.TrailEvent!.Id);
+        Assert.Equal(5, day1.CurrentCanteenCharges);
+        Assert.Equal(0, day1.CurrentHeat);
+        Assert.Null(day1.TrailEvent);
 
-        // Day 2 — LuckyCoinCache, Active
+        // Day 2 — LuckyWaterSeep, Active
         var day2 = session.TravelDiaryDays[1];
         Assert.Equal(2, day2.DayNumber);
         Assert.Equal(TravelMode.Foot, day2.StartingTravelMode);
@@ -302,21 +295,21 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(3, day2.StartingDaysRemaining);
         Assert.Equal(2, day2.RemainingDays);
         Assert.Single(day2.Entries);
-        Assert.Equal("I uncovered a hidden cache of trail coins and pocketed $4.00.", day2.Entries[0]);
+        Assert.Equal("I caught a seep in the rocks and topped off the canteen by 2 charge(s).", day2.Entries[0]);
         Assert.Equal(0, day2.HealthDelta);
-        Assert.Equal(4m, day2.WalletDelta);
+        Assert.Equal(0m, day2.WalletDelta);
         Assert.Equal(-1, day2.FoodDelta);
-        Assert.Equal(-1, day2.CanteenChargeDelta);
-        Assert.Equal(1, day2.HeatIncrease);
+        Assert.Equal(1, day2.CanteenChargeDelta);
+        Assert.Equal(0, day2.HeatIncrease);
         Assert.Equal(1250, day2.CurrentHealth);
-        Assert.Equal(29m, day2.CurrentWallet);
+        Assert.Equal(25m, day2.CurrentWallet);
         Assert.Equal(6, day2.CurrentFood);
         Assert.Equal(6, day2.CurrentCanteenCharges);
-        Assert.Equal(2, day2.CurrentHeat);
+        Assert.Equal(0, day2.CurrentHeat);
         Assert.NotNull(day2.TrailEvent);
-        Assert.Equal(JourneyTrailEventId.LuckyCoinCache, day2.TrailEvent!.Id);
+        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, day2.TrailEvent!.Id);
 
-        // Day 3 — quiet (no trail event), Active
+        // Day 3 — LuckyWaterSeep, Active
         var day3 = session.TravelDiaryDays[2];
         Assert.Equal(3, day3.DayNumber);
         Assert.Equal(TravelMode.Foot, day3.StartingTravelMode);
@@ -327,20 +320,21 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(2, day3.StartingDaysRemaining);
         Assert.Equal(1, day3.RemainingDays);
         Assert.Single(day3.Entries);
-        Assert.Equal("The weather keeps the trail honest and the dust keeps my eyes narrowed.", day3.Entries[0]);
+        Assert.Equal("I caught a seep in the rocks and topped off the canteen by 2 charge(s).", day3.Entries[0]);
         Assert.Equal(0, day3.HealthDelta);
         Assert.Equal(0m, day3.WalletDelta);
         Assert.Equal(-1, day3.FoodDelta);
-        Assert.Equal(-1, day3.CanteenChargeDelta);
-        Assert.Equal(1, day3.HeatIncrease);
+        Assert.Equal(1, day3.CanteenChargeDelta);
+        Assert.Equal(0, day3.HeatIncrease);
         Assert.Equal(1250, day3.CurrentHealth);
-        Assert.Equal(29m, day3.CurrentWallet);
+        Assert.Equal(25m, day3.CurrentWallet);
         Assert.Equal(5, day3.CurrentFood);
-        Assert.Equal(5, day3.CurrentCanteenCharges);
-        Assert.Equal(3, day3.CurrentHeat);
-        Assert.Null(day3.TrailEvent);
+        Assert.Equal(7, day3.CurrentCanteenCharges);
+        Assert.Equal(0, day3.CurrentHeat);
+        Assert.NotNull(day3.TrailEvent);
+        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, day3.TrailEvent!.Id);
 
-        // Day 4 — LuckyFoodCache, Completed
+        // Day 4 — quiet (no trail event), Completed
         var day4 = session.TravelDiaryDays[3];
         Assert.Equal(4, day4.DayNumber);
         Assert.Equal(TravelMode.Foot, day4.StartingTravelMode);
@@ -350,20 +344,18 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(0m, day4.RemainingRideDayDistance);
         Assert.Equal(1, day4.StartingDaysRemaining);
         Assert.Equal(0, day4.RemainingDays);
-        Assert.Single(day4.Entries);
-        Assert.Equal("I found a little extra food and picked up 2 meal(s).", day4.Entries[0]);
+        Assert.Empty(day4.Entries);
         Assert.Equal(0, day4.HealthDelta);
         Assert.Equal(0m, day4.WalletDelta);
-        Assert.Equal(1, day4.FoodDelta);
-        Assert.Equal(5, day4.CanteenChargeDelta);
-        Assert.Equal(1, day4.HeatIncrease);
+        Assert.Equal(-1, day4.FoodDelta);
+        Assert.Equal(3, day4.CanteenChargeDelta);
+        Assert.Equal(0, day4.HeatIncrease);
         Assert.Equal(1250, day4.CurrentHealth);
-        Assert.Equal(29m, day4.CurrentWallet);
-        Assert.Equal(6, day4.CurrentFood);
+        Assert.Equal(25m, day4.CurrentWallet);
+        Assert.Equal(4, day4.CurrentFood);
         Assert.Equal(10, day4.CurrentCanteenCharges);
-        Assert.Equal(4, day4.CurrentHeat);
-        Assert.NotNull(day4.TrailEvent);
-        Assert.Equal(JourneyTrailEventId.LuckyFoodCache, day4.TrailEvent!.Id);
+        Assert.Equal(0, day4.CurrentHeat);
+        Assert.Null(day4.TrailEvent);
     }
 
     // ----- SixDayQuietJourney: acknowledge preserves diary/log accumulation -----
@@ -391,7 +383,7 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Equal(travelLogCountBeforeAck,
             session.LogEntries.Count(e => e.Kind == GameLogEntryKind.Travel));
         Assert.Equal(diaryCountBeforeAck, session.TravelDiaryDays.Count);
-        Assert.Equal(9, session.LogEntries.Count(e => e.Kind == GameLogEntryKind.Travel));
+        Assert.Equal(7, session.LogEntries.Count(e => e.Kind == GameLogEntryKind.Travel));
         Assert.Equal(4, session.TravelDiaryDays.Count);
     }
 

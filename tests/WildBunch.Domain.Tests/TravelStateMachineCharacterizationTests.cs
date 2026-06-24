@@ -88,7 +88,7 @@ public sealed class TravelStateMachineCharacterizationTests
         Assert.Equal(3, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
-        Assert.Equal(1, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(1, session.TravelDiaryDays.Count);
     }
 
