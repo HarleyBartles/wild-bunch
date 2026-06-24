@@ -91,5 +91,33 @@ public sealed class TravelReplayEqualityTests
         Assert.Null(replayed.Journey);
         Assert.Equal(commandSession.CompletedJourneyHistory.Count, replayed.CompletedJourneyHistory.Count);
         Assert.Equal(commandSession.Version, replayed.Version);
+        Assert.Equal(commandSession.LogEntries.Count, replayed.LogEntries.Count);
+        Assert.Equal(commandSession.TravelDiaryDays.Count, replayed.TravelDiaryDays.Count);
+    }
+
+    [Fact]
+    public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
+    {
+        var (commandSession, preview, gameStarted) =
+            TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
+        commandSession.StartJourney(preview);
+        commandSession.AdvanceJourneyDay();
+        var interrupted = commandSession.AdvanceJourneyDay();
+        Assert.Equal(JourneyStatus.Interrupted, interrupted.Status);
+        var resolved = commandSession.ResolveJourneyEncounter("run", forcedRoll: 0);
+        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+
+        var replayed = GameSession.RehydrateFromEvents(
+            commandSession.Id, commandSession.World,
+            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
+            events);
+
+        Assert.Equal(commandSession.Player.Health, replayed.Player.Health);
+        Assert.Equal(commandSession.Player.Wallet.Cash, replayed.Player.Wallet.Cash);
+        Assert.Equal(commandSession.Clock.Day, replayed.Clock.Day);
+        Assert.Equal(commandSession.PursuitState.Heat, replayed.PursuitState.Heat);
+        Assert.Equal(commandSession.LogEntries.Count, replayed.LogEntries.Count);
+        Assert.Equal(commandSession.TravelDiaryDays.Count, replayed.TravelDiaryDays.Count);
+        Assert.Equal(commandSession.Version, replayed.Version);
     }
 }

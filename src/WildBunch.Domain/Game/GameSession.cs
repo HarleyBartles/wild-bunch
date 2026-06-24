@@ -1270,7 +1270,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         if (Journey.PendingEncounter is not null)
         {
             var encounterMessage = Journey.PendingEncounter.Message;
-            AddLogEntry(GameLogEntryKind.Travel, encounterMessage);
             return new TravelJourneyStepResult(
                 false,
                 Journey.Status,
@@ -1329,10 +1328,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
             {
                 dayEntries.Add(currentEncounter.Message);
-                // Narration-only encounters (no TrailEvent) don't produce a typed event.
-                // The log entry is projection-legacy per ADR-0028 and is not reproduced
-                // on replay. Trail events log via Apply(TrailEventApplied) → RecordTravelUpdate.
-                AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
             }
 
             Journey.AdvanceCurrentDayPlan();
@@ -1722,7 +1717,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 PursuitState.IncreaseHeat(plan.HeatIncrease);
 
                 var runMessage = PrependHorseLossMessage(horseLossMessage, plan.Message);
-                AddLogEntry(GameLogEntryKind.Travel, runMessage);
                 dayEntries.Add(plan.Message);
 
                 if (!plan.Resolved)
@@ -1806,7 +1800,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     PursuitState.IncreaseHeat(plan.HeatIncrease);
                 }
 
-                AddLogEntry(GameLogEntryKind.Travel, plan.Message);
                 dayEntries.Add(plan.Message);
 
                 if (!plan.Resolved)
@@ -1903,7 +1896,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     PursuitState.IncreaseHeat(plan.HeatIncrease);
                 }
 
-                AddLogEntry(GameLogEntryKind.Travel, plan.Message);
                 dayEntries.Add(plan.Message);
 
                 var retaliated = !plan.Resolved && (plan.HealthDelta < 0 || plan.StolenItemKind is not null || plan.WalletDelta < -bribeOffer);
@@ -2014,7 +2006,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 var pendingEncounter = currentEncounter.PendingEncounter!;
                 Journey.MarkInterrupted(pendingEncounter);
                 var pendingMessage = pendingEncounter.Message;
-                AddLogEntry(GameLogEntryKind.Travel, pendingMessage);
                 dayEntries.Add(pendingMessage);
 
                 var pendingSnapshot = Journey.ToSnapshot(TravelRules);
@@ -2042,7 +2033,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
             {
                 dayEntries.Add(currentEncounter.Message);
-                AddLogEntry(GameLogEntryKind.Travel, currentEncounter.Message);
             }
 
             Journey.AdvanceCurrentDayPlan();

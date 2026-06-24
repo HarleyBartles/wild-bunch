@@ -8,7 +8,7 @@ namespace WildBunch.Domain.Events;
 /// Day is ABSOLUTE — Apply calls Clock.Set(e.Day, 0).
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it.
 /// HealthDelta is ADDITIVE — Apply adds to player health.
-/// PursuitHeatDelta is ADDITIVE — Apply adds to pursuit heat.
+/// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it.
 /// </summary>
 public sealed record TravelDayAdvanced : IDomainEvent
 {
