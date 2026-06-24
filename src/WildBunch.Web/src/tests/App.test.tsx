@@ -637,7 +637,7 @@ describe("DebugCockpitRoute", () => {
     expect(journalScope.getByRole("heading", { level: 2, name: /journal/i })).toBeInTheDocument();
     expect(journalScope.getByText("Booted")).toBeInTheDocument();
     expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
-    expect(journalScope.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
+    expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
     expect(journalScope.queryByText("trueCulpritId")).not.toBeInTheDocument();
     expect(journalScope.queryByText("killerReleaseState")).not.toBeInTheDocument();
     expect(journalScope.queryByText("clue-1")).not.toBeInTheDocument();

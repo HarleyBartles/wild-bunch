@@ -49,10 +49,6 @@ function formatEntryClock(entry: GameLogEntryDto) {
   return `Note ${entry.turn + 1}`;
 }
 
-function formatEntryCount(count: number) {
-  return count === 1 ? "1 note" : `${count} notes`;
-}
-
 function formatJournalKind(kind: GameLogEntryDto["kind"]) {
   switch (kind) {
     case 0:
@@ -95,7 +91,6 @@ function JournalDaySection({ group }: { group: JournalDayGroup }) {
       <header className="journal-day__header">
         <div>
           <p className="eyebrow">Day {group.day}</p>
-          <p className="panel-subtitle">{formatEntryCount(group.entries.length)}</p>
         </div>
       </header>
       <div className="journal-day__entries">
@@ -131,26 +126,6 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
           <p className="panel-subtitle">Trail notes from the saddlebag.</p>
         </div>
         <p className="journal-surface__clock">{formatJournalClock(journal)}</p>
-      </div>
-
-      <div className="journal-summary">
-        <article className="journal-summary__card">
-          <p className="eyebrow">Camped at</p>
-          <strong>{journal.currentTown.name}</strong>
-          <p>
-            Day {journal.clock.day}, {journal.clock.timeOfDay}
-          </p>
-        </article>
-        <article className="journal-summary__card">
-          <p className="eyebrow">Case note</p>
-          <strong>{journal.caseFile.caseSummary}</strong>
-          <p>{journal.caseFile.caseState.statusText}</p>
-        </article>
-        <article className="journal-summary__card">
-          <p className="eyebrow">Trail notes</p>
-          <strong>{entries.length}</strong>
-          <p>{formatEntryCount(entries.length)}</p>
-        </article>
       </div>
 
       <div className="journal-timeline">

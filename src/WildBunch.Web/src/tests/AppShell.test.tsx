@@ -272,7 +272,8 @@ describe("AppShell", () => {
     const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
     const journalScope = within(journalDialog);
     expect(journalScope.getByRole("heading", { level: 2, name: /^journal$/i })).toBeInTheDocument();
-    expect(journalScope.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
+    expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+    expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
   });
 
   it("exposes a separated Dev tools route that hosts the relocated cockpit", async () => {
