@@ -62,6 +62,59 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
+    public void StoreItemPurchased_ProducesPurchaseEntry_MatchingLegacyCommandPath()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new StoreItemPurchased
+            {
+                TownId = new TownId("pinecross"),
+                ItemKind = ItemKind.Food,
+                DisplayName = "Trail Biscuits",
+                Quantity = 2,
+                UnitPrice = 2m,
+                TotalPrice = 4m,
+                WalletAfter = 21m
+            }
+        };
+        var log = projector.Project(events);
+
+        // Opening + purchase entry
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.Purchase, log[1].Kind);
+        Assert.Equal("Purchased 2 Trail Biscuits for $4.00.", log[1].Message);
+        Assert.Equal(1, log[1].Day);
+        Assert.Equal(0, log[1].Turn);
+    }
+
+    [Fact]
+    public void StoreItemPurchased_SingleQuantity_UsesDisplayNameWithoutQuantityPrefix()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new StoreItemPurchased
+            {
+                TownId = new TownId("pinecross"),
+                ItemKind = ItemKind.Canteen,
+                DisplayName = "Canteen",
+                Quantity = 1,
+                UnitPrice = 3m,
+                TotalPrice = 3m,
+                WalletAfter = 22m
+            }
+        };
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.Purchase, log[1].Kind);
+        Assert.Equal("Purchased Canteen for $3.00.", log[1].Message);
+    }
+
+    [Fact]
     public void SheriffTurnInSettled_ProducesNoLogEntry_MatchingLegacyApply()
     {
         var projector = new JournalLogProjector();
