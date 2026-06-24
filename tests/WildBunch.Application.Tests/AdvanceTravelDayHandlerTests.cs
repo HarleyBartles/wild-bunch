@@ -180,6 +180,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat((int)TrailRisk.Low);
         return session;
     }
 
@@ -210,6 +211,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat((int)TrailRisk.High);
         return session;
     }
 

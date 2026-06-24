@@ -211,6 +211,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        session.PursuitState.IncreaseHeat((int)TrailRisk.High);
         return session;
     }
 }

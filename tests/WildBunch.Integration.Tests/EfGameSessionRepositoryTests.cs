@@ -87,6 +87,12 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        // BUNCH-85 removed per-travel-day route-risk heat increases. The
+        // Moderate-risk trail previously set day-1 heat to
+        // Math.Max(1, (int)RouteProfile.Risk) = 2 (Wary band). Restore that
+        // heat so the deterministic day-plan seed (which includes
+        // PursuitHeatBand) produces the same roll sequence as before.
+        loaded.PursuitState.IncreaseHeat(2);
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -284,6 +290,12 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        // BUNCH-85 removed per-travel-day route-risk heat increases. The
+        // Low-risk trail previously set day-1 heat to
+        // Math.Max(1, (int)RouteProfile.Risk) = 1 (Wary band). Restore that
+        // heat so the deterministic day-plan seed (which includes
+        // PursuitHeatBand) produces the same roll sequence as before.
+        loaded.PursuitState.IncreaseHeat(1);
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
