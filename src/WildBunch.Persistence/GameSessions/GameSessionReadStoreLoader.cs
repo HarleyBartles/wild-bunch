@@ -118,11 +118,9 @@ internal static class GameSessionReadStoreLoader
             .ToDictionaryAsync(component => component.ComponentName, cancellationToken)
             .ConfigureAwait(false);
 
-        // BUNCH-84: derive LogEntries from the event stream via JournalLogProjector
-        // instead of reading the GameSessionLogEntries table. The table write
-        // (SyncLogEntriesAsync) and the command-load table read
-        // (EfGameSessionRepository.LoadStoreAsync) remain as bounded compatibility
-        // surface until AddLogEntry is removed from Apply in a follow-up.
+        // BUNCH-84/BUNCH-86: derive LogEntries from the event stream via
+        // JournalLogProjector. The legacy log entries table has been fully removed;
+        // both the read-store loader and the command-load path now use projection.
         var storedEvents = await dbContext.StoredEvents.AsNoTracking()
             .Where(e => e.StreamId == id.Value)
             .OrderBy(e => e.Sequence)
