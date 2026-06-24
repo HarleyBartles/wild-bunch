@@ -188,7 +188,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             allEvents[i] = _serializer.DeserializeEvent(allStoredEvents[i].EventType, allStoredEvents[i].PayloadJson);
         }
 
-        var logEntries = _journalLogProjector.Project(allEvents);
+        // Project only the snapshot-prefix events for aggregate LogEntries
+        // rehydration. Post-snapshot events are replayed via ApplyCommittedEvents
+        // in ToAggregate, and Apply(...) methods append their own log entries via
+        // AddLogEntry/RecordCaseUpdate/RecordTravelUpdate. If we projected the
+        // full stream here, post-snapshot entries would be duplicated after
+        // replay. See BUNCH-86.
+        var snapshotEvents = allEvents
+            .Take((int)envelope.SnapshotVersion)
+            .ToArray();
+        var logEntries = _journalLogProjector.Project(snapshotEvents);
 
         // Post-snapshot events for state replay (subset of allEvents).
         IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();

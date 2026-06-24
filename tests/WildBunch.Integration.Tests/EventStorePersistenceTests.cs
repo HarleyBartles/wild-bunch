@@ -498,6 +498,76 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         Assert.Equal(2, loaded2!.Version);
     }
 
+    /// <summary>
+    /// Proves the snapshot + replay load path does not duplicate aggregate LogEntries
+    /// when the snapshot lags behind the stream version. The repository must project
+    /// only the snapshot-prefix events for aggregate LogEntries rehydration, then let
+    /// post-snapshot replay append the rest via Apply(...). If the repository projected
+    /// the full stream and then replayed post-snapshot events, the post-snapshot log
+    /// entries would be duplicated. See BUNCH-86.
+    /// </summary>
+    [Fact]
+    public async Task GetByIdAsync_WithLaggingSnapshot_DoesNotDuplicateAggregateLogEntries()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+
+        // Seed: create + commit (v1), then reload + purchase + commit (v2).
+        // After this, SnapshotVersion == StreamVersion == 2 in the DB.
+        // v1 produces GameStarted (1 log entry: opening).
+        // v2 produces StoreItemPurchased (1 log entry: purchase).
+        // Full-stream projection = 2 log entries.
+        GameSessionId sessionId;
+        using (var seedScope = services.CreateScope())
+        {
+            var seedRepo = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var seedUow = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+            var session = CreateSession();
+            sessionId = session.Id;
+            await seedRepo.StoreAsync(session);
+            await seedUow.CommitAsync();
+            session.MarkEventsCommitted();
+
+            var loaded = await seedRepo.GetByIdAsync(sessionId);
+            var resolver = new TownStoreCatalogResolver();
+            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            loaded.Purchase(offer, 1);
+            await seedRepo.StoreAsync(loaded);
+            await seedUow.CommitAsync();
+        }
+
+        // Force a lagging snapshot: set SnapshotVersion back to 1 while
+        // StreamVersion stays at 2. This simulates a snapshot that was not
+        // refreshed after the last event append.
+        using (var adminScope = services.CreateScope())
+        {
+            var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+            var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
+            entity.SnapshotVersion = 1;
+            await adminDb.SaveChangesAsync();
+        }
+
+        // Load through the repository. The snapshot is at version 1, the stream
+        // is at version 2, so one post-snapshot event (StoreItemPurchased) must be
+        // replayed via ApplyCommittedEvents. The aggregate's LogEntries must
+        // contain exactly 2 entries (opening + purchase), not 3 (which would
+        // indicate the purchase entry was duplicated by full-stream projection
+        // followed by post-snapshot replay).
+        using var loadScope = services.CreateScope();
+        var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var loaded2 = await loadRepo.GetByIdAsync(sessionId);
+        Assert.NotNull(loaded2);
+
+        // The full event stream has 2 events (GameStarted + StoreItemPurchased).
+        // The projector produces 2 log entries (opening + purchase).
+        // The aggregate's LogEntries must match — no duplication from
+        // snapshot-prefix projection + post-snapshot replay.
+        Assert.Equal(2, loaded2!.LogEntries.Count);
+        Assert.Equal(GameLogEntryKind.Opening, loaded2.LogEntries[0].Kind);
+        Assert.Equal(GameLogEntryKind.Purchase, loaded2.LogEntries[1].Kind);
+    }
+
     private static ServiceProvider CreateServices(string connectionString)
     {
         var services = new ServiceCollection();
