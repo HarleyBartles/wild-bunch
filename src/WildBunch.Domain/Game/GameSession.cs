@@ -2720,12 +2720,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         AddLogEntry(GameLogEntryKind.CaseUpdate, message);
     }
 
-    public void CompleteCase(string message)
-    {
-        Status = GameStatus.Completed;
-        AddLogEntry(GameLogEntryKind.CaseUpdate, message);
-    }
-
     public void AppendTravelDiaryDay(TravelDiaryDayState travelDiaryDay)
     {
         ArgumentNullException.ThrowIfNull(travelDiaryDay);
