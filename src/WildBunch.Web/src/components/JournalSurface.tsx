@@ -49,6 +49,10 @@ function formatEntryClock(entry: GameLogEntryDto) {
   return `Note ${entry.turn + 1}`;
 }
 
+function formatEntryCount(count: number) {
+  return count === 1 ? "1 note" : `${count} notes`;
+}
+
 function formatJournalKind(kind: GameLogEntryDto["kind"]) {
   switch (kind) {
     case 0:
@@ -62,6 +66,15 @@ function formatJournalKind(kind: GameLogEntryDto["kind"]) {
   }
 }
 
+function formatJournalEntryMessage(message: string) {
+  const openingMatch = message.match(/^The hunt begins in (.+)\.$/);
+  if (openingMatch) {
+    return `Started out in ${openingMatch[1]}.`;
+  }
+
+  return message;
+}
+
 function JournalEntryCard({ entry }: { entry: GameLogEntryDto }) {
   return (
     <article className="journal-entry">
@@ -71,7 +84,7 @@ function JournalEntryCard({ entry }: { entry: GameLogEntryDto }) {
           Day {entry.day}, {formatEntryClock(entry)}
         </span>
       </div>
-      <p className="journal-entry__message">{entry.message}</p>
+      <p className="journal-entry__message">{formatJournalEntryMessage(entry.message)}</p>
     </article>
   );
 }
@@ -82,7 +95,7 @@ function JournalDaySection({ group }: { group: JournalDayGroup }) {
       <header className="journal-day__header">
         <div>
           <p className="eyebrow">Day {group.day}</p>
-          <p className="panel-subtitle">{group.entries.length} public entries</p>
+          <p className="panel-subtitle">{formatEntryCount(group.entries.length)}</p>
         </div>
       </header>
       <div className="journal-day__entries">
@@ -115,7 +128,7 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
       <div className="case-modal__section-head journal-surface__head">
         <div>
           <h3>Journal</h3>
-          <p className="panel-subtitle">A trail journal kept in the rider&apos;s own words.</p>
+          <p className="panel-subtitle">Trail notes from the saddlebag.</p>
         </div>
         <p className="journal-surface__clock">{formatJournalClock(journal)}</p>
       </div>
@@ -136,7 +149,7 @@ export function JournalSurface({ journal, loading, error, sessionLogEntries }: J
         <article className="journal-summary__card">
           <p className="eyebrow">Trail notes</p>
           <strong>{entries.length}</strong>
-          <p>{entries.length === 1 ? "note in ink" : "notes in ink"}</p>
+          <p>{formatEntryCount(entries.length)}</p>
         </article>
       </div>
 

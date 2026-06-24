@@ -146,7 +146,7 @@ export function DebugCockpitRoute() {
         open={openSurface === "journal"}
         eyebrow="Journal"
         title="Journal"
-        description="A read-only timeline of player-visible events from the hunt."
+        description="Trail notes from the saddlebag."
         onClose={closeSurface}
       >
         <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={session?.logEntries ?? []} />

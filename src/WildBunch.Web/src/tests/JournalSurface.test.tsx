@@ -9,7 +9,7 @@ describe("JournalSurface", () => {
       clock: { day: 5, turn: 2, timeOfDay: "Morning" },
       currentTown: { id: "t-town", name: "Tumbleweed" },
       logEntries: [
-        { kind: 0, message: "Booted", day: 1, turn: 0 },
+        { kind: 0, message: "The hunt begins in Tumbleweed.", day: 1, turn: 0 },
         { kind: 1, message: "Travelled to Red Mesa", day: 5, turn: 1 },
         { kind: 2, message: "Found a public lead", day: 5, turn: 2 },
         { kind: 2, message: "Bought food", day: 6, turn: 0 },
@@ -26,7 +26,8 @@ describe("JournalSurface", () => {
     expect(screen.getByText("Day 1")).toBeInTheDocument();
     expect(screen.getByText("Day 5")).toBeInTheDocument();
     expect(screen.getByText("Day 6")).toBeInTheDocument();
-    expect(screen.getByText("Booted")).toBeInTheDocument();
+    expect(screen.getByText("Started out in Tumbleweed.")).toBeInTheDocument();
+    expect(screen.queryByText("The hunt begins in Tumbleweed.")).not.toBeInTheDocument();
     expect(screen.getByText("Travelled to Red Mesa")).toBeInTheDocument();
     expect(screen.getByText("Found a public lead")).toBeInTheDocument();
     expect(screen.getByText("Bought food")).toBeInTheDocument();
