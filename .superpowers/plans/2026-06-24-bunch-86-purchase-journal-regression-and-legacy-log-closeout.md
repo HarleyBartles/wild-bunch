@@ -20,8 +20,8 @@
 - The existing purchase log message format is: `$"Purchased {quantityLabel} for ${totalPrice:0.00}."` where `quantityLabel = quantity == 1 ? displayName : $"{quantity} {displayName}"`.
 - The `GameSessionDiaryDays` table is an intentional materialized read model (`TravelDiaryDayState` is a rich per-day state object not derivable from the current `DiaryProjector`); it is NOT a hanger-on and is out of scope for removal.
 - The snapshot `Serialize`/`Deserialize` methods (`GameSessionJsonSerializer.SessionSnapshot`) are test-only; no production code calls them. Their `LogEntries` field is not a production hanger-on.
-- `JournalResolver` reads `session.LogEntries` for 6 investigation command handlers; after the fix, `session.LogEntries` is fully event-derived, so the data is identical to the projection. This is classified as harmless/temporary with a source-backed reason (see closeout report).
-- Command response DTOs (`GameSessionMapper.ToDto`) read `session.LogEntries`; same classification as `JournalResolver`.
+- `JournalResolver` reads `session.LogEntries` for investigation command handlers. After the fix, `session.LogEntries` is fully event-derived. Whether this surface is a live player-facing aggregate-log read path that should be switched to a projection-backed route, or an internal command-path read that is lawful as-is, must be determined by the closeout audit (Task 13) with source evidence — not pre-classified here.
+- Command response DTOs (`GameSessionMapper.ToDto`) read `session.LogEntries`. Same as `JournalResolver` — classification deferred to the closeout audit with source evidence.
 - Validation: `dotnet build`, `dotnet test`, `dotnet ef migrations list`, `.\scripts\postgres-dev.ps1 validate`.
 - Worker environment uses PowerShell; no `&&` chaining.
 
@@ -99,8 +99,10 @@ public void StoreItemPurchased_SingleQuantity_UsesDisplayNameWithoutQuantityPref
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorTests.StoreItemPurchased_ProducesPurchaseEntry"`
+Run: `dotnet test tests/WildBunch.Application.Tests --filter "FullyQualifiedName~JournalLogProjectorTests.StoreItemPurchased_ProducesPurchaseEntry"`
 Expected: FAIL — projector skips `StoreItemPurchased`, so `log.Count` is 1, not 2.
+
+Note: Do NOT use `--no-build` here — the test assembly must be rebuilt to pick up the newly added test. Use `--no-build` only on subsequent runs after an explicit build.
 
 - [ ] **Step 3: Commit the failing test**
 
@@ -153,8 +155,10 @@ Note: If `TravelTestFactory.CreateSessionWithGameStarted` does not exist, check 
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorEquivalenceTests.Purchase_ProjectedLogMatchesCommandPath"`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~JournalLogProjectorEquivalenceTests.Purchase_ProjectedLogMatchesCommandPath"`
 Expected: FAIL — `session.LogEntries` has the purchase entry (from `AddLogEntry` in `Purchase()`), but the projection skips `StoreItemPurchased`, so counts differ.
+
+Note: Do NOT use `--no-build` here — the test assembly must be rebuilt to pick up the newly added test.
 
 - [ ] **Step 3: Commit the failing test**
 
@@ -214,8 +218,10 @@ Note: Check `GameApiPurchaseTests.cs` for the exact `BuyStoreItemRequest` constr
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `.\scripts\postgres-dev.ps1 ensure` then `.\scripts\postgres-dev.ps1 test -- --no-build --filter "FullyQualifiedName~GameApiJournalTests.GetJournalAfterPurchaseIncludesPurchaseLogEntry"`
+Run: `.\scripts\postgres-dev.ps1 ensure` then `.\scripts\postgres-dev.ps1 test -- --filter "FullyQualifiedName~GameApiJournalTests.GetJournalAfterPurchaseIncludesPurchaseLogEntry"`
 Expected: FAIL — `journal.LogEntries` has no `Purchase` entry because `JournalLogProjector` skips `StoreItemPurchased`.
+
+Note: Do NOT use `--no-build` here — the integration test assembly must be rebuilt to pick up the newly added test.
 
 - [ ] **Step 3: Commit the failing test**
 
@@ -260,14 +266,18 @@ In `Purchase()` (around line 2310-2312), remove the `AddLogEntry` line. Keep the
         return StorePurchaseResult.Succeeded($"Purchased {quantityLabel} for ${totalPrice:0.00}.");
 ```
 
-- [ ] **Step 3: Run the projector and equivalence tests to verify they pass**
+- [ ] **Step 3: Build and run targeted tests to verify the expected intermediate state**
 
-Run: `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorTests.StoreItemPurchased"` and `dotnet test tests/WildBunch.Domain.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorEquivalenceTests.Purchase_ProjectedLogMatchesCommandPath"`
-Expected: PASS for both — `Apply(StoreItemPurchased)` now appends the purchase log entry, so `session.LogEntries` and the projection agree.
+Run: `dotnet build` then `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorTests.StoreItemPurchased"` and `dotnet test tests/WildBunch.Domain.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorEquivalenceTests.Purchase_ProjectedLogMatchesCommandPath"`
 
-Note: The projector test (Task 1) will still fail because `JournalLogProjector` still skips `StoreItemPurchased`. That is fixed in Task 5. The equivalence test (Task 2) should now pass because both `session.LogEntries` (from Apply) and the projection... wait, the projection still skips `StoreItemPurchased`. The equivalence test compares `session.LogEntries` (which now has the purchase entry from Apply) against the projection (which still skips it). So the equivalence test should STILL FAIL. This is correct — the projector fix is needed in Task 5.
+Expected: BOTH STILL FAIL. This is the correct intermediate state:
+- The projector test (Task 1) still fails because `JournalLogProjector` still skips `StoreItemPurchased` — the projector is not updated until Task 5.
+- The equivalence test (Task 2) still fails because `session.LogEntries` now has the purchase entry (from `Apply`), but the projection still skips `StoreItemPurchased`, so `session.LogEntries.Count` > `projected.Count`.
 
-Actually, re-check: the equivalence test will fail because `session.LogEntries.Count` > `projected.Count` (session has the purchase entry from Apply, projection skips it). This is the expected state until Task 5 fixes the projector.
+What this step proves: the source change compiles and `Apply(StoreItemPurchased)` is now the single mutation+log path for purchase (mutation authority fixed). The projection fix in Task 5 is what makes both tests pass. Do NOT expect green here — the red/green sequence is:
+1. projector/integration/equivalence tests fail against current source (Tasks 1-3);
+2. moving the log into `Apply(StoreItemPurchased)` fixes command/replay mutation authority but does not by itself fix projection (this step — still red);
+3. updating `JournalLogProjector` makes projection and API journal behavior pass (Task 5 — green).
 
 - [ ] **Step 4: Commit the Apply/Purchase fix**
 
@@ -306,13 +316,13 @@ case StoreItemPurchased p:
 
 - [ ] **Step 2: Run all projector and equivalence tests to verify they pass**
 
-Run: `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorTests"` and `dotnet test tests/WildBunch.Domain.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorEquivalenceTests"`
-Expected: PASS for all.
+Run: `dotnet build` then `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorTests"` and `dotnet test tests/WildBunch.Domain.Tests --no-build --filter "FullyQualifiedName~JournalLogProjectorEquivalenceTests"`
+Expected: PASS for all — this is the green step. `JournalLogProjector` now projects `StoreItemPurchased`, so the projector tests, equivalence test, and command/replay/projection paths all agree.
 
 - [ ] **Step 3: Run the integration test to verify it passes**
 
-Run: `.\scripts\postgres-dev.ps1 test -- --no-build --filter "FullyQualifiedName~GameApiJournalTests.GetJournalAfterPurchaseIncludesPurchaseLogEntry"`
-Expected: PASS — `/journal` now includes the purchase entry via the projection.
+Run: `.\scripts\postgres-dev.ps1 test -- --filter "FullyQualifiedName~GameApiJournalTests.GetJournalAfterPurchaseIncludesPurchaseLogEntry"`
+Expected: PASS — `/journal` now includes the purchase entry via the projection. (No `--no-build` — the integration test assembly must be rebuilt to pick up the projector source change.)
 
 - [ ] **Step 4: Commit the projector fix**
 
@@ -354,8 +364,8 @@ private const int KnownLegacyAddLogEntryCallSiteCount = 5;
 
 - [ ] **Step 3: Run guardrail and projector tests to verify they pass**
 
-Run: `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~AddLogEntryGuardrailTests|FullyQualifiedName~JournalLogProjectorTests"`
-Expected: PASS.
+Run: `dotnet build` then `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~AddLogEntryGuardrailTests|FullyQualifiedName~JournalLogProjectorTests"`
+Expected: PASS. (Build first — test files changed, so the assembly must be rebuilt before `--no-build`.)
 
 - [ ] **Step 4: Commit the test and guardrail updates**
 
@@ -583,8 +593,8 @@ Update the class-level doc comment to reflect the BUNCH-86 closeout.
 
 - [ ] **Step 2: Run guardrail tests to verify they pass**
 
-Run: `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~ReadStoreLoaderJournalProjectionGuardrailTests"`
-Expected: PASS.
+Run: `dotnet build` then `dotnet test tests/WildBunch.Application.Tests --no-build --filter "FullyQualifiedName~ReadStoreLoaderJournalProjectionGuardrailTests"`
+Expected: PASS. (Build first — test file changed, so the assembly must be rebuilt before `--no-build`.)
 
 - [ ] **Step 3: Commit the guardrail update**
 
@@ -668,7 +678,7 @@ Run:
 ```powershell
 .\scripts\postgres-dev.ps1 test -- --no-build --filter "FullyQualifiedName~GameApiJournalTests|FullyQualifiedName~GameApiPurchaseTests|FullyQualifiedName~StorePurchaseAcceptanceTests|FullyQualifiedName~JournalLogProjectorTests|FullyQualifiedName~JournalLogProjectorEquivalenceTests|FullyQualifiedName~AddLogEntryGuardrailTests|FullyQualifiedName~ReadStoreLoaderJournalProjectionGuardrailTests"
 ```
-Expected: All PASS.
+Expected: All PASS. (`--no-build` is safe here — Step 1's `validate` already built all assemblies.)
 
 ### Task 13: Repo-Wide Architecture Closeout Inspection
 
@@ -689,69 +699,83 @@ Record: grep for `AddLogEntry` in `GameSession.cs` — verify all remaining call
 
 Search for all references to: `AddLogEntry`, `RecordCaseUpdate`, `RecordTravelUpdate`, `_logEntries`, `LogEntries`, `JournalResolver`, `GameSessionLogEntries`, `SyncLogEntriesAsync`, snapshot `LogEntries`.
 
-Classify each:
-- `AddLogEntry` — 4 remaining (definition + 3 call sites inside Apply/RecordCaseUpdate/RecordTravelUpdate). All event-sourced. Acceptable.
-- `RecordCaseUpdate` — called from `Apply(InvestigationPerformed)` and `Apply(WantedSuspectConfronted)`. Event-sourced. Acceptable.
-- `RecordTravelUpdate` — called from travel `Apply` methods. Event-sourced. Acceptable.
-- `_logEntries` — aggregate backing field, populated by `Apply` methods and `ReplaceLogEntries` (snapshot/projection load). Acceptable.
-- `LogEntries` (aggregate property) — read by `GameSessionMapper.ToDto` (command response) and `JournalResolver` (investigation handlers). After BUNCH-86, fully event-derived. Harmless/temporary — data is identical to projection. Follow-up: replace with projection-backed output in command responses.
-- `JournalResolver` — reads `session.LogEntries` for 6 investigation handlers. Harmless/temporary — same data as projection. Follow-up: replace with projection.
-- `GameSessionLogEntries` — REMOVED by this issue. Verify no references remain in `src/`.
-- `SyncLogEntriesAsync` — REMOVED by this issue. Verify no references remain.
-- Snapshot `LogEntries` (`GameSessionJsonSerializer.SessionSnapshot`) — test-only serialization path, no production callers. Harmless.
+For each reference found, the worker must inspect the actual source and classify it as one of:
+- **removed** — no longer present in `src/` after this issue;
+- **retained with source-backed reason** — lawful, intentional, with a concrete source-backed justification;
+- **harmless/temporary with source-backed reason** — not a live player-facing journal/read-model path, or data is provably identical to the projection, with source evidence;
+- **closure blocker** — a live player-facing aggregate-log read path where a projection-backed route is available but not used, requiring either a fix in this issue or an AMBER/BLOCKED return with exact follow-up evidence.
+
+Do NOT pre-classify any surface. Inspect the source, record the file/line, and classify from evidence. In particular:
+- `JournalResolver` reading `session.LogEntries` — inspect which handlers call it, whether those handlers serve player-facing journal/read-model output or internal command-path logic, and whether a projection-backed route is available. Classify from evidence.
+- `GameSessionMapper.ToDto` reading `session.LogEntries` — inspect whether the DTO is a player-facing read surface, whether the data is event-derived after BUNCH-86, and whether a projection-backed route is available. Classify from evidence.
+- `GameSessionDiaryDays` — inspect `TravelDiaryDayState` vs `DiaryProjector` output to determine whether the table is event-derivable or intentionally materialized. Classify from evidence.
+
+GREEN is only allowed if every remaining surface is removed, fixed, or source-backed as lawful. If any surface is a live player-facing aggregate-log read path where a projection-backed route is available but not used, either fix it in this issue or return AMBER/BLOCKED with exact follow-up evidence.
 
 - [ ] **Step 3: Projection-backed reads and CQRS posture audit**
 
-Verify:
-- `/journal` endpoint derives log entries from `StoredEvents` via `JournalLogProjector` (in `GameSessionReadStoreLoader`). ✓
-- Command-load path (`EfGameSessionRepository.LoadStoreAsync`) now also derives log entries from `StoredEvents` via `JournalLogProjector`. ✓ (BUNCH-86)
-- Command handlers do not use query-side read models to mutate state. ✓
-- Player-facing read surfaces expose safe projections/DTOs, not raw events or hidden culprit truth. Verify `/journal` payload does not contain `trueCulpritId`, `isTrueCulprit`, `linkedSuspectIds`, `killerReleaseState`, `suspectCount`. (Existing `GameApiJournalTests` already assert this.)
-- `JournalResolver.Resolve(session)` is still called by 6 investigation handlers. Classified as harmless/temporary — data is event-derived after BUNCH-86. Follow-up recommended.
+Verify with source evidence:
+- `/journal` endpoint derives log entries from `StoredEvents` via `JournalLogProjector` (in `GameSessionReadStoreLoader`). Record the file/line that proves this.
+- Command-load path (`EfGameSessionRepository.LoadStoreAsync`) now also derives log entries from `StoredEvents` via `JournalLogProjector`. Record the file/line that proves this.
+- Command handlers do not use query-side read models to mutate state. Inspect handler source for any read-model imports or queries.
+- Player-facing read surfaces expose safe projections/DTOs, not raw events or hidden culprit truth. Verify `/journal` payload does not contain `trueCulpritId`, `isTrueCulprit`, `linkedSuspectIds`, `killerReleaseState`, `suspectCount`. (Existing `GameApiJournalTests` already assert this — record the test name.)
+- `JournalResolver.Resolve(session)` callers — inspect each caller. If any caller serves a player-facing journal/read-model output where a projection-backed route is available, classify as closure blocker (fix in this issue or return AMBER/BLOCKED). If all callers are internal command-path logic where reading event-derived `session.LogEntries` is lawful, classify as retained with source-backed reason. Do NOT pre-classify.
 
 - [ ] **Step 4: Event sourcing and replay compatibility audit**
 
-Verify:
-- Typed events are registered/deserializable: `GameSessionJsonSerializer.DeserializeEvent` handles all event types. ✓
-- Command path, replay path, and projection path agree for purchase: proven by `JournalLogProjectorEquivalenceTests.Purchase_ProjectedLogMatchesCommandPath` and `GameApiJournalTests.GetJournalAfterPurchaseIncludesPurchaseLogEntry`. ✓
-- No event-recording-beside-mutation seams: `Purchase()` no longer appends log entries outside `Apply`. All `AddLogEntry` calls are inside `Apply` methods. ✓
-- Snapshots remain cache, not the only source: `EfGameSessionRepository` loads from snapshot + post-snapshot event replay. Log entries come from event projection, not snapshot. ✓
+Verify with source evidence:
+- Typed events are registered/deserializable: inspect `GameSessionJsonSerializer.DeserializeEvent` and confirm it handles all event types used in the purchase flow.
+- Command path, replay path, and projection path agree for purchase: confirm `JournalLogProjectorEquivalenceTests.Purchase_ProjectedLogMatchesCommandPath` and `GameApiJournalTests.GetJournalAfterPurchaseIncludesPurchaseLogEntry` pass and prove agreement. Record the test names.
+- No event-recording-beside-mutation seams: inspect `Purchase()` source and confirm it no longer appends log entries outside `Apply`. Grep all `AddLogEntry` call sites and confirm each is inside an `Apply` method or helper called from `Apply`.
+- Snapshots remain cache, not the only source: inspect `EfGameSessionRepository` load path and confirm it loads from snapshot + post-snapshot event replay, with log entries from event projection (not snapshot).
 
 - [ ] **Step 5: Onion dependency direction audit**
 
-Verify:
+Verify with source evidence:
 - Domain does not depend on Application, Persistence, API, or frontend. Check `src/WildBunch.Domain/*.csproj` — no project references to Application/Persistence/Api.
 - Application abstractions/handlers do not depend on Persistence implementation types. Check `src/WildBunch.Application/*.csproj` — references Domain and Abstractions, not Persistence.
 - Persistence depends inward on Application/Domain. Check `src/WildBunch.Persistence/*.csproj` — references Application and Domain.
-- `JournalLogProjector` is in `WildBunch.Application.Projections` — correct layer. ✓
+- `JournalLogProjector` is in `WildBunch.Application.Projections` — confirm the namespace/project layer is correct.
 
 - [ ] **Step 6: Persistence/read-model hangers-on audit**
 
-Verify:
-- `GameSessionLogEntries` table — REMOVED. Migration drops it. ✓
-- `GameSessionDiaryDays` — intentional materialized read model. `TravelDiaryDayState` is a rich per-day state object (health/wallet/food deltas, horse state, encounter details) not derivable from the current `DiaryProjector` (which produces simple `DiaryEntry` values). Retained with source-backed reason. ✓
-- No legacy tables remain without a justified role. Check migrations for any orphaned tables.
+Inspect all tables in the EF model and migrations. For each table, determine whether it is:
+- removed by this issue (verify no references remain in `src/`);
+- an event-derivable read model that should be replaced by a projector (closure blocker if not fixed);
+- an intentionally materialized read model with a source-backed reason (inspect the model vs available projectors to prove the data is not derivable).
+
+In particular:
+- `GameSessionLogEntries` — verify REMOVED by this issue. Confirm the migration drops it and no references remain in `src/`.
+- `GameSessionDiaryDays` — inspect `TravelDiaryDayState` (the entity/model shape) vs `DiaryProjector` output. Determine whether the per-day state is derivable from the current projector or intentionally materialized. Classify from evidence — do NOT pre-classify as "intentionally retained."
+- Check migrations for any other orphaned tables without a justified role.
 
 - [ ] **Step 7: Dead or misleading code audit**
 
-Verify:
-- `CompleteCase` — REMOVED. No production callers existed. ✓
-- No remaining direct `AddLogEntry` callers outside `Apply` methods. ✓
+Verify with source evidence:
+- `CompleteCase` — verify REMOVED by Task 11. Grep `src/` for any remaining references. Confirm no production callers existed before removal.
+- No remaining direct `AddLogEntry` callers outside `Apply` methods. Grep `GameSession.cs` for all `AddLogEntry` call sites and verify each is inside an `Apply` method or a helper called only from `Apply` methods (`RecordCaseUpdate`, `RecordTravelUpdate`).
 - ADR-0028 and related docs do not claim future projectors are missing when they now exist. Check `docs/adr/ADR-0028-*.md` for stale claims. If found, update or note as follow-up.
 
 - [ ] **Step 8: Record closeout findings**
 
-Compile the audit results into the PR description and worker return report. Classify each remaining surface as: removed, proven harmless/temporary with source-backed reason, or closure blocker. State the final closure judgment.
+Compile the audit results into the PR description and worker return report as an evidence-shaped table. For each of the following surfaces, record: the searches/files inspected, the classification, and the source-backed reason.
 
-Expected classification:
-- `GameSessionLogEntries` table: REMOVED
-- `CompleteCase` dead stub: REMOVED
-- `JournalResolver` in investigation handlers: HARMLESS/TEMPORARY — `session.LogEntries` is fully event-derived after BUNCH-86, so the data is identical to the projection. Follow-up: replace with projection-backed journal output in command responses.
-- `GameSessionMapper.ToDto` reading `session.LogEntries`: HARMLESS/TEMPORARY — same reason. Follow-up: same.
-- `GameSessionDiaryDays`: INTENTIONALLY RETAINED — rich materialized read model, not event-derivable through existing projectors.
-- Snapshot `LogEntries` (`SessionSnapshot`): TEST-ONLY — no production callers. Harmless.
+Required surfaces to report (one row each):
+- `GameSessionLogEntries` (table/entity/DbSet/configuration)
+- `SyncLogEntriesAsync` (method)
+- `AddLogEntry` (method + call sites)
+- `RecordCaseUpdate` (method + callers)
+- `RecordTravelUpdate` (method + callers)
+- `_logEntries` (aggregate backing field)
+- `LogEntries` (aggregate property — all readers)
+- `JournalResolver` (all callers, classified per Step 2/3)
+- `GameSessionDiaryDays` (table — classified per Step 2/6)
+- Snapshot `LogEntries` (`GameSessionJsonSerializer.SessionSnapshot` — all callers)
+- `CompleteCase` (method — removed or retained)
 
-Final judgment: GREEN if all hangers-on are removed or triaged with source-backed reasons. No known closure blockers.
+Classification values: `removed`, `retained with source-backed reason`, `harmless/temporary with source-backed reason`, `closure blocker`.
+
+Final judgment: GREEN only if every surface is `removed`, `retained with source-backed reason`, or `harmless/temporary with source-backed reason`. If any surface is `closure blocker`, return AMBER or BLOCKED with exact follow-up evidence — do not claim GREEN.
 
 ---
 
