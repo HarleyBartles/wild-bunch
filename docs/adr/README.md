@@ -91,6 +91,7 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0026 Turn-In Outcome Semantics for Bounty and Murder-Case Separation](ADR-0026-turn-in-outcome-semantics-for-bounty-and-murder-case-separation.md)
 - [ADR-0027 UI v0.1 SPA shell, routing, and player/debug separation](ADR-0027-ui-v0-1-spa-shell-routing-and-player-debug-separation.md)
 - [ADR-0028 Onion, DDD, CQRS, Event Sourcing, and projections posture](ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md)
+- [ADR-0029 Heat is future lawman pressure, not trail danger](ADR-0029-heat-is-future-lawman-pressure-not-trail-danger.md)
 
 ## Current Working Set
 
@@ -104,4 +105,7 @@ boundary. ADR-0026 extends the log with the turn-in outcome semantics that sit
 on top of that vocabulary. ADR-0028 extends the log with the true event-sourcing
 posture: typed domain events, command-produces-event-then-applies, replay,
 optimistic concurrency, snapshot as cache, safe projections, and the
-single-repository-port persistence path.
+single-repository-port persistence path. ADR-0029 extends the log with the
+heat model: heat is lawman pursuit pressure from time spent in town, not
+trail danger — it increases by 1 per full town day, resets to 0 on leaving
+town, and has no mechanical effect yet.

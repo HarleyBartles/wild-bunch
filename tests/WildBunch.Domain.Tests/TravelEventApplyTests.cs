@@ -26,7 +26,8 @@ public sealed class TravelEventApplyTests
         session.Apply(new JourneyStarted
         {
             JourneySnapshot = snapshot,
-            DiaryMessage = "You head out at dawn."
+            DiaryMessage = "You head out at dawn.",
+            PursuitHeat = 0
         });
 
         Assert.NotNull(session.Journey);
@@ -49,7 +50,8 @@ public sealed class TravelEventApplyTests
         session.Apply(new JourneyStarted
         {
             JourneySnapshot = startSnapshot,
-            DiaryMessage = "You head out at dawn."
+            DiaryMessage = "You head out at dawn.",
+            PursuitHeat = 0
         });
 
         setup.AdvanceJourneyDay();
@@ -84,7 +86,8 @@ public sealed class TravelEventApplyTests
         session.Apply(new JourneyStarted
         {
             JourneySnapshot = startSnapshot,
-            DiaryMessage = "You head out at dawn."
+            DiaryMessage = "You head out at dawn.",
+            PursuitHeat = 0
         });
 
         var healthBefore = session.Player.Health;
@@ -119,7 +122,8 @@ public sealed class TravelEventApplyTests
         session.Apply(new JourneyStarted
         {
             JourneySnapshot = startSnapshot,
-            DiaryMessage = "You head out at dawn."
+            DiaryMessage = "You head out at dawn.",
+            PursuitHeat = 0
         });
 
         var walletBefore = session.Player.Wallet.Cash;

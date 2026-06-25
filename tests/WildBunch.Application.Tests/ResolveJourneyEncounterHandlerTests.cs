@@ -157,7 +157,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Contains(resolvedDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("horse still had to work for it", StringComparison.OrdinalIgnoreCase)));
-        Assert.True(resolvedDay.HeatIncrease > 0);
+        Assert.Equal(0, resolvedDay.HeatIncrease);
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None)
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.Spring)
             });
 
         var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());

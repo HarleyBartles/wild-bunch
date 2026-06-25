@@ -130,7 +130,7 @@ public sealed class GameLogEntryLegacyProjectionTests
                 TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
                 Entropy = AdventureRandomnessPolicy.Standard
             },
-            new TownActionContextEntered { Day = 1, Turn = 1, Context = TownActionContext.SheriffOffice, TownId = new TownId("pinecross"), TimeOfDay = TimeOfDay.Afternoon },
+            new TownActionContextEntered { Day = 1, Turn = 1, Context = TownActionContext.SheriffOffice, TownId = new TownId("pinecross"), TimeOfDay = TimeOfDay.Afternoon, PursuitHeat = 0 },
             new InvestigationPerformed { SourceKind = InvestigationSourceKind.LocalRecords, TownId = new TownId("pinecross"), Message = "A public lead is noted." },
             new StoreItemPurchased { TownId = new TownId("pinecross"), ItemKind = ItemKind.Food, DisplayName = "Trail Biscuits", Quantity = 1, UnitPrice = 2m, TotalPrice = 2m, WalletAfter = 23m }
         };

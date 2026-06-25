@@ -70,7 +70,7 @@ internal static class CaseCharacterRoster
             ["notice board", "sheriff record"],
             SuspectTraits.FromTags(SuspectTraitTags.GangLoyal, SuspectTraitTags.Rider, SuspectTraitTags.Cautious),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "elzy-lay",
@@ -109,7 +109,7 @@ internal static class CaseCharacterRoster
             ["station clerk", "ledger note"],
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Fence, SuspectTraitTags.Cautious),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "news-carver",
@@ -122,7 +122,7 @@ internal static class CaseCharacterRoster
             ["notice board", "telegraph ledger"],
             SuspectTraits.FromTags(SuspectTraitTags.Desperate, SuspectTraitTags.Talkative, SuspectTraitTags.Lookout),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "camillo-hanks",
@@ -135,7 +135,7 @@ internal static class CaseCharacterRoster
             ["waystation clerk", "sheriff record"],
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate, SuspectTraitTags.GangLoyal, SuspectTraitTags.Violent),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "flat-nose-curry",
@@ -161,7 +161,7 @@ internal static class CaseCharacterRoster
             ["trail witness", "rail ledger"],
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Cautious, SuspectTraitTags.Fence),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "bill-doolin",
@@ -187,7 +187,7 @@ internal static class CaseCharacterRoster
             ["notice board", "sheriff record"],
             SuspectTraits.FromTags(SuspectTraitTags.GangLoyal, SuspectTraitTags.Cautious, SuspectTraitTags.Talkative),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "dynamite-dick-clifton",
@@ -200,7 +200,7 @@ internal static class CaseCharacterRoster
             ["waystation clerk", "rail ledger"],
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Enforcer, SuspectTraitTags.Tenacious),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "roy-daugherty",
@@ -226,7 +226,7 @@ internal static class CaseCharacterRoster
             ["station clerk", "ledger note"],
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Lookout, SuspectTraitTags.Tenacious),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false),
         Gang(
             "charley-pierce",
@@ -239,7 +239,7 @@ internal static class CaseCharacterRoster
             ["notice board", "telegraph ledger"],
             SuspectTraits.FromTags(SuspectTraitTags.Desperate, SuspectTraitTags.Talkative, SuspectTraitTags.Cautious),
             isGangEligible: true,
-            isTrueCulpritEligible: false,
+            isTrueCulpritEligible: true,
             isAssociatedCharacter: false)
     ];
 

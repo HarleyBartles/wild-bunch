@@ -25,7 +25,7 @@ public static class StartingWorldDescriptorResolver
     public static Guid GenerateRandomSeedCode()
         => Guid.NewGuid();
 
-    internal static StartingWorldDescriptor CreateCanonicalDescriptor(
+    public static StartingWorldDescriptor CreateCanonicalDescriptor(
         TravelDifficulty difficulty = TravelDifficulty.Normal,
         AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
     {
@@ -185,7 +185,7 @@ public static class StartingWorldDescriptorResolver
     public static string FormatSeedCode(Guid seedCode)
         => seedCode.ToString(SeedCodeFormat);
 
-    internal static Guid CreateRepresentativeSeedCode(StartingWorldDescriptor descriptor)
+    public static Guid CreateRepresentativeSeedCode(StartingWorldDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 

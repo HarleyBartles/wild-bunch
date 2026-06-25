@@ -120,7 +120,7 @@ public sealed class JournalLogProjectorTests
         var events = new IDomainEvent[]
         {
             GameStartedEvent(),
-            new TownActionContextEntered { Day = 1, Turn = 1, Context = TownActionContext.SheriffOffice, TownId = new TownId("pinecross"), TimeOfDay = TimeOfDay.Afternoon },
+            new TownActionContextEntered { Day = 1, Turn = 1, Context = TownActionContext.SheriffOffice, TownId = new TownId("pinecross"), TimeOfDay = TimeOfDay.Afternoon, PursuitHeat = 0 },
             new InvestigationPerformed
             {
                 SourceKind = InvestigationSourceKind.SheriffWarrants,
@@ -144,7 +144,7 @@ public sealed class JournalLogProjectorTests
         var events = new IDomainEvent[]
         {
             GameStartedEvent(),
-            new JourneyStarted { JourneySnapshot = null!, DiaryMessage = "You set out." },
+            new JourneyStarted { JourneySnapshot = null!, DiaryMessage = "You set out.", PursuitHeat = 0 },
             new TravelDayAdvanced
             {
                 Day = 2,

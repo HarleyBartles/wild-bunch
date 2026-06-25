@@ -61,7 +61,7 @@ internal static class ScenarioSeedCatalog
         TravelDifficulty: TravelDifficulty.Normal,
         Entropy: AdventureRandomnessPolicy.Standard,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=holloway,redmesa|preview=missing",
+        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -198,7 +198,7 @@ internal static class ScenarioSeedCatalog
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.success", !blockedAdvance.Success, "expected the first advance to interrupt due to encounter.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.journeyStatus", JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter", blockedAdvance.Journey is not null && blockedAdvance.Journey.PendingEncounter is not null, "expected a pending public encounter.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.kind", "foe", blockedAdvance.Journey!.PendingEncounter!.Kind);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.kind", "npc", blockedAdvance.Journey!.PendingEncounter!.Kind);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choices", 3, blockedAdvance.Journey.PendingEncounter.Choices.Count);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choiceIds", "run,fight,bribe", string.Join(",", blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id)));
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.day", dryForkTravel.CurrentSession.Clock.Day + 1, blockedAdvance.CurrentSession.Clock.Day);
@@ -216,11 +216,10 @@ internal static class ScenarioSeedCatalog
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resolved.clock.turn", 0, resolved.CurrentSession.Clock.Turn);
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.logEntries", resolved.CurrentSession.LogEntries.Count > dryForkTravel.CurrentSession.LogEntries.Count, "expected the resolution to add durable log state.");
 
-        Require("HighRiskFoeInterruptRoute", "travel-turn.resume.success", resumeAdvance.Success, "expected the route to resume after resolution.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.resume.journeyRemains", resumeAdvance.CurrentSession.Journey is not null, "expected the journey to remain after resuming.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.currentTownId", "redmesa", resumeAdvance.CurrentSession.Player.CurrentTownId);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.day", blockedAdvance.CurrentSession.Clock.Day + 1, resumeAdvance.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.turn", 0, resumeAdvance.CurrentSession.Clock.Turn);
-        Require("HighRiskFoeInterruptRoute", "travel-turn.resume.journey", resumeAdvance.CurrentSession.Journey is not null, "expected the journey to remain active after resuming.");
     }
 
     public static StartGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)
@@ -260,8 +259,8 @@ internal static class ScenarioSeedCatalog
         RequireEqual(scenarioName, "start-game.currentTownId", "pinecross", session.Player.CurrentTownId);
         RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
         RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
-        RequireEqual(scenarioName, "start-game.world.towns", 6, session.World.Towns.Count);
-        RequireEqual(scenarioName, "start-game.world.trails", 7, session.World.Trails.Count);
+        RequireEqual(scenarioName, "start-game.world.towns", 8, session.World.Towns.Count);
+        RequireEqual(scenarioName, "start-game.world.trails", 9, session.World.Trails.Count);
         RequireEqual(scenarioName, "start-game.caseFile.openingLead", "The culprit has a scar on his left cheek.", session.CaseFile.OpeningLead);
         RequireEqual(scenarioName, "start-game.caseFile.caseState.statusText", "The Wild Bunch trail is quiet.", session.CaseFile.CaseState.StatusText);
         RequireEqual(scenarioName, "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);

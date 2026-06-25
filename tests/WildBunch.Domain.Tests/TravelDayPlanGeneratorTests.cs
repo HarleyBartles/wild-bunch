@@ -32,7 +32,6 @@ public sealed class TravelDayPlanGeneratorTests
         Assert.Equal(TravelPressureBand.Critical, context.CanteenPressure);
         Assert.Equal(TravelPressureBand.Critical, context.HorseFeedPressure);
         Assert.Equal(HorseConditionBand.Worn, context.HorseConditionBand);
-        Assert.Equal(PursuitHeatBand.Calm, context.PursuitHeatBand);
         Assert.Equal(WalletBand.Tight, context.WalletBand);
         Assert.True(context.IsMounted);
         Assert.False(context.WaterSecure);
@@ -389,7 +388,6 @@ public sealed class TravelDayPlanGeneratorTests
             TravelPressureBand.None,
             TravelPressureBand.None,
             horseConditionBand,
-            PursuitHeatBand.Calm,
             WalletBand.Steady,
             Array.Empty<JourneyTrailEventKind>(),
             Array.Empty<JourneyTrailEventId>(),

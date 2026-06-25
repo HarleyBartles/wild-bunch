@@ -8,7 +8,7 @@ namespace WildBunch.Domain.Events;
 /// Day is ABSOLUTE — Apply calls Clock.Set(e.Day, 0).
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it.
 /// HealthDelta is ADDITIVE — Apply adds to player health.
-/// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it.
+/// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it (future lawman pressure; see ADR-0029).
 /// AdditionalDiaryMessages carries narration-only encounter messages that don't
 /// produce a typed TrailEventApplied event. Apply logs each via RecordTravelUpdate.
 /// </summary>

@@ -297,7 +297,8 @@ public sealed class ProjectionTests
                 TownId = new TownId("pinecross"),
                 Day = 1,
                 Turn = 1,
-                TimeOfDay = TimeOfDay.Morning
+                TimeOfDay = TimeOfDay.Morning,
+                PursuitHeat = 0
             },
             new InvestigationPerformed
             {
@@ -334,7 +335,7 @@ public sealed class ProjectionTests
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
                 Entropy = AdventureRandomnessPolicy.Standard
             },
-            new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("pinecross"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning },
+            new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("pinecross"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning, PursuitHeat = 0 },
             new SaloonPersonOfInterestSpotted
             {
                 SourceKind = InvestigationSourceKind.SaloonLookAround,
@@ -367,7 +368,7 @@ public sealed class ProjectionTests
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
                 Entropy = AdventureRandomnessPolicy.Standard
             },
-            new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("pinecross"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning },
+            new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("pinecross"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning, PursuitHeat = 0 },
             new SaloonPersonOfInterestSpotted
             {
                 SourceKind = InvestigationSourceKind.SaloonLookAround,

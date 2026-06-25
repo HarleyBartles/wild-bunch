@@ -30,11 +30,17 @@ internal static partial class TravelDayPlanGenerator
             return new TravelDayPlanState(context.DayNumber, Array.Empty<TravelDayEncounterState>(), CurrentEncounterIndex: 0, IsComplete: true);
         }
 
+        if (encounterCount == 0)
+        {
+            return new TravelDayPlanState(context.DayNumber, Array.Empty<TravelDayEncounterState>(), CurrentEncounterIndex: 0, IsComplete: true);
+        }
+
         var encounters = new List<TravelDayEncounterState>(encounterCount);
         for (var slot = 0; slot < encounterCount; slot++)
         {
             var slotSeed = ComposeSeed(baseSeed, $"slot:{slot}");
             var category = SelectCategory(context, Roll(slotSeed, "category"));
+
             encounters.Add(CreateEncounter(context, rules, context.DayNumber, slot, category, slotSeed));
         }
 
@@ -63,7 +69,6 @@ internal static partial class TravelDayPlanGenerator
             context.CanteenPressure.ToString(),
             context.HorseFeedPressure.ToString(),
             context.HorseConditionBand.ToString(),
-            context.PursuitHeatBand.ToString(),
             context.WalletBand.ToString(),
             string.Join(",", context.RecentTrailEventKinds),
             string.Join(",", context.RecentTrailEventIds),
@@ -143,12 +148,8 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, 3, context.HorseFeedPressure >= TravelPressureBand.High ? 1 : 0);
         }
 
-        if (context.PursuitHeatBand is PursuitHeatBand.Hot or PursuitHeatBand.Hunted)
-        {
-            AddWeight(weights, 1, -1);
-            AddWeight(weights, 2, 1);
-            AddWeight(weights, 3, context.PursuitHeatBand == PursuitHeatBand.Hunted ? 1 : 0);
-        }
+        // Heat band does NOT influence encounter count. Heat is lawman pressure (ADR-0029),
+        // not trail danger. Encounter count is determined by route risk, difficulty, and resource pressure.
 
         if (context.WalletBand is WalletBand.Broke or WalletBand.Tight)
         {
@@ -308,11 +309,9 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
         }
 
-        if (context.PursuitHeatBand is PursuitHeatBand.Hot or PursuitHeatBand.Hunted)
-        {
-            AddWeight(weights, TravelDayEncounterCategory.Foe, 1 + (int)context.PursuitHeatBand - 1);
-            AddWeight(weights, TravelDayEncounterCategory.Unlucky, context.PursuitHeatBand == PursuitHeatBand.Hunted ? 1 : 0);
-        }
+        // Heat does NOT influence encounter category. Heat is lawman pressure (ADR-0029),
+        // not trail danger. Category weights are determined by route risk, terrain, difficulty,
+        // and resource pressure. Heat has no effect on the trail.
 
         if (recentFoeCount > 0)
         {
@@ -646,8 +645,7 @@ internal static partial class TravelDayPlanGenerator
                     JourneyTrailEventId.BadLuckWashout,
                     "Washed-out trail",
                     $"A washout forced a detour and cost me {travelRulesProfile.BadLuckTrailDelayDays} extra day(s).",
-                    delayDays: travelRulesProfile.BadLuckTrailDelayDays,
-                    heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
+                    delayDays: travelRulesProfile.BadLuckTrailDelayDays),
                 null,
                 null),
                 RequiresHorse: false,
@@ -665,8 +663,7 @@ internal static partial class TravelDayPlanGenerator
                     foodDelta: -travelRulesProfile.BadLuckTrailFoodLoss,
                     canteenChargeDelta: -travelRulesProfile.BadLuckTrailCanteenLoss,
                     horseThirstDelta: travelRulesProfile.BadLuckTrailHorseThirst,
-                    delayDays: travelRulesProfile.BadLuckTrailDelayDays,
-                    heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
+                    delayDays: travelRulesProfile.BadLuckTrailDelayDays),
                 null,
                 null),
                 RequiresHorse: false,
@@ -681,8 +678,7 @@ internal static partial class TravelDayPlanGenerator
                     JourneyTrailEventId.BadLuckSpookedHorse,
                     "Spooked horse",
                     "A sudden canyon echo spooked the horse and left it more exhausted.",
-                    horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion,
-                    heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
+                    horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion),
                 null,
                 null),
                 RequiresHorse: true,
@@ -697,8 +693,7 @@ internal static partial class TravelDayPlanGenerator
                     JourneyTrailEventId.BadLuckDustStorm,
                     "Hard miles",
                     "The trail goes mean and I have to earn every mile the hard way.",
-                    delayDays: 0,
-                    heatIncrease: travelRulesProfile.TrailEventHeatIncrease),
+                    delayDays: 0),
                 null,
                 null),
                 RequiresHorse: false,

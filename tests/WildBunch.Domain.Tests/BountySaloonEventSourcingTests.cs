@@ -369,7 +369,7 @@ public sealed class BountySaloonEventSourcingTests
     {
         var events = new IDomainEvent[]
         {
-            new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("current"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning },
+            new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("current"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning, PursuitHeat = 0 },
             new SaloonPersonOfInterestSpotted { SourceKind = InvestigationSourceKind.SaloonLookAround, TownId = new TownId("current"), Message = "test", RecordLog = true },
             new WantedSuspectConfronted { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, Choice = WantedSuspectConfrontationChoice.Surrendered, Outcome = WantedSuspectConfrontationOutcome.Surrendered, IsAlive = true, IsSecured = true, Message = "test" },
             new SheriffTurnInSettled { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, IsAlive = true, BountyAmount = 50m, Message = "test", Day = 1, Turn = 1 },
