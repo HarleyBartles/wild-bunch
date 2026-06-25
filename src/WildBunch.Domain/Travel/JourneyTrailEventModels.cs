@@ -29,7 +29,7 @@ public sealed record JourneyTrailEventState(
     int HorseThirstDelta,
     int HorseExhaustionDelta,
     int DelayDays,
-    int HeatIncrease)
+    int HeatIncrease) // Dead/reserved — always 0 under ADR-0029; trail events do not affect heat.
 {
     public static JourneyTrailEventState CreateLucky(
         JourneyTrailEventId id,

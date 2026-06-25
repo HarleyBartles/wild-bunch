@@ -3,14 +3,17 @@ using WildBunch.Domain.Inventory;
 namespace WildBunch.Domain.Travel;
 
 /// <summary>
-/// Tuning knobs for travel difficulty. Heat-increase fields represent noise
-/// from visible/noisy/witnessed behavior that draws future lawman attention
-/// (ADR-0029), not trail danger. <see cref="TrailEventHeatIncrease"/> is a
-/// reserved knob for future noisy/witnessed trail events — no current trail
-/// event wires it in. <see cref="EncounterRunMountedHeatIncrease"/>,
-/// <see cref="EncounterRunFootHeatIncrease"/>, and
-/// <see cref="EncounterFightHeatIncrease"/> apply to encounter resolutions
-/// (run/fight) which are visible/noisy incidents.
+/// Tuning knobs for travel difficulty. Heat-increase fields
+/// (<see cref="TrailEventHeatIncrease"/>,
+/// <see cref="EncounterRunMountedHeatIncrease"/>,
+/// <see cref="EncounterRunFootHeatIncrease"/>,
+/// <see cref="EncounterFightHeatIncrease"/>) are **dead/reserved** under
+/// the current heat model (ADR-0029): heat is lawman pressure from time
+/// spent in town, not trail danger, and trail events and trail encounters
+/// do not affect heat. No code reads these fields. They are retained as
+/// reserved knobs for a future lawman-pressure system that may reintroduce
+/// heat changes from noisy/witnessed incidents, but they have no effect
+/// today and should not be interpreted as active trail-heat mechanics.
 /// </summary>
 public sealed record TravelRulesProfile(
     TravelDifficulty Difficulty,

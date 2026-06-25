@@ -16,7 +16,7 @@ internal static class JourneyEncounterResolutionEngine
         int HealthDelta,
         decimal WalletDelta,
         int AmmoSpent,
-        int HeatIncrease,
+        int HeatIncrease, // Dead/reserved — always 0 under ADR-0029; trail encounters do not affect heat.
         int HorseExhaustionDelta,
         bool ContinuedOnFoot,
         ItemKind? StolenItemKind,
