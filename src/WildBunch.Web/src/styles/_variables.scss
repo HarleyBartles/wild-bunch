@@ -1,0 +1,35 @@
+// Global design tokens for the Wild Bunch shell and feature surfaces.
+// Styled-components components reference these via var(--token) so the
+// SASS layer remains the single source of truth for palette and spacing.
+
+:root {
+  color-scheme: dark;
+
+  // Palette
+  --bg: #0f1115;
+  --bg-elevated: rgba(21, 24, 31, 0.9);
+  --bg-panel: rgba(18, 21, 27, 0.96);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text: #f2efe8;
+  --muted: #a9a49b;
+  --accent: #df9f4f;
+  --accent-strong: #f0bb73;
+  --danger: #f07e6e;
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  --radius: 18px;
+
+  // Typography
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(223, 159, 79, 0.18), transparent 22%),
+    radial-gradient(circle at top right, rgba(83, 113, 153, 0.14), transparent 24%),
+    linear-gradient(180deg, #14171c 0%, #0c0f14 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

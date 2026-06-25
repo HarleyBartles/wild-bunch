@@ -37,3 +37,4 @@ Human-facing ADR log index and conventions: [README.md](README.md)
 | ADR-0027 | 2026-06-25 | Updated — HUD label "heat" → "lawman heat" |
 | ADR-0028 | 2026-06-25 | Clean — PursuitHeat event refs are historical |
 | ADR-0029 | 2026-06-25 | Rewritten — town-heat model |
+| ADR-0030 | 2026-06-25 | New — dev overlay and dev endpoint namespace |
