@@ -21,7 +21,7 @@ Use Crew to prepare reasoning for the correct downstream owner, not to choose a 
 
 For normal coding workflow, the control plane is Linear/Codex: Linear issue as task contract, Codex worker where the golden gate says the task is executable, human Create PR gate, and GitHub PR/main verification.
 
-For GPT-native skillwork, route to the skill stack: `skill-creator`, `skill-validator`, `skill-packager`, and `skill-handoff`. Do not let Crew reasoning make GPT-native installed-skill edits look like Codex Cloud repo tasks unless the editable skill source is proven repo-backed and accessible to the worker.
+For GPT-native skillwork, route to `skill-creator` for authored skill content and `writing-skills` for cross-repo wording and doctrine checks when relevant. Do not let Crew reasoning make GPT-native installed-skill edits look like Codex Cloud repo tasks unless the editable skill source is proven repo-backed and accessible to the worker.
 
 For GitHub evidence, route to the repo/GitHub proof surface. For validation choice, route to the validation decision surface. For report language, route to `tps-reporting`. For old chat/YAML worker packets, use the legacy dispatch skills only when Linear/Codex is unavailable, unsuitable, or explicitly rejected.
 

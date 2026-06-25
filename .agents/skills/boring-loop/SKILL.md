@@ -78,8 +78,8 @@ Route out instead of restating specialist procedure.
 - GitHub proof, review routing, or branch closeout: `github-operations` or `github-superpowers`
 - Verification before completion: `verification-before-completion`
 - Repo-specific anti-slop controls: `unslop-superpowers`
-- Skill lifecycle work: `skill-validator`, `skill-packager`, `skill-installer`, `skill-handoff`
-- Dense issue bodies, connector-hostile content, or moving detail to attached Linear docs: `linear-issue-compactor`
+- Skill lifecycle work: use the current repo-backed install/projection lane for skill work; do not route new work through the retired package/install/handoff stack.
+- Dense issue bodies, connector-hostile content, or moving detail to attached Linear docs: `linear-superpowers`
 
 Use the specialist skill for the procedure. Use Boring Loop only to decide when to route there and what the next boring move is.
 

@@ -1,6 +1,6 @@
 ---
 name: connector-safety
-description: use this skill to keep connector and tool-side-effect work safe, auditable, and boring when a write is blocked, when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle, or when mutation work should follow discover -> read -> write -> verify or step back up the connector discovery chain.
+description: use this skill to keep connector and tool-side-effect work safe, auditable, and boring when a connector or tool call is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle, or when mutation work should follow discover -> read -> write -> verify or step back up the connector discovery chain.
 metadata:
   source-id: connector-safety-v1.1
   source-path: sources/first_party/skills/connector-safety/SKILL.md
@@ -9,13 +9,31 @@ license: "MIT"
 ---
 # Connector Safety
 
-Use this skill to keep connector and tool-side-effect work safe, auditable, and boring when a write is blocked or when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle.
+Use this skill to keep connector and tool-side-effect work safe, auditable, and boring when a connector or tool call is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, or when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle.
+
+## Automatic trigger
+
+If a connector, tool, or safety layer blocks a call, stop and switch into `connector-safety` recovery automatically.
+
+Do not treat the block as a request to paraphrase the payload from memory, guess a new shape, or keep retrying the same mutation surface.
 
 ## Core rule
 
 Treat connector or tool safety blocks as signals to narrow, clarify, verify, or stop. Do not frame the safety layer as an adversary and do not try to bypass it.
 
 A blocked mutation is not proof that the mutation happened. A planned mutation is not proof of authorization. A retry is lawful only when it is materially safer, narrower, clearer, or more auditable than the failed call.
+
+After a block, do not retry by paraphrasing the failed payload or rebuilding it from memory.
+
+## Authority-gated side-effect fields
+
+Some connectors expose fields that change execution authority, handoff control, or who can act next. Treat those fields as high-risk side effects even when the surrounding write looks routine.
+
+For Linear, `delegate` is one such field. Only write it when Harley explicitly asks to delegate the issue to a named agent or explicitly asks for Linear native delegation on that issue.
+
+Do not infer `delegate` from `send`, `run`, `worker-ready`, `Devin-ready`, `for Devin`, `campaign-sized`, `start`, `worker`, `agent`, or similar wording.
+
+Do not use `!`-prefixed labels as a proxy for delegation or worker pickup.
 
 ## Discovery-before-mutation rule
 
@@ -98,20 +116,17 @@ This is safer than creating a large fully populated child object in one call bec
 
 When a connector write is blocked, do not claim success. Follow this explicit recovery ladder:
 
-1. Do not claim success from a blocked write.
-2. Read the exact target if possible.
-3. Retry once only with a narrower one-field write.
-4. If blocked, step back to bounded parent discovery.
-5. Discover the target from that parent surface.
-6. Read the exact target.
-7. Read dependent connector vocabulary before writing: labels, statuses, projects, folders, users, branches, milestones, or other connector-owned values.
-8. Perform one bounded write using discovered stable values.
-9. Read back from the mutated target.
-10. Stop after repeated parent-discovered failure and report observed state.
+1. Acknowledge that the mutation did not happen.
+2. Step back to bounded parent discovery before any retry.
+3. Discover the target from that parent surface and read the exact target.
+4. Read dependent connector vocabulary before writing: labels, statuses, projects, folders, users, branches, milestones, or other connector-owned values.
+5. Retry once only with one narrower safer mutation using the discovered stable values.
+6. Read back from the mutated target.
+7. Stop after repeated parent-discovered failure and report observed state.
 
-Include a shortcut guard: a retry from memory or a stale target reference does not count as full recovery. Full recovery means parent discovery -> target discovery -> exact target read -> dependent vocabulary read if needed -> one-field write -> readback.
+Include a shortcut guard: a retry from memory or a stale target reference does not count as full recovery. Full recovery means parent discovery -> target discovery -> exact target read -> dependent vocabulary read if needed -> one narrower safer mutation -> readback.
 
-Concrete Linear example: `Linear team discovery -> issue discovery from team -> exact issue read -> team label vocabulary read -> label-only write -> readback`.
+Concrete Linear example: `Linear team discovery -> project or issue discovery from team -> exact issue or project read -> label/status vocabulary read if needed -> one narrow write -> readback`.
 
 ## Upstream discovery fallback
 

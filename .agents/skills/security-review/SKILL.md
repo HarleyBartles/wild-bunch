@@ -24,6 +24,12 @@ This skill ensures all code follows security best practices and identifies poten
 - Storing or transmitting sensitive data
 - Integrating third-party APIs
 
+## Quick Reference
+
+| Resource | Purpose | Load when |
+| --- | --- | --- |
+| `references/cloud-infrastructure-security.md` | Cloud, IAM, CI/CD, and deployment hardening guidance | The change touches cloud infra, secrets, or deployment plumbing |
+
 ## Security Checklist
 
 ### 1. Secrets Management
