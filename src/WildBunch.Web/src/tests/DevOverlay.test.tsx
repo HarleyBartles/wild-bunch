@@ -55,12 +55,12 @@ function renderOverlay(open: boolean, onClose = () => {}) {
 describe("DevOverlay", () => {
   it("renders nothing when closed", () => {
     renderOverlay(false);
-    expect(screen.queryByRole("dialog", { name: /developer overlay/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
   });
 
-  it("renders the overlay dialog when open", () => {
+  it("renders the overlay region when open", () => {
     renderOverlay(true);
-    expect(screen.getByRole("dialog", { name: /developer overlay/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
   });
 
   it("calls onClose when the Close button is clicked", async () => {
@@ -72,7 +72,7 @@ describe("DevOverlay", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onClose on Escape key", async () => {
+  it("calls onClose on Escape key when not expanded", async () => {
     const onClose = vi.fn();
     renderOverlay(true, onClose);
 
@@ -84,5 +84,28 @@ describe("DevOverlay", () => {
   it("renders the session audit panel tab", () => {
     renderOverlay(true);
     expect(screen.getByRole("button", { name: /session audit/i })).toBeInTheDocument();
+  });
+
+  it("expands when Expand is clicked and shows Shrink button", async () => {
+    renderOverlay(true);
+
+    const user = userEvent.setup();
+    const expandBtn = screen.getByRole("button", { name: /expand/i });
+    await user.click(expandBtn);
+
+    expect(screen.getByRole("button", { name: /shrink/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /expand/i })).not.toBeInTheDocument();
+  });
+
+  it("Escape shrinks instead of closing when expanded", async () => {
+    const onClose = vi.fn();
+    renderOverlay(true, onClose);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /expand/i }));
+
+    await user.keyboard("{Escape}");
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
   });
 });

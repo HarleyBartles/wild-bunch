@@ -285,7 +285,7 @@ describe("AppShell", () => {
     expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
   });
 
-  it("shows a Dev overlay button that opens the developer overlay", async () => {
+  it("shows a Dev toggle button that opens the developer overlay drawer", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -296,9 +296,9 @@ describe("AppShell", () => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("button", { name: /dev overlay/i }));
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
 
-    expect(await screen.findByRole("dialog", { name: /developer overlay/i })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
   });
 
   it("closes the dev overlay on Escape", async () => {
@@ -312,11 +312,11 @@ describe("AppShell", () => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("button", { name: /dev overlay/i }));
-    const dialog = await screen.findByRole("dialog", { name: /developer overlay/i });
-    expect(dialog).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+    expect(drawer).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: /developer overlay/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
   });
 });
