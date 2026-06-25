@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { Hud } from "./Hud";
 import { GlobalOverlays, type OverlayKind } from "../flow/GlobalOverlays";
+import { DevOverlay } from "../dev/DevOverlay";
 
 function ShellChrome() {
-  const path = useRouterState({ select: (state) => state.location.pathname });
-  const isDebug = path === "/debug";
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
+  const [devOverlayOpen, setDevOverlayOpen] = useState(false);
 
   return (
     <div className="v0-1-shell v0-1-shell--flow">
@@ -14,13 +14,13 @@ function ShellChrome() {
       <div className="shell-overlay-bar">
         <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
         <nav className="shell-dev-nav" aria-label="Developer tools">
-          <Link
-            to="/debug"
-            className={`shell-nav__link shell-nav__link--dev${isDebug ? " shell-nav__link--active" : ""}`}
-            aria-current={isDebug ? "page" : undefined}
+          <button
+            type="button"
+            className={`shell-nav__link shell-nav__link--dev${devOverlayOpen ? " shell-nav__link--active" : ""}`}
+            onClick={() => setDevOverlayOpen(true)}
           >
-            Dev tools
-          </Link>
+            Dev overlay
+          </button>
         </nav>
       </div>
       <main className="route-outlet" aria-live="polite">
@@ -28,6 +28,7 @@ function ShellChrome() {
           <Outlet />
         </div>
       </main>
+      <DevOverlay open={devOverlayOpen} onClose={() => setDevOverlayOpen(false)} />
     </div>
   );
 }
