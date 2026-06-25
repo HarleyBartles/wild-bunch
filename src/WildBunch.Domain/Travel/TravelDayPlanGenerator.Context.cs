@@ -85,7 +85,6 @@ internal static partial class TravelDayPlanGenerator
             context.CanteenPressure.ToString(),
             context.HorseFeedPressure.ToString(),
             context.HorseConditionBand.ToString(),
-            context.PursuitHeatBand.ToString(),
             context.WalletBand.ToString(),
             string.Join(",", context.RecentTrailEventKinds),
             string.Join(",", context.RecentTrailEventIds),
@@ -165,12 +164,8 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, 3, context.HorseFeedPressure >= TravelPressureBand.High ? 1 : 0);
         }
 
-        if (context.PursuitHeatBand is PursuitHeatBand.Hot or PursuitHeatBand.Hunted)
-        {
-            AddWeight(weights, 1, -1);
-            AddWeight(weights, 2, 1);
-            AddWeight(weights, 3, context.PursuitHeatBand == PursuitHeatBand.Hunted ? 1 : 0);
-        }
+        // Heat band does NOT influence encounter count. Heat is lawman pressure (ADR-0029),
+        // not trail danger. Encounter count is determined by route risk, difficulty, and resource pressure.
 
         if (context.WalletBand is WalletBand.Broke or WalletBand.Tight)
         {
@@ -330,11 +325,10 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
         }
 
-        if (context.PursuitHeatBand is PursuitHeatBand.Hot or PursuitHeatBand.Hunted)
-        {
-            AddWeight(weights, TravelDayEncounterCategory.Foe, 1 + (int)context.PursuitHeatBand - 1);
-            AddWeight(weights, TravelDayEncounterCategory.Unlucky, context.PursuitHeatBand == PursuitHeatBand.Hunted ? 1 : 0);
-        }
+        // Heat band does NOT influence encounter category. Heat is lawman pressure (ADR-0029),
+        // not trail danger. Category weights are determined by route risk, terrain, difficulty,
+        // and resource pressure. Heat band still affects encounter *resolution* (foe profiles,
+        // bribe costs) via JourneyEncounterResolutionEngine.
 
         if (recentFoeCount > 0)
         {

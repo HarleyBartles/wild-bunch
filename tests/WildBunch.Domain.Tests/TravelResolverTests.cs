@@ -127,7 +127,7 @@ public sealed class TravelResolverTests
     public void AdvanceJourneyDaySwitchesToFootImmediatelyWhenHorseBecomesLameAndRecalculatesRemainingDays()
     {
         var session = CreateProgressionSession(
-            HorseTravelState.Healthy,
+            new HorseTravelState(0, 0, 1),
             TrailTerrain.Mountains,
             WaterFeature.None,
             trailRisk: TrailRisk.Moderate,
@@ -135,7 +135,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(2);
 
         var result = session.AdvanceJourneyDay();
 
@@ -154,7 +153,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(2);
 
         var result = session.AdvanceJourneyDay();
 
@@ -195,7 +193,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("silvercreek"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -220,7 +217,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
 
         var result = session.AdvanceJourneyDay();
 
@@ -258,7 +254,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(4);
 
         var result = session.AdvanceJourneyDay();
 
@@ -274,7 +269,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -295,7 +289,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryspring"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -314,7 +307,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("hardpan"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
 
         var result = session.AdvanceJourneyDay();
 
@@ -330,7 +322,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("ridgeway"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(2);
 
         var result = session.AdvanceJourneyDay();
 
@@ -349,7 +340,6 @@ public sealed class TravelResolverTests
         Assert.Contains(preview.Warnings, warning => warning.Contains("poor grazing", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(preview.Warnings, warning => warning.Contains("two canteen charges per day", StringComparison.OrdinalIgnoreCase));
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(1);
 
         var result = session.AdvanceJourneyDay();
 
@@ -367,7 +357,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
 
         var result = session.AdvanceJourneyDay();
 
@@ -516,7 +505,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
 
         var result = session.AdvanceJourneyDay();
 
@@ -562,7 +550,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
         session.Journey!.MarkInterrupted(CreateFoeEncounter());
@@ -581,7 +568,7 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Journey.DelayDays);
         Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
         Assert.Equal(StartingHealthFor(session.TravelDifficulty), session.Player.Health);
-        Assert.True(session.PursuitState.Heat >= 4);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
     }
@@ -593,7 +580,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
         session.Journey!.MarkInterrupted(CreateFoeEncounter());
@@ -605,7 +591,7 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.DoesNotContain("delay", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.True(session.Journey!.DelayDays >= 0);
-        Assert.True(session.PursuitState.Heat >= 5);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
         Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
         Assert.Equal(2, session.Clock.Day);
@@ -636,7 +622,6 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        session.PursuitState.IncreaseHeat(3);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
         session.Journey!.MarkInterrupted(CreateFoeEncounter());
@@ -648,7 +633,7 @@ public sealed class TravelResolverTests
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
         Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
-        Assert.True(session.PursuitState.Heat >= 4);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(2, session.Clock.Day);
@@ -1032,7 +1017,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 2m)
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.Moderate, TrailTerrain.Badlands, WaterFeature.None, 2m)
             });
 
         var caseFile = CreateCaseFile();
@@ -1046,7 +1031,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.HorseFeed, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static DomainWorld CreateParityWorld(TrailRisk trailRisk = TrailRisk.Low)
@@ -1080,7 +1065,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness, entropy: AdventureRandomnessPolicy.Boring);
     }
 
     private static GameSession CreateLuckyFootSession()
@@ -1091,7 +1076,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, silvercreek },
             new[]
             {
-                new Trail(new TrailId("trail-pine-silver"), pinecross.Id, silvercreek.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek)
+                new Trail(new TrailId("trail-pine-silver"), pinecross.Id, silvercreek.Id, TrailRisk.Low, TrailTerrain.Mountains, WaterFeature.Creek)
             });
 
         var caseFile = CreateCaseFile();
@@ -1186,7 +1171,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, dryspring },
             new[]
             {
-                new Trail(new TrailId("trail-pine-dryspring"), pinecross.Id, dryspring.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+                new Trail(new TrailId("trail-pine-dryspring"), pinecross.Id, dryspring.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.None, 3m)
             });
 
         var caseFile = CreateCaseFile();
@@ -1210,7 +1195,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, hardpan },
             new[]
             {
-                new Trail(new TrailId("trail-pine-hardpan"), pinecross.Id, hardpan.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+                new Trail(new TrailId("trail-pine-hardpan"), pinecross.Id, hardpan.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.Spring, 3m)
             });
 
         var caseFile = CreateCaseFile();
@@ -1262,7 +1247,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None)
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.Spring)
             });
 
         var caseFile = CreateCaseFile();

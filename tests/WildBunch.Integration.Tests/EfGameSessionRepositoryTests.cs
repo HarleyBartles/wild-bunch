@@ -87,12 +87,6 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
-        // BUNCH-85 removed per-travel-day route-risk heat increases. The
-        // Moderate-risk trail previously set day-1 heat to
-        // Math.Max(1, (int)RouteProfile.Risk) = 2 (Wary band). Restore that
-        // heat so the deterministic day-plan seed (which includes
-        // PursuitHeatBand) produces the same roll sequence as before.
-        loaded.PursuitState.IncreaseHeat(2);
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -104,14 +98,14 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(new DomainInventoryCapabilityResolver().Resolve(reloaded.Player.Inventory).MountedTravelAvailable);
         Assert.Equal(2, reloaded.Clock.Day);
         Assert.Equal(0, reloaded.Clock.Turn);
-        Assert.Equal(2, reloaded.PursuitState.Heat);
+        Assert.Equal(0, reloaded.PursuitState.Heat);
         Assert.NotNull(reloaded.Journey);
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
         Assert.Equal(1m, reloaded.Journey.RemainingRideDayDistance);
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
-        Assert.Equal(1, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(2, reloaded.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal(TrailTerrain.Hills, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).Terrain);
         Assert.Equal(WaterFeature.River, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).WaterFeature);
@@ -290,12 +284,6 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
-        // BUNCH-85 removed per-travel-day route-risk heat increases. The
-        // Low-risk trail previously set day-1 heat to
-        // Math.Max(1, (int)RouteProfile.Risk) = 1 (Wary band). Restore that
-        // heat so the deterministic day-plan seed (which includes
-        // PursuitHeatBand) produces the same roll sequence as before.
-        loaded.PursuitState.IncreaseHeat(1);
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -305,7 +293,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(new TownId("dustvale"), reloaded!.Player.CurrentTownId);
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(0, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
-        Assert.Equal(new DomainHorseTravelState(0, 0, 2), reloaded.Player.Inventory.GetHorseState());
+        Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
         Assert.Equal(8, reloaded.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Equal(5m, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-1")).RideDayDistance);
     }

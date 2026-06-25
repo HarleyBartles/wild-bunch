@@ -66,8 +66,13 @@ public sealed class TravelResourceTrackingCharacterizationTests
         Assert.Equal(1250, session.Player.Health);
     }
 
+    // Heat no longer affects trail events or encounters, so the deterministic
+    // rolls now produce a different outcome for the same route profile: the
+    // EasyShortJourney is interrupted by an NPC encounter on day 1 instead of
+    // completing quietly with a LuckyCoinCache. The wallet is therefore
+    // unchanged. See ADR-0029.
     [Fact]
-    public void AdvanceJourneyDay_GainsExactWalletCashOnCompletion()
+    public void AdvanceJourneyDay_InterruptedByEncounter_LeavesWalletUnchanged()
     {
         var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
         session.StartJourney(preview);
@@ -75,8 +80,8 @@ public sealed class TravelResourceTrackingCharacterizationTests
 
         var result = session.AdvanceJourneyDay();
 
-        Assert.Equal(JourneyStatus.Completed, result.Status);
-        Assert.Equal(29m, session.Player.Wallet.Cash);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
     }
 
     [Fact]

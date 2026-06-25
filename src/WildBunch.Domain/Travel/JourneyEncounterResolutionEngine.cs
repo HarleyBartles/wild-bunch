@@ -27,10 +27,10 @@ internal static class JourneyEncounterResolutionEngine
     }
 
     /// <summary>
-    /// Creates a foe profile for a trail encounter. <see cref="PursuitHeatBand"/>
-    /// (Hunted/Hot) makes foes tougher and bribes pricier because a hot player
-    /// draws more aggressive/greedy riders — this is lawman-pressure-shaped
-    /// attention, not trail danger. See ADR-0029.
+    /// Creates a foe profile for a trail encounter. Foe speed, fight strength,
+    /// and bribe cost are determined by route risk, terrain, travel mode, and
+    /// difficulty — not by heat. Heat is lawman pressure (ADR-0029), not trail
+    /// danger, and has no effect on the trail.
     /// </summary>
     public static JourneyFoeProfile CreateFoeProfile(TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile, string seed)
     {
@@ -68,12 +68,6 @@ internal static class JourneyEncounterResolutionEngine
                 TrailRisk.Moderate => 1,
                 _ => 0
             })
-            + (context.PursuitHeatBand switch
-            {
-                PursuitHeatBand.Hunted => 2,
-                PursuitHeatBand.Hot => 1,
-                _ => 0
-            })
             + (context.Terrain switch
             {
                 TrailTerrain.Badlands => 1,
@@ -94,12 +88,6 @@ internal static class JourneyEncounterResolutionEngine
             {
                 TrailRisk.High => 4m,
                 TrailRisk.Moderate => 2m,
-                _ => 0m
-            })
-            + (context.PursuitHeatBand switch
-            {
-                PursuitHeatBand.Hunted => 3m,
-                PursuitHeatBand.Hot => 2m,
                 _ => 0m
             });
 
@@ -172,7 +160,7 @@ internal static class JourneyEncounterResolutionEngine
                 healthDelta,
                 0m,
                 0,
-                travelMode == TravelMode.Foot ? travelRulesProfile.EncounterRunFootHeatIncrease : travelRulesProfile.EncounterRunMountedHeatIncrease,
+                0,
                 horseExhaustionDelta,
                 travelMode == TravelMode.Foot,
                 null,
@@ -196,7 +184,7 @@ internal static class JourneyEncounterResolutionEngine
             failedHealthDelta,
             0m,
             0,
-            travelMode == TravelMode.Foot ? travelRulesProfile.EncounterRunFootHeatIncrease + 1 : travelRulesProfile.EncounterRunMountedHeatIncrease + 1,
+            0,
             failedHorseExhaustionDelta,
             travelMode == TravelMode.Foot,
             null,
@@ -271,7 +259,7 @@ internal static class JourneyEncounterResolutionEngine
             -healthLoss,
             0m,
             bulletSpend,
-            travelRulesProfile.EncounterFightHeatIncrease + (success ? 0 : 1),
+            0,
             0,
             false,
             null,
