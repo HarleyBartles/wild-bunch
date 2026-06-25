@@ -14,6 +14,7 @@ internal static class GameSessionComponentNames
     internal const string CompletedJourneyHistory = "completedJourneyHistory";
     internal const string WantedSuspectPresenceLedger = "wantedSuspectPresenceLedger";
     internal const string CurrentActionContext = "currentActionContext";
+    internal const string PendingDevTravelOverride = "pendingDevTravelOverride";
 }
 
 internal static class GameSessionComponentPayloads
