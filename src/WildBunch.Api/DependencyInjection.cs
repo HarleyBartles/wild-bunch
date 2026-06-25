@@ -1,6 +1,7 @@
 using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Dev.Queries;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Queries;
@@ -64,6 +65,9 @@ public static class DependencyInjection
         // Dev-only services (gated by DevRoleGuard, separated from player-facing APIs)
         services.AddScoped<DevRoleGuard>();
         services.AddScoped<GetSessionAuditHandler>();
+        services.AddScoped<GetTravelDevContextHandler>();
+        services.AddScoped<ForceTravelOverrideHandler>();
+        services.AddScoped<ClearTravelOverrideHandler>();
 
         return services;
     }

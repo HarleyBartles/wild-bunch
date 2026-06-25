@@ -100,6 +100,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         UpsertComponent(entity.Id, GameSessionComponentNames.TownVisitState, _serializer.SerializeTownVisitState(session.CurrentTownVisit), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.CurrentActionContext, _serializer.SerializeCurrentActionContext(session.CurrentActionContext, session.CurrentActionContextTownId), now);
 
+        var devOverrideJson = _serializer.SerializePendingDevTravelOverride(session.PendingDevTravelOverride);
+        if (devOverrideJson is null)
+        {
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.PendingDevTravelOverride, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            UpsertComponent(entity.Id, GameSessionComponentNames.PendingDevTravelOverride, devOverrideJson, now);
+        }
+
         if (session.Journey is null)
         {
             await RemoveComponentAsync(entity.Id, GameSessionComponentNames.Journey, cancellationToken).ConfigureAwait(false);
@@ -288,6 +298,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).
         // When the snapshot is current, this restores the persisted context.
         GameSessionRehydrator.SetCurrentActionContext(session, currentActionContext, currentActionContextTownId);
+
+        // Set PendingDevTravelOverride from snapshot. If there are post-snapshot events,
+        // ApplyCommittedEvents will overwrite this via Apply(DevTravelOverrideForced/Cleared/Consumed).
+        // When the snapshot is current, this restores the persisted dev override. See BUNCH-89.
+        var devOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevTravelOverride);
+        var pendingDevOverride = _serializer.DeserializePendingDevTravelOverride(devOverrideJson);
+        if (pendingDevOverride is not null)
+        {
+            GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", pendingDevOverride);
+        }
 
         if (hasPostSnapshotEvents)
         {

@@ -130,6 +130,15 @@ public sealed partial class GameSession
             case JourneyArrivalAcknowledged jaa:
                 session.Apply(jaa);
                 break;
+            case DevTravelOverrideForced dtf:
+                session.Apply(dtf);
+                break;
+            case DevTravelOverrideCleared dtc:
+                session.Apply(dtc);
+                break;
+            case DevTravelOverrideConsumed dtc2:
+                session.Apply(dtc2);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
