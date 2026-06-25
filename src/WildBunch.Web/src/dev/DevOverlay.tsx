@@ -114,7 +114,8 @@ const Drawer = styled.div<{ $expanded: boolean; $top: number }>`
   top: ${(props) => props.$top}px;
   left: 0;
   right: 0;
-  height: ${(props) => (props.$expanded ? "85vh" : "42vh")};
+  height: ${(props) => (props.$expanded ? `calc(100dvh - ${props.$top}px)` : "auto")};
+  max-height: calc(100dvh - ${(props) => props.$top}px);
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -124,13 +125,6 @@ const Drawer = styled.div<{ $expanded: boolean; $top: number }>`
   border-bottom: 1px solid var(--border-strong);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
   animation: ${slideDown} 0.16s ease-out;
-  transition-property: height;
-  transition-duration: 160ms;
-  transition-timing-function: ease-out;
-
-  @media (max-width: 640px) {
-    height: ${(props) => (props.$expanded ? "90vh" : "48vh")};
-  }
 `;
 
 const DrawerHeader = styled.header`
