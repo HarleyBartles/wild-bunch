@@ -11,13 +11,13 @@
 ## Global Constraints
 
 - Backend remains authoritative for gameplay state; React renders server state.
-- Hidden culprit truth must not be exposed through any dev endpoint or player API.
+- Normal player APIs and read models must not newly leak hidden truth. Dev-only endpoints MAY expose hidden truth and internal diagnostics when deliberately scoped, guarded, and separated from player DTOs. BUNCH-88 does not itself expose hidden truth, but the foundation must not establish an ADR/API convention that prevents later dev-only truth inspection.
 - The dev overlay is dev-only scaffolding; keep it utilitarian per AGENTS.md and play-surface-ui.md.
 - Do not implement travel encounter forcing or saloon/POI forcing in this issue.
 - Do not implement real auth; add the seam only.
-- Normal player DTOs/APIs must not newly expose hidden truth.
 - The `GameSession` aggregate root remains the live-play mutation boundary.
-- Dev endpoints live under `/api/dev/` and are gated by a centralized `DevRoleGuard`.
+- Dev endpoints live under `/api/dev/` and are gated by a centralized `DevRoleGuard` that returns an explicit 403 when access is denied — not an unhandled exception.
+- `DevRoleGuard` lives in `WildBunch.Api` (where `IHostEnvironment` is naturally available) and is tested through `WildBunch.Integration.Tests` (which references Api and uses `WebApplicationFactory<Program>`), not `WildBunch.Application.Tests` (which references Application, Domain, GameContent — not Api).
 - The overlay off state must preserve a clean normal play surface.
 - Worker environment uses PowerShell; do not use `&&` for command chaining.
 
@@ -91,9 +91,11 @@ Dev-only endpoints should live under a new `/api/dev/` route group, mapped by a 
 
 ### 6. What is the smallest centralized future auth/dev-role guard seam?
 
-A `DevRoleGuard` class registered as a scoped service in `DependencyInjection.cs`. It exposes a single `EnsureDevAccess()` method that currently always succeeds in development and throws/returns 403 in non-development environments. Each dev endpoint calls `devRoleGuard.EnsureDevAccess()` before processing.
+A `DevRoleGuard` class in `WildBunch.Api/Dev/`, registered as a scoped service in `DependencyInjection.cs`. It exposes a single `EnsureDevAccess()` method that no-ops in development and throws `DevAccessDeniedException` in non-development environments. Each dev endpoint calls `guard.EnsureDevAccess()` inside a try block that catches `DevAccessDeniedException` and returns `Results.Forbid()` (HTTP 403). This produces an explicit 403 response, not an unhandled exception.
 
-This is the smallest seam: one class, one method, one registration. Future auth implementations replace the body of `EnsureDevAccess` without changing call sites. The guard checks `IHostEnvironment.IsDevelopment()` now; later it can check claims, headers, or a dev-role token.
+The guard lives in `WildBunch.Api` because it depends on `IHostEnvironment`, which is naturally available there. `WildBunch.Application.Tests` does not reference Api, so the guard is tested through `WildBunch.Integration.Tests` (which references Api and uses `WebApplicationFactory<Program>`) — the same pattern used for `ProjectionEndpointTests`.
+
+This is the smallest seam: one class, one exception type, one method, one registration. Future auth implementations replace the body of `EnsureDevAccess` without changing call sites. The guard checks `IHostEnvironment.IsDevelopment()` now; later it can check claims, headers, or a dev-role token.
 
 ### 7. Which normal player DTO/API/read-model surfaces currently expose state, and how will the dev endpoint boundary avoid hidden-truth leakage?
 
@@ -104,14 +106,18 @@ Current player-facing DTOs:
 - `AvailableActionDto[]` — action kinds and labels.
 - `WantedPosterDto[]` — target display name, features, bounty, etc.
 
-The `FullAuditProjection` (`FullAuditProjector.cs`) is explicitly a developer/replay surface and is NOT exposed through any current endpoint. It derives event type names and summaries from the event stream.
+The `FullAuditProjection` (`FullAuditProjector.cs`) is explicitly a developer/replay surface and is NOT exposed through any current player-facing endpoint. It derives event type names and summaries from the event stream. The existing `ProjectionEndpointTests.GetAuditProjection_IsNotExposedOnPlayerFacingApi` test proves the audit endpoint is not reachable under `/api/games/{id}/projections/audit` (returns 404).
+
+The existing `GameApiHiddenTruthTests` test proves player-facing responses don't contain hidden markers (`trueCulpritId`, `isTrueCulprit`, `linkedSuspectIds`, `killerReleaseState`, gang member names).
 
 Dev endpoint boundary strategy:
-- Dev endpoints under `/api/dev/` may return `FullAuditProjection` and other dev-only data.
+- **The boundary is player-vs-dev, not truth-vs-no-truth.** Normal player APIs and read models must not newly leak hidden truth. Dev-only endpoints MAY expose hidden truth and internal diagnostics when deliberately scoped, guarded, and separated from player DTOs. BUNCH-88 does not itself expose hidden truth, but the foundation must not establish a convention that prevents later dev-only truth inspection.
+- Dev endpoints under `/api/dev/` may return `FullAuditProjection` and other dev-only data now, and may later expose hidden truth (culprit identity, internal encounter state, seed internals) when a future issue deliberately scopes that.
 - Dev DTOs are separate types in a `Dev/` folder, not reused player DTOs.
 - Dev query handlers derive from the event stream but return dev-shaped DTOs.
-- The `DevRoleGuard` prevents non-dev access.
+- The `DevRoleGuard` prevents non-dev access with an explicit 403 response.
 - Player-facing DTOs are unchanged — no hidden truth leaks into them.
+- The existing `GameApiHiddenTruthTests` pattern continues to guard the player boundary. A new integration test proves the dev endpoint is reachable under `/api/dev/` while the player-facing audit path remains 404.
 
 ### 8. What extension pattern will later travel and saloon/POI panels use?
 
@@ -138,11 +144,14 @@ This issue establishes the registry, the shell, the first diagnostic panel, and 
 - Dev overlay renders the first diagnostic panel content.
 - Dev API client calls `/api/dev/` namespace.
 
-**Backend tests (xUnit):**
-- `DevRoleGuard` allows access in development environment.
-- `DevRoleGuard` denies access in non-development environment.
-- Dev audit endpoint returns `FullAuditProjection`-shaped data.
-- Dev audit endpoint returns 403 when guard denies.
+**Backend tests (xUnit — `WildBunch.Integration.Tests`):**
+- Dev audit endpoint (`GET /api/dev/sessions/{id}/audit`) returns 200 with `SessionAuditDto`-shaped data when running in the development environment (the default `WebApplicationFactory` environment).
+- Dev audit endpoint returns 403 when the environment is overridden to Production (proves the `DevRoleGuard` denial path produces an explicit HTTP 403, not an unhandled exception).
+- Dev audit endpoint returns 404 when the session ID does not exist.
+- Player-facing audit path (`GET /api/games/{id}/projections/audit`) still returns 404 (the existing `ProjectionEndpointTests.GetAuditProjection_IsNotExposedOnPlayerFacingApi` test continues to pass — dev namespace does not reopen the player-facing audit path).
+- The existing `GameApiHiddenTruthTests` continue to pass (player DTOs unchanged).
+
+These are endpoint-level integration tests using the existing `PostgreSqlApiFactory` / `WebApplicationFactory<Program>` pattern. The denial-path test uses a test-specific factory that overrides the environment to Production via `builder.UseEnvironment("Production")` in `ConfigureWebHost`.
 
 **Browser screenshots (playtest evidence):**
 - Overlay off: clean play surface with HUD and flow content.
@@ -161,6 +170,40 @@ Split would be warranted if:
 - Multiple dev panels with complex backend queries were needed (this issue adds one panel).
 
 None of these apply, so one PR is correct.
+
+### 11. Current gameplay dev-surface inventory (seeds closeout)
+
+This inventory maps the current meaningful gameplay surfaces that exist in the play-surface flow today, and identifies which will later need dev overlay coverage. It is the project-level inventory BUNCH-88 needs to seed closeout — not just a list of cockpit panels being moved or retired.
+
+**Current player-facing gameplay surfaces (flow surfaces + HUD + overlays):**
+
+| Surface | Source | Gameplay meaning | Dev overlay coverage needed? |
+|---|---|---|---|
+| Pre-session | `PreSessionSurface.tsx` | Seed setup, start new hunt | Yes — seed descriptor inspection, world variant, culprit identity |
+| Town hub | `TownHubSurface.tsx` | Place selection (store, sheriff, saloon, trailhead) | Yes — force place availability, action gating diagnostics |
+| Store place | `places/StorePlace.tsx` | Buy supplies, food, gear | Yes — force store offers, vendor availability |
+| Sheriff place | `places/SheriffPlace.tsx` | Read wanted posters, check records | Yes — force wanted poster content, record results |
+| Saloon place | `places/SaloonPlace.tsx` | Look around, gather gossip, confront POI | Yes — force POI spawn, control confrontation outcomes |
+| Travel prep | `TravelPrepSurface.tsx` | Destination selection, route preview, start ride | Yes — force route profile, trail selection |
+| Trail flow | `TrailFlowSurface.tsx` | Active journey, travel panel, encounter resolution | Yes — force encounter kind, control encounter outcomes (BUNCH-87 area) |
+| Arrival | `ArrivalSurface.tsx` | Acknowledge arrival, enter town | Minimal — arrival is deterministic |
+| HUD | `shell/Hud.tsx` | Persistent status (player, clock, location, health, cash, heat, status) | Yes — resource state diagnostics (wallet, inventory, horse, canteen at diagnostic level) |
+| Case file overlay | `GlobalOverlays.tsx` → `CaseFileSurface` | Player-known clues, suspects, warrants | Yes — hidden truth inspection (culprit identity, internal suspect linkage) |
+| Wanted posters overlay | `GlobalOverlays.tsx` → `WantedPosterSurface` | Posters read from town notice boards | Yes — force poster content, poster feature salience |
+| Journal overlay | `GlobalOverlays.tsx` → `JournalSurface` | Player's authored record | Minimal — journal is projection output |
+
+**Dev surfaces that later issues will add to the overlay:**
+
+| Dev panel | Later issue | What it forces/inspects |
+|---|---|---|
+| Seed & world inspection | Future | Starting world descriptor, UUID seed decode, world variant, difficulty, entropy, culprit identity |
+| Travel encounter forcing | BUNCH-87 area | Force specific encounter kinds on the trail, control encounter choice outcomes |
+| Saloon/POI forcing | Future | Force POI spawn, control confrontation outcomes, inspect hidden POI state |
+| Session state inspection | This issue (first panel) | Full audit projection from event stream |
+| Resource state diagnostics | Future | Wallet, inventory, horse, canteen at a diagnostic level (not player-facing) |
+| Pursuit/heat diagnostics | Future | Lawman pressure state, heat progression diagnostics |
+
+This inventory is the seed for closeout: it tells future issues which gameplay surfaces exist, what dev overlay coverage they'll need, and which later issue owns each dev panel. BUNCH-88 establishes the foundation (shell, registry, endpoint namespace, guard, first panel) that these future panels register into.
 
 ---
 
@@ -188,8 +231,9 @@ None of these apply, so one PR is correct.
 ### Backend (`src/WildBunch.Api/`, `src/WildBunch.Application/`)
 
 **Create:**
-- `WildBunch.Api/Dev/DevEndpoints.cs` — maps `/api/dev/` route group with audit endpoint.
-- `WildBunch.Api/Dev/DevRoleGuard.cs` — centralized dev-role guard seam.
+- `WildBunch.Api/Dev/DevEndpoints.cs` — maps `/api/dev/` route group with audit endpoint; catches `DevAccessDeniedException` and returns 403.
+- `WildBunch.Api/Dev/DevRoleGuard.cs` — centralized dev-role guard seam; throws `DevAccessDeniedException` when access is denied.
+- `WildBunch.Api/Dev/DevAccessDeniedException.cs` — specific exception for dev-access denial (caught by endpoints, not a generic `UnauthorizedAccessException`).
 - `WildBunch.Application/Dev/Queries/GetSessionAuditQuery.cs` — dev query for session audit.
 - `WildBunch.Application/Dev/Queries/GetSessionAuditHandler.cs` — dev query handler using `FullAuditProjector`.
 - `WildBunch.Application/Dev/Models/SessionAuditDto.cs` — dev-only DTO.
@@ -198,11 +242,13 @@ None of these apply, so one PR is correct.
 - `WildBunch.Api/DependencyInjection.cs` — register `DevRoleGuard` and dev query handler; map dev endpoints.
 - `WildBunch.Api/Program.cs` — no change expected (dev endpoints mapped via `MapWildBunchApi`).
 
-### Tests (`src/WildBunch.Application.Tests/` or equivalent)
+### Tests (`tests/WildBunch.Integration.Tests/`)
 
 **Create:**
-- `Dev/DevRoleGuardTests.cs` — guard allows in dev, denies in non-dev.
-- `Dev/GetSessionAuditHandlerTests.cs` — handler returns audit projection.
+- `Dev/DevEndpointTests.cs` — endpoint-level integration tests using `PostgreSqlApiFactory` / `WebApplicationFactory<Program>`: audit returns 200 in dev, audit returns 403 in Production environment, audit returns 404 for missing session, player-facing audit path still 404.
+
+**Create (test infrastructure):**
+- `Dev/NonDevApiFactory.cs` — test-specific `WebApplicationFactory<Program>` that overrides the environment to Production via `builder.UseEnvironment("Production")` in `ConfigureWebHost`, for the 403 denial-path test.
 
 ### Docs
 
@@ -216,62 +262,34 @@ None of these apply, so one PR is correct.
 
 ## Implementation Tasks
 
-### Task 1: Backend dev-role guard seam
+### Task 1: Backend dev-role guard seam and dev-access exception
 
 **Files:**
 - Create: `src/WildBunch.Api/Dev/DevRoleGuard.cs`
-- Test: `src/WildBunch.Application.Tests/Dev/DevRoleGuardTests.cs`
+- Create: `src/WildBunch.Api/Dev/DevAccessDeniedException.cs`
 
 **Interfaces:**
-- Consumes: `IHostEnvironment` (from Microsoft.Extensions.Hosting)
-- Produces: `DevRoleGuard.EnsureDevAccess()` — throws `UnauthorizedAccessException` when not in development; no-op in development.
+- Consumes: `IHostEnvironment` (from Microsoft.Extensions.Hosting — available in the Api project)
+- Produces: `DevRoleGuard.EnsureDevAccess()` — throws `DevAccessDeniedException` when not in development; no-op in development. `DevAccessDeniedException` is a specific exception caught by dev endpoints to return 403.
 
-- [ ] **Step 1: Write the failing test**
+**Test placement note:** `DevRoleGuard` lives in `WildBunch.Api` because it depends on `IHostEnvironment`, which is naturally available in the Api project. `WildBunch.Application.Tests` references Application, Domain, and GameContent — not Api — so it cannot test this type. The guard and endpoint behavior are tested together through `WildBunch.Integration.Tests` (which references Api and uses `WebApplicationFactory<Program>`) in Task 3. This matches the repo's existing pattern: `ProjectionEndpointTests` tests projection endpoints through the integration test project, not through unit tests.
+
+- [ ] **Step 1: Write the dev-access exception**
 
 ```csharp
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
-using WildBunch.Api.Dev;
+namespace WildBunch.Api.Dev;
 
-namespace WildBunch.Application.Tests.Dev;
-
-public class DevRoleGuardTests
+/// <summary>
+/// Thrown by DevRoleGuard when dev endpoint access is denied.
+/// Dev endpoints catch this and return 403 Forbid.
+/// </summary>
+public sealed class DevAccessDeniedException : Exception
 {
-    [Fact]
-    public void EnsureDevAccess_AllowsInDevelopmentEnvironment()
-    {
-        var env = new TestHostEnvironment { EnvironmentName = Environments.Development };
-        var guard = new DevRoleGuard(env);
-
-        // Should not throw
-        guard.EnsureDevAccess();
-    }
-
-    [Fact]
-    public void EnsureDevAccess_ThrowsInNonDevelopmentEnvironment()
-    {
-        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
-        var guard = new DevRoleGuard(env);
-
-        Assert.Throws<UnauthorizedAccessException>(() => guard.EnsureDevAccess());
-    }
-
-    private sealed class TestHostEnvironment : IHostEnvironment
-    {
-        public string EnvironmentName { get; set; } = Environments.Development;
-        public string ApplicationName { get; set; } = "TestApp";
-        public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
-        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
-    }
+    public DevAccessDeniedException(string message) : base(message) { }
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `dotnet test src/WildBunch.Application.Tests --filter "DevRoleGuardTests"`
-Expected: FAIL — `DevRoleGuard` type not found.
-
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 2: Write the guard**
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -281,7 +299,8 @@ namespace WildBunch.Api.Dev;
 /// <summary>
 /// Centralized dev-role guard seam. Currently checks development environment.
 /// Future auth implementations replace the body of EnsureDevAccess without
-/// changing call sites.
+/// changing call sites. Throws DevAccessDeniedException when access is denied;
+/// dev endpoints catch this and return 403.
 /// </summary>
 public sealed class DevRoleGuard
 {
@@ -296,23 +315,25 @@ public sealed class DevRoleGuard
     {
         if (!_environment.IsDevelopment())
         {
-            throw new UnauthorizedAccessException("Dev endpoints are only available in the development environment.");
+            throw new DevAccessDeniedException("Dev endpoints are only available in the development environment.");
         }
     }
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 3: Build to verify compilation**
 
-Run: `dotnet test src/WildBunch.Application.Tests --filter "DevRoleGuardTests"`
+Run: `dotnet build`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add src/WildBunch.Api/Dev/DevRoleGuard.cs src/WildBunch.Application.Tests/Dev/DevRoleGuardTests.cs
-git commit -m "feat: add DevRoleGuard centralized dev-access seam"
+git add src/WildBunch.Api/Dev/DevRoleGuard.cs src/WildBunch.Api/Dev/DevAccessDeniedException.cs
+git commit -m "feat: add DevRoleGuard and DevAccessDeniedException dev-access seam"
 ```
+
+Note: The guard is not unit-tested in isolation because it lives in Api and the unit test projects don't reference Api. Its behavior (allow in dev, deny in non-dev → 403) is proven by the endpoint-level integration tests in Task 3, which test the actual route contract including the denial path.
 
 ### Task 2: Backend dev session audit query and DTO
 
@@ -438,17 +459,19 @@ git add src/WildBunch.Application/Dev/ src/WildBunch.Application.Tests/Dev/GetSe
 git commit -m "feat: add dev session audit query and DTO"
 ```
 
-### Task 3: Backend dev endpoints and DI registration
+### Task 3: Backend dev endpoints, DI registration, and endpoint-level integration tests
 
 **Files:**
 - Create: `src/WildBunch.Api/Dev/DevEndpoints.cs`
 - Modify: `src/WildBunch.Api/DependencyInjection.cs`
+- Create: `tests/WildBunch.Integration.Tests/Dev/DevEndpointTests.cs`
+- Create: `tests/WildBunch.Integration.Tests/Dev/NonDevApiFactory.cs`
 
 **Interfaces:**
-- Consumes: `DevRoleGuard`, `GetSessionAuditHandler`
-- Produces: `GET /api/dev/sessions/{id}/audit` → `SessionAuditDto`
+- Consumes: `DevRoleGuard`, `GetSessionAuditHandler`, `PostgreSqlApiFactory`, `BoringScenarioBuilder`
+- Produces: `GET /api/dev/sessions/{id}/audit` → `SessionAuditDto` (200), 403 (denied), 404 (not found)
 
-- [ ] **Step 1: Write the dev endpoints**
+- [ ] **Step 1: Write the dev endpoints with 403 catch**
 
 ```csharp
 using WildBunch.Application.Dev.Models;
@@ -478,12 +501,15 @@ public static class DevEndpoints
         GetSessionAuditHandler handler,
         CancellationToken cancellationToken)
     {
-        guard.EnsureDevAccess();
-
         try
         {
+            guard.EnsureDevAccess();
             var result = await handler.HandleAsync(new GetSessionAuditQuery(id), cancellationToken);
             return Results.Ok(result);
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.Forbid();
         }
         catch (GameSessionNotFoundException)
         {
@@ -492,6 +518,8 @@ public static class DevEndpoints
     }
 }
 ```
+
+Note: `guard.EnsureDevAccess()` is inside the try block so `DevAccessDeniedException` is caught and returns 403, not an unhandled exception. This is the explicit dev-boundary behavior the DOD requires.
 
 - [ ] **Step 2: Register in DependencyInjection**
 
@@ -509,16 +537,165 @@ app.MapDevEndpoints();
 
 Add using statements for `WildBunch.Api.Dev` and `WildBunch.Application.Dev.Queries`.
 
-- [ ] **Step 3: Build and verify**
+- [ ] **Step 3: Write the NonDevApiFactory for the 403 denial-path test**
+
+```csharp
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using WildBunch.Api;
+using WildBunch.Application.Abstractions;
+using WildBunch.GameContent.Abstractions;
+using WildBunch.Persistence;
+using WildBunch.Persistence.GameSessions;
+using WildBunch.Integration.Tests.TestInfrastructure;
+
+namespace WildBunch.Integration.Tests.Dev;
+
+/// <summary>
+/// WebApplicationFactory that overrides the environment to Production
+/// so DevRoleGuard denies access. Proves the 403 denial path.
+/// </summary>
+public sealed class NonDevApiFactory : WebApplicationFactory<Program>, IDisposable
+{
+    private readonly PostgreSqlTestDatabase _database;
+    private bool _disposed;
+
+    public NonDevApiFactory()
+    {
+        _database = new PostgreSqlTestDatabase();
+
+        using var context = new WildBunchDbContext(new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(_database.ConnectionString)
+            .Options);
+
+        context.Database.Migrate();
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Production");
+
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<DbContextOptions<WildBunchDbContext>>();
+            services.RemoveAll<WildBunchDbContext>();
+            services.RemoveAll<IGameSessionRepository>();
+            services.RemoveAll<ITravelRandomnessSource>();
+
+            services.AddSingleton(_database);
+            services.AddDbContext<WildBunchDbContext>((_, options) => options.UseNpgsql(_database.ConnectionString));
+            services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
+            services.AddSingleton<ITravelRandomnessSource, DeterministicTravelRandomnessSource>();
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing && !_disposed)
+        {
+            _disposed = true;
+            _database.Dispose();
+        }
+    }
+}
+```
+
+- [ ] **Step 4: Write the endpoint-level integration tests**
+
+```csharp
+using System.Net;
+using System.Net.Http.Json;
+using WildBunch.Api.Games;
+using WildBunch.Integration.Tests.TestInfrastructure;
+
+namespace WildBunch.Integration.Tests.Dev;
+
+public sealed class DevEndpointTests
+{
+    [Fact]
+    public async Task GetSessionAudit_Returns200_WithAuditEntriesInDevEnvironment()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(created);
+
+        var auditResponse = await client.GetAsync($"/api/dev/sessions/{created!.Id}/audit");
+        Assert.Equal(HttpStatusCode.OK, auditResponse.StatusCode);
+
+        var payload = await auditResponse.Content.ReadAsStringAsync();
+        Assert.Contains("\"entries\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("GameStarted", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetSessionAudit_Returns403_InNonDevEnvironment()
+    {
+        using var factory = new NonDevApiFactory();
+        using var client = factory.CreateClient();
+
+        // Even a valid session ID should be denied — the guard runs before the handler.
+        var auditResponse = await client.GetAsync($"/api/dev/sessions/{Guid.NewGuid()}/audit");
+        Assert.Equal(HttpStatusCode.Forbidden, auditResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSessionAudit_Returns404_WhenSessionDoesNotExist()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var auditResponse = await client.GetAsync($"/api/dev/sessions/{Guid.NewGuid()}/audit");
+        Assert.Equal(HttpStatusCode.NotFound, auditResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlayerFacingAuditPath_StillReturns404()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(created);
+
+        // The player-facing audit path must remain closed even though /api/dev/ exists.
+        var playerAuditResponse = await client.GetAsync($"/api/games/{created!.Id}/projections/audit");
+        Assert.Equal(HttpStatusCode.NotFound, playerAuditResponse.StatusCode);
+    }
+}
+```
+
+Note: The `GameSessionDto` record used here follows the pattern in `ProjectionEndpointTests.cs` (line 110: `private sealed record GameSessionDto(Guid Id);`). Check whether to use the full `GameSessionDto` from `WildBunch.Application.Games.Models` or the minimal local record — the existing `ProjectionEndpointTests` uses a minimal local record, while `GameApiTests` uses the full DTO. Follow whichever pattern the existing tests in the file use.
+
+- [ ] **Step 5: Build and run integration tests**
 
 Run: `dotnet build`
-Expected: PASS with no errors.
+Expected: PASS
 
-- [ ] **Step 4: Commit**
+Run: `.\scripts\postgres-dev.ps1 ensure`
+Run: `dotnet test tests/WildBunch.Integration.Tests --filter "DevEndpointTests"`
+Expected: PASS — all four tests pass (200 in dev, 403 in non-dev, 404 for missing session, player-facing audit still 404).
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/WildBunch.Api/Dev/DevEndpoints.cs src/WildBunch.Api/DependencyInjection.cs
-git commit -m "feat: add /api/dev/ endpoint namespace with audit endpoint"
+git add src/WildBunch.Api/Dev/DevEndpoints.cs src/WildBunch.Api/DependencyInjection.cs tests/WildBunch.Integration.Tests/Dev/DevEndpointTests.cs tests/WildBunch.Integration.Tests/Dev/NonDevApiFactory.cs
+git commit -m "feat: add /api/dev/ endpoint namespace with audit endpoint and integration tests"
 ```
 
 ### Task 4: Frontend dev API client and types
@@ -1230,13 +1407,13 @@ architecture, ui, process
 ## Related ADRs
 
 - `depends on`: ADR-0028 (projection posture — FullAuditProjector is the dev audit source)
-- `related to`: ADR-0007 (hidden culprit boundaries — dev endpoints must not leak hidden truth to player APIs)
+- `related to`: ADR-0007 (hidden culprit boundaries — the player-vs-dev boundary, not a blanket prohibition on dev truth)
 
 ## Context
 
 The previous dev cockpit (`DebugCockpitRoute` at `/debug`) duplicated player-facing functionality (start game, actions, travel, case file) already available in the flow surfaces. It was a separate route that competed with the play surface rather than a contextual overlay that could augment it.
 
-Future dev controls (travel encounter forcing, saloon/POI forcing) need a shared extension point that is clearly dev-only, toggleable, and separated from player-facing APIs.
+Future dev controls (travel encounter forcing, saloon/POI forcing) need a shared extension point that is clearly dev-only, toggleable, and separated from player-facing APIs. Some future dev panels will need to inspect hidden truth (culprit identity, internal encounter state, seed internals) for debugging and playtesting. The foundation must not establish a convention that prevents that.
 
 ## Decision
 
@@ -1244,26 +1421,28 @@ Future dev controls (travel encounter forcing, saloon/POI forcing) need a shared
 
 2. **Dev endpoint namespace.** Dev-only endpoints live under `/api/dev/`, mapped by `DevEndpoints`, separate from player-facing `/api/games/`. Dev endpoints may return dev-only projections (FullAuditProjection) and dev-only DTOs.
 
-3. **DevRoleGuard seam.** A centralized `DevRoleGuard` with `EnsureDevAccess()` gates every dev endpoint. Currently checks `IHostEnvironment.IsDevelopment()`. Future auth replaces the method body without changing call sites.
+3. **DevRoleGuard seam.** A centralized `DevRoleGuard` with `EnsureDevAccess()` gates every dev endpoint. Currently checks `IHostEnvironment.IsDevelopment()`. Throws `DevAccessDeniedException` which endpoints catch and return as 403. Future auth replaces the method body without changing call sites.
 
 4. **Panel registry.** A `DevPanelRegistry` defines available dev panels as `{ id, label, render }` entries. The DevOverlay renders a sidebar from the registry. Future panels (TravelDevPanel, SaloonDevPanel) add entries without modifying the shell.
 
 5. **Cockpit retirement.** `DebugCockpitRoute` and the `/debug` route are removed. There is one dev surface: the DevOverlay.
 
-6. **Hidden-truth safety.** Dev endpoints return dev-shaped DTOs (`SessionAuditDto`) separate from player DTOs. The FullAuditProjection exposes event type names and summaries but not hidden culprit identity fields. Player-facing DTOs are unchanged.
+6. **Player-vs-dev truth boundary.** The boundary is player-vs-dev, not truth-vs-no-truth. Normal player APIs and read models must not newly leak hidden truth (per ADR-0007 and ADR-0028 §10). Dev-only endpoints MAY expose hidden truth and internal diagnostics when deliberately scoped, guarded, and separated from player DTOs. BUNCH-88 does not itself expose hidden truth, but the `/api/dev/` namespace and `DevRoleGuard` seam establish the route through which later issues can deliberately expose dev-only truth. Dev DTOs are separate types from player DTOs. The existing `GameApiHiddenTruthTests` continue to guard the player boundary.
 
 ## Options Considered and Rejected
 
 - **Keep DebugCockpitRoute and add overlay beside it.** Rejected: two dev surfaces creates confusion and duplication.
 - **Route-based overlay at /dev.** Rejected: URL-based toggle adds navigation complexity and doesn't coexist cleanly with game phase routing.
 - **Generic Modal/Panel abstraction.** Rejected per play-surface-ui.md: avoid generic React infrastructure before demand. The DevOverlay is a specific dev surface, not a reusable abstraction.
+- **Blanket prohibition on dev hidden-truth exposure.** Rejected: this would prevent future dev-only truth inspection (culprit identity, encounter internals, seed diagnostics) that playtesting and debugging require. The correct boundary is player-vs-dev with the guard seam, not truth-vs-no-truth.
 
 ## Consequences
 
 - Future dev panels register through the registry and fetch from `/api/dev/`.
-- Dev endpoint access is centralized through one guard seam.
+- Dev endpoint access is centralized through one guard seam with an explicit 403 denial path.
 - The play surface is clean when the overlay is closed.
 - The FullAuditProjector is now exposed through a dev endpoint, but only in development and only through dev DTOs.
+- Later issues may add dev endpoints that expose hidden truth (culprit identity, internal state) through the same guarded `/api/dev/` namespace without violating ADR-0007, because ADR-0007's boundary is player-facing, not dev-facing.
 ```
 
 - [ ] **Step 2: Update ADR index**
@@ -1336,15 +1515,15 @@ If browser evidence or final adjustments require changes, commit them. Otherwise
 
 | DOD Clause | Proof |
 |---|---|
-| Current `main` is inspected and source seams are reported | Preflight answers 1-10 above with file references |
+| Current `main` is inspected and source seams are reported | Preflight answers 1-11 above with file references; gameplay dev-surface inventory in answer 11 |
 | Old dev cockpit is retired or no longer rendered | Task 7 deletes `DebugCockpitRoute.tsx` and removes `/debug` route |
 | Dev overlay can be toggled on and off | Task 6 + Task 7: `DevOverlay` with `open` prop, toggle button in `AppShell` |
 | Overlay off preserves a clean normal play surface | Task 8 test: overlay closed → dialog not in DOM; Task 10 screenshot |
 | Overlay on is visibly dev-only and can render contextual panel content | Task 6: `DevOverlay` with "Developer overlay" dialog label; Task 5: `SessionAuditDevPanel` |
-| Dev-only API/query namespace exists separately from normal player APIs | Task 3: `/api/dev/` route group with `DevEndpoints` |
-| Future auth/dev-role guard is centralized | Task 1: `DevRoleGuard.EnsureDevAccess()` |
-| Normal player DTOs/APIs do not newly expose hidden truth | Dev DTOs are separate types; player DTOs unchanged; FullAuditProjection exposes event summaries only |
-| Extension pattern for future contextual panels is clear | Task 5: `DevPanelRegistry` with `{ id, label, render }` entries |
-| Validation covers backend/frontend surfaces touched | Task 10: `dotnet build`, `dotnet test`, `npm run typecheck`, `npm run build`, `npm run test`, EF migrations check |
+| Dev-only API/query namespace exists separately from normal player APIs | Task 3: `/api/dev/` route group with `DevEndpoints`; `DevEndpointTests` proves 200 in dev, 403 in non-dev, 404 for missing session, player-facing audit still 404 |
+| Future auth/dev-role guard is centralized | Task 1: `DevRoleGuard.EnsureDevAccess()` in `WildBunch.Api`; Task 3: endpoint catches `DevAccessDeniedException` → 403; `DevEndpointTests` proves the denial path returns explicit 403 |
+| Normal player DTOs/APIs do not newly expose hidden truth | Dev DTOs are separate types; player DTOs unchanged; `GameApiHiddenTruthTests` continues to pass; `DevEndpointTests.PlayerFacingAuditPath_StillReturns404` proves dev namespace does not reopen player-facing audit; ADR-0030 records the player-vs-dev boundary (not a blanket prohibition on dev truth) |
+| Extension pattern for future contextual panels is clear | Task 5: `DevPanelRegistry` with `{ id, label, render }` entries; Preflight answer 11: gameplay dev-surface inventory maps which surfaces will need coverage |
+| Validation covers backend/frontend surfaces touched | Task 10: `dotnet build`, `dotnet test` (including `DevEndpointTests` integration tests), `npm run typecheck`, `npm run build`, `npm run test`, EF migrations check |
 | Return evidence includes branch, PR URL, SHA, changed files, validation, screenshots, DOD mapping | Final worker return per AGENTS.md return format |
 
