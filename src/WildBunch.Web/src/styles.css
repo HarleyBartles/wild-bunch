@@ -1115,6 +1115,136 @@ h1 {
   font-size: 1.08rem;
 }
 
+/* ===== Dev overlay ===== */
+.dev-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 10, 8, 0.98);
+  color: var(--text);
+}
+
+.dev-overlay__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dev-overlay__eyebrow {
+  margin: 0;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+}
+
+.dev-overlay__title {
+  margin: 2px 0 0;
+  font-size: 1.2rem;
+}
+
+.dev-overlay__close {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dev-overlay__body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.dev-overlay__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--border);
+  min-width: 180px;
+}
+
+.dev-overlay__tab {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.dev-overlay__tab--active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-strong);
+}
+
+.dev-overlay__content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.dev-panel-muted {
+  color: var(--muted);
+}
+
+.dev-panel-error {
+  color: #f07e6e;
+}
+
+.dev-audit-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dev-audit-entry {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  font-size: 0.86rem;
+}
+
+.dev-audit-sequence {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dev-audit-type {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.dev-audit-summary {
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .dev-overlay__body {
+    flex-direction: column;
+  }
+  .dev-overlay__sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    min-width: 0;
+  }
+}
+
 .place-card__body p {
   margin: 0;
   color: var(--muted);
