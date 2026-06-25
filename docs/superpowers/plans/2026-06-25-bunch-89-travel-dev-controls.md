@@ -60,13 +60,17 @@ On `GameSession` as a new private field `_pendingDevTravelOverride` of type `Dev
 
 ### Q6: What immutable dev events are needed for force, clear, and consume?
 
-- `DevTravelOverrideForced` — records that a dev command set a pending override (category, optional foe profile fields, optional message). Applied to set `_pendingDevTravelOverride`.
-- `DevTravelOverrideCleared` — records that a dev command cleared the pending override. Applied to set `_pendingDevTravelOverride = null`.
-- Consumption is recorded by the existing `TravelDayAdvanced` event — the day plan it carries will reflect the forced content. No separate "consumed" event is needed; the override is cleared from aggregate state during `PrepareTravelDayAdvance()` and the `TravelDayAdvanced` event is the proof that the forced day was played. The dev query surface can show the override was present and is now gone.
+Three typed dev events, each with an explicit `Apply` path so replay reconstructs the exact same aggregate state as the command path:
+
+- `DevTravelOverrideForced` — records that a dev command set a pending override (category, optional foe profile fields, optional message). `Apply` sets `_pendingDevTravelOverride`.
+- `DevTravelOverrideCleared` — records that a dev command cleared the pending override. `Apply` sets `_pendingDevTravelOverride = null`.
+- `DevTravelOverrideConsumed` — records that the pending override was consumed by normal travel advancement. `Apply` sets `_pendingDevTravelOverride = null`. This is emitted by `PrepareTravelDayAdvance()` right before the `TravelDayAdvanced` event, in the same command execution.
+
+The consumption event is necessary for replay safety. Without it, replaying `DevTravelOverrideForced → TravelDayAdvanced` would set the override on the `Forced` event and never clear it, leaving a stale pending override in the rehydrated session. With the explicit `DevTravelOverrideConsumed` event, replay of `Forced → Consumed → TravelDayAdvanced` reconstructs the correct final state: override set, then cleared, then the normal travel day applied. The `TravelDayAdvanced` event remains the normal gameplay outcome event and is unchanged — it does not know or care whether the day plan was dev-forced or generator-produced.
 
 ### Q7: How will normal travel events record that a generated thing came from dev-forced state without treating dev command intent as the gameplay outcome?
 
-The `TravelDayAdvanced` event carries the ABSOLUTE `JourneySnapshot` (which includes `CurrentDayPlan`) and `DayOutcome` — these are the gameplay facts. The dev override only controls *what* `TravelDayPlanGenerator` would have produced; the actual day plan, encounter, and resolution are still normal gameplay events. The `DevTravelOverrideForced` event is a separate dev-only fact in the stream. The normal events do not carry a "wasForced" flag — the event stream speaks for itself: a `DevTravelOverrideForced` followed by a `TravelDayAdvanced` with the forced shape is the audit trail.
+The `TravelDayAdvanced` event carries the ABSOLUTE `JourneySnapshot` (which includes `CurrentDayPlan`) and `DayOutcome` — these are the gameplay facts. The dev override only controls *what* `TravelDayPlanGenerator` would have produced; the actual day plan, encounter, and resolution are still normal gameplay events. The normal events do not carry a "wasForced" flag — the event stream speaks for itself: `DevTravelOverrideForced → DevTravelOverrideConsumed → TravelDayAdvanced` with the forced shape is the audit trail. The `DevTravelOverrideConsumed` event is dev-only and does not affect gameplay state beyond clearing the pending override; it is not a gameplay outcome.
 
 ### Q8: Where should dev-only travel query/command endpoints live?
 
@@ -85,19 +89,22 @@ All endpoints under `/api/games/` — `GameSessionEndpoints`, `TravelEndpoints`,
 
 - Existing `AdvanceTravelDayHandlerTests` continue to pass unchanged (no override active).
 - New domain test: `AdvanceJourneyDay_WithNoDevOverride_UsesGeneratorOutput` — characterization test proving the day plan matches `TravelDayPlanGenerator.Generate` output.
-- New domain test: `AdvanceJourneyDay_WithDevOverride_ConsumesOverrideOnce` — proves the forced plan is used and the override is cleared after.
+- New domain test: `AdvanceJourneyDay_WithDevOverride_ConsumesOverrideOnce` — proves the forced plan is used, `DevTravelOverrideConsumed` is emitted, and the override is cleared after.
 - New domain test: `AdvanceJourneyDay_AfterConsumedOverride_ResumesNormalGeneration` — proves the next advance uses normal generation.
-- Replay equality test: `RehydrateFromEvents_WithDevOverrideForced_ReconstructsOverrideState` — proves the override is reconstructed from events.
+- Replay test: `RehydrateFromEvents_WithDevOverrideForced_ReconstructsOverrideState` — proves the override is reconstructed from the `Forced` event alone.
+- **Replay-after-consumption test: `RehydrateFromEvents_AfterConsumption_HasNoPendingOverride`** — proves that replaying `Forced → Consumed → TravelDayAdvanced` rehydrates a session with `_pendingDevTravelOverride = null`. This is the critical replay-safety proof: the consumed event clears the override on replay just as the command path clears it during execution.
+- **No-override replay test: `RehydrateFromEvents_WithNoDevOverride_HasNoPendingOverride`** — proves that a normal event stream without dev events rehydrates with no pending override (does not accidentally clear unrelated future state).
 
 ### Q11: What event-stream proof will demonstrate force -> advance/consume -> normal resolution?
 
 A domain-level test that:
 1. Starts a journey (emits `JourneyStarted`).
 2. Forces a foe override (emits `DevTravelOverrideForced`).
-3. Advances the day (emits `TravelDayAdvanced` with the forced foe encounter in the day plan, `DayOutcome = Interrupted`).
+3. Advances the day (emits `DevTravelOverrideConsumed` then `TravelDayAdvanced` with the forced foe encounter in the day plan, `DayOutcome = Interrupted`).
 4. Verifies the override is consumed (aggregate state `_pendingDevTravelOverride` is null).
 5. Resolves the encounter normally (emits `JourneyEncounterResolved`).
-6. Verifies the event stream contains: `JourneyStarted`, `DevTravelOverrideForced`, `TravelDayAdvanced`, `JourneyEncounterResolved` — proving the dev force was an event, the advance consumed it, and normal resolution followed.
+6. Verifies the event stream contains: `JourneyStarted`, `DevTravelOverrideForced`, `DevTravelOverrideConsumed`, `TravelDayAdvanced`, `JourneyEncounterResolved` — proving the dev force was an event, the consume was an event, the advance consumed it, and normal resolution followed.
+7. **Rehydrates a fresh session from that event stream and verifies `_pendingDevTravelOverride` is null** — proving replay produces the same final state as the command path.
 
 ---
 
@@ -109,8 +116,9 @@ A domain-level test that:
 |------|----------------|
 | `Events/DevTravelOverrideForced.cs` | New typed domain event: dev forced a pending travel override |
 | `Events/DevTravelOverrideCleared.cs` | New typed domain event: dev cleared the pending travel override |
+| `Events/DevTravelOverrideConsumed.cs` | New typed domain event: pending override was consumed by normal travel advancement |
 | `Game/DevTravelOverride.cs` | New record: the pending dev override shape (category, foe profile fields, message) |
-| `Game/GameSession.cs` (modify) | Add `_pendingDevTravelOverride` field, `ForceDevTravelOverride()` / `ClearDevTravelOverride()` command methods, `Apply(DevTravelOverrideForced)` / `Apply(DevTravelOverrideCleared)` methods, consume override in `PrepareTravelDayAdvance()` |
+| `Game/GameSession.cs` (modify) | Add `_pendingDevTravelOverride` field, `ForceDevTravelOverride()` / `ClearDevTravelOverride()` command methods, `Apply(DevTravelOverrideForced)` / `Apply(DevTravelOverrideCleared)` / `Apply(DevTravelOverrideConsumed)` methods, emit `DevTravelOverrideConsumed` + consume override in `PrepareTravelDayAdvance()` |
 | `Game/GameSessionEventReplay.cs` (modify) | Add dev event cases to `ApplyEvent` switch |
 | `Game/GameSession.cs` `ApplyProducedEvent` (modify) | Add dev event cases to the produce-time dispatch switch |
 
@@ -139,7 +147,7 @@ A domain-level test that:
 
 | File | Responsibility |
 |------|----------------|
-| `Serialization/GameSessionJsonSerializer.Events.cs` (modify) | Add 2 new event types to `ResolveEventType` switch |
+| `Serialization/GameSessionJsonSerializer.Events.cs` (modify) | Add 3 new event types to `ResolveEventType` switch |
 | `Serialization/GameSessionJsonSerializer.SessionSnapshot.cs` (modify) | Add `PendingDevTravelOverride` to snapshot record and `FromDomain`/`ToDomain` |
 | `Serialization/GameSessionRehydrator.cs` (modify) | Add override field to `Create` method if needed (or set via snapshot ToDomain) |
 
@@ -178,9 +186,10 @@ A domain-level test that:
 - Create: `src/WildBunch.Domain/Game/DevTravelOverride.cs`
 - Create: `src/WildBunch.Domain/Events/DevTravelOverrideForced.cs`
 - Create: `src/WildBunch.Domain/Events/DevTravelOverrideCleared.cs`
+- Create: `src/WildBunch.Domain/Events/DevTravelOverrideConsumed.cs`
 
 **Interfaces:**
-- Produces: `DevTravelOverride` record, `DevTravelOverrideForced` event, `DevTravelOverrideCleared` event — consumed by Task 2 (GameSession) and Task 5 (persistence serializer).
+- Produces: `DevTravelOverride` record, `DevTravelOverrideForced` event, `DevTravelOverrideCleared` event, `DevTravelOverrideConsumed` event — consumed by Task 2 (GameSession) and Task 5 (persistence serializer).
 
 - [ ] **Step 1: Write the DevTravelOverride record**
 
@@ -245,15 +254,32 @@ namespace WildBunch.Domain.Events;
 public sealed record DevTravelOverrideCleared : IDomainEvent;
 ```
 
-- [ ] **Step 4: Build to verify compilation**
+- [ ] **Step 4: Write the DevTravelOverrideConsumed event**
+
+```csharp
+// src/WildBunch.Domain/Events/DevTravelOverrideConsumed.cs
+namespace WildBunch.Domain.Events;
+
+/// <summary>
+/// Fact: the pending dev travel override was consumed by normal travel advancement.
+/// Emitted by PrepareTravelDayAdvance() right before the TravelDayAdvanced event,
+/// in the same command execution. Apply clears _pendingDevTravelOverride.
+/// This event makes replay safe: replaying Forced -> Consumed -> TravelDayAdvanced
+/// reconstructs the correct final state with no pending override.
+/// Dev-only event — not a gameplay outcome. See BUNCH-89 and ADR-0030.
+/// </summary>
+public sealed record DevTravelOverrideConsumed : IDomainEvent;
+```
+
+- [ ] **Step 5: Build to verify compilation**
 
 Run: `dotnet build src/WildBunch.Domain/WildBunch.Domain.csproj`
 Expected: Build succeeds (new files compile, no references yet).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```powershell
-git add src/WildBunch.Domain/Game/DevTravelOverride.cs src/WildBunch.Domain/Events/DevTravelOverrideForced.cs src/WildBunch.Domain/Events/DevTravelOverrideCleared.cs
+git add src/WildBunch.Domain/Game/DevTravelOverride.cs src/WildBunch.Domain/Events/DevTravelOverrideForced.cs src/WildBunch.Domain/Events/DevTravelOverrideCleared.cs src/WildBunch.Domain/Events/DevTravelOverrideConsumed.cs
 git commit -m "BUNCH-89: add DevTravelOverride record and dev domain events"
 ```
 
@@ -267,8 +293,10 @@ git commit -m "BUNCH-89: add DevTravelOverride record and dev domain events"
 - Test: `tests/WildBunch.Domain.Tests/DevTravelOverrideTests.cs`
 
 **Interfaces:**
-- Consumes: `DevTravelOverride`, `DevTravelOverrideForced`, `DevTravelOverrideCleared` from Task 1
-- Produces: `GameSession.ForceDevTravelOverride()`, `GameSession.ClearDevTravelOverride()`, `GameSession.PendingDevTravelOverride` property, `Apply(DevTravelOverrideForced)`, `Apply(DevTravelOverrideCleared)` — consumed by Task 3 (handlers), Task 5 (persistence), Task 7 (frontend query).
+- Consumes: `DevTravelOverride`, `DevTravelOverrideForced`, `DevTravelOverrideCleared`, `DevTravelOverrideConsumed` from Task 1
+- Produces: `GameSession.ForceDevTravelOverride()`, `GameSession.ClearDevTravelOverride()`, `GameSession.PendingDevTravelOverride` property, `Apply(DevTravelOverrideForced)`, `Apply(DevTravelOverrideCleared)`, `Apply(DevTravelOverrideConsumed)` — consumed by Task 3 (handlers), Task 5 (persistence), Task 7 (frontend query).
+
+**Application-layer access strategy:** `PendingDevTravelOverride` is `internal` on `GameSession`. The repo already has `[assembly: InternalsVisibleTo("WildBunch.Application")]` in `src/WildBunch.Domain/Properties/AssemblyInfo.cs` (line 4), so the Application dev mapper can read it directly. No new `InternalsVisibleTo` attribute or public accessor is needed. This is settled — not a mid-flight discovery point.
 
 - [ ] **Step 1: Write failing domain tests**
 
@@ -322,6 +350,8 @@ public sealed class DevTravelOverrideTests
 
         session.AdvanceJourneyDay();
 
+        // DevTravelOverrideConsumed event was emitted
+        Assert.Single(session.UncommittedEvents.OfType<DevTravelOverrideConsumed>());
         // Override consumed after advance
         Assert.Null(session.PendingDevTravelOverride);
         // Journey interrupted by the forced foe encounter
@@ -345,6 +375,8 @@ public sealed class DevTravelOverrideTests
         // Next advance should use normal generation (no override)
         var result = session.AdvanceJourneyDay();
         Assert.Null(session.PendingDevTravelOverride);
+        // No new DevTravelOverrideConsumed event (override was already consumed)
+        Assert.Empty(session.UncommittedEvents.OfType<DevTravelOverrideConsumed>());
         // The result should be a normal advance (not forced)
         Assert.True(result.Success || session.Journey!.Status == JourneyStatus.Interrupted);
     }
@@ -359,6 +391,55 @@ public sealed class DevTravelOverrideTests
         Assert.Null(session.PendingDevTravelOverride);
         // No dev events in the stream
         Assert.Empty(session.UncommittedEvents.OfType<DevTravelOverrideForced>());
+        Assert.Empty(session.UncommittedEvents.OfType<DevTravelOverrideConsumed>());
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_WithDevOverrideForced_ReconstructsOverrideState()
+    {
+        var session = TestSessionFactory.CreateWithActiveJourney();
+        session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
+        session.MarkEventsCommitted();
+
+        var events = session.AllEvents;
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id, session.World, session.CaseFile, events);
+
+        Assert.NotNull(rehydrated.PendingDevTravelOverride);
+        Assert.Equal(TravelDayEncounterCategory.Foe, rehydrated.PendingDevTravelOverride!.ForcedCategory);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_AfterConsumption_HasNoPendingOverride()
+    {
+        var session = TestSessionFactory.CreateWithActiveJourney();
+        session.ForceDevTravelOverride(DevTravelOverride.ForFoe(
+            new JourneyFoeProfile(Speed: 5, FightStrength: 4, MinimumBribe: 8m)));
+        session.MarkEventsCommitted();
+        session.AdvanceJourneyDay();
+        session.MarkEventsCommitted();
+
+        // Rehydrate from the full event stream: Forced -> Consumed -> TravelDayAdvanced
+        var events = session.AllEvents;
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id, session.World, session.CaseFile, events);
+
+        // Critical replay-safety proof: override is null after replay
+        Assert.Null(rehydrated.PendingDevTravelOverride);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_WithNoDevOverride_HasNoPendingOverride()
+    {
+        var session = TestSessionFactory.CreateWithActiveJourney();
+        session.AdvanceJourneyDay();
+        session.MarkEventsCommitted();
+
+        var events = session.AllEvents;
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id, session.World, session.CaseFile, events);
+
+        Assert.Null(rehydrated.PendingDevTravelOverride);
     }
 }
 ```
@@ -462,6 +543,18 @@ internal void Apply(DevTravelOverrideCleared e)
     _pendingDevTravelOverride = null;
     _version++;
 }
+
+/// <summary>
+/// Applies a DevTravelOverrideConsumed event. Clears the pending dev override.
+/// This is the replay-safe consumption path: replaying Forced -> Consumed ->
+/// TravelDayAdvanced reconstructs the correct final state with no pending override.
+/// Dev-only event — not a gameplay outcome. See BUNCH-89.
+/// </summary>
+internal void Apply(DevTravelOverrideConsumed e)
+{
+    _pendingDevTravelOverride = null;
+    _version++;
+}
 ```
 
 - [ ] **Step 6: Add dev event cases to ApplyProducedEvent**
@@ -474,6 +567,9 @@ case DevTravelOverrideForced dtf:
     break;
 case DevTravelOverrideCleared dtc:
     Apply(dtc);
+    break;
+case DevTravelOverrideConsumed dtc2:
+    Apply(dtc2);
     break;
 ```
 
@@ -488,9 +584,12 @@ case DevTravelOverrideForced dtf:
 case DevTravelOverrideCleared dtc:
     session.Apply(dtc);
     break;
+case DevTravelOverrideConsumed dtc2:
+    session.Apply(dtc2);
+    break;
 ```
 
-- [ ] **Step 8: Consume the override in PrepareTravelDayAdvance**
+- [ ] **Step 8: Consume the override in PrepareTravelDayAdvance with an explicit consumed event**
 
 In `src/WildBunch.Domain/Game/GameSession.cs`, in `PrepareTravelDayAdvance()` (around line 1172-1173), replace:
 
@@ -502,12 +601,22 @@ Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
 with:
 
 ```csharp
-var dayPlan = _pendingDevTravelOverride is not null
-    ? TravelDayPlanFactory.CreateForcedDayPlan(_pendingDevTravelOverride, Journey.DaysTravelled, TravelRules)
-    : TravelDayPlanGenerator.Generate(CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion));
+TravelDayPlanState dayPlan;
+if (_pendingDevTravelOverride is not null)
+{
+    // Dev override is active: produce the consumed event (replay-safe clear),
+    // then use the forced day plan instead of the generator.
+    ProduceEvent(new DevTravelOverrideConsumed());
+    dayPlan = TravelDayPlanFactory.CreateForcedDayPlan(_pendingDevTravelOverride, Journey.DaysTravelled, TravelRules);
+}
+else
+{
+    dayPlan = TravelDayPlanGenerator.Generate(CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion));
+}
 Journey.SetCurrentDayPlan(dayPlan);
-_pendingDevTravelOverride = null; // Consume once
 ```
+
+Note: `ProduceEvent` calls `Apply(DevTravelOverrideConsumed)` which sets `_pendingDevTravelOverride = null` and increments `_version`. This is the single mutation path — the field is not cleared imperatively outside the event apply path. The `DevTravelOverrideConsumed` event is emitted before the `TravelDayAdvanced` event in the same command execution, so the event stream order is `... DevTravelOverrideConsumed, TravelDayAdvanced ...` and replay produces the same state.
 
 - [ ] **Step 9: Create TravelDayPlanFactory helper**
 
@@ -565,7 +674,7 @@ internal static class TravelDayPlanFactory
                     TrailEvent: null,
                     PendingEncounter: JourneyEncounterState.CreateFoe(
                         message,
-                        new JourneyFoeProfile(Speed: 3, FightStrength: 3, MinimumBribe: travelRules.BribeBaseAmount)),
+                        new JourneyFoeProfile(Speed: 3, FightStrength: 3, MinimumBribe: travelRules.EncounterBribeCash)),
                     Resolution: null),
             TravelDayEncounterCategory.Quiet =>
                 new TravelDayEncounterState(
@@ -616,7 +725,7 @@ internal static class TravelDayPlanFactory
 }
 ```
 
-Note: This factory needs `using WildBunch.Domain.Game;` for `DevTravelOverride`. Verify `TravelRulesProfile.BribeBaseAmount` exists; if the field name differs, adjust to the actual property. Check `src/WildBunch.Domain/Travel/TravelRulesProfile.cs` for the exact name.
+Note: This factory needs `using WildBunch.Domain.Game;` for `DevTravelOverride`. The field `TravelRulesProfile.EncounterBribeCash` is confirmed (verified in `src/WildBunch.Domain/Travel/JourneyEncounterResolutionEngine.cs:86`).
 
 - [ ] **Step 10: Add test session factory helper if needed**
 
@@ -1170,6 +1279,7 @@ In `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs`
 ```csharp
 nameof(DevTravelOverrideForced) => typeof(DevTravelOverrideForced),
 nameof(DevTravelOverrideCleared) => typeof(DevTravelOverrideCleared),
+nameof(DevTravelOverrideConsumed) => typeof(DevTravelOverrideConsumed),
 ```
 
 Add `using WildBunch.Domain.Events;` if not already present (it is, since other events are referenced).
@@ -1216,32 +1326,17 @@ Add `using WildBunch.Domain.Game;` if not already present.
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~EventSourcing"`
 Expected: PASS — existing replay tests still green.
 
-- [ ] **Step 4: Add a replay test for dev override**
+- [ ] **Step 4: Verify replay tests are already in place**
 
-In `tests/WildBunch.Domain.Tests/DevTravelOverrideTests.cs`, add:
-
-```csharp
-[Fact]
-public void RehydrateFromEvents_WithDevOverrideForced_ReconstructsOverrideState()
-{
-    var session = TestSessionFactory.CreateWithActiveJourney();
-    session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
-    session.MarkEventsCommitted();
-
-    // Rehydrate from the full event stream
-    var events = session.AllEvents;
-    var rehydrated = GameSession.RehydrateFromEvents(
-        session.Id, session.World, session.CaseFile, events);
-
-    Assert.NotNull(rehydrated.PendingDevTravelOverride);
-    Assert.Equal(TravelDayEncounterCategory.Foe, rehydrated.PendingDevTravelOverride!.ForcedCategory);
-}
-```
-
-- [ ] **Step 5: Run dev override tests**
+The replay tests (`RehydrateFromEvents_WithDevOverrideForced_ReconstructsOverrideState`, `RehydrateFromEvents_AfterConsumption_HasNoPendingOverride`, `RehydrateFromEvents_WithNoDevOverride_HasNoPendingOverride`) were added in Task 2 Step 1. After adding the persistence serializer entries in Steps 1-2, these tests now exercise the full persistence round-trip path (event serialization + deserialization + replay). Verify they still pass:
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevTravelOverrideTests"`
-Expected: PASS
+Expected: PASS — all 8 tests green, including the three replay tests.
+
+- [ ] **Step 5: Run full domain test suite**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests`
+Expected: PASS — no regressions from the serializer changes.
 
 - [ ] **Step 6: Commit**
 
@@ -1689,7 +1784,7 @@ git commit -m "BUNCH-89: validation complete"
 - ✅ Inspect current travel generation, pending encounter, foe profile, command/API, and event-sourcing seams — covered in Preflight Answers.
 - ✅ Add dev-only travel command endpoints for forcing and clearing — Task 4.
 - ✅ Route dev commands through application/domain handling and GameSession — Tasks 2, 3, 4.
-- ✅ Record explicit immutable dev events for force, clear, and consumption — Tasks 1, 2 (force/clear events; consumption is proven by TravelDayAdvanced).
+- ✅ Record explicit immutable dev events for force, clear, and consumption — Tasks 1, 2 (three events: `DevTravelOverrideForced`, `DevTravelOverrideCleared`, `DevTravelOverrideConsumed`; consumption is an explicit event with its own `Apply` path for replay safety).
 - ✅ Support forcing next travel category/profile, including foe encounters — Tasks 1, 2, 3.
 - ✅ For foe forcing, allow bribe demand, speed, fight strength — Task 3 (DTO), Task 6 (frontend form).
 - ✅ Display current journey/encounter internals through dev-only query — Task 3 (query), Task 6 (panel).
@@ -1715,10 +1810,10 @@ No TBD, TODO, or "implement later" placeholders. All code blocks contain complet
 ### Type consistency
 
 - `DevTravelOverride` — consistent across Task 1 (definition), Task 2 (GameSession field), Task 3 (mapper), Task 5 (snapshot).
-- `DevTravelOverrideForced` / `DevTravelOverrideCleared` — consistent across Task 1 (definition), Task 2 (Apply + dispatch), Task 5 (serializer).
+- `DevTravelOverrideForced` / `DevTravelOverrideCleared` / `DevTravelOverrideConsumed` — consistent across Task 1 (definition), Task 2 (Apply + dispatch + consume logic), Task 5 (serializer). The consumed event is emitted by `ProduceEvent(new DevTravelOverrideConsumed())` in `PrepareTravelDayAdvance()`, applied via `Apply(DevTravelOverrideConsumed)` which clears `_pendingDevTravelOverride`, and dispatched in both `ApplyProducedEvent` and `GameSessionEventReplay.ApplyEvent`.
 - `ForceTravelOverrideCommand` — consistent across Task 3 (definition), Task 4 (endpoint).
 - `TravelDevContextDto` — consistent across Task 3 (definition), Task 4 (endpoint), Task 6 (frontend type).
-- `PendingDevTravelOverride` — `internal` on GameSession, accessed by Application via same assembly friend access or internal visibility (verify project references allow this; if not, add an `InternalsVisibleTo` or make it public with a clear dev-only doc comment).
+- `PendingDevTravelOverride` — `internal` on GameSession, accessed by Application via the existing `[assembly: InternalsVisibleTo("WildBunch.Application")]` in `src/WildBunch.Domain/Properties/AssemblyInfo.cs` (line 4). Settled — no new attribute or public accessor needed.
 
 ---
 
