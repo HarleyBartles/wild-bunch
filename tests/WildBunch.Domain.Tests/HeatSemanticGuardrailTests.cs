@@ -5,38 +5,80 @@ using WildBunch.Domain.World;
 namespace WildBunch.Domain.Tests;
 
 /// <summary>
-/// Guardrail tests proving heat is future lawman pressure, not trail danger.
-/// These tests encode the BUNCH-85 / ADR-0029 semantic decision:
-/// - Travel no longer raises heat from route risk alone.
-/// - Private-hardship trail events (washout, dust storm, spooked horse, hard miles)
-///   do not raise heat because they are not noisy/visible/witnessed incidents.
-/// - Encounter run/fight/bribe heat is preserved (visible/noisy incidents).
+/// Guardrail tests proving heat is future lawman pressure from time spent in
+/// town, not trail danger. These tests encode the BUNCH-85 / ADR-0029 model:
+/// - Heat increases by +1 only when a full in-town day rolls over (turn 4 → next day turn 1).
+/// - Heat resets to 0 when leaving town (starting a journey).
+/// - Heat does not change on the trail — trail events and encounters do not affect heat.
+/// - High/low heat has no mechanical effect yet.
+/// - Heat starts counting again when the player reaches the next town and spends time there.
 /// </summary>
 public sealed class HeatSemanticGuardrailTests
 {
     [Fact]
-    public void QuietTravelDay_DoesNotRaiseHeat_FromRouteRiskAlone()
+    public void NonRolloverTownTurns_DoNotIncreaseHeat()
+    {
+        var session = TestSessionFactory.CreateDefault();
+
+        // EnterActionContext advances the turn when the context changes.
+        // Turns 1, 2, and 3 do not roll over a full day, so heat stays at 0.
+        Assert.Equal(0, session.PursuitState.Heat);
+
+        session.EnterActionContext(TownActionContext.SheriffOffice);
+        Assert.Equal(0, session.PursuitState.Heat);
+
+        session.EnterActionContext(TownActionContext.Saloon);
+        Assert.Equal(0, session.PursuitState.Heat);
+
+        session.EnterActionContext(TownActionContext.Store);
+        Assert.Equal(0, session.PursuitState.Heat);
+    }
+
+    [Fact]
+    public void TownDayRollover_IncreasesHeatByExactlyOne()
+    {
+        var session = TestSessionFactory.CreateDefault();
+
+        Assert.Equal(0, session.PursuitState.Heat);
+
+        // Advance through 4 context changes to trigger a day rollover
+        // (turn 0 → 1 → 2 → 3 → rollover to day 2 turn 0).
+        session.EnterActionContext(TownActionContext.SheriffOffice);
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.EnterActionContext(TownActionContext.Store);
+        session.EnterActionContext(TownActionContext.Stable);
+
+        // After one full day rollover, heat should be exactly 1.
+        Assert.Equal(1, session.PursuitState.Heat);
+    }
+
+    [Fact]
+    public void StartingJourney_ResetsHeatToZero()
+    {
+        var session = TestSessionFactory.CreateDefault();
+
+        // Build up heat by rolling over a full town day.
+        session.EnterActionContext(TownActionContext.SheriffOffice);
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.EnterActionContext(TownActionContext.Store);
+        session.EnterActionContext(TownActionContext.Stable);
+        Assert.Equal(1, session.PursuitState.Heat);
+
+        // Start a journey — heat resets to 0.
+        var (travelSession, preview) = TravelTestFactory.CreateEasyShortJourney();
+        travelSession.StartJourney(preview);
+
+        Assert.Equal(0, travelSession.PursuitState.Heat);
+    }
+
+    [Fact]
+    public void AdvancingTrailDays_DoesNotIncreaseHeat()
     {
         var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
         session.StartJourney(preview);
         Assert.Equal(0, session.PursuitState.Heat);
 
-        session.AdvanceJourneyDay();
-
-        // Heat stays 0 — travel no longer raises heat from route risk.
-        // See ADR-0029.
-        Assert.Equal(0, session.PursuitState.Heat);
-    }
-
-    [Fact]
-    public void MultipleQuietTravelDays_DoNotRaiseHeat_FromRouteRiskAlone()
-    {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
-        session.StartJourney(preview);
-        Assert.Equal(0, session.PursuitState.Heat);
-
-        // Advance all days of the quiet journey — heat should never rise
-        // from route risk alone.
+        // Advance all days of the journey — heat should never rise on the trail.
         for (var i = 0; i < 6; i++)
         {
             var result = session.AdvanceJourneyDay();
@@ -48,43 +90,65 @@ public sealed class HeatSemanticGuardrailTests
     }
 
     [Fact]
-    public void BadLuckTrailEvents_DoNotRaiseHeat_BecauseTheyArePrivateHardship()
+    public void ArrivalInNewTown_DoesNotRetroactivelyAddTravelHeat()
     {
-        // All bad-luck trail events (washout, dust-choked outfit, spooked horse,
-        // hard miles) should carry HeatIncrease=0 because they are private hardship
-        // or generic route difficulty, not noisy/visible/witnessed incidents.
-        // See ADR-0029 and the trail-event heat audit.
-        var (session, preview) = TravelTestFactory.CreateHighRiskJourney();
+        var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
         session.StartJourney(preview);
 
-        // Advance days until the journey completes or interrupts.
-        // Any trail events that fire should not raise heat.
-        for (var i = 0; i < 10; i++)
+        // Advance until the journey completes.
+        for (var i = 0; i < 6; i++)
         {
             var result = session.AdvanceJourneyDay();
-            if (result.Status is JourneyStatus.Completed or JourneyStatus.Interrupted)
+            if (result.Status == JourneyStatus.Completed)
                 break;
         }
 
-        // Heat should be 0 — no per-day route-risk increase, and any trail events
-        // that fired are private hardship with HeatIncrease=0.
-        // If the journey interrupted with an encounter, heat may be >0 from the
-        // encounter resolution, but we haven't resolved any encounter here.
+        // Heat should still be 0 after arrival — travel does not add heat.
         Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
-    public void PursuitState_IncreaseHeat_StillWorks_ForVisibleNoisyIncidents()
+    public void TownDayRolloverInNextTown_StartsIncrementingHeatAgain()
     {
-        // The heat model itself is not disabled — encounter run/fight/bribe
-        // still raises heat because those are visible/noisy incidents.
-        // This test proves the IncreaseHeat path is intact for future lawman
-        // pressure from noisy behavior.
+        var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
+        session.StartJourney(preview);
+
+        // Advance until the journey completes.
+        for (var i = 0; i < 6; i++)
+        {
+            var result = session.AdvanceJourneyDay();
+            if (result.Status == JourneyStatus.Completed)
+                break;
+        }
+
+        Assert.Equal(0, session.PursuitState.Heat);
+
+        // Acknowledge arrival to clear the journey and enter the new town.
+        session.AcknowledgeJourneyArrival();
+
+        // Roll over a full day in the new town by cycling through action contexts.
+        session.EnterActionContext(TownActionContext.SheriffOffice);
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.EnterActionContext(TownActionContext.Store);
+        session.EnterActionContext(TownActionContext.Stable);
+
+        // Heat should now be 1 — time in the new town started accumulating heat.
+        Assert.Equal(1, session.PursuitState.Heat);
+    }
+
+    [Fact]
+    public void PursuitState_SetHeat_SetsAbsoluteValue()
+    {
+        // The SetHeat path is used by event-sourced Apply methods that carry
+        // the absolute heat value. This proves it works independently of
+        // the IncreaseHeat accumulation path.
         var pursuitState = new PursuitState();
         Assert.Equal(0, pursuitState.Heat);
 
-        pursuitState.IncreaseHeat(2);
+        pursuitState.SetHeat(3);
+        Assert.Equal(3, pursuitState.Heat);
 
-        Assert.Equal(2, pursuitState.Heat);
+        pursuitState.SetHeat(0);
+        Assert.Equal(0, pursuitState.Heat);
     }
 }

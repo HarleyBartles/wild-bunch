@@ -813,7 +813,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var newJourney = TravelJourney.Start(preview, _nextJourneySequence, BuildJourneyOpeningNarration(preview));
         var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
         // Leaving town resets heat to 0 — lawman pressure clears when you hit the trail.
-        PursuitState.SetHeat(0);
+        // Do not mutate PursuitState here; Apply(JourneyStarted) sets it from the event.
         ProduceEvent(new JourneyStarted
         {
             JourneySnapshot = newJourney.ToSnapshot(TravelRules),

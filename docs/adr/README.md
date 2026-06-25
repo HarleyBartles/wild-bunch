@@ -105,4 +105,7 @@ boundary. ADR-0026 extends the log with the turn-in outcome semantics that sit
 on top of that vocabulary. ADR-0028 extends the log with the true event-sourcing
 posture: typed domain events, command-produces-event-then-applies, replay,
 optimistic concurrency, snapshot as cache, safe projections, and the
-single-repository-port persistence path.
+single-repository-port persistence path. ADR-0029 extends the log with the
+heat model: heat is lawman pursuit pressure from time spent in town, not
+trail danger — it increases by 1 per full town day, resets to 0 on leaving
+town, and has no mechanical effect yet.

@@ -6,7 +6,8 @@
 
 ## Dated Status History
 
-- 2026-06-24 - live (BUNCH-85): Heat reframed as future lawman pursuit pressure. Per-travel-day route-risk heat increase removed (`GameSession.PrepareTravelDayAdvance` no longer calls `PursuitState.IncreaseHeat` from `RouteProfile.Risk`). Heat increases removed from all four bad-luck trail events (washout, dust-choked outfit, spooked horse, hard miles) because they are private hardship / generic route difficulty, not noisy/visible/witnessed incidents. Encounter run/fight/bribe heat increases retained as visible/noisy incidents. `PursuitState`, `PursuitHeat`, `PursuitHeatBand`, and the `pursuitState` persistence component name retained as low-value-to-rename with clarifying XML docs. `TrailEventHeatIncrease` field retained in `TravelRulesProfile` as a reserved knob for future noisy/witnessed trail events. Active travel cooling (heat decreases per travel day) is deferred to a follow-up issue — this slice does NOT claim travel cools heat by distance. Lawman pursuit system stays a seam. HUD, field report, and travel diary labels changed from "Heat" to "Lawman heat".
+- 2026-06-25 - live (BUNCH-85 correction): Heat model simplified to town-time-only. Heat increases by 1 only when a full in-town day rolls over (turn 4 → next day turn 1). Heat resets to 0 when leaving town (starting a journey). Heat does not change on the trail — trail events and trail encounters do not affect heat. High/low heat has no mechanical effect yet. `PursuitHeatBand` removed from encounter generation, encounter resolution, and the day-plan seed string. All `IncreaseHeat` calls removed from trail-event and encounter paths. `PursuitHeat` added to `JourneyStarted` and `TownActionContextEntered` events for snapshot round-trip fidelity. Player-facing labels changed from "Heat" to "Lawman heat".
+- 2026-06-24 - live (BUNCH-85 initial): Heat reframed as future lawman pursuit pressure. Per-travel-day route-risk heat increase removed. Bad-luck trail-event heat increases removed. Encounter run/fight/bribe heat increases temporarily retained. `PursuitHeatBand` temporarily retained in encounter generation.
 
 ## Decision Type
 
@@ -19,11 +20,15 @@ gameplay, architecture
 
 ## Context
 
-The heat model lived in `PursuitState.Heat` with no ADR defining what heat means. Two mechanics made heat behave as trail/route danger rather than future lawman pressure:
+The heat model lived in `PursuitState.Heat` with no ADR defining what heat means. Several mechanics made heat behave as trail/route danger rather than future lawman pressure:
 
-1. **Per-travel-day route-risk heat increase** (`GameSession.PrepareTravelDayAdvance`): every travel day raised heat by `Math.Max(1, (int)RouteProfile.Risk)` — a direct "heat = route danger" mechanic. A quiet day on a moderate-risk route raised heat by 2; a quiet day on a high-risk route raised it by 3. This contradicted the BUNCH-85 design decision that heat is not current route danger.
+1. **Per-travel-day route-risk heat increase**: every travel day raised heat by route risk level — a direct "heat = route danger" mechanic. A quiet day on a moderate-risk route raised heat by 2; a quiet day on a high-risk route raised it by 3.
 
-2. **Private-hardship trail-event heat increases**: all four bad-luck trail events (washout, dust-choked outfit, spooked horse, hard miles) carried `heatIncrease: TrailEventHeatIncrease`. These events are private hardship or generic route difficulty — a washout on a lonely trail, a dust storm stripping supplies, a canyon echo spooking a horse, hard miles on a mean trail. None are noisy, visible, witnessed, or attention-generating in a way that would draw lawman attention.
+2. **Private-hardship trail-event heat increases**: bad-luck trail events (washout, dust storm, spooked horse, hard miles) carried heat increases. These events are private hardship, not noisy/visible/witnessed incidents.
+
+3. **Encounter heat increases**: encounter run/fight/bribe resolutions increased heat, treating trail encounters as lawman-attention-generating incidents.
+
+4. **`PursuitHeatBand` in encounter generation**: a heat band (Calm/Wary/Hot/Hunted) derived from current heat influenced foe profiles and bribe costs in encounter generation, coupling trail encounters to heat level.
 
 ADR-0013 warned that "travel wording could become misleading if it starts implying future systems like richer lawman or route-simulation mechanics." ADR-0020 and ADR-0028 both reference "future pursuit/lawman" sub-aggregates as expected boundaries. No ADR defined heat's meaning until ADR-0029.
 
@@ -31,36 +36,43 @@ ADR-0013 warned that "travel wording could become misleading if it starts implyi
 
 - Heat must mean future lawman pursuit pressure, not trail danger, route danger, generic encounter risk, or reputation. (BUNCH-85)
 - Travel should not raise heat just because the route is risky. (BUNCH-85)
-- Heat increases should come from noisy, visible, witnessed, or attention-generating behavior — not private hardship or generic route difficulty. (Harley correction, 2026-06-24)
-- Active travel cooling is a separate feature, not this slice. (Harley correction, 2026-06-24)
+- Trail events and trail encounters should not affect heat. (Harley correction, 2026-06-25)
+- High/low heat has no mechanical effect yet — no lawman system exists. (Harley correction, 2026-06-25)
 - The lawman pursuit system is not implemented in this slice. (BUNCH-85 non-goals)
-- Identifier renaming (`PursuitState` → `LawmanPressureState`) would force a persisted-component migration with no clear semantic payoff. "Pursuit" is close to "lawman pursuit pressure" and not actively misleading. (Decision A — approved to keep stable)
 
 ## Decision
 
-**Heat is future lawman pursuit pressure.** It represents lawman/town attention that accumulates from noisy, visible, witnessed, or attention-generating behavior (fights, bribes, confrontations, conspicuous trail incidents). A future lawman system will consume heat as a pressure clock; until then no lawman catches the player on the trail.
+**Heat is future lawman pursuit pressure.** It represents lawman/town attention that accumulates from time spent in town. A future lawman system will consume heat as a pressure clock; until then no lawman catches the player on the trail.
+
+**Heat model (simple, first version):**
+- Heat increases by **+1 only when a full in-town day rolls over** (turn 4 → next day turn 1).
+- Heat **resets to 0** when leaving town (starting a journey).
+- Heat **does not change on the trail** — trail events and trail encounters do not affect heat.
+- **High/low heat has no mechanical effect yet.** No lawman system exists.
+- Heat **starts counting again** when the player reaches the next town and spends time there.
 
 **Removed heat sources:**
-- Per-travel-day route-risk heat increase (`RouteProfile.Risk` → `IncreaseHeat`).
-- Bad-luck trail-event heat increases (washout, dust-choked outfit, spooked horse, hard miles) — private hardship, not noisy/visible/witnessed.
+- Per-travel-day route-risk heat increase.
+- Bad-luck trail-event heat increases (washout, dust storm, spooked horse, hard miles).
+- Encounter run/fight/bribe heat increases.
+- `PursuitHeatBand` influence on encounter generation and resolution.
+- `PursuitHeatBand` from the `TravelDayGenerationContext` seed string.
 
-**Retained heat sources:**
-- Encounter run/fight/bribe heat increases — visible/noisy incidents that draw future lawman attention.
-- `TrailEventHeatIncrease` field in `TravelRulesProfile` — reserved as a tuning knob for future noisy/witnessed trail events. No current event wires it in.
+**Retained identifiers:**
+- `PursuitState`, `PursuitHeat`, `PursuitStateDto`, `pursuitState` (persistence component). Clarified via XML docs and this ADR rather than renamed.
 
-**Retained identifiers (Decision A — keep stable):**
-- `PursuitState`, `PursuitHeat`, `PursuitHeatBand`, `PursuitStateDto`, `pursuitState` (persistence component). Clarified via XML docs and this ADR rather than renamed.
-
-**Deferred:**
-- Active travel cooling (heat decreases per travel day) — follow-up issue.
-- Lawman pursuit system, lawman encounters, lawman AI, route interception, custody, arrest, escape, town alarm escalation, wanted-state redesign — all out of scope.
+**Out of scope:**
+- Lawman pursuit system, lawman encounters, lawman AI, route interception, custody, arrest, escape, town alarm escalation, wanted-state redesign.
+- Any mechanical effect from high/low heat.
 
 ## Consequences
 
 - Travel no longer raises heat for route risk. A quiet day on any route leaves heat unchanged.
-- Private-hardship trail events no longer raise heat. A washout, dust storm, spooked horse, or hard miles leaves heat unchanged.
-- Encounter run/fight/bribe still raises heat — these are visible/noisy incidents.
-- `PursuitHeatBand` (Calm/Wary/Hot/Hunted) still affects foe profiles and bribe costs — a hot player draws tougher/more-greedy riders. This is lawman-pressure-shaped attention, not trail danger.
+- Trail events no longer raise heat. A washout, dust storm, spooked horse, or hard miles leaves heat unchanged.
+- Trail encounters (run, fight, bribe) no longer raise heat.
+- `PursuitHeatBand` no longer exists in encounter generation or the day-plan seed. Encounter outcomes are determined by route profile, difficulty, and entropy — not by heat level.
+- Heat only changes at two moments: town-day rollover (+1) and journey start (reset to 0).
+- `PursuitHeat` is carried on `JourneyStarted` and `TownActionContextEntered` events so heat survives snapshot round-trips without pre-event mutation.
 - Characterization tests updated to encode the new heat semantics.
 - Player-facing labels changed from "Heat" to "Lawman heat" in HUD, field report, and travel diary.
 - No persistence migration required — `pursuitState` component name and `PursuitStateSnapshot` shape are unchanged.
