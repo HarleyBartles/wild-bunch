@@ -1,5 +1,7 @@
+using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Dev.Queries;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Projections;
@@ -57,6 +59,11 @@ public static class DependencyInjection
         // FullAuditProjector is a developer/replay surface, not player-facing.
         services.AddSingleton<HudProjector>();
         services.AddSingleton<DiaryProjector>();
+        services.AddSingleton<FullAuditProjector>();
+
+        // Dev-only services (gated by DevRoleGuard, separated from player-facing APIs)
+        services.AddScoped<DevRoleGuard>();
+        services.AddScoped<GetSessionAuditHandler>();
 
         return services;
     }
@@ -64,6 +71,7 @@ public static class DependencyInjection
     public static IEndpointRouteBuilder MapWildBunchApi(this IEndpointRouteBuilder app)
     {
         app.MapGameEndpoints();
+        app.MapDevEndpoints();
         return app;
     }
 }
