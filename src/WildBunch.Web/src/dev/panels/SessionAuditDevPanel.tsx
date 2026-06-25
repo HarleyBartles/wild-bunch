@@ -44,38 +44,40 @@ export function SessionAuditDevPanel() {
 
 const AuditList = styled.div`
   display: grid;
-  gap: 6px;
+  gap: 5px;
 `;
 
 const AuditEntry = styled.div`
   display: grid;
   grid-template-columns: auto auto 1fr;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 7px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
 `;
 
 const Sequence = styled.span`
-  color: rgba(242, 239, 232, 0.5);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 `;
 
 const EventType = styled.span`
-  color: #efc37e;
+  color: var(--accent);
   font-weight: 600;
 `;
 
 const Summary = styled.span`
-  color: rgba(242, 239, 232, 0.92);
+  color: var(--text);
 `;
 
 const MutedText = styled.p`
-  color: rgba(242, 239, 232, 0.5);
+  color: var(--muted);
+  margin: 0;
 `;
 
 const ErrorText = styled.p`
-  color: #f07e6e;
+  color: var(--danger);
+  margin: 0;
 `;
