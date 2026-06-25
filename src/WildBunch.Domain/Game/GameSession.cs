@@ -39,6 +39,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
+    private DevTravelOverride? _pendingDevTravelOverride;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
@@ -117,6 +118,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public TownVisitState CurrentTownVisit => _currentTown.VisitState;
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
+
+    /// <summary>
+    /// Pending dev override for the next travel-day generation. Dev-only state.
+    /// Consumed once by the next AdvanceJourneyDay. See BUNCH-89.
+    /// </summary>
+    internal DevTravelOverride? PendingDevTravelOverride => _pendingDevTravelOverride;
 
     [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
@@ -346,6 +353,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 break;
             case JourneyArrivalAcknowledged jaa:
                 Apply(jaa);
+                break;
+            case DevTravelOverrideForced dtf:
+                Apply(dtf);
+                break;
+            case DevTravelOverrideCleared dtc:
+                Apply(dtc);
+                break;
+            case DevTravelOverrideConsumed dtc2:
+                Apply(dtc2);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -620,6 +636,41 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Applies a DevTravelOverrideForced event. Sets the pending dev override.
+    /// Dev-only event — does not affect gameplay state directly. See BUNCH-89.
+    /// </summary>
+    internal void Apply(DevTravelOverrideForced e)
+    {
+        _pendingDevTravelOverride = new DevTravelOverride(
+            e.ForcedCategory,
+            e.FoeProfile,
+            e.EncounterMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevTravelOverrideCleared event. Clears the pending dev override.
+    /// Dev-only event. See BUNCH-89.
+    /// </summary>
+    internal void Apply(DevTravelOverrideCleared e)
+    {
+        _pendingDevTravelOverride = null;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevTravelOverrideConsumed event. Clears the pending dev override.
+    /// This is the replay-safe consumption path: replaying Forced -> Consumed ->
+    /// TravelDayAdvanced reconstructs the correct final state with no pending override.
+    /// Dev-only event — not a gameplay outcome. See BUNCH-89.
+    /// </summary>
+    internal void Apply(DevTravelOverrideConsumed e)
+    {
+        _pendingDevTravelOverride = null;
+        _version++;
+    }
+
+    /// <summary>
     /// Adjusts player food by a signed delta. Positive deltas add food; negative
     /// deltas remove food. Used by travel Apply methods for additive food deltas.
     /// </summary>
@@ -832,6 +883,45 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult AdvanceJourneyDay()
         => AdvanceJourneyDayDeterministic();
+
+    /// <summary>
+    /// Dev command: forces the next travel-day generation to use the given override.
+    /// Produces a DevTravelOverrideForced event. The override is consumed once by
+    /// the next AdvanceJourneyDay. See BUNCH-89.
+    /// </summary>
+    public void ForceDevTravelOverride(DevTravelOverride overrideValue)
+    {
+        ArgumentNullException.ThrowIfNull(overrideValue);
+        if (Journey is null || Journey.Status != JourneyStatus.Active)
+        {
+            throw new InvalidOperationException("Cannot force a travel override without an active journey.");
+        }
+        if (Journey.PendingEncounter is not null)
+        {
+            throw new InvalidOperationException("Cannot force a travel override while an encounter is pending.");
+        }
+
+        ProduceEvent(new DevTravelOverrideForced
+        {
+            ForcedCategory = overrideValue.ForcedCategory,
+            FoeProfile = overrideValue.FoeProfile,
+            EncounterMessage = overrideValue.EncounterMessage
+        });
+    }
+
+    /// <summary>
+    /// Dev command: clears any pending travel override.
+    /// Produces a DevTravelOverrideCleared event. See BUNCH-89.
+    /// </summary>
+    public void ClearDevTravelOverride()
+    {
+        if (_pendingDevTravelOverride is null)
+        {
+            return; // No-op if nothing to clear — idempotent
+        }
+
+        ProduceEvent(new DevTravelOverrideCleared());
+    }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
     {
@@ -1169,8 +1259,25 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         // Heat is future lawman pressure, not trail danger — travel no longer
         // raises heat from route risk. See ADR-0029.
-        var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
-        Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
+        //
+        // Dev override: capture the pending override before producing the consumed event,
+        // because ProduceEvent(new DevTravelOverrideConsumed()) calls Apply() which clears
+        // _pendingDevTravelOverride. The forced day plan must be built from the captured
+        // value. See BUNCH-89.
+        var pendingOverride = _pendingDevTravelOverride;
+
+        TravelDayPlanState dayPlan;
+        if (pendingOverride is not null)
+        {
+            dayPlan = TravelDayPlanFactory.CreateForcedDayPlan(pendingOverride, Journey.DaysTravelled, TravelRules);
+            ProduceEvent(new DevTravelOverrideConsumed());
+        }
+        else
+        {
+            var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
+            dayPlan = TravelDayPlanGenerator.Generate(generationContext);
+        }
+        Journey.SetCurrentDayPlan(dayPlan);
 
         return new TravelDayAdvanceState(
             startingState,
