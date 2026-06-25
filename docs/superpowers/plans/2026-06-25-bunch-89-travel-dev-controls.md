@@ -358,6 +358,13 @@ public sealed class DevTravelOverrideTests
         Assert.Equal(JourneyStatus.Interrupted, session.Journey!.Status);
         Assert.NotNull(session.Journey.PendingEncounter);
         Assert.Equal("foe", session.Journey.PendingEncounter!.Kind);
+        // The forced day plan reflects the override: the pending encounter's
+        // foe profile matches the forced values, proving the day plan was
+        // built from the captured override before the consumed event cleared it.
+        Assert.Equal(5, session.Journey.PendingEncounter!.FoeProfile!.Speed);
+        Assert.Equal(4, session.Journey.PendingEncounter.FoeProfile!.FightStrength);
+        Assert.Equal(8m, session.Journey.PendingEncounter.FoeProfile!.MinimumBribe);
+        Assert.Equal("A hard-eyed rider blocks the trail.", session.Journey.PendingEncounter!.Message);
     }
 
     [Fact]
@@ -601,13 +608,21 @@ Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
 with:
 
 ```csharp
+// Capture the pending override before producing the consumed event.
+// ProduceEvent(new DevTravelOverrideConsumed()) calls Apply() which clears
+// _pendingDevTravelOverride, so we must build the forced day plan from the
+// captured value before emitting the event.
+var pendingOverride = _pendingDevTravelOverride;
+
 TravelDayPlanState dayPlan;
-if (_pendingDevTravelOverride is not null)
+if (pendingOverride is not null)
 {
-    // Dev override is active: produce the consumed event (replay-safe clear),
-    // then use the forced day plan instead of the generator.
+    // Build the forced day plan from the captured override value first.
+    dayPlan = TravelDayPlanFactory.CreateForcedDayPlan(pendingOverride, Journey.DaysTravelled, TravelRules);
+
+    // Then produce the consumed event — Apply clears _pendingDevTravelOverride.
+    // Event stream order: ... DevTravelOverrideConsumed, TravelDayAdvanced ...
     ProduceEvent(new DevTravelOverrideConsumed());
-    dayPlan = TravelDayPlanFactory.CreateForcedDayPlan(_pendingDevTravelOverride, Journey.DaysTravelled, TravelRules);
 }
 else
 {
@@ -616,7 +631,7 @@ else
 Journey.SetCurrentDayPlan(dayPlan);
 ```
 
-Note: `ProduceEvent` calls `Apply(DevTravelOverrideConsumed)` which sets `_pendingDevTravelOverride = null` and increments `_version`. This is the single mutation path — the field is not cleared imperatively outside the event apply path. The `DevTravelOverrideConsumed` event is emitted before the `TravelDayAdvanced` event in the same command execution, so the event stream order is `... DevTravelOverrideConsumed, TravelDayAdvanced ...` and replay produces the same state.
+Note: The override value must be captured into a local before `ProduceEvent(new DevTravelOverrideConsumed())` is called, because `ProduceEvent` dispatches to `Apply(DevTravelOverrideConsumed)` which sets `_pendingDevTravelOverride = null` and increments `_version`. If the forced day plan were built after the consumed event, the override would already be null. The local capture ensures the forced day plan reflects the override, and the consumed event ensures replay clears the override. This is the single mutation path — the field is not cleared imperatively outside the event apply path. The `DevTravelOverrideConsumed` event is emitted before the `TravelDayAdvanced` event in the same command execution, so the event stream order is `... DevTravelOverrideConsumed, TravelDayAdvanced ...` and replay produces the same state.
 
 - [ ] **Step 9: Create TravelDayPlanFactory helper**
 
@@ -1810,7 +1825,7 @@ No TBD, TODO, or "implement later" placeholders. All code blocks contain complet
 ### Type consistency
 
 - `DevTravelOverride` — consistent across Task 1 (definition), Task 2 (GameSession field), Task 3 (mapper), Task 5 (snapshot).
-- `DevTravelOverrideForced` / `DevTravelOverrideCleared` / `DevTravelOverrideConsumed` — consistent across Task 1 (definition), Task 2 (Apply + dispatch + consume logic), Task 5 (serializer). The consumed event is emitted by `ProduceEvent(new DevTravelOverrideConsumed())` in `PrepareTravelDayAdvance()`, applied via `Apply(DevTravelOverrideConsumed)` which clears `_pendingDevTravelOverride`, and dispatched in both `ApplyProducedEvent` and `GameSessionEventReplay.ApplyEvent`.
+- `DevTravelOverrideForced` / `DevTravelOverrideCleared` / `DevTravelOverrideConsumed` — consistent across Task 1 (definition), Task 2 (Apply + dispatch + consume logic), Task 5 (serializer). The consumed event is emitted by `ProduceEvent(new DevTravelOverrideConsumed())` in `PrepareTravelDayAdvance()` **after** the override is captured into a local and the forced day plan is built from it, applied via `Apply(DevTravelOverrideConsumed)` which clears `_pendingDevTravelOverride`, and dispatched in both `ApplyProducedEvent` and `GameSessionEventReplay.ApplyEvent`. The capture-before-emit ordering is critical: `ProduceEvent` calls `Apply` synchronously, so the override must be captured before the consumed event is produced.
 - `ForceTravelOverrideCommand` — consistent across Task 3 (definition), Task 4 (endpoint).
 - `TravelDevContextDto` — consistent across Task 3 (definition), Task 4 (endpoint), Task 6 (frontend type).
 - `PendingDevTravelOverride` — `internal` on GameSession, accessed by Application via the existing `[assembly: InternalsVisibleTo("WildBunch.Application")]` in `src/WildBunch.Domain/Properties/AssemblyInfo.cs` (line 4). Settled — no new attribute or public accessor needed.
