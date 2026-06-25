@@ -39,14 +39,14 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function renderOverlay(open: boolean, onClose = () => {}) {
+function renderOverlay(open: boolean, onClose = () => {}, top = 0) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <DevOverlay open={open} onClose={onClose} />
+        <DevOverlay open={open} onClose={onClose} top={top} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );
@@ -107,5 +107,17 @@ describe("DevOverlay", () => {
     await user.keyboard("{Escape}");
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("calls onClose when clicking outside the drawer", async () => {
+    const onClose = vi.fn();
+    renderOverlay(true, onClose);
+
+    const user = userEvent.setup();
+    const clickAway = screen.getByTestId("dev-click-away");
+    expect(clickAway).toBeInTheDocument();
+
+    await user.click(clickAway);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

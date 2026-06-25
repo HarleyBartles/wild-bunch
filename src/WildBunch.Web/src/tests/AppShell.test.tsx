@@ -319,4 +319,47 @@ describe("AppShell", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
   });
+
+  it("closes the dev overlay when clicking the play surface outside the drawer", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+
+    const clickAway = screen.getByTestId("dev-click-away");
+    await user.click(clickAway);
+
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the game HUD visible above the dev drawer when the drawer is open", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(within(hud).getByText("Ruth")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+
+    expect(screen.getByRole("banner", { name: /game status/i })).toBeInTheDocument();
+    expect(within(hud).getByText("Ruth")).toBeInTheDocument();
+  });
 });

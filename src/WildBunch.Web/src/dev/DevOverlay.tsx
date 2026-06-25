@@ -5,9 +5,10 @@ import { devPanels } from "./DevPanelRegistry";
 interface DevOverlayProps {
   open: boolean;
   onClose: () => void;
+  top: number;
 }
 
-export function DevOverlay({ open, onClose }: DevOverlayProps) {
+export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
   const [activePanelId, setActivePanelId] = useState(devPanels[0]?.id ?? null);
   const [expanded, setExpanded] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -48,39 +49,42 @@ export function DevOverlay({ open, onClose }: DevOverlayProps) {
   const activePanel = devPanels.find((p) => p.id === activePanelId) ?? devPanels[0];
 
   return (
-    <Drawer $expanded={expanded} role="region" aria-label="Developer overlay">
-      <DrawerHeader>
-        <TitleGroup>
-          <Eyebrow>Dev</Eyebrow>
-          <DrawerTitle>Developer overlay</DrawerTitle>
-        </TitleGroup>
-        <HeaderActions>
-          <ToggleButton type="button" onClick={() => setExpanded((prev) => !prev)}>
-            {expanded ? "Shrink" : "Expand"}
-          </ToggleButton>
-          <CloseButton ref={closeButtonRef} type="button" onClick={onClose}>
-            Close
-          </CloseButton>
-        </HeaderActions>
-      </DrawerHeader>
-      <DrawerBody>
-        <Sidebar aria-label="Dev panels">
-          {devPanels.map((panel) => (
-            <Tab
-              key={panel.id}
-              type="button"
-              $active={panel.id === activePanel?.id}
-              onClick={() => setActivePanelId(panel.id)}
-            >
-              {panel.label}
-            </Tab>
-          ))}
-        </Sidebar>
-        <Content>
-          {activePanel ? activePanel.render() : <MutedText>No panels registered.</MutedText>}
-        </Content>
-      </DrawerBody>
-    </Drawer>
+    <>
+      <ClickAway $top={top} onClick={onClose} aria-hidden="true" data-testid="dev-click-away" />
+      <Drawer $expanded={expanded} $top={top} role="region" aria-label="Developer overlay">
+        <DrawerHeader>
+          <TitleGroup>
+            <Eyebrow>Dev</Eyebrow>
+            <DrawerTitle>Developer overlay</DrawerTitle>
+          </TitleGroup>
+          <HeaderActions>
+            <ToggleButton type="button" onClick={() => setExpanded((prev) => !prev)}>
+              {expanded ? "Shrink" : "Expand"}
+            </ToggleButton>
+            <CloseButton ref={closeButtonRef} type="button" onClick={onClose}>
+              Close
+            </CloseButton>
+          </HeaderActions>
+        </DrawerHeader>
+        <DrawerBody>
+          <Sidebar aria-label="Dev panels">
+            {devPanels.map((panel) => (
+              <Tab
+                key={panel.id}
+                type="button"
+                $active={panel.id === activePanel?.id}
+                onClick={() => setActivePanelId(panel.id)}
+              >
+                {panel.label}
+              </Tab>
+            ))}
+          </Sidebar>
+          <Content>
+            {activePanel ? activePanel.render() : <MutedText>No panels registered.</MutedText>}
+          </Content>
+        </DrawerBody>
+      </Drawer>
+    </>
   );
 }
 
@@ -95,9 +99,19 @@ const slideDown = keyframes`
   }
 `;
 
-const Drawer = styled.div<{ $expanded: boolean }>`
+const ClickAway = styled.div<{ $top: number }>`
   position: fixed;
-  top: 0;
+  top: ${(props) => props.$top}px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+`;
+
+const Drawer = styled.div<{ $expanded: boolean; $top: number }>`
+  position: fixed;
+  top: ${(props) => props.$top}px;
   left: 0;
   right: 0;
   height: ${(props) => (props.$expanded ? "85vh" : "42vh")};

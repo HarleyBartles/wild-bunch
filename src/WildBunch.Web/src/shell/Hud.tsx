@@ -73,9 +73,6 @@ export function Hud({ onOpenJournal }: HudProps) {
 }
 
 const HudBar = styled.header`
-  position: sticky;
-  top: 0;
-  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 18px;
