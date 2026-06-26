@@ -196,6 +196,33 @@ public sealed class ProjectionTests
     }
 
     [Fact]
+    public void FullAuditProjector_SaloonDevOverrideEvents_ProduceReadableSummaries()
+    {
+        var projector = new FullAuditProjector();
+        var events = new IDomainEvent[]
+        {
+            new DevSaloonOverrideForced
+            {
+                ForcedKind = DevSaloonPoiKind.Suspect,
+                ForcedSuspectId = new SuspectId("suspect-1")
+            },
+            new DevSaloonOverrideCleared(),
+            new DevSaloonOverrideConsumed()
+        };
+
+        var audit = projector.Project(events);
+
+        Assert.Equal(3, audit.Entries.Count);
+        Assert.Equal("DevSaloonOverrideForced", audit.Entries[0].EventType);
+        Assert.Equal("DevSaloonOverrideCleared", audit.Entries[1].EventType);
+        Assert.Equal("DevSaloonOverrideConsumed", audit.Entries[2].EventType);
+        Assert.Contains("Forced saloon override", audit.Entries[0].Summary);
+        Assert.Contains("suspect-1", audit.Entries[0].Summary);
+        Assert.Equal("Cleared pending saloon override.", audit.Entries[1].Summary);
+        Assert.Equal("Consumed pending saloon override during saloon look-around.", audit.Entries[2].Summary);
+    }
+
+    [Fact]
     public void CaseFileViewProjector_ProducesViewFromSeedCaseFile()
     {
         var projector = new CaseFileViewProjector();
