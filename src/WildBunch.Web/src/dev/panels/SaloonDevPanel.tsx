@@ -82,6 +82,36 @@ export function SaloonDevPanel() {
       </Section>
 
       <Section>
+        <SectionTitle>Active saloon POI</SectionTitle>
+        {data?.activeSaloonPoi ? (
+          <>
+            <Row>
+              <Label>Kind:</Label>
+              <Value>{data.activeSaloonPoi.personOfInterestKind ?? "unknown"}</Value>
+            </Row>
+            {data.activeSaloonPoi.suspectId && (
+              <Row>
+                <Label>Suspect ID:</Label>
+                <Value>{data.activeSaloonPoi.suspectId}</Value>
+              </Row>
+            )}
+            {data.activeSaloonPoi.descriptor && (
+              <Row>
+                <Label>Descriptor:</Label>
+                <Value>{data.activeSaloonPoi.descriptor}</Value>
+              </Row>
+            )}
+          </>
+        ) : (
+          <MutedText>
+            {data?.sourceSpent
+              ? "No active POI (source spent - repeat visit or confrontation cleared)."
+              : "No active POI (LookAroundSaloon not yet called)."}
+          </MutedText>
+        )}
+      </Section>
+
+      <Section>
         <SectionTitle>Hidden truth (dev only)</SectionTitle>
         {data?.hiddenTruth ? (
           <Row>

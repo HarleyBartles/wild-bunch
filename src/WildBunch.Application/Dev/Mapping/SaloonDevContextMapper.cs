@@ -14,6 +14,22 @@ public static class SaloonDevContextMapper
         var trueCulprit = session.CaseFile.Suspects.FirstOrDefault(s => s.Id == session.CaseFile.TrueCulpritId);
         var sourceSpent = session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround);
 
+        // Map active saloon POI directly from the current town visit state.
+        // This is the contextual encounter state after LookAroundSaloon(), not
+        // recomputed from suspects. See BUNCH-90 and ADR-0032.
+        var townState = session.CurrentTownVisit.CurrentTownState;
+        var activePoiId = townState.ActiveSaloonPersonOfInterestId;
+        var activePoiDescriptor = townState.ActiveSaloonPersonOfInterestDescriptor;
+        var activePoiKind = townState.ResolveActiveSaloonPersonOfInterestKind();
+        ActiveSaloonPoiDto? activePoi = null;
+        if (activePoiId is not null || activePoiDescriptor is not null)
+        {
+            activePoi = new ActiveSaloonPoiDto(
+                activePoiId?.Value,
+                activePoiDescriptor,
+                activePoiKind?.ToString());
+        }
+
         var suspects = session.CaseFile.Suspects.Select(s => new SaloonSuspectDevDto(
             s.Id.Value,
             s.Name,
@@ -30,6 +46,7 @@ public static class SaloonDevContextMapper
             CurrentTownId: session.CurrentTown.TownId.Value,
             CurrentTownName: session.CurrentTown.TownName,
             SourceSpent: sourceSpent,
+            ActiveSaloonPoi: activePoi,
             PendingDevOverride: devOverride is null ? null : new DevSaloonOverrideDto(
                 devOverride.ForcedKind.ToString(),
                 devOverride.ForcedSuspectId?.Value),

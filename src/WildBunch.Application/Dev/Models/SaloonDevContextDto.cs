@@ -8,9 +8,20 @@ public sealed record SaloonDevContextDto(
     string? CurrentTownId,
     string? CurrentTownName,
     bool SourceSpent,
+    ActiveSaloonPoiDto? ActiveSaloonPoi,
     DevSaloonOverrideDto? PendingDevOverride,
     HiddenTruthDevDto? HiddenTruth,
     IReadOnlyList<SaloonSuspectDevDto> Suspects);
+
+/// <summary>
+/// Dev-only DTO exposing the active saloon person of interest from the current
+/// town visit state. Maps directly from TownSourceVisitState, not recomputed
+/// from suspects. See BUNCH-90 and ADR-0032.
+/// </summary>
+public sealed record ActiveSaloonPoiDto(
+    string? SuspectId,
+    string? Descriptor,
+    string? PersonOfInterestKind);
 
 /// <summary>
 /// Dev-only DTO exposing hidden culprit truth. This is the first dev endpoint

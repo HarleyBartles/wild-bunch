@@ -65,12 +65,19 @@ export interface DevSaloonOverrideDto {
   forcedSuspectId: string | null;
 }
 
+export interface ActiveSaloonPoiDto {
+  suspectId: string | null;
+  descriptor: string | null;
+  personOfInterestKind: string | null;
+}
+
 export interface SaloonDevContextDto {
   sessionId: string;
   currentActionContext: string | null;
   currentTownId: string | null;
   currentTownName: string | null;
   sourceSpent: boolean;
+  activeSaloonPoi: ActiveSaloonPoiDto | null;
   pendingDevOverride: DevSaloonOverrideDto | null;
   hiddenTruth: HiddenTruthDevDto | null;
   suspects: SaloonSuspectDevDto[];

@@ -78,6 +78,7 @@ describe("SaloonDevPanel", () => {
       currentTownId: "pinecross",
       currentTownName: "Pinecross",
       sourceSpent: false,
+      activeSaloonPoi: null,
       pendingDevOverride: null,
       hiddenTruth: { trueCulpritId: "suspect-2", trueCulpritName: "Reno Pike" },
       suspects: [
@@ -116,6 +117,103 @@ describe("SaloonDevPanel", () => {
     expect(screen.getByText("ineligible")).toBeInTheDocument();
   });
 
+  it("renders active wanted-suspect POI when one is present", async () => {
+    seedGameId("test-game-poi-suspect");
+    mockedGetContext.mockResolvedValue({
+      sessionId: "test-game-poi-suspect",
+      currentActionContext: "Saloon",
+      currentTownId: "pinecross",
+      currentTownName: "Pinecross",
+      sourceSpent: true,
+      activeSaloonPoi: {
+        suspectId: "suspect-1",
+        descriptor: "a scar-faced drifter with a raven-feather pin",
+        personOfInterestKind: "WantedSuspect",
+      },
+      pendingDevOverride: null,
+      hiddenTruth: null,
+      suspects: [],
+    });
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("WantedSuspect")).toBeInTheDocument();
+    });
+    expect(screen.getByText("suspect-1")).toBeInTheDocument();
+    expect(screen.getByText(/scar-faced drifter/)).toBeInTheDocument();
+  });
+
+  it("renders active citizen POI when one is present", async () => {
+    seedGameId("test-game-poi-citizen");
+    mockedGetContext.mockResolvedValue({
+      sessionId: "test-game-poi-citizen",
+      currentActionContext: "Saloon",
+      currentTownId: "pinecross",
+      currentTownName: "Pinecross",
+      sourceSpent: true,
+      activeSaloonPoi: {
+        suspectId: null,
+        descriptor: "a dusty rancher nursing a sarsaparilla",
+        personOfInterestKind: "Citizen",
+      },
+      pendingDevOverride: null,
+      hiddenTruth: null,
+      suspects: [],
+    });
+
+    renderPanel();
+
+    await waitFor(() => {
+      // The active POI section shows "Citizen" as the kind
+      const poiSection = screen.getByText("Active saloon POI").closest("section");
+      expect(poiSection?.textContent).toMatch(/Citizen/);
+    });
+    expect(screen.getByText(/dusty rancher/)).toBeInTheDocument();
+  });
+
+  it("shows no-active-POI message when source not spent", async () => {
+    seedGameId("test-game-no-poi");
+    mockedGetContext.mockResolvedValue({
+      sessionId: "test-game-no-poi",
+      currentActionContext: "None",
+      currentTownId: "pinecross",
+      currentTownName: "Pinecross",
+      sourceSpent: false,
+      activeSaloonPoi: null,
+      pendingDevOverride: null,
+      hiddenTruth: null,
+      suspects: [],
+    });
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText(/LookAroundSaloon not yet called/)).toBeInTheDocument();
+    });
+  });
+
+  it("shows no-active-POI message when source spent but no POI", async () => {
+    seedGameId("test-game-repeat");
+    mockedGetContext.mockResolvedValue({
+      sessionId: "test-game-repeat",
+      currentActionContext: "None",
+      currentTownId: "pinecross",
+      currentTownName: "Pinecross",
+      sourceSpent: true,
+      activeSaloonPoi: null,
+      pendingDevOverride: null,
+      hiddenTruth: null,
+      suspects: [],
+    });
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText(/repeat visit or confrontation cleared/)).toBeInTheDocument();
+    });
+  });
+
   it("shows pending override when one is set", async () => {
     seedGameId("test-game-2");
     mockedGetContext.mockResolvedValue({
@@ -124,6 +222,7 @@ describe("SaloonDevPanel", () => {
       currentTownId: "pinecross",
       currentTownName: "Pinecross",
       sourceSpent: false,
+      activeSaloonPoi: null,
       pendingDevOverride: { forcedKind: "Citizen", forcedSuspectId: null },
       hiddenTruth: null,
       suspects: [],
@@ -146,6 +245,7 @@ describe("SaloonDevPanel", () => {
       currentTownId: "pinecross",
       currentTownName: "Pinecross",
       sourceSpent: false,
+      activeSaloonPoi: null,
       pendingDevOverride: null,
       hiddenTruth: null,
       suspects: [],
@@ -176,6 +276,7 @@ describe("SaloonDevPanel", () => {
       currentTownId: "pinecross",
       currentTownName: "Pinecross",
       sourceSpent: false,
+      activeSaloonPoi: null,
       pendingDevOverride: { forcedKind: "Suspect", forcedSuspectId: "suspect-1" },
       hiddenTruth: null,
       suspects: [],

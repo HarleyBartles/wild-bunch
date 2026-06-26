@@ -29,6 +29,8 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.Equal("Current Town", result.CurrentTownName);
         Assert.False(result.SourceSpent);
         Assert.Null(result.PendingDevOverride);
+        // No active POI before LookAroundSaloon
+        Assert.Null(result.ActiveSaloonPoi);
 
         // Hidden truth is exposed in dev DTO
         Assert.NotNull(result.HiddenTruth);
@@ -44,6 +46,74 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.True(suspect2.IsTrueCulprit);
         Assert.False(suspect2.IsEligibleSaloonPoi);
         Assert.Contains("True culprit", suspect2.IneligibilityReason);
+    }
+
+    [Fact]
+    public async Task HandleAsync_AfterLookAroundSaloon_ReturnsActiveWantedSuspectPoi()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSessionWithSaloonSuspect();
+        session.LookAroundSaloon();
+        session.MarkEventsCommitted();
+        repository.Seed(session);
+
+        var handler = new GetSaloonDevContextHandler(repository);
+
+        var result = await handler.HandleAsync(new GetSaloonDevContextQuery(session.Id.Value));
+
+        Assert.True(result.SourceSpent);
+        Assert.NotNull(result.ActiveSaloonPoi);
+        Assert.Equal("WantedSuspect", result.ActiveSaloonPoi!.PersonOfInterestKind);
+        Assert.NotNull(result.ActiveSaloonPoi.SuspectId);
+        Assert.NotNull(result.ActiveSaloonPoi.Descriptor);
+    }
+
+    [Fact]
+    public async Task HandleAsync_AfterForcedCitizenOverride_ReturnsActiveCitizenPoi()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSessionWithSaloonSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
+        session.MarkEventsCommitted();
+        session.LookAroundSaloon();
+        session.MarkEventsCommitted();
+        repository.Seed(session);
+
+        var handler = new GetSaloonDevContextHandler(repository);
+
+        var result = await handler.HandleAsync(new GetSaloonDevContextQuery(session.Id.Value));
+
+        Assert.True(result.SourceSpent);
+        Assert.NotNull(result.ActiveSaloonPoi);
+        Assert.Equal("Citizen", result.ActiveSaloonPoi!.PersonOfInterestKind);
+        Assert.Null(result.ActiveSaloonPoi.SuspectId);
+        Assert.NotNull(result.ActiveSaloonPoi.Descriptor);
+        // Override consumed
+        Assert.Null(result.PendingDevOverride);
+    }
+
+    [Fact]
+    public async Task HandleAsync_AfterForcedSuspectOverride_ReturnsActiveForcedSuspectPoi()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSessionWithSaloonSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
+        session.LookAroundSaloon();
+        session.MarkEventsCommitted();
+        repository.Seed(session);
+
+        var handler = new GetSaloonDevContextHandler(repository);
+
+        var result = await handler.HandleAsync(new GetSaloonDevContextQuery(session.Id.Value));
+
+        Assert.True(result.SourceSpent);
+        Assert.NotNull(result.ActiveSaloonPoi);
+        Assert.Equal("WantedSuspect", result.ActiveSaloonPoi!.PersonOfInterestKind);
+        Assert.Equal("suspect-1", result.ActiveSaloonPoi.SuspectId);
+        Assert.NotNull(result.ActiveSaloonPoi.Descriptor);
+        // Override consumed
+        Assert.Null(result.PendingDevOverride);
     }
 
     [Fact]

@@ -126,6 +126,11 @@ public sealed class DevSaloonOverrideTests
         Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, spottedEvent.PersonOfInterestKind);
         // Override is cleared after consumption
         Assert.Null(session.PendingDevSaloonOverride);
+        // Active saloon POI state is set from the forced suspect
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.NotNull(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect,
+            session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind());
     }
 
     [Fact]
@@ -147,6 +152,11 @@ public sealed class DevSaloonOverrideTests
         Assert.Null(spottedEvent.SuspectId);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, spottedEvent.PersonOfInterestKind);
         Assert.Null(session.PendingDevSaloonOverride);
+        // Active saloon POI state is set as a citizen (no suspect id, descriptor present)
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.NotNull(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.Equal(SaloonPersonOfInterestKind.Citizen,
+            session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind());
     }
 
     [Fact]
