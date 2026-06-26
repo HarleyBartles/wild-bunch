@@ -153,7 +153,7 @@ const Drawer = styled.div<{ $expanded: boolean; $top: number }>`
   top: ${(props) => props.$top}px;
   left: 0;
   right: 0;
-  height: ${(props) => (props.$expanded ? `calc(60dvh - ${props.$top}px)` : "auto")};
+  height: ${(props) => (props.$expanded ? `calc(80dvh - ${props.$top}px)` : `calc(40dvh - ${props.$top}px)`)};
   max-height: calc(100dvh - ${(props) => props.$top}px);
   z-index: 1000;
   display: flex;
