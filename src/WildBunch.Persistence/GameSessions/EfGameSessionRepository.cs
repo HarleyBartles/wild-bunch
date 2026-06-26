@@ -110,6 +110,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.PendingDevTravelOverride, devOverrideJson, now);
         }
 
+        var devSaloonOverrideJson = _serializer.SerializePendingDevSaloonOverride(session.PendingDevSaloonOverride);
+        if (devSaloonOverrideJson is null)
+        {
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.PendingDevSaloonOverride, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            UpsertComponent(entity.Id, GameSessionComponentNames.PendingDevSaloonOverride, devSaloonOverrideJson, now);
+        }
+
         if (session.Journey is null)
         {
             await RemoveComponentAsync(entity.Id, GameSessionComponentNames.Journey, cancellationToken).ConfigureAwait(false);
@@ -307,6 +317,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (pendingDevOverride is not null)
         {
             GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", pendingDevOverride);
+        }
+
+        // Set PendingDevSaloonOverride from snapshot. See BUNCH-90.
+        var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride);
+        var pendingDevSaloonOverride = _serializer.DeserializePendingDevSaloonOverride(devSaloonOverrideJson);
+        if (pendingDevSaloonOverride is not null)
+        {
+            GameSessionRehydrator.SetBackingField(session, "_pendingDevSaloonOverride", pendingDevSaloonOverride);
         }
 
         if (hasPostSnapshotEvents)

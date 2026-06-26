@@ -126,6 +126,12 @@ public sealed partial class GameSessionJsonSerializer
     public DevTravelOverride? DeserializePendingDevTravelOverride(string? json)
         => json is null ? null : Deserialize<DevTravelOverride>(json);
 
+    public string? SerializePendingDevSaloonOverride(DevSaloonOverride? overrideValue)
+        => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
+
+    public DevSaloonOverride? DeserializePendingDevSaloonOverride(string? json)
+        => json is null ? null : Deserialize<DevSaloonOverride>(json);
+
     private sealed record PlayerSnapshot(
         string Name,
         string CurrentTownId,
