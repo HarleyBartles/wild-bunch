@@ -128,14 +128,14 @@ const DecisionHeading = styled.div`
   align-items: baseline;
 
   span {
-    color: rgba(242, 239, 232, 0.6);
+    color: color-mix(in srgb, var(--text) 60%, transparent);
     font-size: 0.82rem;
   }
 `;
 
 const DecisionBody = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.86);
+  color: color-mix(in srgb, var(--text) 86%, transparent);
 `;
 
 const EncounterControls = styled.div`
@@ -154,7 +154,7 @@ const ControlCard = styled.div`
 `;
 
 const ControlLabel = styled.label`
-  color: rgba(242, 239, 232, 0.8);
+  color: color-mix(in srgb, var(--text) 80%, transparent);
   font-size: 0.88rem;
 `;
 
@@ -162,8 +162,8 @@ const ControlInput = styled.input`
   width: 100%;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(12, 10, 8, 0.68);
-  color: #f2efe8;
+  background: rgba(12, 10, 8, 0.68); /* no token match — input surface */
+  color: var(--text);
   padding: 10px 12px;
 
   &:disabled {
@@ -174,7 +174,7 @@ const ControlInput = styled.input`
 
 const ControlHint = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.58);
+  color: color-mix(in srgb, var(--text) 58%, transparent);
   font-size: 0.82rem;
 `;
 
@@ -186,7 +186,7 @@ const ChoiceRow = styled.div`
 
 const ChoiceButton = styled(ButtonBase)`
   background: transparent;
-  color: #f2efe8;
+  color: var(--text);
   border-color: rgba(255, 255, 255, 0.16);
 
   &:disabled {
@@ -197,6 +197,6 @@ const ChoiceButton = styled(ButtonBase)`
 
 const DecisionHint = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.58);
+  color: color-mix(in srgb, var(--text) 58%, transparent);
   font-size: 0.88rem;
 `;

@@ -136,10 +136,10 @@ const StartGameStage = styled.article`
   gap: 18px;
   padding: 22px;
   border-radius: 28px;
-  border: 1px solid rgba(228, 186, 126, 0.2);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 20%, transparent);
   background:
-    radial-gradient(circle at top left, rgba(236, 203, 146, 0.14), transparent 28%),
-    linear-gradient(180deg, rgba(29, 23, 16, 0.98), rgba(16, 12, 8, 0.98));
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-strong) 14%, transparent), transparent 28%),
+    linear-gradient(180deg, rgba(29, 23, 16, 0.98), rgba(16, 12, 8, 0.98)); /* no token match — surface gradient */
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
 `;
 
@@ -152,7 +152,7 @@ const StartGameHeaderCard = styled.header`
 
 const Eyebrow = styled.p`
   margin: 0 0 6px;
-  color: #efc37e;
+  color: var(--accent-strong);
   text-transform: uppercase;
   letter-spacing: 0.22em;
   font-size: 0.74rem;
@@ -168,7 +168,7 @@ const Title = styled.h3`
 const Lead = styled.p`
   max-width: 72ch;
   margin: 0;
-  color: rgba(242, 239, 232, 0.75);
+  color: color-mix(in srgb, var(--text) 75%, transparent);
 `;
 
 const HeaderMeta = styled.div`
@@ -186,7 +186,7 @@ const MetaCard = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.08);
 
   span {
-    color: rgba(242, 239, 232, 0.62);
+    color: color-mix(in srgb, var(--text) 62%, transparent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.75rem;
@@ -201,9 +201,9 @@ const StartGameForm = styled.form`
 const PanelError = styled.div`
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(240, 126, 110, 0.14);
-  border: 1px solid rgba(240, 126, 110, 0.26);
-  color: #ffe4de;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+  color: var(--danger-text);
 `;
 
 const ActionBarRow = styled.div`
@@ -225,13 +225,13 @@ const ButtonBase = styled.button`
 `;
 
 const PrimaryButton = styled(ButtonBase)`
-  background: linear-gradient(180deg, #efc37e, #bf7a35);
-  color: #1b1308;
-  border-color: rgba(239, 195, 126, 0.55);
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent-strong-dark));
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent-strong) 55%, transparent);
 `;
 
 const GhostButton = styled(ButtonBase)`
   background: transparent;
-  color: #f2efe8;
+  color: var(--text);
   border-color: rgba(255, 255, 255, 0.16);
 `;

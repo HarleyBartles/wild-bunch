@@ -37,7 +37,7 @@ export const SectionHeader = styled.div`
   }
 
   span {
-    color: rgba(242, 239, 232, 0.62);
+    color: color-mix(in srgb, var(--text) 62%, transparent);
     font-size: 0.9rem;
   }
 `;

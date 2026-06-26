@@ -37,7 +37,7 @@ const Field = styled.div`
 `;
 
 const Label = styled.label`
-  color: rgba(242, 239, 232, 0.62);
+  color: color-mix(in srgb, var(--text) 62%, transparent);
   font-size: 0.92rem;
 `;
 
@@ -46,13 +46,13 @@ const baseControl = `
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
-  color: #f2efe8;
+  color: var(--text);
   padding: 12px 14px;
   outline: none;
 
   &:focus {
-    border-color: rgba(223, 159, 79, 0.55);
-    box-shadow: 0 0 0 3px rgba(223, 159, 79, 0.18);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 `;
 
@@ -64,20 +64,20 @@ const MonospaceInput = styled.input`
 
 const Hint = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.55);
+  color: color-mix(in srgb, var(--text) 55%, transparent);
   font-size: 0.86rem;
 `;
 
 const DraftNotice = styled.p`
   margin: 0;
-  color: rgba(239, 195, 126, 0.9);
+  color: color-mix(in srgb, var(--accent-strong) 90%, transparent);
   font-size: 0.84rem;
 `;
 
 const InlineError = styled.div`
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(240, 126, 110, 0.12);
-  border: 1px solid rgba(240, 126, 110, 0.24);
-  color: #ffe8e3;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
+  color: var(--danger-text);
 `;

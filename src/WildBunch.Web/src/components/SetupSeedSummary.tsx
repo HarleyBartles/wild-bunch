@@ -37,7 +37,7 @@ const SummaryCard = styled.dl`
 
 const SummaryItem = styled.div`
   dt {
-    color: rgba(242, 239, 232, 0.58);
+    color: color-mix(in srgb, var(--text) 58%, transparent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.74rem;
