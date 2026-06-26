@@ -4,6 +4,8 @@
 
 **Goal:** Make the dev-only session audit surface readable enough to inspect a play session without changing gameplay behavior or leaking hidden truth through player APIs.
 
+**Sequencing Gate:** Implementation must not start until BUNCH-90 has landed on `main`. Before implementation, rebase on current `main`, inspect the merged BUNCH-90 saloon POI dev-control changes, and update the weak-summary inventory and tests to include any new saloon dev events, DTOs, endpoint outputs, and panel-visible behavior.
+
 **Architecture:** Keep summary generation in `WildBunch.Application.Projections` so the dev query handler stays thin and the `/api/dev/` boundary remains centralized. Expand the audit projector, or extract a small formatter beside it, to translate the event stream into readable summaries by event family: session setup, town action context, investigations, saloon activity, travel/journey events, bounty/sheriff events, and dev travel overrides. Keep the React panel focused on presentation only: sequence, event type, and a readable summary, with no gameplay logic, no new routes, and no shell redesign.
 
 **Tech Stack:** C#/.NET 10 / `net10.0`, ASP.NET Core minimal APIs, xUnit, React 18, TypeScript, React Query, styled-components, Vite/Vitest.
@@ -39,23 +41,23 @@
 - `src/WildBunch.Api/Dev/DevEndpoints.cs`
 - `src/WildBunch.Api/Dev/DevRoleGuard.cs`
 - `src/WildBunch.Api/DependencyInjection.cs`
-- `src/WildBunch.Web/src/dev/panels/SessionAuditDevPanel.tsx`
 - `src/WildBunch.Application/Dev/Models/SaloonDevContextDto.cs`
 - `src/WildBunch.Application/Dev/Mapping/SaloonDevContextMapper.cs`
 - `src/WildBunch.Application/Dev/Queries/GetSaloonDevContextHandler.cs`
 - `src/WildBunch.Domain/Events/DevSaloonOverrideForced.cs`
 - `src/WildBunch.Domain/Events/DevSaloonOverrideCleared.cs`
 - `src/WildBunch.Domain/Events/DevSaloonOverrideConsumed.cs`
+- `src/WildBunch.Web/src/dev/panels/SessionAuditDevPanel.tsx`
 - `src/WildBunch.Web/src/dev/panels/SaloonDevPanel.tsx`
-- `tests/WildBunch.Application.Tests/Dev/GetSaloonDevContextHandlerTests.cs`
-- `tests/WildBunch.Integration.Tests/Dev/DevSaloonEndpointTests.cs`
 - `src/WildBunch.Web/src/dev/types.ts`
 - `src/WildBunch.Web/src/tests/DevOverlay.test.tsx`
 - `src/WildBunch.Web/src/tests/TravelDevPanel.test.tsx`
 - `tests/WildBunch.Application.Tests/Dev/GetSessionAuditHandlerTests.cs`
+- `tests/WildBunch.Application.Tests/Dev/GetSaloonDevContextHandlerTests.cs`
 - `tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs`
 - `tests/WildBunch.Application.Tests/Projections/GameLogEntryLegacyProjectionTests.cs`
 - `tests/WildBunch.Integration.Tests/Dev/DevEndpointTests.cs`
+- `tests/WildBunch.Integration.Tests/Dev/DevSaloonEndpointTests.cs`
 - `tests/WildBunch.Integration.Tests/GameApiHiddenTruthTests.cs`
 - `docs/adr/ADR-0030-dev-overlay-and-dev-endpoint-namespace.md`
 - `docs/adr/ADR-0031-event-sourced-dev-travel-controls.md`
@@ -156,6 +158,7 @@ Commit only the application projector and its tests so the backend summary behav
 **Files:**
 - Modify: `tests/WildBunch.Application.Tests/Dev/GetSessionAuditHandlerTests.cs`
 - Modify: `tests/WildBunch.Integration.Tests/Dev/DevEndpointTests.cs`
+- Modify: `tests/WildBunch.Integration.Tests/Dev/DevSaloonEndpointTests.cs`
 - Leave unchanged unless a test proves otherwise: `tests/WildBunch.Integration.Tests/GameApiHiddenTruthTests.cs`
 
 **Interfaces:**
@@ -175,11 +178,13 @@ Expected: the updated assertions fail until the new summary strings are wired th
 Update the dev endpoint test to assert that the payload contains at least one readable summary string from a representative session, not just the raw `"GameStarted"` token. Keep the existing 200/403/404 checks intact.
 If the saloon dev-control audit entries remain raw after BUNCH-90, add explicit coverage for `DevSaloonOverrideForced`, `DevSaloonOverrideCleared`, or `DevSaloonOverrideConsumed` so the audit endpoint proves the merged saloon event stream is readable.
 
+If BUNCH-90 added saloon dev force/clear/consume events, extend the integration coverage to include one representative audit payload from those flows so the dev-only endpoint proves the new saloon entries are readable.
+
 Run: `.\scripts\postgres-dev.ps1 ensure`
 
-Run: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~DevEndpointTests|FullyQualifiedName~GameApiHiddenTruthTests"`
+Run: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~DevEndpointTests|FullyQualifiedName~GameApiHiddenTruthTests|FullyQualifiedName~DevSaloonEndpointTests"`
 
-Expected: the dev endpoint stays under `/api/dev/`, non-dev access still returns 403, missing sessions still return 404, and player-facing audit routes remain 404.
+Expected: the dev endpoint stays under `/api/dev/`, non-dev access still returns 403, missing sessions still returns 404, and player-facing audit routes remain 404.
 
 - [ ] **Step 3: Commit the endpoint regression coverage**
 
@@ -257,7 +262,7 @@ Expected: the audit panel tests and TypeScript build pass.
 
 - [ ] **Step 4: Capture before/after examples for the return**
 
-Record two or three exact audit entries before and after the change, with emphasis on the events that used to render as raw type names. Include one town-context example, one travel example, and one dev-override example.
+Record two or three exact audit entries before and after the change, with emphasis on the events that used to render as raw type names. Include one town-context example, one travel example, one dev-travel-override example, and one saloon-dev-control example.
 
 - [ ] **Step 5: Commit the final slice**
 
@@ -272,4 +277,3 @@ Commit the final source state only after the validation commands above pass and 
 - The plan includes backend, integration, and frontend validation.
 - The plan includes before/after examples for the worker return.
 - The plan stays narrow enough to fit in one PR unless a review uncovers a separate missing seam.
-
