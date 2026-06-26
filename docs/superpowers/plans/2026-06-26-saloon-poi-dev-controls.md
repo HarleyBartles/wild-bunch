@@ -24,7 +24,8 @@
 - Worker environment uses PowerShell; do not use `&&` for command chaining.
 - Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
 - The dev override is consumed once by the next `LookAroundSaloon()` call, then cleared from aggregate state.
-- Dev force commands are rejected when the current town has no saloon source available — overrides are contextual, not queued cross-town.
+- Every town has a saloon; `LookAroundSaloon` is always an available town action. Do not model saloon availability as a condition that can disable saloon dev controls or reject saloon override commands.
+- Every town has a sheriff's office; `ReadWantedPosters` is always an available town action. The false `TownServices.NoticeBoard` gate on wanted posters is removed at the source (domain action resolver and `GameSession`), not patched in the dev overlay.
 - Dev force commands for a specific suspect are validated against the current saloon POI eligibility rules: the suspect must exist, must not be the true culprit, and if the suspect has a known warrant, their presence state must be AvailableInTown or GoneToGround. Dev inspection can show why a suspect is ineligible, but dev force must not break core saloon/culprit invariants.
 
 ---
@@ -163,7 +164,7 @@ The consumption event is necessary for replay safety. Without it, replaying `Dev
 ### Q7: What dev-only query data is useful and safe to show only through dev endpoints?
 
 The `SaloonDevContextDto` will include:
-- **Current saloon context:** `CurrentActionContext` (is it `Saloon`?), `CurrentTownId`, `CurrentTownName`, `SaloonAvailable` (whether the town has a saloon source).
+- **Current saloon context:** `CurrentActionContext` (is it `Saloon`?), `CurrentTownId`, `CurrentTownName`. Every town has a saloon, so there is no `SaloonAvailable` field.
 - **Active POI state:** `ActiveSaloonPersonOfInterestId`, `ActiveSaloonPersonOfInterestDescriptor`, `ActiveSaloonPersonOfInterestKind`, `SaloonSourceSpent` (whether `SaloonLookAround` is spent this visit).
 - **Eligible suspects (dev-only internal truth):** List of all suspects with their ID, name, `IsTrueCulprit` flag, `IsEligibleSaloonCandidate` flag, and reason for ineligibility if applicable. This is hidden truth that helps Harley understand why certain suspects do or don't appear.
 - **Hidden culprit truth (dev-only):** `TrueCulpritId` and `TrueCulpritName` — the actual culprit identity. This is deliberately exposed through the dev endpoint per ADR-0030 §7.
@@ -202,6 +203,230 @@ A domain-level test that:
 5. Confronts the POI normally (emits `SaloonPersonOfInterestConfronted` / `WantedSuspectConfronted`).
 6. Verifies the event stream contains: `DevSaloonOverrideForced`, `DevSaloonOverrideConsumed`, `SaloonPersonOfInterestSpotted`, `SaloonPersonOfInterestConfronted` — proving the dev force was an event, the consume was an event, the look-around consumed it, and normal confrontation followed.
 7. **Rehydrates a fresh session from that event stream and verifies `_pendingDevSaloonOverride` is null** — proving replay produces the same final state as the command path.
+
+---
+
+## Task 0: Source invariant fix — saloon and wanted posters are always available
+
+**Goal:** Fix the false unavailability of saloon look-around and wanted-poster viewing at the source (domain, action resolver, and frontend), not in the dev overlay. Every town has a saloon and a sheriff's office. These are game invariants, not conditional on town services.
+
+**Root cause analysis (verified against current source):**
+
+1. **Saloon look-around** — `InvestigationSourceKind.SaloonLookAround` is already `TownSourceAvailability.Baseline` with `TownServices.None` in `TownSourceCatalog.Default` (`TownSourceModels.cs:72-80`). The action is always available through `ActionAvailabilityResolver` via `GetInvestigationActions()`. However, `GameSession.LookAroundSaloon()` at line 2546 has a dead `IsAvailable` check that can never fail but implies the saloon can be unavailable. This dead check should be removed so the code matches the invariant.
+
+2. **Wanted posters** — `AvailableActionKind.ReadWantedPosters` is gated on `TownServices.NoticeBoard` in two places:
+   - `ActionAvailabilityResolver.Resolve()` line 40-43: only adds the action if the town has `NoticeBoard`.
+   - `GameSession.ReadWantedPosters()` line 2455: fails with "There are no wanted posters here." if `SupportsWantedPosters` is false.
+   - `TownAggregate.SupportsWantedPosters` line 32: returns `(Services & TownServices.NoticeBoard) != 0`.
+   - `SeedWorldCatalog` line 76, 78, 79: towns Dry Fork, Hardpan, and Open Pass have `TownServices.None` — no `NoticeBoard` flag. These towns show a disabled wanted-posters button in the sheriff's office UI.
+
+**Fix:** Make `ReadWantedPosters` a baseline action (always available), like `Travel`, `ViewMap`, and `ViewJournal`. Remove the `NoticeBoard` service gate. The `NoticeBoard` service flag remains for the `InspectNoticeBoard` investigation source (which is already baseline in the source catalog and unaffected by this change).
+
+**Files:**
+- Modify: `src/WildBunch.Domain/Actions/ActionAvailabilityResolver.cs` — make `ReadWantedPosters` always available
+- Modify: `src/WildBunch.Domain/Game/GameSession.cs` — remove dead `SupportsWantedPosters` check in `ReadWantedPosters()` and dead `IsAvailable` check in `LookAroundSaloon()`
+- Modify: `src/WildBunch.Domain/Game/TownAggregate.cs` — remove `SupportsWantedPosters` property (dead after fix)
+- Modify: `src/WildBunch.Web/src/flow/places/SheriffPlace.tsx` — no change needed if the action DTO is always present; verify the button is not disabled by dead `canReadWantedPosters` logic
+- Test: domain tests proving both actions are always available; frontend test proving buttons are not disabled under ordinary town state
+
+**Interfaces:**
+- Consumes: existing `ActionAvailabilityResolver`, `GameSession`, `TownAggregate` APIs
+- Produces: corrected action availability for all towns; dev overlay naturally reflects corrected state
+
+- [ ] **Step 1: Make ReadWantedPosters always available in ActionAvailabilityResolver**
+
+In `src/WildBunch.Domain/Actions/ActionAvailabilityResolver.cs`, move `ReadWantedPosters` from the `NoticeBoard`-gated block to the always-available list. Change:
+
+```csharp
+// BEFORE (line 40-43):
+if ((currentTown.Services & TownServices.NoticeBoard) != 0)
+{
+    availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
+}
+```
+
+To:
+
+```csharp
+// AFTER: ReadWantedPosters is always available — every town has a sheriff's office.
+availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
+```
+
+Place this after the `ViewJournal` line (line 17) in the always-available block, before the service-gated blocks.
+
+- [ ] **Step 2: Remove SupportsWantedPosters check in GameSession.ReadWantedPosters()**
+
+In `src/WildBunch.Domain/Game/GameSession.cs`, remove the `SupportsWantedPosters` guard in `ReadWantedPosters()` (lines 2455-2458):
+
+```csharp
+// REMOVE these lines:
+if (!CurrentTown.SupportsWantedPosters)
+{
+    return ReadWantedPostersResult.Failed("There are no wanted posters here.");
+}
+```
+
+The method should still check `IsJourneyModal()` first (that is a real modal block), then proceed directly to `EnterActionContext(TownActionContext.SheriffOffice)`.
+
+- [ ] **Step 3: Remove dead IsAvailable check in GameSession.LookAroundSaloon()**
+
+In `src/WildBunch.Domain/Game/GameSession.cs`, remove the dead saloon availability check (lines 2546-2549):
+
+```csharp
+// REMOVE these lines:
+if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
+{
+    return CaseInvestigationResult.Failed("There is no saloon here.");
+}
+```
+
+The method should still check `IsJourneyModal()` first, then proceed directly to `EnterActionContext(TownActionContext.Saloon)`. Update the comment on line 2551-2553 to remove the "If no saloon exists" language.
+
+- [ ] **Step 4: Remove SupportsWantedPosters from TownAggregate**
+
+In `src/WildBunch.Domain/Game/TownAggregate.cs`, remove the `SupportsWantedPosters` property (line 32):
+
+```csharp
+// REMOVE:
+public bool SupportsWantedPosters => (Services & TownServices.NoticeBoard) != 0;
+```
+
+Search for any remaining references to `SupportsWantedPosters` and remove them. The `CheckWantedPosters()` method on `TownVisitState` is separate and remains — it marks the source as spent per visit.
+
+- [ ] **Step 5: Write domain tests proving the invariants**
+
+Add tests to `tests/WildBunch.Domain.Tests/` (either in an existing test file or a new `TownActionAvailabilityTests.cs`):
+
+```csharp
+// tests/WildBunch.Domain.Tests/TownActionAvailabilityTests.cs
+using WildBunch.Domain.Actions;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.World;
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Travel;
+
+namespace WildBunch.Domain.Tests;
+
+public sealed class TownActionAvailabilityTests
+{
+    [Fact]
+    public void ActionAvailabilityResolver_AlwaysIncludesReadWantedPosters_RegardlessOfTownServices()
+    {
+        // Use a town with TownServices.None — the worst case for availability.
+        // If the seed system is required, use SeededNewGameFactory to create a session
+        // in a town with no services (e.g. Dry Fork). If a hand-built world is acceptable
+        // for this availability test (it is about action resolution, not resource mechanics),
+        // construct the session directly.
+        //
+        // The implementer should choose the approach that best fits the test factory
+        // patterns. The key assertion is that ReadWantedPosters appears in the actions
+        // list even when the town has no NoticeBoard service.
+        var session = TestSessionFactory.CreateDefault();
+        // Verify the default test town has no NoticeBoard service, or use a town that doesn't.
+        // If CreateDefault uses a town with NoticeBoard, the implementer should either:
+        //   - Use a seed-based session in a no-service town (Dry Fork), or
+        //   - Construct a minimal session with TownServices.None.
+        //
+        // For the test to be meaningful, the town must NOT have TownServices.NoticeBoard.
+
+        var resolver = new ActionAvailabilityResolver();
+        var actions = resolver.Resolve(session);
+
+        Assert.Contains(actions, a => a.Kind == AvailableActionKind.ReadWantedPosters);
+    }
+
+    [Fact]
+    public void ActionAvailabilityResolver_AlwaysIncludesLookAroundSaloon_RegardlessOfTownServices()
+    {
+        // Same setup as above — town with TownServices.None.
+        var session = TestSessionFactory.CreateDefault();
+
+        var resolver = new ActionAvailabilityResolver();
+        var actions = resolver.Resolve(session);
+
+        Assert.Contains(actions, a => a.Kind == AvailableActionKind.LookAroundSaloon);
+    }
+
+    [Fact]
+    public void ReadWantedPosters_Succeeds_EvenWhenTownHasNoNoticeBoardService()
+    {
+        // Create a session in a town without NoticeBoard service.
+        // If TestSessionFactory.CreateDefault() uses a town with NoticeBoard,
+        // the implementer should use a seed-based session or construct one
+        // with TownServices.None.
+        var session = TestSessionFactory.CreateDefault();
+
+        var result = session.ReadWantedPosters();
+
+        // Should not fail with "no wanted posters here" — that check is removed.
+        // It may succeed with "nothing new" if no warrants/clues are available,
+        // but it must not fail with the availability message.
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public void LookAroundSaloon_Succeeds_EvenWhenTownHasNoServices()
+    {
+        // Create a session in a town with TownServices.None.
+        var session = TestSessionFactory.CreateDefault();
+
+        var result = session.LookAroundSaloon();
+
+        // Should not fail with "no saloon here" — that check is removed.
+        Assert.True(result.Success);
+    }
+}
+```
+
+**Implementation note:** The implementer must verify which `TestSessionFactory` method creates a session in a town without `NoticeBoard`. If `CreateDefault()` uses a town with `NoticeBoard`, the implementer should either add a factory helper for a no-service town or use the seed system to create a session in Dry Fork (which has `TownServices.None`). The test is only meaningful if the town lacks `NoticeBoard` service. Note: `TestSessionFactory.CreateWithNoSaloon()` is misleadingly named — every town has a saloon after Task 0. Check what town services it actually uses before repurposing it.
+
+- [ ] **Step 6: Verify frontend does not disable wanted-posters button**
+
+In `src/WildBunch.Web/src/flow/places/SheriffPlace.tsx`, the button is disabled when `!canReadWantedPosters`. After the domain fix, `canReadWantedPosters` will always be true for non-journey sessions because the action is always in the actions list. Verify this by checking:
+
+1. The `canReadWantedPosters` derivation in `useCurrentGameSession.ts` line 290: `actions.some(actionIsWantedPosters)` — this will now always find the action.
+2. The `SheriffPlace.tsx` button: `disabled={loading || !canReadWantedPosters}` — `canReadWantedPosters` is now always true when not loading.
+
+No frontend code change should be needed if the API action DTO is corrected. But add a frontend test to prove the button is not disabled under ordinary town state:
+
+```typescript
+// src/WildBunch.Web/src/tests/SheriffPlace.test.tsx
+// Verify the "Read wanted posters" button is not disabled when the session
+// is in a town with no special services. Mock the actions API to include
+// ReadWantedPosters (which it now always does) and verify the button
+// is enabled. This test documents the invariant that the button should
+// never be disabled due to town services.
+```
+
+The implementer should follow the existing frontend test patterns in `src/WildBunch.Web/src/tests/` for mocking the game session and actions API.
+
+- [ ] **Step 7: Run domain tests**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~TownActionAvailability"`
+Expected: PASS — all 4 invariant tests green.
+
+- [ ] **Step 8: Run full domain test suite to verify no regressions**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests`
+Expected: PASS — existing clue, journal, wanted-poster, and bounty flows unaffected.
+
+- [ ] **Step 9: Commit**
+
+```powershell
+git add src/WildBunch.Domain/Actions/ActionAvailabilityResolver.cs src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Domain/Game/TownAggregate.cs tests/WildBunch.Domain.Tests/TownActionAvailabilityTests.cs
+git commit -m "BUNCH-90: fix saloon and wanted-poster availability invariants at source
+
+Every town has a saloon and a sheriff's office. Remove false availability
+gates that made these actions appear unavailable in towns without
+NoticeBoard service (Dry Fork, Hardpan, Open Pass).
+
+- ActionAvailabilityResolver: ReadWantedPosters is now always available
+- GameSession.ReadWantedPosters: removed dead SupportsWantedPosters check
+- GameSession.LookAroundSaloon: removed dead IsAvailable check
+- TownAggregate: removed dead SupportsWantedPosters property
+- Added TownActionAvailabilityTests proving both actions are always available"
+```
 
 ---
 
@@ -374,9 +599,9 @@ git commit -m "BUNCH-90: add DevSaloonOverride record and dev domain events"
 
 **Application-layer access strategy:** `PendingDevSaloonOverride` is `internal` on `GameSession`. The repo already has `[assembly: InternalsVisibleTo("WildBunch.Application")]` in `src/WildBunch.Domain/Properties/AssemblyInfo.cs` (line 4), so the Application dev mapper can read it directly. No new `InternalsVisibleTo` attribute or public accessor is needed. This is settled — not a mid-flight discovery point.
 
-**Consume-once strategy:** `LookAroundSaloon()` at `GameSession.cs:2539` currently calls `TryGetConfrontableSaloonPersonOfInterestCandidateInTown()` at line 2570. The override is consumed **after** the availability check and context entry, but **before** the spent-source check. This means:
-- If the saloon is not available, the override is NOT consumed (the look-around fails first).
-- If the saloon is available, the override IS consumed — it replaces both the spent-source repeat path and the normal candidate-selection path.
+**Consume-once strategy:** `LookAroundSaloon()` at `GameSession.cs:2539` currently calls `TryGetConfrontableSaloonPersonOfInterestCandidateInTown()` at line 2570. The override is consumed **after** the journey-modal check and context entry, but **before** the spent-source check. (After Task 0, the dead saloon-availability check is removed — every town has a saloon.) This means:
+- If a journey is active, the override is NOT consumed (the look-around fails first).
+- Otherwise, the override IS consumed — it replaces both the spent-source repeat path and the normal candidate-selection path.
 - The `DevSaloonOverrideConsumed` event is emitted before the `SaloonPersonOfInterestSpotted` event, in the same command execution. The forced POI shape is built from the captured override value before the consumed event clears the field (same capture-before-consume pattern as travel at `GameSession.cs:1267`).
 - **Suspect eligibility is validated at force time** (in `ForceDevSaloonOverride`), not at consume time. The consume path trusts that the forced suspect was already validated when the override was set. This is safe because the override is session-owned state that can only be set through the aggregate command method, and the eligibility rules (true culprit exclusion, warrant/presence) are stable between force and consume within the same town visit.
 
@@ -572,19 +797,6 @@ public sealed class DevSaloonOverrideTests
     }
 
     [Fact]
-    public void ForceDevSaloonOverride_RejectsWhenNoSaloonInCurrentTown()
-    {
-        var session = TestSessionFactory.CreateWithNoSaloon();
-
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen()));
-
-        Assert.Contains("no saloon", ex.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Null(session.PendingDevSaloonOverride);
-        Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideForced>());
-    }
-
-    [Fact]
     public void ForceDevSaloonOverride_RejectsIneligibleSuspect_WithWarrantAndBadPresence()
     {
         // This test requires a session where a non-culprit suspect has a known
@@ -599,7 +811,7 @@ public sealed class DevSaloonOverrideTests
         //   - suspect-1 must have a known warrant in the CaseFile.
         //   - suspect-1's presence state must be set to SecuredAlive via
         //     session.SetWantedSuspectPresenceState(suspect-1, SecuredAlive).
-        //   - The current town must have a saloon source available.
+        //   - Every town has a saloon, so no saloon-availability setup is needed.
         //
         // Example factory method to add to TestSessionFactory:
         //
@@ -771,11 +983,6 @@ Add after `ClearDevTravelOverride()` (after line 924):
 ///
 /// Validation rules (enforced at force time, not consume time):
 /// - Rejects if a journey is active.
-/// - Rejects if the current town has no saloon source available
-///   (CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround) is false).
-///   This matches BUNCH-90's requirement that saloon/POI controls appear only
-///   when saloon/town POI context is relevant. The override is not queued
-///   cross-town — it is a contextual dev control for the current town.
 /// - For Suspect kind with a specific ForcedSuspectId:
 ///   - Rejects if the suspect ID does not match any suspect in the case file.
 ///   - Rejects if the suspect is the true culprit (CaseFile.TrueCulpritId).
@@ -796,11 +1003,6 @@ public void ForceDevSaloonOverride(DevSaloonOverride overrideValue)
     if (IsJourneyModal())
     {
         throw new InvalidOperationException("Cannot force a saloon override while a journey is active.");
-    }
-
-    if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
-    {
-        throw new InvalidOperationException("Cannot force a saloon override: the current town has no saloon.");
     }
 
     if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
@@ -1062,7 +1264,7 @@ This preserves the exact same normal-path behavior (steps 4-6 are identical to t
 - [ ] **Step 9: Run domain tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaloonOverrideTests"`
-Expected: PASS — all 17 tests green.
+Expected: PASS — all 16 tests green.
 
 - [ ] **Step 10: Run full domain test suite to verify no regressions**
 
@@ -1111,7 +1313,6 @@ public sealed record SaloonDevContextDto(
     bool InSaloonContext,
     string? CurrentTownId,
     string? CurrentTownName,
-    bool SaloonAvailable,
     bool SaloonSourceSpent,
     string? ActiveSaloonPersonOfInterestId,
     string? ActiveSaloonPersonOfInterestDescriptor,
@@ -1217,7 +1418,6 @@ public static class SaloonDevContextMapper
             InSaloonContext: session.CurrentActionContext == TownActionContext.Saloon,
             CurrentTownId: session.Player.CurrentTownId.Value,
             CurrentTownName: session.CurrentTown.TownName,
-            SaloonAvailable: session.CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround),
             SaloonSourceSpent: townState.IsSpent(InvestigationSourceKind.SaloonLookAround),
             ActiveSaloonPersonOfInterestId: townState.ActiveSaloonPersonOfInterestId?.Value,
             ActiveSaloonPersonOfInterestDescriptor: townState.ActiveSaloonPersonOfInterestDescriptor,
@@ -1405,7 +1605,6 @@ public sealed class GetSaloonDevContextHandlerTests
 
         Assert.Equal(session.Id.Value, result.SessionId);
         Assert.False(result.InSaloonContext);
-        Assert.True(result.SaloonAvailable);
         Assert.False(result.SaloonSourceSpent);
         Assert.NotEmpty(result.Suspects);
     }
@@ -1565,24 +1764,6 @@ public sealed class ForceSaloonOverrideHandlerTests
                 session.Id.Value,
                 DevSaloonPoiKind.Suspect,
                 new SuspectId("nonexistent-suspect"))));
-
-        Assert.Equal(0, repository.StoreCalls);
-    }
-
-    [Fact]
-    public async Task HandleAsync_RejectsForce_WhenNoSaloonInCurrentTown()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = TestSessionFactory.CreateWithNoSaloon();
-        repository.Seed(session);
-
-        var handler = new ForceSaloonOverrideHandler(repository, repository);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.HandleAsync(new ForceSaloonOverrideCommand(
-                session.Id.Value,
-                DevSaloonPoiKind.Citizen,
-                ForcedSuspectId: null)));
 
         Assert.Equal(0, repository.StoreCalls);
     }
@@ -1794,7 +1975,7 @@ Add the `using` directives for `WildBunch.Application.Dev.Queries` and `WildBunc
 
 - [ ] **Step 3: Write integration tests**
 
-Create `tests/WildBunch.Integration.Tests/DevSaloonEndpointTests.cs` following the existing `DevTravelEndpointTests.cs` pattern. Use `BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady()` to create a session (the Pinecross town has a saloon source available). Test:
+Create `tests/WildBunch.Integration.Tests/DevSaloonEndpointTests.cs` following the existing `DevTravelEndpointTests.cs` pattern. Use `BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady()` to create a session (every town has a saloon). Test:
 
 ```csharp
 // tests/WildBunch.Integration.Tests/DevSaloonEndpointTests.cs
@@ -1828,7 +2009,6 @@ public sealed class DevSaloonEndpointTests
         var devContext = await devContextResponse.Content.ReadFromJsonAsync<SaloonDevContextDto>();
         Assert.NotNull(devContext);
         Assert.Equal(createdSession.Id, devContext!.SessionId);
-        Assert.True(devContext.SaloonAvailable);
     }
 
     [Fact]
@@ -2087,7 +2267,7 @@ Expected: PASS — existing replay tests still green.
 The replay tests (`RehydrateFromEvents_WithDevSaloonOverrideForced_ReconstructsOverrideState`, `RehydrateFromEvents_AfterSaloonConsumption_HasNoPendingOverride`, `RehydrateFromEvents_WithNoDevSaloonOverride_HasNoPendingOverride`) were added in Task 2 Step 1. After adding the persistence serializer entries, these tests exercise the full persistence round-trip path. Verify they still pass:
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaloonOverrideTests"`
-Expected: PASS — all 17 tests green, including the three replay tests.
+Expected: PASS — all 16 tests green, including the three replay tests.
 
 - [ ] **Step 8: Run full domain test suite**
 
@@ -2116,7 +2296,7 @@ git commit -m "BUNCH-90: persist dev saloon override in event stream and snapsho
 - Consumes: `/api/dev/sessions/{id}/saloon-context`, `/api/dev/sessions/{id}/saloon/force-override`, `/api/dev/sessions/{id}/saloon/clear-override` from Task 4
 - Produces: `SaloonDevPanel` registered in the dev overlay sidebar.
 
-**Contextual visibility:** The `SaloonDevPanel` appears in the dev overlay sidebar alongside `TravelDevPanel`. It is always available in the registry (the registry is static), but the panel content adapts to the current game state: if no session is active, it shows "No active session."; if the saloon is not available in the current town, it shows the saloon-unavailable state but still shows suspect/culprit truth for debugging.
+**Contextual visibility:** The `SaloonDevPanel` appears in the dev overlay sidebar alongside `TravelDevPanel`. It is always available in the registry (the registry is static). The panel content adapts to the current game state: if no session is active, it shows "No active session."; otherwise it shows the saloon context, hidden truth, suspects, and force controls. Every town has a saloon, so there is no saloon-unavailable state to handle.
 
 - [ ] **Step 1: Add TypeScript DTOs to types.ts**
 
@@ -2142,7 +2322,6 @@ export interface SaloonDevContextDto {
   inSaloonContext: boolean;
   currentTownId: string | null;
   currentTownName: string | null;
-  saloonAvailable: boolean;
   saloonSourceSpent: boolean;
   activeSaloonPersonOfInterestId: string | null;
   activeSaloonPersonOfInterestDescriptor: string | null;
@@ -2274,10 +2453,6 @@ export function SaloonDevPanel() {
           </Row>
         )}
         <Row>
-          <Label>Saloon available:</Label>
-          <Value>{data?.saloonAvailable ? "Yes" : "No"}</Value>
-        </Row>
-        <Row>
           <Label>Source spent:</Label>
           <Value>{data?.saloonSourceSpent ? "Yes" : "No"}</Value>
         </Row>
@@ -2342,45 +2517,36 @@ export function SaloonDevPanel() {
 
       <Section>
         <SectionTitle>Force next saloon override</SectionTitle>
-        {data?.saloonAvailable ? (
-          <>
-            <Field>
-              <Label>Kind:</Label>
-              <Select value={kind} onChange={(e) => setKind(e.target.value)}>
-                {POI_KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            {kind === "Suspect" && (
-              <Field>
-                <Label>Suspect ID:</Label>
-                <Input
-                  type="text"
-                  value={suspectId}
-                  onChange={(e) => setSuspectId(e.target.value)}
-                  placeholder="(first eligible if blank)"
-                />
-              </Field>
-            )}
-            <ButtonRow>
-              <Button type="button" onClick={handleForce} disabled={actionPending}>
-                Force override
-              </Button>
-              <Button type="button" onClick={handleClear} disabled={actionPending}>
-                Clear override
-              </Button>
-            </ButtonRow>
-            {error && <ErrorText>{error}</ErrorText>}
-          </>
-        ) : (
-          <MutedText>
-            Saloon not available in current town — force controls disabled.
-            Hidden truth and suspect info are still shown for debugging.
-          </MutedText>
+        <Field>
+          <Label>Kind:</Label>
+          <Select value={kind} onChange={(e) => setKind(e.target.value)}>
+            {POI_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {kind === "Suspect" && (
+          <Field>
+            <Label>Suspect ID:</Label>
+            <Input
+              type="text"
+              value={suspectId}
+              onChange={(e) => setSuspectId(e.target.value)}
+              placeholder="(first eligible if blank)"
+            />
+          </Field>
         )}
+        <ButtonRow>
+          <Button type="button" onClick={handleForce} disabled={actionPending}>
+            Force override
+          </Button>
+          <Button type="button" onClick={handleClear} disabled={actionPending}>
+            Clear override
+          </Button>
+        </ButtonRow>
+        {error && <ErrorText>{error}</ErrorText>}
       </Section>
     </Container>
   );
@@ -2585,7 +2751,7 @@ git commit -m "BUNCH-90: add SaloonDevPanel with force/clear controls to dev ove
 Add a new dated status entry to the Dated Status History in `docs/adr/ADR-0030-dev-overlay-and-dev-endpoint-namespace.md`:
 
 ```markdown
-- 2026-06-26 - live (BUNCH-90): Second contextual dev module added. SaloonDevPanel in the dev overlay with dev endpoints for saloon-context query, force-override, and clear-override. New typed domain events DevSaloonOverrideForced, DevSaloonOverrideCleared, and DevSaloonOverrideConsumed. Dev saloon override is session-owned aggregate state consumed once by the next LookAroundSaloon. Normal saloon generation unchanged when no override is active. Dev DTOs separate from player DTOs. The saloon-context dev endpoint is the first dev endpoint to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) per ADR-0030 §7, guarded by DevRoleGuard and separated from player DTOs. Player-facing APIs remain clean of dev override state and hidden truth. Dev force commands validate against current saloon POI eligibility rules: reject unknown suspect IDs, reject the true culprit, reject suspects with ineligible warrant/presence state, and reject force when the current town has no saloon. Dev inspection can show why a suspect is ineligible, but dev force must not break core saloon/culprit invariants.
+- 2026-06-26 - live (BUNCH-90): Second contextual dev module added. SaloonDevPanel in the dev overlay with dev endpoints for saloon-context query, force-override, and clear-override. New typed domain events DevSaloonOverrideForced, DevSaloonOverrideCleared, and DevSaloonOverrideConsumed. Dev saloon override is session-owned aggregate state consumed once by the next LookAroundSaloon. Normal saloon generation unchanged when no override is active. Dev DTOs separate from player DTOs. The saloon-context dev endpoint is the first dev endpoint to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) per ADR-0030 §7, guarded by DevRoleGuard and separated from player DTOs. Player-facing APIs remain clean of dev override state and hidden truth. Dev force commands validate against current saloon POI eligibility rules: reject unknown suspect IDs, reject the true culprit, and reject suspects with ineligible warrant/presence state. Dev inspection can show why a suspect is ineligible, but dev force must not break core saloon/culprit invariants. Source invariant fix: every town has a saloon and a sheriff's office — removed false availability gates on LookAroundSaloon and ReadWantedPosters at the domain action resolver and GameSession level, not in the dev overlay.
 ```
 
 - [ ] **Step 2: Update ADR INDEX**
@@ -2658,7 +2824,7 @@ Expected: 0 errors, 0 warnings (or only pre-existing warnings).
 - [ ] **Step 2: Run full domain test suite**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests`
-Expected: All tests pass including new `DevSaloonOverrideTests` (17 tests) and existing `GameSessionSaloonPersonOfInterestTests`.
+Expected: All tests pass including new `DevSaloonOverrideTests` (16 tests) and existing `GameSessionSaloonPersonOfInterestTests`.
 
 - [ ] **Step 3: Run full application test suite**
 
@@ -2746,9 +2912,9 @@ Add this test to `DevSaloonOverrideTests.cs` if not already present from Task 2.
 - [ ] **Step 9: Playtest / screenshot steps**
 
 Start the API and Vite dev server. Using the dev overlay:
-1. Start a new game in a town with a saloon (e.g., Pinecross).
+1. Start a new game in any town (e.g., Pinecross).
 2. Open the dev overlay, select the "Saloon dev" panel.
-3. Verify the saloon context shows: town name, saloon available = Yes, source spent = No.
+3. Verify the saloon context shows: town name, source spent = No.
 4. Verify the "Hidden truth" section shows the true culprit name and ID.
 5. Verify the "Suspects" section lists all suspects with eligibility flags and the culprit badge.
 6. Force a "Citizen" override.
