@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { Hud } from "./Hud";
 import { GlobalOverlays, type OverlayKind } from "../flow/GlobalOverlays";
 import { DevOverlay } from "../dev/DevOverlay";
+import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 
 function ShellChrome() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
@@ -23,34 +24,36 @@ function ShellChrome() {
   }, []);
 
   return (
-    <Shell>
-      <ChromeBar ref={chromeBarRef}>
-        <Hud onOpenJournal={() => setOpenOverlay("journal")} />
-        <OverlayBar>
-          <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
-          <DevNav aria-label="Developer tools">
-            <DevToggleButton
-              type="button"
-              $active={devOverlayOpen}
-              onClick={() => setDevOverlayOpen((prev) => !prev)}
-              aria-expanded={devOverlayOpen}
-            >
-              {devOverlayOpen ? "Hide dev" : "Dev"}
-            </DevToggleButton>
-          </DevNav>
-        </OverlayBar>
-      </ChromeBar>
-      <RouteOutlet aria-live="polite">
-        <Route>
-          <Outlet />
-        </Route>
-      </RouteOutlet>
-      <DevOverlay
-        open={devOverlayOpen}
-        onClose={() => setDevOverlayOpen(false)}
-        top={chromeBarHeight}
-      />
-    </Shell>
+    <DevSurfaceProvider>
+      <Shell>
+        <ChromeBar ref={chromeBarRef}>
+          <Hud onOpenJournal={() => setOpenOverlay("journal")} />
+          <OverlayBar>
+            <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
+            <DevNav aria-label="Developer tools">
+              <DevToggleButton
+                type="button"
+                $active={devOverlayOpen}
+                onClick={() => setDevOverlayOpen((prev) => !prev)}
+                aria-expanded={devOverlayOpen}
+              >
+                {devOverlayOpen ? "Hide dev" : "Dev"}
+              </DevToggleButton>
+            </DevNav>
+          </OverlayBar>
+        </ChromeBar>
+        <RouteOutlet aria-live="polite">
+          <Route>
+            <Outlet />
+          </Route>
+        </RouteOutlet>
+        <DevOverlay
+          open={devOverlayOpen}
+          onClose={() => setDevOverlayOpen(false)}
+          top={chromeBarHeight}
+        />
+      </Shell>
+    </DevSurfaceProvider>
   );
 }
 

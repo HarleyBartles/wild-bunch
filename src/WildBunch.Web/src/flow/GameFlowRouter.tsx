@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGamePhase } from "../hooks/useGamePhase";
+import { useSetDevSurface } from "../dev/DevSurfaceContext";
+import type { DevSurface } from "../dev/DevSurfaceContext";
 import { PreSessionSurface } from "./PreSessionSurface";
 import { TownHubSurface } from "./TownHubSurface";
 import { TrailFlowSurface } from "./TrailFlowSurface";
@@ -7,9 +9,29 @@ import { ArrivalSurface } from "./ArrivalSurface";
 
 export type TownPlace = "store" | "sheriff" | "saloon" | "trailhead" | null;
 
+const placeToSurface: Record<Exclude<TownPlace, null>, DevSurface> = {
+  store: "store",
+  sheriff: "sheriff",
+  saloon: "saloon",
+  trailhead: "trailhead",
+};
+
 export function GameFlowRouter() {
   const { phase } = useGamePhase();
   const [activePlace, setActivePlace] = useState<TownPlace>(null);
+  const setDevSurface = useSetDevSurface();
+
+  useEffect(() => {
+    if (phase === "pre-session") {
+      setDevSurface("pre-session");
+    } else if (phase === "on-trail") {
+      setDevSurface("trail");
+    } else if (phase === "arrival") {
+      setDevSurface("arrival");
+    } else if (phase === "in-town") {
+      setDevSurface(activePlace ? placeToSurface[activePlace] : "town");
+    }
+  }, [phase, activePlace, setDevSurface]);
 
   switch (phase) {
     case "pre-session":
