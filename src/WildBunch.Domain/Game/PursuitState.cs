@@ -1,5 +1,11 @@
 namespace WildBunch.Domain.Game;
 
+/// <summary>
+/// Tracks heat: lawman pursuit pressure that accumulates from time spent in
+/// town. Each full day (4 turns) in town increases heat by 1. Leaving town
+/// (starting a journey) resets heat to 0. Heat does not change on the trail.
+/// A future lawman system will consume heat as a pressure clock. See ADR-0029.
+/// </summary>
 public sealed class PursuitState
 {
     public int Heat { get; private set; }

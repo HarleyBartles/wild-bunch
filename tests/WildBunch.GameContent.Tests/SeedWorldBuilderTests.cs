@@ -17,7 +17,9 @@ public sealed class SeedWorldBuilderTests
             {
                 ("dryfork", "Dry Fork", TownServices.None),
                 ("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph),
+                ("hardpan", "Hardpan", TownServices.None),
                 ("holloway", "Holloway", TownServices.Doctor),
+                ("openpass", "Open Pass", TownServices.None),
                 ("pinecross", "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard),
                 ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph),
                 ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor),
@@ -27,7 +29,9 @@ public sealed class SeedWorldBuilderTests
             new[]
             {
                 ("trail-hollow-sage", "holloway", "sagewell", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                ("trail-pine-hardpan", "pinecross", "hardpan", TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m),
                 ("trail-pine-hollow", "pinecross", "holloway", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 2m),
+                ("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m),
                 ("trail-pine-red", "pinecross", "redmesa", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
                 ("trail-red-dry", "redmesa", "dryfork", TrailRisk.High, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
                 ("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
@@ -47,7 +51,9 @@ public sealed class SeedWorldBuilderTests
             {
                 ("dryfork", "Dry Fork", TownServices.None),
                 ("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph),
+                ("hardpan", "Hardpan", TownServices.None),
                 ("holloway", "Holloway", TownServices.Doctor | TownServices.NoticeBoard),
+                ("openpass", "Open Pass", TownServices.None),
                 ("pinecross", "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard),
                 ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph),
                 ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor),
@@ -57,7 +63,9 @@ public sealed class SeedWorldBuilderTests
             new[]
             {
                 ("trail-hollow-sage", "holloway", "sagewell", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River, 3m),
+                ("trail-pine-hardpan", "pinecross", "hardpan", TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m),
                 ("trail-pine-hollow", "pinecross", "holloway", TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring, 2m),
+                ("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m),
                 ("trail-pine-red", "pinecross", "redmesa", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
                 ("trail-red-dry", "redmesa", "dryfork", TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m),
                 ("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m),
@@ -82,7 +90,9 @@ public sealed class SeedWorldBuilderTests
             {
                 ("dryfork", "Dry Fork", TownServices.None),
                 ("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph),
+                ("hardpan", "Hardpan", TownServices.None),
                 ("holloway", "Holloway", TownServices.Doctor),
+                ("openpass", "Open Pass", TownServices.None),
                 ("pinecross", "Pinecross", TownServices.Supplies | TownServices.Lodging),
                 ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph | TownServices.NoticeBoard),
                 ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor | TownServices.NoticeBoard),
@@ -92,7 +102,9 @@ public sealed class SeedWorldBuilderTests
             new[]
             {
                 ("trail-hollow-sage", "holloway", "sagewell", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River, 3m),
+                ("trail-pine-hardpan", "pinecross", "hardpan", TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m),
                 ("trail-pine-hollow", "pinecross", "holloway", TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring, 2m),
+                ("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m),
                 ("trail-pine-red", "pinecross", "redmesa", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
                 ("trail-red-dry", "redmesa", "dryfork", TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m),
                 ("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, 5m),

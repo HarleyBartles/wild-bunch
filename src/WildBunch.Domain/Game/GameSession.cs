@@ -39,6 +39,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
+    private DevTravelOverride? _pendingDevTravelOverride;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
@@ -117,6 +118,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public TownVisitState CurrentTownVisit => _currentTown.VisitState;
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
+
+    /// <summary>
+    /// Pending dev override for the next travel-day generation. Dev-only state.
+    /// Consumed once by the next AdvanceJourneyDay. See BUNCH-89.
+    /// </summary>
+    internal DevTravelOverride? PendingDevTravelOverride => _pendingDevTravelOverride;
 
     [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
@@ -232,10 +239,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // Compute resulting clock state (do NOT mutate Clock directly — Apply does that).
         var newTurn = Clock.Turn + 1;
         var newDay = Clock.Day;
+        var newHeat = PursuitState.Heat;
         if (newTurn >= 4)
         {
             newDay++;
             newTurn = 0;
+            // A full day passed in town — heat increases by 1 (lawman pressure).
+            newHeat = PursuitState.Heat + 1;
         }
 
         var e = new TownActionContextEntered
@@ -244,7 +254,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             TownId = CurrentTown.TownId,
             Day = newDay,
             Turn = newTurn,
-            TimeOfDay = (TimeOfDay)newTurn
+            TimeOfDay = (TimeOfDay)newTurn,
+            PursuitHeat = newHeat
         };
         ProduceEvent(e);
         return true;
@@ -343,6 +354,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case JourneyArrivalAcknowledged jaa:
                 Apply(jaa);
                 break;
+            case DevTravelOverrideForced dtf:
+                Apply(dtf);
+                break;
+            case DevTravelOverrideCleared dtc:
+                Apply(dtc);
+                break;
+            case DevTravelOverrideConsumed dtc2:
+                Apply(dtc2);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -359,6 +379,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         CurrentActionContext = e.Context;
         CurrentActionContextTownId = e.TownId;
         Clock.Set(e.Day, e.Turn);
+        PursuitState.SetHeat(e.PursuitHeat);
         _version++;
     }
 
@@ -480,6 +501,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
         _travelDiaryDays.Clear();
+        PursuitState.SetHeat(e.PursuitHeat);
         RecordTravelUpdate(e.DiaryMessage);
         _version++;
     }
@@ -610,6 +632,41 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _completedJourneyHistory.Add(e.JourneySnapshot);
         Journey = null;
         RecordTravelUpdate(e.DiaryMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevTravelOverrideForced event. Sets the pending dev override.
+    /// Dev-only event — does not affect gameplay state directly. See BUNCH-89.
+    /// </summary>
+    internal void Apply(DevTravelOverrideForced e)
+    {
+        _pendingDevTravelOverride = new DevTravelOverride(
+            e.ForcedCategory,
+            e.FoeProfile,
+            e.EncounterMessage);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevTravelOverrideCleared event. Clears the pending dev override.
+    /// Dev-only event. See BUNCH-89.
+    /// </summary>
+    internal void Apply(DevTravelOverrideCleared e)
+    {
+        _pendingDevTravelOverride = null;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevTravelOverrideConsumed event. Clears the pending dev override.
+    /// This is the replay-safe consumption path: replaying Forced -> Consumed ->
+    /// TravelDayAdvanced reconstructs the correct final state with no pending override.
+    /// Dev-only event — not a gameplay outcome. See BUNCH-89.
+    /// </summary>
+    internal void Apply(DevTravelOverrideConsumed e)
+    {
+        _pendingDevTravelOverride = null;
         _version++;
     }
 
@@ -806,10 +863,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var newJourney = TravelJourney.Start(preview, _nextJourneySequence, BuildJourneyOpeningNarration(preview));
         var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
+        // Leaving town resets heat to 0 — lawman pressure clears when you hit the trail.
+        // Do not mutate PursuitState here; Apply(JourneyStarted) sets it from the event.
         ProduceEvent(new JourneyStarted
         {
             JourneySnapshot = newJourney.ToSnapshot(TravelRules),
-            DiaryMessage = startMessage
+            DiaryMessage = startMessage,
+            PursuitHeat = 0
         });
 
         return new TravelJourneyStepResult(
@@ -823,6 +883,45 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult AdvanceJourneyDay()
         => AdvanceJourneyDayDeterministic();
+
+    /// <summary>
+    /// Dev command: forces the next travel-day generation to use the given override.
+    /// Produces a DevTravelOverrideForced event. The override is consumed once by
+    /// the next AdvanceJourneyDay. See BUNCH-89.
+    /// </summary>
+    public void ForceDevTravelOverride(DevTravelOverride overrideValue)
+    {
+        ArgumentNullException.ThrowIfNull(overrideValue);
+        if (Journey is null || Journey.Status != JourneyStatus.Active)
+        {
+            throw new InvalidOperationException("Cannot force a travel override without an active journey.");
+        }
+        if (Journey.PendingEncounter is not null)
+        {
+            throw new InvalidOperationException("Cannot force a travel override while an encounter is pending.");
+        }
+
+        ProduceEvent(new DevTravelOverrideForced
+        {
+            ForcedCategory = overrideValue.ForcedCategory,
+            FoeProfile = overrideValue.FoeProfile,
+            EncounterMessage = overrideValue.EncounterMessage
+        });
+    }
+
+    /// <summary>
+    /// Dev command: clears any pending travel override.
+    /// Produces a DevTravelOverrideCleared event. See BUNCH-89.
+    /// </summary>
+    public void ClearDevTravelOverride()
+    {
+        if (_pendingDevTravelOverride is null)
+        {
+            return; // No-op if nothing to clear — idempotent
+        }
+
+        ProduceEvent(new DevTravelOverrideCleared());
+    }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
     {
@@ -935,10 +1034,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             }
         }
 
-        if (trailEvent.HeatIncrease != 0)
-        {
-            PursuitState.IncreaseHeat(trailEvent.HeatIncrease);
-        }
+        // Trail events do not affect heat. Heat is lawman pressure from time spent
+        // in town, not trail danger. See ADR-0029.
 
         if (trailEvent.DelayDays != 0)
         {
@@ -1159,11 +1256,28 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var newDay = Clock.Day + 1;
         Clock.AdvanceTravelDay();
         var progress = Journey.AdvanceOneDay();
-        var heatIncrease = Math.Max(1, (int)Journey.Preview.RouteProfile.Risk);
-        PursuitState.IncreaseHeat(heatIncrease);
 
-        var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
-        Journey.SetCurrentDayPlan(TravelDayPlanGenerator.Generate(generationContext));
+        // Heat is future lawman pressure, not trail danger — travel no longer
+        // raises heat from route risk. See ADR-0029.
+        //
+        // Dev override: capture the pending override before producing the consumed event,
+        // because ProduceEvent(new DevTravelOverrideConsumed()) calls Apply() which clears
+        // _pendingDevTravelOverride. The forced day plan must be built from the captured
+        // value. See BUNCH-89.
+        var pendingOverride = _pendingDevTravelOverride;
+
+        TravelDayPlanState dayPlan;
+        if (pendingOverride is not null)
+        {
+            dayPlan = TravelDayPlanFactory.CreateForcedDayPlan(pendingOverride, Journey.DaysTravelled, TravelRules);
+            ProduceEvent(new DevTravelOverrideConsumed());
+        }
+        else
+        {
+            var generationContext = CreateTravelDayGenerationContext(TravelDayPlanGenerator.CurrentVersion);
+            dayPlan = TravelDayPlanGenerator.Generate(generationContext);
+        }
+        Journey.SetCurrentDayPlan(dayPlan);
 
         return new TravelDayAdvanceState(
             startingState,
@@ -1481,14 +1595,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CreateCanteenPressureBand(Journey.AvailableCanteenCharges, Journey.RemainingDays, Journey.Preview.RouteProfile.WaterFeature, horseState, TravelRules),
             CreateHorseFeedPressureBand(Journey.HorseFeedRemaining, Journey.RemainingDays, Journey.Preview.RouteProfile.Terrain, horseState),
             CreateHorseConditionBand(horseState, TravelRules),
-            CreateHeatBand(PursuitState.Heat),
             CreateWalletBand(Player.Wallet.Cash, TravelRules),
             recentTrailEventKinds,
             recentTrailEventIds,
             recentEncounterCategories,
             HasHorse: horseState is not null && !horseState.IsDeadFor(TravelRules),
             TravelRandomness.Mode,
-            TravelRandomness.Salt);
+            TravelRandomness.Salt,
+            Entropy);
     }
 
     private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)
@@ -1615,26 +1729,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         return HorseConditionBand.Sound;
-    }
-
-    private static PursuitHeatBand CreateHeatBand(int heat)
-    {
-        if (heat <= 0)
-        {
-            return PursuitHeatBand.Calm;
-        }
-
-        if (heat <= 2)
-        {
-            return PursuitHeatBand.Wary;
-        }
-
-        if (heat <= 4)
-        {
-            return PursuitHeatBand.Hot;
-        }
-
-        return PursuitHeatBand.Hunted;
     }
 
     private static WalletBand CreateWalletBand(decimal cash, TravelRulesProfile travelRulesProfile)
@@ -1774,7 +1868,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     ? ApplyEncounterHorsePressure(plan.HorseExhaustionDelta)
                     : string.Empty;
 
-                PursuitState.IncreaseHeat(plan.HeatIncrease);
+                // Encounters do not affect heat. Heat is lawman pressure from time
+                // spent in town, not trail activity. See ADR-0029.
 
                 var runMessage = PrependHorseLossMessage(horseLossMessage, plan.Message);
                 dayEntries.Add(plan.Message);
@@ -1855,10 +1950,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     Player.AdjustHealth(plan.HealthDelta);
                 }
 
-                if (plan.HeatIncrease != 0)
-                {
-                    PursuitState.IncreaseHeat(plan.HeatIncrease);
-                }
+                // Encounters do not affect heat. See ADR-0029.
 
                 dayEntries.Add(plan.Message);
 
@@ -1951,10 +2043,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     Player.AdjustHealth(plan.HealthDelta);
                 }
 
-                if (plan.HeatIncrease != 0)
-                {
-                    PursuitState.IncreaseHeat(plan.HeatIncrease);
-                }
+                // Encounters do not affect heat. See ADR-0029.
 
                 dayEntries.Add(plan.Message);
 

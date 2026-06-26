@@ -390,7 +390,7 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
         Assert.NotNull(blockedAdvance.Journey);
         Assert.NotNull(blockedAdvance.Journey!.PendingEncounter);
-        Assert.Equal("foe", blockedAdvance.Journey.PendingEncounter!.Kind);
+        Assert.Equal("npc", blockedAdvance.Journey.PendingEncounter!.Kind);
         Assert.Equal(3, blockedAdvance.Journey.PendingEncounter.Choices.Count);
         Assert.Equal(new[] { "run", "fight", "bribe" }, blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
         Assert.Equal(10, blockedAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);

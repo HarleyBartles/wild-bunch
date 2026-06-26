@@ -1,0 +1,12 @@
+// Wild Bunch global stylesheet entry.
+//
+// SASS partials handle global concerns (design tokens, reset, base element
+// defaults) that don't belong in styled-components. Component-level styling
+// lives in styled-components within each component file.
+//
+// Feature styles that have not yet been migrated to styled-components remain
+// in styles.css and are imported here so the migration can proceed incrementally.
+
+@use "variables";
+@use "reset";
+@use "../styles.css";

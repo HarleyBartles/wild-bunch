@@ -120,6 +120,12 @@ public sealed partial class GameSessionJsonSerializer
 
     private sealed record CurrentActionContextSnapshot(TownActionContext Context, string? TownId);
 
+    public string? SerializePendingDevTravelOverride(DevTravelOverride? overrideValue)
+        => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
+
+    public DevTravelOverride? DeserializePendingDevTravelOverride(string? json)
+        => json is null ? null : Deserialize<DevTravelOverride>(json);
+
     private sealed record PlayerSnapshot(
         string Name,
         string CurrentTownId,

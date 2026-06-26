@@ -44,8 +44,7 @@ internal static class TrailEventCatalog
                 JourneyTrailEventId.BadLuckWashout,
                 "Washed-out trail",
                 $"A washout forced a detour and cost me {travelRulesProfile.BadLuckTrailDelayDays} extra delay day(s).",
-                delayDays: travelRulesProfile.BadLuckTrailDelayDays,
-                heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
+                delayDays: travelRulesProfile.BadLuckTrailDelayDays);
         }
 
         if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
@@ -57,8 +56,7 @@ internal static class TrailEventCatalog
                 foodDelta: -travelRulesProfile.BadLuckTrailFoodLoss,
                 canteenChargeDelta: -travelRulesProfile.BadLuckTrailCanteenLoss,
                 horseThirstDelta: travelRulesProfile.BadLuckTrailHorseThirst,
-                delayDays: travelRulesProfile.BadLuckTrailDelayDays,
-                heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
+                delayDays: travelRulesProfile.BadLuckTrailDelayDays);
         }
 
         if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && journey.HorseState is not null && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
@@ -67,8 +65,7 @@ internal static class TrailEventCatalog
                 JourneyTrailEventId.BadLuckSpookedHorse,
                 "Spooked horse",
                 "A sudden canyon echo spooked the horse and left it more exhausted.",
-                horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion,
-                heatIncrease: travelRulesProfile.TrailEventHeatIncrease);
+                horseExhaustionDelta: travelRulesProfile.BadLuckTrailHorseExhaustion);
         }
 
         return null;

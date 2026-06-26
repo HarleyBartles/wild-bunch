@@ -22,6 +22,7 @@ import {
   readWantedPosters,
   travel,
 } from "../api/wildBunchApi";
+import { getSessionAudit } from "../dev/devApi";
 
 vi.mock("../api/wildBunchApi", () => ({
   buyStoreItem: vi.fn(),
@@ -40,6 +41,10 @@ vi.mock("../api/wildBunchApi", () => ({
   travel: vi.fn(),
 }));
 
+vi.mock("../dev/devApi", () => ({
+  getSessionAudit: vi.fn(),
+}));
+
 const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
@@ -54,6 +59,7 @@ const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
+const mockedGetSessionAudit = vi.mocked(getSessionAudit);
 
 afterEach(() => {
   cleanup();
@@ -216,6 +222,7 @@ function primeMocks() {
     trailEvent: null,
     travelDiary: null,
   });
+  mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
 
 describe("AppShell", () => {
@@ -256,23 +263,29 @@ describe("AppShell", () => {
     expect(screen.getByText(/player-known facts and does not guess at hidden truth/i)).toBeInTheDocument();
   });
 
-  it("opens the Activity log overlay and renders the log surface", async () => {
+  it("opens the Journal overlay and renders the journal surface", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     renderShell();
 
     const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("button", { name: /activity log/i }));
+    await user.click(within(hud).getByRole("button", { name: /journal/i }));
 
-    expect(await screen.findByRole("heading", { name: /activity log/i })).toBeInTheDocument();
+    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
+    const journalScope = within(journalDialog);
+    expect(journalScope.getByRole("heading", { level: 2, name: /^journal$/i })).toBeInTheDocument();
+    expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+    expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
   });
 
-  it("exposes a separated Dev tools route that hosts the relocated cockpit", async () => {
+  it("shows a Dev toggle button that opens the developer overlay drawer", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -283,10 +296,70 @@ describe("AppShell", () => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
 
-    await user.click(screen.getByRole("link", { name: /dev tools/i }));
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
 
-    expect(await screen.findByRole("heading", { name: /field cockpit/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open case file/i })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/debug");
+    expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+  });
+
+  it("closes the dev overlay on Escape", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+    expect(drawer).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
+  });
+
+  it("closes the dev overlay when clicking the play surface outside the drawer", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+
+    const clickAway = screen.getByTestId("dev-click-away");
+    await user.click(clickAway);
+
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the game HUD visible above the dev drawer when the drawer is open", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(within(hud).getByText("Ruth")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+
+    expect(screen.getByRole("banner", { name: /game status/i })).toBeInTheDocument();
+    expect(within(hud).getByText("Ruth")).toBeInTheDocument();
   });
 });

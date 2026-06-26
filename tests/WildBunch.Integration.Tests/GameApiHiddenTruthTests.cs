@@ -70,4 +70,39 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", sheriffRecordsPayload, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task DevTravelContextDoesNotLeakHiddenCulpritMarkers()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(createdSession);
+
+        // Start travel so the journey is active
+        var travelResponse = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession!.Id}/travel",
+            new TravelRequest(scenario.PreviewDestinationTownId!));
+        travelResponse.EnsureSuccessStatusCode();
+
+        // The dev travel-context endpoint exposes journey internals + dev override state,
+        // but must NOT leak hidden culprit truth. See BUNCH-89 and ADR-0007.
+        var devContextResponse = await client.GetAsync($"/api/dev/sessions/{createdSession.Id}/travel-context");
+        devContextResponse.EnsureSuccessStatusCode();
+        var devContextPayload = await devContextResponse.Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("Butch Cassidy", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Sundance Kid", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Elzy Lay", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Kid Curry", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"trueCulpritId\"", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", devContextPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"killerReleaseState\"", devContextPayload, StringComparison.OrdinalIgnoreCase);
+    }
 }

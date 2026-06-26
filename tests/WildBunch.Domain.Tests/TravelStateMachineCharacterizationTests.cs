@@ -66,6 +66,10 @@ public sealed class TravelStateMachineCharacterizationTests
         Assert.Contains("No active journey", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    // Heat no longer affects trail events or encounters, so the deterministic
+    // rolls now produce a different outcome for the same route profile: the
+    // EasyShortJourney is interrupted by an NPC encounter on day 1 instead of
+    // completing quietly. See ADR-0029.
     [Fact]
     public void AdvanceJourneyDay_FirstDay_ExactState()
     {
@@ -74,22 +78,23 @@ public sealed class TravelStateMachineCharacterizationTests
 
         var result = session.AdvanceJourneyDay();
 
-        Assert.True(result.Success);
-        Assert.Equal(JourneyStatus.Completed, result.Status);
-        Assert.Equal("You reach Connected Town.", result.Message);
-        Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
+        Assert.False(result.Success);
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal("Your journey is interrupted by a trail encounter.", result.Message);
+        Assert.Equal(JourneyStatus.Interrupted, session.Journey!.Status);
         Assert.Equal(1, session.Journey.DaysTravelled);
         Assert.Equal(0, session.Journey.RemainingDays);
         Assert.Equal(3, session.Journey.FoodRemaining);
         Assert.Equal(0, session.Journey.HorseFeedRemaining);
         Assert.Equal(10, session.Journey.AvailableCanteenCharges);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(29m, session.Player.Wallet.Cash);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(3, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
-        Assert.Equal(1, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(1, session.TravelDiaryDays.Count);
+        Assert.NotNull(session.Journey.PendingEncounter);
     }
 
     [Fact]

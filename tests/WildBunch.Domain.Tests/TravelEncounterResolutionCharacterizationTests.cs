@@ -49,7 +49,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(2, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(2, session.Clock.Day);
-        Assert.Equal(3, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -57,6 +57,8 @@ public sealed class TravelEncounterResolutionCharacterizationTests
     {
         var (session, preview) = TravelTestFactory.CreateHighRiskJourney();
         session.StartJourney(preview);
+        // The High-risk Badlands route produces a Foe encounter from route risk
+        // and terrain alone; heat no longer affects trail encounters (BUNCH-85 / ADR-0029).
         AdvanceUntilInterrupted(session);
 
         var result = session.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 99UL);
@@ -72,7 +74,9 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Equal(0, session.Journey.PendingEncounter.HiddenState!.Annoyance);
         Assert.Equal(1250, session.Player.Health);
         Assert.Equal(25m, session.Player.Wallet.Cash);
-        Assert.Equal(4, session.PursuitState.Heat);
+        // Heat no longer increases on the trail (BUNCH-85 / ADR-0029). The failed
+        // mounted run still costs horse exhaustion but adds no pursuit heat.
+        Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -94,7 +98,7 @@ public sealed class TravelEncounterResolutionCharacterizationTests
         Assert.Null(session.Journey.PendingEncounter);
         Assert.Equal(11m, session.Player.Wallet.Cash);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(3, session.PursuitState.Heat);
+        Assert.Equal(0, session.PursuitState.Heat);
     }
 
     [Fact]
@@ -102,34 +106,38 @@ public sealed class TravelEncounterResolutionCharacterizationTests
     {
         var (session, preview) = TravelTestFactory.CreateHighRiskJourney();
         session.StartJourney(preview);
+        // The High-risk Badlands route produces a Foe encounter with a
+        // deterministic MinimumBribe of $9.00 from route risk, terrain, wallet
+        // band, and difficulty alone. Heat no longer affects foe profiles or
+        // bribe costs (BUNCH-85 / ADR-0029).
         AdvanceUntilInterrupted(session);
 
-        // First bribe attempt — non-insulting amount (5m > 4.9m insult threshold)
-        // keeps the encounter pending without retaliation.
-        var firstBribe = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 5m, forcedRoll: 0UL);
+        // First bribe attempt — non-insulting amount (4m > 3.15m insult threshold,
+        // i.e. MinimumBribe * 0.35) keeps the encounter pending without retaliation.
+        var firstBribe = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 4m, forcedRoll: 0UL);
         Assert.False(firstBribe.Success);
         Assert.True(firstBribe.SessionChanged);
         Assert.Equal(JourneyStatus.Interrupted, firstBribe.Status);
-        Assert.Equal("I offered $5.00, and the rider pocketed it without moving aside.", firstBribe.Message);
+        Assert.Equal("I offered $4.00, and the rider pocketed it without moving aside.", firstBribe.Message);
         Assert.Equal(JourneyStatus.Interrupted, session.Journey!.Status);
         Assert.NotNull(session.Journey.PendingEncounter);
         Assert.Equal(1, session.Journey.PendingEncounter!.HiddenState!.BribeOffersMade);
         Assert.False(session.Journey.PendingEncounter.HiddenState!.BribeLockedOut);
 
-        // Second bribe attempt — still non-insulting, but cumulative (10m) is below
-        // the minimum bribe (14m), so the lockout flag is set after this offer.
-        var secondBribe = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 5m, forcedRoll: 0UL);
+        // Second bribe attempt — still non-insulting, but cumulative (8m) is below
+        // the minimum bribe (9m), so the lockout flag is set after this offer.
+        var secondBribe = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 4m, forcedRoll: 0UL);
         Assert.False(secondBribe.Success);
         Assert.True(secondBribe.SessionChanged);
         Assert.Equal(JourneyStatus.Interrupted, secondBribe.Status);
-        Assert.Equal("I offered $5.00, and the rider pocketed it without moving aside.", secondBribe.Message);
+        Assert.Equal("I offered $4.00, and the rider pocketed it without moving aside.", secondBribe.Message);
         Assert.Equal(JourneyStatus.Interrupted, session.Journey!.Status);
         Assert.NotNull(session.Journey.PendingEncounter);
         Assert.Equal(2, session.Journey.PendingEncounter!.HiddenState!.BribeOffersMade);
         Assert.True(session.Journey.PendingEncounter.HiddenState!.BribeLockedOut);
 
         // Third bribe attempt — locked out, the rider refuses any more money.
-        var thirdBribe = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 5m, forcedRoll: 0UL);
+        var thirdBribe = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 4m, forcedRoll: 0UL);
         Assert.False(thirdBribe.Success);
         Assert.False(thirdBribe.SessionChanged);
         Assert.Equal(JourneyStatus.Interrupted, thirdBribe.Status);

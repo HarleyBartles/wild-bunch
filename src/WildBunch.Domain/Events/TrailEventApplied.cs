@@ -6,6 +6,10 @@ namespace WildBunch.Domain.Events;
 /// Fact: a trail event (Lucky or BadLuck) fired during a travel day.
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it (captures delay, horse, mode changes).
 /// WalletCash and PursuitHeat are ABSOLUTE — Apply sets player wallet and pursuit heat directly.
+/// PursuitHeat is future lawman pressure (ADR-0029), not trail danger. It is
+/// always the current heat value (unchanged by trail events). HeatIncrease is
+/// a dead/reserved field — always 0 today; retained for a future lawman-pressure
+/// system but has no effect under the current model.
 /// Food/canteen/horse are set ABSOLUTE from the journey snapshot via SyncPlayerFromJourneySnapshot.
 /// Horse/delay/mode fields are informational for projections (journey snapshot is the source of truth).
 /// </summary>

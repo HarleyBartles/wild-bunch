@@ -1,6 +1,6 @@
 namespace WildBunch.GameContent.NewGame;
 
-internal static class GameSetupDeterministicLabels
+public static class GameSetupDeterministicLabels
 {
     public const string AdventureRandomnessPolicy = "adventure-randomness-policy";
     public const string WorldVariant = "world.variant";

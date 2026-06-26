@@ -84,7 +84,7 @@ public sealed class AdvanceTravelDayHandlerTests
             HorseTravelState.Healthy,
             TrailTerrain.Mountains,
             WaterFeature.None,
-            trailRisk: TrailRisk.Moderate,
+            trailRisk: TrailRisk.Low,
             travelDifficulty: TravelDifficulty.Hard);
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
@@ -191,7 +191,7 @@ public sealed class AdvanceTravelDayHandlerTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None)
+                new Trail(new TrailId("trail-pine-dry"), pinecross.Id, dryfork.Id, TrailRisk.High, TrailTerrain.Badlands, WaterFeature.Spring)
             });
 
         var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());

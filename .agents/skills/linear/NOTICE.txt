@@ -1,3 +1,0 @@
-Linear Control Plane skill
-
-This skill adapts the workflow posture of OpenAI's curated Linear skill concept from the public openai/skills repository. It also adds local ChatGPT connector compatibility notes and Wild Bunch control-plane rules authored in this session.

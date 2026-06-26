@@ -23,6 +23,11 @@ public enum HorseConditionBand
     Critical = 4
 }
 
+/// <summary>
+/// Banded view of <see cref="WildBunch.Domain.Game.PursuitState.Heat"/>.
+/// Retained for future lawman pursuit system use; travel and encounters
+/// do not consume heat band. See ADR-0029.
+/// </summary>
 public enum PursuitHeatBand
 {
     Calm = 0,
@@ -59,14 +64,14 @@ public sealed record TravelDayGenerationContext(
     TravelPressureBand CanteenPressure,
     TravelPressureBand HorseFeedPressure,
     HorseConditionBand HorseConditionBand,
-    PursuitHeatBand PursuitHeatBand,
     WalletBand WalletBand,
     IReadOnlyList<JourneyTrailEventKind> RecentTrailEventKinds,
     IReadOnlyList<JourneyTrailEventId> RecentTrailEventIds,
     IReadOnlyList<TravelDayEncounterCategory> RecentEncounterCategories,
     bool HasHorse,
     TravelRandomnessMode RandomnessMode,
-    string RandomnessSalt)
+    string RandomnessSalt,
+    AdventureRandomnessPolicy Entropy = AdventureRandomnessPolicy.Standard)
 {
     public bool WaterSecure => WaterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
 

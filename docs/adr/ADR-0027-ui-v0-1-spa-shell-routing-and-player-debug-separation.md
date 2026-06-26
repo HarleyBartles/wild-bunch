@@ -47,7 +47,7 @@ App
 └─ GameSessionProvider              // single authoritative session source (+ town store/buy)
    └─ RouterProvider (TanStack Router)
       └─ AppShell (root route)
-         ├─ Hud                     // sticky compact status bar (player, day/turn, town, health, cash, heat, status)
+         ├─ Hud                     // sticky compact status bar (player, day/turn, town, health, cash, lawman heat, status)
          ├─ shell-nav               // player routes + separated "Dev tools"
          └─ Outlet (TanStack Router)
             ├─ /        Camp        // start / continue hunt (StartGamePanel)
@@ -92,7 +92,7 @@ The Dev tools route is a **temporary dev surface**, not a permanent fixture. It 
 
 ### HUD
 
-The HUD is a sticky, compact, single-row status bar that wraps on narrow viewports. It shows player, clock, location, health, cash, heat, and status. It protects the center and lower-middle playfield; long text lives in DOM routes/drawers/modals, not permanent playfield-covering panels.
+The HUD is a sticky, compact, single-row status bar that wraps on narrow viewports. It shows player, clock, location, health, cash, lawman heat, and status. It protects the center and lower-middle playfield; long text lives in DOM routes/drawers/modals, not permanent playfield-covering panels.
 
 ### Styling and component architecture
 
