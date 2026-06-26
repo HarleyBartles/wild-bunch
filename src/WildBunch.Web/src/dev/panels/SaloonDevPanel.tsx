@@ -8,7 +8,11 @@ import type { SaloonSuspectDevDto } from "../types";
 const POI_KINDS = ["Suspect", "Citizen"] as const;
 type PoiKind = (typeof POI_KINDS)[number];
 
-export function SaloonDevPanel() {
+interface SaloonDevPanelProps {
+  expanded?: boolean;
+}
+
+export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
   const { gameId } = useGameSession();
   const queryClient = useQueryClient();
 
@@ -73,185 +77,189 @@ export function SaloonDevPanel() {
   const contextMismatch = detectContextMismatch(data?.currentActionContext);
 
   return (
-    <Container>
-      <ContextSection>
-        <SectionTitle>Saloon context</SectionTitle>
-        <Row>
-          <Label>Town:</Label>
-          <Value>{data?.currentTownName ?? "-"}</Value>
-        </Row>
-        <Row>
-          <Label>Aggregate context:</Label>
-          <Value>{data?.currentActionContext ?? "None"}</Value>
-        </Row>
-        <Row>
-          <Label>Source spent:</Label>
-          <Value>{data?.sourceSpent ? "Yes" : "No"}</Value>
-        </Row>
-        {contextMismatch && (
-          <MismatchWarning>
-            Warning: UI surface is saloon but aggregate context is {data?.currentActionContext}.
-            This may indicate a stale context transition.
-          </MismatchWarning>
-        )}
-      </ContextSection>
+    <Container $expanded={expanded}>
+      <LeftColumn $expanded={expanded}>
+        <ContextSection>
+          <SectionTitle>Saloon context</SectionTitle>
+          <Row>
+            <Label>Town:</Label>
+            <Value>{data?.currentTownName ?? "-"}</Value>
+          </Row>
+          <Row>
+            <Label>Aggregate context:</Label>
+            <Value>{data?.currentActionContext ?? "None"}</Value>
+          </Row>
+          <Row>
+            <Label>Source spent:</Label>
+            <Value>{data?.sourceSpent ? "Yes" : "No"}</Value>
+          </Row>
+          {contextMismatch && (
+            <MismatchWarning>
+              Warning: UI surface is saloon but aggregate context is {data?.currentActionContext}.
+              This may indicate a stale context transition.
+            </MismatchWarning>
+          )}
+        </ContextSection>
 
-      <Section>
-        <SectionTitle>Active saloon POI</SectionTitle>
-        {data?.activeSaloonPoi ? (
-          <PoiCard>
-            <Row>
-              <Label>Kind:</Label>
-              <Value>{formatPoiKind(data.activeSaloonPoi.personOfInterestKind)}</Value>
-            </Row>
-            {data.activeSaloonPoi.suspectName && (
+        <Section>
+          <SectionTitle>Active saloon POI</SectionTitle>
+          {data?.activeSaloonPoi ? (
+            <PoiCard>
               <Row>
-                <Label>Person:</Label>
-                <Value>{data.activeSaloonPoi.suspectName}</Value>
+                <Label>Kind:</Label>
+                <Value>{formatPoiKind(data.activeSaloonPoi.personOfInterestKind)}</Value>
               </Row>
-            )}
-            {data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
-              <Row>
-                <Label>Suspect ID:</Label>
-                <Value>{data.activeSaloonPoi.suspectId}</Value>
-              </Row>
-            )}
-            {data.activeSaloonPoi.descriptor && (
-              <Row>
-                <Label>Descriptor:</Label>
-                <Value>{data.activeSaloonPoi.descriptor}</Value>
-              </Row>
-            )}
-            {!data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
-              <MutedText>
-                Generic citizen POI — no named entity. {data.citizenInfo?.descriptor ?? ""}
-              </MutedText>
-            )}
-          </PoiCard>
-        ) : (
-          <MutedText>
-            {data?.sourceSpent
-              ? "No active POI (source spent — repeat visit or confrontation cleared)."
-              : "No active POI (LookAroundSaloon not yet called)."}
-          </MutedText>
-        )}
-      </Section>
+              {data.activeSaloonPoi.suspectName && (
+                <Row>
+                  <Label>Person:</Label>
+                  <Value>{data.activeSaloonPoi.suspectName}</Value>
+                </Row>
+              )}
+              {data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
+                <Row>
+                  <Label>Suspect ID:</Label>
+                  <Value>{data.activeSaloonPoi.suspectId}</Value>
+                </Row>
+              )}
+              {data.activeSaloonPoi.descriptor && (
+                <Row>
+                  <Label>Descriptor:</Label>
+                  <Value>{data.activeSaloonPoi.descriptor}</Value>
+                </Row>
+              )}
+              {!data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
+                <MutedText>
+                  Generic citizen POI — no named entity. {data.citizenInfo?.descriptor ?? ""}
+                </MutedText>
+              )}
+            </PoiCard>
+          ) : (
+            <MutedText>
+              {data?.sourceSpent
+                ? "No active POI (source spent — repeat visit or confrontation cleared)."
+                : "No active POI (LookAroundSaloon not yet called)."}
+            </MutedText>
+          )}
+        </Section>
 
-      <Section>
-        <SectionTitle>Hidden truth (dev only)</SectionTitle>
-        {data?.hiddenTruth ? (
-          <HiddenTruthCard>
+        <Section>
+          <SectionTitle>Hidden truth (dev only)</SectionTitle>
+          {data?.hiddenTruth ? (
+            <HiddenTruthCard>
+              <Row>
+                <Label>True culprit:</Label>
+                <Value>{data.hiddenTruth.trueCulpritName}</Value>
+              </Row>
+              <Row>
+                <Label>Killer release:</Label>
+                <Value>{data.hiddenTruth.killerReleaseStatus}</Value>
+              </Row>
+              <Row>
+                <Label>Culprit saloon eligibility:</Label>
+                <Value>
+                  {data.hiddenTruth.killerIsReleased
+                    ? "Eligible — killer trail is released"
+                    : "Gated out — killer trail is locked"}
+                </Value>
+              </Row>
+              <ExplanationText>{data.hiddenTruth.saloonLoopExplanation}</ExplanationText>
+            </HiddenTruthCard>
+          ) : (
+            <MutedText>Not available.</MutedText>
+          )}
+        </Section>
+
+        <Section>
+          <SectionTitle>Pending dev override</SectionTitle>
+          {data?.pendingDevOverride ? (
             <Row>
-              <Label>True culprit:</Label>
-              <Value>{data.hiddenTruth.trueCulpritName}</Value>
-            </Row>
-            <Row>
-              <Label>Killer release:</Label>
-              <Value>{data.hiddenTruth.killerReleaseStatus}</Value>
-            </Row>
-            <Row>
-              <Label>Culprit saloon eligibility:</Label>
+              <Label>Override:</Label>
               <Value>
-                {data.hiddenTruth.killerIsReleased
-                  ? "Eligible — killer trail is released"
-                  : "Gated out — killer trail is locked"}
+                {data.pendingDevOverride.forcedKind}
+                {data.pendingDevOverride.forcedSuspectName
+                  ? ` — ${data.pendingDevOverride.forcedSuspectName}`
+                  : data.pendingDevOverride.forcedSuspectId
+                    ? ` (${data.pendingDevOverride.forcedSuspectId})`
+                    : ""}
               </Value>
             </Row>
-            <ExplanationText>{data.hiddenTruth.saloonLoopExplanation}</ExplanationText>
-          </HiddenTruthCard>
-        ) : (
-          <MutedText>Not available.</MutedText>
-        )}
-      </Section>
+          ) : (
+            <MutedText>None pending.</MutedText>
+          )}
+        </Section>
 
-      <Section>
-        <SectionTitle>Suspects</SectionTitle>
-        {data?.suspects && data.suspects.length > 0 ? (
-          data.suspects.map((s) => <SuspectCard key={s.suspectId} suspect={s} />)
-        ) : (
-          <MutedText>No suspects.</MutedText>
-        )}
-      </Section>
-
-      <Section>
-        <SectionTitle>Pending dev override</SectionTitle>
-        {data?.pendingDevOverride ? (
-          <Row>
-            <Label>Override:</Label>
-            <Value>
-              {data.pendingDevOverride.forcedKind}
-              {data.pendingDevOverride.forcedSuspectName
-                ? ` — ${data.pendingDevOverride.forcedSuspectName}`
-                : data.pendingDevOverride.forcedSuspectId
-                  ? ` (${data.pendingDevOverride.forcedSuspectId})`
-                  : ""}
-            </Value>
-          </Row>
-        ) : (
-          <MutedText>None pending.</MutedText>
-        )}
-      </Section>
-
-      <ForceSection>
-        <SectionTitle>Force next saloon look-around POI</SectionTitle>
-        <ScopeNote>
-          Sets the POI shape for the next LookAroundSaloon call. Does not grant casefile
-          knowledge, does not resolve confrontation, does not force sheriff/take-in success.
-          Consumed by normal saloon gameplay.
-        </ScopeNote>
-        <Field>
-          <Label>POI kind:</Label>
-          <Select
-            value={forcedKind}
-            onChange={(e) => {
-              setForcedKind(e.target.value as PoiKind);
-              setSelectedSuspectId("");
-            }}
-            data-testid="force-kind-select"
-          >
-            {POI_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {forcedKind === "Suspect" && (
+        <ForceSection>
+          <SectionTitle>Force next saloon look-around POI</SectionTitle>
+          <ScopeNote>
+            Sets the POI shape for the next LookAroundSaloon call. Does not grant casefile
+            knowledge, does not resolve confrontation, does not force sheriff/take-in success.
+            Consumed by normal saloon gameplay.
+          </ScopeNote>
           <Field>
-            <Label>Candidate:</Label>
+            <Label>POI kind:</Label>
             <Select
-              value={selectedSuspectId}
-              onChange={(e) => setSelectedSuspectId(e.target.value)}
-              data-testid="force-suspect-select"
+              value={forcedKind}
+              onChange={(e) => {
+                setForcedKind(e.target.value as PoiKind);
+                setSelectedSuspectId("");
+              }}
+              data-testid="force-kind-select"
             >
-              <option value="">(first eligible)</option>
-              {eligibleSuspects.map((s) => (
-                <option key={s.suspectId} value={s.suspectId}>
-                  {formatSuspectLabel(s)}
+              {POI_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {k}
                 </option>
               ))}
             </Select>
           </Field>
-        )}
-        {forcedKind === "Citizen" && (
-          <CitizenNote>
-            {data?.citizenInfo
-              ? data.citizenInfo.hasNamedArchetypes
-                ? `Available archetypes: ${data.citizenInfo.availableArchetypes.join(", ")}`
-                : `Generic citizen POI — ${data.citizenInfo.descriptor}. No named archetypes exist.`
-              : "Generic citizen POI — no named archetypes."}
-          </CitizenNote>
-        )}
-        <ButtonRow>
-          <Button type="button" onClick={handleForce} disabled={actionPending}>
-            Force next POI
-          </Button>
-          <Button type="button" onClick={handleClear} disabled={actionPending}>
-            Clear override
-          </Button>
-        </ButtonRow>
-        {error && <ErrorText>{error}</ErrorText>}
-      </ForceSection>
+          {forcedKind === "Suspect" && (
+            <Field>
+              <Label>Candidate:</Label>
+              <Select
+                value={selectedSuspectId}
+                onChange={(e) => setSelectedSuspectId(e.target.value)}
+                data-testid="force-suspect-select"
+              >
+                <option value="">Any eligible suspect (normal selection)</option>
+                {eligibleSuspects.map((s) => (
+                  <option key={s.suspectId} value={s.suspectId}>
+                    {formatSuspectLabel(s)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+          {forcedKind === "Citizen" && (
+            <CitizenNote>
+              {data?.citizenInfo
+                ? data.citizenInfo.hasNamedArchetypes
+                  ? `Available archetypes: ${data.citizenInfo.availableArchetypes.join(", ")}`
+                  : `Generic citizen POI — ${data.citizenInfo.descriptor}. No named archetypes exist.`
+                : "Generic citizen POI — no named archetypes."}
+            </CitizenNote>
+          )}
+          <ButtonRow>
+            <Button type="button" onClick={handleForce} disabled={actionPending}>
+              Force next POI
+            </Button>
+            <Button type="button" onClick={handleClear} disabled={actionPending}>
+              Clear override
+            </Button>
+          </ButtonRow>
+          {error && <ErrorText>{error}</ErrorText>}
+        </ForceSection>
+      </LeftColumn>
+
+      <RightColumn $expanded={expanded}>
+        <Section>
+          <SectionTitle>Suspects</SectionTitle>
+          {data?.suspects && data.suspects.length > 0 ? (
+            data.suspects.map((s) => <SuspectCard key={s.suspectId} suspect={s} />)
+          ) : (
+            <MutedText>No suspects.</MutedText>
+          )}
+        </Section>
+      </RightColumn>
     </Container>
   );
 }
@@ -322,9 +330,30 @@ function SuspectCard({ suspect }: { suspect: SaloonSuspectDevDto }) {
   );
 }
 
-const Container = styled.div`
+const Container = styled.div<{ $expanded: boolean }>`
   display: grid;
   gap: 16px;
+  grid-template-columns: ${({ $expanded }) => ($expanded ? "1fr 1fr" : "1fr")};
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const LeftColumn = styled.div<{ $expanded: boolean }>`
+  display: grid;
+  gap: 16px;
+  grid-column: 1;
+`;
+
+const RightColumn = styled.div<{ $expanded: boolean }>`
+  display: grid;
+  gap: 16px;
+  grid-column: ${({ $expanded }) => ($expanded ? "2" : "1")};
+
+  @media (max-width: 700px) {
+    grid-column: 1;
+  }
 `;
 
 const Section = styled.section`

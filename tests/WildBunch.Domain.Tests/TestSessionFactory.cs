@@ -107,6 +107,50 @@ public static class TestSessionFactory
     }
 
     /// <summary>
+    /// Creates a session identical to CreateWithConfrontableSaloonSuspect but with
+    /// the killer-release gate fully open (killerReleaseProgress = killerReleaseThreshold = 2).
+    /// The true culprit (suspect-2) is therefore eligible as a saloon POI candidate.
+    /// Used by BUNCH-90 gate-aware true culprit eligibility tests.
+    /// </summary>
+    public static GameSession CreateWithKillerReleaseGateOpen()
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Mira Cline",
+                new SuspectProfile(
+                    Array.Empty<SuspectAlias>(),
+                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
+            knownClues: Array.Empty<Clue>(),
+            killerReleaseThreshold: 2,
+            killerReleaseProgress: 2,
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
     /// Creates a session with no confrontable saloon suspects (empty suspects list).
     /// LookAroundSaloon will spot a citizen person of interest instead.
     /// Used by BUNCH-80 bounty/saloon event-sourcing tests.

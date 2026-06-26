@@ -4,10 +4,19 @@ import { TravelDevPanel } from "./panels/TravelDevPanel";
 import { SaloonDevPanel } from "./panels/SaloonDevPanel";
 import type { DevSurface } from "./DevSurfaceContext";
 
+export interface DevPanelRenderProps {
+  /**
+   * Whether the dev overlay is in expanded (workbench) mode.
+   * Panels should use horizontal space in expanded mode rather than
+   * becoming a tall single-column stack. Per the dev-overlay doctrine.
+   */
+  expanded: boolean;
+}
+
 export interface DevPanelDefinition {
   id: string;
   label: string;
-  render: () => ReactNode;
+  render: (props: DevPanelRenderProps) => ReactNode;
   /**
    * Surfaces where this panel is contextually available.
    * If undefined, the panel is available on all surfaces.
@@ -38,7 +47,7 @@ export const devPanels: DevPanelDefinition[] = [
   {
     id: "saloon-dev",
     label: "Saloon dev",
-    render: () => <SaloonDevPanel />,
+    render: ({ expanded }) => <SaloonDevPanel expanded={expanded} />,
     surfaces: ["saloon"],
     isSurfaceOwner: true,
   },

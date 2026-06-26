@@ -56,24 +56,53 @@ public sealed class ForceSaloonOverrideHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RejectsTrueCulprit_ThrowsAndDoesNotPersist()
+    public async Task HandleAsync_RejectsTrueCulprit_WhenKillerReleaseGateIsLocked()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSessionWithSaloonSuspect();
         repository.Seed(session);
 
+        // Verify gate is locked
+        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
+
         var handler = new ForceSaloonOverrideHandler(repository, repository);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.HandleAsync(new ForceSaloonOverrideCommand(
                 session.Id.Value,
                 ForcedKind: "Suspect",
                 ForcedSuspectId: "suspect-2")));
 
+        // Gate-aware rejection, not "must never appear"
+        Assert.Contains("killer trail is locked", ex.Message.ToLowerInvariant());
+        Assert.DoesNotContain("must never appear", ex.Message.ToLowerInvariant());
         Assert.Equal(0, repository.StoreCalls);
     }
 
-    private static GameSession CreateSessionWithSaloonSuspect()
+    [Fact]
+    public async Task HandleAsync_AcceptsTrueCulprit_WhenKillerReleaseGateIsOpen()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSessionWithSaloonSuspect(killerReleaseProgress: 2);
+        repository.Seed(session);
+
+        // Verify gate is open
+        Assert.True(session.CaseFile.KillerReleaseState.IsReleased);
+
+        var handler = new ForceSaloonOverrideHandler(repository, repository);
+
+        await handler.HandleAsync(new ForceSaloonOverrideCommand(
+            session.Id.Value,
+            ForcedKind: "Suspect",
+            ForcedSuspectId: "suspect-2"));
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded!.PendingDevSaloonOverride);
+        Assert.Equal(DevSaloonPoiKind.Suspect, reloaded.PendingDevSaloonOverride!.ForcedKind);
+        Assert.Equal("suspect-2", reloaded.PendingDevSaloonOverride.ForcedSuspectId?.Value);
+    }
+
+    private static GameSession CreateSessionWithSaloonSuspect(int killerReleaseProgress = 0)
     {
         // Use the domain test factory which creates a session with a confrontable saloon suspect.
         // The Application tests project references WildBunch.Domain.Tests? No - we need to create
@@ -106,6 +135,8 @@ public sealed class ForceSaloonOverrideHandlerTests
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads."),
             knownClues: Array.Empty<Clue>(),
+            killerReleaseThreshold: 2,
+            killerReleaseProgress: killerReleaseProgress,
             knownWarrants: Array.Empty<Warrant>());
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,

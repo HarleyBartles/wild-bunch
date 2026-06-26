@@ -59,13 +59,42 @@ public sealed class DevSaloonOverrideTests
     }
 
     [Fact]
-    public void ForceDevSaloonOverride_RejectsTrueCulprit()
+    public void ForceDevSaloonOverride_RejectsTrueCulprit_WhenKillerReleaseGateIsLocked()
     {
+        // Default session: killer-release gate is locked (progress=0, threshold=2).
+        // The true culprit is gated out of saloon POI, not permanently barred.
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
         var trueCulpritId = new SuspectId("suspect-2");
 
-        Assert.Throws<InvalidOperationException>(() =>
+        // Verify the gate is locked
+        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
             session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(trueCulpritId)));
+
+        // The rejection message must be gate-aware, not "must never appear"
+        Assert.Contains("killer trail is locked", ex.Message.ToLowerInvariant());
+        Assert.DoesNotContain("must never appear", ex.Message.ToLowerInvariant());
+    }
+
+    [Fact]
+    public void ForceDevSaloonOverride_AcceptsTrueCulprit_WhenKillerReleaseGateIsOpen()
+    {
+        // Gate-open session: killer-release progress = threshold = 2.
+        // The true culprit is now eligible as a saloon POI candidate.
+        var session = TestSessionFactory.CreateWithKillerReleaseGateOpen();
+        var trueCulpritId = new SuspectId("suspect-2");
+
+        // Verify the gate is open
+        Assert.True(session.CaseFile.KillerReleaseState.IsReleased);
+
+        // Force should succeed — the true culprit is eligible when the gate is open
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(trueCulpritId));
+        session.MarkEventsCommitted();
+
+        Assert.NotNull(session.PendingDevSaloonOverride);
+        Assert.Equal(DevSaloonPoiKind.Suspect, session.PendingDevSaloonOverride!.ForcedKind);
+        Assert.Equal(trueCulpritId, session.PendingDevSaloonOverride.ForcedSuspectId);
     }
 
     [Fact]
@@ -157,22 +186,6 @@ public sealed class DevSaloonOverrideTests
         Assert.NotNull(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen,
             session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind());
-    }
-
-    [Fact]
-    public void LookAroundSaloon_WithFalseLeadOverride_ConsumesOverrideAndSpotsCitizen()
-    {
-        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-        session.ForceDevSaloonOverride(DevSaloonOverride.ForFalseLead());
-        session.MarkEventsCommitted();
-
-        var result = session.LookAroundSaloon();
-
-        Assert.True(result.Success);
-        var spottedEvent = session.UncommittedEvents.OfType<SaloonPersonOfInterestSpotted>().Single();
-        Assert.Null(spottedEvent.SuspectId);
-        Assert.Equal(SaloonPersonOfInterestKind.Citizen, spottedEvent.PersonOfInterestKind);
-        Assert.Null(session.PendingDevSaloonOverride);
     }
 
     [Fact]

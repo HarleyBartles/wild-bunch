@@ -7,7 +7,7 @@
 ## Dated Status History
 
 - 2026-06-26 - live: Event-sourced dev saloon override implemented. Three dev events (DevSaloonOverrideForced, DevSaloonOverrideCleared, DevSaloonOverrideConsumed) flow through GameSession command methods, Apply, and event replay. DevSaloonOverrideConsumed provides replay-safe consumption semantics. SaloonDevPanel registered in DevOverlay. Dev endpoints under /api/dev/sessions/{id}/saloon-context, /saloon/force-override, /saloon/clear-override. This is the first dev endpoint to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) through the ADR-0030 §7 player-vs-dev boundary. Hidden-truth guard test extended to cover the dev saloon-context endpoint.
-- 2026-06-27 - live: BUNCH-90 doctrine and enrichment pass. True culprit eligibility is now gate-aware via KillerReleaseState (no longer permanently barred). SaloonDevContextDto enriched with resolved suspect names, warrant facts (bounty, disposition, known features, summary), aliases, identifying facts, trait tags, citizen info, and gate-aware hidden truth (KillerReleaseStatus, KillerIsReleased, SaloonLoopExplanation). FalseLead removed from frontend force control (it produces a Citizen POI, not a distinct domain type). Force control renamed to "Force next saloon look-around POI" with scope description and candidate dropdowns replacing free-text suspect ID. Dev-overlay doctrine installed at `.agents/dev-overlay/DOCTRINE.md` as binding agent-facing law. Context mismatch detection added. Default panel selection prefers surface owner over Session Audit.
+- 2026-06-27 - live: BUNCH-90 doctrine and enrichment pass. True culprit eligibility is now gate-aware via KillerReleaseState (no longer permanently barred). The force path uses the same gate-aware eligibility as the candidate list — no special permanent true-culprit rejection. SaloonDevContextDto enriched with resolved suspect names, warrant facts (bounty, disposition, known features, summary), aliases, identifying facts, trait tags, citizen info, and gate-aware hidden truth (KillerReleaseStatus, KillerIsReleased, SaloonLoopExplanation). FalseLead removed from DevSaloonPoiKind enum, handler, and tests — it was semantically identical to Citizen and the false-lead outcome belongs to the normal confrontation flow. Force control renamed to "Force next saloon look-around POI" with scope description and candidate dropdowns replacing free-text suspect ID. Dev-overlay doctrine installed at `.agents/dev-overlay/DOCTRINE.md` as binding agent-facing law. Context mismatch detection added. Default panel selection prefers surface owner over Session Audit.
 
 ## Decision Type
 
@@ -24,7 +24,7 @@ architecture, dev, event-sourcing
 
 Playtesting saloon Point of Interest (POI) encounters requires:
 1. Inspecting the hidden/internal saloon state — which suspects are eligible as saloon POI candidates, which is the true culprit, what warrants and presence states exist.
-2. Forcing the next `LookAroundSaloon` to produce a specific POI shape: a particular wanted suspect, any eligible suspect, a citizen, or a false lead.
+2. Forcing the next `LookAroundSaloon` to produce a specific POI shape: a particular wanted suspect, any eligible suspect, or a citizen. (The false-lead outcome is not a separate force kind — it comes from the normal confrontation flow when the player declares a wrong wanted identity on a citizen POI.)
 
 The previous debug cockpit had no saloon forcing capability and no way to inspect suspect eligibility without playing through the game. ADR-0030 established the dev overlay and /api/dev/ namespace, and ADR-0031 established the event-sourced dev override pattern for travel. This ADR applies the same pattern to saloon POI encounters.
 
@@ -32,7 +32,7 @@ A key difference from ADR-0031: the saloon dev context is the first dev surface 
 
 ## Decision
 
-1. **DevSaloonOverride record.** A plain domain record `DevSaloonOverride(DevSaloonPoiKind ForcedKind, SuspectId? ForcedSuspectId)` carries the override payload. `DevSaloonPoiKind` is an enum with values `Suspect`, `Citizen`, `FalseLead`. Factory methods `ForSuspect`, `ForAnySuspect`, `ForCitizen`, `ForFalseLead` construct common shapes.
+1. **DevSaloonOverride record.** A plain domain record `DevSaloonOverride(DevSaloonPoiKind ForcedKind, SuspectId? ForcedSuspectId)` carries the override payload. `DevSaloonPoiKind` is an enum with values `Suspect`, `Citizen`. Factory methods `ForSuspect`, `ForAnySuspect`, `ForCitizen` construct common shapes. The false-lead confrontation outcome is not a separate override kind — it comes from the normal confrontation flow when the player declares a wrong wanted identity on a citizen POI. To test the false-lead path, force a Citizen override and then make a wrong declaration during confrontation.
 
 2. **Three dev events.** The override lifecycle is event-sourced through three sealed record events implementing IDomainEvent:
    - `DevSaloonOverrideForced` — sets the pending override. Produced by `ForceDevSaloonOverride`.

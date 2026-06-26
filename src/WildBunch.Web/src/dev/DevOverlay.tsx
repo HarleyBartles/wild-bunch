@@ -119,7 +119,7 @@ export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
             )}
           </Sidebar>
           <Content data-testid="dev-overlay-content">
-            {activePanel ? activePanel.render() : <MutedText>No contextual dev panel for this surface.</MutedText>}
+            {activePanel ? activePanel.render({ expanded }) : <MutedText>No contextual dev panel for this surface.</MutedText>}
           </Content>
         </DrawerBody>
       </Drawer>

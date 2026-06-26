@@ -37,8 +37,6 @@ public sealed class ForceSaloonOverrideHandler : GameSessionCommandHandler
                     => DevSaloonOverride.ForAnySuspect(),
                 DevSaloonPoiKind.Citizen
                     => DevSaloonOverride.ForCitizen(),
-                DevSaloonPoiKind.FalseLead
-                    => DevSaloonOverride.ForFalseLead(),
                 _ => throw new ArgumentOutOfRangeException(nameof(command.ForcedKind))
             };
 

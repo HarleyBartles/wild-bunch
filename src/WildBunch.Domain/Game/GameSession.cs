@@ -989,6 +989,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         // Validate specific-suspect eligibility at force time.
         // Dev force must not break core saloon/culprit invariants.
+        // Uses the same gate-aware eligibility as the candidate list:
+        // IsEligibleSaloonPersonOfInterestCandidate. The true culprit is gated
+        // out while the killer-release gate is locked, but becomes eligible
+        // once the gate opens. No special permanent true-culprit rejection.
         if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
         {
             var suspectId = overrideValue.ForcedSuspectId.Value;
@@ -1000,33 +1004,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     $"Unknown suspect ID: {suspectId.Value}. Cannot force a saloon override for a suspect that does not exist.");
             }
 
-            // Reject the true culprit - it must never appear as a saloon POI.
-            if (CaseFile.TrueCulpritId == overrideValue.ForcedSuspectId)
+            // Use the same gate-aware eligibility as the candidate list.
+            var suspect = CaseFile.Suspects.First(s => s.Id == overrideValue.ForcedSuspectId);
+            if (!IsEligibleSaloonPersonOfInterestCandidate(suspect))
             {
+                var reason = GetSaloonPoiIneligibilityReason(suspect);
                 throw new InvalidOperationException(
-                    "Cannot force a saloon override for the true culprit. The true culprit must never appear as a saloon POI.");
-            }
-
-            // If the suspect has a known warrant, their presence state must be
-            // AvailableInTown or GoneToGround to be a valid saloon POI candidate.
-            // If no presence state is tracked, the suspect is NOT eligible (matches
-            // IsEligibleSaloonPersonOfInterestCandidate domain rule).
-            if (TryGetKnownWarrantForSuspect(suspectId, out _))
-            {
-                if (!TryGetWantedSuspectPresenceState(suspectId, out var presence))
-                {
-                    throw new InvalidOperationException(
-                        $"Suspect {suspectId.Value} has a known warrant but no tracked presence state, " +
-                        "which is not eligible for a saloon POI.");
-                }
-
-                if (presence is not (WantedSuspectPresenceState.AvailableInTown
-                    or WantedSuspectPresenceState.GoneToGround))
-                {
-                    throw new InvalidOperationException(
-                        $"Suspect {suspectId.Value} has a known warrant but presence state {presence}, " +
-                        "which is not eligible for a saloon POI. Eligible states: AvailableInTown, GoneToGround.");
-                }
+                    $"Cannot force a saloon override for suspect {suspectId.Value} ({suspect.Name}). " +
+                    $"{reason ?? "Suspect is not eligible as a saloon POI candidate."}");
             }
         }
 
@@ -2716,7 +2701,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             }
             else
             {
-                // Citizen or FalseLead - both spot a citizen.
+                // Citizen - spots a generic town citizen.
                 // The false-lead outcome comes from the normal confrontation flow
                 // when the player declares a wrong wanted identity on a citizen POI.
                 var forcedCitizenDescriptor = DescribeTownCitizen(CurrentTown);
