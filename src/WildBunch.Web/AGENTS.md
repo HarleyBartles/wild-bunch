@@ -16,6 +16,7 @@ React should render backend/player-known state rather than inventing canonical g
 - Reference design tokens via `var(--token-name)` to stay on-palette.
 - Re-use shared primitives from `src/components/ui/sharedStyled.tsx` for genuine cross-surface patterns (Panel, StatusCard, Button, Grid, ItemCard, etc.).
 - Feature-specific styled components should stay local in the component file that uses them.
+- Durable guidance: [`docs/frontend-styling.md`](../../docs/frontend-styling.md).
 - Enforced by `src/tests/stylingEnforcement.test.ts`.
 
 ## Dev overlay work

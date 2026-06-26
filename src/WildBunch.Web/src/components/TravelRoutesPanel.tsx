@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
 import { formatRisk, formatTrailTerrain, formatWaterFeature } from "../ui/formatters";
@@ -7,9 +8,46 @@ import {
   PanelHead,
   PanelSubtitle,
   Stack,
-  DestinationCard,
+  ItemCard,
   Muted,
 } from "./ui/sharedStyled";
+
+const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition:
+    transform 0.15s ease-out,
+    border-color 0.15s ease-out;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  strong {
+    display: block;
+  }
+`;
 
 interface TravelRoutesPanelProps {
   gameId: string | null;

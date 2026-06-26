@@ -6,15 +6,15 @@ import { useGameSession } from "../state/useGameSession";
 import { InventoryPanel } from "../components/InventoryPanel";
 import {
   FlowSurface,
-  FlowNotice,
-  FlowError,
   BackButton,
   Panel,
   PanelHead,
   Stack,
   Button,
-  DestinationCard,
   Muted,
+  ItemCard,
+  FlowNotice,
+  FlowError,
 } from "../components/ui/sharedStyled";
 
 const PlaceHeader = styled.header`
@@ -41,6 +41,43 @@ const TravelPrepActions = styled.div`
   display: flex;
   gap: 12px;
   margin-top: 12px;
+`;
+
+const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition:
+    transform 0.15s ease-out,
+    border-color 0.15s ease-out;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  strong {
+    display: block;
+  }
 `;
 
 interface TravelPrepSurfaceProps {

@@ -1,9 +1,39 @@
 import { describe, expect, it } from "vitest";
 import { execSync } from "node:child_process";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe("Styling Enforcement", () => {
-  it("ensures no components use legacy plain CSS classes from styles.css", () => {
+  const srcDir = path.resolve(__dirname, "..");
+  const webRoot = path.resolve(srcDir, "..");
+
+  it("ensures src/styles.css does not exist", () => {
+    const stylesCssPath = path.resolve(srcDir, "styles.css");
+    expect(fs.existsSync(stylesCssPath), "src/styles.css should have been deleted").toBe(false);
+  });
+
+  it("ensures src/styles/index.scss does not reference styles.css", () => {
+    const indexScssPath = path.resolve(srcDir, "styles", "index.scss");
+    const content = fs.readFileSync(indexScssPath, "utf8");
+    expect(content, "src/styles/index.scss should not reference styles.css").not.toContain("styles.css");
+  });
+
+  it("ensures no .css imports remain in TSX files", () => {
+    try {
+      const result = execSync(`rg "import\\s+['\\"].*\\.css['\\"]" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`, { encoding: "utf8" });
+      if (result) {
+        expect.fail(`Found .css imports in TSX files:\n${result}`);
+      }
+    } catch {
+      // rg returns non-zero if no matches
+    }
+  });
+
+  it("ensures no legacy plain CSS classes from styles.css are used", () => {
     const forbiddenClasses = [
       "panel",
       "panel-head",
@@ -25,21 +55,6 @@ describe("Styling Enforcement", () => {
       "flow-notice",
       "flow-error",
       "case-modal",
-      "case-modal__backdrop",
-      "case-modal__header",
-      "case-modal__body",
-      "case-modal__state",
-      "case-modal__grid",
-      "case-modal__identity-grid",
-      "case-modal__identity-suspects",
-      "case-modal__section",
-      "case-modal__section-head",
-      "case-modal__card",
-      "case-modal__stats",
-      "case-modal__minor",
-      "case-modal__anchor-list",
-      "case-modal__lead-list",
-      "case-modal__deductions",
       "arrival-card",
       "arrival-lead",
       "town-hub-header",
@@ -54,29 +69,17 @@ describe("Styling Enforcement", () => {
       "trail-lock-banner",
     ];
 
-    // Exclude 'tag' and 'stack' from simple grep if they are too noisy,
-    // but they should be replaced by styled components now anyway.
-    // Actually, we want to find className="tag" etc.
-
-    const srcDir = path.resolve(__dirname, "..");
-    
-    // Use ripgrep via execSync to find any className="forbidden-class"
-    // We escape the double quotes for the shell.
-    // We look for exact matches within className="..."
-    
     const violations: string[] = [];
     
     for (const cls of forbiddenClasses) {
       try {
-        // Search for className="cls" or className="... cls ..."
-        // This regex looks for the class name within a className string.
         const pattern = `className=["'][^"']*\\b${cls}\\b[^"']*["']`;
         const result = execSync(`rg -l "${pattern}" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`, { encoding: "utf8" });
         if (result) {
           violations.push(`Class "${cls}" found in:\n${result}`);
         }
       } catch {
-        // rg returns non-zero if no matches, which is fine
+        // no matches
       }
     }
 

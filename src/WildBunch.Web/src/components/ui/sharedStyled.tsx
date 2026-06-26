@@ -33,12 +33,6 @@ export const PanelHead = styled.header`
   }
 `;
 
-export const PanelActions = styled.div`
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-`;
-
 export const PanelSubtitle = styled.p`
   margin: 0;
   color: var(--muted);
@@ -198,68 +192,6 @@ export const ItemCard = styled.div`
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
-`;
-
-export const ActionRow = styled(ItemCard)`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  p {
-    margin: 0;
-    font-size: 0.88rem;
-    color: var(--muted);
-  }
-`;
-
-export const DestinationCard = styled(ActionRow).attrs({ as: "button" })`
-  width: 100%;
-  text-align: left;
-  color: var(--text);
-  cursor: pointer;
-  transition:
-    transform 0.15s ease-out,
-    border-color 0.15s ease-out;
-
-  &:hover:not(:disabled) {
-    border-color: var(--accent);
-    transform: translateY(-1px);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  p {
-    color: var(--text);
-  }
-
-  strong {
-    display: block;
-  }
-`;
-
-export const TagRow = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-`;
-
-export const Tag = styled.span`
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--muted);
 `;
 
 type FlowSurfaceVariant = "pre-session" | "town-hub" | "place" | "travel-prep" | "trail" | "arrival";

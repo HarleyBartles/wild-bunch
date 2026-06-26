@@ -3,37 +3,38 @@
 - BUNCH-95: Consolidate frontend styling stack around `styled-components` (component-owned) and SASS/SCSS (global/non-component).
 - Successfully migrated all components from plain CSS to styled components.
 - Deleted `src/styles.css` (1025 lines removed).
-- Introduced `src/components/ui/sharedStyled.tsx` for cross-surface primitives.
-- Installed durable styling doctrine in `src/WildBunch.Web/AGENTS.md`.
-- Added automated enforcement test in `src/tests/stylingEnforcement.test.ts`.
+- Introduced `src/components/ui/sharedStyled.tsx` for genuine cross-surface primitives.
+- Installed durable styling doctrine in `src/WildBunch.Web/AGENTS.md` and `docs/frontend-styling.md`.
+- Added automated enforcement test in `src/tests/stylingEnforcement.test.ts` covering file existence, CSS imports, and class usage.
 
 ## Changes
 
 ### 1. Shared Styled Primitives
-Extracted 20+ genuinely cross-surface primitives into `sharedStyled.tsx`, including `Panel`, `StatusCard`, `Button`, `Grid`, `ItemCard`, `ActionRow`, and `FlowSurface`.
+Consolidated genuinely cross-surface primitives into `sharedStyled.tsx`: `Panel`, `StatusCard`, `Button`, `Grid`, `ItemCard`, `FlowSurface`. Feature-specific families like `DestinationCard` and `ActionRow` stay local to their respective components.
 
 ### 2. SASS Refactor
-Moved global element defaults (like `h1` styling) to `_base.scss`. Finalized `index.scss` to use only project-standard SASS partials.
+Moved global element defaults to `_base.scss`. Cleaned up `index.scss` and removed stale legacy comments.
 
 ### 3. Component Migrations
-- **Routes (5 files)**: Camp, CaseFile, Hunt, Trail, Wanted.
-- **Feature Panels (5 files)**: AvailableActions, FieldReport, Inventory, StoreOffers, TravelRoutes.
-- **Modal Surfaces (4 files)**: CockpitOverlayFrame, CaseFileSurface, WantedPosterSurface, JournalSurface.
-- **Flow Surfaces (8 files)**: PreSession, Arrival, TownHub, TravelPrep, TrailFlow, SaloonPlace, SheriffPlace, StorePlace.
+All 22 files referencing `styles.css` have been migrated to `styled-components` using the new primitives and design tokens.
 
 ### 4. Enforcement & Doctrine
-- Added `stylingEnforcement.test.ts` which greps for legacy class names in the codebase.
-- Updated `AGENTS.md` with strict styling rules to prevent stack drift.
+- **Automated Guard**: `stylingEnforcement.test.ts` verifies no `styles.css` exists, no `.css` imports remain, and no legacy class names are used in TSX.
+- **Documentation**: Added `docs/frontend-styling.md` and linked it in `docs/INDEX.md`. Updated project `AGENTS.md` with binding styling rules.
 
 ### Visual Verification
-Screenshots captured during validation are available in `.agents/superpowers/output/screenshots/`:
-- `pre-session.png`, `town-hub.png`, `saloon.png`, `sheriff.png`, `case-file.png`, `journal.png`, `travel-prep.png`, `trail.png`.
+Screenshots captured during validation:
+- Core Play Surface: `town-hub.png`, `saloon.png`, `sheriff.png`, `trail.png`.
+- Shell/HUD & Overlays: `case-file.png`, `journal.png`, `pre-session.png`.
+- Dev Overlay: `dev-overlay-closed.png`, `dev-overlay-open.png`.
 
 #### Validation
 
-- [x] `npm test` passes (all 44 tests passing, including enforcement)
-- [x] Automated grep: No `styles.css` imports remain; no legacy class names used in TSX files.
-- [x] Manual check: Core gameplay flows verified via local dev server.
+- [x] `npm run typecheck` passes
+- [x] `npm test` passes (including enforcement test)
+- [x] `npm run build` passes
+- [x] `dotnet build` passes
+- [x] `.\scripts\postgres-dev.ps1 validate` passes (backend guard checks)
 
 Generated with [Devin](https://devin.ai)
 

@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import { AvailableActionKind } from "../api/types";
 import { formatActionKind } from "../ui/formatters";
 import { useGameSession } from "../state/useGameSession";
@@ -6,11 +7,24 @@ import {
   PanelHead,
   PanelSubtitle,
   Stack,
-  ActionRow,
+  ItemCard,
   Field,
   Muted,
   Button,
 } from "./ui/sharedStyled";
+
+const ActionRow = styled(ItemCard)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+`;
 
 export function AvailableActionsPanel() {
   const {

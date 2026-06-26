@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import type { InventoryCapabilitiesDto, InventoryDto, InventoryItemDto } from "../api/types";
 import { formatCanteenState, formatCapabilityLabel, formatHorseTravelState, formatItemKind } from "../ui/formatters";
 import {
@@ -5,9 +6,24 @@ import {
   StatList,
   Stack,
   ItemCard,
-  TagRow,
-  Tag,
 } from "./ui/sharedStyled";
+
+const TagRow = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+`;
+
+const Tag = styled.span`
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
+`;
 
 interface InventoryPanelProps {
   inventory: InventoryDto;

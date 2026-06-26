@@ -17,7 +17,6 @@ import {
   StatList,
   Grid,
   Muted,
-  Tag,
   Stack,
 } from "./ui/sharedStyled";
 
@@ -77,6 +76,16 @@ const SectionHead = styled.div`
     font-size: 1.1rem;
     color: var(--text);
   }
+`;
+
+const Tag = styled.span`
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
 `;
 
 interface CaseFileSurfaceProps {
@@ -426,7 +435,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
 
     return activeJournal.caseFile.discoveredSuspects
       .map((suspect) => {
-        const suspectName = suspect.displayName || suspect.name;
+        const suspectName = suspect.name;
         const basis = findSuspectDiscoveryBasis(activeJournal, suspectName) || "Player observation";
         const record = activeJournal.caseFile.caseBoard.namedRecords.find(
           (r) => normalizeText(r.displayName) === normalizeText(suspectName),
@@ -598,8 +607,8 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
               caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
                 <ItemCard key={evidence.id}>
-                  <h4 style={{ margin: 0, fontSize: "0.94rem" }}>{evidence.displayName}</h4>
-                  <p style={{ margin: "6px 0 0", fontSize: "0.88rem" }}>{evidence.description}</p>
+                  <h4 style={{ margin: 0, fontSize: "0.94rem" }}>{evidence.summary}</h4>
+                  <p style={{ margin: "6px 0 0", fontSize: "0.88rem" }}>{evidence.kindLabel}</p>
                   <Minor style={{ marginTop: "8px" }}>Source: {evidence.sourceLabel}</Minor>
                 </ItemCard>
               ))
@@ -617,9 +626,9 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           <Grid $cols={2} $mobileCols={1}>
             {visibleDiscoveredSuspects.length > 0 ? (
               visibleDiscoveredSuspects.map(({ suspect, basis, record }) => (
-                <ItemCard key={suspect.displayName || suspect.name}>
+                <ItemCard key={suspect.name}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
-                    <h4 style={{ margin: 0, fontSize: "1rem" }}>{suspect.displayName || suspect.name}</h4>
+                    <h4 style={{ margin: 0, fontSize: "1rem" }}>{suspect.name}</h4>
                     <Tag>{formatSuspectStatus(suspect.status)}</Tag>
                   </div>
                   <Minor>{basis}</Minor>

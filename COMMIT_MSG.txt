@@ -1,10 +1,11 @@
-BUNCH-95: consolidate frontend styling stack around styled-components and SASS
+BUNCH-95: refine styling stack consolidation and strengthen enforcement
 
-- Migrated all components from plain CSS to styled components.
-- Deleted src/styles.css.
-- Introduced src/components/ui/sharedStyled.tsx for cross-surface primitives.
-- Installed durable styling doctrine in src/WildBunch.Web/AGENTS.md.
-- Added automated enforcement test in src/tests/stylingEnforcement.test.ts.
+- Move feature-specific styled components (ActionRow, DestinationCard, Tag) back to local files, narrowing sharedStyled.tsx.
+- Strengthen stylingEnforcement.test.ts to check for file existence and CSS imports.
+- Fix CI type errors in CaseFileSurface.tsx.
+- Clean up index.scss comments.
+- Add docs/frontend-styling.md and update docs index.
+- Add missing dev overlay screenshots.
 
 Generated with [Devin](https://devin.ai)
 

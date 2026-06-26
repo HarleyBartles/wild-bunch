@@ -9,7 +9,6 @@ import { formatWarrantDisposition } from "../ui/formatters";
 import {
   StatusCard,
   PanelSubtitle,
-  Tag,
   Eyebrow,
   Muted,
 } from "./ui/sharedStyled";
@@ -105,6 +104,16 @@ const FeatureList = styled.ul`
   margin: 0;
   padding: 0;
   list-style: none;
+`;
+
+const Tag = styled.span`
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
 `;
 
 interface WantedPosterSurfaceProps {
