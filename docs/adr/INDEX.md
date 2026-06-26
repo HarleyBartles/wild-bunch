@@ -37,6 +37,9 @@ Human-facing ADR log index and conventions: [README.md](README.md)
 | ADR-0027 | 2026-06-25 | Updated — HUD label "heat" → "lawman heat" |
 | ADR-0028 | 2026-06-25 | Clean — PursuitHeat event refs are historical |
 | ADR-0029 | 2026-06-25 | Rewritten — town-heat model |
-| ADR-0030 | 2026-06-26 | Updated — SaloonDevPanel added as third panel (BUNCH-90) |
+| ADR-0030 | 2026-06-27 | Updated — doctrine installed, mesh policy, default panel selection |
 | ADR-0031 | 2026-06-25 | New — event-sourced dev travel controls |
-| ADR-0032 | 2026-06-26 | New — event-sourced dev saloon controls |
+| ADR-0032 | 2026-06-27 | Updated — gate-aware eligibility, enriched DTOs, doctrine pass |
+| ADR-0033 | 2026-06-27 | New — repo documentation mesh posture (agents, index, README) |
+
+Back to [docs/](../INDEX.md)

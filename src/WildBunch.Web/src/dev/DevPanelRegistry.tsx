@@ -13,6 +13,12 @@ export interface DevPanelDefinition {
    * If undefined, the panel is available on all surfaces.
    */
   surfaces?: DevSurface[];
+  /**
+   * If true, this panel is the surface owner and should be the default
+   * selected panel when its surface is active. Per the dev-overlay doctrine,
+   * the surface owner wins the default over global panels like Session Audit.
+   */
+  isSurfaceOwner?: boolean;
 }
 
 export const devPanels: DevPanelDefinition[] = [
@@ -27,19 +33,41 @@ export const devPanels: DevPanelDefinition[] = [
     label: "Travel dev",
     render: () => <TravelDevPanel />,
     surfaces: ["trail", "arrival", "trailhead"],
+    isSurfaceOwner: true,
   },
   {
     id: "saloon-dev",
     label: "Saloon dev",
     render: () => <SaloonDevPanel />,
     surfaces: ["saloon"],
+    isSurfaceOwner: true,
   },
 ];
 
 /**
  * Returns the panels available for the given dev surface.
  * Panels without a `surfaces` filter are always available.
+ * Surface owner panels are ordered first so they win default selection.
  */
 export function getAvailablePanels(surface: DevSurface): DevPanelDefinition[] {
-  return devPanels.filter((panel) => !panel.surfaces || panel.surfaces.includes(surface));
+  const available = devPanels.filter(
+    (panel) => !panel.surfaces || panel.surfaces.includes(surface),
+  );
+  // Surface owner panels first, then others
+  return available.sort((a, b) => {
+    if (a.isSurfaceOwner && !b.isSurfaceOwner) return -1;
+    if (!a.isSurfaceOwner && b.isSurfaceOwner) return 1;
+    return 0;
+  });
+}
+
+/**
+ * Returns the default panel for the given surface.
+ * Prefers the surface owner; falls back to the first available panel.
+ */
+export function getDefaultPanelId(surface: DevSurface): string | null {
+  const panels = getAvailablePanels(surface);
+  if (panels.length === 0) return null;
+  const owner = panels.find((p) => p.isSurfaceOwner);
+  return (owner ?? panels[0]).id;
 }

@@ -32,20 +32,34 @@ public sealed class GetSaloonDevContextHandlerTests
         // No active POI before LookAroundSaloon
         Assert.Null(result.ActiveSaloonPoi);
 
-        // Hidden truth is exposed in dev DTO
+        // Hidden truth is exposed in dev DTO with gate-aware eligibility
         Assert.NotNull(result.HiddenTruth);
         Assert.Equal("suspect-2", result.HiddenTruth!.TrueCulpritId);
         Assert.Equal("Reno Pike", result.HiddenTruth.TrueCulpritName);
+        Assert.False(result.HiddenTruth.KillerIsReleased);
+        Assert.Contains("killer trail is locked", result.HiddenTruth.KillerReleaseStatus.ToLowerInvariant());
+        Assert.NotEmpty(result.HiddenTruth.SaloonLoopExplanation);
 
-        // Suspects list includes eligibility info
+        // Citizen info is honestly described
+        Assert.NotNull(result.CitizenInfo);
+        Assert.False(result.CitizenInfo!.HasNamedArchetypes);
+        Assert.Empty(result.CitizenInfo.AvailableArchetypes);
+        Assert.Contains("Current Town", result.CitizenInfo.Descriptor);
+
+        // Suspects list includes eligibility info and warrant-shaped facts
         Assert.Equal(2, result.Suspects.Count);
         var suspect1 = result.Suspects.Single(s => s.SuspectId == "suspect-1");
         Assert.False(suspect1.IsTrueCulprit);
         Assert.True(suspect1.IsEligibleSaloonPoi);
+        Assert.NotEmpty(suspect1.IdentifyingFacts);
+        Assert.Contains("scar", suspect1.IdentifyingFacts[0].ToLowerInvariant());
+
         var suspect2 = result.Suspects.Single(s => s.SuspectId == "suspect-2");
         Assert.True(suspect2.IsTrueCulprit);
         Assert.False(suspect2.IsEligibleSaloonPoi);
-        Assert.Contains("True culprit", suspect2.IneligibilityReason);
+        // Gate-aware: no longer says "can never appear"
+        Assert.DoesNotContain("can never appear", suspect2.IneligibilityReason?.ToLowerInvariant() ?? "");
+        Assert.Contains("killer trail is locked", suspect2.IneligibilityReason?.ToLowerInvariant() ?? "");
     }
 
     [Fact]
@@ -65,6 +79,7 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.NotNull(result.ActiveSaloonPoi);
         Assert.Equal("WantedSuspect", result.ActiveSaloonPoi!.PersonOfInterestKind);
         Assert.NotNull(result.ActiveSaloonPoi.SuspectId);
+        Assert.NotNull(result.ActiveSaloonPoi.SuspectName);
         Assert.NotNull(result.ActiveSaloonPoi.Descriptor);
     }
 
@@ -111,6 +126,7 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.NotNull(result.ActiveSaloonPoi);
         Assert.Equal("WantedSuspect", result.ActiveSaloonPoi!.PersonOfInterestKind);
         Assert.Equal("suspect-1", result.ActiveSaloonPoi.SuspectId);
+        Assert.Equal("Mira Cline", result.ActiveSaloonPoi.SuspectName);
         Assert.NotNull(result.ActiveSaloonPoi.Descriptor);
         // Override consumed
         Assert.Null(result.PendingDevOverride);
@@ -132,6 +148,7 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.NotNull(result.PendingDevOverride);
         Assert.Equal("Suspect", result.PendingDevOverride!.ForcedKind);
         Assert.Equal("suspect-1", result.PendingDevOverride.ForcedSuspectId);
+        Assert.Equal("Mira Cline", result.PendingDevOverride.ForcedSuspectName);
     }
 
     [Fact]

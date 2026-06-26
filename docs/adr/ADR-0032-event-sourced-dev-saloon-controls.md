@@ -7,6 +7,7 @@
 ## Dated Status History
 
 - 2026-06-26 - live: Event-sourced dev saloon override implemented. Three dev events (DevSaloonOverrideForced, DevSaloonOverrideCleared, DevSaloonOverrideConsumed) flow through GameSession command methods, Apply, and event replay. DevSaloonOverrideConsumed provides replay-safe consumption semantics. SaloonDevPanel registered in DevOverlay. Dev endpoints under /api/dev/sessions/{id}/saloon-context, /saloon/force-override, /saloon/clear-override. This is the first dev endpoint to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) through the ADR-0030 §7 player-vs-dev boundary. Hidden-truth guard test extended to cover the dev saloon-context endpoint.
+- 2026-06-27 - live: BUNCH-90 doctrine and enrichment pass. True culprit eligibility is now gate-aware via KillerReleaseState (no longer permanently barred). SaloonDevContextDto enriched with resolved suspect names, warrant facts (bounty, disposition, known features, summary), aliases, identifying facts, trait tags, citizen info, and gate-aware hidden truth (KillerReleaseStatus, KillerIsReleased, SaloonLoopExplanation). FalseLead removed from frontend force control (it produces a Citizen POI, not a distinct domain type). Force control renamed to "Force next saloon look-around POI" with scope description and candidate dropdowns replacing free-text suspect ID. Dev-overlay doctrine installed at `.agents/dev-overlay/DOCTRINE.md` as binding agent-facing law. Context mismatch detection added. Default panel selection prefers surface owner over Session Audit.
 
 ## Decision Type
 
@@ -44,10 +45,10 @@ A key difference from ADR-0031: the saloon dev context is the first dev surface 
 
 4. **Suspect eligibility validation.** `ForceDevSaloonOverride` rejects:
    - Unknown suspect IDs (not in CaseFile.Suspects)
-   - The true culprit (can never appear as a saloon POI)
+   - The true culprit when the killer-release gate is locked (gate-aware via `KillerReleaseState.IsReleased`)
    - Suspects with a known warrant whose presence state is not AvailableInTown or GoneToGround (they are already secured or unavailable)
 
-   The eligibility check reuses the existing `IsEligibleSaloonPersonOfInterestCandidate` logic (made internal for dev mapper access). `ForceDevSaloonOverride` also rejects when a journey is active (journey-modal state).
+   The eligibility check reuses the existing `IsEligibleSaloonPersonOfInterestCandidate` logic (made internal for dev mapper access). When the killer-release gate is open, the true culprit becomes a valid saloon POI candidate. `ForceDevSaloonOverride` also rejects when a journey is active (journey-modal state).
 
 5. **Dev endpoints.** Three endpoints under /api/dev/:
    - `GET /api/dev/sessions/{id}/saloon-context` — returns saloon context, hidden truth, suspect eligibility, and pending dev override via `SaloonDevContextDto`.
@@ -56,10 +57,11 @@ A key difference from ADR-0031: the saloon dev context is the first dev surface 
 
    All gated by `DevRoleGuard.EnsureDevAccess()`. Dev DTOs are separate types from player DTOs.
 
-6. **Hidden-truth exposure.** `SaloonDevContextDto` includes `HiddenTruthDevDto` (TrueCulpritId, TrueCulpritName) and `SaloonSuspectDevDto` (IsTrueCulprit, IsEligibleSaloonPoi, IneligibilityReason, HasKnownWarrant, PresenceState). This is the first dev DTO to deliberately expose hidden culprit truth. The exposure is bounded:
+6. **Hidden-truth exposure.** `SaloonDevContextDto` includes `HiddenTruthDevDto` (TrueCulpritId, TrueCulpritName, KillerReleaseStatus, KillerIsReleased, SaloonLoopExplanation) and `SaloonSuspectDevDto` (IsTrueCulprit, IsEligibleSaloonPoi, IneligibilityReason, HasKnownWarrant, PresenceState, Aliases, IdentifyingFacts, TraitTags, BountyAmount, WarrantDisposition, WarrantKnownFeatures, WarrantSummary). `ActiveSaloonPoiDto` includes `SuspectName` for resolved display. `CitizenInfoDto` honestly describes the citizen POI shape (no named archetypes exist). `DevSaloonOverrideDto` includes `ForcedSuspectName`. This is the first dev DTO to deliberately expose hidden culprit truth. The exposure is bounded:
    - The DTO is a separate type from player DTOs (GameSessionDto, JournalDto).
    - The endpoint is under /api/dev/ with DevRoleGuard.
    - Player-facing APIs continue to be guarded by `GameApiHiddenTruthTests`.
+   - The dev-overlay doctrine (`.agents/dev-overlay/DOCTRINE.md`) governs what hidden truth is useful vs sensational.
 
 7. **Persistence.** The three dev events are registered in `ResolveEventType` for event-stream serialization. The `PendingDevSaloonOverride` is stored as a snapshot component (`pendingDevSaloonOverride`) in the EF component-based snapshot path and as a field in the full `GameSessionSnapshot` record. On load, `_pendingDevSaloonOverride` is set via `GameSessionRehydrator.SetBackingField`. Post-snapshot event replay overwrites the snapshot value via Apply.
 

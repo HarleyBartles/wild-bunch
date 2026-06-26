@@ -24,21 +24,69 @@ public static class SaloonDevContextMapper
         ActiveSaloonPoiDto? activePoi = null;
         if (activePoiId is not null || activePoiDescriptor is not null)
         {
+            // Resolve suspect name for suspect POIs
+            string? activePoiName = null;
+            if (activePoiId is not null)
+            {
+                var suspect = session.CaseFile.Suspects.FirstOrDefault(s => s.Id == activePoiId);
+                activePoiName = suspect?.Name;
+            }
+
             activePoi = new ActiveSaloonPoiDto(
                 activePoiId?.Value,
+                activePoiName,
                 activePoiDescriptor,
                 activePoiKind?.ToString());
         }
 
-        var suspects = session.CaseFile.Suspects.Select(s => new SaloonSuspectDevDto(
-            s.Id.Value,
-            s.Name,
-            IsTrueCulprit: s.Id == session.CaseFile.TrueCulpritId,
-            IsEligibleSaloonPoi: session.IsEligibleSaloonPersonOfInterestCandidate(s),
-            IneligibilityReason: session.GetSaloonPoiIneligibilityReason(s),
-            HasKnownWarrant: session.TryGetKnownWarrantForSuspect(s.Id, out _),
-            PresenceState: session.TryGetWantedSuspectPresenceState(s.Id, out var presence) ? presence.ToString() : null
-        )).ToList();
+        var suspects = session.CaseFile.Suspects.Select(s =>
+        {
+            session.TryGetKnownWarrantForSuspect(s.Id, out var warrant);
+            return new SaloonSuspectDevDto(
+                SuspectId: s.Id.Value,
+                Name: s.Name,
+                IsTrueCulprit: s.Id == session.CaseFile.TrueCulpritId,
+                IsEligibleSaloonPoi: session.IsEligibleSaloonPersonOfInterestCandidate(s),
+                IneligibilityReason: session.GetSaloonPoiIneligibilityReason(s),
+                HasKnownWarrant: warrant is not null,
+                PresenceState: session.TryGetWantedSuspectPresenceState(s.Id, out var presence) ? presence.ToString() : null,
+                Aliases: s.Profile.Aliases.Select(a => a.Name).ToList(),
+                IdentifyingFacts: s.Profile.IdentifyingFacts.Select(f => f.Description).ToList(),
+                TraitTags: s.Traits.Tags.Select(t => t.Value).ToList(),
+                BountyAmount: warrant?.Terms.BountyAmount,
+                WarrantDisposition: warrant is not null ? warrant.Terms.Disposition.ToString() : null,
+                WarrantKnownFeatures: warrant?.Terms.KnownFeatures.ToList() ?? new List<string>(),
+                WarrantSummary: warrant?.Summary);
+        }).ToList();
+
+        // Citizen info — honestly describe what the backend supports
+        var citizenDescriptor = $"a town clerk from {session.CurrentTown.TownName}";
+        var citizenInfo = new CitizenInfoDto(
+            Descriptor: citizenDescriptor,
+            HasNamedArchetypes: false,
+            AvailableArchetypes: Array.Empty<string>());
+
+        // Hidden truth with saloon loop explanation
+        var killerRelease = session.CaseFile.KillerReleaseState;
+        var saloonLoopExplanation = BuildSaloonLoopExplanation(session, killerRelease.IsReleased);
+        HiddenTruthDevDto? hiddenTruth = null;
+        if (trueCulprit is not null)
+        {
+            hiddenTruth = new HiddenTruthDevDto(
+                trueCulprit.Id.Value,
+                trueCulprit.Name,
+                killerRelease.StatusText,
+                killerRelease.IsReleased,
+                saloonLoopExplanation);
+        }
+
+        // Resolve forced suspect name for pending override
+        string? forcedSuspectName = null;
+        if (devOverride?.ForcedSuspectId is not null)
+        {
+            forcedSuspectName = session.CaseFile.Suspects
+                .FirstOrDefault(s => s.Id == devOverride.ForcedSuspectId)?.Name;
+        }
 
         return new SaloonDevContextDto(
             session.Id.Value,
@@ -49,10 +97,29 @@ public static class SaloonDevContextMapper
             ActiveSaloonPoi: activePoi,
             PendingDevOverride: devOverride is null ? null : new DevSaloonOverrideDto(
                 devOverride.ForcedKind.ToString(),
-                devOverride.ForcedSuspectId?.Value),
-            HiddenTruth: trueCulprit is null ? null : new HiddenTruthDevDto(
-                trueCulprit.Id.Value,
-                trueCulprit.Name),
+                devOverride.ForcedSuspectId?.Value,
+                forcedSuspectName),
+            HiddenTruth: hiddenTruth,
+            CitizenInfo: citizenInfo,
             Suspects: suspects);
+    }
+
+    private static string BuildSaloonLoopExplanation(GameSession session, bool killerIsReleased)
+    {
+        var sourceSpent = session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround);
+        var parts = new List<string>();
+
+        parts.Add(sourceSpent
+            ? "Saloon look-around source is spent for this town visit. A repeat visit or confrontation clears the active POI."
+            : "Saloon look-around source is available. Call LookAroundSaloon to spot a POI.");
+
+        parts.Add(killerIsReleased
+            ? "The killer trail is released — the true culprit is now eligible to appear as a saloon POI."
+            : "The killer trail is locked — the true culprit is gated out of saloon POI until the killer-release gate opens.");
+
+        var eligibleCount = session.CaseFile.Suspects.Count(s => session.IsEligibleSaloonPersonOfInterestCandidate(s));
+        parts.Add($"{eligibleCount} suspect(s) are currently eligible as saloon POI candidates.");
+
+        return string.Join(" ", parts);
     }
 }

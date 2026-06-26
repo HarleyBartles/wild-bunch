@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import { getAvailablePanels } from "./DevPanelRegistry";
+import { getAvailablePanels, getDefaultPanelId } from "./DevPanelRegistry";
 import { useDevSurface } from "./DevSurfaceContext";
+import type { DevSurface } from "./DevSurfaceContext";
 
 interface DevOverlayProps {
   open: boolean;
@@ -12,22 +13,37 @@ interface DevOverlayProps {
 export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
   const surface = useDevSurface();
   const availablePanels = useMemo(() => getAvailablePanels(surface), [surface]);
+  const defaultPanelId = useMemo(() => getDefaultPanelId(surface), [surface]);
   const [activePanelId, setActivePanelId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousSurfaceRef = useRef<DevSurface | null>(null);
+  const userSelectedRef = useRef(false);
 
-  // Auto-switch to an available panel when the current one becomes unavailable
+  // When the surface changes, reset to the surface-owner default.
+  // When the current panel becomes unavailable, switch to the default.
+  // User manual selection is respected until the surface changes.
   useEffect(() => {
     if (availablePanels.length === 0) {
       setActivePanelId(null);
       return;
     }
+
+    // Surface changed — reset to default per dev-overlay doctrine
+    if (previousSurfaceRef.current !== surface) {
+      previousSurfaceRef.current = surface;
+      userSelectedRef.current = false;
+      setActivePanelId(defaultPanelId);
+      return;
+    }
+
+    // Current panel became unavailable — switch to default
     const stillAvailable = availablePanels.some((p) => p.id === activePanelId);
     if (!stillAvailable) {
-      setActivePanelId(availablePanels[0].id);
+      setActivePanelId(defaultPanelId);
     }
-  }, [availablePanels, activePanelId]);
+  }, [availablePanels, activePanelId, defaultPanelId, surface]);
 
   useEffect(() => {
     if (!open) {
@@ -89,7 +105,11 @@ export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
                   key={panel.id}
                   type="button"
                   $active={panel.id === activePanel?.id}
-                  onClick={() => setActivePanelId(panel.id)}
+                  aria-pressed={panel.id === activePanel?.id}
+                  onClick={() => {
+                    userSelectedRef.current = true;
+                    setActivePanelId(panel.id);
+                  }}
                 >
                   {panel.label}
                 </Tab>

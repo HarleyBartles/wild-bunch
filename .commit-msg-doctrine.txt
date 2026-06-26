@@ -1,0 +1,18 @@
+BUNCH-90: dev-overlay doctrine, mesh policy, gate-aware eligibility, saloon panel refactor
+
+- Install binding dev-overlay doctrine at .agents/dev-overlay/DOCTRINE.md
+- Install mesh policy in root AGENTS.md (agents mesh = law, index mesh = navigation, README = human-facing)
+- Install index mesh across full folder tree (88 new INDEX.md files, all-or-nothing with documented exclusions)
+- Link doctrine from root AGENTS.md, .agents/INDEX.md, src/WildBunch.Web/AGENTS.md, docs/INDEX.md
+- Make true culprit saloon POI eligibility gate-aware via KillerReleaseState (no longer permanently barred)
+- Enrich SaloonDevContextDto: resolved suspect names, warrant facts, aliases, identifying facts, trait tags, citizen info, gate-aware hidden truth
+- Refactor SaloonDevPanel: candidate dropdowns replacing free-text, resolved names, warrant facts, useful hidden truth, force control renamed with scope description, FalseLead removed from UI
+- Add context mismatch detection warning when aggregate context differs from saloon surface
+- Default panel selection prefers surface owner over Session Audit
+- Add ADR-0033 (repo documentation mesh posture)
+- Update ADR-0030 and ADR-0032 for doctrine/mesh/gate-aware changes
+- Update frontend and backend tests for all changes
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

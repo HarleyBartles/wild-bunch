@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
@@ -166,6 +166,18 @@ describe("DevOverlay contextual panel visibility", () => {
   it("shows Saloon dev tab when surface is saloon", () => {
     renderOverlay(true, () => {}, 0, "saloon");
     expect(screen.getByRole("button", { name: /saloon dev/i })).toBeInTheDocument();
+  });
+
+  it("defaults to Saloon dev (not Session Audit) when surface is saloon", async () => {
+    renderOverlay(true, () => {}, 0, "saloon");
+    // The Saloon dev tab should be the active/selected panel after the effect runs
+    await waitFor(() => {
+      const saloonTab = screen.getByRole("button", { name: /saloon dev/i });
+      expect(saloonTab).toHaveAttribute("aria-pressed", "true");
+    });
+    // Session Audit should be present but NOT the default
+    const auditTab = screen.getByRole("button", { name: /session audit/i });
+    expect(auditTab).not.toHaveAttribute("aria-pressed", "true");
   });
 
   it("does not show Travel dev tab when surface is town", () => {

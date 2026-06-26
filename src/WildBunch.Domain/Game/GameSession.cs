@@ -3204,7 +3204,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (suspect.Id.Equals(CaseFile.TrueCulpritId))
         {
-            return false;
+            // Gate-aware: the true culprit is barred from saloon POI until the killer-release gate opens.
+            // Once the killer trail is released, the true culprit becomes a valid saloon POI candidate.
+            return CaseFile.KillerReleaseState.IsReleased;
         }
 
         if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
@@ -3230,7 +3232,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (suspect.Id.Equals(CaseFile.TrueCulpritId))
         {
-            return "True culprit - can never appear as a saloon POI.";
+            // Gate-aware: the true culprit is gated out until the killer-release gate opens.
+            var killerRelease = CaseFile.KillerReleaseState;
+            if (killerRelease.IsReleased)
+            {
+                return null; // Eligible — killer trail is released
+            }
+
+            return killerRelease.StatusText;
         }
 
         if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
