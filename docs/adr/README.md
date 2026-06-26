@@ -92,6 +92,9 @@ decision can be both `architecture` and `persistence`, or both `gameplay` and
 - [ADR-0027 UI v0.1 SPA shell, routing, and player/debug separation](ADR-0027-ui-v0-1-spa-shell-routing-and-player-debug-separation.md)
 - [ADR-0028 Onion, DDD, CQRS, Event Sourcing, and projections posture](ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md)
 - [ADR-0029 Heat is future lawman pressure, not trail danger](ADR-0029-heat-is-future-lawman-pressure-not-trail-danger.md)
+- [ADR-0030 Dev overlay and dev endpoint namespace](ADR-0030-dev-overlay-and-dev-endpoint-namespace.md)
+- [ADR-0031 Event-sourced dev travel controls](ADR-0031-event-sourced-dev-travel-controls.md)
+- [ADR-0032 Event-sourced dev saloon controls](ADR-0032-event-sourced-dev-saloon-controls.md)
 
 ## Current Working Set
 

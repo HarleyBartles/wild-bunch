@@ -105,4 +105,41 @@ public sealed class GameApiHiddenTruthTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", devContextPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", devContextPayload, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task DevSaloonContextDeliberatelyExposesHiddenTruth_AndPlayerApiDoesNot()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(createdSession);
+
+        // The dev saloon-context endpoint deliberately exposes hidden culprit truth
+        // (TrueCulpritId, IsTrueCulprit, suspect eligibility) per ADR-0030 §7 and ADR-0032.
+        // This is the first dev endpoint to exercise the player-vs-dev truth boundary.
+        var devSaloonResponse = await client.GetAsync($"/api/dev/sessions/{createdSession!.Id}/saloon-context");
+        devSaloonResponse.EnsureSuccessStatusCode();
+        var devSaloonPayload = await devSaloonResponse.Content.ReadAsStringAsync();
+
+        // Dev DTO MUST contain hidden truth markers
+        Assert.Contains("\"trueCulpritId\"", devSaloonPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isTrueCulprit\"", devSaloonPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"hiddenTruth\"", devSaloonPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isEligibleSaloonPoi\"", devSaloonPayload, StringComparison.OrdinalIgnoreCase);
+
+        // Player APIs MUST NOT contain hidden truth markers (re-verify the boundary)
+        var createPayload = await createResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
+
+        var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
+        var journalPayload = await journalResponse.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
+    }
 }

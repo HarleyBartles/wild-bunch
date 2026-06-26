@@ -8,6 +8,7 @@
 
 - 2026-06-25 - live: Dev overlay foundation implemented. Toggleable DevOverlay drawer in AppShell replaces DebugCockpitRoute. Dev endpoints under /api/dev/ with centralized DevRoleGuard. SessionAuditDevPanel as first contextual panel. Panel registry pattern established for future travel/saloon dev panels. Shell chrome (AppShell, Hud, GlobalOverlays) migrated to styled-components; global tokens and reset moved to SASS partials.
 - 2026-06-25 - live: TravelDevPanel added as second panel via the registry pattern (BUNCH-89, ADR-0031). Dev travel endpoints under /api/dev/sessions/{id}/travel-context, /travel/force-override, /travel/clear-override. The panel registry pattern from point 5 is now exercised by a real second panel.
+- 2026-06-26 - live: SaloonDevPanel added as third panel (BUNCH-90, ADR-0032). Dev saloon endpoints under /api/dev/sessions/{id}/saloon-context, /saloon/force-override, /saloon/clear-override. This is the first dev panel to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) through the §7 player-vs-dev boundary. HiddenTruthDevDto is a separate dev-only DTO type, not a player DTO.
 
 ## Decision Type
 
