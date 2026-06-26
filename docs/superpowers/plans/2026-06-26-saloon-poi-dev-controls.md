@@ -24,6 +24,8 @@
 - Worker environment uses PowerShell; do not use `&&` for command chaining.
 - Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
 - The dev override is consumed once by the next `LookAroundSaloon()` call, then cleared from aggregate state.
+- Dev force commands are rejected when the current town has no saloon source available — overrides are contextual, not queued cross-town.
+- Dev force commands for a specific suspect are validated against the current saloon POI eligibility rules: the suspect must exist, must not be the true culprit, and if the suspect has a known warrant, their presence state must be AvailableInTown or GoneToGround. Dev inspection can show why a suspect is ineligible, but dev force must not break core saloon/culprit invariants.
 
 ---
 
@@ -237,9 +239,13 @@ public sealed record DevSaloonOverride(
 {
     /// <summary>
     /// Force the next look-around to spot a specific suspect by ID.
-    /// The suspect must exist in the case file. Normal eligibility checks
-    /// (not the true culprit, warrant/presence state) are bypassed by the
-    /// dev override — the dev is explicitly choosing who appears.
+    /// The suspect must exist in the case file AND must be a valid saloon
+    /// POI candidate under the current domain rules: not the true culprit,
+    /// and if the suspect has a known warrant, their presence state must be
+    /// AvailableInTown or GoneToGround. The aggregate command method
+    /// validates these rules at force time and rejects ineligible suspects.
+    /// Dev inspection can show why a suspect is ineligible, but dev force
+    /// must not break core saloon/culprit invariants. See BUNCH-90.
     /// </summary>
     public static DevSaloonOverride ForSuspect(SuspectId suspectId)
         => new(DevSaloonPoiKind.Suspect, suspectId);
@@ -372,6 +378,7 @@ git commit -m "BUNCH-90: add DevSaloonOverride record and dev domain events"
 - If the saloon is not available, the override is NOT consumed (the look-around fails first).
 - If the saloon is available, the override IS consumed — it replaces both the spent-source repeat path and the normal candidate-selection path.
 - The `DevSaloonOverrideConsumed` event is emitted before the `SaloonPersonOfInterestSpotted` event, in the same command execution. The forced POI shape is built from the captured override value before the consumed event clears the field (same capture-before-consume pattern as travel at `GameSession.cs:1267`).
+- **Suspect eligibility is validated at force time** (in `ForceDevSaloonOverride`), not at consume time. The consume path trusts that the forced suspect was already validated when the override was set. This is safe because the override is session-owned state that can only be set through the aggregate command method, and the eligibility rules (true culprit exclusion, warrant/presence) are stable between force and consume within the same town visit.
 
 - [ ] **Step 1: Write failing domain tests**
 
@@ -548,6 +555,96 @@ public sealed class DevSaloonOverrideTests
         Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideConsumed>());
     }
 
+    // --- Rejection tests: dev force must not break saloon/culprit invariants ---
+
+    [Fact]
+    public void ForceDevSaloonOverride_RejectsTrueCulpritAsSuspect()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        // The true culprit is suspect-2 in the test factory (see GetSaloonDevContextHandlerTests)
+        var trueCulpritId = session.CaseFile.TrueCulpritId;
+        Assert.NotNull(trueCulpritId);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(trueCulpritId!.Value)));
+
+        Assert.Contains("true culprit", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.PendingDevSaloonOverride);
+        Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideForced>());
+    }
+
+    [Fact]
+    public void ForceDevSaloonOverride_RejectsUnknownSuspectId()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("nonexistent-suspect"))));
+
+        Assert.Contains("unknown suspect", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.PendingDevSaloonOverride);
+        Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideForced>());
+    }
+
+    [Fact]
+    public void ForceDevSaloonOverride_RejectsWhenNoSaloonInCurrentTown()
+    {
+        var session = TestSessionFactory.CreateWithNoSaloon();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen()));
+
+        Assert.Contains("no saloon", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.PendingDevSaloonOverride);
+        Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideForced>());
+    }
+
+    [Fact]
+    public void ForceDevSaloonOverride_RejectsIneligibleSuspect_WithWarrantAndBadPresence()
+    {
+        // This test requires a session where a suspect has a known warrant but
+        // their presence state is not AvailableInTown or GoneToGround.
+        // Use TestSessionFactory to create a session with a suspect whose
+        // warrant is known but presence is e.g. Captured or Fled.
+        // If the test factory does not directly support this setup, create
+        // the session and manually advance the suspect's presence state
+        // through the appropriate domain method before calling ForceDevSaloonOverride.
+        //
+        // Implementation note: inspect TestSessionFactory for a helper that
+        // creates a suspect with a known warrant and a non-eligible presence
+        // state. If none exists, use the seed system to create a session
+        // where the suspect's warrant is known (e.g. via ReadWantedPosters)
+        // and then advance their presence to an ineligible state. The exact
+        // setup depends on the domain methods available for presence state
+        // transitions — check TryGetWantedSuspectPresenceState and the
+        // methods that mutate _wantedSuspectPresenceLedger.
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        // TODO: Set up a suspect with a known warrant and ineligible presence.
+        // For now, this test is a placeholder that documents the requirement.
+        // The implementer should replace the setup with a real ineligible
+        // suspect scenario and verify the rejection.
+        //
+        // The expected assertion pattern:
+        // var ex = Assert.Throws<InvalidOperationException>(() =>
+        //     session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(ineligibleSuspectId)));
+        // Assert.Contains("presence state", ex.Message, StringComparison.OrdinalIgnoreCase);
+        // Assert.Null(session.PendingDevSaloonOverride);
+    }
+
+    [Fact]
+    public void ForceDevSaloonOverride_ForAnySuspect_DoesNotReject_WhenEligibleCandidatesExist()
+    {
+        // ForAnySuspect (null ForcedSuspectId) does not do suspect-specific
+        // validation — the consume path uses normal candidate selection,
+        // which already enforces eligibility. So this should succeed.
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForAnySuspect());
+
+        Assert.NotNull(session.PendingDevSaloonOverride);
+        Assert.Single(session.UncommittedEvents.OfType<DevSaloonOverrideForced>());
+    }
+
     [Fact]
     public void RehydrateFromEvents_WithDevSaloonOverrideForced_ReconstructsOverrideState()
     {
@@ -636,6 +733,27 @@ Add after `ClearDevTravelOverride()` (after line 924):
 /// Dev command: forces the next saloon look-around to use the given override.
 /// Produces a DevSaloonOverrideForced event. The override is consumed once by
 /// the next LookAroundSaloon. See BUNCH-90.
+///
+/// Validation rules (enforced at force time, not consume time):
+/// - Rejects if a journey is active.
+/// - Rejects if the current town has no saloon source available
+///   (CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround) is false).
+///   This matches BUNCH-90's requirement that saloon/POI controls appear only
+///   when saloon/town POI context is relevant. The override is not queued
+///   cross-town — it is a contextual dev control for the current town.
+/// - For Suspect kind with a specific ForcedSuspectId:
+///   - Rejects if the suspect ID does not match any suspect in the case file.
+///   - Rejects if the suspect is the true culprit (CaseFile.TrueCulpritId).
+///   - Rejects if the suspect has a known warrant but their presence state
+///     is not AvailableInTown or GoneToGround.
+///   These rules mirror IsEligibleSaloonPersonOfInterestCandidate() at
+///   GameSession.cs:3019. Dev force must not break core saloon/culprit
+///   invariants. The dev query can show why a suspect is ineligible, but
+///   the command refuses to force an ineligible suspect.
+/// - For Suspect kind with no ForcedSuspectId (ForAnySuspect): no suspect-
+///   specific validation needed — the consume path uses normal candidate
+///   selection, which already enforces eligibility.
+/// - For Citizen and FalseLead kinds: no suspect validation needed.
 /// </summary>
 public void ForceDevSaloonOverride(DevSaloonOverride overrideValue)
 {
@@ -643,6 +761,43 @@ public void ForceDevSaloonOverride(DevSaloonOverride overrideValue)
     if (IsJourneyModal())
     {
         throw new InvalidOperationException("Cannot force a saloon override while a journey is active.");
+    }
+
+    if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
+    {
+        throw new InvalidOperationException("Cannot force a saloon override: the current town has no saloon.");
+    }
+
+    if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
+    {
+        var suspect = CaseFile.Suspects.FirstOrDefault(s => s.Id.Equals(overrideValue.ForcedSuspectId.Value));
+        if (suspect is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot force saloon override: unknown suspect ID '{overrideValue.ForcedSuspectId.Value}'.");
+        }
+
+        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
+        {
+            throw new InvalidOperationException(
+                "Cannot force saloon override: the true culprit never appears as a saloon POI.");
+        }
+
+        if (TryGetKnownWarrantForSuspect(suspect.Id, out _))
+        {
+            if (!_wantedSuspectPresenceLedger.TryGetState(suspect.Id, out var presenceState))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot force saloon override: suspect '{suspect.Name}' has a known warrant but no presence state recorded.");
+            }
+
+            if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot force saloon override: suspect '{suspect.Name}' has presence state {presenceState}, " +
+                    "but must be AvailableInTown or GoneToGround.");
+            }
+        }
     }
 
     ProduceEvent(new DevSaloonOverrideForced
@@ -872,7 +1027,7 @@ This preserves the exact same normal-path behavior (steps 4-6 are identical to t
 - [ ] **Step 9: Run domain tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaloonOverrideTests"`
-Expected: PASS — all 12 tests green.
+Expected: PASS — all 17 tests green.
 
 - [ ] **Step 10: Run full domain test suite to verify no regressions**
 
@@ -1338,6 +1493,64 @@ public sealed class ForceSaloonOverrideHandlerTests
         Assert.Equal(DevSaloonPoiKind.Citizen, reloaded.PendingDevSaloonOverride!.ForcedKind);
         Assert.Null(reloaded.PendingDevSaloonOverride.ForcedSuspectId);
     }
+
+    [Fact]
+    public async Task HandleAsync_RejectsTrueCulpritAsForcedSuspect()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        repository.Seed(session);
+
+        var trueCulpritId = session.CaseFile.TrueCulpritId;
+        Assert.NotNull(trueCulpritId);
+
+        var handler = new ForceSaloonOverrideHandler(repository, repository);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.HandleAsync(new ForceSaloonOverrideCommand(
+                session.Id.Value,
+                DevSaloonPoiKind.Suspect,
+                trueCulpritId)));
+
+        // No store call — the domain rejected the command
+        Assert.Equal(0, repository.StoreCalls);
+    }
+
+    [Fact]
+    public async Task HandleAsync_RejectsUnknownSuspectId()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        repository.Seed(session);
+
+        var handler = new ForceSaloonOverrideHandler(repository, repository);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.HandleAsync(new ForceSaloonOverrideCommand(
+                session.Id.Value,
+                DevSaloonPoiKind.Suspect,
+                new SuspectId("nonexistent-suspect"))));
+
+        Assert.Equal(0, repository.StoreCalls);
+    }
+
+    [Fact]
+    public async Task HandleAsync_RejectsForce_WhenNoSaloonInCurrentTown()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = TestSessionFactory.CreateWithNoSaloon();
+        repository.Seed(session);
+
+        var handler = new ForceSaloonOverrideHandler(repository, repository);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.HandleAsync(new ForceSaloonOverrideCommand(
+                session.Id.Value,
+                DevSaloonPoiKind.Citizen,
+                ForcedSuspectId: null)));
+
+        Assert.Equal(0, repository.StoreCalls);
+    }
 }
 ```
 
@@ -1666,6 +1879,49 @@ public sealed class DevSaloonEndpointTests
             $"/api/dev/sessions/{createdSession.Id}/saloon-context");
         Assert.Null(devContext!.PendingDevOverride);
     }
+
+    [Fact]
+    public async Task ForceSaloonOverride_Returns400_WhenForcingTrueCulprit()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(createdSession);
+
+        // Get the dev context to find the true culprit ID
+        var devContext = await client.GetFromJsonAsync<SaloonDevContextDto>(
+            $"/api/dev/sessions/{createdSession!.Id}/saloon-context");
+        Assert.NotNull(devContext!.TrueCulpritId);
+
+        var forceResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/saloon/force-override",
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Suspect", ForcedSuspectId: devContext.TrueCulpritId));
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, forceResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ForceSaloonOverride_Returns400_WhenForcingUnknownSuspect()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        scenario.AssertReady();
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(createdSession);
+
+        var forceResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession!.Id}/saloon/force-override",
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Suspect", ForcedSuspectId: "nonexistent-suspect"));
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, forceResponse.StatusCode);
+    }
 }
 ```
 
@@ -1796,7 +2052,7 @@ Expected: PASS — existing replay tests still green.
 The replay tests (`RehydrateFromEvents_WithDevSaloonOverrideForced_ReconstructsOverrideState`, `RehydrateFromEvents_AfterSaloonConsumption_HasNoPendingOverride`, `RehydrateFromEvents_WithNoDevSaloonOverride_HasNoPendingOverride`) were added in Task 2 Step 1. After adding the persistence serializer entries, these tests exercise the full persistence round-trip path. Verify they still pass:
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaloonOverrideTests"`
-Expected: PASS — all 12 tests green, including the three replay tests.
+Expected: PASS — all 17 tests green, including the three replay tests.
 
 - [ ] **Step 8: Run full domain test suite**
 
@@ -2051,36 +2307,45 @@ export function SaloonDevPanel() {
 
       <Section>
         <SectionTitle>Force next saloon override</SectionTitle>
-        <Field>
-          <Label>Kind:</Label>
-          <Select value={kind} onChange={(e) => setKind(e.target.value)}>
-            {POI_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {kind === "Suspect" && (
-          <Field>
-            <Label>Suspect ID:</Label>
-            <Input
-              type="text"
-              value={suspectId}
-              onChange={(e) => setSuspectId(e.target.value)}
-              placeholder="(first eligible if blank)"
-            />
-          </Field>
+        {data?.saloonAvailable ? (
+          <>
+            <Field>
+              <Label>Kind:</Label>
+              <Select value={kind} onChange={(e) => setKind(e.target.value)}>
+                {POI_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            {kind === "Suspect" && (
+              <Field>
+                <Label>Suspect ID:</Label>
+                <Input
+                  type="text"
+                  value={suspectId}
+                  onChange={(e) => setSuspectId(e.target.value)}
+                  placeholder="(first eligible if blank)"
+                />
+              </Field>
+            )}
+            <ButtonRow>
+              <Button type="button" onClick={handleForce} disabled={actionPending}>
+                Force override
+              </Button>
+              <Button type="button" onClick={handleClear} disabled={actionPending}>
+                Clear override
+              </Button>
+            </ButtonRow>
+            {error && <ErrorText>{error}</ErrorText>}
+          </>
+        ) : (
+          <MutedText>
+            Saloon not available in current town — force controls disabled.
+            Hidden truth and suspect info are still shown for debugging.
+          </MutedText>
         )}
-        <ButtonRow>
-          <Button type="button" onClick={handleForce} disabled={actionPending}>
-            Force override
-          </Button>
-          <Button type="button" onClick={handleClear} disabled={actionPending}>
-            Clear override
-          </Button>
-        </ButtonRow>
-        {error && <ErrorText>{error}</ErrorText>}
       </Section>
     </Container>
   );
@@ -2285,7 +2550,7 @@ git commit -m "BUNCH-90: add SaloonDevPanel with force/clear controls to dev ove
 Add a new dated status entry to the Dated Status History in `docs/adr/ADR-0030-dev-overlay-and-dev-endpoint-namespace.md`:
 
 ```markdown
-- 2026-06-26 - live (BUNCH-90): Second contextual dev module added. SaloonDevPanel in the dev overlay with dev endpoints for saloon-context query, force-override, and clear-override. New typed domain events DevSaloonOverrideForced, DevSaloonOverrideCleared, and DevSaloonOverrideConsumed. Dev saloon override is session-owned aggregate state consumed once by the next LookAroundSaloon. Normal saloon generation unchanged when no override is active. Dev DTOs separate from player DTOs. The saloon-context dev endpoint is the first dev endpoint to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) per ADR-0030 §7, guarded by DevRoleGuard and separated from player DTOs. Player-facing APIs remain clean of dev override state and hidden truth.
+- 2026-06-26 - live (BUNCH-90): Second contextual dev module added. SaloonDevPanel in the dev overlay with dev endpoints for saloon-context query, force-override, and clear-override. New typed domain events DevSaloonOverrideForced, DevSaloonOverrideCleared, and DevSaloonOverrideConsumed. Dev saloon override is session-owned aggregate state consumed once by the next LookAroundSaloon. Normal saloon generation unchanged when no override is active. Dev DTOs separate from player DTOs. The saloon-context dev endpoint is the first dev endpoint to deliberately expose hidden culprit truth (TrueCulpritId, suspect eligibility) per ADR-0030 §7, guarded by DevRoleGuard and separated from player DTOs. Player-facing APIs remain clean of dev override state and hidden truth. Dev force commands validate against current saloon POI eligibility rules: reject unknown suspect IDs, reject the true culprit, reject suspects with ineligible warrant/presence state, and reject force when the current town has no saloon. Dev inspection can show why a suspect is ineligible, but dev force must not break core saloon/culprit invariants.
 ```
 
 - [ ] **Step 2: Update ADR INDEX**
@@ -2358,7 +2623,7 @@ Expected: 0 errors, 0 warnings (or only pre-existing warnings).
 - [ ] **Step 2: Run full domain test suite**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests`
-Expected: All tests pass including new `DevSaloonOverrideTests` (12 tests) and existing `GameSessionSaloonPersonOfInterestTests`.
+Expected: All tests pass including new `DevSaloonOverrideTests` (17 tests) and existing `GameSessionSaloonPersonOfInterestTests`.
 
 - [ ] **Step 3: Run full application test suite**
 
@@ -2400,9 +2665,11 @@ Additionally, verify the full sequence by inspecting committed events in a test:
 public void EventStreamProof_ForceConsumeLookAroundConfront_ShowsCompleteSequence()
 {
     var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+    // Use suspect-1, which is a valid eligible saloon POI candidate (not the true culprit).
+    // The true culprit is suspect-2 — forcing it would be rejected by the domain.
     var suspectId = new SuspectId("suspect-1");
 
-    // 1. Force a suspect override
+    // 1. Force a suspect override (validated at force time: exists, not true culprit, eligible)
     session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
     session.MarkEventsCommitted();
 
@@ -2476,7 +2743,9 @@ This plan does not require splitting. The work is a single coherent slice: one d
 
 If the saloon POI forcing reveals missing domain concepts, split conditions are:
 
-1. **If forcing a specific suspect by ID requires bypassing eligibility checks that are deeply embedded in the confrontation flow (not just the look-around flow)**, split the confrontation-bypass work into a follow-up issue. The current plan only bypasses eligibility in `LookAroundSaloon()` — the confrontation flow (`ConfrontSaloonPersonOfInterest`) still runs normally. If the dev needs to force a confrontation outcome (e.g., force surrender vs flee), that is a separate dev control surface and should be a follow-up.
+1. **If forcing a specific suspect by ID requires bypassing eligibility checks that are deeply embedded in the confrontation flow (not just the look-around flow)**, split the confrontation-bypass work into a follow-up issue. The current plan does NOT bypass eligibility — forced suspects are validated against the same rules as normal candidate selection (not the true culprit, warrant/presence state). The confrontation flow (`ConfrontSaloonPersonOfInterest`) still runs normally. If the dev needs to force a confrontation outcome (e.g., force surrender vs flee), that is a separate dev control surface and should be a follow-up.
+
+4. **If the `ForceDevSaloonOverride_RejectsIneligibleSuspect_WithWarrantAndBadPresence` test cannot be set up with the current test factory**, the implementer should either extend `TestSessionFactory` with a helper for ineligible-presence suspects or use the seed system to create the scenario. If the setup is too complex for this slice, the test may be deferred to a follow-up with an explicit `AMBER` note — but the domain validation logic itself must still be implemented and the true-culprit and unknown-suspect rejection tests must pass.
 
 2. **If the `FalseLead` kind needs to produce a different citizen descriptor or confrontation behavior than the normal citizen path**, split the false-lead-specific logic into a follow-up. The current plan treats `FalseLead` as semantically identical to `Citizen` — the false-lead outcome comes from the normal confrontation flow when the player declares a wrong wanted identity on a citizen POI. If a distinct false-lead POI shape is needed, that requires new domain concepts beyond the current saloon seams.
 
