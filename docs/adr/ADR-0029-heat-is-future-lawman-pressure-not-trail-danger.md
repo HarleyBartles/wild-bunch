@@ -79,7 +79,7 @@ ADR-0013 warned that "travel wording could become misleading if it starts implyi
 
 ## Implementation Status or Plan
 
-Implemented in BUNCH-85. See `.superpowers/plans/2026-06-24-bunch-85-heat-lawman-pressure.md`.
+Implemented in BUNCH-85. See `.agents/superpowers/plans/2026-06-24-bunch-85-heat-lawman-pressure.md`.
 
 ## References
 

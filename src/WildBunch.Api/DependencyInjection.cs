@@ -68,6 +68,9 @@ public static class DependencyInjection
         services.AddScoped<GetTravelDevContextHandler>();
         services.AddScoped<ForceTravelOverrideHandler>();
         services.AddScoped<ClearTravelOverrideHandler>();
+        services.AddScoped<GetSaloonDevContextHandler>();
+        services.AddScoped<ForceSaloonOverrideHandler>();
+        services.AddScoped<ClearSaloonOverrideHandler>();
 
         return services;
     }

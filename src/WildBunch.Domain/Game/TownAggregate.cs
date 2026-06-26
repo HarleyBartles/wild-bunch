@@ -29,8 +29,6 @@ public sealed class TownAggregate
 
     public TownSourceCatalog Sources => Definition.Sources;
 
-    public bool SupportsWantedPosters => (Services & TownServices.NoticeBoard) != 0;
-
     public IReadOnlyList<AvailableAction> GetInvestigationActions()
         => Sources.GetInvestigationActions(Services);
 

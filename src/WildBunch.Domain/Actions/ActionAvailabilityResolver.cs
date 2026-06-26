@@ -14,7 +14,8 @@ public sealed class ActionAvailabilityResolver
         {
             new(AvailableActionKind.Travel, "Travel"),
             new(AvailableActionKind.ViewMap, "View map"),
-            new(AvailableActionKind.ViewJournal, "View journal")
+            new(AvailableActionKind.ViewJournal, "View journal"),
+            new(AvailableActionKind.ReadWantedPosters, "Read wanted posters")
         };
 
         if ((currentTown.Services & TownServices.Supplies) != 0)
@@ -35,11 +36,6 @@ public sealed class ActionAvailabilityResolver
         if ((currentTown.Services & TownServices.Telegraph) != 0)
         {
             availableActions.Add(new AvailableAction(AvailableActionKind.SendTelegram, "Send telegram"));
-        }
-
-        if ((currentTown.Services & TownServices.NoticeBoard) != 0)
-        {
-            availableActions.Add(new AvailableAction(AvailableActionKind.ReadWantedPosters, "Read wanted posters"));
         }
 
         availableActions.AddRange(currentTown.Sources.GetInvestigationActions(currentTown.Services));

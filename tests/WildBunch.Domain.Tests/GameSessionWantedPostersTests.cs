@@ -75,21 +75,27 @@ public sealed class GameSessionWantedPostersTests
     }
 
     [Fact]
-    public void ReadingWantedPostersInUnsupportedTownFailsAndDoesNotMutateClues()
+    public void ReadingWantedPostersInTownWithoutNoticeBoardStillSucceeds()
     {
+        // Every town has a sheriff's office. ReadWantedPosters is always available,
+        // even in a town with TownServices.None. The action should succeed and
+        // reveal the same warrants/clues as in a town with NoticeBoard.
         var session = CreateSession(TownServices.None);
+
+        // Prove the precondition: the town has no NoticeBoard service.
+        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
 
         var result = session.ReadWantedPosters();
 
-        Assert.False(result.Success);
-        Assert.False(result.SessionChanged);
-        Assert.Empty(session.CaseFile.KnownClues);
-        Assert.Single(session.CaseFile.PublicClues);
-        Assert.Empty(session.CaseFile.KnownWarrants);
-        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
-        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
-        Assert.Equal(0, session.Clock.Turn);
-        Assert.Single(session.LogEntries);
+        Assert.True(result.Success);
+        Assert.True(result.SessionChanged);
+        Assert.Single(session.CaseFile.KnownWarrants);
+        Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Single(session.CaseFile.KnownClues);
+        Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Single(session.CaseFile.PublicWarrants);
+        Assert.Single(session.CaseFile.DiscoveredSuspectIds);
+        Assert.Contains(new SuspectId("suspect-1"), session.CaseFile.DiscoveredSuspectIds);
     }
 
     [Fact]

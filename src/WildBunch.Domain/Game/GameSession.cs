@@ -40,6 +40,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly TownAggregate _currentTown;
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
     private DevTravelOverride? _pendingDevTravelOverride;
+    private DevSaloonOverride? _pendingDevSaloonOverride;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
@@ -124,6 +125,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Consumed once by the next AdvanceJourneyDay. See BUNCH-89.
     /// </summary>
     internal DevTravelOverride? PendingDevTravelOverride => _pendingDevTravelOverride;
+
+    /// <summary>
+    /// Pending dev override for the next saloon look-around. Dev-only state.
+    /// Consumed once by the next LookAroundSaloon. See BUNCH-90.
+    /// </summary>
+    internal DevSaloonOverride? PendingDevSaloonOverride => _pendingDevSaloonOverride;
 
     [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
@@ -362,6 +369,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 break;
             case DevTravelOverrideConsumed dtc2:
                 Apply(dtc2);
+                break;
+            case DevSaloonOverrideForced dsf:
+                Apply(dsf);
+                break;
+            case DevSaloonOverrideCleared dsc:
+                Apply(dsc);
+                break;
+            case DevSaloonOverrideConsumed dsc2:
+                Apply(dsc2);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -671,6 +687,40 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Applies a DevSaloonOverrideForced event. Sets the pending dev saloon override.
+    /// Dev-only event - does not affect gameplay state directly. See BUNCH-90.
+    /// </summary>
+    internal void Apply(DevSaloonOverrideForced e)
+    {
+        _pendingDevSaloonOverride = new DevSaloonOverride(
+            e.ForcedKind,
+            e.ForcedSuspectId);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevSaloonOverrideCleared event. Clears the pending dev saloon override.
+    /// Dev-only event. See BUNCH-90.
+    /// </summary>
+    internal void Apply(DevSaloonOverrideCleared e)
+    {
+        _pendingDevSaloonOverride = null;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevSaloonOverrideConsumed event. Clears the pending dev saloon override.
+    /// This is the replay-safe consumption path: replaying Forced -> Consumed ->
+    /// SaloonPersonOfInterestSpotted reconstructs the correct final state with no
+    /// pending override. Dev-only event - not a gameplay outcome. See BUNCH-90.
+    /// </summary>
+    internal void Apply(DevSaloonOverrideConsumed e)
+    {
+        _pendingDevSaloonOverride = null;
+        _version++;
+    }
+
+    /// <summary>
     /// Adjusts player food by a signed delta. Positive deltas add food; negative
     /// deltas remove food. Used by travel Apply methods for additive food deltas.
     /// </summary>
@@ -917,10 +967,73 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         if (_pendingDevTravelOverride is null)
         {
-            return; // No-op if nothing to clear — idempotent
+            return; // No-op if nothing to clear - idempotent
         }
 
         ProduceEvent(new DevTravelOverrideCleared());
+    }
+
+    /// <summary>
+    /// Dev command: forces the next saloon look-around to use the given override.
+    /// Produces a DevSaloonOverrideForced event. The override is consumed once by
+    /// the next LookAroundSaloon. Validates suspect eligibility at force time.
+    /// See BUNCH-90.
+    /// </summary>
+    public void ForceDevSaloonOverride(DevSaloonOverride overrideValue)
+    {
+        ArgumentNullException.ThrowIfNull(overrideValue);
+        if (IsJourneyModal())
+        {
+            throw new InvalidOperationException("Cannot force a saloon override while a journey is active.");
+        }
+
+        // Validate specific-suspect eligibility at force time.
+        // Dev force must not break core saloon/culprit invariants.
+        // Uses the same gate-aware eligibility as the candidate list:
+        // IsEligibleSaloonPersonOfInterestCandidate. The true culprit is gated
+        // out while the killer-release gate is locked, but becomes eligible
+        // once the gate opens. No special permanent true-culprit rejection.
+        if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
+        {
+            var suspectId = overrideValue.ForcedSuspectId.Value;
+
+            // Reject unknown suspect IDs.
+            if (!CaseFile.Suspects.Any(s => s.Id == overrideValue.ForcedSuspectId))
+            {
+                throw new InvalidOperationException(
+                    $"Unknown suspect ID: {suspectId.Value}. Cannot force a saloon override for a suspect that does not exist.");
+            }
+
+            // Use the same gate-aware eligibility as the candidate list.
+            var suspect = CaseFile.Suspects.First(s => s.Id == overrideValue.ForcedSuspectId);
+            if (!IsEligibleSaloonPersonOfInterestCandidate(suspect))
+            {
+                var reason = GetSaloonPoiIneligibilityReason(suspect);
+                throw new InvalidOperationException(
+                    $"Cannot force a saloon override for suspect {suspectId.Value} ({suspect.Name}). " +
+                    $"{reason ?? "Suspect is not eligible as a saloon POI candidate."}");
+            }
+        }
+
+        ProduceEvent(new DevSaloonOverrideForced
+        {
+            ForcedKind = overrideValue.ForcedKind,
+            ForcedSuspectId = overrideValue.ForcedSuspectId
+        });
+    }
+
+    /// <summary>
+    /// Dev command: clears any pending saloon override.
+    /// Produces a DevSaloonOverrideCleared event. See BUNCH-90.
+    /// </summary>
+    public void ClearDevSaloonOverride()
+    {
+        if (_pendingDevSaloonOverride is null)
+        {
+            return; // No-op if nothing to clear - idempotent
+        }
+
+        ProduceEvent(new DevSaloonOverrideCleared());
     }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
@@ -2452,11 +2565,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTown.SupportsWantedPosters)
-        {
-            return ReadWantedPostersResult.Failed("There are no wanted posters here.");
-        }
-
         EnterActionContext(TownActionContext.SheriffOffice);
 
         if (CurrentTownVisit.WantedPostersSpent)
@@ -2543,16 +2651,75 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
-        {
-            return CaseInvestigationResult.Failed("There is no saloon here.");
-        }
-
-        // Enter saloon context AFTER availability check, BEFORE local action resolution.
+        // Enter saloon context BEFORE local action resolution.
         // Emits TownActionContextEntered event if context changed (advances turn).
-        // If no saloon exists, we already returned above — no context event, no turn advance.
         EnterActionContext(TownActionContext.Saloon);
 
+        // Dev override: capture the pending override before producing the consumed event,
+        // because ProduceEvent(new DevSaloonOverrideConsumed()) calls Apply() which clears
+        // _pendingDevSaloonOverride. The forced POI must be built from the captured value.
+        // See BUNCH-90.
+        var pendingDevOverride = _pendingDevSaloonOverride;
+
+        if (pendingDevOverride is not null)
+        {
+            ProduceEvent(new DevSaloonOverrideConsumed());
+
+            // Build the forced POI from the captured override value.
+            // The consumed event has already cleared _pendingDevSaloonOverride.
+            if (pendingDevOverride.ForcedKind is DevSaloonPoiKind.Suspect)
+            {
+                Suspect? forcedSuspect = null;
+                if (pendingDevOverride.ForcedSuspectId is not null)
+                {
+                    // Specific suspect was forced - validated at force time.
+                    forcedSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id == pendingDevOverride.ForcedSuspectId);
+                }
+
+                // If no specific suspect or the specific suspect is not found, use normal candidate selection.
+                if (forcedSuspect is null && pendingDevOverride.ForcedSuspectId is null)
+                {
+                    TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out forcedSuspect);
+                }
+
+                if (forcedSuspect is not null)
+                {
+                    var descriptor = SaloonPersonOfInterestDescriptor.Describe(forcedSuspect, CaseFile);
+                    var spotMessage = $"You look around the saloon and spot {descriptor}.";
+                    ProduceEvent(new SaloonPersonOfInterestSpotted
+                    {
+                        SourceKind = InvestigationSourceKind.SaloonLookAround,
+                        TownId = CurrentTown.TownId,
+                        Message = spotMessage,
+                        SuspectId = forcedSuspect.Id,
+                        Descriptor = descriptor,
+                        PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                        RecordLog = true
+                    });
+                    return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
+                }
+            }
+            else
+            {
+                // Citizen - spots a generic town citizen.
+                // The false-lead outcome comes from the normal confrontation flow
+                // when the player declares a wrong wanted identity on a citizen POI.
+                var forcedCitizenDescriptor = DescribeTownCitizen(CurrentTown);
+                var forcedCitizenMessage = $"You look around the saloon and spot {forcedCitizenDescriptor}.";
+                ProduceEvent(new SaloonPersonOfInterestSpotted
+                {
+                    SourceKind = InvestigationSourceKind.SaloonLookAround,
+                    TownId = CurrentTown.TownId,
+                    Message = forcedCitizenMessage,
+                    Descriptor = forcedCitizenDescriptor,
+                    PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+                    RecordLog = false
+                });
+                return CaseInvestigationResult.Succeeded(forcedCitizenMessage, sessionChanged: true);
+            }
+        }
+
+        // Normal path: no dev override active.
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))
         {
             var repeatMessage = "You look around the saloon again, but nobody of interest is here.";
@@ -2885,7 +3052,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return warrant.Terms.KnownAliases.Any(alias => string.Equals(alias, targetSuspect.Name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private bool TryGetKnownWarrantForSuspect(SuspectId suspectId, [NotNullWhen(true)] out Warrant? warrant)
+    internal bool TryGetKnownWarrantForSuspect(SuspectId suspectId, [NotNullWhen(true)] out Warrant? warrant)
     {
         var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(suspectId));
         if (targetSuspect is null)
@@ -3016,13 +3183,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return false;
     }
 
-    private bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
+    internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
     {
         ArgumentNullException.ThrowIfNull(suspect);
 
         if (suspect.Id.Equals(CaseFile.TrueCulpritId))
         {
-            return false;
+            // Gate-aware: the true culprit is barred from saloon POI until the killer-release gate opens.
+            // Once the killer trail is released, the true culprit becomes a valid saloon POI candidate.
+            return CaseFile.KillerReleaseState.IsReleased;
         }
 
         if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
@@ -3036,6 +3205,44 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         return presenceState is WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround;
+    }
+
+    /// <summary>
+    /// Dev-only: describes why a suspect is ineligible as a saloon POI candidate.
+    /// Returns null if the suspect is eligible. See BUNCH-90.
+    /// </summary>
+    internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+
+        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
+        {
+            // Gate-aware: the true culprit is gated out until the killer-release gate opens.
+            var killerRelease = CaseFile.KillerReleaseState;
+            if (killerRelease.IsReleased)
+            {
+                return null; // Eligible — killer trail is released
+            }
+
+            return killerRelease.StatusText;
+        }
+
+        if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
+        {
+            return null; // Eligible
+        }
+
+        if (!_wantedSuspectPresenceLedger.TryGetState(suspect.Id, out var presenceState))
+        {
+            return "Has known warrant but no tracked presence state.";
+        }
+
+        if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
+        {
+            return $"Has known warrant but presence state is {presenceState} (must be AvailableInTown or GoneToGround).";
+        }
+
+        return null; // Eligible
     }
 
     private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)

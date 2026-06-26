@@ -65,7 +65,8 @@ public sealed class ActionAvailabilityResolverTests
 
         var result = resolver.Resolve(session);
 
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        // ReadWantedPosters is always available - every town has a sheriff's office.
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);

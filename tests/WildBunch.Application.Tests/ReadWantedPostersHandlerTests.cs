@@ -56,8 +56,11 @@ public sealed class ReadWantedPostersHandlerTests
     }
 
     [Fact]
-    public async Task ReadWantedPostersReturnsFailureWithoutSavingWhenActionUnavailable()
+    public async Task ReadWantedPostersSucceedsEvenWithoutNoticeBoardService()
     {
+        // Every town has a sheriff's office. ReadWantedPosters is always available,
+        // even in a town with TownServices.None. The action should succeed and
+        // reveal warrants/clues just like in a town with NoticeBoard.
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession(TownServices.None);
         session.MarkEventsCommitted();
@@ -66,14 +69,14 @@ public sealed class ReadWantedPostersHandlerTests
 
         var result = await handler.HandleAsync(new ReadWantedPostersCommand(session.Id.Value));
 
-        Assert.False(result.Success);
-        Assert.Equal(0, repository.StoreCalls);
-        Assert.Equal(0, repository.CommitCalls);
-        Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Empty(result.WantedPosters);
-        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
-        Assert.Single(result.CurrentJournal.LogEntries);
+        Assert.True(result.Success);
+        Assert.Equal(1, repository.StoreCalls);
+        Assert.Equal(1, repository.CommitCalls);
+        Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(result.WantedPosters);
+        Assert.Equal("warrant-public-1", result.WantedPosters[0].PosterId);
+        Assert.Equal("Mira Cline", result.WantedPosters[0].TargetDisplayName);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", payload, StringComparison.OrdinalIgnoreCase);

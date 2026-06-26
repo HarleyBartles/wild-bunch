@@ -3,10 +3,47 @@
 ## Project
 - Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - Workers branch from current `main` and publish work through a PR.
+- Root index: `INDEX.md`
 - Docs index: `docs/INDEX.md`
-- Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `docs/unslop/backend-architecture.md`
+- Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - Repo-local skills index: `.agents/skills/INDEX.md`
-- Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`
+- Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
+- Required working knowledge for dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
+
+## Mesh Policy
+
+The repo uses three separate documentation/navigation surfaces with different jobs.
+
+### Agents mesh (`AGENTS.md` files)
+- Answer: what is lawful here, what differs from upstream law, and what upstream law still applies.
+- Scoped node mesh — not every folder needs an `AGENTS.md`. Add or update only at meaningful law-boundary nodes.
+- No `AGENTS.md` should be siloed; scoped nodes must be understandable from root agent law and the upstream nodes between here and root.
+
+### Index mesh (`INDEX.md` files)
+- Answer: what is here, where can I go, and how do I get back to root?
+- All-or-nothing if installed. Must cover the whole folder/file tree except explicit documented exclusions (generated/build/cache/local output, dependency folders, canonical skill-shaped folders where `SKILL.md` is the entrypoint).
+- Navigation surfaces, not doctrine. Orient traversal without duplicating source architecture.
+
+### README files
+- Human-facing. Not a mesh. Do not put operative agent law only in README.
+- If a README is stale or contains agent law, repair it or move the law into the agents mesh.
+
+### Self-healing rule
+If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repair the relevant mesh in the same PR or return AMBER with the exact deferred repair.
+
+## Agent-Generated Evidence (Screenshots, Browser Proof)
+- Browser screenshots and other agent-generated evidence artifacts must be written under `.agents/superpowers/output/screenshots/` (or a coherent `.agents/superpowers/output/...` subfolder).
+- Generated screenshot/image artifacts must NOT be committed to the repo. The `.agents/superpowers/output/screenshots/` folder is git-ignored via its local `.gitignore` (`*` with `!.gitignore` and `!INDEX.md` exceptions).
+- PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system if needed, but must not add them as repo files.
+- If a worker finds screenshots or generated evidence committed elsewhere in the repo (e.g. under `docs/`), they should remove/move them to the git-ignored `.agents/superpowers/output/` area as part of self-healing.
+- Superpowers plan records live under `.agents/superpowers/plans/`. Agent-facing superpowers material is consolidated under `.agents/superpowers/`, not at root `.superpowers/` or `docs/superpowers/`.
+
+## Unslop Profiles
+- Repo-wide unslop profiles live under `.agents/unslop/`.
+- Project-local unslop profiles live under `{project}/.agents/unslop/`.
+- Profile filenames are short lowercase kebab-case scope names. Do not include `unslop`, `profile`, or `unslop-profile` in the filename; the folder already says what it is.
+- Human docs may point to these profiles, but profiles themselves are agent-facing review/filter material.
+- Dev-overlay work should apply `.agents/unslop/dev-overlay.md` together with the backend and web unslop profiles where relevant.
 
 ## Branch + PR Workflow
 - Workers branch from current `main`.

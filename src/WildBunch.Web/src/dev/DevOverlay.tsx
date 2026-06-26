@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import { devPanels } from "./DevPanelRegistry";
+import { getAvailablePanels, getDefaultPanelId } from "./DevPanelRegistry";
+import { useDevSurface } from "./DevSurfaceContext";
+import type { DevSurface } from "./DevSurfaceContext";
 
 interface DevOverlayProps {
   open: boolean;
@@ -9,10 +11,39 @@ interface DevOverlayProps {
 }
 
 export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
-  const [activePanelId, setActivePanelId] = useState(devPanels[0]?.id ?? null);
+  const surface = useDevSurface();
+  const availablePanels = useMemo(() => getAvailablePanels(surface), [surface]);
+  const defaultPanelId = useMemo(() => getDefaultPanelId(surface), [surface]);
+  const [activePanelId, setActivePanelId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousSurfaceRef = useRef<DevSurface | null>(null);
+  const userSelectedRef = useRef(false);
+
+  // When the surface changes, reset to the surface-owner default.
+  // When the current panel becomes unavailable, switch to the default.
+  // User manual selection is respected until the surface changes.
+  useEffect(() => {
+    if (availablePanels.length === 0) {
+      setActivePanelId(null);
+      return;
+    }
+
+    // Surface changed — reset to default per dev-overlay doctrine
+    if (previousSurfaceRef.current !== surface) {
+      previousSurfaceRef.current = surface;
+      userSelectedRef.current = false;
+      setActivePanelId(defaultPanelId);
+      return;
+    }
+
+    // Current panel became unavailable — switch to default
+    const stillAvailable = availablePanels.some((p) => p.id === activePanelId);
+    if (!stillAvailable) {
+      setActivePanelId(defaultPanelId);
+    }
+  }, [availablePanels, activePanelId, defaultPanelId, surface]);
 
   useEffect(() => {
     if (!open) {
@@ -46,12 +77,12 @@ export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
     return null;
   }
 
-  const activePanel = devPanels.find((p) => p.id === activePanelId) ?? devPanels[0];
+  const activePanel = availablePanels.find((p) => p.id === activePanelId) ?? availablePanels[0];
 
   return (
     <>
       <ClickAway $top={top} onClick={onClose} aria-hidden="true" data-testid="dev-click-away" />
-      <Drawer $expanded={expanded} $top={top} role="region" aria-label="Developer overlay">
+      <Drawer $expanded={expanded} $top={top} role="region" aria-label="Developer overlay" data-testid="dev-drawer">
         <DrawerHeader>
           <TitleGroup>
             <Eyebrow>Dev</Eyebrow>
@@ -68,19 +99,27 @@ export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
         </DrawerHeader>
         <DrawerBody>
           <Sidebar aria-label="Dev panels">
-            {devPanels.map((panel) => (
-              <Tab
-                key={panel.id}
-                type="button"
-                $active={panel.id === activePanel?.id}
-                onClick={() => setActivePanelId(panel.id)}
-              >
-                {panel.label}
-              </Tab>
-            ))}
+            {availablePanels.length > 0 ? (
+              availablePanels.map((panel) => (
+                <Tab
+                  key={panel.id}
+                  type="button"
+                  $active={panel.id === activePanel?.id}
+                  aria-pressed={panel.id === activePanel?.id}
+                  onClick={() => {
+                    userSelectedRef.current = true;
+                    setActivePanelId(panel.id);
+                  }}
+                >
+                  {panel.label}
+                </Tab>
+              ))
+            ) : (
+              <MutedText>No contextual dev panel for this surface.</MutedText>
+            )}
           </Sidebar>
-          <Content>
-            {activePanel ? activePanel.render() : <MutedText>No panels registered.</MutedText>}
+          <Content data-testid="dev-overlay-content">
+            {activePanel ? activePanel.render({ expanded }) : <MutedText>No contextual dev panel for this surface.</MutedText>}
           </Content>
         </DrawerBody>
       </Drawer>
@@ -114,7 +153,7 @@ const Drawer = styled.div<{ $expanded: boolean; $top: number }>`
   top: ${(props) => props.$top}px;
   left: 0;
   right: 0;
-  height: ${(props) => (props.$expanded ? `calc(100dvh - ${props.$top}px)` : "auto")};
+  height: ${(props) => (props.$expanded ? `calc(80dvh - ${props.$top}px)` : `calc(40dvh - ${props.$top}px)`)};
   max-height: calc(100dvh - ${(props) => props.$top}px);
   z-index: 1000;
   display: flex;

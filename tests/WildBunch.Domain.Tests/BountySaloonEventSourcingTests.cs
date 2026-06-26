@@ -18,7 +18,7 @@ namespace WildBunch.Domain.Tests;
 /// Event-sourcing tests for the BUNCH-80 bounty/saloon migration.
 /// Verifies that LookAroundSaloon produces typed events (SaloonPersonOfInterestSpotted)
 /// and that the clock advances via TownActionContextEntered, not via RecordCaseUpdate.
-/// See ADR-0028 and .superpowers/plans/2026-06-23-bunch-80-phase1-events-and-apply.md.
+/// See ADR-0028 and .agents/superpowers/plans/2026-06-23-bunch-80-phase1-events-and-apply.md.
 /// </summary>
 public sealed class BountySaloonEventSourcingTests
 {
@@ -63,19 +63,6 @@ public sealed class BountySaloonEventSourcingTests
         session.LookAroundSaloon();
 
         Assert.Equal(turnBefore + 1, session.Clock.Turn);
-    }
-
-    [Fact]
-    public void LookAroundSaloonNoSaloonDoesNotAdvanceTurnOrProduceEvent()
-    {
-        var session = TestSessionFactory.CreateWithNoSaloon();
-        var turnBefore = session.Clock.Turn;
-
-        var result = session.LookAroundSaloon();
-
-        Assert.False(result.Success);
-        Assert.Empty(session.UncommittedEvents);
-        Assert.Equal(turnBefore, session.Clock.Turn);
     }
 
     [Fact]

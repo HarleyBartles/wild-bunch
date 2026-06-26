@@ -282,26 +282,32 @@ function Invoke-TargetedTestLane {
     }
 
     if ($testArguments.Count -eq 0) {
-        throw "Usage: .\scripts\postgres-dev.ps1 test -- <dotnet test arguments>"
+        throw "Usage: .\scripts\postgres-dev.ps1 test -- <dotnet command or dotnet test arguments>"
     }
 
-    # Normalize: tolerate callers who include 'dotnet test' in the args.
-    # Both '.\scripts\postgres-dev.ps1 test -- --no-build' and
-    # '.\scripts\postgres-dev.ps1 test -- dotnet test --no-build' should run
-    # the same effective 'dotnet test --no-build' command.
-    if ($testArguments.Count -ge 2 -and $testArguments[0] -eq 'dotnet' -and $testArguments[1] -eq 'test') {
-        $testArguments = @($testArguments[2..($testArguments.Count - 1)])
+    # If the caller passed a full 'dotnet <subcommand>' (e.g. 'dotnet ef migrations list'),
+    # run it as-is. If the caller passed bare test arguments (e.g. '--no-build' or
+    # 'tests/WildBunch.Integration.Tests'), prepend 'dotnet test'.
+    # This means all of the following work:
+    #   .\scripts\postgres-dev.ps1 test -- --no-build
+    #   .\scripts\postgres-dev.ps1 test -- dotnet test --no-build
+    #   .\scripts\postgres-dev.ps1 test -- dotnet ef migrations list --project src/...
+    #   .\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build
+    $dotnetArguments = if ($testArguments[0] -eq 'dotnet') {
+        @($testArguments[1..($testArguments.Count - 1)])
+    } else {
+        @('test') + $testArguments
     }
 
     Initialize-PostgresValidationLane
 
     Invoke-WithValidationConnectionString {
-        Invoke-DotNetCommand (@('test') + $testArguments)
+        Invoke-DotNetCommand $dotnetArguments
     }
 
     Write-Host "PostgreSQL targeted test lane completed."
     Write-Host "Connection string: $ValidationConnectionString"
-    Write-Host "Direct PostgreSQL-backed dotnet test runs must either use this lane or export ConnectionStrings__WildBunchPostgresDb themselves."
+    Write-Host "Direct PostgreSQL-backed dotnet runs must either use this lane or export ConnectionStrings__WildBunchPostgresDb themselves."
 }
 
 switch ($Command) {

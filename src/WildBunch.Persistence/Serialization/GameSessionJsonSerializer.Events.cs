@@ -50,6 +50,9 @@ public sealed partial class GameSessionJsonSerializer
         nameof(DevTravelOverrideForced) => typeof(DevTravelOverrideForced),
         nameof(DevTravelOverrideCleared) => typeof(DevTravelOverrideCleared),
         nameof(DevTravelOverrideConsumed) => typeof(DevTravelOverrideConsumed),
+        nameof(DevSaloonOverrideForced) => typeof(DevSaloonOverrideForced),
+        nameof(DevSaloonOverrideCleared) => typeof(DevSaloonOverrideCleared),
+        nameof(DevSaloonOverrideConsumed) => typeof(DevSaloonOverrideConsumed),
         _ => throw new InvalidOperationException($"Unknown domain event type: {eventType}")
     };
 
