@@ -1,8 +1,47 @@
 import { useEffect, useMemo, useState } from "react";
+import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
 import { useGameSession } from "../state/useGameSession";
 import { InventoryPanel } from "../components/InventoryPanel";
+import {
+  FlowSurface,
+  FlowNotice,
+  FlowError,
+  BackButton,
+  Panel,
+  PanelHead,
+  Stack,
+  Button,
+  DestinationCard,
+  Muted,
+} from "../components/ui/sharedStyled";
+
+const PlaceHeader = styled.header`
+  display: grid;
+  gap: 12px;
+  padding: 24px 0 4px;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const TravelPrepBody = styled.div`
+  display: grid;
+  gap: 20px;
+`;
+
+const TravelPrepRide = styled.p`
+  font-size: 1.15rem;
+  margin: 0;
+`;
+
+const TravelPrepActions = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+`;
 
 interface TravelPrepSurfaceProps {
   onBack: () => void;
@@ -38,7 +77,9 @@ function connectedDestinations(session: GameSessionDto) {
     destinations.set(destinationTownId, { town, trailCount: 1 });
   }
 
-  return Array.from(destinations.values()).sort((left, right) => left.town.name.localeCompare(right.town.name));
+  return Array.from(destinations.values()).sort((left, right) =>
+    left.town.name.localeCompare(right.town.name),
+  );
 }
 
 export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
@@ -90,93 +131,96 @@ export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
     const rideDays = preview.baselineRideDays;
 
     return (
-      <div className="flow-surface flow-surface--travel-prep">
-        <div className="place-header">
-          <button
-            type="button"
-            className="back-button"
-            onClick={() => setSelectedDestId(null)}
-          >
+      <FlowSurface $variant="travel-prep">
+        <PlaceHeader>
+          <BackButton type="button" onClick={() => setSelectedDestId(null)}>
             ← Pick another destination
-          </button>
+          </BackButton>
           <h1>Prepare to ride</h1>
-        </div>
-        <div className="travel-prep-body">
-          <section className="panel">
-            <div className="panel-head">
+        </PlaceHeader>
+        <TravelPrepBody>
+          <Panel>
+            <PanelHead>
               <h2>{destination?.town.name ?? selectedDestId}</h2>
-            </div>
-            <div className="stack">
-              <p className="travel-prep-ride">
+            </PanelHead>
+            <Stack>
+              <TravelPrepRide>
                 That's a <strong>{rideDays}-day ride</strong>
                 {preview.travelMode === 1 ? " on horseback" : " on foot"}.
-              </p>
+              </TravelPrepRide>
               <InventoryPanel inventory={session.inventory} />
-              <div className="travel-prep-actions">
-                <button
+              <TravelPrepActions>
+                <Button
                   type="button"
-                  className="button button--secondary"
+                  $variant="secondary"
                   onClick={() => setSelectedDestId(null)}
                   disabled={loading}
                 >
                   Back to town
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="button button--primary"
+                  $variant="primary"
                   onClick={() => void handleTravel(selectedDestId)}
                   disabled={loading}
                 >
                   {loading ? "Setting out..." : "Start the ride"}
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-        {notice ? <p className="flow-notice">{notice}</p> : null}
-        {error ? <p className="flow-error">{error}</p> : null}
-      </div>
+                </Button>
+              </TravelPrepActions>
+            </Stack>
+          </Panel>
+        </TravelPrepBody>
+        {notice ? <FlowNotice>{notice}</FlowNotice> : null}
+        {error ? <FlowError>{error}</FlowError> : null}
+      </FlowSurface>
     );
   }
 
   // Destination selection screen
   return (
-    <div className="flow-surface flow-surface--travel-prep">
-      <div className="place-header">
-        <button type="button" className="back-button" onClick={onBack}>
+    <FlowSurface $variant="travel-prep">
+      <PlaceHeader>
+        <BackButton type="button" onClick={onBack}>
           ← Back to town
-        </button>
+        </BackButton>
         <h1>Hit the trail</h1>
-      </div>
-      <div className="travel-prep-body">
-        <div className="stack">
+      </PlaceHeader>
+      <TravelPrepBody>
+        <Stack>
           {destinations.length > 0 ? (
             destinations.map(({ town, trailCount }) => (
-              <button
+              <DestinationCard
                 key={town.id}
                 type="button"
-                className="destination-card"
                 onClick={() => setSelectedDestId(town.id)}
                 disabled={!gameId || loading}
               >
-                <div className="destination-card__body">
+                <div style={{ display: "grid", gap: "4px" }}>
                   <strong>{town.name}</strong>
-                  <p className="destination-route">
+                  <p
+                    style={{
+                      color: "var(--text)",
+                      fontSize: "0.88rem",
+                      lineHeight: "1.4",
+                    }}
+                  >
                     {previewLoading && selectedDestId === town.id
                       ? "Checking the route..."
                       : "Click to check the ride"}
                   </p>
                 </div>
-                <div className="destination-meta">
-                  <span>{trailCount} trail{trailCount === 1 ? "" : "s"}</span>
+                <div style={{ textAlign: "right", fontSize: "0.84rem" }}>
+                  <span>
+                    {trailCount} trail{trailCount === 1 ? "" : "s"}
+                  </span>
                 </div>
-              </button>
+              </DestinationCard>
             ))
           ) : (
-            <p className="muted">No trails lead out of this town.</p>
+            <Muted>No trails lead out of this town.</Muted>
           )}
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </TravelPrepBody>
+    </FlowSurface>
   );
 }

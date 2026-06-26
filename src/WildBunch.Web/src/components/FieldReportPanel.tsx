@@ -3,6 +3,7 @@ import { formatServices, formatGameStatus } from "../ui/formatters";
 import { InventoryPanel } from "./InventoryPanel";
 import { StoreOffersPanel } from "./StoreOffersPanel";
 import { TravelPanel } from "./TravelPanel";
+import { Grid, StatusCard, StatList } from "./ui/sharedStyled";
 
 interface FieldReportPanelProps {
   session: GameSessionDto;
@@ -26,10 +27,10 @@ export function FieldReportPanel({
   onTurnResult,
 }: FieldReportPanelProps) {
   return (
-    <div className="session-grid">
-      <article className="status-card">
+    <Grid>
+      <StatusCard>
         <h3>Field report</h3>
-        <dl className="stat-list">
+        <StatList>
           <div>
             <dt>Player</dt>
             <dd>{session.player.name}</dd>
@@ -46,12 +47,12 @@ export function FieldReportPanel({
             <dt>Lawman heat</dt>
             <dd>{session.pursuitState.heat}</dd>
           </div>
-        </dl>
-      </article>
+        </StatList>
+      </StatusCard>
 
-      <article className="status-card">
+      <StatusCard>
         <h3>Town details</h3>
-        <dl className="stat-list">
+        <StatList>
           <div>
             <dt>Current town</dt>
             <dd>{currentTown?.name ?? "Unknown"}</dd>
@@ -76,8 +77,8 @@ export function FieldReportPanel({
             <dt>Log entries</dt>
             <dd>{session.logEntries.length}</dd>
           </div>
-        </dl>
-      </article>
+        </StatList>
+      </StatusCard>
       <InventoryPanel inventory={session.inventory} />
       <StoreOffersPanel
         storeOffers={storeOffers}
@@ -93,6 +94,6 @@ export function FieldReportPanel({
           onTurnResult={onTurnResult}
         />
       ) : null}
-    </div>
+    </Grid>
   );
 }

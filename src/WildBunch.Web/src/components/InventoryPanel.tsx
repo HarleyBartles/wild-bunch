@@ -1,5 +1,13 @@
 import type { InventoryCapabilitiesDto, InventoryDto, InventoryItemDto } from "../api/types";
 import { formatCanteenState, formatCapabilityLabel, formatHorseTravelState, formatItemKind } from "../ui/formatters";
+import {
+  StatusCard,
+  StatList,
+  Stack,
+  ItemCard,
+  TagRow,
+  Tag,
+} from "./ui/sharedStyled";
 
 interface InventoryPanelProps {
   inventory: InventoryDto;
@@ -7,9 +15,9 @@ interface InventoryPanelProps {
 
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
   return (
-    <article className="status-card">
+    <StatusCard>
       <h3>Inventory</h3>
-      <dl className="stat-list">
+      <StatList>
         <div>
           <dt>Cash</dt>
           <dd>${inventory.wallet.cash.toFixed(2)}</dd>
@@ -30,24 +38,31 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           <dt>Capabilities</dt>
           <dd>{Object.values(inventory.capabilities).filter(Boolean).length}</dd>
         </div>
-      </dl>
-      <div className="stack">
+      </StatList>
+      <Stack style={{ marginTop: "16px" }}>
         {inventory.items.map((item: InventoryItemDto) => (
-          <div key={`${item.kind}-${item.horseState?.hunger ?? "none"}-${item.canteenState?.charges ?? "none"}`} className="compact-item">
+          <ItemCard key={`${item.kind}-${item.horseState?.hunger ?? "none"}-${item.canteenState?.charges ?? "none"}`}>
             <strong>
               {formatItemKind(item.kind)} x {item.quantity}
             </strong>
-            <p>{[item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null, item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null].filter(Boolean).join(" | ") || "No travel state"}</p>
-          </div>
+            <p style={{ margin: "4px 0 0", fontSize: "0.88rem", color: "var(--muted)" }}>
+              {[
+                item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null,
+                item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null,
+              ]
+                .filter(Boolean)
+                .join(" | ") || "No travel state"}
+            </p>
+          </ItemCard>
         ))}
-      </div>
-      <div className="tag-row">
+      </Stack>
+      <TagRow>
         {Object.entries(inventory.capabilities).map(([key, enabled]) => (
-          <span key={key} className="tag">
+          <Tag key={key}>
             {formatCapabilityLabel(key as keyof InventoryCapabilitiesDto)}: {enabled ? "Yes" : "No"}
-          </span>
+          </Tag>
         ))}
-      </div>
-    </article>
+      </TagRow>
+    </StatusCard>
   );
 }

@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import type {
   WantedPosterDto,
   WantedPosterFeatureDto,
@@ -5,6 +6,106 @@ import type {
   WantedPosterFeatureSalience,
 } from "../api/types";
 import { formatWarrantDisposition } from "../ui/formatters";
+import {
+  StatusCard,
+  PanelSubtitle,
+  Tag,
+  Eyebrow,
+  Muted,
+} from "./ui/sharedStyled";
+
+const PosterCard = styled.article`
+  padding: 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(62, 45, 20, 0.42), rgba(17, 15, 13, 0.2)),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(223, 159, 79, 0.26);
+`;
+
+const PosterFrame = styled.div`
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  gap: 16px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const PosterPortrait = styled.div`
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+  min-height: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(223, 159, 79, 0.26);
+  background:
+    radial-gradient(circle at top, rgba(223, 159, 79, 0.2), transparent 55%),
+    rgba(10, 9, 8, 0.45);
+
+  strong {
+    font-size: 1.15rem;
+    line-height: 1.1;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+`;
+
+const PosterContent = styled.div`
+  display: grid;
+  gap: 14px;
+`;
+
+const PosterHeader = styled.header`
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+
+  h4 {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+  }
+`;
+
+const PosterMeta = styled.div`
+  display: grid;
+  gap: 6px;
+
+  p {
+    margin: 0;
+    font-size: 0.94rem;
+  }
+`;
+
+const FeatureRow = styled.li`
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+
+  p {
+    margin: 2px 0 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+`;
+
+const FeatureList = styled.ul`
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
 
 interface WantedPosterSurfaceProps {
   wantedPosters: WantedPosterDto[];
@@ -47,15 +148,15 @@ function formatFeatureRenderMode(renderMode: WantedPosterFeatureRenderMode) {
 
 function WantedPosterFeatureRow({ feature }: { feature: WantedPosterFeatureDto }) {
   return (
-    <li className="wanted-poster__feature">
-      <div className="wanted-poster__feature-copy">
+    <FeatureRow>
+      <div>
         <strong>{formatFeatureSalience(feature.salience)}</strong>
         <p>{feature.text}</p>
       </div>
-      <div className="wanted-poster__feature-tags">
-        <span className="tag">{formatFeatureRenderMode(feature.renderMode)}</span>
+      <div>
+        <Tag>{formatFeatureRenderMode(feature.renderMode)}</Tag>
       </div>
-    </li>
+    </FeatureRow>
   );
 }
 
@@ -64,34 +165,40 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
   const textOnlyFeatures = poster.details.features.filter((feature) => feature.renderMode === 1);
 
   return (
-    <article className="wanted-poster-card">
-      <div className="wanted-poster-card__frame">
-        <div className="wanted-poster-card__portrait" aria-hidden="true">
-          <span className="wanted-poster-card__portrait-label">Wanted notice</span>
+    <PosterCard>
+      <PosterFrame>
+        <PosterPortrait aria-hidden="true">
+          <Eyebrow style={{ fontSize: "0.72rem", color: "var(--accent-strong)" }}>
+            Wanted notice
+          </Eyebrow>
           <strong>{poster.targetDisplayName}</strong>
           <p>
-            {portraitFeatures.length > 0 ? portraitFeatures[0].text : "Simple head-and-shoulders portrait cue"}
+            {portraitFeatures.length > 0
+              ? portraitFeatures[0].text
+              : "Simple head-and-shoulders portrait cue"}
           </p>
-        </div>
+        </PosterPortrait>
 
-        <div className="wanted-poster-card__content">
-          <header className="wanted-poster-card__header">
+        <PosterContent>
+          <PosterHeader>
             <div>
-              <p className="eyebrow">Public notice</p>
+              <Eyebrow>Public notice</Eyebrow>
               <h4>{poster.targetDisplayName}</h4>
-              <p className="wanted-poster-card__quick-view">
+              <p style={{ margin: 0, color: "var(--accent-strong)" }}>
                 {poster.quickView.headlineNameOrAlias} - {poster.quickView.headlineFeatureOrDescriptor}
               </p>
             </div>
-            {poster.publicSafeClassification ? <span className="tag">{poster.publicSafeClassification}</span> : null}
-          </header>
+            {poster.publicSafeClassification ? <Tag>{poster.publicSafeClassification}</Tag> : null}
+          </PosterHeader>
 
-          <div className="wanted-poster-card__meta">
+          <PosterMeta>
             <p>
-              <strong>Aliases:</strong> {poster.aliases.length > 0 ? poster.aliases.join(", ") : "None recorded"}
+              <strong>Aliases:</strong>{" "}
+              {poster.aliases.length > 0 ? poster.aliases.join(", ") : "None recorded"}
             </p>
             <p>
-              <strong>Disposition:</strong> {formatWarrantDisposition(poster.legalTerms.disposition)}
+              <strong>Disposition:</strong>{" "}
+              {formatWarrantDisposition(poster.legalTerms.disposition)}
             </p>
             <p>
               <strong>Bounty:</strong> {formatBounty(poster.legalTerms.bountyAmount)}
@@ -105,53 +212,65 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
             <p>
               <strong>Public origin:</strong> {poster.details.publicOrigin}
             </p>
-            <p>{poster.details.summary}</p>
-          </div>
+            <p style={{ marginTop: "4px" }}>{poster.details.summary}</p>
+          </PosterMeta>
 
-          <div className="wanted-poster-card__feature-block">
-            <div className="wanted-poster-card__section-head">
-              <h5>Feature notes</h5>
-              <p className="panel-subtitle">Public-safe hints keep the poster legible without exposing hidden truth.</p>
+          <div>
+            <div style={{ marginBottom: "10px" }}>
+              <h5 style={{ margin: 0, fontSize: "0.98rem" }}>Feature notes</h5>
+              <PanelSubtitle>
+                Public-safe hints keep the poster legible without exposing hidden truth.
+              </PanelSubtitle>
             </div>
             {poster.details.features.length > 0 ? (
-              <ul className="wanted-poster__feature-list">
+              <FeatureList>
                 {poster.details.features.map((feature) => (
-                  <WantedPosterFeatureRow key={`${poster.posterId}-${feature.text}-${feature.salience}`} feature={feature} />
+                  <WantedPosterFeatureRow
+                    key={`${poster.posterId}-${feature.text}-${feature.salience}`}
+                    feature={feature}
+                  />
                 ))}
-              </ul>
+              </FeatureList>
             ) : (
-              <p className="muted">No public feature notes were returned.</p>
+              <Muted>No public feature notes were returned.</Muted>
             )}
             {textOnlyFeatures.length > 0 ? (
-              <p className="wanted-poster-card__text-only-note">
+              <p
+                style={{
+                  marginTop: "10px",
+                  fontSize: "0.84rem",
+                  fontStyle: "italic",
+                  color: "var(--muted)",
+                }}
+              >
                 Text-only cues: {textOnlyFeatures.map((feature) => feature.text).join(", ")}
               </p>
             ) : null}
           </div>
-        </div>
-      </div>
-    </article>
+        </PosterContent>
+      </PosterFrame>
+    </PosterCard>
   );
 }
 
 export function WantedPosterSurface({ wantedPosters }: WantedPosterSurfaceProps) {
   return (
-    <article className="case-modal__section case-modal__section--wide">
-      <div className="case-modal__section-head">
-        <div>
-          <h3>Wanted posters</h3>
-          <p className="panel-subtitle">Public-safe sheriff notices, quick views, and feature notes from the current board.</p>
-        </div>
+    <StatusCard as="article" style={{ gridColumn: "1 / -1" }}>
+      <div style={{ marginBottom: "12px" }}>
+        <h3>Wanted posters</h3>
+        <PanelSubtitle>
+          Public-safe sheriff notices, quick views, and feature notes from the current board.
+        </PanelSubtitle>
       </div>
       {wantedPosters.length > 0 ? (
-        <div className="wanted-poster__list">
+        <div style={{ display: "grid", gap: "20px" }}>
           {wantedPosters.map((poster) => (
             <WantedPosterCard key={poster.posterId} poster={poster} />
           ))}
         </div>
       ) : (
-        <p className="muted">No wanted posters are known yet.</p>
+        <Muted>No wanted posters are known yet.</Muted>
       )}
-    </article>
+    </StatusCard>
   );
 }

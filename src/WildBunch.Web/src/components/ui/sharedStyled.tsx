@@ -116,6 +116,20 @@ export const Error = styled.div`
   border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
 `;
 
+export const Grid = styled.div<{ $cols?: number; $tabletCols?: number; $mobileCols?: number }>`
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(${({ $cols }) => $cols ?? 2}, minmax(0, 1fr));
+
+  @media (max-width: 1280px) {
+    grid-template-columns: repeat(${({ $tabletCols, $cols }) => $tabletCols ?? $cols ?? 2}, minmax(0, 1fr));
+  }
+
+  @media (max-width: 960px) {
+    grid-template-columns: repeat(${({ $mobileCols }) => $mobileCols ?? 1}, minmax(0, 1fr));
+  }
+`;
+
 export const Stack = styled.div`
   display: grid;
   gap: 12px;
@@ -160,7 +174,8 @@ export const Field = styled.div`
   display: grid;
   gap: 4px;
 
-  label {
+  label,
+  span {
     font-size: 0.82rem;
     color: var(--muted);
     text-transform: uppercase;
@@ -176,6 +191,75 @@ export const Field = styled.div`
     color: var(--text);
     font-size: 0.94rem;
   }
+`;
+
+export const ItemCard = styled.div`
+  padding: 14px 15px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+`;
+
+export const ActionRow = styled(ItemCard)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+`;
+
+export const DestinationCard = styled(ActionRow).attrs({ as: "button" })`
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease-out,
+    border-color 0.15s ease-out;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  p {
+    color: var(--text);
+  }
+
+  strong {
+    display: block;
+  }
+`;
+
+export const TagRow = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+`;
+
+export const Tag = styled.span`
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
 `;
 
 type FlowSurfaceVariant = "pre-session" | "town-hub" | "place" | "travel-prep" | "trail" | "arrival";

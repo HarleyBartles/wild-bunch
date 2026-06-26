@@ -1,5 +1,32 @@
+import styled from "styled-components";
 import { useGameSession } from "../../state/useGameSession";
 import { WantedPosterSurface } from "../../components/WantedPosterSurface";
+import {
+  FlowSurface,
+  FlowNotice,
+  FlowError,
+  BackButton,
+  Panel,
+  PanelHead,
+  Stack,
+  Button,
+  Muted,
+} from "../../components/ui/sharedStyled";
+
+const PlaceHeader = styled.header`
+  display: grid;
+  gap: 12px;
+  padding: 24px 0 4px;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const PlaceBody = styled.div`
+  display: grid;
+  gap: 20px;
+`;
 
 interface SheriffPlaceProps {
   onLeave: () => void;
@@ -24,52 +51,50 @@ export function SheriffPlace({ onLeave }: SheriffPlaceProps) {
   }
 
   return (
-    <div className="flow-surface flow-surface--place">
-      <div className="place-header">
-        <button type="button" className="back-button" onClick={onLeave}>
+    <FlowSurface $variant="place">
+      <PlaceHeader>
+        <BackButton type="button" onClick={onLeave}>
           ← Back to town
-        </button>
+        </BackButton>
         <h1>Sheriff Office</h1>
-      </div>
-      <div className="place-body">
-        <section className="panel">
-          <div className="panel-head">
+      </PlaceHeader>
+      <PlaceBody>
+        <Panel>
+          <PanelHead>
             <h2>Wanted posters</h2>
-          </div>
-          <div className="stack">
-            <button
+          </PanelHead>
+          <Stack>
+            <Button
               type="button"
-              className="button"
               onClick={handleReadWantedPosters}
               disabled={loading || !canReadWantedPosters}
             >
               {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
-            </button>
+            </Button>
             {wantedPosters.length > 0 ? (
               <WantedPosterSurface wantedPosters={wantedPosters} />
             ) : (
-              <p className="muted">No wanted posters read yet.</p>
+              <Muted>No wanted posters read yet.</Muted>
             )}
-          </div>
-        </section>
-        <section className="panel">
-          <div className="panel-head">
+          </Stack>
+        </Panel>
+        <Panel>
+          <PanelHead>
             <h2>Local records</h2>
-          </div>
-          <div className="stack">
-            <button
+          </PanelHead>
+          <Stack>
+            <Button
               type="button"
-              className="button"
               onClick={handleCheckLocalRecords}
               disabled={loading || !canCheckLocalRecords}
             >
               {busyMode === "investigating" ? "Checking..." : "Check local records"}
-            </button>
-          </div>
-        </section>
-        {notice ? <p className="flow-notice">{notice}</p> : null}
-        {error ? <p className="flow-error">{error}</p> : null}
-      </div>
-    </div>
+            </Button>
+          </Stack>
+        </Panel>
+        {notice ? <FlowNotice>{notice}</FlowNotice> : null}
+        {error ? <FlowError>{error}</FlowError> : null}
+      </PlaceBody>
+    </FlowSurface>
   );
 }

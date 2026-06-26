@@ -1,16 +1,17 @@
 import { WantedPosterSurface } from "../components/WantedPosterSurface";
+import { Panel, PanelHead, PanelSubtitle } from "../components/ui/sharedStyled";
 import { useGameSession } from "../state/useGameSession";
 
 export function WantedRoute() {
   const { wantedPosters } = useGameSession();
 
   return (
-    <section className="panel panel--wide">
-      <div className="panel-head">
+    <Panel $wide>
+      <PanelHead>
         <h2>Wanted posters</h2>
-        <span className="panel-subtitle">{wantedPosters.length} posted</span>
-      </div>
+        <PanelSubtitle as="span">{wantedPosters.length} posted</PanelSubtitle>
+      </PanelHead>
       <WantedPosterSurface wantedPosters={wantedPosters} />
-    </section>
+    </Panel>
   );
 }

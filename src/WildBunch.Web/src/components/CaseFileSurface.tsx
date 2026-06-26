@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react";
+import styled from "styled-components";
 import type { JournalDto } from "../api/types";
 import {
   formatCaseIdentityKind,
@@ -9,6 +10,74 @@ import {
   formatWarrantDisposition,
 } from "../ui/formatters";
 import { WantedPosterSurface } from "./WantedPosterSurface";
+import {
+  StatusCard,
+  ItemCard,
+  PanelSubtitle,
+  StatList,
+  Grid,
+  Muted,
+  Tag,
+  Stack,
+} from "./ui/sharedStyled";
+
+const ModalState = styled.div`
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+`;
+
+const AnchorList = styled.ul`
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.88rem;
+
+  li {
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  strong {
+    color: var(--muted);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+`;
+
+const LeadList = styled.ul`
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+
+  li {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    font-size: 0.84rem;
+    border-left: 2px solid var(--accent);
+  }
+`;
+
+const Minor = styled.span`
+  display: block;
+  font-size: 0.84rem;
+  color: var(--muted);
+`;
+
+const SectionHead = styled.div`
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+`;
 
 interface CaseFileSurfaceProps {
   journal: JournalDto | null;
@@ -140,13 +209,13 @@ function renderAnchorRows(rows: AnchorRow[]) {
   }
 
   return (
-    <ul className="case-modal__anchor-list">
+    <AnchorList>
       {rows.map((row) => (
         <li key={`${row.label}:${row.value}`}>
           <strong>{row.label}:</strong> {row.value}
         </li>
       ))}
-    </ul>
+    </AnchorList>
   );
 }
 
@@ -212,7 +281,11 @@ function normalizeText(text: string) {
 
 function formatDiscoveryBasis(basisSourceLabel: string | null | undefined) {
   const lower = normalizeText(basisSourceLabel ?? "");
-  if (lower.includes("notice board") || lower.includes("wanted poster") || lower.includes("wanted notice")) {
+  if (
+    lower.includes("notice board") ||
+    lower.includes("wanted poster") ||
+    lower.includes("wanted notice")
+  ) {
     return "Discovered from wanted poster";
   }
 
@@ -243,7 +316,9 @@ function findSuspectDiscoveryBasis(journal: JournalDto, suspectName: string) {
 
   const clue = journal.caseFile.knownClues.find((candidate) => {
     const descriptionMatches = normalizeText(candidate.description).includes(normalizedSuspectName);
-    const subjectMatches = candidate.anchors.subjects.some((subject) => normalizeText(subject.label) === normalizedSuspectName);
+    const subjectMatches = candidate.anchors.subjects.some(
+      (subject) => normalizeText(subject.label) === normalizedSuspectName,
+    );
     return descriptionMatches || subjectMatches;
   });
 
@@ -266,30 +341,22 @@ function Section({
   wide?: boolean;
 }) {
   return (
-    <article className={`case-modal__section${wide ? " case-modal__section--wide" : ""}`}>
-      <div className="case-modal__section-head">
-        <div>
-          <h3>{title}</h3>
-          {subtitle ? <p className="panel-subtitle">{subtitle}</p> : null}
-        </div>
-      </div>
+    <StatusCard as="article" style={wide ? { gridColumn: "1 / -1" } : undefined}>
+      <SectionHead>
+        <h3>{title}</h3>
+        {subtitle ? <PanelSubtitle>{subtitle}</PanelSubtitle> : null}
+      </SectionHead>
       {children}
-    </article>
+    </StatusCard>
   );
 }
 
-function Card({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <article className="case-modal__card">
-      <h4>{title}</h4>
+    <ItemCard as="article">
+      <h4 style={{ margin: "0 0 8px", fontSize: "0.98rem" }}>{title}</h4>
       {children}
-    </article>
+    </ItemCard>
   );
 }
 
@@ -313,7 +380,9 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
       return [];
     }
 
-    const activeEvidenceIds = new Set(activeJournal.caseFile.caseBoard.evidenceItems.map((evidence) => evidence.id));
+    const activeEvidenceIds = new Set(
+      activeJournal.caseFile.caseBoard.evidenceItems.map((evidence) => evidence.id),
+    );
     return activeJournal.caseFile.knownClues.filter((clue) => activeEvidenceIds.has(clue.id));
   }, [activeJournal]);
 
@@ -357,12 +426,13 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
 
     return activeJournal.caseFile.discoveredSuspects
       .map((suspect) => {
-        const basis = findSuspectDiscoveryBasis(activeJournal, suspect.name);
+        const suspectName = suspect.displayName || suspect.name;
+        const basis = findSuspectDiscoveryBasis(activeJournal, suspectName) || "Player observation";
         const record = activeJournal.caseFile.caseBoard.namedRecords.find(
-          (entry) => normalizeText(entry.displayName) === normalizeText(suspect.name),
+          (r) => normalizeText(r.displayName) === normalizeText(suspectName),
         );
 
-        return basis
+        return suspectName
           ? {
               suspect,
               basis,
@@ -374,11 +444,11 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
   }, [activeJournal]);
 
   if (loading && !activeJournal) {
-    return <div className="case-modal__state">Loading the latest case file...</div>;
+    return <ModalState>Loading the latest case file...</ModalState>;
   }
 
   if (!loading && !activeJournal) {
-    return <div className="case-modal__state">{error || "Load a game to inspect the case file."}</div>;
+    return <ModalState>{error || "Load a game to inspect the case file."}</ModalState>;
   }
 
   const caseJournal = activeJournal;
@@ -388,13 +458,18 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
   }
 
   return (
-    <div className="case-modal__grid">
-      <Section title="Overview" subtitle={`${formatClockContext(caseJournal)} - ${formatGameStatus(caseJournal.status)}`}>
-        <p className="case-summary">{caseJournal.caseFile.caseSummary}</p>
-        <p className="case-lead">
+    <Grid $cols={3} $tabletCols={2} $mobileCols={1}>
+      <Section
+        title="Overview"
+        subtitle={`${formatClockContext(caseJournal)} - ${formatGameStatus(caseJournal.status)}`}
+      >
+        <p style={{ margin: "0 0 12px", fontSize: "0.94rem", lineHeight: "1.5" }}>
+          {caseJournal.caseFile.caseSummary}
+        </p>
+        <p style={{ margin: "0 0 16px", fontSize: "0.88rem" }}>
           <strong>Opening lead:</strong> {caseJournal.caseFile.openingLead}
         </p>
-        <dl className="stat-list case-modal__stats">
+        <StatList style={{ marginBottom: "12px" }}>
           <div>
             <dt>Case state</dt>
             <dd>{caseJournal.caseFile.caseState.statusText}</dd>
@@ -413,7 +488,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             <dt>Status</dt>
             <dd>{formatGameStatus(caseJournal.status)}</dd>
           </div>
-        </dl>
+        </StatList>
       </Section>
 
       <Section
@@ -424,191 +499,216 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             : "No clue is explicitly tagged as culprit trail yet, so this board shows the strongest known leads."
         }
       >
-        <div className="stack">
+        <Stack>
           {trailClues.length > 0 ? (
             trailClues.map((clue, index) => (
-              <div key={`${clue.description}-${index}`} className="compact-item">
+              <ItemCard key={`${clue.description}-${index}`}>
                 <strong>{clue.description}</strong>
-                <p>{formatClueKind(clue.kind)}</p>
+                <p style={{ margin: "4px 0 0", fontSize: "0.84rem", color: "var(--muted)" }}>
+                  {formatClueKind(clue.kind)}
+                </p>
                 {clue.sourceLabel ? (
-                  <p>
+                  <Minor style={{ marginTop: "8px" }}>
                     <strong>Source:</strong> {clue.sourceLabel}
                     {clue.context ? ` - ${clue.context}` : ""}
-                  </p>
+                  </Minor>
                 ) : null}
-              </div>
+              </ItemCard>
             ))
           ) : (
-            <p className="muted">No clues have been recorded yet.</p>
+            <Muted>No clues have been recorded yet.</Muted>
           )}
-        </div>
+        </Stack>
       </Section>
 
       <Section title="Identity board" subtitle="Player-known identity threads, loose leads, and earned links." wide>
-        <div className="case-modal__identity-grid">
-          <div className="stack">
-            <div className="case-modal__section-head">
-              <div>
-                <h3>Named records</h3>
-                <p className="panel-subtitle">Wanted posters and other named records the player has earned.</p>
-              </div>
-            </div>
+        <Grid $cols={3} $tabletCols={2} $mobileCols={1}>
+          <Stack>
+            <SectionHead>
+              <h3>Named records</h3>
+              <PanelSubtitle>
+                Wanted posters and other named records the player has earned.
+              </PanelSubtitle>
+            </SectionHead>
             {caseJournal.caseFile.caseBoard.namedRecords.length > 0 ? (
               caseJournal.caseFile.caseBoard.namedRecords.map((record) => (
-                <article key={record.id} className="case-modal__card">
-                  <h4>{record.displayName}</h4>
-                  <p>
-                    <strong>Type:</strong> {formatCaseIdentityKind(record.kind)}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {formatCaseIdentityStatus(record.status)}
-                  </p>
+                <ItemCard key={record.id}>
+                  <h4 style={{ margin: 0, fontSize: "1rem" }}>{record.displayName}</h4>
+                  <Minor>Type: {formatCaseIdentityKind(record.kind)}</Minor>
+                  <Minor>Status: {formatCaseIdentityStatus(record.status)}</Minor>
                   {record.resolvedToDisplayName ? (
-                    <p>
-                      <strong>Resolved to:</strong> {record.resolvedToDisplayName}
-                    </p>
-                  ) : null}
+                    <Minor>Resolved to: {record.resolvedToDisplayName}</Minor>
+                  ) : (
+                    <Minor>No named record links this lead yet.</Minor>
+                  )}
                   {record.summaryLines.length > 0 ? (
-                    <ul className="case-modal__lead-list">
+                    <LeadList>
                       {record.summaryLines.map((line) => (
                         <li key={line}>{line}</li>
                       ))}
-                    </ul>
+                    </LeadList>
                   ) : null}
-                  {renderWarrantFacts(record)}
-                </article>
+                  <div style={{ marginTop: "10px", fontSize: "0.84rem" }}>
+                    {renderWarrantFacts(record)}
+                  </div>
+                </ItemCard>
               ))
             ) : (
-              <p className="muted">No named records have been earned yet.</p>
+              <Muted>No named records have been earned yet.</Muted>
             )}
-          </div>
+          </Stack>
 
-          <div className="stack">
-            <div className="case-modal__section-head">
-              <div>
-                <h3>Loose leads</h3>
-                <p className="panel-subtitle">Identity-bearing leads that have not resolved into a named record yet.</p>
-              </div>
-            </div>
+          <Stack>
+            <SectionHead>
+              <h3>Loose leads</h3>
+              <PanelSubtitle>
+                Identity-bearing leads that have not resolved into a named record yet.
+              </PanelSubtitle>
+            </SectionHead>
             {caseJournal.caseFile.caseBoard.looseLeads.length > 0 ? (
               caseJournal.caseFile.caseBoard.looseLeads.map((lead) => (
-                <article key={lead.id} className="case-modal__card">
-                  <h4>{lead.displayName}</h4>
-                  <p>
-                    <strong>Type:</strong> {formatCaseIdentityKind(lead.kind)}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {formatCaseIdentityStatus(lead.status)}
-                  </p>
+                <ItemCard key={lead.id}>
+                  <h4 style={{ margin: 0, fontSize: "0.94rem" }}>{lead.displayName}</h4>
+                  <Minor>Type: {formatCaseIdentityKind(lead.kind)}</Minor>
+                  <Minor>Status: {formatCaseIdentityStatus(lead.status)}</Minor>
                   {lead.resolvedToDisplayName ? (
-                    <p>
-                      <strong>Resolved to:</strong> {lead.resolvedToDisplayName}
-                    </p>
+                    <Minor>Resolved to: {lead.resolvedToDisplayName}</Minor>
                   ) : (
-                    <p className="case-modal__minor">No named record links this lead yet.</p>
+                    <Minor>No named record links this lead yet.</Minor>
                   )}
                   {lead.summaryLines.length > 0 ? (
-                    <ul className="case-modal__lead-list">
+                    <LeadList>
                       {lead.summaryLines.map((line) => (
                         <li key={line}>{line}</li>
                       ))}
-                    </ul>
+                    </LeadList>
                   ) : null}
-                </article>
+                </ItemCard>
               ))
             ) : (
-              <p className="muted">No loose leads have been logged yet.</p>
+              <Muted>No loose leads have been logged yet.</Muted>
             )}
-          </div>
-        </div>
+          </Stack>
 
-        <div className="case-modal__identity-suspects">
-          <div className="case-modal__section-head">
-            <div>
-              <h3>Discovered suspects</h3>
-              <p className="panel-subtitle">Only suspects the player has already uncovered are shown.</p>
-            </div>
-          </div>
-          <div className="stack">
+          <Stack>
+            <SectionHead>
+              <h3>Evidence items</h3>
+              <PanelSubtitle>Material evidence collected and linked to the case board.</PanelSubtitle>
+            </SectionHead>
+            {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
+              caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
+                <ItemCard key={evidence.id}>
+                  <h4 style={{ margin: 0, fontSize: "0.94rem" }}>{evidence.displayName}</h4>
+                  <p style={{ margin: "6px 0 0", fontSize: "0.88rem" }}>{evidence.description}</p>
+                  <Minor style={{ marginTop: "8px" }}>Source: {evidence.sourceLabel}</Minor>
+                </ItemCard>
+              ))
+            ) : (
+              <Muted>No evidence items have been linked yet.</Muted>
+            )}
+          </Stack>
+        </Grid>
+
+        <div style={{ marginTop: "20px" }}>
+          <SectionHead>
+            <h3>Discovered suspects</h3>
+            <PanelSubtitle>Only suspects the player has already uncovered are shown.</PanelSubtitle>
+          </SectionHead>
+          <Grid $cols={2} $mobileCols={1}>
             {visibleDiscoveredSuspects.length > 0 ? (
               visibleDiscoveredSuspects.map(({ suspect, basis, record }) => (
-                  <div key={suspect.name} className="compact-item">
-                    <strong>{suspect.name}</strong>
-                    <p>{formatSuspectStatus(suspect.status)}</p>
-                    <p className="case-modal__minor">{basis}</p>
-                    {record ? (
-                      <>
-                        {record.summaryLines.length > 0 ? (
-                          <ul className="case-modal__lead-list">
-                            {record.summaryLines.map((line) => (
-                              <li key={line}>{line}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {renderWarrantFacts(record)}
-                      </>
-                    ) : null}
+                <ItemCard key={suspect.displayName || suspect.name}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
+                    <h4 style={{ margin: 0, fontSize: "1rem" }}>{suspect.displayName || suspect.name}</h4>
+                    <Tag>{formatSuspectStatus(suspect.status)}</Tag>
                   </div>
-                ))
+                  <Minor>{basis}</Minor>
+                  {record ? (
+                    <>
+                      {record.summaryLines.length > 0 ? (
+                        <LeadList>
+                          {record.summaryLines.map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </LeadList>
+                      ) : null}
+                      <div style={{ marginTop: "10px", fontSize: "0.84rem" }}>
+                        {renderWarrantFacts(record)}
+                      </div>
+                    </>
+                  ) : null}
+                </ItemCard>
+              ))
             ) : (
-              <p className="muted">No suspects have been confirmed from player-known evidence yet.</p>
+              <Muted>No suspects have been confirmed from player-known evidence yet.</Muted>
             )}
-          </div>
+          </Grid>
         </div>
       </Section>
 
       <Section title="Warrants" subtitle="Known warrants and their safe terms.">
-        <div className="stack">
+        <Stack>
           {activeKnownWarrants.length > 0 ? (
             activeKnownWarrants.map((warrant) => (
               <Card key={`${warrant.targetName}-${warrant.issuingSource}`} title={warrant.targetName}>
-                <p>
+                <p style={{ fontSize: "0.9rem" }}>
                   <strong>Bounty:</strong> {formatBounty(warrant.bountyAmount)}
                 </p>
-                <p>
+                <p style={{ fontSize: "0.88rem" }}>
                   <strong>Disposition:</strong> {formatWarrantDisposition(warrant.disposition)}
                 </p>
-                <p>
+                <p style={{ fontSize: "0.88rem" }}>
                   <strong>Source:</strong> {warrant.issuingSource}
                 </p>
-                <p>{warrant.summary || "No warrant summary recorded."}</p>
+                <p style={{ marginTop: "8px", fontSize: "0.9rem" }}>
+                  {warrant.summary || "No warrant summary recorded."}
+                </p>
               </Card>
             ))
           ) : (
-            <p className="muted">No warrants have been logged yet.</p>
+            <Muted>No warrants have been logged yet.</Muted>
           )}
-        </div>
+        </Stack>
       </Section>
 
       <Section title="Evidence stack" subtitle="All player-known clues with their safe anchors." wide>
-        <div className="stack">
+        <Stack>
           {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
             caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
               <Card key={evidence.id} title={evidence.summary}>
-                <p>
+                <p style={{ fontSize: "0.88rem" }}>
                   <strong>Kind:</strong> {evidence.kindLabel}
                 </p>
-                <p>
+                <p style={{ fontSize: "0.88rem" }}>
                   <strong>Source:</strong> {evidence.sourceLabel}
                 </p>
-                {evidence.identityBearing ? <p className="case-modal__minor">Identity-bearing evidence</p> : <p className="case-modal__minor">Color-only observation</p>}
+                {evidence.identityBearing ? (
+                  <Minor>Identity-bearing evidence</Minor>
+                ) : (
+                  <Minor>Color-only observation</Minor>
+                )}
                 {renderAnchorRows(buildAnchorRows(evidence.anchors))}
               </Card>
             ))
           ) : (
-            <p className="muted">No clues recorded yet.</p>
+            <Muted>No clues recorded yet.</Muted>
           )}
-        </div>
+        </Stack>
       </Section>
 
       <WantedPosterSurface wantedPosters={activeWantedPosters} />
 
-      <Section title="Deductions and contradictions" subtitle="A safe comparison board for known facts and unresolved links." wide>
-        <div className="case-modal__deductions">
-          <p>
-            Compare the opening lead, the clue stack, and the discovered suspects. This board stays anchored to player-known facts and does not guess at hidden truth.
+      <Section
+        title="Deductions and contradictions"
+        subtitle="A safe comparison board for known facts and unresolved links."
+        wide
+      >
+        <div style={{ display: "grid", gap: "20px" }}>
+          <p style={{ margin: 0, fontSize: "0.94rem", color: "var(--muted)" }}>
+            Compare the opening lead, the clue stack, and the discovered suspects. This board stays
+            anchored to player-known facts and does not guess at hidden truth.
           </p>
-          <dl className="stat-list case-modal__stats">
+          <StatList>
             <div>
               <dt>Clues</dt>
               <dd>{visibleKnownClues.length}</dd>
@@ -625,21 +725,23 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
               <dt>Contradictions</dt>
               <dd>{contradictionClues.length > 0 ? contradictionClues.length : "None recorded"}</dd>
             </div>
-          </dl>
+          </StatList>
           {contradictionClues.length > 0 ? (
-            <div className="stack">
+            <Stack>
               {contradictionClues.map((clue, index) => (
-                <div key={`${clue.description}-${index}`} className="compact-item">
+                <ItemCard key={`${clue.description}-${index}`}>
                   <strong>{clue.description}</strong>
-                  <p>{clue.sourceLabel ? clue.sourceLabel : "Contradiction note"}</p>
-                </div>
+                  <p style={{ fontSize: "0.84rem", color: "var(--muted)" }}>
+                    {clue.sourceLabel ? clue.sourceLabel : "Contradiction note"}
+                  </p>
+                </ItemCard>
               ))}
-            </div>
+            </Stack>
           ) : (
-            <p className="case-modal__minor">No explicit contradictions have been logged yet.</p>
+            <Minor>No explicit contradictions have been logged yet.</Minor>
           )}
         </div>
       </Section>
-    </div>
+    </Grid>
   );
 }

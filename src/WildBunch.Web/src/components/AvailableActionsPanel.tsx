@@ -1,6 +1,16 @@
 import { AvailableActionKind } from "../api/types";
 import { formatActionKind } from "../ui/formatters";
 import { useGameSession } from "../state/useGameSession";
+import {
+  Panel,
+  PanelHead,
+  PanelSubtitle,
+  Stack,
+  ActionRow,
+  Field,
+  Muted,
+  Button,
+} from "./ui/sharedStyled";
 
 export function AvailableActionsPanel() {
   const {
@@ -30,19 +40,19 @@ export function AvailableActionsPanel() {
   } = useGameSession();
 
   return (
-    <section className="panel">
-      <div className="panel-head">
+    <Panel>
+      <PanelHead>
         <h2>Available actions</h2>
-        <span className="panel-subtitle">{actions.length} fetched</span>
-      </div>
-      <div className="stack">
+        <PanelSubtitle as="span">{actions.length} fetched</PanelSubtitle>
+      </PanelHead>
+      <Stack>
         {session?.activeSaloonPersonOfInterest ? (
-          <div className="action-row">
+          <ActionRow>
             <div>
               <strong>Person of interest spotted</strong>
               <p>{session.activeSaloonPersonOfInterest.descriptor} is waiting in the saloon.</p>
               {wantedPosters.length > 0 ? (
-                <label className="field" style={{ marginTop: "0.75rem" }}>
+                <Field as="label" style={{ marginTop: "0.75rem" }}>
                   <span>Declare wanted identity</span>
                   <select
                     value={declaredWantedIdentityHandle}
@@ -55,14 +65,13 @@ export function AvailableActionsPanel() {
                       </option>
                     ))}
                   </select>
-                </label>
+                </Field>
               ) : (
-                <p className="muted">Read wanted posters to choose the identity you want to declare.</p>
+                <Muted>Read wanted posters to choose the identity you want to declare.</Muted>
               )}
             </div>
-            <button
+            <Button
               type="button"
-              className="button"
               onClick={handleConfrontSaloonPersonOfInterest}
               disabled={!gameId || loading || !canConfrontSaloonPersonOfInterest}
             >
@@ -71,77 +80,71 @@ export function AvailableActionsPanel() {
                 : selectedWantedPoster
                   ? `Take ${session.activeSaloonPersonOfInterest.descriptor} to sheriff as ${selectedWantedPoster.targetDisplayName}`
                   : `Take ${session.activeSaloonPersonOfInterest.descriptor} to sheriff`}
-            </button>
-          </div>
+            </Button>
+          </ActionRow>
         ) : null}
         {actions.length > 0 ? (
           actions.map((action) => (
-            <div key={`${action.kind}-${action.label}`} className="action-row">
+            <ActionRow key={`${action.kind}-${action.label}`}>
               <div>
                 <strong>{action.label}</strong>
                 <p>{formatActionKind(action.kind)}</p>
               </div>
               {action.kind === AvailableActionKind.ReadWantedPosters ? (
-                <button
+                <Button
                   type="button"
-                  className="button"
                   onClick={handleReadWantedPosters}
                   disabled={!gameId || loading || !canReadWantedPosters}
                 >
                   {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
-                </button>
+                </Button>
               ) : action.kind === AvailableActionKind.InspectNoticeBoard ? (
-                <button
+                <Button
                   type="button"
-                  className="button"
                   onClick={handleInspectNoticeBoard}
                   disabled={!gameId || loading || !canInspectNoticeBoard}
                 >
                   {busyMode === "investigating" ? "Inspecting..." : "Inspect notice board"}
-                </button>
+                </Button>
               ) : action.kind === AvailableActionKind.CheckSheriffRecords ? (
-                <button
+                <Button
                   type="button"
-                  className="button"
                   onClick={handleCheckLocalRecords}
                   disabled={!gameId || loading || !canCheckLocalRecords}
                 >
                   {busyMode === "investigating" ? "Checking..." : "Check local records"}
-                </button>
+                </Button>
               ) : action.kind === AvailableActionKind.FollowTelegraphLeads ? (
-                <button
+                <Button
                   type="button"
-                  className="button"
                   onClick={handleFollowTelegraphLeads}
                   disabled={!gameId || loading || !canFollowTelegraphLeads}
                 >
                   {busyMode === "investigating" ? "Following..." : "Follow telegraph leads"}
-                </button>
+                </Button>
               ) : action.kind === AvailableActionKind.GatherLocalGossip ? (
-                <button
+                <Button
                   type="button"
-                  className="button"
                   onClick={handleGatherLocalGossip}
                   disabled={!gameId || loading || !canGatherLocalGossip}
                 >
                   {busyMode === "investigating" ? "Gathering..." : "Gather local gossip"}
-                </button>
+                </Button>
               ) : action.kind === AvailableActionKind.LookAroundSaloon ? (
-                <button
+                <Button
                   type="button"
-                  className="button"
                   onClick={handleLookAroundSaloon}
                   disabled={!gameId || loading || !canLookAroundSaloon}
                 >
                   {busyMode === "investigating" ? "Looking..." : "Look around saloon"}
-                </button>
+                </Button>
               ) : null}
-            </div>
+            </ActionRow>
           ))
         ) : (
-          <p className="muted">Actions will appear here after a game loads.</p>
+          <Muted>Actions will appear here after a game loads.</Muted>
         )}
-      </div>
-    </section>
+      </Stack>
+    </Panel>
   );
 }

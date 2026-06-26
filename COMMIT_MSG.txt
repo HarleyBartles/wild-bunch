@@ -1,0 +1,11 @@
+BUNCH-95: consolidate frontend styling stack around styled-components and SASS
+
+- Migrated all components from plain CSS to styled components.
+- Deleted src/styles.css.
+- Introduced src/components/ui/sharedStyled.tsx for cross-surface primitives.
+- Installed durable styling doctrine in src/WildBunch.Web/AGENTS.md.
+- Added automated enforcement test in src/tests/stylingEnforcement.test.ts.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

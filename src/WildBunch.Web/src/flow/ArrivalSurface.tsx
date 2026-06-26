@@ -1,4 +1,27 @@
+import styled from "styled-components";
 import { useGameSession } from "../state/useGameSession";
+import { FlowSurface, Button } from "../components/ui/sharedStyled";
+
+const ArrivalCard = styled.div`
+  padding: 32px;
+  border-radius: 28px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  text-align: center;
+  display: grid;
+  gap: 20px;
+  justify-items: center;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const ArrivalLead = styled.p`
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+`;
 
 export function ArrivalSurface() {
   const { session, loading, handleAcknowledgeArrival } = useGameSession();
@@ -12,21 +35,21 @@ export function ArrivalSurface() {
   const daysTravelled = journey.daysTravelled;
 
   return (
-    <div className="flow-surface flow-surface--arrival">
-      <div className="arrival-card">
+    <FlowSurface $variant="arrival">
+      <ArrivalCard>
         <h1>You've arrived in {destinationName}</h1>
-        <p className="arrival-lead">
+        <ArrivalLead>
           You put {daysTravelled} day{daysTravelled === 1 ? "" : "s"} of trail behind you.
-        </p>
-        <button
+        </ArrivalLead>
+        <Button
           type="button"
-          className="button button--primary"
+          $variant="primary"
           onClick={() => void handleAcknowledgeArrival()}
           disabled={loading}
         >
           {loading ? "Stepping into town..." : "Step into town"}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </ArrivalCard>
+    </FlowSurface>
   );
 }

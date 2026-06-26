@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
 import { formatRisk, formatTrailTerrain, formatWaterFeature } from "../ui/formatters";
+import {
+  Panel,
+  PanelHead,
+  PanelSubtitle,
+  Stack,
+  DestinationCard,
+  Muted,
+} from "./ui/sharedStyled";
 
 interface TravelRoutesPanelProps {
   gameId: string | null;
@@ -108,42 +116,51 @@ export function TravelRoutesPanel({ gameId, session, busy, onTravel }: TravelRou
   }, [destinations, gameId, session]);
 
   return (
-    <section className="panel">
-      <div className="panel-head">
+    <Panel>
+      <PanelHead>
         <h2>Travel routes</h2>
-        <span className="panel-subtitle">{destinations.length} connected</span>
-      </div>
-      <div className="stack">
+        <PanelSubtitle as="span">{destinations.length} connected</PanelSubtitle>
+      </PanelHead>
+      <Stack>
         {destinations.length > 0 ? (
           destinations.map(({ town, trailCount }) => {
             const preview = previews[town.id];
 
             return (
-              <button
+              <DestinationCard
                 key={town.id}
                 type="button"
-                className="destination-card"
                 onClick={() => void onTravel(town.id)}
                 disabled={!gameId || busy}
               >
-                <div className="destination-card__body">
+                <div style={{ display: "grid", gap: "4px" }}>
                   <strong>{town.name}</strong>
                   <p>{town.id}</p>
-                  <p className="destination-route">{preview ? formatPreviewSummary(preview) : "Loading route preview..."}</p>
+                  <p
+                    style={{
+                      color: "var(--text)",
+                      fontSize: "0.88rem",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    {preview ? formatPreviewSummary(preview) : "Loading route preview..."}
+                  </p>
                 </div>
-                <div className="destination-meta">
+                <div style={{ display: "grid", gap: "4px", textAlign: "right", fontSize: "0.84rem" }}>
                   <span>
                     {trailCount} trail{trailCount === 1 ? "" : "s"}
                   </span>
-                  <span>{preview ? preview.routeProfile.trailId : "Previewing..."}</span>
+                  <span style={{ color: "var(--muted)" }}>
+                    {preview ? preview.routeProfile.trailId : "Previewing..."}
+                  </span>
                 </div>
-              </button>
+              </DestinationCard>
             );
           })
         ) : (
-          <p className="muted">Travel destinations derive from the current town and world trails.</p>
+          <Muted>Travel destinations derive from the current town and world trails.</Muted>
         )}
-      </div>
-    </section>
+      </Stack>
+    </Panel>
   );
 }

@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import { useGameSession } from "../state/useGameSession";
 import { AvailableActionKind } from "../api/types";
 import type { TownPlace } from "./GameFlowRouter";
@@ -5,6 +6,83 @@ import { StorePlace } from "./places/StorePlace";
 import { SheriffPlace } from "./places/SheriffPlace";
 import { SaloonPlace } from "./places/SaloonPlace";
 import { TravelPrepSurface } from "./TravelPrepSurface";
+import { FlowSurface } from "../components/ui/sharedStyled";
+
+const TownHubHeader = styled.header`
+  display: grid;
+  gap: 8px;
+  padding: 24px 0 4px;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const TownHubLead = styled.p`
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--muted);
+`;
+
+const TownHubGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+
+  @media (max-width: 1366px) {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  @media (max-width: 960px) {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+`;
+
+const PlaceCard = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  transition:
+    transform 0.15s ease-out,
+    border-color 0.15s ease-out;
+
+  &:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  &.trailhead {
+    border-color: var(--accent-strong);
+    background: linear-gradient(180deg, var(--bg-elevated), rgba(223, 159, 79, 0.05));
+  }
+`;
+
+const PlaceCardIcon = styled.div`
+  font-size: 2rem;
+  flex-shrink: 0;
+`;
+
+const PlaceCardBody = styled.div`
+  display: grid;
+  gap: 4px;
+
+  strong {
+    font-size: 1.05rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+`;
 
 interface TownHubSurfaceProps {
   activePlace: TownPlace;
@@ -43,65 +121,49 @@ export function TownHubSurface({ activePlace, onPlaceChange }: TownHubSurfacePro
   const townName = currentTown?.name ?? session.player.currentTownId;
 
   return (
-    <div className="flow-surface flow-surface--town-hub">
-      <div className="town-hub-header">
+    <FlowSurface $variant="town-hub">
+      <TownHubHeader>
         <h1>{townName}</h1>
-        <p className="town-hub-lead">Where to next?</p>
-      </div>
-      <div className="town-hub-grid">
+        <TownHubLead>Where to next?</TownHubLead>
+      </TownHubHeader>
+      <TownHubGrid>
         {hasStore ? (
-          <button
-            type="button"
-            className="place-card"
-            onClick={() => onPlaceChange("store")}
-          >
-            <div className="place-card__icon" aria-hidden="true">📦</div>
-            <div className="place-card__body">
+          <PlaceCard type="button" onClick={() => onPlaceChange("store")}>
+            <PlaceCardIcon aria-hidden="true">📦</PlaceCardIcon>
+            <PlaceCardBody>
               <strong>Store</strong>
               <p>Buy supplies, food, and gear.</p>
-            </div>
-          </button>
+            </PlaceCardBody>
+          </PlaceCard>
         ) : null}
         {hasSheriff ? (
-          <button
-            type="button"
-            className="place-card"
-            onClick={() => onPlaceChange("sheriff")}
-          >
-            <div className="place-card__icon" aria-hidden="true">⭐</div>
-            <div className="place-card__body">
+          <PlaceCard type="button" onClick={() => onPlaceChange("sheriff")}>
+            <PlaceCardIcon aria-hidden="true">⭐</PlaceCardIcon>
+            <PlaceCardBody>
               <strong>Sheriff Office</strong>
               <p>Read wanted posters and check records.</p>
-            </div>
-          </button>
+            </PlaceCardBody>
+          </PlaceCard>
         ) : null}
         {hasSaloon ? (
-          <button
-            type="button"
-            className="place-card"
-            onClick={() => onPlaceChange("saloon")}
-          >
-            <div className="place-card__icon" aria-hidden="true">🥃</div>
-            <div className="place-card__body">
+          <PlaceCard type="button" onClick={() => onPlaceChange("saloon")}>
+            <PlaceCardIcon aria-hidden="true">🥃</PlaceCardIcon>
+            <PlaceCardBody>
               <strong>Saloon</strong>
               <p>Look around, gather gossip, confront a suspect.</p>
-            </div>
-          </button>
+            </PlaceCardBody>
+          </PlaceCard>
         ) : null}
         {hasTrailhead ? (
-          <button
-            type="button"
-            className="place-card place-card--trailhead"
-            onClick={() => onPlaceChange("trailhead")}
-          >
-            <div className="place-card__icon" aria-hidden="true">🐎</div>
-            <div className="place-card__body">
+          <PlaceCard type="button" className="trailhead" onClick={() => onPlaceChange("trailhead")}>
+            <PlaceCardIcon aria-hidden="true">🐎</PlaceCardIcon>
+            <PlaceCardBody>
               <strong>Hit the trail</strong>
               <p>Ride to the next town.</p>
-            </div>
-          </button>
+            </PlaceCardBody>
+          </PlaceCard>
         ) : null}
-      </div>
-    </div>
+      </TownHubGrid>
+    </FlowSurface>
   );
 }

@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
 import { formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
+import {
+  StatusCard,
+  StatList,
+  Stack,
+  ItemCard,
+  Muted,
+  Field,
+  Button,
+} from "./ui/sharedStyled";
 
 interface StoreOffersPanelProps {
   storeOffers: TownStoreOffersDto | null;
@@ -34,18 +43,18 @@ function StoreOfferCard({
   }
 
   return (
-    <div className="compact-item">
+    <ItemCard>
       <strong>
         {offer.displayName} ${offer.price.toFixed(2)}
       </strong>
-      <p>
+      <p style={{ margin: "4px 0 0", fontSize: "0.88rem", color: "var(--muted)" }}>
         {formatItemKind(offer.itemKind)} - {formatStoreVendorType(offer.vendorType)}
       </p>
-      <p>
+      <p style={{ margin: "2px 0 0", fontSize: "0.84rem", color: "var(--muted)" }}>
         {formatStoreOfferAvailability(offer.availability)} - {offer.sourceNote}
       </p>
-      <div className="button-row">
-        <label className="field" style={{ flex: 1 }}>
+      <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "flex-end" }}>
+        <Field as="label" style={{ flex: 1 }}>
           <span>Quantity</span>
           <input
             type="number"
@@ -55,24 +64,28 @@ function StoreOfferCard({
             onChange={(event) => setQuantity(event.target.value)}
             disabled={disabled}
           />
-        </label>
-        <button type="button" className="button" onClick={handleBuy} disabled={disabled || offer.availability !== 0}>
+        </Field>
+        <Button
+          type="button"
+          onClick={handleBuy}
+          disabled={disabled || offer.availability !== 0}
+        >
           Buy
-        </button>
+        </Button>
       </div>
-    </div>
+    </ItemCard>
   );
 }
 
 export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: StoreOffersPanelProps) {
   return (
-    <article className="status-card">
+    <StatusCard>
       <h3>Store offers</h3>
-      {loading && storeOffers === null ? <p className="muted">Loading town offers...</p> : null}
-      {!loading && storeOffers === null ? <p className="muted">Town catalog unavailable.</p> : null}
+      {loading && storeOffers === null ? <Muted>Loading town offers...</Muted> : null}
+      {!loading && storeOffers === null ? <Muted>Town catalog unavailable.</Muted> : null}
       {storeOffers ? (
         <>
-          <dl className="stat-list">
+          <StatList>
             <div>
               <dt>Town</dt>
               <dd>{storeOffers.townName}</dd>
@@ -89,8 +102,8 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
               <dt>Source</dt>
               <dd>{storeOffers.sourceNote}</dd>
             </div>
-          </dl>
-          <div className="stack">
+          </StatList>
+          <Stack style={{ marginTop: "16px" }}>
             {storeOffers.offers.length > 0 ? (
               storeOffers.offers.map((offer) => (
                 <StoreOfferCard
@@ -101,11 +114,11 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
                 />
               ))
             ) : (
-              <p className="muted">No store offers are available in this town.</p>
+              <Muted>No store offers are available in this town.</Muted>
             )}
-          </div>
+          </Stack>
         </>
       ) : null}
-    </article>
+    </StatusCard>
   );
 }
