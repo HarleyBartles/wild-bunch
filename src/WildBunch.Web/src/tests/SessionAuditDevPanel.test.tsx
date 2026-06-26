@@ -37,9 +37,53 @@ function renderPanel() {
   );
 }
 
+function seedGameId(id: string) {
+  window.localStorage.setItem("wild-bunch.current-game-id", id);
+}
+
 describe("SessionAuditDevPanel", () => {
+  it("shows no active session when gameId is missing", () => {
+    renderPanel();
+
+    expect(screen.getByText(/no active session/i)).toBeInTheDocument();
+  });
+
+  it("shows a loading state while the audit query is pending", () => {
+    seedGameId("game-loading");
+    mockedGetSessionAudit.mockImplementation(() => new Promise(() => {}));
+
+    renderPanel();
+
+    expect(screen.getByText(/loading session audit/i)).toBeInTheDocument();
+  });
+
+  it("shows an error state when the audit query fails", async () => {
+    seedGameId("game-error");
+    mockedGetSessionAudit.mockRejectedValueOnce(new Error("Audit failed."));
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Audit failed.");
+    });
+  });
+
+  it("shows an empty state when the audit query returns no entries", async () => {
+    seedGameId("game-empty");
+    mockedGetSessionAudit.mockResolvedValue({
+      sessionId: "game-empty",
+      entries: [],
+    });
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText(/no audit entries yet/i)).toBeInTheDocument();
+    });
+  });
+
   it("renders readable saloon dev-control audit entries", async () => {
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    seedGameId("game-1");
     mockedGetSessionAudit.mockResolvedValue({
       sessionId: "game-1",
       entries: [
@@ -61,9 +105,14 @@ describe("SessionAuditDevPanel", () => {
     renderPanel();
 
     await waitFor(() => {
-      expect(screen.getByText("DevSaloonOverrideForced")).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: /session audit entries/i })).toBeInTheDocument();
     });
-    expect(screen.getByText(/Forced saloon override/i)).toBeInTheDocument();
-    expect(screen.getByText(/Consumed pending saloon override/i)).toBeInTheDocument();
+    const entries = screen.getAllByRole("listitem");
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toHaveTextContent("#1");
+    expect(entries[0]).toHaveTextContent("DevSaloonOverrideForced");
+    expect(entries[0]).toHaveTextContent("Forced saloon override");
+    expect(entries[1]).toHaveTextContent("#2");
+    expect(entries[1]).toHaveTextContent("Consumed pending saloon override");
   });
 });
