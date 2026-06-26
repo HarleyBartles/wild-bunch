@@ -33,6 +33,11 @@ public sealed class FullAuditProjector : IDomainEventProjector<FullAuditProjecti
     {
         GameStarted gs => $"Game started: {gs.PlayerName} in {gs.StartingTownName} ({gs.Difficulty}).",
         StoreItemPurchased sp => $"Purchased {sp.Quantity}x {sp.DisplayName} for {sp.TotalPrice:C} (wallet: {sp.WalletAfter:C}).",
+        DevSaloonOverrideForced forced => forced.ForcedSuspectId is null
+            ? $"Forced saloon override: {forced.ForcedKind}."
+            : $"Forced saloon override: {forced.ForcedKind} for suspect {forced.ForcedSuspectId}.",
+        DevSaloonOverrideCleared => "Cleared pending saloon override.",
+        DevSaloonOverrideConsumed => "Consumed pending saloon override during saloon look-around.",
         _ => e.GetType().Name
     };
 }
