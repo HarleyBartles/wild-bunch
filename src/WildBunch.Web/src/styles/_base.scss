@@ -1,0 +1,12 @@
+// Base element defaults that apply globally regardless of which component
+// renders them. These are not component-owned styling — they belong in SASS.
+//
+// Component-specific heading/paragraph styling lives in styled-components
+// within the owning component file.
+
+h1 {
+  margin-bottom: 8px;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  line-height: 0.95;
+}
