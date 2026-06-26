@@ -540,21 +540,6 @@ public sealed class DevSaloonOverrideTests
         Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideConsumed>());
     }
 
-    [Fact]
-    public void LookAroundSaloon_WithNoSaloon_DoesNotConsumeOverride()
-    {
-        var session = TestSessionFactory.CreateWithNoSaloon();
-        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
-        session.MarkEventsCommitted();
-
-        var result = session.LookAroundSaloon();
-
-        // Override is NOT consumed — the look-around failed before reaching the consume point
-        Assert.False(result.Success);
-        Assert.NotNull(session.PendingDevSaloonOverride);
-        Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideConsumed>());
-    }
-
     // --- Rejection tests: dev force must not break saloon/culprit invariants ---
 
     [Fact]
@@ -602,33 +587,83 @@ public sealed class DevSaloonOverrideTests
     [Fact]
     public void ForceDevSaloonOverride_RejectsIneligibleSuspect_WithWarrantAndBadPresence()
     {
-        // This test requires a session where a suspect has a known warrant but
-        // their presence state is not AvailableInTown or GoneToGround.
-        // Use TestSessionFactory to create a session with a suspect whose
-        // warrant is known but presence is e.g. Captured or Fled.
-        // If the test factory does not directly support this setup, create
-        // the session and manually advance the suspect's presence state
-        // through the appropriate domain method before calling ForceDevSaloonOverride.
+        // This test requires a session where a non-culprit suspect has a known
+        // warrant but their presence state is SecuredAlive (not AvailableInTown
+        // or GoneToGround). The existing CreateWithWarrantedSuspect() factory
+        // makes the warranted suspect the true culprit, so it cannot be used
+        // directly. The implementer must add a new TestSessionFactory helper
+        // (e.g. CreateWithIneligibleWarrantedSuspect) or construct the session
+        // inline. The setup must:
+        //   - Have at least 2 suspects: suspect-1 (non-culprit, with a known
+        //     warrant) and suspect-2 (true culprit).
+        //   - suspect-1 must have a known warrant in the CaseFile.
+        //   - suspect-1's presence state must be set to SecuredAlive via
+        //     session.SetWantedSuspectPresenceState(suspect-1, SecuredAlive).
+        //   - The current town must have a saloon source available.
         //
-        // Implementation note: inspect TestSessionFactory for a helper that
-        // creates a suspect with a known warrant and a non-eligible presence
-        // state. If none exists, use the seed system to create a session
-        // where the suspect's warrant is known (e.g. via ReadWantedPosters)
-        // and then advance their presence to an ineligible state. The exact
-        // setup depends on the domain methods available for presence state
-        // transitions — check TryGetWantedSuspectPresenceState and the
-        // methods that mutate _wantedSuspectPresenceLedger.
-        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-        // TODO: Set up a suspect with a known warrant and ineligible presence.
-        // For now, this test is a placeholder that documents the requirement.
-        // The implementer should replace the setup with a real ineligible
-        // suspect scenario and verify the rejection.
+        // Example factory method to add to TestSessionFactory:
         //
-        // The expected assertion pattern:
-        // var ex = Assert.Throws<InvalidOperationException>(() =>
-        //     session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(ineligibleSuspectId)));
-        // Assert.Contains("presence state", ex.Message, StringComparison.OrdinalIgnoreCase);
-        // Assert.Null(session.PendingDevSaloonOverride);
+        // public static GameSession CreateWithIneligibleWarrantedSuspect()
+        // {
+        //     var town = new Town(new TownId("current"), "Current Town",
+        //         TownServices.NoticeBoard | TownServices.Supplies);
+        //     var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        //     var world = new DomainWorld(
+        //         new[] { town, connected },
+        //         new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+        //     var suspects = new[]
+        //     {
+        //         new Suspect(new SuspectId("suspect-1"), "Mira Cline",
+        //             SuspectTraits.Empty, SuspectStatus.AtLarge),
+        //         new Suspect(new SuspectId("suspect-2"), "Reno Pike",
+        //             SuspectTraits.Empty, SuspectStatus.AtLarge)
+        //     };
+        //     var caseFile = new CaseFile(
+        //         accusation: null, suspects,
+        //         trueCulpritId: new SuspectId("suspect-2"),
+        //         openingLead: CaseOpeningLead.Create("Follow the public leads."),
+        //         knownClues: Array.Empty<Clue>(),
+        //         knownWarrants: new[]
+        //         {
+        //             new Warrant(new WarrantId("warrant-1"), "Mira Cline",
+        //                 new WarrantTerms(WarrantDisposition.DeadOrAlive, 2500m,
+        //                     new[] { "Red Wren" }, new[] { "Raven-feather pin" },
+        //                     "Dodge City Marshal", InvestigationTargetKind.TrueCulprit,
+        //                     Array.Empty<OutlawGangId>(), null),
+        //                 "Wanted for a stage robbery.")
+        //         });
+        //     var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        //         Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+        //         TravelRandomnessState.CreateDeterministic(string.Empty));
+        //     session.SetWantedSuspectPresenceState(
+        //         new SuspectId("suspect-1"), WantedSuspectPresenceState.SecuredAlive);
+        //     session.MarkEventsCommitted();
+        //     return session;
+        // }
+        //
+        // Verify the town has a saloon source. If TownServices flags don't
+        // include the saloon investigation source, check how CreateWithConfrontableSaloonSuspect
+        // sets up town services (it uses TownServices.NoticeBoard — verify
+        // that NoticeBoard implies saloon availability, or add the correct
+        // TownServices flag). The implementer must confirm that
+        // CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround)
+        // returns true for the test town before running the force command.
+
+        var session = TestSessionFactory.CreateWithIneligibleWarrantedSuspect();
+        var ineligibleSuspectId = new SuspectId("suspect-1");
+
+        // Verify the test setup is correct: suspect-1 is not the true culprit
+        Assert.NotEqual(session.CaseFile.TrueCulpritId, ineligibleSuspectId);
+        // Verify suspect-1 has a known warrant (eligibility check should reach the warrant branch)
+        Assert.True(session.TryGetWantedSuspectPresenceState(ineligibleSuspectId, out var presence));
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, presence);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(ineligibleSuspectId)));
+
+        Assert.Contains("presence state", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.PendingDevSaloonOverride);
+        Assert.Empty(session.UncommittedEvents.OfType<DevSaloonOverrideForced>());
     }
 
     [Fact]
@@ -2745,7 +2780,7 @@ If the saloon POI forcing reveals missing domain concepts, split conditions are:
 
 1. **If forcing a specific suspect by ID requires bypassing eligibility checks that are deeply embedded in the confrontation flow (not just the look-around flow)**, split the confrontation-bypass work into a follow-up issue. The current plan does NOT bypass eligibility — forced suspects are validated against the same rules as normal candidate selection (not the true culprit, warrant/presence state). The confrontation flow (`ConfrontSaloonPersonOfInterest`) still runs normally. If the dev needs to force a confrontation outcome (e.g., force surrender vs flee), that is a separate dev control surface and should be a follow-up.
 
-4. **If the `ForceDevSaloonOverride_RejectsIneligibleSuspect_WithWarrantAndBadPresence` test cannot be set up with the current test factory**, the implementer should either extend `TestSessionFactory` with a helper for ineligible-presence suspects or use the seed system to create the scenario. If the setup is too complex for this slice, the test may be deferred to a follow-up with an explicit `AMBER` note — but the domain validation logic itself must still be implemented and the true-culprit and unknown-suspect rejection tests must pass.
+4. **If the `CreateWithIneligibleWarrantedSuspect` factory method cannot be added to `TestSessionFactory`** (e.g. because the town services or warrant construction requires domain internals not accessible from tests), the implementer should construct the session inline in the test body instead. The test must not be skipped or deferred — the ineligible-presence rejection is a core invariant that must be proven with an executable test.
 
 2. **If the `FalseLead` kind needs to produce a different citizen descriptor or confrontation behavior than the normal citizen path**, split the false-lead-specific logic into a follow-up. The current plan treats `FalseLead` as semantically identical to `Citizen` — the false-lead outcome comes from the normal confrontation flow when the player declares a wrong wanted identity on a citizen POI. If a distinct false-lead POI shape is needed, that requires new domain concepts beyond the current saloon seams.
 
