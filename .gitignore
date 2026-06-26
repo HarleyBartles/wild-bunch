@@ -9,6 +9,9 @@
 # Git worktrees
 .worktrees/
 
+# Agent commit-message temp files
+.commit-msg-*.txt
+
 # User-specific files
 *.rsuser
 *.suo

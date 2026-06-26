@@ -31,6 +31,13 @@ The repo uses three separate documentation/navigation surfaces with different jo
 ### Self-healing rule
 If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repair the relevant mesh in the same PR or return AMBER with the exact deferred repair.
 
+## Agent-Generated Evidence (Screenshots, Browser Proof)
+- Browser screenshots and other agent-generated evidence artifacts must be written under `.agents/superpowers/output/screenshots/` (or a coherent `.agents/superpowers/output/...` subfolder).
+- Generated screenshot/image artifacts must NOT be committed to the repo. The `.agents/superpowers/output/screenshots/` folder is git-ignored via its local `.gitignore` (`*` with `!.gitignore` and `!INDEX.md` exceptions).
+- PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system if needed, but must not add them as repo files.
+- If a worker finds screenshots or generated evidence committed elsewhere in the repo (e.g. under `docs/`), they should remove/move them to the git-ignored `.agents/superpowers/output/` area as part of self-healing.
+- Superpowers plan records live under `.agents/superpowers/plans/`. Agent-facing superpowers material is consolidated under `.agents/superpowers/`, not at root `.superpowers/` or `docs/superpowers/`.
+
 ## Branch + PR Workflow
 - Workers branch from current `main`.
 - Workers push a branch and open or return a PR.

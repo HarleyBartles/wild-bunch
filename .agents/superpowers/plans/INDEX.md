@@ -29,5 +29,8 @@ Per-issue plan records and multi-step phase breakdowns.
 - [2026-06-24-bunch-84-projection-backed-journal-output.md](2026-06-24-bunch-84-projection-backed-journal-output.md) - Plan for projection-backed journal output.
 - [2026-06-24-bunch-85-heat-lawman-pressure.md](2026-06-24-bunch-85-heat-lawman-pressure.md) - Plan for heat/lawman pressure.
 - [2026-06-24-bunch-86-purchase-journal-regression-and-legacy-log-closeout.md](2026-06-24-bunch-86-purchase-journal-regression-and-legacy-log-closeout.md) - Plan for purchase journal regression and legacy log closeout.
+- [2026-06-25-bunch-89-travel-dev-controls.md](2026-06-25-bunch-89-travel-dev-controls.md) - Plan for travel dev controls (BUNCH-89).
+- [2026-06-25-dev-overlay-foundation.md](2026-06-25-dev-overlay-foundation.md) - Plan for dev overlay foundation.
+- [2026-06-26-saloon-poi-dev-controls.md](2026-06-26-saloon-poi-dev-controls.md) - Plan for saloon POI dev controls.
 
-Back to [.superpowers/](../INDEX.md)
+Back to [superpowers/](../INDEX.md)

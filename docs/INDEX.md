@@ -5,7 +5,6 @@ Lightweight table of contents for repo docs.
 ## Subdirectories
 
 - [adr/](adr/INDEX.md) - Architecture decision record log with per-file freshness timestamps.
-- [superpowers/](superpowers/INDEX.md) - Superpowers plan records and screenshots.
 - [unslop/](unslop/INDEX.md) - Unslop drift-prevention profiles.
 
 ## Key files

@@ -122,3 +122,5 @@ Dev-overlay work must provide:
 - Screenshots showing candidate dropdowns (not raw ID typing) for any force control.
 - Screenshots showing resolved names and domain meaning for displayed fields.
 - Test results for backend domain/application/API and frontend tests.
+
+Screenshots and other agent-generated evidence must be written under `.agents/superpowers/output/screenshots/` and must NOT be committed to the repo. See root `AGENTS.md` "Agent-Generated Evidence" section. PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system.

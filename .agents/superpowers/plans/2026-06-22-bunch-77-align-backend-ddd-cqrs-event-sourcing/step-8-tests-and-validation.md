@@ -16,7 +16,7 @@ After this step passes, ADR-0028 is promoted from `planned` to `live`.
 - Add: `tests/WildBunch.Application.Tests/Games/Commands/EndToEndHandlerProjectionTests.cs` — handler produces safe projections from real events.
 - Add: `tests/WildBunch.Api.Tests/SafeApiBridgeEndToEndTests.cs` — API response has diary + HUD, no raw events/audit.
 - Modify: `docs/adr/ADR-0028-*.md` — promote to `live`; finalize Implementation Status and Proof of Implementation.
-- Modify: `.superpowers/plans/2026-06-22-bunch-77-align-backend-ddd-cqrs-event-sourcing.md` — mark step checkboxes complete.
+- Modify: `.agents/superpowers/plans/2026-06-22-bunch-77-align-backend-ddd-cqrs-event-sourcing.md` — mark step checkboxes complete.
 
 ## The three core proofs
 
