@@ -230,6 +230,59 @@ public static class TestSessionFactory
     }
 
     /// <summary>
+    /// Creates a session where suspect-1 (non-culprit) has a known warrant and
+    /// presence state SecuredAlive (not AvailableInTown or GoneToGround).
+    /// Used by BUNCH-90 dev saloon override eligibility tests.
+    /// </summary>
+    public static GameSession CreateWithIneligibleWarrantedSuspect()
+    {
+        var town = new Town(new TownId("current"), "Current Town",
+            TownServices.NoticeBoard | TownServices.Supplies);
+        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline",
+                SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike",
+                SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null, suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-1"),
+                    "Mira Cline",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        2500m,
+                        new[] { "Red Wren" },
+                        new[] { "Raven-feather pin" },
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for a stage robbery.")
+            });
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.SetWantedSuspectPresenceState(
+            new SuspectId("suspect-1"), WantedSuspectPresenceState.SecuredAlive);
+        session.MarkEventsCommitted();
+        return session;
+    }
+
+    /// <summary>
     /// Creates a session with a warranted suspect that has been confronted and secured alive.
     /// The suspect is in Surrendered confrontation state, ready for sheriff turn-in.
     /// Used by BUNCH-80 sheriff turn-in event-sourcing tests.

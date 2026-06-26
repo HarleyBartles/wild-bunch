@@ -139,6 +139,15 @@ public sealed partial class GameSession
             case DevTravelOverrideConsumed dtc2:
                 session.Apply(dtc2);
                 break;
+            case DevSaloonOverrideForced dsf:
+                session.Apply(dsf);
+                break;
+            case DevSaloonOverrideCleared dsc:
+                session.Apply(dsc);
+                break;
+            case DevSaloonOverrideConsumed dsc2:
+                session.Apply(dsc2);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
