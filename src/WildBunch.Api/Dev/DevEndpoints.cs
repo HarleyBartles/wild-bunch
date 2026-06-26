@@ -36,6 +36,25 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound);
 
+        dev.MapGet("/sessions/{id:guid}/saloon-context", GetSaloonDevContextAsync)
+            .WithName("GetSaloonDevContext")
+            .Produces<SaloonDevContextDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
+        dev.MapPost("/sessions/{id:guid}/saloon/force-override", ForceSaloonOverrideAsync)
+            .WithName("ForceSaloonOverride")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
+
+        dev.MapPost("/sessions/{id:guid}/saloon/clear-override", ClearSaloonOverrideAsync)
+            .WithName("ClearSaloonOverride")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
         return app;
     }
 
@@ -131,6 +150,87 @@ public static class DevEndpoints
         {
             guard.EnsureDevAccess();
             await handler.HandleAsync(new ClearTravelOverrideCommand(id), cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> GetSaloonDevContextAsync(
+        Guid id,
+        DevRoleGuard guard,
+        GetSaloonDevContextHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            var result = await handler.HandleAsync(new GetSaloonDevContextQuery(id), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> ForceSaloonOverrideAsync(
+        Guid id,
+        DevRoleGuard guard,
+        ForceSaloonOverrideHandler handler,
+        ForceSaloonOverrideRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            if (string.IsNullOrWhiteSpace(request.ForcedKind))
+            {
+                return Results.BadRequest("ForcedKind is required.");
+            }
+            await handler.HandleAsync(new ForceSaloonOverrideCommand(
+                id, request.ForcedKind, request.ForcedSuspectId),
+                cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (ArgumentException)
+        {
+            return Results.BadRequest("Invalid ForcedKind value.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    private static async Task<IResult> ClearSaloonOverrideAsync(
+        Guid id,
+        DevRoleGuard guard,
+        ClearSaloonOverrideHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            await handler.HandleAsync(new ClearSaloonOverrideCommand(id), cancellationToken);
             return Results.NoContent();
         }
         catch (DevAccessDeniedException)
