@@ -77,8 +77,8 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
   const contextMismatch = detectContextMismatch(data?.currentActionContext);
 
   return (
-    <Container $expanded={expanded}>
-      <LeftColumn $expanded={expanded}>
+    <Container>
+      <LeftColumn>
         <ContextSection>
           <SectionTitle>Saloon context</SectionTitle>
           <Row>
@@ -250,7 +250,7 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
         </ForceSection>
       </LeftColumn>
 
-      <RightColumn $expanded={expanded}>
+      <RightColumn>
         <Section>
           <SectionTitle>Suspects</SectionTitle>
           {data?.suspects && data.suspects.length > 0 ? (
@@ -330,26 +330,26 @@ function SuspectCard({ suspect }: { suspect: SaloonSuspectDevDto }) {
   );
 }
 
-const Container = styled.div<{ $expanded: boolean }>`
+const Container = styled.div`
   display: grid;
   gap: 16px;
-  grid-template-columns: ${({ $expanded }) => ($expanded ? "1fr 1fr" : "1fr")};
+  grid-template-columns: 1fr 1fr;
 
   @media (max-width: 700px) {
     grid-template-columns: 1fr;
   }
 `;
 
-const LeftColumn = styled.div<{ $expanded: boolean }>`
+const LeftColumn = styled.div`
   display: grid;
   gap: 16px;
   grid-column: 1;
 `;
 
-const RightColumn = styled.div<{ $expanded: boolean }>`
+const RightColumn = styled.div`
   display: grid;
   gap: 16px;
-  grid-column: ${({ $expanded }) => ($expanded ? "2" : "1")};
+  grid-column: 2;
 
   @media (max-width: 700px) {
     grid-column: 1;
