@@ -3067,7 +3067,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return warrant.Terms.KnownAliases.Any(alias => string.Equals(alias, targetSuspect.Name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private bool TryGetKnownWarrantForSuspect(SuspectId suspectId, [NotNullWhen(true)] out Warrant? warrant)
+    internal bool TryGetKnownWarrantForSuspect(SuspectId suspectId, [NotNullWhen(true)] out Warrant? warrant)
     {
         var targetSuspect = CaseFile.Suspects.FirstOrDefault(suspect => suspect.Id.Equals(suspectId));
         if (targetSuspect is null)
@@ -3198,7 +3198,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return false;
     }
 
-    private bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
+    internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
     {
         ArgumentNullException.ThrowIfNull(suspect);
 
@@ -3218,6 +3218,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         return presenceState is WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround;
+    }
+
+    /// <summary>
+    /// Dev-only: describes why a suspect is ineligible as a saloon POI candidate.
+    /// Returns null if the suspect is eligible. See BUNCH-90.
+    /// </summary>
+    internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+
+        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
+        {
+            return "True culprit - can never appear as a saloon POI.";
+        }
+
+        if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
+        {
+            return null; // Eligible
+        }
+
+        if (!_wantedSuspectPresenceLedger.TryGetState(suspect.Id, out var presenceState))
+        {
+            return "Has known warrant but no tracked presence state.";
+        }
+
+        if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
+        {
+            return $"Has known warrant but presence state is {presenceState} (must be AvailableInTown or GoneToGround).";
+        }
+
+        return null; // Eligible
     }
 
     private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)
