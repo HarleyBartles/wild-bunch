@@ -5,10 +5,10 @@
 - Workers branch from current `main` and publish work through a PR.
 - Root index: `INDEX.md`
 - Docs index: `docs/INDEX.md`
-- Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `docs/unslop/backend-architecture.md`
+- Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - Repo-local skills index: `.agents/skills/INDEX.md`
-- Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`
-- Required working knowledge for dev overlay work: `.agents/dev-overlay/DOCTRINE.md`
+- Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
+- Required working knowledge for dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
 
 ## Mesh Policy
 
@@ -37,6 +37,13 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system if needed, but must not add them as repo files.
 - If a worker finds screenshots or generated evidence committed elsewhere in the repo (e.g. under `docs/`), they should remove/move them to the git-ignored `.agents/superpowers/output/` area as part of self-healing.
 - Superpowers plan records live under `.agents/superpowers/plans/`. Agent-facing superpowers material is consolidated under `.agents/superpowers/`, not at root `.superpowers/` or `docs/superpowers/`.
+
+## Unslop Profiles
+- Repo-wide unslop profiles live under `.agents/unslop/`.
+- Project-local unslop profiles live under `{project}/.agents/unslop/`.
+- Profile filenames are short lowercase kebab-case scope names. Do not include `unslop`, `profile`, or `unslop-profile` in the filename; the folder already says what it is.
+- Human docs may point to these profiles, but profiles themselves are agent-facing review/filter material.
+- Dev-overlay work should apply `.agents/unslop/dev-overlay.md` together with the backend and web unslop profiles where relevant.
 
 ## Branch + PR Workflow
 - Workers branch from current `main`.

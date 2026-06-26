@@ -2,6 +2,8 @@
 
 This is the binding agent-facing doctrine for the Dev Overlay and Playtest Control Plane. All dev-overlay work must follow it. The Linear document "Doctrine — dev overlay state/action boundary" is the upstream source; this file is the repo-persisted version that future workers encounter through the agents mesh.
 
+Apply the [dev overlay unslop profile](../unslop/dev-overlay.md) together with this doctrine when designing, implementing, or reviewing dev overlay work.
+
 ## 1. State/action boundary
 
 The dev overlay may mutate game state to set up, inspect, stabilize, or clear the conditions needed for a playtest. It must not force normal gameplay actions or directly fabricate their outcomes.

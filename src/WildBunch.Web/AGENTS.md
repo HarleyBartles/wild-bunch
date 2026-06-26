@@ -1,6 +1,6 @@
 # Wild Bunch Web
 
-Use [`docs/unslop/play-surface-ui.md`](docs/unslop/play-surface-ui.md) before designing, implementing, or reviewing player-facing game surfaces, HUD placement, overlays, modal surfaces, or related reference UI.
+Use [`.agents/unslop/play-surface-ui.md`](.agents/unslop/play-surface-ui.md) before designing, implementing, or reviewing player-facing game surfaces, HUD placement, overlays, modal surfaces, or related reference UI.
 
 Keep player-facing game surfaces as in-world, player-usable surfaces, not cockpit dashboards or product chrome. If a label, counter, callout, modal title, or overlay header does not help the player read or use the surface, cut it.
 
@@ -11,6 +11,8 @@ React should render backend/player-known state rather than inventing canonical g
 ## Dev overlay work
 
 Required reading: [`.agents/dev-overlay/DOCTRINE.md`](../../.agents/dev-overlay/DOCTRINE.md) — binding doctrine for dev overlay state/action boundary, panel ownership, related panel visibility, layout, hidden truth, backend authority, and closeout proof.
+
+Also apply [`.agents/unslop/dev-overlay.md`](../../.agents/unslop/dev-overlay.md) — the dev overlay unslop drift-prevention profile — together with this doctrine when designing, implementing, or reviewing dev overlay work.
 
 Dev panels are contextual to the current gameplay surface. Each panel deeply owns one domain node/surface and only lightly manipulates related nodes. Dev mutations go through backend commands — the frontend never fakes player progress or injects final results.
 

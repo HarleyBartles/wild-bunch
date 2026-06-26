@@ -4,7 +4,7 @@ React/Vite web play-surface client with a dev overlay.
 
 ## Subdirectories
 
-- [docs/](docs/INDEX.md) - Web-specific docs and unslop profiles.
+- [.agents/](.agents/INDEX.md) - Project-local agent doctrine and unslop profiles.
 - [src/](src/INDEX.md) - Application source (components, flow, hooks, routes, shell, state, dev, api, ui, tests, styles).
 
 ## Key files
