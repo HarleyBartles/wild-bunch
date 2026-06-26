@@ -310,25 +310,53 @@ namespace WildBunch.Domain.Tests;
 
 public sealed class TownActionAvailabilityTests
 {
+    /// <summary>
+    /// Creates a session in a town with TownServices.None — no NoticeBoard,
+    /// no Supplies, no Lodging, no Telegraph, no Doctor. This is the worst case
+    /// for action availability. The town uses the default source catalog (no
+    /// sabotaged definitions). Every town has a saloon and a sheriff's office,
+    /// so both ReadWantedPosters and LookAroundSaloon must be available here.
+    /// </summary>
+    private static GameSession CreateSessionInNoServiceTown()
+    {
+        var town = new Town(new TownId("no-service"), "No Service Town", TownServices.None);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike",
+                SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null, suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            TravelRandomnessState.CreateDeterministic(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+
     [Fact]
     public void ActionAvailabilityResolver_AlwaysIncludesReadWantedPosters_RegardlessOfTownServices()
     {
-        // Use a town with TownServices.None — the worst case for availability.
-        // If the seed system is required, use SeededNewGameFactory to create a session
-        // in a town with no services (e.g. Dry Fork). If a hand-built world is acceptable
-        // for this availability test (it is about action resolution, not resource mechanics),
-        // construct the session directly.
-        //
-        // The implementer should choose the approach that best fits the test factory
-        // patterns. The key assertion is that ReadWantedPosters appears in the actions
-        // list even when the town has no NoticeBoard service.
-        var session = TestSessionFactory.CreateDefault();
-        // Verify the default test town has no NoticeBoard service, or use a town that doesn't.
-        // If CreateDefault uses a town with NoticeBoard, the implementer should either:
-        //   - Use a seed-based session in a no-service town (Dry Fork), or
-        //   - Construct a minimal session with TownServices.None.
-        //
-        // For the test to be meaningful, the town must NOT have TownServices.NoticeBoard.
+        var session = CreateSessionInNoServiceTown();
+
+        // Prove the precondition: the town has no NoticeBoard service.
+        // This makes the test falsifiable — if the town had NoticeBoard,
+        // the assertion would pass trivially even without the fix.
+        Assert.Equal(TownServices.None, session.CurrentTown.Services);
+        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
 
         var resolver = new ActionAvailabilityResolver();
         var actions = resolver.Resolve(session);
@@ -339,8 +367,10 @@ public sealed class TownActionAvailabilityTests
     [Fact]
     public void ActionAvailabilityResolver_AlwaysIncludesLookAroundSaloon_RegardlessOfTownServices()
     {
-        // Same setup as above — town with TownServices.None.
-        var session = TestSessionFactory.CreateDefault();
+        var session = CreateSessionInNoServiceTown();
+
+        // Prove the precondition: the town has no services at all.
+        Assert.Equal(TownServices.None, session.CurrentTown.Services);
 
         var resolver = new ActionAvailabilityResolver();
         var actions = resolver.Resolve(session);
@@ -351,11 +381,10 @@ public sealed class TownActionAvailabilityTests
     [Fact]
     public void ReadWantedPosters_Succeeds_EvenWhenTownHasNoNoticeBoardService()
     {
-        // Create a session in a town without NoticeBoard service.
-        // If TestSessionFactory.CreateDefault() uses a town with NoticeBoard,
-        // the implementer should use a seed-based session or construct one
-        // with TownServices.None.
-        var session = TestSessionFactory.CreateDefault();
+        var session = CreateSessionInNoServiceTown();
+
+        // Prove the precondition: no NoticeBoard service.
+        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
 
         var result = session.ReadWantedPosters();
 
@@ -368,8 +397,10 @@ public sealed class TownActionAvailabilityTests
     [Fact]
     public void LookAroundSaloon_Succeeds_EvenWhenTownHasNoServices()
     {
-        // Create a session in a town with TownServices.None.
-        var session = TestSessionFactory.CreateDefault();
+        var session = CreateSessionInNoServiceTown();
+
+        // Prove the precondition: no services at all.
+        Assert.Equal(TownServices.None, session.CurrentTown.Services);
 
         var result = session.LookAroundSaloon();
 
@@ -379,7 +410,7 @@ public sealed class TownActionAvailabilityTests
 }
 ```
 
-**Implementation note:** The implementer must verify which `TestSessionFactory` method creates a session in a town without `NoticeBoard`. If `CreateDefault()` uses a town with `NoticeBoard`, the implementer should either add a factory helper for a no-service town or use the seed system to create a session in Dry Fork (which has `TownServices.None`). The test is only meaningful if the town lacks `NoticeBoard` service. Note: `TestSessionFactory.CreateWithNoSaloon()` is misleadingly named — every town has a saloon after Task 0. Check what town services it actually uses before repurposing it.
+**Implementation note:** The `CreateSessionInNoServiceTown` helper constructs a minimal session in a town with `TownServices.None` using the default source catalog (no sabotaged definitions). This is the correct setup for invariant tests — it proves the actions are available even when the town has zero services. Do NOT use `TestSessionFactory.CreateWithNoSaloon()` for these tests: it deliberately sabotages the source catalog to make the saloon unavailable, which is a scenario that cannot happen in normal play after Task 0. Do NOT use `TestSessionFactory.CreateDefault()`: its town has `TownServices.NoticeBoard`, which would make the wanted-poster test pass trivially without proving the invariant.
 
 - [ ] **Step 6: Verify frontend does not disable wanted-posters button**
 
@@ -853,13 +884,9 @@ public sealed class DevSaloonOverrideTests
         //     return session;
         // }
         //
-        // Verify the town has a saloon source. If TownServices flags don't
-        // include the saloon investigation source, check how CreateWithConfrontableSaloonSuspect
-        // sets up town services (it uses TownServices.NoticeBoard — verify
-        // that NoticeBoard implies saloon availability, or add the correct
-        // TownServices flag). The implementer must confirm that
-        // CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround)
-        // returns true for the test town before running the force command.
+        // This test only cares about the wanted-suspect eligibility condition:
+        // known warrant plus presence state not AvailableInTown or GoneToGround.
+        // Saloon availability is not part of this test — every town has a saloon.
 
         var session = TestSessionFactory.CreateWithIneligibleWarrantedSuspect();
         var ineligibleSuspectId = new SuspectId("suspect-1");
@@ -1133,16 +1160,14 @@ case DevSaloonOverrideConsumed dsc2:
 
 - [ ] **Step 8: Consume the override in LookAroundSaloon**
 
-In `src/WildBunch.Domain/Game/GameSession.cs`, in `LookAroundSaloon()` (starting at line 2539), the current flow is:
+In `src/WildBunch.Domain/Game/GameSession.cs`, in `LookAroundSaloon()` (starting at line 2539), the planned flow after Task 0 removes the dead saloon-availability check is:
 
 1. Journey modal check (`:2541`)
-2. Saloon availability check (`:2546`)
-3. Enter saloon context (`:2554`)
-4. Spent-source repeat check (`:2556-2568`)
-5. Try confrontable suspect candidate (`:2570-2586`)
-6. Default citizen POI (`:2588-2600`)
+2. Enter saloon context (`:2554`)
+3. If a pending dev saloon override exists, consume it and produce the forced POI through the normal `SaloonPersonOfInterestSpotted` route
+4. Otherwise: spent-source repeat check, then normal candidate/citizen path
 
-The override is consumed **after** step 2 (availability check) and step 3 (context entry), but **before** step 4 (spent-source check). This means the override bypasses both the spent-source repeat path and the normal candidate selection. Replace steps 4-6 with override-aware logic:
+The override is consumed **after** step 1 (journey-modal check) and step 2 (context entry), but **before** the spent-source check. This means the override bypasses both the spent-source repeat path and the normal candidate selection. Replace the spent-source and candidate/citizen blocks with override-aware logic:
 
 Replace the block from line 2556 (`if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))`) through line 2600 (the end of the citizen POI block) with:
 
