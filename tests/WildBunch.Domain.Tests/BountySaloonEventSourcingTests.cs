@@ -66,19 +66,6 @@ public sealed class BountySaloonEventSourcingTests
     }
 
     [Fact]
-    public void LookAroundSaloonNoSaloonDoesNotAdvanceTurnOrProduceEvent()
-    {
-        var session = TestSessionFactory.CreateWithNoSaloon();
-        var turnBefore = session.Clock.Turn;
-
-        var result = session.LookAroundSaloon();
-
-        Assert.False(result.Success);
-        Assert.Empty(session.UncommittedEvents);
-        Assert.Equal(turnBefore, session.Clock.Turn);
-    }
-
-    [Fact]
     public void LookAroundSaloonRepeatProducesSpottedEventWithNoSuspect()
     {
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();

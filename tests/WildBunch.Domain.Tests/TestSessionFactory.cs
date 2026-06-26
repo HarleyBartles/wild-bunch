@@ -135,9 +135,11 @@ public static class TestSessionFactory
     }
 
     /// <summary>
-    /// Creates a session where the current town has no saloon source available.
-    /// LookAroundSaloon will fail with "There is no saloon here."
-    /// Used by BUNCH-80 bounty/saloon event-sourcing tests.
+    /// Creates a session with a sabotaged saloon source catalog (Conditional + Telegraph required)
+    /// in a town with TownServices.None. This was used by BUNCH-80 tests to simulate no-saloon
+    /// scenarios. After BUNCH-90, every town has a saloon and the dead IsAvailable check in
+    /// LookAroundSaloon is removed, so this factory no longer causes LookAroundSaloon to fail.
+    /// Kept for backward compatibility with existing tests that may still reference it.
     /// </summary>
     public static GameSession CreateWithNoSaloon()
     {

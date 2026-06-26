@@ -93,7 +93,6 @@ public sealed class BoringScenarioBuilderTests
 
         scenario.Fixture.AssertCreatedSession(sessionDto);
 
-        Assert.True(session.CurrentTown.SupportsWantedPosters);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);

@@ -16,7 +16,6 @@ public sealed class TownAggregateTests
 
         Assert.Equal(currentTown.Id, aggregate.TownId);
         Assert.Equal("Current Town", aggregate.TownName);
-        Assert.True(aggregate.SupportsWantedPosters);
         Assert.True(aggregate.IsAvailable(InvestigationSourceKind.TelegraphLead));
         Assert.Contains(aggregate.GetInvestigationActions(), action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
 

@@ -2452,11 +2452,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTown.SupportsWantedPosters)
-        {
-            return ReadWantedPostersResult.Failed("There are no wanted posters here.");
-        }
-
         EnterActionContext(TownActionContext.SheriffOffice);
 
         if (CurrentTownVisit.WantedPostersSpent)
@@ -2543,14 +2538,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
-        if (!CurrentTown.IsAvailable(InvestigationSourceKind.SaloonLookAround))
-        {
-            return CaseInvestigationResult.Failed("There is no saloon here.");
-        }
-
-        // Enter saloon context AFTER availability check, BEFORE local action resolution.
+        // Enter saloon context BEFORE local action resolution.
         // Emits TownActionContextEntered event if context changed (advances turn).
-        // If no saloon exists, we already returned above — no context event, no turn advance.
         EnterActionContext(TownActionContext.Saloon);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))
