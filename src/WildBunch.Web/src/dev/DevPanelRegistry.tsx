@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { SessionAuditDevPanel } from "./panels/SessionAuditDevPanel";
 import { TravelDevPanel } from "./panels/TravelDevPanel";
+import { SaloonDevPanel } from "./panels/SaloonDevPanel";
 
 export interface DevPanelDefinition {
   id: string;
@@ -18,5 +19,10 @@ export const devPanels: DevPanelDefinition[] = [
     id: "travel-dev",
     label: "Travel dev",
     render: () => <TravelDevPanel />,
+  },
+  {
+    id: "saloon-dev",
+    label: "Saloon dev",
+    render: () => <SaloonDevPanel />,
   },
 ];
