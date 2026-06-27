@@ -72,7 +72,7 @@ public sealed class GameSessionArchiveTests
         Assert.Equal(new TownId("pinecross"), archived.LastTownId);
         Assert.Equal("Pinecross", archived.LastTownName);
         Assert.Equal(session.Clock.Day, archived.Day);
-        Assert.Equal(session.Clock.TimeOfDay.ToString(), archived.Turn);
+        Assert.Equal("0", archived.Turn);
         Assert.Equal(GameStatus.Active, archived.StatusBeforeArchive);
     }
 

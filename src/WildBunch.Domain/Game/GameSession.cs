@@ -847,7 +847,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             LastTownId = CurrentTown.TownId,
             LastTownName = CurrentTown.TownName,
             Day = Clock.Day,
-            Turn = Clock.TimeOfDay.ToString(),
+            Turn = Clock.Turn.ToString(),
             StatusBeforeArchive = Status
         };
 
