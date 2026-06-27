@@ -620,3 +620,10 @@ export interface SaloonPersonOfInterestConfrontationResultDto {
 }
 
 export interface WantedSuspectConfrontationResultDto extends SaloonPersonOfInterestConfrontationResultDto {}
+
+export interface PrologueDto {
+  heading: string;
+  body: string;
+  primaryAction: string;
+  variantId: string;
+}

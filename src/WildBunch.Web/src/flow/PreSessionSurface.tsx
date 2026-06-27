@@ -66,6 +66,7 @@ export function PreSessionSurface() {
           onStoryAcknowledgedChange={flow.setStoryAcknowledged}
           onContinue={flow.advance}
           onBack={flow.goBack}
+          seedCode={flow.seedState.seedCode}
         />
       )}
 

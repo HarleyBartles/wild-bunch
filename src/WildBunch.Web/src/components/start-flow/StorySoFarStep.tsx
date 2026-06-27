@@ -1,12 +1,15 @@
 import styled from "styled-components";
 import type { FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Eyebrow, Button, BackButton } from "../ui/sharedStyled";
+import { getPrologue } from "../../api/wildBunchApi";
 
 interface StorySoFarStepProps {
   storyAcknowledged: boolean;
   onStoryAcknowledgedChange: (value: boolean) => void;
   onContinue: () => void;
   onBack: () => void;
+  seedCode?: string | null;
 }
 
 export function StorySoFarStep({
@@ -14,10 +17,22 @@ export function StorySoFarStep({
   onStoryAcknowledgedChange,
   onContinue,
   onBack,
+  seedCode,
 }: StorySoFarStepProps) {
+  const prologueQuery = useQuery({
+    queryKey: ["prologue", seedCode ?? null],
+    queryFn: () => getPrologue(seedCode),
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  const heading = prologueQuery.data?.heading ?? "The story so far";
+  const body = prologueQuery.data?.body ?? null;
+  const primaryAction = prologueQuery.data?.primaryAction ?? "I understand. Keep riding.";
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!storyAcknowledged) {
+    if (!storyAcknowledged || prologueQuery.isLoading || prologueQuery.isError) {
       return;
     }
     onContinue();
@@ -26,16 +41,17 @@ export function StorySoFarStep({
   return (
     <StepCard>
       <Eyebrow>Step 2 of 3</Eyebrow>
-      <StepHeading>The story so far</StepHeading>
-      <StepLead>
-        A culprit is on the run. The trail is fresh, but it won't stay that way for long. Read the
-        posters, follow the clues, and bring them in before the law closes the file.
-      </StepLead>
+      <StepHeading>{heading}</StepHeading>
 
-      <PlaceholderBody>
-        Prologue copy will be fetched from the backend in a later task. For now, acknowledge the
-        story to continue.
-      </PlaceholderBody>
+      {prologueQuery.isLoading ? (
+        <PrologueLoading>Loading the story so far…</PrologueLoading>
+      ) : prologueQuery.isError ? (
+        <PrologueError>
+          Couldn't load the prologue. Check your connection and try again.
+        </PrologueError>
+      ) : (
+        <PrologueBody>{body}</PrologueBody>
+      )}
 
       <StepForm onSubmit={handleSubmit}>
         <Field>
@@ -45,6 +61,7 @@ export function StorySoFarStep({
               type="checkbox"
               checked={storyAcknowledged}
               onChange={(event) => onStoryAcknowledgedChange(event.target.checked)}
+              disabled={prologueQuery.isLoading || prologueQuery.isError}
             />
             <Label htmlFor="start-flow-story-ack">I've read the story so far</Label>
           </CheckboxRow>
@@ -54,8 +71,12 @@ export function StorySoFarStep({
           <BackButton type="button" onClick={onBack}>
             Back
           </BackButton>
-          <Button type="submit" $variant="primary" disabled={!storyAcknowledged}>
-            Continue
+          <Button
+            type="submit"
+            $variant="primary"
+            disabled={!storyAcknowledged || prologueQuery.isLoading || prologueQuery.isError}
+          >
+            {primaryAction}
           </Button>
         </StepActions>
       </StepForm>
@@ -82,19 +103,36 @@ const StepHeading = styled.h2`
   line-height: 1.02;
 `;
 
-const StepLead = styled.p`
+const PrologueBody = styled.p`
   margin: 0;
-  color: color-mix(in srgb, var(--text) 75%, transparent);
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: color-mix(in srgb, var(--text) 88%, transparent);
+  font-size: 0.96rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
   max-width: 60ch;
 `;
 
-const PlaceholderBody = styled.p`
+const PrologueLoading = styled.p`
   margin: 0;
   padding: 14px 16px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
   color: var(--muted);
+  font-size: 0.92rem;
+`;
+
+const PrologueError = styled.p`
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+  color: var(--danger-text);
   font-size: 0.92rem;
 `;
 

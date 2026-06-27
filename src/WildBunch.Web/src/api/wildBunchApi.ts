@@ -5,6 +5,7 @@ import type {
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
+  PrologueDto,
   ResolveJourneyEncounterRequest,
   StartGameRequest,
   TownStoreOffersDto,
@@ -134,4 +135,13 @@ export function confrontSaloonPersonOfInterest(gameId: string, declaredWantedIde
 
 export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdentityHandle: string) {
   return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle) as Promise<WantedSuspectConfrontationResultDto>;
+}
+
+export function getPrologue(seedCode?: string | null) {
+  const params = new URLSearchParams();
+  if (seedCode) {
+    params.set("seedCode", seedCode);
+  }
+  const query = params.toString();
+  return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);
 }
