@@ -34,6 +34,26 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         return store is null ? null : ToAggregate(store);
     }
 
+    public async Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
+    {
+        var sessionIds = await _dbContext.GameSessions.AsNoTracking()
+            .Where(entity => entity.Status == status.ToString())
+            .Select(entity => entity.Id)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var sessions = new List<GameSession>(sessionIds.Length);
+        foreach (var id in sessionIds)
+        {
+            var store = await LoadStoreAsync(new GameSessionId(id), cancellationToken).ConfigureAwait(false);
+            if (store is not null)
+            {
+                sessions.Add(ToAggregate(store));
+            }
+        }
+        return sessions;
+    }
+
     public async Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);

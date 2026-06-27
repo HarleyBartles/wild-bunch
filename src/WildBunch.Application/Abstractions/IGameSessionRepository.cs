@@ -7,6 +7,8 @@ public interface IGameSessionRepository
 {
     Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Stages the snapshot upsert and event append on the DbContext.
     /// The UoW commits. No independent SaveChangesAsync here.

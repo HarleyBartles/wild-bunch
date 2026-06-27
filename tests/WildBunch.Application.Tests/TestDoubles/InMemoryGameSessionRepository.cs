@@ -40,6 +40,12 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult(session);
     }
 
+    public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
+    {
+        var matching = _sessions.Values.Where(s => s.Status == status).ToArray();
+        return Task.FromResult<IReadOnlyList<GameSession>>(matching);
+    }
+
     Task<GameSessionReadModel?> IGameSessionReadRepository.GetByIdAsync(GameSessionId id, CancellationToken cancellationToken)
     {
         _sessions.TryGetValue(id, out var session);
