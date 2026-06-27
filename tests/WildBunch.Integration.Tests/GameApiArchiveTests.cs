@@ -54,4 +54,27 @@ public sealed class GameApiArchiveTests
 
         Assert.Equal(HttpStatusCode.NotFound, archiveResponse.StatusCode);
     }
+
+    [Fact]
+    public async Task ArchiveGameReturnsConflictForDoubleArchive()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(createdSession);
+
+        var firstArchive = await client.PostAsync($"/api/games/{createdSession!.Id}/archive", content: null);
+        Assert.Equal(HttpStatusCode.OK, firstArchive.StatusCode);
+
+        var secondArchive = await client.PostAsync($"/api/games/{createdSession.Id}/archive", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, secondArchive.StatusCode);
+    }
 }

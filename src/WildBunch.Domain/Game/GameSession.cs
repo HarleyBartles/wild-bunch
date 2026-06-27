@@ -30,6 +30,7 @@ namespace WildBunch.Domain.Game;
 public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
+    private const string ArchivedBlockMessage = "This playthrough is archived.";
     private const decimal CitizenDeclarationFine = 10m;
 
     private readonly List<GameLogEntry> _logEntries = [];
@@ -954,6 +955,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
+        if (IsArchived)
+        {
+            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+        }
+
         ArgumentNullException.ThrowIfNull(preview);
 
         if (Journey is not null)
@@ -982,7 +988,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public TravelJourneyStepResult AdvanceJourneyDay()
-        => AdvanceJourneyDayDeterministic();
+    {
+        if (IsArchived)
+        {
+            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+        }
+
+        return AdvanceJourneyDayDeterministic();
+    }
 
     /// <summary>
     /// Dev command: forces the next travel-day generation to use the given override.
@@ -1678,6 +1691,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
     {
+        if (IsArchived)
+        {
+            return JourneyArrivalAcknowledgementResult.Failed(ArchivedBlockMessage);
+        }
+
         if (Journey is null)
         {
             return JourneyArrivalAcknowledgementResult.Failed("No completed journey is waiting to be acknowledged.");
@@ -2498,7 +2516,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         int? bulletSpend,
         decimal? bribeAmount,
         ulong? forcedRoll)
-        => ResolveJourneyEncounterDeterministic(choiceId, bulletSpend, bribeAmount, forcedRoll);
+    {
+        if (IsArchived)
+        {
+            return JourneyEncounterResolutionResult.Failed(ArchivedBlockMessage, JourneyStatus.Failed);
+        }
+
+        return ResolveJourneyEncounterDeterministic(choiceId, bulletSpend, bribeAmount, forcedRoll);
+    }
 
     private static string DescribeTravelMode(TravelMode travelMode)
         => travelMode == TravelMode.Mounted ? "by mounted travel" : "on foot";
@@ -2557,6 +2582,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
     {
+        if (IsArchived)
+        {
+            return StorePurchaseResult.Failed(ArchivedBlockMessage);
+        }
+
         ArgumentNullException.ThrowIfNull(offer);
 
         if (IsJourneyModal())
@@ -2610,6 +2640,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public ReadWantedPostersResult ReadWantedPosters()
     {
+        if (IsArchived)
+        {
+            return ReadWantedPostersResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return ReadWantedPostersResult.Failed(JourneyModalBlockMessage);
@@ -2696,6 +2731,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult LookAroundSaloon()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2818,16 +2858,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
-        => _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+    {
+        if (IsArchived)
+        {
+            return SaloonPersonOfInterestConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+        }
+
+        return _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+    }
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
-        => _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
+    {
+        if (IsArchived)
+        {
+            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+        }
+
+        return _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
+    }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
         SuspectId targetSuspectId,
         WantedSuspectConfrontationChoice choice,
         string? declaredWantedIdentityHandle = null)
-        => _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
+    {
+        if (IsArchived)
+        {
+            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+        }
+
+        return _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
+    }
 
     private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
     {
@@ -2846,13 +2907,32 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
-        => _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
+    {
+        if (IsArchived)
+        {
+            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+        }
+
+        return _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
+    }
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
-        => _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+    {
+        if (IsArchived)
+        {
+            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+        }
+
+        return _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+    }
 
     public CaseInvestigationResult FollowTelegraphLeads()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2910,6 +2990,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult GatherLocalGossip()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2962,6 +3047,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult InspectNoticeBoard()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -3014,6 +3104,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult CheckSheriffRecords()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -3300,6 +3395,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private bool IsJourneyModal()
         => Journey is not null;
+
+    private bool IsArchived => Status == GameStatus.Archived;
 
     private bool CanPurchaseInventoryItem(StoreOffer offer, int quantity, out string failureMessage)
     {

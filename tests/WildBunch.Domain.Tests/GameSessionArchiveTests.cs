@@ -105,6 +105,98 @@ public sealed class GameSessionArchiveTests
         Assert.Equal(GameStatus.Archived, rehydrated.Status);
     }
 
+    [Fact]
+    public void Archived_Session_Purchase_Returns_Failed_With_Archived_Message()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var offer = new StoreOffer(
+            DomainItemKind.Food,
+            "Trail Biscuits",
+            1m,
+            StoreVendorType.GeneralStore,
+            StoreOfferAvailability.Available,
+            "Pinecross general store");
+
+        var result = session.Purchase(offer, 1);
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Archived_Session_ReadWantedPosters_Returns_Failed()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var result = session.ReadWantedPosters();
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Archived_Session_LookAroundSaloon_Returns_Failed()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var result = session.LookAroundSaloon();
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Archived_Session_FollowTelegraphLeads_Returns_Failed()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var result = session.FollowTelegraphLeads();
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Archived_Session_AdvanceJourneyDay_Returns_Failed()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Archived_Session_ConfrontSaloonPersonOfInterest_Returns_Failed()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var result = session.ConfrontSaloonPersonOfInterest();
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Archived_Session_AssessSheriffTurnIn_Returns_Failed()
+    {
+        var session = CreateSession();
+        session.ArchivePlaythrough("start-over");
+
+        var result = session.AssessSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        Assert.False(result.Success);
+        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static GameSession CreateSession(
         Wallet? wallet = null,
         DomainInventory? inventory = null)

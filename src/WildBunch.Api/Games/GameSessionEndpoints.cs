@@ -113,5 +113,9 @@ public static class GameSessionEndpoints
         {
             return Results.NotFound();
         }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { error = ex.Message });
+        }
     }
 }
