@@ -494,3 +494,5 @@ $RECYCLE.BIN/
 *.swp
 
 .superpowers/
+.agents/superpowers/sdd/
+.agents/superpowers/output/
