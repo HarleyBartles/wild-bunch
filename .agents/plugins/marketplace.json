@@ -1,0 +1,112 @@
+{
+  "name": "wild-bunch",
+  "interface": {
+    "displayName": "Wild Bunch"
+  },
+  "plugins": [
+    {
+      "name": "repo-worker-pack",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/repo-worker-pack"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "superpowers-plus",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/superpowers-plus"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Coding"
+    },
+    {
+      "name": "wild-bunch-project-pack",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/wild-bunch-project-pack"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "game-studio",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/game-studio"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "dotnet-kit",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/dotnet-kit"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "architecture-pack",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/architecture-pack"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "frontend-pack",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/frontend-pack"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ],
+  "notes": [
+    "Repo-local Codex plugin marketplace for HarleyBartles/wild-bunch.",
+    "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace.",
+    "wild-bunch-project-pack is thin: only Wild Bunch native/bridge skills.",
+    "house-skills is intentionally not default-installed."
+  ]
+}

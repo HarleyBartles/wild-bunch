@@ -6,13 +6,15 @@
 - Root index: `INDEX.md`
 - Docs index: `docs/INDEX.md`
 - Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
-- Repo-local skills index: `.agents/skills/INDEX.md`
+- Repo-local plugin marketplace: `.agents/plugins/marketplace.json` (default-installs `repo-worker-pack`, `superpowers-plus`, `wild-bunch-project-pack`, `game-studio`, `dotnet-kit`, `architecture-pack`, `frontend-pack`; sourced from `HarleyBartles/agent-asset-marketplace`).
 - Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Required working knowledge for dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
 
 ## Mesh Policy
 
 The repo uses three separate documentation/navigation surfaces with different jobs.
+
+Detailed mesh contract: [`.agents/docs/mesh-policy.md`](.agents/docs/mesh-policy.md). The summary below is binding; the detailed doc is the companion.
 
 ### Agents mesh (`AGENTS.md` files)
 - Answer: what is lawful here, what differs from upstream law, and what upstream law still applies.
@@ -31,12 +33,15 @@ The repo uses three separate documentation/navigation surfaces with different jo
 ### Self-healing rule
 If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repair the relevant mesh in the same PR or return AMBER with the exact deferred repair.
 
-## Agent-Generated Evidence (Screenshots, Browser Proof)
+## Agent-Generated Outputs
+- All agent-generated non-work outputs (plans, evidence, screenshots, doctrine notes, unslop profiles, session artifacts) must live under the `.agents/` subtree — never at repo root, under `docs/`, or in product source folders.
+- Do not create loose files at repo root for agent use (no `COMMIT_MSG.txt`, `PR_BODY.md`, scratch notes, etc.). These are worker artifacts that pollute the tree and the generated index mesh.
+- Superpowers plan records live under `.agents/superpowers/plans/`. Agent-facing superpowers material is consolidated under `.agents/superpowers/`, not at root `.superpowers/` or `docs/superpowers/`.
 - Browser screenshots and other agent-generated evidence artifacts must be written under `.agents/superpowers/output/screenshots/` (or a coherent `.agents/superpowers/output/...` subfolder).
 - Generated screenshot/image artifacts must NOT be committed to the repo. The `.agents/superpowers/output/screenshots/` folder is git-ignored via its local `.gitignore` (`*` with `!.gitignore` and `!INDEX.md` exceptions).
 - PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system if needed, but must not add them as repo files.
 - If a worker finds screenshots or generated evidence committed elsewhere in the repo (e.g. under `docs/`), they should remove/move them to the git-ignored `.agents/superpowers/output/` area as part of self-healing.
-- Superpowers plan records live under `.agents/superpowers/plans/`. Agent-facing superpowers material is consolidated under `.agents/superpowers/`, not at root `.superpowers/` or `docs/superpowers/`.
+- If a worker finds loose agent artifact files at repo root or in product folders, remove them as part of self-healing.
 
 ## Unslop Profiles
 - Repo-wide unslop profiles live under `.agents/unslop/`.
