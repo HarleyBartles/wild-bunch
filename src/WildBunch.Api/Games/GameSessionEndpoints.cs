@@ -4,6 +4,7 @@ using WildBunch.Application.Games.Models;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Api.Games.Validation;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 
 namespace WildBunch.Api.Games;
 
@@ -20,6 +21,10 @@ public static class GameSessionEndpoints
         games.MapGet("starting-towns", GetStartingTownsAsync)
             .WithName("GetStartingTowns")
             .Produces<IReadOnlyList<StartingTownDto>>(StatusCodes.Status200OK);
+
+        games.MapGet("prologue", GetPrologueAsync)
+            .WithName("GetPrologue")
+            .Produces<PrologueDto>(StatusCodes.Status200OK);
 
         games.MapGet("{id:guid}", GetGameAsync)
             .WithName("GetGame")
@@ -57,6 +62,23 @@ public static class GameSessionEndpoints
     {
         var towns = await handler.HandleAsync(new GetStartingTownsQuery(), cancellationToken);
         return Results.Ok(towns);
+    }
+
+    private static async Task<IResult> GetPrologueAsync(
+        GetPrologueHandler handler,
+        TravelDifficulty? travelDifficulty = null,
+        string? seedCode = null,
+        AdventureRandomnessPolicy? entropy = null,
+        string? variantId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetPrologueQuery(
+            travelDifficulty ?? TravelDifficulty.Normal,
+            seedCode,
+            entropy ?? AdventureRandomnessPolicy.Standard,
+            variantId);
+        var dto = await handler.HandleAsync(query, cancellationToken);
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> GetGameAsync(
