@@ -322,6 +322,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case GameStarted gs:
                 Apply(gs);
                 break;
+            case PlaythroughArchived pa:
+                Apply(pa);
+                break;
             case StoreItemPurchased p:
                 Apply(p);
                 break;
@@ -818,6 +821,39 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return session;
     }
 
+    /// <summary>
+    /// Archives this playthrough: marks the session <see cref="GameStatus.Archived"/>
+    /// and emits a <see cref="PlaythroughArchived"/> event carrying a snapshot of the
+    /// player's last position (town, day, turn) and the status before archive. Archive
+    /// is a lifecycle mutation, not a deletion — the session remains queryable. See BUNCH-102.
+    /// </summary>
+    /// <param name="archiveReason">Caller-supplied reason recorded on the event (e.g. "start-over").</param>
+    /// <param name="archivedAtUtc">Optional archive timestamp; defaults to <see cref="DateTime.UtcNow"/>.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the session is already archived.</exception>
+    public void ArchivePlaythrough(string archiveReason, DateTime? archivedAtUtc = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(archiveReason);
+
+        if (Status == GameStatus.Archived)
+        {
+            throw new InvalidOperationException("This playthrough is already archived.");
+        }
+
+        var e = new PlaythroughArchived
+        {
+            ArchivedAtUtc = archivedAtUtc ?? DateTime.UtcNow,
+            ArchiveReason = archiveReason,
+            PlayerName = Player.Name,
+            LastTownId = CurrentTown.TownId,
+            LastTownName = CurrentTown.TownName,
+            Day = Clock.Day,
+            Turn = Clock.TimeOfDay.ToString(),
+            StatusBeforeArchive = Status
+        };
+
+        ProduceEvent(e);
+    }
+
     private static int StartingHealthFor(TravelDifficulty travelDifficulty)
         => travelDifficulty switch
         {
@@ -844,6 +880,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         TravelRandomness = e.TravelRandomness;
         Entropy = e.Entropy;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="PlaythroughArchived"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the archive flow: it sets
+    /// <see cref="Status"/> to <see cref="GameStatus.Archived"/>. The event carries
+    /// the pre-archive status and last-position snapshot as decision data; the
+    /// snapshot is not re-applied to live state (archive is terminal for play).
+    /// See ADR-0028 and BUNCH-102.
+    /// </summary>
+    private void Apply(PlaythroughArchived e)
+    {
+        Status = GameStatus.Archived;
         _version++;
     }
 

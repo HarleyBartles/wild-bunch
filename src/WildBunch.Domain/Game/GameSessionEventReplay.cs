@@ -91,6 +91,9 @@ public sealed partial class GameSession
             case GameStarted gs:
                 session.Apply(gs);
                 break;
+            case PlaythroughArchived pa:
+                session.Apply(pa);
+                break;
             case StoreItemPurchased p:
                 session.Apply(p);
                 break;
