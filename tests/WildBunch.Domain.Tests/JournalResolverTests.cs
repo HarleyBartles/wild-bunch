@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
@@ -18,7 +19,7 @@ public sealed class JournalResolverTests
         var session = CreateSession();
         var resolver = new JournalResolver();
 
-        var result = resolver.Resolve(session, session.LogEntries);
+        var result = resolver.Resolve(session, GameSessionLogProjection.Project(session));
 
         Assert.Equal(session.Id.Value, result.SessionId);
         Assert.Equal(session.Status, result.Status);
@@ -34,7 +35,7 @@ public sealed class JournalResolverTests
         Assert.Equal("Find the culprit before the law closes in.", result.CaseSummary);
         Assert.Empty(result.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.KnownClues.Count);
-        Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
+        Assert.Equal(GameSessionLogProjection.Project(session).Count, result.LogEntries.Count);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
     }
 
@@ -45,7 +46,7 @@ public sealed class JournalResolverTests
         session.CaseFile.DiscoverSuspect(new SuspectId("suspect-2"));
         var resolver = new JournalResolver();
 
-        var result = resolver.Resolve(session, session.LogEntries);
+        var result = resolver.Resolve(session, GameSessionLogProjection.Project(session));
 
         Assert.Single(result.DiscoveredSuspects);
         Assert.Equal("suspect-2", result.DiscoveredSuspects[0].Id.Value);
@@ -62,16 +63,16 @@ public sealed class JournalResolverTests
         var beforeTownId = session.Player.CurrentTownId;
         var beforeDay = session.Clock.Day;
         var beforeTurn = session.Clock.Turn;
-        var beforeLogCount = session.LogEntries.Count;
+        var beforeLogCount = GameSessionLogProjection.Project(session).Count;
         var beforeSuspectCount = session.CaseFile.Suspects.Count;
         var beforeClueCount = session.CaseFile.KnownClues.Count;
 
-        _ = resolver.Resolve(session, session.LogEntries);
+        _ = resolver.Resolve(session, GameSessionLogProjection.Project(session));
 
         Assert.Equal(beforeTownId, session.Player.CurrentTownId);
         Assert.Equal(beforeDay, session.Clock.Day);
         Assert.Equal(beforeTurn, session.Clock.Turn);
-        Assert.Equal(beforeLogCount, session.LogEntries.Count);
+        Assert.Equal(beforeLogCount, GameSessionLogProjection.Project(session).Count);
         Assert.Equal(beforeSuspectCount, session.CaseFile.Suspects.Count);
         Assert.Equal(beforeClueCount, session.CaseFile.KnownClues.Count);
         Assert.Equal("A rider with a pale scar across the left cheek.", session.CaseFile.OpeningLead.Description);

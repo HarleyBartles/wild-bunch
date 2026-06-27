@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
@@ -115,7 +116,7 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(25m, session.Player.Wallet.Cash);
-        Assert.Single(session.LogEntries);
+        Assert.Single(GameSessionLogProjection.Project(session));
     }
 
     [Fact]

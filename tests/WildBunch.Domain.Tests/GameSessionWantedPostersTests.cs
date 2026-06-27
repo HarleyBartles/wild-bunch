@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.WantedPosters;
@@ -23,7 +24,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
-        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
@@ -47,7 +48,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(first.Success);
         Assert.True(second.Success);
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first ReadWantedPosters advances turn (same context)
-        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
@@ -65,7 +66,7 @@ public sealed class GameSessionWantedPostersTests
 
         Assert.True(first.Success);
         Assert.Equal(1, session.Clock.Turn);
-        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
@@ -115,7 +116,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
-        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
         Assert.Equal(JourneyStatus.Completed, session.Journey.Status);
     }
 

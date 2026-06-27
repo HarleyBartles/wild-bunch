@@ -235,7 +235,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // full stream here, post-snapshot entries would be duplicated after
         // replay. See BUNCH-86.
         var snapshotEvents = allEvents
-            .Take((int)envelope.SnapshotVersion)
+            .Take((int)envelope.SnapshotVersion.GetValueOrDefault())
             .ToArray();
         var logEntries = _journalLogProjector.Project(snapshotEvents);
 
@@ -320,7 +320,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
         var hasPostSnapshotEvents = store.PostSnapshotEvents.Count > 0;
         var initialVersion = hasPostSnapshotEvents
-            ? (int)store.Envelope.SnapshotVersion
+            ? (int)store.Envelope.SnapshotVersion.GetValueOrDefault()
             : (int)store.Envelope.StreamVersion;
         GameSessionRehydrator.SetVersion(session, initialVersion);
 

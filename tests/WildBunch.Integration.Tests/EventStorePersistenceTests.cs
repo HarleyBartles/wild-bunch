@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -563,9 +564,9 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         // The projector produces 2 log entries (opening + purchase).
         // The aggregate's LogEntries must match — no duplication from
         // snapshot-prefix projection + post-snapshot replay.
-        Assert.Equal(2, loaded2!.LogEntries.Count);
-        Assert.Equal(GameLogEntryKind.Opening, loaded2.LogEntries[0].Kind);
-        Assert.Equal(GameLogEntryKind.Purchase, loaded2.LogEntries[1].Kind);
+        Assert.Equal(2, GameSessionLogProjection.Project(loaded2!).Count);
+        Assert.Equal(GameLogEntryKind.Opening, GameSessionLogProjection.Project(loaded2)[0].Kind);
+        Assert.Equal(GameLogEntryKind.Purchase, GameSessionLogProjection.Project(loaded2)[1].Kind);
     }
 
     private static ServiceProvider CreateServices(string connectionString)

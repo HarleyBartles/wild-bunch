@@ -1,4 +1,5 @@
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
@@ -62,7 +63,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             session.CurrentTownVisit,
             session.Journey is null ? null : session.Journey.ToSnapshot(session.TravelRules),
             session.TravelDiaryDays.ToArray(),
-            session.LogEntries.ToArray()));
+            GameSessionLogProjection.Project(session).ToArray()));
     }
 
     Task<JournalSnapshot?> IGameJournalReadRepository.GetByIdAsync(

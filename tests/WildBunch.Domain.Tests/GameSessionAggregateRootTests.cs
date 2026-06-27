@@ -20,7 +20,12 @@ public sealed class GameSessionAggregateRootTests
     public void SessionLevelMutationMethodsChangeOnlySessionOwnedState()
     {
         var session = CreateSession();
+        // RecordCaseUpdate mutates session.LogEntries directly without producing a
+        // domain event, so GameSessionLogProjection (which projects from events)
+        // cannot observe it. Read the legacy LogEntries here, suppressed per ADR-0028.
+#pragma warning disable CS0618
         var beforeLogCount = session.LogEntries.Count;
+#pragma warning restore CS0618
         var beforeTurn = session.Clock.Turn;
 
         session.RecordCaseUpdate("A public lead is noted.");
@@ -28,8 +33,10 @@ public sealed class GameSessionAggregateRootTests
         // RecordCaseUpdate is decoupled from the clock (BUNCH-80 Task 1).
         // It only adds a log entry — turn advancement is handled by EnterActionContext.
         Assert.Equal(beforeTurn, session.Clock.Turn);
+#pragma warning disable CS0618
         Assert.Equal(beforeLogCount + 1, session.LogEntries.Count);
         Assert.Equal("A public lead is noted.", session.LogEntries[^1].Message);
+#pragma warning restore CS0618
     }
 
     private static GameSession CreateSession()

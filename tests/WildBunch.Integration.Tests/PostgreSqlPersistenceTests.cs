@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
@@ -108,7 +109,7 @@ public sealed class PostgreSqlPersistenceTests
             Assert.Equal(session.Player.Name, reloaded.Player.Name);
             Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
             Assert.Equal(session.Status, reloaded.Status);
-            Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
+            Assert.Equal(GameSessionLogProjection.Project(session).Count, GameSessionLogProjection.Project(reloaded).Count);
             Assert.Equal(session.TravelDiaryDays.Count, reloaded.TravelDiaryDays.Count);
             Assert.NotNull(reloaded.Journey);
             Assert.Equal(JourneyStatus.Completed, reloaded.Journey!.Status);

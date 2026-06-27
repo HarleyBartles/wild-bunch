@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
@@ -41,7 +42,7 @@ public sealed class GetJournalHandlerTests
         Assert.Equal("Butch Cassidy", result.CaseFile.WantedPosters[0].TargetDisplayName);
         Assert.Equal("County marshal", result.CaseFile.WantedPosters[0].LegalTerms.IssuingAuthority);
         Assert.Equal("Dead or alive, $2,500.00 bounty", result.CaseFile.WantedPosters[0].QuickView.PocketCheckDescriptor);
-        Assert.Equal(session.LogEntries.Count, result.LogEntries.Count);
+        Assert.Equal(GameSessionLogProjection.Project(session).Count, result.LogEntries.Count);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.TrueCulpritId);
 

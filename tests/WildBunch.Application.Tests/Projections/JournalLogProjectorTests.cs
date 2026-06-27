@@ -154,7 +154,7 @@ public sealed class JournalLogProjectorTests
                 DayOutcome = TravelDayOutcome.Ongoing,
                 AdditionalDiaryMessages = new[] { "A quiet morning." },
                 DiaryMessage = "You reach the next leg.",
-                HorseLostMessage = null
+                HorseLostMessage = string.Empty
             }
         };
         var log = projector.Project(events);

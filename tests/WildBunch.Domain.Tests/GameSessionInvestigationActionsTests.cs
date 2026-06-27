@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
@@ -26,7 +27,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(first.Success);
         Assert.True(second.Success);
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
-        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
         Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -44,7 +45,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(first.Success);
         Assert.True(second.Success);
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
-        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
@@ -61,7 +62,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(first.Success);
         Assert.True(second.Success);
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
-        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
@@ -78,7 +79,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(first.Success);
         Assert.True(second.Success);
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
-        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
@@ -114,7 +115,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal("Finish the current journey before taking that action.", sheriffRecords.Message);
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.KnownWarrants);
-        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
     }
 
     [Fact]
@@ -205,7 +206,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatSameVisit.Message);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first LookAroundSaloon advances turn (same context)
-        Assert.Equal(3, session.LogEntries.Count);
+        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
 
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
