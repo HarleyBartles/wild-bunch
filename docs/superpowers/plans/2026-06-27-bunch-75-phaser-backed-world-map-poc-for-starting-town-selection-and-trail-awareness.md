@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a minimal React-hosted Phaser map POC that shows starting towns and trails spatially, lets the player pick a starting town by clicking the map, and confirms that choice through the normal start flow without moving game truth into the frontend.
+**Goal:** Add a minimal React-hosted Phaser map POC that enhances the BUNCH-102 starting-town step with spatial map selection, lets the player pick a starting town by clicking the map, and confirms that choice through the normal start flow without moving game truth into the frontend.
 
 **Architecture:** React stays the shell and owns the setup/start flow state. Phaser is a renderer/input adapter only: it receives map read data, draws towns and trail edges, and emits selection intent back to React. Backend/application code remains authoritative for town identity, route distance, and start eligibility.
 
@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - `GameSession` remains the live-play aggregate root; Phaser must not own gameplay truth.
-- Current `main` does **not** yet have the BUNCH-102 starting-town selection seam. This slice is blocked until BUNCH-102 lands or an equivalent seam appears on refreshed `main`.
+- BUNCH-102 has a checked-in, merged plan that defines the expected upstream start-flow seam. BUNCH-75 composes with that plan and reuses its starting-town selection, request, and confirmation seams.
 - The Phaser layer is presentation/input only. It may emit `townSelected` intent, but it must not calculate legal moves, start eligibility, or route truth.
 - Keep the backend/application/domain route authoritative for towns, trails, distances, selected starting town validity, and game creation.
 - Do not rewrite the whole frontend in Phaser.
@@ -19,7 +19,7 @@
 - Do not expose hidden culprit truth or other internal game-state facts through the map surface.
 - Keep any new browser surface inside the existing React shell and HUD model.
 - Do not normalize runtime session state into new tables for this slice.
-- If BUNCH-102 is still absent when execution begins, stop AMBER instead of inventing a parallel start flow.
+- If BUNCH-102 implementation has not landed on refreshed `main` at execution time, stop AMBER instead of inventing a parallel start flow.
 
 ---
 
@@ -35,7 +35,7 @@ Current source inspection on `main` found these seams:
 - `src/WildBunch.Api/Games/TravelEndpoints.cs` only exposes post-start travel preview and travel actions.
 - `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs` and `src/WildBunch.Application/Games/Mapping/TravelMapper.cs` map authoritative world/travel state after session creation.
 - `src/WildBunch.Domain/World/WorldModels.cs` and `src/WildBunch.Domain/Travel/TravelRouteModels.cs` already own town/trail and ride-day distance truth.
-- `BUNCH-102` is still `Todo` in Linear, so the starting-town selection seam this issue depends on has not landed yet.
+- `BUNCH-102` has a checked-in, merged plan, but the implementation must still land on refreshed `main` before BUNCH-75 can execute.
 
 That means the execution plan must stay gated on BUNCH-102 and should not assume a separate start-flow component already exists on current `main`.
 
@@ -43,20 +43,20 @@ That means the execution plan must stay gated on BUNCH-102 and should not assume
 
 If execution proceeds after the BUNCH-102 gate opens, the intended touchpoints are:
 
-- `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` and a new `SeedWorldMapLayout.cs` or equivalent to keep deterministic map coordinates and trail graph data next to the existing seeded world catalog.
-- `src/WildBunch.Application/Games/Models/StartingTownMapDto.cs` and a new read-model DTO for map towns and trail edges.
-- `src/WildBunch.Application/Games/Queries/GetStartingTownMapQuery.cs` and `GetStartingTownMapHandler.cs` for the map read endpoint.
-- `src/WildBunch.Api/Games/StartingTownMapEndpoints.cs` or a narrowly extended `GameSessionEndpoints.cs` for the public read route.
-- `src/WildBunch.Web/src/api/types.ts` and `src/WildBunch.Web/src/api/wildBunchApi.ts` for the map DTO and client call.
+- `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` plus a small map-layout companion such as `SeedWorldMapLayout.cs` to keep deterministic coordinates next to the seeded world catalog.
+- `src/WildBunch.Application/Games/Models/StartingTownMapDto.cs` and companion town/trail DTOs if the setup read model needs richer map fields than BUNCH-102 already returns.
+- `src/WildBunch.Application/Games/Queries/GetStartingTownMapQuery.cs` and `GetStartingTownMapHandler.cs` only if the BUNCH-102 `GET /api/games/starting-towns` read model needs a clearly named companion map endpoint; do not create a second eligibility algorithm.
+- `src/WildBunch.Api/Games/StartingTownMapEndpoints.cs` or an extended setup route only if the map read model cannot be kept on the existing setup endpoint.
+- `src/WildBunch.Web/src/api/types.ts` and `src/WildBunch.Web/src/api/wildBunchApi.ts` for the shared setup/map DTO and client call.
 - `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx` for the mount/unmount seam.
-- `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx` or the BUNCH-102 host component for React-owned confirmation, detail text, and selection state.
+- `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx` or its BUNCH-102 successor component for the React-owned confirmation, detail text, and selection state.
 - `src/WildBunch.Web/src/tests/*` for the adapter and start-flow tests.
-- `tests/WildBunch.Application.Tests/*` and `tests/WildBunch.Api.Tests/*` for the map read-model and endpoint tests.
+- `tests/WildBunch.Application.Tests/*` and `tests/WildBunch.Api.Tests/*` for the setup/map read-model and endpoint tests.
 - `docs/adr/*` only if the Phaser playfield becomes a durable frontend architecture decision rather than a one-off POC seam.
 
 ---
 
-### Task 0: Revalidate the dependency gate and current start-flow seam
+### Task 0: Revalidate the BUNCH-102 seam, then compose with it
 
 **Files:**
 - Inspect: `src/WildBunch.Web/src/flow/PreSessionSurface.tsx`
@@ -67,96 +67,96 @@ If execution proceeds after the BUNCH-102 gate opens, the intended touchpoints a
 - Inspect: `docs/superpowers/plans/2026-06-27-bunch-102-start-over-settings-and-prologue-start-loop.md`
 
 **Interfaces:**
-- Consumes: current `main`, Linear BUNCH-102 status, and the existing pre-session/start-route seam.
-- Produces: a go/no-go decision for execution. If the BUNCH-102 seam is still absent, stop AMBER and do not start the code slice.
+- Consumes: the checked-in BUNCH-102 plan, the expected upstream start-flow seams, and refreshed `main` at execution time.
+- Produces: a go/no-go decision for execution. If the BUNCH-102 implementation is still absent on refreshed `main`, stop AMBER and do not start the code slice.
 
-- [ ] **Step 1: Confirm BUNCH-102 is landed or the equivalent starting-town seam exists on refreshed `main`.**
+- [ ] **Step 1: Read the checked-in BUNCH-102 plan and identify the expected upstream seams.**
 
-Run: `rg -n "starting-town|prologue|StorySoFar|StartFlow|PhaserMapHost" src/WildBunch.Web src/WildBunch.Api src/WildBunch.Application`
+Use: `docs/superpowers/plans/2026-06-27-bunch-102-start-over-settings-and-prologue-start-loop.md`
 
-Expected: the new start-flow seam is present only if BUNCH-102 has landed.
+Expected: the plan establishes the upstream `StartingTownId` chain, `GET /api/games/starting-towns`, and the React start-flow step that BUNCH-75 must enhance.
 
-- [ ] **Step 2: Confirm current pre-session code still owns the old setup screen.**
+- [ ] **Step 2: On execution, revalidate refreshed `main` against the expected BUNCH-102 seams.**
 
-Run: `Get-Content src/WildBunch.Web/src/flow/PreSessionSurface.tsx`
+Run: `rg -n "StartingTownId|starting-towns|StartingTownStep|StorySoFar|PhaserMapHost" src/WildBunch.Web src/WildBunch.Api src/WildBunch.Application`
 
-Expected: `PreSessionSurface` still renders `StartGamePanel` on the pre-session route.
+Expected: the upstream seam exists on source, or a landed variant can be reconciled before implementing BUNCH-75.
 
-- [ ] **Step 3: Stop if the dependency gate is still closed.**
+- [ ] **Step 3: If BUNCH-102 has landed differently from the plan, reconcile against landed source before implementing.**
 
-If BUNCH-102 is still missing, return AMBER and do not continue into implementation tasks.
+Do not duplicate start-request, start-command, or setup-endpoint work. Reuse the landed seam or adjust the plan against it before coding.
 
-### Task 1: Define the map read model from authoritative world data
+- [ ] **Step 4: Stop if the BUNCH-102 implementation is still absent on refreshed `main`.**
+
+If the upstream implementation has not landed, return AMBER and do not continue into implementation tasks.
+
+### Task 1: Extend the BUNCH-102 setup read model for map coordinates
 
 **Files:**
-- Create: `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs`
-- Create: `src/WildBunch.Application/Games/Models/StartingTownMapDto.cs`
-- Create: `src/WildBunch.Application/Games/Models/StartingTownMapTownDto.cs`
-- Create: `src/WildBunch.Application/Games/Models/StartingTownMapTrailDto.cs`
+- Modify: `src/WildBunch.Application/Games/Models/StartingTownDto.cs` or the existing setup-town DTO surface from BUNCH-102
 - Modify: `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs`
+- Create: `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs`
 - Modify: `src/WildBunch.Domain/World/WorldModels.cs` only if the smallest honest representation needs a domain-level coordinate value object instead of a GameContent-local layout table
 
 **Interfaces:**
-- Consumes: seeded town ids/names/services and trail distance truth from current world generation.
-- Produces: a deterministic map layout model with town coordinates, route edges, and ride-day distance labels for the map host.
+- Consumes: the BUNCH-102 setup-town candidate source and the seeded world/trail truth.
+- Produces: a deterministic map layout extension with town coordinates and route edges that reuses the same eligibility/candidate source as BUNCH-102.
 
 - [ ] **Step 1: Add a deterministic coordinate layout for the seeded towns.**
 
 The layout should stay static and modest. Use coordinates that make the trail graph readable; do not generate procedural map art.
 
-- [ ] **Step 2: Add a map DTO that carries the minimum data the map needs.**
+- [ ] **Step 2: Extend the setup-town read model or add a companion map projection, but keep the candidate source shared.**
 
-The DTO should include town id, town name, x/y coordinate, selection eligibility, and trail edge data with ride-day distance labels.
+The map view may add x/y coordinates and trail-edge labels, but the allowed-town list must come from the same eligibility logic BUNCH-102 already owns.
 
-- [ ] **Step 3: Keep the map source next to the existing seeded world catalog.**
+- [ ] **Step 3: Keep the map source next to the existing seeded world catalog and setup read model.**
 
 Do not move map truth into the web project. The frontend should consume read data only.
 
-### Task 2: Add the backend read endpoint for the map POC
+### Task 2: Reuse the BUNCH-102 setup endpoint and expose map-ready data
 
 **Files:**
-- Create: `src/WildBunch.Application/Games/Queries/GetStartingTownMapQuery.cs`
-- Create: `src/WildBunch.Application/Games/Queries/GetStartingTownMapHandler.cs`
-- Modify: `src/WildBunch.Application/DependencyInjection.cs` or the existing game-handler registration surface
-- Create: `src/WildBunch.Api/Games/StartingTownMapEndpoints.cs` or extend `src/WildBunch.Api/Games/GameSessionEndpoints.cs`
-- Create or modify: `tests/WildBunch.Application.Tests/Games/Queries/GetStartingTownMapHandlerTests.cs`
-- Create or modify: `tests/WildBunch.Api.Tests/Games/StartingTownMapEndpointsTests.cs`
+- Modify: `src/WildBunch.Application/Games/Queries/GetStartingTownsHandler.cs` or the BUNCH-102 setup-town query surface
+- Modify: `src/WildBunch.Api/Games/GameSessionEndpoints.cs` or the BUNCH-102 setup endpoint surface
+- Create or modify: `tests/WildBunch.Application.Tests/Games/Queries/GetStartingTownsHandlerTests.cs`
+- Create or modify: `tests/WildBunch.Api.Tests/Games/GameSessionEndpointsTests.cs`
 
 **Interfaces:**
-- Consumes: the new map read model and the seeded world catalog.
-- Produces: a public read endpoint that returns town coordinates and trail edges before session creation.
+- Consumes: the BUNCH-102 setup-town candidate source and the map coordinate extension.
+- Produces: a setup-scoped read endpoint that returns the existing candidate towns plus optional map-ready coordinates and trail edges.
 
-- [ ] **Step 1: Write the query and handler against the authoritative seeded world data.**
+- [ ] **Step 1: Verify and reuse the BUNCH-102 setup-town endpoint rather than creating a second eligibility algorithm.**
 
-The handler should return only player-visible map data. It must not depend on a live `GameSession`.
+If the existing endpoint can carry coordinates and edges, extend it; otherwise add a clearly named companion map endpoint that still uses the same candidate source.
 
-- [ ] **Step 2: Add the API route.**
+- [ ] **Step 2: Add or extend the API route without duplicating eligibility.**
 
 Use a setup-scoped map route rather than forcing the caller to create a session first.
 
-- [ ] **Step 3: Add tests that prove the map data is deterministic and sourced from the backend.**
+- [ ] **Step 3: Add tests that prove the map data is deterministic, backend-sourced, and shares the candidate list with BUNCH-102.**
 
-The tests should assert town ids, coordinates, and trail distances without depending on frontend state.
+The tests should assert town ids, coordinates, trail distances, and candidate eligibility without depending on frontend state.
 
-### Task 3: Host Phaser inside React and keep React in charge of selection
+### Task 3: Replace the BUNCH-102 `StartingTownStep` body with a Phaser-backed map host
 
 **Files:**
 - Create: `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx`
-- Create or modify: `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx`
+- Modify: `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx`
 - Modify: `src/WildBunch.Web/src/api/types.ts`
 - Modify: `src/WildBunch.Web/src/api/wildBunchApi.ts`
 - Create or modify: `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx`
 - Create or modify: `src/WildBunch.Web/src/tests/StartingTownStep.test.tsx`
 
 **Interfaces:**
-- Consumes: the map read endpoint response and the current React-owned selected-town state.
+- Consumes: the BUNCH-102 setup-town candidate response and the current React-owned selected-town state.
 - Produces: a mounted Phaser scene that emits `townSelected` intent and unmounts cleanly on route change.
 
 - [ ] **Step 1: Add the Phaser host component with explicit mount/unmount cleanup.**
 
 The host should create the Phaser game in `useEffect`, destroy it on cleanup, and respond to resize without taking over React state.
 
-- [ ] **Step 2: Wire the host into the starting-town step.**
+- [ ] **Step 2: Wire the host into the BUNCH-102 starting-town step.**
 
 React owns the selected town, the detail panel, and the confirm action. Phaser only raises selection intent.
 
@@ -168,30 +168,35 @@ The Phaser canvas should not own buttons, validation, or final confirmation.
 
 Tests should prove the host mounts and unmounts cleanly and that selection intent flows back into React state.
 
-### Task 4: Confirm the selected town through the normal start flow
+### Task 4: Prove React owns the final confirmation and game creation
 
 **Files:**
-- Modify: `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts`
-- Modify: `src/WildBunch.Web/src/api/types.ts`
-- Modify: `src/WildBunch.Web/src/api/wildBunchApi.ts`
-- Modify: `src/WildBunch.Web/src/flow/PreSessionSurface.tsx` if the existing setup surface still hosts the start flow after BUNCH-102 lands
+- Inspect: `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts`
+- Inspect: `src/WildBunch.Web/src/api/types.ts`
+- Inspect: `src/WildBunch.Web/src/api/wildBunchApi.ts`
+- Inspect: `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx`
 - Create or modify: `src/WildBunch.Web/src/tests/StartFlow.test.tsx` or the BUNCH-102 start-flow test surface
+- Create or modify: `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx`
 
 **Interfaces:**
-- Consumes: the React-selected starting town and the existing `startNewGame` mutation.
-- Produces: a final `POST /api/games` call that carries the selected town only after the normal start flow confirms it.
+- Consumes: the React-selected starting town and the existing `startNewGame` mutation from BUNCH-102.
+- Produces: proof that the final `POST /api/games` call still comes from React-owned confirmation, not Phaser.
 
-- [ ] **Step 1: Extend the start request model to carry the selected starting town.**
+- [ ] **Step 1: Verify the selected-town request and command seams already exist from BUNCH-102.**
 
-The request should still preserve existing difficulty/seed/entropy behavior.
+Do not re-add `StartingTownId` to the request chain; just confirm the upstream seam and reuse it.
 
-- [ ] **Step 2: Pass the selected town from React into the existing game-creation path.**
+- [ ] **Step 2: Keep Phaser out of the game-creation path.**
 
-Do not let Phaser call the game-creation endpoint directly.
+React owns the selection state and the confirm action. Phaser must not call `POST /api/games`.
 
 - [ ] **Step 3: Add tests proving the final confirmation still happens through the normal start flow.**
 
 The map can select a town, but the game should only start after React-owned confirmation.
+
+- [ ] **Step 4: Add falsifiable proof that Phaser does not own game truth.**
+
+Tests should prove Phaser does not call `POST /api/games`, does not decide eligibility, does not store selected-town truth, and does not bypass the React-owned final confirmation.
 
 ### Task 5: Validate the slice and capture browser proof
 
@@ -242,4 +247,3 @@ If the Phaser host becomes a standing architecture decision, update the relevant
 - If BUNCH-102 is still absent on refreshed `main`, stop AMBER and do not start implementation.
 - If the map design turns into pathfinding, freeform movement, or full travel animation, split that work out and stop this slice.
 - If the slice needs more than a deterministic coordinate layout plus trail edges, pause and reassess instead of broadening the frontend.
-
