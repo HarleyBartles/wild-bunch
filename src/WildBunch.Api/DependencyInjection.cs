@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<AcknowledgeJourneyArrivalHandler>();
         services.AddScoped<ResolveJourneyEncounterHandler>();
         services.AddScoped<TurnInToSheriffHandler>();
+        services.AddScoped<ArchivePlaythroughHandler>();
 
         // Projection projectors (safe read-model derivations from event stream)
         // Only HUD and diary are exposed through the player-facing API.
