@@ -4,9 +4,10 @@ import { useGameSession } from "../state/useGameSession";
 
 interface HudProps {
   onOpenJournal: () => void;
+  onOpenGameSettings: () => void;
 }
 
-export function Hud({ onOpenJournal }: HudProps) {
+export function Hud({ onOpenJournal, onOpenGameSettings }: HudProps) {
   const { session, currentTown, cockpitMode } = useGameSession();
 
   if (!session) {
@@ -23,6 +24,9 @@ export function Hud({ onOpenJournal }: HudProps) {
         <HudActions>
           <HudButton type="button" disabled>
             Journal
+          </HudButton>
+          <HudButton type="button" disabled>
+            Game Settings
           </HudButton>
         </HudActions>
       </HudBar>
@@ -66,6 +70,9 @@ export function Hud({ onOpenJournal }: HudProps) {
       <HudActions>
         <HudButton type="button" onClick={onOpenJournal}>
           Journal
+        </HudButton>
+        <HudButton type="button" onClick={onOpenGameSettings}>
+          Game Settings
         </HudButton>
       </HudActions>
     </HudBar>

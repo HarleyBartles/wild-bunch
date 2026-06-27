@@ -27,7 +27,10 @@ function ShellChrome() {
     <DevSurfaceProvider>
       <Shell>
         <ChromeBar ref={chromeBarRef}>
-          <Hud onOpenJournal={() => setOpenOverlay("journal")} />
+          <Hud
+            onOpenJournal={() => setOpenOverlay("journal")}
+            onOpenGameSettings={() => setOpenOverlay("game-settings")}
+          />
           <OverlayBar>
             <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
             <DevNav aria-label="Developer tools">
