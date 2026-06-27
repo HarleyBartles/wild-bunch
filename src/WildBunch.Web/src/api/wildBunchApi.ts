@@ -29,6 +29,10 @@ export function getGame(gameId: string) {
   return requestJson<GameSessionDto>(`/api/games/${gameId}`);
 }
 
+export function archiveGame(gameId: string) {
+  return requestJson<void>(`/api/games/${gameId}/archive`, { method: "POST" });
+}
+
 export function getAvailableActions(gameId: string) {
   return requestJson<AvailableActionDto[]>(`/api/games/${gameId}/actions`);
 }

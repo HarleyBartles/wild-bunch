@@ -16,7 +16,7 @@ interface GlobalOverlaysProps {
 }
 
 export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
-  const { journal, wantedPosters, loading, error } = useGameSession();
+  const { journal, wantedPosters, loading, error, archivePlaythrough, archiving } = useGameSession();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
@@ -96,8 +96,11 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         body="This will archive your current playthrough. You will not be able to return to it. A new hunt will begin from the start."
         confirmLabel="Archive and start over"
         cancelLabel="Keep riding"
+        busy={archiving}
         onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          void archivePlaythrough().then(() => setConfirmOpen(false));
+        }}
       />
     </>
   );
