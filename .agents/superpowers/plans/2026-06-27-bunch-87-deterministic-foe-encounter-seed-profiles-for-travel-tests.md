@@ -23,6 +23,20 @@
 
 ---
 
+## Preflight Answers / Source Seams Inspected
+
+- The current dev-travel control seam is `GameSession.ForceDevTravelOverride(...)`, consumed by `PrepareTravelDayAdvance()` and surfaced through `/api/dev/sessions/{id}/travel/force-override` and the dev travel context mapper.
+- That seam is backend/application/domain-owned, not frontend-only state.
+- Tests can compose with the same seam directly, so the plan does not need a separate test-only rulebook.
+- Normal travel still advances through the standard journey start and day-advance route, and encounter resolution stays on the regular `ResolveJourneyEncounter(...)` path.
+- The fragile tests are the ones that still lean on interruption loops, hand-tuned route profiles, or comments that treat seed descriptors as the encounter-control mechanism.
+- Descriptor/setup seeds are still useful only as route/setup guardrails when a test needs a lawful starting shape.
+- Boring mode stays deterministic-test posture only; it is not encounter suppression.
+- Heat stays future lawman pressure, not trail danger; current travel/encounter selection does not move that responsibility into the route generator.
+- This issue composes with BUNCH-89 and BUNCH-94 by reusing the current shared seam now, without implementing their broader control surfaces here.
+
+---
+
 ### Task 1: Move the domain travel foe tests onto the shared dev override seam
 
 **Files:**
@@ -142,18 +156,44 @@ Expected:
 
 Keep the API test change small enough that a reviewer can see the same lawful control path being exercised from the outside.
 
----
+--- 
 
-### Task 3: Final validation and plan publication
+### Task 3: Implementation closeout and evidence
 
 **Files:**
 - Read-only: the whole repo for final verification.
 
 **Interfaces:**
 - Consumes: the two changed test layers and the repo-local plan record.
-- Produces: a plan-only PR-ready branch with a checked-in plan file and a route-state update in Linear.
+- Produces: implementation-phase evidence, an updated PR body, and a final closeout record for the approved branch.
 
-- [ ] **Step 1: Run the broad repository guardrails that still matter for a test-only slice.**
+- [ ] **Step 1: Run the targeted tests from Tasks 1 and 2.**
+
+Run:
+
+```powershell
+dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~TravelEncounterResolutionCharacterizationTests|FullyQualifiedName~TravelReplayEqualityTests|FullyQualifiedName~DevTravelOverrideTests"
+dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --filter "FullyQualifiedName~TravelTestSeedCatalogGuardrailTests"
+dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~DevTravelEndpointTests|FullyQualifiedName~GameApiHiddenTruthTests"
+```
+
+Expected:
+
+- the deterministic foe-control tests pass without retry loops or seed-only assumptions;
+- the dev-travel API test proves the shared backend seam works end-to-end;
+- the hidden-truth guard still holds.
+
+- [ ] **Step 2: Falsify stale patterns after the rewrite.**
+
+Run searches such as:
+
+```powershell
+rg -n "loop|retry|until.*foe|seed descriptor.*encounter|used for foe-encounter|Boring mode|no-enemy|no-NPC|heat.*trail danger|route risk|random roll|runtime state" tests src
+```
+
+Any remaining hit must either be removed or explicitly justified in the closeout notes.
+
+- [ ] **Step 3: Run the broad repository guardrails.**
 
 Run:
 
@@ -162,9 +202,9 @@ dotnet build WildBunch.sln
 dotnet test WildBunch.sln
 ```
 
-If full-solution test runtime is too heavy for the plan-only pass, keep the plan narrow but do not skip the targeted tests from Tasks 1 and 2.
+If `dotnet test WildBunch.sln` hits a concrete runtime blocker, report the blocker and do not claim full validation.
 
-- [ ] **Step 2: Confirm the worktree and branch are clean before publication.**
+- [ ] **Step 4: Confirm the worktree and branch are clean.**
 
 Run:
 
@@ -180,29 +220,16 @@ Expected:
 - the branch matches `harleydbartles/bunch-87-deterministic-foe-encounter-seed-profiles-for-travel-tests`;
 - the head commit is the plan commit.
 
-- [ ] **Step 3: Publish the plan-only PR against `main`.**
+- [ ] **Step 5: Update the implementation PR body and closeout evidence.**
 
-Push the branch and open a draft PR targeting `main`. The PR body should say:
+Update the PR body with:
 
-- the issue now uses the shared dev-travel override seam for deterministic foe tests;
-- seed/profile setup is route-only, not encounter-control;
-- BUNCH-103 is assumed landed;
-- no gameplay redesign or seed-code change was required.
+- changed files;
+- validation commands and results;
+- remaining AMBER notes, if any;
+- evidence that deterministic foe control now comes from the shared dev-travel seam.
 
-- [ ] **Step 4: Update the Linear route-state comment.**
-
-Post the route-state block back to BUNCH-87 with the actual repo plan path and PR URL.
-
-Expected route state:
-
-```text
-Route state: preflight_complete_pending_approval
-Plan path: .agents/superpowers/plans/2026-06-27-bunch-87-deterministic-foe-encounter-seed-profiles-for-travel-tests.md
-Plan PR: <plan-only draft PR URL>
-Plan branch: harleydbartles/bunch-87-deterministic-foe-encounter-seed-profiles-for-travel-tests
-Plan base commit: ac683496f462caccd50523c369ae6568737b6ea0
-Status: plan-only draft PR open; awaiting approval before execution.
-```
+Then return the final head SHA, branch, clean-worktree status, and the evidence that the shared seam controls deterministic foe encounters.
 
 ---
 
@@ -214,6 +241,7 @@ Status: plan-only draft PR open; awaiting approval before execution.
 - Preserve replay safety and hidden-truth boundaries: Task 1 and Task 2.
 - Avoid Boring-mode suppression and runtime patching: Global Constraints.
 - Avoid seed codec or gameplay redesign work: Global Constraints.
+- Final execution closeout, falsification, and PR-body evidence: Task 3.
 
 **2. Placeholder scan:**
 - No TBDs, TODOs, or hand-wavy "handle edge cases" text remain in the task list.
