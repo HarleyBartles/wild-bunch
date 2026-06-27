@@ -8,6 +8,14 @@
 
 **Tech Stack:** C# / .NET, xUnit, ASP.NET Core integration tests, the existing dev travel endpoints under `/api/dev`, and the current `GameSession.ForceDevTravelOverride` domain command path.
 
+## Plan Status
+
+- Plan status: approved for implementation
+- Current route state: `approved_to_implement`
+- This PR is plan-only and contains no implementation.
+- After this plan PR is merged, a later implementation worker should execute the checked-in plan from current `main`.
+- Implementation must still follow the plan’s validation and falsification steps; approval of the plan is not approval to skip verification.
+
 ## Global Constraints
 
 - Assumption baseline: current `origin/main` after the BUNCH-103 merge commit `ac683496f462caccd50523c369ae6568737b6ea0`.
