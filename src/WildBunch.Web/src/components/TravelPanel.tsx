@@ -65,10 +65,10 @@ const TravelStage = styled.article`
   gap: 18px;
   padding: 22px;
   border-radius: 28px;
-  border: 1px solid rgba(228, 186, 126, 0.24);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 24%, transparent);
   background:
-    radial-gradient(circle at top right, rgba(236, 203, 146, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(34, 25, 16, 0.98), rgba(18, 13, 8, 0.98));
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-strong) 12%, transparent), transparent 26%),
+    linear-gradient(180deg, rgba(34, 25, 16, 0.98), rgba(18, 13, 8, 0.98)); /* no token match — surface gradient */
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
 `;
 
@@ -81,7 +81,7 @@ const TravelHeader = styled.header`
 
 const Eyebrow = styled.p`
   margin: 0 0 6px;
-  color: #efc37e;
+  color: var(--accent-strong);
   text-transform: uppercase;
   letter-spacing: 0.22em;
   font-size: 0.74rem;
@@ -97,7 +97,7 @@ const Title = styled.h2`
 const Lead = styled.p`
   max-width: 70ch;
   margin: 0;
-  color: rgba(242, 239, 232, 0.76);
+  color: color-mix(in srgb, var(--text) 76%, transparent);
 `;
 
 const HeaderMeta = styled.div`
@@ -115,7 +115,7 @@ const MetaCard = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.09);
 
   span {
-    color: rgba(242, 239, 232, 0.62);
+    color: color-mix(in srgb, var(--text) 62%, transparent);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.75rem;
@@ -131,15 +131,15 @@ const TravelGrid = styled.div`
 const ErrorBanner = styled.div`
   padding: 13px 14px;
   border-radius: 16px;
-  background: rgba(240, 126, 110, 0.15);
-  border: 1px solid rgba(240, 126, 110, 0.26);
-  color: #ffe4de;
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+  color: var(--danger-text);
 `;
 
 const InfoBanner = styled.div`
   padding: 13px 14px;
   border-radius: 16px;
-  background: rgba(95, 159, 111, 0.12);
-  border: 1px solid rgba(95, 159, 111, 0.2);
-  color: rgba(242, 239, 232, 0.84);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
+  color: color-mix(in srgb, var(--text) 84%, transparent);
 `;

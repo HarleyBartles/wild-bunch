@@ -1,5 +1,78 @@
 import { useMemo } from "react";
+import styled from "styled-components";
 import type { GameLogEntryDto, JournalDto } from "../api/types";
+import {
+  StatusCard,
+  Eyebrow,
+  Muted,
+  Stack,
+  ItemCard,
+} from "./ui/sharedStyled";
+
+const ModalState = styled.div`
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+`;
+
+const JournalClock = styled.h3`
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
+  white-space: nowrap;
+`;
+
+const JournalTimeline = styled.div`
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+`;
+
+const JournalDay = styled(StatusCard)`
+  padding: 16px;
+  border-radius: 22px;
+`;
+
+const JournalDayHeader = styled.header`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+`;
+
+const JournalEntry = styled.article`
+  padding: 8px 0;
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+  }
+`;
+
+const JournalEntryMessage = styled.p`
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.5;
+  color: var(--text);
+`;
+
+const JournalEntryStack = styled(Stack)`
+  gap: 4px;
+`;
+
+const JournalSurfaceSection = styled(StatusCard).attrs({ as: "section" })`
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 18px;
+`;
 
 interface JournalSurfaceProps {
   journal: JournalDto | null;
@@ -55,58 +128,61 @@ function formatJournalEntryMessage(message: string) {
 
 function JournalEntryCard({ entry }: { entry: GameLogEntryDto }) {
   return (
-    <article className="journal-entry">
-      <p className="journal-entry__message">{formatJournalEntryMessage(entry.message)}</p>
-    </article>
+    <JournalEntry>
+      <JournalEntryMessage>{formatJournalEntryMessage(entry.message)}</JournalEntryMessage>
+    </JournalEntry>
   );
 }
 
 function JournalDaySection({ group }: { group: JournalDayGroup }) {
   return (
-    <section className="journal-day">
-      <header className="journal-day__header">
-        <div>
-          <p className="eyebrow">Day {group.day}</p>
-        </div>
-      </header>
-      <div className="journal-day__entries">
+    <JournalDay>
+      <JournalDayHeader>
+        <Eyebrow>Day {group.day}</Eyebrow>
+      </JournalDayHeader>
+      <JournalEntryStack>
         {group.entries.map((entry, index) => (
           <JournalEntryCard key={`${entry.day}-${entry.turn}-${index}`} entry={entry} />
         ))}
-      </div>
-    </section>
+      </JournalEntryStack>
+    </JournalDay>
   );
 }
 
-export function JournalSurface({ journal, loading, error, sessionLogEntries }: JournalSurfaceProps) {
+export function JournalSurface({
+  journal,
+  loading,
+  error,
+  sessionLogEntries,
+}: JournalSurfaceProps) {
   const entries = getEntries(journal, sessionLogEntries);
   const groups = useMemo(() => groupEntriesByDay(entries), [entries]);
 
   if (loading) {
-    return <div className="case-modal__state">Opening the trail journal...</div>;
+    return <ModalState>Opening the trail journal...</ModalState>;
   }
 
   if (error) {
-    return <div className="case-modal__state">{error || "Load a game to read the trail journal."}</div>;
+    return <ModalState>{error || "Load a game to read the trail journal."}</ModalState>;
   }
 
   if (!journal) {
-    return <div className="case-modal__state">Load a game to read the trail journal.</div>;
+    return <ModalState>Load a game to read the trail journal.</ModalState>;
   }
 
   return (
-    <section className="case-modal__section case-modal__section--wide journal-surface">
-      <div className="case-modal__section-head journal-surface__head">
-        <h3 className="journal-surface__clock">{formatJournalClock(journal)}</h3>
-      </div>
+    <JournalSurfaceSection>
+      <header>
+        <JournalClock>{formatJournalClock(journal)}</JournalClock>
+      </header>
 
-      <div className="journal-timeline">
+      <JournalTimeline>
         {groups.length > 0 ? (
           groups.map((group) => <JournalDaySection key={group.day} group={group} />)
         ) : (
-          <p className="muted">No notes yet. The trail is still being written.</p>
+          <Muted>No notes yet. The trail is still being written.</Muted>
         )}
-      </div>
-    </section>
+      </JournalTimeline>
+    </JournalSurfaceSection>
   );
 }

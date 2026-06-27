@@ -130,10 +130,10 @@ const DiaryDayCard = styled.article`
   padding: 16px;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(250, 244, 232, 0.055), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, color-mix(in srgb, var(--text) 6%, transparent), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f7f3ea;
+  color: var(--text);
 `;
 
 const DiaryDayHeader = styled.header`
@@ -151,7 +151,7 @@ const DayTitle = styled.h3`
 
 const DaySubhead = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.68);
+  color: color-mix(in srgb, var(--text) 68%, transparent);
   font-size: 0.92rem;
 `;
 
@@ -159,34 +159,34 @@ const DayBadge = styled.span`
   padding: 5px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(242, 239, 232, 0.82);
+  color: color-mix(in srgb, var(--text) 82%, transparent);
   background: rgba(255, 255, 255, 0.04);
   font-size: 0.78rem;
   white-space: nowrap;
 
   &[data-state="arrival"] {
-    color: #1b1308;
-    background: linear-gradient(180deg, #f0d39b, #c8843d);
-    border-color: rgba(240, 211, 155, 0.58);
+    color: var(--accent-ink);
+    background: linear-gradient(180deg, var(--accent-strong), var(--accent-strong-dark));
+    border-color: color-mix(in srgb, var(--accent-strong) 58%, transparent);
   }
 
   &[data-state="interrupted"] {
-    color: #ffe8e3;
-    background: rgba(240, 126, 110, 0.14);
-    border-color: rgba(240, 126, 110, 0.24);
+    color: var(--danger-text);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 24%, transparent);
   }
 
   &[data-state="resolved"] {
-    color: #def3e0;
-    background: rgba(95, 159, 111, 0.14);
-    border-color: rgba(95, 159, 111, 0.24);
+    color: var(--success-text);
+    background: color-mix(in srgb, var(--success) 14%, transparent);
+    border-color: color-mix(in srgb, var(--success) 24%, transparent);
   }
 
   &[data-state="eventful"],
   &[data-state="departure"] {
-    color: #1b1308;
-    background: linear-gradient(180deg, #efc37e, #b87634);
-    border-color: rgba(239, 195, 126, 0.42);
+    color: var(--accent-ink);
+    background: linear-gradient(180deg, var(--accent-strong), var(--accent-strong-dark));
+    border-color: color-mix(in srgb, var(--accent-strong) 42%, transparent);
   }
 `;
 
@@ -201,10 +201,10 @@ const DiaryBody = styled.div`
 const OpeningNote = styled.p`
   margin: 0;
   padding: 12px 14px;
-  border-left: 3px solid rgba(239, 195, 126, 0.72);
+  border-left: 3px solid color-mix(in srgb, var(--accent-strong) 72%, transparent);
   border-radius: 12px;
-  background: rgba(239, 195, 126, 0.08);
-  color: rgba(247, 243, 234, 0.94);
+  background: color-mix(in srgb, var(--accent-strong) 8%, transparent);
+  color: color-mix(in srgb, var(--text) 94%, transparent);
 `;
 
 const DiaryParagraph = styled.p`
@@ -216,12 +216,12 @@ const TrailNote = styled.div`
   gap: 8px;
   padding: 13px 14px;
   border-radius: 16px;
-  background: rgba(223, 159, 79, 0.09);
-  border: 1px solid rgba(223, 159, 79, 0.18);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
 
   p {
     margin: 0;
-    color: rgba(242, 239, 232, 0.8);
+    color: color-mix(in srgb, var(--text) 80%, transparent);
   }
 `;
 
@@ -229,7 +229,7 @@ const TrailNoteMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
-  color: rgba(242, 239, 232, 0.64);
+  color: color-mix(in srgb, var(--text) 64%, transparent);
   font-size: 0.84rem;
 `;
 
@@ -238,17 +238,17 @@ const ResolutionNote = styled.div`
   gap: 6px;
   padding: 13px 14px;
   border-radius: 16px;
-  background: rgba(95, 159, 111, 0.11);
-  border: 1px solid rgba(95, 159, 111, 0.2);
+  background: color-mix(in srgb, var(--success) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
 
   p {
     margin: 0;
-    color: rgba(242, 239, 232, 0.82);
+    color: color-mix(in srgb, var(--text) 82%, transparent);
   }
 `;
 
 const DayMeta = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.54);
+  color: color-mix(in srgb, var(--text) 54%, transparent);
   font-size: 0.84rem;
 `;

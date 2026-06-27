@@ -487,7 +487,7 @@ const CulpritBadge = styled.span`
 `;
 
 const EligibleTag = styled.span`
-  color: var(--success, #4caf50);
+  color: var(--success);
   font-weight: 600;
 `;
 

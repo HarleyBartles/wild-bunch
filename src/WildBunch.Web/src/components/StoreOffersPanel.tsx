@@ -1,6 +1,43 @@
 import { useEffect, useState } from "react";
+import styled from "styled-components";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
 import { formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
+import {
+  StatusCard,
+  StatList,
+  Stack,
+  ItemCard,
+  Muted,
+  Field,
+  Button,
+} from "./ui/sharedStyled";
+
+const OfferKindLine = styled.p`
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+`;
+
+const OfferAvailabilityLine = styled.p`
+  margin: 2px 0 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+`;
+
+const BuyRow = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  align-items: flex-end;
+`;
+
+const QuantityField = styled(Field).attrs({ as: "label" })`
+  flex: 1;
+`;
+
+const OfferList = styled(Stack)`
+  margin-top: 16px;
+`;
 
 interface StoreOffersPanelProps {
   storeOffers: TownStoreOffersDto | null;
@@ -34,18 +71,18 @@ function StoreOfferCard({
   }
 
   return (
-    <div className="compact-item">
+    <ItemCard>
       <strong>
         {offer.displayName} ${offer.price.toFixed(2)}
       </strong>
-      <p>
+      <OfferKindLine>
         {formatItemKind(offer.itemKind)} - {formatStoreVendorType(offer.vendorType)}
-      </p>
-      <p>
+      </OfferKindLine>
+      <OfferAvailabilityLine>
         {formatStoreOfferAvailability(offer.availability)} - {offer.sourceNote}
-      </p>
-      <div className="button-row">
-        <label className="field" style={{ flex: 1 }}>
+      </OfferAvailabilityLine>
+      <BuyRow>
+        <QuantityField>
           <span>Quantity</span>
           <input
             type="number"
@@ -55,24 +92,28 @@ function StoreOfferCard({
             onChange={(event) => setQuantity(event.target.value)}
             disabled={disabled}
           />
-        </label>
-        <button type="button" className="button" onClick={handleBuy} disabled={disabled || offer.availability !== 0}>
+        </QuantityField>
+        <Button
+          type="button"
+          onClick={handleBuy}
+          disabled={disabled || offer.availability !== 0}
+        >
           Buy
-        </button>
-      </div>
-    </div>
+        </Button>
+      </BuyRow>
+    </ItemCard>
   );
 }
 
 export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: StoreOffersPanelProps) {
   return (
-    <article className="status-card">
+    <StatusCard>
       <h3>Store offers</h3>
-      {loading && storeOffers === null ? <p className="muted">Loading town offers...</p> : null}
-      {!loading && storeOffers === null ? <p className="muted">Town catalog unavailable.</p> : null}
+      {loading && storeOffers === null ? <Muted>Loading town offers...</Muted> : null}
+      {!loading && storeOffers === null ? <Muted>Town catalog unavailable.</Muted> : null}
       {storeOffers ? (
         <>
-          <dl className="stat-list">
+          <StatList>
             <div>
               <dt>Town</dt>
               <dd>{storeOffers.townName}</dd>
@@ -89,8 +130,8 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
               <dt>Source</dt>
               <dd>{storeOffers.sourceNote}</dd>
             </div>
-          </dl>
-          <div className="stack">
+          </StatList>
+          <OfferList>
             {storeOffers.offers.length > 0 ? (
               storeOffers.offers.map((offer) => (
                 <StoreOfferCard
@@ -101,11 +142,11 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
                 />
               ))
             ) : (
-              <p className="muted">No store offers are available in this town.</p>
+              <Muted>No store offers are available in this town.</Muted>
             )}
-          </div>
+          </OfferList>
         </>
       ) : null}
-    </article>
+    </StatusCard>
   );
 }

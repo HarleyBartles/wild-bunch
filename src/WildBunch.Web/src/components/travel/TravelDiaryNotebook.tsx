@@ -40,5 +40,5 @@ const DiaryStack = styled.div`
 
 const MutedNote = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.66);
+  color: color-mix(in srgb, var(--text) 66%, transparent);
 `;

@@ -1,4 +1,32 @@
+import styled from "styled-components";
 import { useGameSession } from "../../state/useGameSession";
+import {
+  FlowSurface,
+  FlowNotice,
+  FlowError,
+  BackButton,
+  Panel,
+  PanelHead,
+  Stack,
+  Button,
+  Field,
+  Muted,
+} from "../../components/ui/sharedStyled";
+
+const PlaceHeader = styled.header`
+  display: grid;
+  gap: 12px;
+  padding: 24px 0 4px;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const PlaceBody = styled.div`
+  display: grid;
+  gap: 20px;
+`;
 
 interface SaloonPlaceProps {
   onLeave: () => void;
@@ -31,48 +59,46 @@ export function SaloonPlace({ onLeave }: SaloonPlaceProps) {
   const personOfInterest = session.activeSaloonPersonOfInterest;
 
   return (
-    <div className="flow-surface flow-surface--place">
-      <div className="place-header">
-        <button type="button" className="back-button" onClick={onLeave}>
+    <FlowSurface $variant="place">
+      <PlaceHeader>
+        <BackButton type="button" onClick={onLeave}>
           ← Back to town
-        </button>
+        </BackButton>
         <h1>Saloon</h1>
-      </div>
-      <div className="place-body">
-        <section className="panel">
-          <div className="panel-head">
+      </PlaceHeader>
+      <PlaceBody>
+        <Panel>
+          <PanelHead>
             <h2>Saloon floor</h2>
-          </div>
-          <div className="stack">
-            <button
+          </PanelHead>
+          <Stack>
+            <Button
               type="button"
-              className="button"
               onClick={handleLookAroundSaloon}
               disabled={loading || !canLookAroundSaloon}
             >
               {busyMode === "investigating" ? "Looking..." : "Look around"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="button"
               onClick={handleGatherLocalGossip}
               disabled={loading || !canGatherLocalGossip}
             >
               {busyMode === "investigating" ? "Gathering..." : "Gather gossip"}
-            </button>
-          </div>
-        </section>
+            </Button>
+          </Stack>
+        </Panel>
         {personOfInterest ? (
-          <section className="panel">
-            <div className="panel-head">
+          <Panel>
+            <PanelHead>
               <h2>Person of interest</h2>
-            </div>
-            <div className="stack">
+            </PanelHead>
+            <Stack>
               <p>
                 <strong>{personOfInterest.descriptor}</strong> is waiting in the saloon.
               </p>
               {wantedPosters.length > 0 ? (
-                <label className="field">
+                <Field as="label">
                   <span>Declare wanted identity</span>
                   <select
                     value={declaredWantedIdentityHandle}
@@ -85,13 +111,15 @@ export function SaloonPlace({ onLeave }: SaloonPlaceProps) {
                       </option>
                     ))}
                   </select>
-                </label>
+                </Field>
               ) : (
-                <p className="muted">Read wanted posters at the Sheriff Office to choose the identity you want to declare.</p>
+                <Muted>
+                  Read wanted posters at the Sheriff Office to choose the identity you want to
+                  declare.
+                </Muted>
               )}
-              <button
+              <Button
                 type="button"
-                className="button"
                 onClick={handleConfrontSaloonPersonOfInterest}
                 disabled={!gameId || loading || !canConfrontSaloonPersonOfInterest}
               >
@@ -100,13 +128,13 @@ export function SaloonPlace({ onLeave }: SaloonPlaceProps) {
                   : selectedWantedPoster
                     ? `Take ${personOfInterest.descriptor} to sheriff as ${selectedWantedPoster.targetDisplayName}`
                     : `Take ${personOfInterest.descriptor} to sheriff`}
-              </button>
-            </div>
-          </section>
+              </Button>
+            </Stack>
+          </Panel>
         ) : null}
-        {notice ? <p className="flow-notice">{notice}</p> : null}
-        {error ? <p className="flow-error">{error}</p> : null}
-      </div>
-    </div>
+        {notice ? <FlowNotice>{notice}</FlowNotice> : null}
+        {error ? <FlowError>{error}</FlowError> : null}
+      </PlaceBody>
+    </FlowSurface>
   );
 }

@@ -1,5 +1,6 @@
 import { AvailableActionsPanel } from "../components/AvailableActionsPanel";
 import { FieldReportPanel } from "../components/FieldReportPanel";
+import { Panel, PanelHead, Muted } from "../components/ui/sharedStyled";
 import { useGameSession } from "../state/useGameSession";
 
 export function HuntRoute() {
@@ -16,18 +17,18 @@ export function HuntRoute() {
 
   if (!session) {
     return (
-      <section className="panel panel--wide">
-        <p className="muted">Start a hunt from Camp to begin the field report.</p>
-      </section>
+      <Panel $wide>
+        <Muted>Start a hunt from Camp to begin the field report.</Muted>
+      </Panel>
     );
   }
 
   return (
     <>
-      <section className="panel panel--wide">
-        <div className="panel-head">
+      <Panel $wide>
+        <PanelHead>
           <h2>Field report</h2>
-        </div>
+        </PanelHead>
         <FieldReportPanel
           session={session}
           currentTown={currentTown}
@@ -38,7 +39,7 @@ export function HuntRoute() {
           onBuyOffer={handleBuyOffer}
           onTurnResult={handleTravelTurnResult}
         />
-      </section>
+      </Panel>
 
       <AvailableActionsPanel />
     </>

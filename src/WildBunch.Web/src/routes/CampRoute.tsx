@@ -1,4 +1,5 @@
 import { StartGamePanel } from "../components/StartGamePanel";
+import { Panel, PanelHead, Notice, Error } from "../components/ui/sharedStyled";
 import { useGameSession } from "../state/useGameSession";
 
 export function CampRoute() {
@@ -6,10 +7,10 @@ export function CampRoute() {
     useGameSession();
 
   return (
-    <section className="panel panel--wide">
-      <div className="panel-head">
+    <Panel $wide>
+      <PanelHead>
         <h2>{gameId ? "Current session" : "Start a new hunt"}</h2>
-      </div>
+      </PanelHead>
 
       <StartGamePanel
         session={session}
@@ -22,8 +23,8 @@ export function CampRoute() {
         }}
       />
 
-      {notice ? <div className="notice">{notice}</div> : null}
-      {error ? <div className="error">{error}</div> : null}
-    </section>
+      {notice ? <Notice>{notice}</Notice> : null}
+      {error ? <Error>{error}</Error> : null}
+    </Panel>
   );
 }

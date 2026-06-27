@@ -1,6 +1,23 @@
+import styled from "styled-components";
 import { useGameSession } from "../../state/useGameSession";
 import { StoreOffersPanel } from "../../components/StoreOffersPanel";
 import { InventoryPanel } from "../../components/InventoryPanel";
+import { FlowSurface, BackButton } from "../../components/ui/sharedStyled";
+
+const PlaceHeader = styled.header`
+  display: grid;
+  gap: 12px;
+  padding: 24px 0 4px;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const PlaceBody = styled.div`
+  display: grid;
+  gap: 20px;
+`;
 
 interface StorePlaceProps {
   onLeave: () => void;
@@ -14,14 +31,14 @@ export function StorePlace({ onLeave }: StorePlaceProps) {
   }
 
   return (
-    <div className="flow-surface flow-surface--place">
-      <div className="place-header">
-        <button type="button" className="back-button" onClick={onLeave}>
+    <FlowSurface $variant="place">
+      <PlaceHeader>
+        <BackButton type="button" onClick={onLeave}>
           ← Back to town
-        </button>
+        </BackButton>
         <h1>Store</h1>
-      </div>
-      <div className="place-body">
+      </PlaceHeader>
+      <PlaceBody>
         <StoreOffersPanel
           storeOffers={storeOffers}
           loading={storeOffersLoading}
@@ -29,7 +46,7 @@ export function StorePlace({ onLeave }: StorePlaceProps) {
           onBuyOffer={handleBuyOffer}
         />
         <InventoryPanel inventory={session.inventory} />
-      </div>
-    </div>
+      </PlaceBody>
+    </FlowSurface>
   );
 }

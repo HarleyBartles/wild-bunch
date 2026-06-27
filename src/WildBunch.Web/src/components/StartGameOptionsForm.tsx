@@ -67,7 +67,7 @@ const Field = styled.div`
 `;
 
 const Label = styled.label`
-  color: rgba(242, 239, 232, 0.62);
+  color: color-mix(in srgb, var(--text) 62%, transparent);
   font-size: 0.92rem;
 `;
 
@@ -76,13 +76,13 @@ const baseControl = `
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
-  color: #f2efe8;
+  color: var(--text);
   padding: 12px 14px;
   outline: none;
 
   &:focus {
-    border-color: rgba(223, 159, 79, 0.55);
-    box-shadow: 0 0 0 3px rgba(223, 159, 79, 0.18);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 `;
 

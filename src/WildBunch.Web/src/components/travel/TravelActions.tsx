@@ -102,28 +102,28 @@ const SectionHeader = styled.div`
   }
 
   span {
-    color: rgba(242, 239, 232, 0.62);
+    color: color-mix(in srgb, var(--text) 62%, transparent);
     font-size: 0.9rem;
   }
 `;
 
 const ActionCopy = styled.p`
   margin: 0;
-  color: rgba(242, 239, 232, 0.74);
+  color: color-mix(in srgb, var(--text) 74%, transparent);
 `;
 
 const InlineError = styled.div`
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(240, 126, 110, 0.14);
-  border: 1px solid rgba(240, 126, 110, 0.24);
-  color: #ffe8e3;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
+  color: var(--danger-text);
 `;
 
 const PrimaryButton = styled(ButtonBase)`
-  background: linear-gradient(180deg, #efc37e, #bf7a35);
-  color: #1b1308;
-  border-color: rgba(239, 195, 126, 0.55);
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent-strong-dark));
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent-strong) 55%, transparent);
 
   &:disabled {
     cursor: not-allowed;

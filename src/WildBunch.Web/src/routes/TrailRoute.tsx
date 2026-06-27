@@ -1,5 +1,6 @@
 import { TravelPanel } from "../components/TravelPanel";
 import { TravelRoutesPanel } from "../components/TravelRoutesPanel";
+import { Panel, PanelHead } from "../components/ui/sharedStyled";
 import { useGameSession } from "../state/useGameSession";
 
 export function TrailRoute() {
@@ -8,17 +9,17 @@ export function TrailRoute() {
   return (
     <>
       {session?.journey ? (
-        <section className="panel panel--wide">
-          <div className="panel-head">
+        <Panel $wide>
+          <PanelHead>
             <h2>Active journey</h2>
-          </div>
+          </PanelHead>
           <TravelPanel
             gameId={gameId ?? session.id}
             session={session}
             busy={loading}
             onTurnResult={handleTravelTurnResult}
           />
-        </section>
+        </Panel>
       ) : null}
 
       <TravelRoutesPanel gameId={gameId ?? session?.id ?? null} session={session} busy={loading} onTravel={handleTravel} />
