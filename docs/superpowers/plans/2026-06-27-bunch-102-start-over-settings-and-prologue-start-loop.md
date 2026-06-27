@@ -4,7 +4,9 @@
 
 **Goal:** Deliver one player-facing lifecycle slice: a themed start/prologue flow for beginning a playthrough (start screen → name entry → story so far → starting town selection → game start proper), plus a normal player Game Settings surface that lets Harley start over during playtesting without dev-only controls. Confirming Start Over archives the active playthrough (does not delete it), returns the player to the start flow, and a fresh active playthrough is created only after the start flow is completed. One active playthrough at a time is preserved.
 
-**Architecture:** Player commands flow through Application handlers into `GameSession` aggregate methods that emit typed domain events. Start Over is a player command-side operation: an `ArchivePlaythroughHandler` loads the active `GameSession`, invokes a new `GameSession.ArchivePlaythrough(...)` command method that emits a `PlaythroughArchived` event (typed, replay-friendly, audit-friendly), and stores it through the repository/UoW. The frontend tracks the active session id in `localStorage` under `wild-bunch.current-game-id`; Start Over clears that id and returns to the start flow. A new active playthrough is created only when the player completes the full start flow and the existing `POST /api/games` route is called. Prologue copy lives in `WildBunch.GameContent` as a new `PrologueContent` content source with flavour variants (code-backed per ADR-0012). The `{trueCulpritMainIdentifier}` surfaced in the prologue is the same player-visible descriptor produced by `SaloonPersonOfInterestDescriptor.Describe(...)` — the prologue does not expose hidden culprit internals. Starting town selection uses a new read endpoint that returns playable map towns (excluding the unnamed incident town), and the existing `StartGameRequest`/`StartNewGameCommand`/`SeededNewGameFactory`/`GameSession.StartNew` chain is extended with an optional player-chosen `StartingTownId` that overrides the seed-derived starting town.
+**Architecture:** Player commands flow through Application handlers into `GameSession` aggregate methods that emit typed domain events. Start Over is a player command-side operation: an `ArchivePlaythroughHandler` loads the active `GameSession`, invokes a new `GameSession.ArchivePlaythrough(...)` command method that emits a `PlaythroughArchived` event (typed, replay-friendly, audit-friendly), and stores it through the repository/UoW. The frontend tracks the active session id in `localStorage` under `wild-bunch.current-game-id`; Start Over clears that id and returns to the start flow. A new active playthrough is created only when the player completes the full start flow and the existing `POST /api/games` route is called.
+
+**One-active-playthrough invariant (strong route):** The invariant is enforced at the application/persistence level, not only in browser-local state. `StartNewGameHandler` is extended so that before creating a new session it loads any existing `Active` sessions via a new `IGameSessionRepository.GetByStatusAsync(GameStatus.Active)` query, archives each one through `GameSession.ArchivePlaythrough(...)` + `StoreAsync`, and then creates the new session — all staged on the same EF DbContext and committed in a single `IGameSessionUnitOfWork.CommitAsync` transaction. This guarantees that after any `POST /api/games` call, at most one `Active` session exists in the persisted store, regardless of client state. The explicit `POST /api/games/{id}/archive` Start Over endpoint archives the named session directly; the `StartNewGameHandler` invariant enforcement is the backstop that catches any other Active sessions (e.g. from a stale client, a second browser, or a direct API call). Prologue copy lives in `WildBunch.GameContent` as a new `PrologueContent` content source with flavour variants (code-backed per ADR-0012). The `{trueCulpritMainIdentifier}` surfaced in the prologue is the same player-visible descriptor produced by `SaloonPersonOfInterestDescriptor.Describe(...)` — the prologue does not expose hidden culprit internals. Starting town selection uses a new read endpoint that returns playable map towns (excluding the unnamed incident town), and the existing `StartGameRequest`/`StartNewGameCommand`/`SeededNewGameFactory`/`GameSession.StartNew` chain is extended with an optional player-chosen `StartingTownId` that overrides the seed-derived starting town.
 
 **Tech Stack:** C#/.NET 10, ASP.NET Core Minimal APIs, EF Core, xUnit, React 18, TanStack Query, styled-components, Vitest, TanStack Router.
 
@@ -26,6 +28,7 @@
 - Worker environment uses PowerShell; do not use `&&` for command chaining.
 - Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
 - UUID seed codec: adding a player-chosen starting town does NOT add a new codec field. The seed still encodes the world (towns, trails, culprit, loadout, etc.); the player's town choice is a runtime override passed through the command/factory chain, not a new encoded starting-world field. The seed-derived starting town becomes the default when the player does not pick one.
+- One-active-playthrough invariant is enforced at the application/persistence level (strong route): `StartNewGameHandler` archives any existing `Active` sessions in the same UoW transaction before creating a new one. This is not deferred to a future slice. The invariant must be provable against persisted state, not only against browser-local storage.
 
 ---
 
@@ -102,7 +105,15 @@ Per the copy doc: session id, player name, created time if available, archived t
 
 ### Q16: How will the implementation enforce one active playthrough at a time?
 
-The frontend holds a single active id in `localStorage`. Start Over archives the current session and clears the stored id; a new session is created only when the player completes the start flow. The backend does not need a global "one active session" invariant in this issue — the player-facing UX enforces it by replacing the held id. (A future server-side invariant is a separate slice; the copy doc scopes this issue to "Preserve one active playthrough at a time" via the player flow.)
+**Strong route (chosen):** The invariant is enforced at the application/persistence level, not only in browser-local state. `StartNewGameHandler` is extended so that before creating a new session it:
+1. Queries all existing `Active` sessions via a new `IGameSessionRepository.GetByStatusAsync(GameStatus.Active)`.
+2. For each Active session, calls `session.ArchivePlaythrough("superseded-by-new-playthrough")` and `StoreAsync` — staging the archive on the same EF DbContext.
+3. Creates the new session via `_newGameFactory.Create(...)` and `StoreAsync` — also staged on the same DbContext.
+4. Commits everything in a single `IGameSessionUnitOfWork.CommitAsync` transaction.
+
+This guarantees that after any `POST /api/games` call, at most one `Active` session exists in the persisted store, regardless of how many clients or direct API calls created sessions. The explicit `POST /api/games/{id}/archive` Start Over endpoint archives the named session directly; the `StartNewGameHandler` invariant enforcement is the backstop that catches any other Active sessions (e.g. from a stale client, a second browser, or a direct API call that bypassed the frontend flow).
+
+This is feasible without unrelated architecture because: the UoW already wraps a single EF DbContext transaction (`EfGameSessionUnitOfWork.CommitAsync` at `src/WildBunch.Persistence/GameSessions/EfGameSessionUnitOfWork.cs:7-33` calls `BeginTransactionAsync` → `SaveChangesAsync` → `CommitAsync`); `EfGameSessionRepository.StoreAsync` stages changes on the DbContext without calling `SaveChangesAsync` itself (line 142: "NO SaveChangesAsync here — the UoW commits"); so multiple `StoreAsync` calls for different aggregates can be staged before one `CommitAsync`. The only new infrastructure is a `GetByStatusAsync` query method on `IGameSessionRepository` (a simple EF `Where(entity => entity.Status == status.ToString())` query) and the `ArchivePlaythrough` domain method (already in this plan). No new tables, no session-account architecture, no broad refactor.
 
 ### Q17: What happens if Start Over is confirmed while no active session exists?
 
@@ -114,7 +125,7 @@ A new `ArchivePlaythroughCommand(GameSessionId SessionId, string ArchiveReason)`
 
 ### Q19: Which aggregate or application coordinator owns archive-old + create-new?
 
-`GameSession.ArchivePlaythrough(...)` owns the archive mutation on the aggregate. The new session is created by the existing `StartNewGameHandler` when the player completes the start flow. There is no single "archive + create" coordinator in this issue — the two operations are separated by the player completing the start flow, which matches the copy doc ("A fresh active playthrough should only be created once the player completes name entry, story acknowledgement, and starting town selection"). The Application layer does not bypass domain/persistence truth: archive goes through the aggregate + repository/UoW, create goes through the existing factory + handler.
+`GameSession.ArchivePlaythrough(...)` owns the archive mutation on the aggregate. The new session is created by the existing `StartNewGameHandler` when the player completes the start flow. `StartNewGameHandler` also owns the one-active-playthrough invariant: before creating the new session, it loads and archives any existing `Active` sessions in the same UoW transaction (see Q16). The explicit `ArchivePlaythroughHandler` (for the `POST /api/games/{id}/archive` Start Over endpoint) archives a named session directly. The Application layer does not bypass domain/persistence truth: both archive and create go through the aggregate + repository/UoW. The two operations (archive-old, create-new) are coordinated by `StartNewGameHandler` in a single transaction, but the player-facing flow still separates them by requiring the player to complete the start flow before `POST /api/games` is called (matching the copy doc: "A fresh active playthrough should only be created once the player completes name entry, story acknowledgement, and starting town selection").
 
 ### Q20: What domain event(s) or persisted facts record that a playthrough was archived?
 
@@ -197,6 +208,33 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 - [ ] Integration test in `tests/WildBunch.Integration.Tests/`: `GameApiArchiveTests.cs` — create a session, archive it, assert status becomes Archived, assert session still loadable by id, assert archived session is not deleted.
 - [ ] Verify: `.\scripts\postgres-dev.ps1 ensure` then `dotnet test tests/WildBunch.Integration.Tests` (PostgreSQL-backed).
 
+#### Task 1.5 — Add `GetByStatusAsync` to `IGameSessionRepository` + `EfGameSessionRepository`
+
+- [ ] Add `Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)` to `IGameSessionRepository` (`src/WildBunch.Application/Abstractions/IGameSessionRepository.cs`).
+- [ ] Implement in `EfGameSessionRepository` (`src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`) as a query on `_dbContext.GameSessions.Where(entity => entity.Status == status.ToString())` that loads each matching session via the existing `LoadStoreAsync` + `ToAggregate` path. This is a read + rehydrate query, not a projection — it returns full `GameSession` aggregates so the handler can call `ArchivePlaythrough` on them.
+- [ ] This is the minimal infrastructure for the one-active-playthrough invariant (Q16). No new tables, no session-account architecture.
+- [ ] Verify: `dotnet build`.
+
+#### Task 1.6 — Extend `StartNewGameHandler` to enforce one-active-playthrough invariant
+
+- [ ] Modify `StartNewGameHandler.HandleAsync` (`src/WildBunch.Application/Games/Commands/StartNewGameHandler.cs`) so that before creating the new session it:
+  1. Calls `GameSessionRepository.GetByStatusAsync(GameStatus.Active, cancellationToken)` to load all existing Active sessions.
+  2. For each Active session, calls `session.ArchivePlaythrough("superseded-by-new-playthrough")` and `GameSessionRepository.StoreAsync(session, correlationId, cancellationToken)` — staging the archive on the same DbContext.
+  3. Creates the new session via `_newGameFactory.Create(...)` and stages it via `StoreAsync`.
+  4. Commits everything in a single `GameSessionUnitOfWork.CommitAsync`.
+- [ ] This requires restructuring `ExecuteNewSessionAsync` (or inlining its logic in `StartNewGameHandler`) so that the archive-old + create-new steps share one correlation id and one commit. The base class `ExecuteNewSessionAsync` (`src/WildBunch.Application/Games/Execution/GameSessionCommandHandler.cs:81-98`) currently does `createAsync → StoreAsync → CommitAsync`; the extended flow does `archive-old → StoreAsync(each) → create-new → StoreAsync → CommitAsync`. Keep the base class method for other new-session paths if any; inline or add a new base method for the archive-then-create path.
+- [ ] Application test in `tests/WildBunch.Application.Tests/`: `StartNewGameOneActivePlaythroughTests.cs` —
+  - Assert: when an Active session exists, calling `StartNewGameHandler` archives it (emits `PlaythroughArchived`, status → Archived) and creates the new Active session, all in one UoW commit.
+  - Assert: when multiple Active sessions exist (e.g. from direct API calls), all are archived and only the new one remains Active.
+  - Assert: when no Active session exists, `StartNewGameHandler` creates the new session with no archive events.
+  - Assert: `CommitAsync` is called exactly once (single transaction).
+  - Assert: `StoreAsync` is called once per archived session + once for the new session.
+- [ ] Integration test in `tests/WildBunch.Integration.Tests/`: `OneActivePlaythroughInvariantTests.cs` —
+  - Assert against persisted PostgreSQL state: create session A via `POST /api/games`, create session B via `POST /api/games`, query `GameSessions` table and assert exactly one row has `Status = "Active"` (session B) and session A has `Status = "Archived"`.
+  - Assert: session A is still loadable by id with `Archived` status (not deleted).
+  - Assert: the `PlaythroughArchived` event is in session A's event stream with `ArchiveReason = "superseded-by-new-playthrough"`.
+- [ ] Verify: `.\scripts\postgres-dev.ps1 ensure` then `dotnet test tests/WildBunch.Application.Tests tests/WildBunch.Integration.Tests`.
+
 ### Phase 2 — Backend: starting-town selection + prologue content
 
 #### Task 2.1 — Add `StartingTownId` to start-game chain (no codec change)
@@ -205,7 +243,7 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 - [ ] Add `TownId? StartingTownId` to `StartNewGameCommand` (`src/WildBunch.Application/Games/Commands/StartNewGameCommand.cs`).
 - [ ] Add `TownId? startingTownId = null` to `INewGameFactory.Create` (`src/WildBunch.GameContent/Abstractions/INewGameFactory.cs`).
 - [ ] Update `SeededNewGameFactory.Create` (`src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`) to accept `TownId? startingTownId` and pass it through to `GameSession.StartNew` instead of `setupPackage.StartingTownId` when the player provides one. When null, keep `setupPackage.StartingTownId` (seed-derived default).
-- [ ] Update `StartNewGameHandler.HandleAsync` to forward `command.StartingTownId`.
+- [ ] Update `StartNewGameHandler.HandleAsync` to forward `command.StartingTownId` (the invariant enforcement from Task 1.6 is already in place; this just adds the town forwarding).
 - [ ] Update `GameSessionEndpoints.CreateGameAsync` to forward `validatedRequest.StartingTownId`.
 - [ ] Update existing `StartNewGameHandlerTests` and `SeededNewGameFactoryTests` to cover: player-chosen town overrides seed town; null town falls back to seed town; invalid town id throws.
 - [ ] Verify: `dotnet build` and `dotnet test tests/WildBunch.Application.Tests tests/WildBunch.GameContent.Tests`.
@@ -243,7 +281,7 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 
 #### Task 3.2 — Name entry step component
 
-- [ ] Create `src/WildBunch.Web/src/components/start-flow/NameEntryStep.tsx` using the copy doc's heading ("Howdy, pard'ner. What name d'you go by?"), helper, validation ("Tell me what name you go by before we ride on."), and primary action ("Continue"). Reuse the existing styled-components theme.
+- [ ] Create `src/WildBunch.Web/src/components/start-flow/NameEntryStep.tsx` using the copy doc's heading ("Howdy, pard'ner. What name d'you go by?"), helper, validation ("Tell me what name you go by before we ride on."), and primary action ("Continue"). Reuse the shared styled primitives from `src/WildBunch.Web/src/components/ui/sharedStyled.ts` (`FlowSurface`, `Eyebrow`, `Button`, etc.) introduced by BUNCH-95.
 - [ ] Vitest test: `NameEntryStep.test.tsx` — assert empty name shows validation, valid name enables Continue, Continue advances step.
 
 #### Task 3.3 — Story-so-far step component
@@ -268,7 +306,7 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 
 #### Task 4.1 — Add `ConfirmDialog` component
 
-- [ ] Create `src/WildBunch.Web/src/components/ConfirmDialog.tsx` with props `open`, `title`, `body`, `cancelLabel`, `confirmLabel`, `onCancel`, `onConfirm`, `busy`. Built on the existing backdrop/overlay pattern (reuse `CockpitOverlayFrame` or a sibling styled backdrop). Accessible: focus trap, Escape cancels, aria roles.
+- [ ] Create `src/WildBunch.Web/src/components/ConfirmDialog.tsx` with props `open`, `title`, `body`, `cancelLabel`, `confirmLabel`, `onCancel`, `onConfirm`, `busy`. Built on the existing backdrop/overlay pattern (reuse `CockpitOverlayFrame` or a sibling styled backdrop using shared primitives from `ui/sharedStyled`). Accessible: focus trap, Escape cancels, aria roles.
 - [ ] Vitest test: `ConfirmDialog.test.tsx` — assert Cancel calls `onCancel` and not `onConfirm`; assert Confirm calls `onConfirm`; assert Escape cancels.
 
 #### Task 4.2 — Add Game Settings overlay + Start Over section
@@ -291,9 +329,15 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 
 - [ ] Integration/contract test: `PrologueHiddenTruthTests.cs` — assert the prologue response contains no `trueCulpritId`, `isTrueCulprit`, `linkedSuspectIds`, or internal suspect id fields; assert the `{trueCulpritMainIdentifier}` is a public-safe descriptor string.
 
-#### Task 5.2 — One-active-playthrough invariant test
+#### Task 5.2 — One-active-playthrough invariant proof (strong route)
 
-- [ ] Integration test: create session A, archive A, create session B, assert A is `Archived` and loadable, assert B is `Active`, assert frontend flow clears stored id after archive (covered by frontend test in 4.3).
+This is the core invariant proof. The tests in Task 1.6 (`StartNewGameOneActivePlaythroughTests.cs` and `OneActivePlaythroughInvariantTests.cs`) are the primary proof. This task is the summary and falsification checklist:
+
+- [ ] Application test (`StartNewGameOneActivePlaythroughTests.cs` from Task 1.6): assert that `StartNewGameHandler` archives all pre-existing Active sessions and creates exactly one new Active session in a single UoW commit, with `CommitAsync` called exactly once.
+- [ ] Integration test (`OneActivePlaythroughInvariantTests.cs` from Task 1.6): assert against persisted PostgreSQL state that after two consecutive `POST /api/games` calls, exactly one row has `Status = "Active"` and the other has `Status = "Archived"` with a `PlaythroughArchived` event in its stream.
+- [ ] Falsification check: directly insert a second Active session via the API (bypassing the frontend), then call `POST /api/games` again, and assert the invariant still holds (only one Active row after).
+- [ ] Falsification check: call `POST /api/games/{id}/archive` on the active session, then call `POST /api/games`, and assert the archived session remains Archived and the new session is Active (no resurrection).
+- [ ] Archived sessions remain persisted and distinguishable: assert archived sessions are loadable by id with `Archived` status and their event streams contain `PlaythroughArchived` (covered by `GameApiArchiveTests.cs` from Task 1.4 + `OneActivePlaythroughInvariantTests.cs` from Task 1.6).
 
 #### Task 5.3 — Regression: reset/start-over is not exposed only through dev overlay
 
@@ -303,8 +347,8 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 
 #### Task 6.1 — ADR freshness check + update
 
-- [ ] Read `docs/adr/INDEX.md` and every ADR. This issue introduces `GameStatus.Archived` and a `PlaythroughArchived` event. If any ADR documents `GameStatus` values or session lifecycle, update it in this PR. Specifically check ADR-0002 (GameSession aggregate root), ADR-0003 (composed persistence), ADR-0028 (event sourcing). Update the `Last checked` timestamps in `docs/adr/INDEX.md` for each ADR verified.
-- [ ] If a new ADR is warranted for the archive/start-over lifecycle decision, add it (e.g. ADR-0032: "Playthrough Archive Lifecycle") and update the index.
+- [ ] Read `docs/adr/INDEX.md` and every ADR. The ADR log now contains ADR-0001 through ADR-0033 (as of main @ 30c3b58). ADR-0032 (event-sourced dev saloon controls) and ADR-0033 (repo documentation mesh posture) were added by BUNCH-90/BUNCH-96. This issue introduces `GameStatus.Archived` and a `PlaythroughArchived` event and the one-active-playthrough invariant. If any ADR documents `GameStatus` values or session lifecycle, update it in this PR. Specifically check ADR-0002 (GameSession aggregate root), ADR-0003 (composed persistence), ADR-0028 (event sourcing). Update the `Last checked` timestamps in `docs/adr/INDEX.md` for each ADR verified.
+- [ ] If a new ADR is warranted for the archive/start-over lifecycle decision, add it as ADR-0034: "Playthrough Archive Lifecycle and One-Active-Playthrough Invariant" and update the index. (ADR-0032 and ADR-0033 are already taken.)
 
 #### Task 6.2 — Update docs if new lifecycle/persistence semantics introduced
 
@@ -331,7 +375,8 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 | Game Settings reachable from normal play UI | `GameSettingsOverlay.test.tsx` asserting HUD entry, not DevOverlay |
 | Start Over opens confirmation; Cancel safe | `ConfirmDialog.test.tsx` + `StartOverConfirmation.test.tsx` asserting no mutation on Cancel |
 | Confirming Start Over archives, returns to start flow, new playthrough only after setup | `StartOverConfirmation.test.tsx` + `GameApiArchiveTests.cs` |
-| Archived sessions remain stored and distinguishable | `GameApiArchiveTests.cs` asserting archived session loadable by id with `Archived` status |
+| Archived sessions remain stored and distinguishable from the active session | `GameApiArchiveTests.cs` + `OneActivePlaythroughInvariantTests.cs` asserting archived session loadable by id with `Archived` status and `PlaythroughArchived` event in stream; active session has `Active` status |
+| One active playthrough at a time (strong route, persisted-level invariant) | `StartNewGameOneActivePlaythroughTests.cs` (application: single UoW commit, all pre-existing Active archived) + `OneActivePlaythroughInvariantTests.cs` (integration: exactly one `Active` row in PostgreSQL after consecutive creates; falsification checks for direct-API and archive-then-create paths) |
 | Automated tests cover start flow, town selection, copy source, cancel, confirm, one-active invariant, persistence | Test files listed per task above |
 | Manual/playtest proof | Screenshots for first-start and reset-from-active flows |
 | PR includes updated docs or durable route notes | ADR freshness update + any doc updates from Task 6.2 |
@@ -354,4 +399,20 @@ Typed domain events are sealed records implementing `IDomainEvent` (`src/WildBun
 
 ## Open Questions for Harley (none blocking preflight)
 
-None. The preflight questions are all answered from current source. The plan makes one default decision worth flagging: the prologue endpoint resolves the true culprit descriptor from the seed without yet creating a session, so the player sees the story-so-far before committing to a town. If Harley prefers the story-so-far to come only after a setup-session is created, that is a separate slice (none exists today and the copy doc explicitly allows frontend draft state until final creation).
+None. The preflight questions are all answered from current source. The plan makes two default decisions worth flagging:
+
+1. **One-active-playthrough route (strong, chosen):** The invariant is enforced at the application/persistence level — `StartNewGameHandler` archives all pre-existing `Active` sessions in the same UoW transaction before creating the new one. This was chosen over the narrow route because repo inspection confirmed it requires only one new repository query method (`GetByStatusAsync`) and the existing UoW already supports staging multiple `StoreAsync` calls before a single `CommitAsync`. No session-account architecture or broad refactor is needed. The narrow route (browser-local only) was rejected because it would under-claim the invariant the issue requires.
+
+2. **Prologue endpoint resolves the true culprit descriptor from the seed without yet creating a session**, so the player sees the story-so-far before committing to a town. If Harley prefers the story-so-far to come only after a setup-session is created, that is a separate slice (none exists today and the copy doc explicitly allows frontend draft state until final creation).
+
+## Staleness check
+
+- Plan originally written against main @ `1af4053`.
+- Refreshed staleness check against current main @ `30c3b58` (PR #109 base).
+- 3 commits between `1af4053` and `30c3b58`: BUNCH-95 (frontend styling consolidation), BUNCH-96 (session audit summaries), BUNCH-90 (saloon POI dev controls).
+- **Core backend extension points unchanged:** `GameStatus.cs`, `StartNewGameCommand.cs`, `StartNewGameHandler.cs`, `GameSessionEndpoints.cs`, `StartGameRequest.cs`, `IGameSessionRepository.cs`, `IGameSessionUnitOfWork.cs`, `EfGameSessionUnitOfWork.cs`, `SeededNewGameFactory.cs`, `INewGameFactory.cs`, `SeedWorldBuilder.cs`, `SeedWorldCatalog.cs` — none changed.
+- **`EfGameSessionRepository.cs` changed** (BUNCH-90 added saloon dev override component handling in `StoreAsync` and `LoadStoreAsync`). The staging pattern ("NO SaveChangesAsync here — the UoW commits") is unchanged. The new `GetByStatusAsync` method (Task 1.5) is additive and does not conflict.
+- **Frontend styling consolidated** (BUNCH-95): `CockpitOverlayFrame.tsx`, `StartGamePanel.tsx`, `StartGameOptionsForm.tsx`, `PreSessionSurface.tsx`, `AppShell.tsx` changed. Shared styled primitives extracted to `src/WildBunch.Web/src/components/ui/sharedStyled.ts` (`FlowSurface`, `FlowNotice`, `FlowError`, `Eyebrow`, `PanelSubtitle`, `Button`). `AppShell.tsx` now wraps in `DevSurfaceProvider`. The styled-components + CSS variables pattern is preserved. The overlay/HUD/routing structure my plan references is structurally the same. Implementation should use the shared primitives from `ui/sharedStyled` for new components.
+- **ADR log updated:** ADR-0032 (event-sourced dev saloon controls) and ADR-0033 (repo documentation mesh posture) added. ADR-0030 and ADR-0031 timestamps updated. Task 6.1 updated to account for these.
+- **`GlobalOverlays.tsx`, `Hud.tsx`, `useCurrentGameSession.ts`, `wildBunchApi.ts`, `types.ts`** — unchanged.
+- **Conclusion:** Plan is not materially stale. The core architecture decisions and extension points are valid against current main. Frontend implementation should use the new shared styled primitives.
