@@ -221,6 +221,35 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(deterministicFirst.TravelRandomness.Salt, deterministicSecond.TravelRandomness.Salt);
     }
 
+    [Fact]
+    public void CreateWithPlayerChosenStartingTownOverridesSeedDefault()
+    {
+        var factory = new SeededNewGameFactory();
+
+        // Establish the seed-derived default town for the default seed.
+        var defaultSession = factory.Create("Ranger Vale");
+        var seedDefaultTownId = defaultSession.Player.CurrentTownId;
+
+        // Pick a different valid town from the same world to use as the player override.
+        var overriddenTown = defaultSession.World.Towns.First(town => !town.Id.Equals(seedDefaultTownId));
+
+        var session = factory.Create("Ranger Vale", startingTownId: overriddenTown.Id.Value);
+
+        Assert.Equal(overriddenTown.Id, session.Player.CurrentTownId);
+        Assert.NotEqual(seedDefaultTownId, session.Player.CurrentTownId);
+    }
+
+    [Fact]
+    public void CreateWithNullStartingTownIdUsesSeedDefault()
+    {
+        var factory = new SeededNewGameFactory();
+
+        var session = factory.Create("Ranger Vale", startingTownId: null);
+
+        // The seed-derived default for the canonical descriptor is "pinecross".
+        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+    }
+
     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}"));
 

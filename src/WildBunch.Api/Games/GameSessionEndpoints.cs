@@ -42,7 +42,7 @@ public static class GameSessionEndpoints
 
         var validatedRequest = request!;
         var session = await handler.HandleAsync(
-            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.TravelDifficulty, validatedRequest.SeedCode, validatedRequest.Entropy),
+            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.TravelDifficulty, validatedRequest.SeedCode, validatedRequest.Entropy, validatedRequest.StartingTownId),
             cancellationToken);
         return Results.Created($"/api/games/{session.Id}", session);
     }
