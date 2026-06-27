@@ -843,7 +843,7 @@ This repo default-installs seven Codex plugins from [HarleyBartles/agent-asset-m
 - Consumes: `scripts/generate_index_mesh.py` (Task 3), `.agents/plugins/marketplace.json` (Task 1).
 - Produces: a CI job that fails on a stale mesh or invalid marketplace JSON.
 
-- [ ] **Step 1: Add an `index-mesh` job to `.github/workflows/ci.yml`**
+- [x] **Step 1: Add an `index-mesh` job to `.github/workflows/ci.yml`**
 
 Insert this job after the `frontend` job:
 
@@ -868,12 +868,7 @@ Insert this job after the `frontend` job:
         run: python scripts/generate_index_mesh.py --check
 ```
 
-- [ ] **Step 2: Commit**
-
-```powershell
-git add .github/workflows/ci.yml
-git commit -m "BUNCH-103: add index-mesh and marketplace.json CI validation"
-```
+- [x] **Step 2: Commit**
 
 ---
 
