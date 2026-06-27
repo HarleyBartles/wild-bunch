@@ -49,6 +49,7 @@ export interface StartGameRequest {
   playerName: string;
   travelDifficulty: TravelDifficulty;
   seedCode?: string | null;
+  startingTownId?: string | null;
 }
 
 export interface TravelRequest {

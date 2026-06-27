@@ -243,7 +243,8 @@ describe("AppShell", () => {
     renderShell();
 
     expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start new game/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /name your rider/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
   });
 
   it("opens the Case file overlay and renders the case surface", async () => {

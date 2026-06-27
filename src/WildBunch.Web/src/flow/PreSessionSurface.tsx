@@ -1,7 +1,11 @@
 import styled from "styled-components";
 import { useGameSession } from "../state/useGameSession";
-import { StartGamePanel } from "../components/StartGamePanel";
+import { useStartFlow } from "../hooks/useStartFlow";
 import { FlowSurface, FlowNotice, FlowError } from "../components/ui/sharedStyled";
+import { NameEntryStep } from "../components/start-flow/NameEntryStep";
+import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
+import { StartingTownStep } from "../components/start-flow/StartingTownStep";
+import { CreatingStep } from "../components/start-flow/CreatingStep";
 
 const FlowHero = styled.div`
   display: grid;
@@ -28,6 +32,14 @@ export function PreSessionSurface() {
     startNewGame,
     reloadCurrentGame,
   } = useGameSession();
+  const flow = useStartFlow({ session, resetToken });
+
+  async function handleStartWithTown(townId: string) {
+    flow.setSelectedTownId(townId);
+    flow.goToStep("creating");
+    const request = await flow.buildStartGameRequest(townId);
+    await startNewGame(request);
+  }
 
   return (
     <FlowSurface $variant="pre-session">
@@ -38,16 +50,70 @@ export function PreSessionSurface() {
           in.
         </FlowHeroLead>
       </FlowHero>
-      <StartGamePanel
-        session={session}
-        busy={loading}
-        gameId={gameId}
-        resetToken={resetToken}
-        onStartGame={startNewGame}
-        onRefresh={reloadCurrentGame}
-      />
+
+      {flow.step === "name" && (
+        <NameEntryStep
+          playerName={flow.playerName}
+          onPlayerNameChange={flow.setPlayerName}
+          onContinue={flow.advance}
+          onBack={flow.goBack}
+        />
+      )}
+
+      {flow.step === "story" && (
+        <StorySoFarStep
+          storyAcknowledged={flow.storyAcknowledged}
+          onStoryAcknowledgedChange={flow.setStoryAcknowledged}
+          onContinue={flow.advance}
+          onBack={flow.goBack}
+        />
+      )}
+
+      {flow.step === "town" && (
+        <StartingTownStep
+          selectedTownId={flow.selectedTownId}
+          onSelectTown={handleStartWithTown}
+          onBack={flow.goBack}
+        />
+      )}
+
+      {flow.step === "creating" && <CreatingStep busy={loading} />}
+
+      {gameId ? (
+        <RefreshRow>
+          <RefreshButton type="button" onClick={() => void reloadCurrentGame()} disabled={loading}>
+            Refresh session
+          </RefreshButton>
+        </RefreshRow>
+      ) : null}
+
       {notice ? <FlowNotice>{notice}</FlowNotice> : null}
       {error ? <FlowError>{error}</FlowError> : null}
     </FlowSurface>
   );
 }
+
+const RefreshRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+`;
+
+const RefreshButton = styled.button`
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+`;
