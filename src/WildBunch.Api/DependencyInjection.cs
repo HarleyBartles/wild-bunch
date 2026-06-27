@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddSingleton<TownStoreCatalogResolver>();
         services.AddScoped<StartNewGameHandler>();
         services.AddScoped<GetGameSessionHandler>();
+        services.AddScoped<GetStartingTownsHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<GetJournalHandler>();
         services.AddScoped<GetTownStoreOffersHandler>();

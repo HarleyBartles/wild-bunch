@@ -17,6 +17,10 @@ public static class GameSessionEndpoints
             .Produces<GameSessionDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
+        games.MapGet("starting-towns", GetStartingTownsAsync)
+            .WithName("GetStartingTowns")
+            .Produces<IReadOnlyList<StartingTownDto>>(StatusCodes.Status200OK);
+
         games.MapGet("{id:guid}", GetGameAsync)
             .WithName("GetGame")
             .Produces<GameSessionDto>(StatusCodes.Status200OK)
@@ -45,6 +49,14 @@ public static class GameSessionEndpoints
             new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.TravelDifficulty, validatedRequest.SeedCode, validatedRequest.Entropy, validatedRequest.StartingTownId),
             cancellationToken);
         return Results.Created($"/api/games/{session.Id}", session);
+    }
+
+    private static async Task<IResult> GetStartingTownsAsync(
+        GetStartingTownsHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var towns = await handler.HandleAsync(new GetStartingTownsQuery(), cancellationToken);
+        return Results.Ok(towns);
     }
 
     private static async Task<IResult> GetGameAsync(
