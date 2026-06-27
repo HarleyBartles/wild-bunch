@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { PreSessionSurface } from "../flow/PreSessionSurface";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
-import { createGame, getGame, getAvailableActions, getJournal } from "../api/wildBunchApi";
+import { createGame, getGame, getAvailableActions, getJournal, getPrologue } from "../api/wildBunchApi";
 
 vi.mock("../api/wildBunchApi", () => ({
   createGame: vi.fn(),
@@ -24,12 +24,14 @@ vi.mock("../api/wildBunchApi", () => ({
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
+  getPrologue: vi.fn(),
 }));
 
 const mockedCreateGame = vi.mocked(createGame);
 const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
+const mockedGetPrologue = vi.mocked(getPrologue);
 
 afterEach(() => {
   cleanup();
@@ -130,6 +132,12 @@ function primeMocks() {
     logEntries: [],
   });
   mockedCreateGame.mockResolvedValue(createSession());
+  mockedGetPrologue.mockResolvedValue({
+    heading: "The story so far",
+    body: "A culprit is on the run. The trail is fresh, but it won't stay that way for long.",
+    primaryAction: "I understand. Keep riding.",
+    variantId: "variant-1",
+  });
 }
 
 describe("StartFlow", () => {
@@ -138,7 +146,7 @@ describe("StartFlow", () => {
     const user = userEvent.setup();
     renderSurface();
 
-    expect(await screen.findByRole("heading", { name: /name your rider/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /howdy, pard'ner/i })).toBeInTheDocument();
 
     const nameInput = screen.getByLabelText(/player name/i);
     await user.type(nameInput, "Ranger Vale");
@@ -167,7 +175,7 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /back/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /name your rider/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /howdy, pard'ner/i })).toBeInTheDocument();
     });
 
     expect(screen.getByLabelText(/player name/i)).toHaveValue("Ranger Vale");
@@ -187,7 +195,7 @@ describe("StartFlow", () => {
     });
 
     await user.click(screen.getByRole("checkbox", { name: /i've read the story so far/i }));
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
@@ -208,7 +216,7 @@ describe("StartFlow", () => {
     });
 
     await user.click(screen.getByRole("checkbox", { name: /i've read the story so far/i }));
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
@@ -221,7 +229,7 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /back/i }));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /name your rider/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /howdy, pard'ner/i })).toBeInTheDocument();
     });
   });
 
@@ -239,7 +247,7 @@ describe("StartFlow", () => {
     });
 
     await user.click(screen.getByRole("checkbox", { name: /i've read the story so far/i }));
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
@@ -263,7 +271,7 @@ describe("StartFlow", () => {
     });
 
     await user.click(screen.getByRole("checkbox", { name: /i've read the story so far/i }));
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
@@ -295,7 +303,7 @@ describe("StartFlow", () => {
     });
 
     await user.click(screen.getByRole("checkbox", { name: /i've read the story so far/i }));
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();

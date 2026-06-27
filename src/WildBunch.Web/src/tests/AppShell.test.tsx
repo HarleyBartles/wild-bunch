@@ -243,7 +243,7 @@ describe("AppShell", () => {
     renderShell();
 
     expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /name your rider/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /howdy, pard'ner/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
   });
 

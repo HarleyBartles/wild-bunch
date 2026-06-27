@@ -1,6 +1,7 @@
+import { useState } from "react";
 import styled from "styled-components";
 import type { FormEvent } from "react";
-import { Eyebrow, Button, BackButton } from "../ui/sharedStyled";
+import { Eyebrow, Button, BackButton, FlowError } from "../ui/sharedStyled";
 
 interface NameEntryStepProps {
   playerName: string;
@@ -11,9 +12,12 @@ interface NameEntryStepProps {
 
 export function NameEntryStep({ playerName, onPlayerNameChange, onContinue, onBack }: NameEntryStepProps) {
   const trimmed = playerName.trim();
+  const [touched, setTouched] = useState(false);
+  const showValidation = touched && !trimmed;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setTouched(true);
     if (!trimmed) {
       return;
     }
@@ -23,9 +27,9 @@ export function NameEntryStep({ playerName, onPlayerNameChange, onContinue, onBa
   return (
     <StepCard>
       <Eyebrow>Step 1 of 3</Eyebrow>
-      <StepHeading>Name your rider</StepHeading>
+      <StepHeading>Howdy, pard&apos;ner. What name d&apos;you go by?</StepHeading>
       <StepLead>
-        Every bounty hunter needs a name on the poster. What should the frontier call you?
+        A name&apos;s a useful thing to have when folks start shouting after you.
       </StepLead>
 
       <StepForm onSubmit={handleSubmit}>
@@ -35,10 +39,21 @@ export function NameEntryStep({ playerName, onPlayerNameChange, onContinue, onBa
             id="start-flow-player-name"
             type="text"
             value={playerName}
-            onChange={(event) => onPlayerNameChange(event.target.value)}
+            onChange={(event) => {
+              onPlayerNameChange(event.target.value);
+              setTouched(true);
+            }}
+            onBlur={() => setTouched(true)}
             placeholder="Enter a rider name"
             autoComplete="off"
+            aria-invalid={showValidation}
+            aria-describedby={showValidation ? "start-flow-player-name-validation" : undefined}
           />
+          {showValidation && (
+            <FlowError id="start-flow-player-name-validation" role="alert">
+              Tell me what name you go by before we ride on.
+            </FlowError>
+          )}
         </Field>
 
         <StepActions>
