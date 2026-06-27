@@ -26,13 +26,13 @@ public sealed class TravelDiaryCharacterizationTests
         var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
-        Assert.Equal(1, travelLogs.Count);
+        Assert.Single(travelLogs);
         Assert.Equal(1, travelLogs[0].Day);
         Assert.Equal(0, travelLogs[0].Turn);
         Assert.Equal(
             "You set out from Current Town toward Connected Town by mounted travel. The route is 1 ride-day unit(s) and should take 1 day(s). Route water is secure, so no canteen reserve is required.",
             travelLogs[0].Message);
-        Assert.Equal(0, session.TravelDiaryDays.Count);
+        Assert.Empty(session.TravelDiaryDays);
     }
 
     // Heat no longer affects trail events or encounters, so the deterministic
@@ -69,7 +69,7 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.AdvanceJourneyDay();
 
-        Assert.Equal(1, session.TravelDiaryDays.Count);
+        Assert.Single(session.TravelDiaryDays);
         var day = session.TravelDiaryDays[0];
         Assert.Equal(1, day.DayNumber);
         Assert.Equal("Current Town", day.OriginTownName);
@@ -128,13 +128,13 @@ public sealed class TravelDiaryCharacterizationTests
         var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
-        Assert.Equal(1, travelLogs.Count);
+        Assert.Single(travelLogs);
         Assert.Equal(1, travelLogs[0].Day);
         Assert.Equal(0, travelLogs[0].Turn);
         Assert.Equal(
             "You set out from Pinecross toward Six Mile on foot. The route is 3 ride-day unit(s) and should take 4 day(s). The canteen has 2 spare charge(s) and can absorb 2 delay day(s).",
             travelLogs[0].Message);
-        Assert.Equal(0, session.TravelDiaryDays.Count);
+        Assert.Empty(session.TravelDiaryDays);
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.AdvanceJourneyDay();
 
-        Assert.Equal(1, session.TravelDiaryDays.Count);
+        Assert.Single(session.TravelDiaryDays);
         var day = session.TravelDiaryDays[0];
         Assert.Equal(1, day.DayNumber);
         Assert.Equal("Pinecross", day.OriginTownName);

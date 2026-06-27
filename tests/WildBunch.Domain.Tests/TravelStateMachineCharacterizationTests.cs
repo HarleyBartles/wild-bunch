@@ -93,7 +93,7 @@ public sealed class TravelStateMachineCharacterizationTests
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(0, session.PursuitState.Heat);
-        Assert.Equal(1, session.TravelDiaryDays.Count);
+        Assert.Single(session.TravelDiaryDays);
         Assert.NotNull(session.Journey.PendingEncounter);
     }
 

@@ -414,7 +414,6 @@ public sealed class CaseFile
     /// </summary>
     public void RevealClueById(ClueId clueId)
     {
-        ArgumentNullException.ThrowIfNull(clueId);
         var clue = _publicClues.FirstOrDefault(c => c.Id.Equals(clueId));
         if (clue is not null)
         {
@@ -443,7 +442,6 @@ public sealed class CaseFile
     /// </summary>
     public void RevealWarrantById(WarrantId warrantId)
     {
-        ArgumentNullException.ThrowIfNull(warrantId);
         var warrant = _publicWarrants.FirstOrDefault(w => w.Id.Equals(warrantId));
         if (warrant is not null)
         {
