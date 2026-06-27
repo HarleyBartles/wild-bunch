@@ -6,13 +6,15 @@
 - Root index: `INDEX.md`
 - Docs index: `docs/INDEX.md`
 - Required working knowledge for architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
-- Repo-local skills index: `.agents/skills/INDEX.md`
+- Repo-local plugin marketplace: `.agents/plugins/marketplace.json` (default-installs `repo-worker-pack`, `superpowers-plus`, `wild-bunch-project-pack`, `game-studio`, `dotnet-kit`, `architecture-pack`, `frontend-pack`; sourced from `HarleyBartles/agent-asset-marketplace`).
 - Required working knowledge for web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Required working knowledge for dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
 
 ## Mesh Policy
 
 The repo uses three separate documentation/navigation surfaces with different jobs.
+
+Detailed mesh contract: [`.agents/docs/mesh-policy.md`](.agents/docs/mesh-policy.md). The summary below is binding; the detailed doc is the companion.
 
 ### Agents mesh (`AGENTS.md` files)
 - Answer: what is lawful here, what differs from upstream law, and what upstream law still applies.
