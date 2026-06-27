@@ -1,11 +1,12 @@
-BUNCH-95: refine styling stack consolidation and strengthen enforcement
+BUNCH-95: move all inline style props to styled components
 
-- Move feature-specific styled components (ActionRow, DestinationCard, Tag) back to local files, narrowing sharedStyled.tsx.
-- Strengthen stylingEnforcement.test.ts to check for file existence and CSS imports.
-- Fix CI type errors in CaseFileSurface.tsx.
-- Clean up index.scss comments.
-- Add docs/frontend-styling.md and update docs index.
-- Add missing dev overlay screenshots.
+- Remove all 51 inline style={{ ... }} props from 8 migrated component files.
+- Replace with local styled components or transient $props.
+- Add enforcement test for inline style props with zero allowlist (all static
+  layout/spacing/typography must live in styled components).
+- Files changed: CaseFileSurface, WantedPosterSurface, TravelRoutesPanel,
+  TravelPrepSurface, StoreOffersPanel, InventoryPanel, AvailableActionsPanel,
+  JournalSurface.
 
 Generated with [Devin](https://devin.ai)
 

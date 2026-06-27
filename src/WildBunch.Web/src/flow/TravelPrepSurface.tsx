@@ -80,6 +80,22 @@ const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
   }
 `;
 
+const RouteDetails = styled.div`
+  display: grid;
+  gap: 4px;
+`;
+
+const RoutePreview = styled.p`
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.4;
+`;
+
+const RouteMeta = styled.div`
+  text-align: right;
+  font-size: 0.84rem;
+`;
+
 interface TravelPrepSurfaceProps {
   onBack: () => void;
 }
@@ -232,25 +248,19 @@ export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
                 onClick={() => setSelectedDestId(town.id)}
                 disabled={!gameId || loading}
               >
-                <div style={{ display: "grid", gap: "4px" }}>
+                <RouteDetails>
                   <strong>{town.name}</strong>
-                  <p
-                    style={{
-                      color: "var(--text)",
-                      fontSize: "0.88rem",
-                      lineHeight: "1.4",
-                    }}
-                  >
+                  <RoutePreview>
                     {previewLoading && selectedDestId === town.id
                       ? "Checking the route..."
                       : "Click to check the ride"}
-                  </p>
-                </div>
-                <div style={{ textAlign: "right", fontSize: "0.84rem" }}>
+                  </RoutePreview>
+                </RouteDetails>
+                <RouteMeta>
                   <span>
                     {trailCount} trail{trailCount === 1 ? "" : "s"}
                   </span>
-                </div>
+                </RouteMeta>
               </DestinationCard>
             ))
           ) : (

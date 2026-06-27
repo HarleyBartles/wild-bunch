@@ -25,6 +25,16 @@ const Tag = styled.span`
   color: var(--muted);
 `;
 
+const ItemList = styled(Stack)`
+  margin-top: 16px;
+`;
+
+const ItemDetailLine = styled.p`
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+`;
+
 interface InventoryPanelProps {
   inventory: InventoryDto;
 }
@@ -55,23 +65,23 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           <dd>{Object.values(inventory.capabilities).filter(Boolean).length}</dd>
         </div>
       </StatList>
-      <Stack style={{ marginTop: "16px" }}>
+      <ItemList>
         {inventory.items.map((item: InventoryItemDto) => (
           <ItemCard key={`${item.kind}-${item.horseState?.hunger ?? "none"}-${item.canteenState?.charges ?? "none"}`}>
             <strong>
               {formatItemKind(item.kind)} x {item.quantity}
             </strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.88rem", color: "var(--muted)" }}>
+            <ItemDetailLine>
               {[
                 item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null,
                 item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null,
               ]
                 .filter(Boolean)
                 .join(" | ") || "No travel state"}
-            </p>
+            </ItemDetailLine>
           </ItemCard>
         ))}
-      </Stack>
+      </ItemList>
       <TagRow>
         {Object.entries(inventory.capabilities).map(([key, enabled]) => (
           <Tag key={key}>

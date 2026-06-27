@@ -49,6 +49,28 @@ const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
   }
 `;
 
+const RouteDetails = styled.div`
+  display: grid;
+  gap: 4px;
+`;
+
+const RoutePreview = styled.p`
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.4;
+`;
+
+const RouteMeta = styled.div`
+  display: grid;
+  gap: 4px;
+  text-align: right;
+  font-size: 0.84rem;
+`;
+
+const RouteMetaTrailId = styled.span`
+  color: var(--muted);
+`;
+
 interface TravelRoutesPanelProps {
   gameId: string | null;
   session: GameSessionDto | null;
@@ -171,27 +193,21 @@ export function TravelRoutesPanel({ gameId, session, busy, onTravel }: TravelRou
                 onClick={() => void onTravel(town.id)}
                 disabled={!gameId || busy}
               >
-                <div style={{ display: "grid", gap: "4px" }}>
+                <RouteDetails>
                   <strong>{town.name}</strong>
                   <p>{town.id}</p>
-                  <p
-                    style={{
-                      color: "var(--text)",
-                      fontSize: "0.88rem",
-                      lineHeight: "1.4",
-                    }}
-                  >
+                  <RoutePreview>
                     {preview ? formatPreviewSummary(preview) : "Loading route preview..."}
-                  </p>
-                </div>
-                <div style={{ display: "grid", gap: "4px", textAlign: "right", fontSize: "0.84rem" }}>
+                  </RoutePreview>
+                </RouteDetails>
+                <RouteMeta>
                   <span>
                     {trailCount} trail{trailCount === 1 ? "" : "s"}
                   </span>
-                  <span style={{ color: "var(--muted)" }}>
+                  <RouteMetaTrailId>
                     {preview ? preview.routeProfile.trailId : "Previewing..."}
-                  </span>
-                </div>
+                  </RouteMetaTrailId>
+                </RouteMeta>
               </DestinationCard>
             );
           })

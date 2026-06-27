@@ -26,6 +26,10 @@ const ActionRow = styled(ItemCard)`
   }
 `;
 
+const DeclareWantedField = styled(Field).attrs({ as: "label" })`
+  margin-top: 0.75rem;
+`;
+
 export function AvailableActionsPanel() {
   const {
     session,
@@ -66,7 +70,7 @@ export function AvailableActionsPanel() {
               <strong>Person of interest spotted</strong>
               <p>{session.activeSaloonPersonOfInterest.descriptor} is waiting in the saloon.</p>
               {wantedPosters.length > 0 ? (
-                <Field as="label" style={{ marginTop: "0.75rem" }}>
+                <DeclareWantedField>
                   <span>Declare wanted identity</span>
                   <select
                     value={declaredWantedIdentityHandle}
@@ -79,7 +83,7 @@ export function AvailableActionsPanel() {
                       </option>
                     ))}
                   </select>
-                </Field>
+                </DeclareWantedField>
               ) : (
                 <Muted>Read wanted posters to choose the identity you want to declare.</Muted>
               )}

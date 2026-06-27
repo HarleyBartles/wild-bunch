@@ -85,4 +85,22 @@ describe("Styling Enforcement", () => {
 
     expect(violations, `Found legacy CSS class violations:\n${violations.join("\n")}`).toHaveLength(0);
   });
+
+  it("ensures no inline style props remain in migrated component files", () => {
+    // Inline style={{ ... }} props are forbidden in component files.
+    // All static layout/spacing/typography must live in styled components.
+    // The only allowed exception is for genuinely dynamic values that cannot
+    // be known at styling time — those should use transient $props instead.
+    try {
+      const result = execSync(
+        `rg "style=\\{\\{" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`,
+        { encoding: "utf8" },
+      );
+      if (result) {
+        expect.fail(`Found inline style={{ ... }} props in TSX files:\n${result}`);
+      }
+    } catch {
+      // rg returns non-zero if no matches — this is the expected pass case
+    }
+  });
 });

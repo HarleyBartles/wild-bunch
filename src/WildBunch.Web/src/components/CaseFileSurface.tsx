@@ -88,6 +88,85 @@ const Tag = styled.span`
   color: var(--muted);
 `;
 
+const SectionCard = styled(StatusCard)<{ $wide?: boolean }>`
+  grid-column: ${({ $wide }) => ($wide ? "1 / -1" : "auto")};
+`;
+
+const CardTitle = styled.h4`
+  margin: 0 0 8px;
+  font-size: 0.98rem;
+`;
+
+const CaseSummary = styled.p`
+  margin: 0 0 12px;
+  font-size: 0.94rem;
+  line-height: 1.5;
+`;
+
+const OpeningLead = styled.p`
+  margin: 0 0 16px;
+  font-size: 0.88rem;
+`;
+
+const OverviewStatList = styled(StatList)`
+  margin-bottom: 12px;
+`;
+
+const ClueMeta = styled.p<{ $spaced?: boolean }>`
+  margin: ${({ $spaced }) => ($spaced ? "4px 0 0" : "0")};
+  font-size: 0.84rem;
+  color: var(--muted);
+`;
+
+const SpacedMinor = styled(Minor)`
+  margin-top: 8px;
+`;
+
+const RecordTitle = styled.h4<{ $large?: boolean }>`
+  margin: 0;
+  font-size: ${({ $large }) => ($large ? "1rem" : "0.94rem")};
+`;
+
+const WarrantFactsBox = styled.div`
+  margin-top: 10px;
+  font-size: 0.84rem;
+`;
+
+const EvidenceKind = styled.p`
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+`;
+
+const SuspectSection = styled.div`
+  margin-top: 20px;
+`;
+
+const SuspectHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const DeductionsGrid = styled.div`
+  display: grid;
+  gap: 20px;
+`;
+
+const DeductionsIntro = styled.p`
+  margin: 0;
+  font-size: 0.94rem;
+  color: var(--muted);
+`;
+
+const WarrantText = styled.p<{ $spaced?: boolean }>`
+  margin-top: ${({ $spaced }) => ($spaced ? "8px" : "0")};
+  font-size: 0.9rem;
+`;
+
+const FineLine = styled.p`
+  font-size: 0.88rem;
+`;
+
 interface CaseFileSurfaceProps {
   journal: JournalDto | null;
   loading: boolean;
@@ -350,20 +429,20 @@ function Section({
   wide?: boolean;
 }) {
   return (
-    <StatusCard as="article" style={wide ? { gridColumn: "1 / -1" } : undefined}>
+    <SectionCard as="article" $wide={wide}>
       <SectionHead>
         <h3>{title}</h3>
         {subtitle ? <PanelSubtitle>{subtitle}</PanelSubtitle> : null}
       </SectionHead>
       {children}
-    </StatusCard>
+    </SectionCard>
   );
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <ItemCard as="article">
-      <h4 style={{ margin: "0 0 8px", fontSize: "0.98rem" }}>{title}</h4>
+      <CardTitle>{title}</CardTitle>
       {children}
     </ItemCard>
   );
@@ -472,13 +551,13 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         title="Overview"
         subtitle={`${formatClockContext(caseJournal)} - ${formatGameStatus(caseJournal.status)}`}
       >
-        <p style={{ margin: "0 0 12px", fontSize: "0.94rem", lineHeight: "1.5" }}>
+        <CaseSummary>
           {caseJournal.caseFile.caseSummary}
-        </p>
-        <p style={{ margin: "0 0 16px", fontSize: "0.88rem" }}>
+        </CaseSummary>
+        <OpeningLead>
           <strong>Opening lead:</strong> {caseJournal.caseFile.openingLead}
-        </p>
-        <StatList style={{ marginBottom: "12px" }}>
+        </OpeningLead>
+        <OverviewStatList>
           <div>
             <dt>Case state</dt>
             <dd>{caseJournal.caseFile.caseState.statusText}</dd>
@@ -497,7 +576,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             <dt>Status</dt>
             <dd>{formatGameStatus(caseJournal.status)}</dd>
           </div>
-        </StatList>
+        </OverviewStatList>
       </Section>
 
       <Section
@@ -513,14 +592,14 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             trailClues.map((clue, index) => (
               <ItemCard key={`${clue.description}-${index}`}>
                 <strong>{clue.description}</strong>
-                <p style={{ margin: "4px 0 0", fontSize: "0.84rem", color: "var(--muted)" }}>
+                <ClueMeta $spaced>
                   {formatClueKind(clue.kind)}
-                </p>
+                </ClueMeta>
                 {clue.sourceLabel ? (
-                  <Minor style={{ marginTop: "8px" }}>
+                  <SpacedMinor>
                     <strong>Source:</strong> {clue.sourceLabel}
                     {clue.context ? ` - ${clue.context}` : ""}
-                  </Minor>
+                  </SpacedMinor>
                 ) : null}
               </ItemCard>
             ))
@@ -542,7 +621,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             {caseJournal.caseFile.caseBoard.namedRecords.length > 0 ? (
               caseJournal.caseFile.caseBoard.namedRecords.map((record) => (
                 <ItemCard key={record.id}>
-                  <h4 style={{ margin: 0, fontSize: "1rem" }}>{record.displayName}</h4>
+                  <RecordTitle $large>{record.displayName}</RecordTitle>
                   <Minor>Type: {formatCaseIdentityKind(record.kind)}</Minor>
                   <Minor>Status: {formatCaseIdentityStatus(record.status)}</Minor>
                   {record.resolvedToDisplayName ? (
@@ -557,9 +636,9 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                       ))}
                     </LeadList>
                   ) : null}
-                  <div style={{ marginTop: "10px", fontSize: "0.84rem" }}>
+                  <WarrantFactsBox>
                     {renderWarrantFacts(record)}
-                  </div>
+                  </WarrantFactsBox>
                 </ItemCard>
               ))
             ) : (
@@ -577,7 +656,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             {caseJournal.caseFile.caseBoard.looseLeads.length > 0 ? (
               caseJournal.caseFile.caseBoard.looseLeads.map((lead) => (
                 <ItemCard key={lead.id}>
-                  <h4 style={{ margin: 0, fontSize: "0.94rem" }}>{lead.displayName}</h4>
+                  <RecordTitle>{lead.displayName}</RecordTitle>
                   <Minor>Type: {formatCaseIdentityKind(lead.kind)}</Minor>
                   <Minor>Status: {formatCaseIdentityStatus(lead.status)}</Minor>
                   {lead.resolvedToDisplayName ? (
@@ -607,9 +686,9 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
               caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
                 <ItemCard key={evidence.id}>
-                  <h4 style={{ margin: 0, fontSize: "0.94rem" }}>{evidence.summary}</h4>
-                  <p style={{ margin: "6px 0 0", fontSize: "0.88rem" }}>{evidence.kindLabel}</p>
-                  <Minor style={{ marginTop: "8px" }}>Source: {evidence.sourceLabel}</Minor>
+                  <RecordTitle>{evidence.summary}</RecordTitle>
+                  <EvidenceKind>{evidence.kindLabel}</EvidenceKind>
+                  <SpacedMinor>Source: {evidence.sourceLabel}</SpacedMinor>
                 </ItemCard>
               ))
             ) : (
@@ -618,7 +697,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           </Stack>
         </Grid>
 
-        <div style={{ marginTop: "20px" }}>
+        <SuspectSection>
           <SectionHead>
             <h3>Discovered suspects</h3>
             <PanelSubtitle>Only suspects the player has already uncovered are shown.</PanelSubtitle>
@@ -627,10 +706,10 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             {visibleDiscoveredSuspects.length > 0 ? (
               visibleDiscoveredSuspects.map(({ suspect, basis, record }) => (
                 <ItemCard key={suspect.name}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
-                    <h4 style={{ margin: 0, fontSize: "1rem" }}>{suspect.name}</h4>
+                  <SuspectHeader>
+                    <RecordTitle $large>{suspect.name}</RecordTitle>
                     <Tag>{formatSuspectStatus(suspect.status)}</Tag>
-                  </div>
+                  </SuspectHeader>
                   <Minor>{basis}</Minor>
                   {record ? (
                     <>
@@ -641,9 +720,9 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                           ))}
                         </LeadList>
                       ) : null}
-                      <div style={{ marginTop: "10px", fontSize: "0.84rem" }}>
+                      <WarrantFactsBox>
                         {renderWarrantFacts(record)}
-                      </div>
+                      </WarrantFactsBox>
                     </>
                   ) : null}
                 </ItemCard>
@@ -652,7 +731,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
               <Muted>No suspects have been confirmed from player-known evidence yet.</Muted>
             )}
           </Grid>
-        </div>
+        </SuspectSection>
       </Section>
 
       <Section title="Warrants" subtitle="Known warrants and their safe terms.">
@@ -660,18 +739,18 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           {activeKnownWarrants.length > 0 ? (
             activeKnownWarrants.map((warrant) => (
               <Card key={`${warrant.targetName}-${warrant.issuingSource}`} title={warrant.targetName}>
-                <p style={{ fontSize: "0.9rem" }}>
+                <WarrantText>
                   <strong>Bounty:</strong> {formatBounty(warrant.bountyAmount)}
-                </p>
-                <p style={{ fontSize: "0.88rem" }}>
+                </WarrantText>
+                <FineLine>
                   <strong>Disposition:</strong> {formatWarrantDisposition(warrant.disposition)}
-                </p>
-                <p style={{ fontSize: "0.88rem" }}>
+                </FineLine>
+                <FineLine>
                   <strong>Source:</strong> {warrant.issuingSource}
-                </p>
-                <p style={{ marginTop: "8px", fontSize: "0.9rem" }}>
+                </FineLine>
+                <WarrantText $spaced>
                   {warrant.summary || "No warrant summary recorded."}
-                </p>
+                </WarrantText>
               </Card>
             ))
           ) : (
@@ -685,12 +764,12 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
             caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
               <Card key={evidence.id} title={evidence.summary}>
-                <p style={{ fontSize: "0.88rem" }}>
+                <FineLine>
                   <strong>Kind:</strong> {evidence.kindLabel}
-                </p>
-                <p style={{ fontSize: "0.88rem" }}>
+                </FineLine>
+                <FineLine>
                   <strong>Source:</strong> {evidence.sourceLabel}
-                </p>
+                </FineLine>
                 {evidence.identityBearing ? (
                   <Minor>Identity-bearing evidence</Minor>
                 ) : (
@@ -712,11 +791,11 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         subtitle="A safe comparison board for known facts and unresolved links."
         wide
       >
-        <div style={{ display: "grid", gap: "20px" }}>
-          <p style={{ margin: 0, fontSize: "0.94rem", color: "var(--muted)" }}>
+        <DeductionsGrid>
+          <DeductionsIntro>
             Compare the opening lead, the clue stack, and the discovered suspects. This board stays
             anchored to player-known facts and does not guess at hidden truth.
-          </p>
+          </DeductionsIntro>
           <StatList>
             <div>
               <dt>Clues</dt>
@@ -740,16 +819,16 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
               {contradictionClues.map((clue, index) => (
                 <ItemCard key={`${clue.description}-${index}`}>
                   <strong>{clue.description}</strong>
-                  <p style={{ fontSize: "0.84rem", color: "var(--muted)" }}>
+                  <ClueMeta>
                     {clue.sourceLabel ? clue.sourceLabel : "Contradiction note"}
-                  </p>
+                  </ClueMeta>
                 </ItemCard>
               ))}
             </Stack>
           ) : (
             <Minor>No explicit contradictions have been logged yet.</Minor>
           )}
-        </div>
+        </DeductionsGrid>
       </Section>
     </Grid>
   );

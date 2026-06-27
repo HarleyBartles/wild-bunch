@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import styled from "styled-components";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
 import { formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
 import {
@@ -10,6 +11,33 @@ import {
   Field,
   Button,
 } from "./ui/sharedStyled";
+
+const OfferKindLine = styled.p`
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+`;
+
+const OfferAvailabilityLine = styled.p`
+  margin: 2px 0 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+`;
+
+const BuyRow = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  align-items: flex-end;
+`;
+
+const QuantityField = styled(Field).attrs({ as: "label" })`
+  flex: 1;
+`;
+
+const OfferList = styled(Stack)`
+  margin-top: 16px;
+`;
 
 interface StoreOffersPanelProps {
   storeOffers: TownStoreOffersDto | null;
@@ -47,14 +75,14 @@ function StoreOfferCard({
       <strong>
         {offer.displayName} ${offer.price.toFixed(2)}
       </strong>
-      <p style={{ margin: "4px 0 0", fontSize: "0.88rem", color: "var(--muted)" }}>
+      <OfferKindLine>
         {formatItemKind(offer.itemKind)} - {formatStoreVendorType(offer.vendorType)}
-      </p>
-      <p style={{ margin: "2px 0 0", fontSize: "0.84rem", color: "var(--muted)" }}>
+      </OfferKindLine>
+      <OfferAvailabilityLine>
         {formatStoreOfferAvailability(offer.availability)} - {offer.sourceNote}
-      </p>
-      <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "flex-end" }}>
-        <Field as="label" style={{ flex: 1 }}>
+      </OfferAvailabilityLine>
+      <BuyRow>
+        <QuantityField>
           <span>Quantity</span>
           <input
             type="number"
@@ -64,7 +92,7 @@ function StoreOfferCard({
             onChange={(event) => setQuantity(event.target.value)}
             disabled={disabled}
           />
-        </Field>
+        </QuantityField>
         <Button
           type="button"
           onClick={handleBuy}
@@ -72,7 +100,7 @@ function StoreOfferCard({
         >
           Buy
         </Button>
-      </div>
+      </BuyRow>
     </ItemCard>
   );
 }
@@ -103,7 +131,7 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
               <dd>{storeOffers.sourceNote}</dd>
             </div>
           </StatList>
-          <Stack style={{ marginTop: "16px" }}>
+          <OfferList>
             {storeOffers.offers.length > 0 ? (
               storeOffers.offers.map((offer) => (
                 <StoreOfferCard
@@ -116,7 +144,7 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
             ) : (
               <Muted>No store offers are available in this town.</Muted>
             )}
-          </Stack>
+          </OfferList>
         </>
       ) : null}
     </StatusCard>

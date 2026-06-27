@@ -116,6 +116,49 @@ const Tag = styled.span`
   color: var(--muted);
 `;
 
+const WantedNoticeEyebrow = styled(Eyebrow)`
+  font-size: 0.72rem;
+  color: var(--accent-strong);
+`;
+
+const PosterHeadline = styled.p`
+  margin: 0;
+  color: var(--accent-strong);
+`;
+
+const SummaryLine = styled.p`
+  margin-top: 4px;
+`;
+
+const FeatureNotesHeader = styled.div`
+  margin-bottom: 10px;
+`;
+
+const FeatureNotesHeading = styled.h5`
+  margin: 0;
+  font-size: 0.98rem;
+`;
+
+const TextOnlyCues = styled.p`
+  margin-top: 10px;
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--muted);
+`;
+
+const PosterSurfaceCard = styled(StatusCard)`
+  grid-column: 1 / -1;
+`;
+
+const SurfaceHeader = styled.div`
+  margin-bottom: 12px;
+`;
+
+const PosterList = styled.div`
+  display: grid;
+  gap: 20px;
+`;
+
 interface WantedPosterSurfaceProps {
   wantedPosters: WantedPosterDto[];
 }
@@ -177,9 +220,9 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
     <PosterCard>
       <PosterFrame>
         <PosterPortrait aria-hidden="true">
-          <Eyebrow style={{ fontSize: "0.72rem", color: "var(--accent-strong)" }}>
+          <WantedNoticeEyebrow>
             Wanted notice
-          </Eyebrow>
+          </WantedNoticeEyebrow>
           <strong>{poster.targetDisplayName}</strong>
           <p>
             {portraitFeatures.length > 0
@@ -193,9 +236,9 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
             <div>
               <Eyebrow>Public notice</Eyebrow>
               <h4>{poster.targetDisplayName}</h4>
-              <p style={{ margin: 0, color: "var(--accent-strong)" }}>
+              <PosterHeadline>
                 {poster.quickView.headlineNameOrAlias} - {poster.quickView.headlineFeatureOrDescriptor}
-              </p>
+              </PosterHeadline>
             </div>
             {poster.publicSafeClassification ? <Tag>{poster.publicSafeClassification}</Tag> : null}
           </PosterHeader>
@@ -221,16 +264,16 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
             <p>
               <strong>Public origin:</strong> {poster.details.publicOrigin}
             </p>
-            <p style={{ marginTop: "4px" }}>{poster.details.summary}</p>
+            <SummaryLine>{poster.details.summary}</SummaryLine>
           </PosterMeta>
 
           <div>
-            <div style={{ marginBottom: "10px" }}>
-              <h5 style={{ margin: 0, fontSize: "0.98rem" }}>Feature notes</h5>
+            <FeatureNotesHeader>
+              <FeatureNotesHeading>Feature notes</FeatureNotesHeading>
               <PanelSubtitle>
                 Public-safe hints keep the poster legible without exposing hidden truth.
               </PanelSubtitle>
-            </div>
+            </FeatureNotesHeader>
             {poster.details.features.length > 0 ? (
               <FeatureList>
                 {poster.details.features.map((feature) => (
@@ -244,16 +287,9 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
               <Muted>No public feature notes were returned.</Muted>
             )}
             {textOnlyFeatures.length > 0 ? (
-              <p
-                style={{
-                  marginTop: "10px",
-                  fontSize: "0.84rem",
-                  fontStyle: "italic",
-                  color: "var(--muted)",
-                }}
-              >
+              <TextOnlyCues>
                 Text-only cues: {textOnlyFeatures.map((feature) => feature.text).join(", ")}
-              </p>
+              </TextOnlyCues>
             ) : null}
           </div>
         </PosterContent>
@@ -264,22 +300,22 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
 
 export function WantedPosterSurface({ wantedPosters }: WantedPosterSurfaceProps) {
   return (
-    <StatusCard as="article" style={{ gridColumn: "1 / -1" }}>
-      <div style={{ marginBottom: "12px" }}>
+    <PosterSurfaceCard as="article">
+      <SurfaceHeader>
         <h3>Wanted posters</h3>
         <PanelSubtitle>
           Public-safe sheriff notices, quick views, and feature notes from the current board.
         </PanelSubtitle>
-      </div>
+      </SurfaceHeader>
       {wantedPosters.length > 0 ? (
-        <div style={{ display: "grid", gap: "20px" }}>
+        <PosterList>
           {wantedPosters.map((poster) => (
             <WantedPosterCard key={poster.posterId} poster={poster} />
           ))}
-        </div>
+        </PosterList>
       ) : (
         <Muted>No wanted posters are known yet.</Muted>
       )}
-    </StatusCard>
+    </PosterSurfaceCard>
   );
 }

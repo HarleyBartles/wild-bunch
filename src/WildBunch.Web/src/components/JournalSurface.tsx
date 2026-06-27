@@ -64,6 +64,16 @@ const JournalEntryMessage = styled.p`
   color: var(--text);
 `;
 
+const JournalEntryStack = styled(Stack)`
+  gap: 4px;
+`;
+
+const JournalSurfaceSection = styled(StatusCard).attrs({ as: "section" })`
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 18px;
+`;
+
 interface JournalSurfaceProps {
   journal: JournalDto | null;
   loading: boolean;
@@ -130,11 +140,11 @@ function JournalDaySection({ group }: { group: JournalDayGroup }) {
       <JournalDayHeader>
         <Eyebrow>Day {group.day}</Eyebrow>
       </JournalDayHeader>
-      <Stack style={{ gap: "4px" }}>
+      <JournalEntryStack>
         {group.entries.map((entry, index) => (
           <JournalEntryCard key={`${entry.day}-${entry.turn}-${index}`} entry={entry} />
         ))}
-      </Stack>
+      </JournalEntryStack>
     </JournalDay>
   );
 }
@@ -161,7 +171,7 @@ export function JournalSurface({
   }
 
   return (
-    <StatusCard as="section" style={{ gridColumn: "1 / -1", display: "grid", gap: "18px" }}>
+    <JournalSurfaceSection>
       <header>
         <JournalClock>{formatJournalClock(journal)}</JournalClock>
       </header>
@@ -173,6 +183,6 @@ export function JournalSurface({
           <Muted>No notes yet. The trail is still being written.</Muted>
         )}
       </JournalTimeline>
-    </StatusCard>
+    </JournalSurfaceSection>
   );
 }
