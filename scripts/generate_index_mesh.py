@@ -46,18 +46,22 @@ def should_index(path: Path) -> bool:
     return not is_skill_root(path)
 
 
-def rel_link(target: Path, label: str | None = None) -> str:
-    rel = target.relative_to(ROOT).as_posix()
+def rel_link(current: Path, target: Path, label: str | None = None) -> str:
+    rel = os.path.relpath(target, start=current).replace(os.sep, "/")
     return f"[{label or target.name}]({rel})"
 
 
 def dir_link(current: Path, child: Path) -> str | None:
     skill_md = child / "SKILL.md"
     if skill_md.exists():
-        return f"[{child.name}]({skill_md.relative_to(ROOT).as_posix()})"
+        rel = os.path.relpath(skill_md, start=current).replace(os.sep, "/")
+        return f"[{child.name}]({rel})"
     if should_index(child):
-        return f"[{child.name}]({child.relative_to(ROOT).as_posix()}/INDEX.md)"
-    return f"[{child.name}]({child.relative_to(ROOT).as_posix()}/)"
+        index_md = child / "INDEX.md"
+        rel = os.path.relpath(index_md, start=current).replace(os.sep, "/")
+        return f"[{child.name}]({rel})"
+    rel = os.path.relpath(child, start=current).replace(os.sep, "/")
+    return f"[{child.name}]({rel}/)"
 
 
 def render_index(path: Path) -> str:
@@ -92,7 +96,7 @@ def render_index(path: Path) -> str:
     if files:
         lines.append("## Files")
         for child in files:
-            lines.append(f"- {rel_link(child)}")
+            lines.append(f"- {rel_link(path, child)}")
         lines.append("")
 
     if not dirs and not files:
@@ -112,19 +116,15 @@ def resolve_link_target(current: Path, target: str) -> Path | None:
     clean_target = target.split("#", 1)[0]
     if not clean_target:
         return None
-    candidates = [
-        (current.parent / clean_target).resolve(),
-        (ROOT / clean_target).resolve(),
-    ]
-    for resolved in candidates:
-        if not is_under(resolved, ROOT):
-            continue
-        if target.endswith("/"):
-            if resolved.is_dir():
-                return resolved
-            continue
-        if resolved.exists():
+    resolved = (current.parent / clean_target).resolve()
+    if not is_under(resolved, ROOT):
+        return None
+    if target.endswith("/"):
+        if resolved.is_dir():
             return resolved
+        return None
+    if resolved.exists():
+        return resolved
     return None
 
 
