@@ -99,7 +99,7 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         busy={archiving}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {
-          void archivePlaythrough().then(() => setConfirmOpen(false));
+          void archivePlaythrough().then(() => setConfirmOpen(false)).catch(() => { /* onError already handled in mutation */ });
         }}
       />
     </>
