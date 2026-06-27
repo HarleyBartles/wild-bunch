@@ -807,7 +807,7 @@ Expected: matches only in `.agents/docs/mesh-policy.md` (section 7, the custody 
 **Interfaces:**
 - Produces: a human-facing root entrypoint with no operative agent law.
 
-- [ ] **Step 1: Create `README.md`**
+- [x] **Step 1: Create `README.md`**
 
 ```markdown
 # Wild Bunch
@@ -830,12 +830,7 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 This repo default-installs seven Codex plugins from [HarleyBartles/agent-asset-marketplace](https://github.com/HarleyBartles/agent-asset-marketplace): `repo-worker-pack`, `superpowers-plus`, `wild-bunch-project-pack`, `game-studio`, `dotnet-kit`, `architecture-pack`, and `frontend-pack`. See [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json).
 ```
 
-- [ ] **Step 2: Commit**
-
-```powershell
-git add README.md
-git commit -m "BUNCH-103: add root README as human discoverability entrypoint"
-```
+- [x] **Step 2: Commit**
 
 ---
 

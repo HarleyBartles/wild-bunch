@@ -91,3 +91,22 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  index-mesh:
+    name: Index mesh + plugin manifest
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate marketplace.json
+        run: |
+          python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==7; assert all(p['policy']['installation']=='INSTALLED_BY_DEFAULT' for p in m['plugins']); assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack','game-studio','dotnet-kit','architecture-pack','frontend-pack'}; print('OK marketplace.json')"
+
+      - name: Validate INDEX.md mesh
+        run: python scripts/generate_index_mesh.py --check
