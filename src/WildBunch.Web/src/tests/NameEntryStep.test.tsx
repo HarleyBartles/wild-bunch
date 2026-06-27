@@ -9,9 +9,9 @@ afterEach(() => {
 });
 
 interface StepHandlers {
-  onPlayerNameChange: ReturnType<typeof vi.fn>;
-  onContinue: ReturnType<typeof vi.fn>;
-  onBack: ReturnType<typeof vi.fn>;
+  onPlayerNameChange: (value: string) => void;
+  onContinue: () => void;
+  onBack: () => void;
 }
 
 // Stateful wrapper so controlled-input typing updates playerName and re-renders.
