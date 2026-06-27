@@ -371,7 +371,7 @@ Back to [.agents/](../INDEX.md)
 - Produces: `scripts/generate_index_mesh.py` with `--check` mode for CI.
 - Consumes: the repo tree, the exclusion policy, and the skill-root detection rule (`SKILL.md` presence).
 
-- [ ] **Step 1: Create `scripts/generate_index_mesh.py`**
+- [x] **Step 1: Create `scripts/generate_index_mesh.py`**
 
 This is a repo-local adaptation of `HarleyBartles/agent-asset-marketplace/tools/generate_index_mesh.py`. Differences from the upstream script: the exclusion set is the Wild Bunch set (`bin`, `obj`, `node_modules`, `.git`, `.worktrees`, `.local`, `bin`, `obj`); there is no `sources/third_party` or `generated/skill-zips` root to special-case; the rendered shape is identical (`# INDEX.md`, generated-by note, `## Directories`, `## Files`).
 
@@ -594,7 +594,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: Smoke-test the generator in write mode on a throwaway copy**
+- [x] **Step 2: Smoke-test the generator in write mode on a throwaway copy**
 
 Run (from the worktree root):
 ```powershell
@@ -602,18 +602,12 @@ python scripts/generate_index_mesh.py
 ```
 Expected: `Wrote index mesh: N files` and no broken-link error. This overwrites the hand-authored `INDEX.md` files with generated content — that is intended for this slice, but the worker should `git diff` afterward to confirm the shape change is acceptable and that no link validation failed.
 
-- [ ] **Step 3: Run the generator in check mode**
+- [x] **Step 3: Run the generator in check mode**
 
 Run: `python scripts/generate_index_mesh.py --check`
 Expected: `OK index mesh: N indexes current`
 
-- [ ] **Step 4: Commit**
-
-```powershell
-git add scripts/generate_index_mesh.py
-git add -A
-git commit -m "BUNCH-103: add repo-local INDEX.md mesh generator and regenerate mesh"
-```
+- [x] **Step 4: Commit**
 
 ---
 
@@ -626,7 +620,7 @@ git commit -m "BUNCH-103: add repo-local INDEX.md mesh generator and regenerate 
 - Consumes: `.agents/docs/mesh-policy.md` (Task 2), `.agents/plugins/marketplace.json` (Task 1).
 - Produces: updated root law that no longer references `.agents/skills/INDEX.md` and defers mesh detail to the policy doc.
 
-- [ ] **Step 1: Update the "Repo-local skills index" line**
+- [x] **Step 1: Update the "Repo-local skills index" line**
 
 Replace the line:
 ```
@@ -637,24 +631,19 @@ with:
 - Repo-local plugin marketplace: `.agents/plugins/marketplace.json` (default-installs `repo-worker-pack`, `superpowers-plus`, `wild-bunch-project-pack`, `game-studio`, `dotnet-kit`, `architecture-pack`, `frontend-pack`; sourced from `HarleyBartles/agent-asset-marketplace`).
 ```
 
-- [ ] **Step 2: Update the Mesh Policy section to defer to the policy doc**
+- [x] **Step 2: Update the Mesh Policy section to defer to the policy doc**
 
 In the "Mesh Policy" section header block, add after the intro paragraph:
 ```
 Detailed mesh contract: [`.agents/docs/mesh-policy.md`](.agents/docs/mesh-policy.md). The summary below is binding; the detailed doc is the companion.
 ```
 
-- [ ] **Step 3: Verify no other `.agents/skills/` references remain in `AGENTS.md`**
+- [x] **Step 3: Verify no other `.agents/skills/` references remain in `AGENTS.md`**
 
 Run: `Select-String -Path AGENTS.md -Pattern "\.agents/skills" -SimpleMatch`
 Expected: no matches.
 
-- [ ] **Step 4: Commit**
-
-```powershell
-git add AGENTS.md
-git commit -m "BUNCH-103: point root AGENTS.md at plugin marketplace and mesh-policy doc"
-```
+- [x] **Step 4: Commit**
 
 ---
 
@@ -667,20 +656,20 @@ git commit -m "BUNCH-103: point root AGENTS.md at plugin marketplace and mesh-po
 **Interfaces:**
 - Produces: a written audit note (in the PR description) confirming either (a) no descriptions were operative law, or (b) the exact relocations made.
 
-- [ ] **Step 1: List every `INDEX.md` description that is more than a name/short nav hint**
+- [x] **Step 1: List every `INDEX.md` description that is more than a name/short nav hint**
 
 Run:
 ```powershell
 Get-ChildItem -Recurse -Filter INDEX.md -File | ForEach-Object { Write-Output "===== $($_.FullName) ====="; Get-Content $_.FullName }
 ```
 
-- [ ] **Step 2: For each description that states a rule, boundary, or obligation, relocate it to the nearest `AGENTS.md`**
+- [x] **Step 2: For each description that states a rule, boundary, or obligation, relocate it to the nearest `AGENTS.md`**
 
 The current `INDEX.md` files use short `- [name](path) - description` lines. Most descriptions are short nav hints (e.g. "Agent doctrine, architecture hygiene..."). Any line that states a binding rule (e.g. "must", "do not", "required") is law and must move to the nearest `AGENTS.md` before regeneration. Record each relocation in the PR description.
 
 Known candidates to inspect (from the root and `.agents/` indexes): the root `INDEX.md` "Index mesh exclusions" paragraph is law — relocate it to root `AGENTS.md` mesh section (or confirm it is already covered by the mesh-policy doc) before regeneration. The `.agents/skills/INDEX.md` "Maintenance rule" section is law but that file is deleted in Task 7, so no relocation is needed.
 
-- [ ] **Step 3: Relocate the root `INDEX.md` exclusion law**
+- [x] **Step 3: Relocate the root `INDEX.md` exclusion law**
 
 The root `INDEX.md` ends with:
 ```
@@ -691,7 +680,7 @@ INDEX.md files are not created in: `bin/`, `obj/` (build output), `node_modules/
 
 This is operative law (the exclusion policy). It is already captured in `.agents/docs/mesh-policy.md` (Task 2, section 2) and in the generator's `EXCLUDED_DIR_NAMES`. After regeneration the root `INDEX.md` will not carry this paragraph. Confirm the mesh-policy doc and generator exclusion set match the current exclusion list, then no `AGENTS.md` relocation is needed beyond what Task 4 already did. Update the exclusion list in `.agents/docs/mesh-policy.md` section 2 to drop `.agents/skills/` (since the skills tree is removed in Task 7) and keep `bin/`, `obj/`, `node_modules/`, `.git/`, `.local/`.
 
-- [ ] **Step 4: Commit any relocations**
+- [x] **Step 4: Commit any relocations**
 
 ```powershell
 git add -A
@@ -712,27 +701,22 @@ git commit -m "BUNCH-103: relocate operative INDEX.md law into agents mesh befor
 - Consumes: `scripts/generate_index_mesh.py` (Task 3), the updated exclusion policy.
 - Produces: a generated, link-validated `INDEX.md` mesh.
 
-- [ ] **Step 1: Regenerate the mesh**
+- [x] **Step 1: Regenerate the mesh**
 
 Run: `python scripts/generate_index_mesh.py`
 Expected: `Wrote index mesh: N files` and no broken-link error.
 
-- [ ] **Step 2: Validate in check mode**
+- [x] **Step 2: Validate in check mode**
 
 Run: `python scripts/generate_index_mesh.py --check`
 Expected: `OK index mesh: N indexes current`
 
-- [ ] **Step 3: Spot-check the root and `.agents/` indexes**
+- [x] **Step 3: Spot-check the root and `.agents/` indexes**
 
 Run: `Get-Content INDEX.md; Get-Content .agents/INDEX.md`
 Expected: generated shape (`# INDEX.md`, generated-by note, `## Directories`, `## Files`), no `.agents/skills/` link (it will be removed in Task 7; if Task 7 has not run yet, the generator will still emit a link to `.agents/skills/INDEX.md` because the folder still exists — that is fine, Task 7 removes the folder and a final regeneration in Task 7 cleans the link).
 
-- [ ] **Step 4: Commit**
-
-```powershell
-git add -A
-git commit -m "BUNCH-103: regenerate full INDEX.md mesh via generator"
-```
+- [x] **Step 4: Commit**
 
 ---
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Repo Worker Base"
-  short_description: "Base repo hygiene for Codex workers in Harley's workspace."
-  default_prompt: "Use Repo Worker Base for repo-backed work in Harley's workspace."
