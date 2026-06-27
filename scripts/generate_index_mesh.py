@@ -6,59 +6,14 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local"}
-EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local"}
+EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist"}
+EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist"}
 EXCLUDED_FILE_NAMES = {".git"}
-
-
-def _load_tracked_paths() -> set[Path]:
-    """Return the set of paths tracked by git, so git-ignored entries are excluded."""
-    try:
-        result = subprocess.run(
-            ["git", "ls-files"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        # Not a git repo or git unavailable — fall back to filesystem walk
-        return set()
-    tracked: set[Path] = set()
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if line:
-            tracked.add((ROOT / line).resolve())
-    return tracked
-
-
-_TRACKED_PATHS: set[Path] | None = None
-
-
-def tracked_paths() -> set[Path]:
-    global _TRACKED_PATHS
-    if _TRACKED_PATHS is None:
-        _TRACKED_PATHS = _load_tracked_paths()
-    return _TRACKED_PATHS
-
-
-def is_tracked(path: Path) -> bool:
-    """True if path is a tracked file or a directory containing tracked files."""
-    tp = tracked_paths()
-    if not tp:
-        # No git available — include everything
-        return True
-    resolved = path.resolve()
-    if resolved in tp:
-        return True
-    # Directory: check if any tracked file is under it
-    return any(resolved in t.parents for t in tp)
 
 
 @dataclass(frozen=True)
@@ -79,9 +34,7 @@ def is_under(path: Path, ancestor: Path) -> bool:
 
 
 def should_descend(child: Path) -> bool:
-    if child.name in EXCLUDED_DIR_NAMES or is_skill_root(child):
-        return False
-    return is_tracked(child)
+    return child.name not in EXCLUDED_DIR_NAMES and not is_skill_root(child)
 
 
 def should_index(path: Path) -> bool:
@@ -90,9 +43,7 @@ def should_index(path: Path) -> bool:
     relative = path.relative_to(ROOT)
     if any(part in EXCLUDED_ROOT_NAMES for part in relative.parts):
         return False
-    if is_skill_root(path):
-        return False
-    return is_tracked(path)
+    return not is_skill_root(path)
 
 
 def rel_link(current: Path, target: Path, label: str | None = None) -> str:
@@ -124,13 +75,9 @@ def render_index(path: Path) -> str:
                 continue
             if is_skill_root(path):
                 continue
-            if not is_tracked(entry):
-                continue
             dirs.append(entry)
         else:
             if entry.name in EXCLUDED_FILE_NAMES:
-                continue
-            if not is_tracked(entry):
                 continue
             files.append(entry)
 
