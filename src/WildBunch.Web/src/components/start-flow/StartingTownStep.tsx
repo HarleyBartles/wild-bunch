@@ -1,5 +1,7 @@
 import styled from "styled-components";
+import { useQuery } from "@tanstack/react-query";
 import { Eyebrow, BackButton, Button } from "../ui/sharedStyled";
+import { getStartingTowns } from "../../api/wildBunchApi";
 
 interface StartingTownStepProps {
   selectedTownId: string | null;
@@ -7,39 +9,49 @@ interface StartingTownStepProps {
   onBack: () => void;
 }
 
-const placeholderTowns = [
-  { id: "t-town", name: "Tumbleweed" },
-  { id: "dust-fork", name: "Dust Fork" },
-];
-
 export function StartingTownStep({ selectedTownId, onSelectTown, onBack }: StartingTownStepProps) {
+  const townsQuery = useQuery({
+    queryKey: ["starting-towns"],
+    queryFn: () => getStartingTowns(),
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  const towns = townsQuery.data ?? [];
+  const isPending = townsQuery.isLoading || townsQuery.isError || towns.length === 0;
+
   return (
     <StepCard>
       <Eyebrow>Step 3 of 3</Eyebrow>
-      <StepHeading>Pick your starting town</StepHeading>
+      <StepHeading>Pick a starting town</StepHeading>
       <StepLead>
-        Every hunt begins somewhere. Choose the town where you'll pick up the trail.
+        You cannot go back to the town where the dying man fell. The sheriff will have that place
+        locked down by now.
+      </StepLead>
+      <StepLead>
+        So pick the town where your run begins proper. From there, you will follow leads, read
+        wanted posters, ride the trails, and hunt for the Wild Bunch killer before the law catches
+        up with you.
       </StepLead>
 
-      <PlaceholderBody>
-        Starting towns will be fetched from the backend in a later task. For now, pick from the
-        placeholder list.
-      </PlaceholderBody>
-
-      <TownList>
-        {placeholderTowns.map((town) => (
-          <TownCard key={town.id}>
-            <TownName>{town.name}</TownName>
-            <Button
-              type="button"
-              $variant={selectedTownId === town.id ? "primary" : "ghost"}
-              onClick={() => onSelectTown(town.id)}
-            >
-              Start here
-            </Button>
-          </TownCard>
-        ))}
-      </TownList>
+      {isPending ? (
+        <TownLoading>Saddling up the map…</TownLoading>
+      ) : (
+        <TownList>
+          {towns.map((town) => (
+            <TownCard key={town.id}>
+              <TownName>{town.name}</TownName>
+              <Button
+                type="button"
+                $variant={selectedTownId === town.id ? "primary" : "ghost"}
+                onClick={() => onSelectTown(town.id)}
+              >
+                Start in {town.name}
+              </Button>
+            </TownCard>
+          ))}
+        </TownList>
+      )}
 
       <StepActions>
         <BackButton type="button" onClick={onBack}>
@@ -73,9 +85,10 @@ const StepLead = styled.p`
   margin: 0;
   color: color-mix(in srgb, var(--text) 75%, transparent);
   max-width: 60ch;
+  line-height: 1.5;
 `;
 
-const PlaceholderBody = styled.p`
+const TownLoading = styled.p`
   margin: 0;
   padding: 14px 16px;
   border-radius: 14px;

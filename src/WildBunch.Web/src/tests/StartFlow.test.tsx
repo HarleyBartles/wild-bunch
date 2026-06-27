@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { PreSessionSurface } from "../flow/PreSessionSurface";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
-import { createGame, getGame, getAvailableActions, getJournal, getPrologue } from "../api/wildBunchApi";
+import { createGame, getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns } from "../api/wildBunchApi";
 
 vi.mock("../api/wildBunchApi", () => ({
   createGame: vi.fn(),
@@ -25,6 +25,7 @@ vi.mock("../api/wildBunchApi", () => ({
   acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
   getPrologue: vi.fn(),
+  getStartingTowns: vi.fn(),
 }));
 
 const mockedCreateGame = vi.mocked(createGame);
@@ -32,6 +33,7 @@ const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetPrologue = vi.mocked(getPrologue);
+const mockedGetStartingTowns = vi.mocked(getStartingTowns);
 
 afterEach(() => {
   cleanup();
@@ -138,6 +140,10 @@ function primeMocks() {
     primaryAction: "I understand. Keep riding.",
     variantId: "variant-1",
   });
+  mockedGetStartingTowns.mockResolvedValue([
+    { id: "t-town", name: "Tumbleweed", services: 0 },
+    { id: "dust-fork", name: "Dust Fork", services: 0 },
+  ]);
 }
 
 describe("StartFlow", () => {
@@ -198,7 +204,7 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
   });
 
@@ -219,7 +225,7 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: /back/i }));
@@ -250,7 +256,7 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
     // createGame (POST /api/games) must not have been called yet — only at the final step.
@@ -274,10 +280,10 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getAllByRole("button", { name: /start here/i })[0]);
+    await user.click(screen.getAllByRole("button", { name: /start in /i })[0]);
 
     await waitFor(() => {
       expect(mockedCreateGame).toHaveBeenCalledTimes(1);
@@ -306,10 +312,10 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick your starting town/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getAllByRole("button", { name: /start here/i })[0]);
+    await user.click(screen.getAllByRole("button", { name: /start in /i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /starting your hunt/i })).toBeInTheDocument();

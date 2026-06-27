@@ -8,6 +8,7 @@ import type {
   PrologueDto,
   ResolveJourneyEncounterRequest,
   StartGameRequest,
+  StartingTownDto,
   TownStoreOffersDto,
   TravelRequest,
   TravelPreviewResultDto,
@@ -144,4 +145,8 @@ export function getPrologue(seedCode?: string | null) {
   }
   const query = params.toString();
   return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);
+}
+
+export function getStartingTowns() {
+  return requestJson<StartingTownDto[]>("/api/games/starting-towns");
 }

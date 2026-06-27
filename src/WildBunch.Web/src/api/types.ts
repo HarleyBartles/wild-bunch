@@ -627,3 +627,9 @@ export interface PrologueDto {
   primaryAction: string;
   variantId: string;
 }
+
+export interface StartingTownDto {
+  id: string;
+  name: string;
+  services: number;
+}
