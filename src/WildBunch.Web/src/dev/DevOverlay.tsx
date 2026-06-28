@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import { getAvailablePanels, getDefaultPanelId } from "./DevPanelRegistry";
+import { getAvailablePanels, getDefaultPanelId, devPanels } from "./DevPanelRegistry";
 import { useDevSurface } from "./DevSurfaceContext";
 import type { DevSurface } from "./DevSurfaceContext";
 
@@ -78,6 +78,11 @@ export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
   }
 
   const activePanel = availablePanels.find((p) => p.id === activePanelId) ?? availablePanels[0];
+  
+  // Session audit is always available but handled separately
+  const sessionAuditPanel = devPanels.find((p) => p.id === "session-audit");
+  const mainPanels = availablePanels.filter((p) => p.id !== "session-audit");
+  const hasMainPanels = mainPanels.length > 0;
 
   return (
     <>
@@ -99,21 +104,38 @@ export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
         </DrawerHeader>
         <DrawerBody>
           <Sidebar aria-label="Dev panels">
-            {availablePanels.length > 0 ? (
-              availablePanels.map((panel) => (
-                <Tab
-                  key={panel.id}
-                  type="button"
-                  $active={panel.id === activePanel?.id}
-                  aria-pressed={panel.id === activePanel?.id}
-                  onClick={() => {
-                    userSelectedRef.current = true;
-                    setActivePanelId(panel.id);
-                  }}
-                >
-                  {panel.label}
-                </Tab>
-              ))
+            {hasMainPanels ? (
+              <>
+                <MainPanelList>
+                  {mainPanels.map((panel) => (
+                    <Tab
+                      key={panel.id}
+                      type="button"
+                      $active={panel.id === activePanel?.id}
+                      aria-pressed={panel.id === activePanel?.id}
+                      onClick={() => {
+                        userSelectedRef.current = true;
+                        setActivePanelId(panel.id);
+                      }}
+                    >
+                      {panel.label}
+                    </Tab>
+                  ))}
+                </MainPanelList>
+                <SessionAuditSection>
+                  <SessionAuditTab
+                    type="button"
+                    $active={activePanelId === "session-audit"}
+                    aria-pressed={activePanelId === "session-audit"}
+                    onClick={() => {
+                      userSelectedRef.current = true;
+                      setActivePanelId("session-audit");
+                    }}
+                  >
+                    {sessionAuditPanel?.label}
+                  </SessionAuditTab>
+                </SessionAuditSection>
+              </>
             ) : (
               <MutedText>No contextual dev panel for this surface.</MutedText>
             )}
@@ -275,6 +297,53 @@ const Sidebar = styled.nav`
     border-right: none;
     border-bottom: 1px solid var(--border);
     min-width: 0;
+  }
+`;
+
+const MainPanelList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+`;
+
+const SessionAuditSection = styled.div`
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  
+  @media (max-width: 640px) {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    border-left: 1px solid var(--border);
+    padding-left: 8px;
+  }
+`;
+
+const SessionAuditTab = styled.button<{ $active: boolean }>`
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid ${(props) => (props.$active ? "var(--border-strong)" : "transparent")};
+  background: ${(props) => (props.$active ? "rgba(223, 159, 79, 0.1)" : "transparent")};
+  color: ${(props) => (props.$active ? "var(--accent)" : "var(--muted)")};
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: ${(props) => (props.$active ? 600 : 400)};
+  text-align: left;
+  transition-property: background-color, border-color, color;
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+  width: 100%;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 `;
 
