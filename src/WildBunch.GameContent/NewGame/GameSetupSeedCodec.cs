@@ -195,7 +195,7 @@ public static class StartingWorldDescriptorResolver
         for (var attempt = 0; attempt < RepresentativeSeedSearchLimit; attempt++)
         {
             var candidateSeed = StartingWorldDescriptorSeedMixer.CreateCandidateSeed(descriptorSignature, salt: 0, attempt);
-            var resolvedDescriptor = Resolve(candidateSeed);
+            var resolvedDescriptor = Resolve(candidateSeed, descriptor.GameDifficulty, descriptor.GameEntropy);
             if (HasSameSemantics(descriptor, resolvedDescriptor))
             {
                 return candidateSeed;

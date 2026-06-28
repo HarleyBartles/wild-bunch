@@ -17,10 +17,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void CanonicalMountedStandard_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedStandard);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedStandard.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedStandard.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Standard, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Classic, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
         Assert.True(resolved.Player.StartWithHorse);
     }
@@ -29,10 +27,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void CanonicalMountedBoring_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedBoring);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedBoring.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedBoring.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Standard, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Boring, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
         Assert.True(resolved.Player.StartWithHorse);
     }
@@ -41,10 +37,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void CanonicalFootBoringLight_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalFootBoringLight);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalFootBoringLight.GameDifficulty, TravelTestSeedCatalog.CanonicalFootBoringLight.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Standard, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Boring, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
         Assert.False(resolved.Player.StartWithHorse);
         Assert.Equal(StartingLoadoutProfile.Light, resolved.Player.LoadoutProfile);
@@ -54,10 +48,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void CanonicalMountedEasyStandard_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedEasyStandard);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedEasyStandard.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedEasyStandard.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Easy, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Classic, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
         Assert.True(resolved.Player.StartWithHorse);
     }
@@ -66,10 +58,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void CanonicalMountedHardStandard_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedHardStandard);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedHardStandard.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedHardStandard.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Challenging, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Classic, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
         Assert.True(resolved.Player.StartWithHorse);
     }
@@ -78,10 +68,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void FrontierFootNormalFoe_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierFootNormalFoe);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.FrontierFootNormalFoe.GameDifficulty, TravelTestSeedCatalog.FrontierFootNormalFoe.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Standard, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Classic, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Frontier, resolved.World.Variant);
         Assert.False(resolved.Player.StartWithHorse);
         Assert.Equal(StartingLoadoutProfile.Light, resolved.Player.LoadoutProfile);
@@ -91,10 +79,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void FrontierMountedHardNpc_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierMountedHardNpc);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.FrontierMountedHardNpc.GameDifficulty, TravelTestSeedCatalog.FrontierMountedHardNpc.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Challenging, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Classic, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Frontier, resolved.World.Variant);
         Assert.True(resolved.Player.StartWithHorse);
     }
@@ -103,10 +89,8 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void FrontierMountedNormalHighRisk_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierMountedNormalHighRisk);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
+        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.FrontierMountedNormalHighRisk.GameDifficulty, TravelTestSeedCatalog.FrontierMountedNormalHighRisk.GameEntropy);
 
-        Assert.Equal(GameDifficulty.Standard, resolved.GameDifficulty);
-        Assert.Equal(GameEntropy.Classic, resolved.GameEntropy);
         Assert.Equal(SeedWorldVariant.Frontier, resolved.World.Variant);
         Assert.True(resolved.Player.StartWithHorse);
     }

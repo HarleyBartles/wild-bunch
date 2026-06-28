@@ -2,8 +2,10 @@ using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Api.Games.Validation;
+using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
+using WildBunch.Application.Projections;
 
 namespace WildBunch.Api.Games;
 

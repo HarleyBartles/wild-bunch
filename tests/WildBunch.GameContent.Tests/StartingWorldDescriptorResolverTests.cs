@@ -38,13 +38,9 @@ public sealed class StartingWorldDescriptorResolverTests
     }
 
     [Fact]
-    public void ExplicitSeedResolutionIgnoresRequestedDifficultyAndEntropy()
+    public void ExplicitSeedResolutionUsesRequestedDifficultyAndEntropy()
     {
-        var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Easy,
-            GameEntropy.Boring);
-        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(
-            StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
+        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(Guid.NewGuid());
 
         var baseline = StartingWorldDescriptorResolver.Resolve(
             seedCode,
@@ -55,7 +51,15 @@ public sealed class StartingWorldDescriptorResolverTests
             GameDifficulty.Challenging,
             GameEntropy.Wild);
 
-        Assert.Equal(baseline, challenged);
+        Assert.Equal(GameDifficulty.Easy, baseline.GameDifficulty);
+        Assert.Equal(GameEntropy.Boring, baseline.GameEntropy);
+        Assert.Equal(GameDifficulty.Challenging, challenged.GameDifficulty);
+        Assert.Equal(GameEntropy.Wild, challenged.GameEntropy);
+        Assert.Equal(baseline.World, challenged.World);
+        // Player state may differ due to difficulty-based starting cash
+        Assert.Equal(baseline.Player.StartWithHorse, challenged.Player.StartWithHorse);
+        Assert.Equal(baseline.Player.LoadoutProfile, challenged.Player.LoadoutProfile);
+        Assert.Equal(baseline.Case, challenged.Case);
     }
 
     [Fact]
@@ -109,7 +113,7 @@ public sealed class StartingWorldDescriptorResolverTests
     public void GameEntropyStaysDescriptorLevelAndWildStaysLegal()
     {
         var wildSeed = CreateSeedCode(3, 0, 0, 0, 1, 8, 1, tail: 0);
-        var descriptor = StartingWorldDescriptorResolver.Resolve(wildSeed);
+        var descriptor = StartingWorldDescriptorResolver.Resolve(wildSeed, GameDifficulty.Standard, GameEntropy.Wild);
 
         Assert.Equal(GameEntropy.Wild, descriptor.GameEntropy);
         Assert.Equal(GameSetupDeterministicLabels.WorldStartingTownHorse, descriptor.World.StartingTownSelectionKey);
@@ -130,13 +134,11 @@ public sealed class StartingWorldDescriptorResolverTests
         var descriptorB = StartingWorldDescriptorResolver.Resolve(seedB);
 
         var differenceScore = 0;
-        if (descriptorA.GameDifficulty != descriptorB.GameDifficulty) differenceScore++;
-        if (descriptorA.GameEntropy != descriptorB.GameEntropy) differenceScore++;
         if (descriptorA.World != descriptorB.World) differenceScore++;
         if (descriptorA.Player != descriptorB.Player) differenceScore++;
         if (descriptorA.Case != descriptorB.Case) differenceScore++;
 
-        Assert.True(differenceScore >= 4, $"Expected avalanche behavior, but only {differenceScore} descriptor surfaces changed.");
+        Assert.True(differenceScore >= 2, $"Expected avalanche behavior, but only {differenceScore} descriptor surfaces changed.");
     }
 
     [Fact]

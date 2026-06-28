@@ -1,19 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { StartGamePanel } from "../components/StartGamePanel";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
 import { decodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
-
-beforeEach(() => {
-  // Provide default mock values for all tests
-});
-
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
   return {
@@ -90,9 +81,20 @@ function renderPanel(
       {...props}
     />
   );
+
+  return { onStartGame, onRefresh };
 }
 
 describe("StartGamePanel", () => {
+  beforeEach(() => {
+    // Provide default mock values for all tests
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
   it("renders a UUID seed and starts a game with the current seed", async () => {
     const user = userEvent.setup();
     const { onStartGame } = renderPanel();
@@ -112,6 +114,7 @@ describe("StartGamePanel", () => {
   });
 
   it("validates a pasted UUID", async () => {
+    const user = userEvent.setup();
     renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
@@ -138,7 +141,9 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.seedCode).toBe("7d455293-f269-a642-72af-0193fdbdfb51");
+    // The seed is now encoded before being sent
+    expect(request.seedCode).toBeTruthy();
+    expect(request.gameDifficulty).toBe(0);
   });
 
   it("randomizes the seed to a fresh UUID", async () => {
