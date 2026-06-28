@@ -21,13 +21,12 @@ interface SetupHuntStepProps {
 }
 
 const difficultyOptions: ReadonlyArray<{ value: TravelDifficulty; label: string }> = [
-  { value: 0, label: "Normal" },
   { value: 1, label: "Easy" },
+  { value: 0, label: "Normal" },
   { value: 2, label: "Hard" },
 ];
 
 const entropyOptions: ReadonlyArray<{ value: AdventureRandomnessPolicy; label: string }> = [
-  { value: 0, label: "Boring" },
   { value: 1, label: "Classic" },
   { value: 2, label: "Adventurous" },
   { value: 3, label: "Wild" },
@@ -95,36 +94,36 @@ export function SetupHuntStep({
 
         <FieldGroup>
           <GroupLabel>Difficulty</GroupLabel>
-          <OptionRow>
+          <SegmentedToggle>
             {difficultyOptions.map((option) => (
-              <OptionButton
+              <Segment
                 key={option.value}
                 type="button"
                 $selected={travelDifficulty === option.value}
                 onClick={() => onTravelDifficultyChange(option.value)}
                 aria-pressed={travelDifficulty === option.value}
               >
-                <OptionLabel>{option.label}</OptionLabel>
-              </OptionButton>
+                {option.label}
+              </Segment>
             ))}
-          </OptionRow>
+          </SegmentedToggle>
         </FieldGroup>
 
         <FieldGroup>
           <GroupLabel>Entropy</GroupLabel>
-          <OptionRow>
+          <SegmentedToggle>
             {entropyOptions.map((option) => (
-              <OptionButton
+              <Segment
                 key={option.value}
                 type="button"
                 $selected={entropy === option.value}
                 onClick={() => onEntropyChange(option.value)}
                 aria-pressed={entropy === option.value}
               >
-                <OptionLabel>{option.label}</OptionLabel>
-              </OptionButton>
+                {option.label}
+              </Segment>
             ))}
-          </OptionRow>
+          </SegmentedToggle>
         </FieldGroup>
 
         <Field>
@@ -245,36 +244,46 @@ const SeedRow = styled.div`
   }
 `;
 
-const OptionRow = styled.div`
+const SegmentedToggle = styled.div`
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 3px;
+  gap: 0;
+  overflow: hidden;
 `;
 
-const OptionButton = styled.button<{ $selected: boolean }>`
-  display: grid;
-  gap: 2px;
-  flex: 1 1 140px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid
-    ${({ $selected }) =>
-      $selected ? "color-mix(in srgb, var(--accent) 55%, transparent)" : "rgba(255, 255, 255, 0.12)"};
+const Segment = styled.button<{ $selected: boolean }>`
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 999px;
   background: ${({ $selected }) =>
-    $selected ? "color-mix(in srgb, var(--accent) 14%, transparent)" : "rgba(255, 255, 255, 0.03)"};
-  color: var(--text);
+    $selected ? "color-mix(in srgb, var(--accent) 22%, transparent)" : "transparent"};
+  color: ${({ $selected }) =>
+    $selected ? "var(--text)" : "color-mix(in srgb, var(--text) 65%, transparent)"};
+  font-weight: 600;
+  font-size: 0.88rem;
   cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
 
   &:hover {
-    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--text);
   }
-`;
 
-const OptionLabel = styled.span`
-  font-weight: 600;
-  font-size: 0.94rem;
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: -2px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+    padding: 8px 6px;
+  }
 `;
 
 const StepActions = styled.div`

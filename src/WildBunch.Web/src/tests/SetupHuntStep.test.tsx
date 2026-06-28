@@ -233,34 +233,55 @@ describe("SetupHuntStep", () => {
     expect(onEntropyChange).toHaveBeenCalledWith(3);
   });
 
-  it("renders only the canonical difficulty option names (Normal, Easy, Hard)", () => {
+  it("renders difficulty options as Easy, Normal, Hard in that order", () => {
     renderStep();
 
     const difficultyLabel = screen.getByText("Difficulty");
-    const difficultyGroup = difficultyLabel.parentElement!;
-    const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
+    const toggle = difficultyLabel.parentElement!.querySelector("div")!;
+    const buttons = Array.from(toggle.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Normal", "Easy", "Hard"]);
+    expect(labels).toEqual(["Easy", "Normal", "Hard"]);
     // Guard against invented Western-flavoured labels.
     expect(labels).not.toContain("Greenhorn");
     expect(labels).not.toContain("Trail hand");
     expect(labels).not.toContain("Iron rider");
   });
 
-  it("renders only the canonical entropy option names (Boring, Classic, Adventurous, Wild)", () => {
+  it("renders entropy options as Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
     const entropyLabel = screen.getByText("Entropy");
-    const entropyGroup = entropyLabel.parentElement!;
-    const buttons = Array.from(entropyGroup.querySelectorAll("button"));
+    const toggle = entropyLabel.parentElement!.querySelector("div")!;
+    const buttons = Array.from(toggle.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Boring", "Classic", "Adventurous", "Wild"]);
+    expect(labels).toEqual(["Classic", "Adventurous", "Wild"]);
     // Guard against invented Western-flavoured labels.
     expect(labels).not.toContain("Placid");
     expect(labels).not.toContain("Restless");
     expect(labels).not.toContain("Rowdy");
+  });
+
+  it("does not render Boring as a player-facing entropy option", () => {
+    renderStep();
+
+    expect(screen.queryByRole("button", { name: /^boring$/i })).not.toBeInTheDocument();
+  });
+
+  it("renders each segmented toggle as a single non-wrapping flex row", () => {
+    renderStep();
+
+    const toggles = document.querySelectorAll("div[style*='border-radius: 999px'], div");
+    const difficultyLabel = screen.getByText("Difficulty");
+    const entropyLabel = screen.getByText("Entropy");
+
+    for (const label of [difficultyLabel, entropyLabel]) {
+      const toggle = label.parentElement!.querySelector("div")!;
+      const style = window.getComputedStyle(toggle);
+      // The segmented toggle must not wrap — it stays one horizontal row.
+      expect(style.flexWrap).toBe("nowrap");
+    }
   });
 
   it("calls onRandomizeSeed when Randomize is clicked", async () => {
