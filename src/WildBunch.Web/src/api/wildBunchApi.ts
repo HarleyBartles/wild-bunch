@@ -171,24 +171,3 @@ export function getStartingTowns() {
 export function getStartingTownMap() {
   return requestJson<StartingTownMapDto>("/api/games/starting-town-map");
 }
-
-export function getRepresentativeSeed(
-  gameDifficulty?: GameDifficulty,
-  gameEntropy?: GameEntropy,
-) {
-  const params = new URLSearchParams();
-  if (gameDifficulty != null) {
-    params.set("gameDifficulty", String(gameDifficulty));
-  }
-  if (gameEntropy != null) {
-    params.set("gameEntropy", String(gameEntropy));
-  }
-  const query = params.toString();
-  return requestJson<string>(`/api/games/representative-seed${query ? `?${query}` : ""}`);
-}
-
-export function decodeSeed(seedCode: string) {
-  return requestJson<{ gameDifficulty: GameDifficulty; gameEntropy: GameEntropy }>(
-    `/api/games/decode-seed?seedCode=${encodeURIComponent(seedCode)}`,
-  );
-}

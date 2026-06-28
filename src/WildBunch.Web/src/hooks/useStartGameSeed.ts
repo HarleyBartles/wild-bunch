@@ -6,7 +6,6 @@ import {
   encodeGameSetupSeed,
   type GameSetupSeedState,
 } from "../ui/gameSetupSeedCodec";
-import { getRepresentativeSeed, decodeSeed } from "../api/wildBunchApi";
 
 interface UseStartGameSeedArgs {
   session: GameSessionDto | null;
@@ -71,59 +70,27 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDraft(seedState.seedCode);
   }, [seedState.seedCode]);
 
-  async function handleSeedDraftChange(value: string) {
+  function handleSeedDraftChange(value: string) {
     setDecodeError(null);
     setSeedDraft(value);
     setSeedDirty(true);
-
-    // Decode the seed to get the encoded difficulty and entropy
-    try {
-      const seedDecoded = await decodeSeed(value);
-      setGameDifficulty(seedDecoded.gameDifficulty);
-      setGameEntropy(seedDecoded.gameEntropy);
-    } catch (error) {
-      // Don't show error on typing, only on validation
-    }
   }
 
-  async function handleGameDifficultyChange(difficulty: GameDifficulty) {
+  function handleGameDifficultyChange(difficulty: GameDifficulty) {
     setDecodeError(null);
     setGameDifficulty(difficulty);
-    try {
-      const seed = await getRepresentativeSeed(difficulty, gameEntropy);
-      setSeedState({ seedCode: seed });
-      setSeedDirty(false);
-    } catch (error) {
-      setDecodeError(getErrorMessage(error));
-    }
   }
 
-  async function handleGameEntropyChange(value: GameEntropy) {
+  function handleGameEntropyChange(value: GameEntropy) {
     setGameEntropy(value);
-    try {
-      const seed = await getRepresentativeSeed(gameDifficulty, value);
-      setSeedState({ seedCode: seed });
-      setSeedDirty(false);
-    } catch (error) {
-      setDecodeError(getErrorMessage(error));
-    }
   }
 
-  async function randomizeSeed() {
+  function randomizeSeed() {
     setDecodeError(null);
     setSeedDirty(false);
-    try {
-      // Generate a truly random UUID
-      const randomSeed = crypto.randomUUID();
-      setSeedState({ seedCode: randomSeed });
-
-      // Decode the random seed to get its difficulty and entropy
-      const seedDecoded = await decodeSeed(randomSeed);
-      setGameDifficulty(seedDecoded.gameDifficulty);
-      setGameEntropy(seedDecoded.gameEntropy);
-    } catch (error) {
-      setDecodeError(getErrorMessage(error));
-    }
+    const randomSeed = crypto.randomUUID();
+    setSeedState({ seedCode: randomSeed });
+    setSeedDraft(randomSeed);
   }
 
   return {

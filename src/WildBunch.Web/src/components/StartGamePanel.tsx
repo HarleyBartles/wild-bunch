@@ -90,8 +90,7 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
     }
 
     setSubmitError(null);
-    // Use the current seed draft (what the user typed or was randomized)
-    const seedCode = seedDraft;
+    const seedCode = await encodeGameSetupSeed(seedState);
     await onStartGame({
       playerName: trimmedName,
       gameDifficulty,
