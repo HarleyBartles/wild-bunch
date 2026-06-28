@@ -1,0 +1,9 @@
+# Generated INDEX.md files are written by scripts/generate_index_mesh.py
+# with LF line endings (newline="\n"). Force LF in the working tree to
+# match the script output and prevent CRLF/LF churn on Windows with
+# core.autocrlf=true.
+**/INDEX.md eol=lf
+
+# The generator script and this attributes file use LF.
+scripts/generate_index_mesh.py eol=lf
+.gitattributes eol=lf

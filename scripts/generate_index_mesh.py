@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults"}
-EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults"}
+EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output"}
+EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output"}
 EXCLUDED_FILE_NAMES = {".git"}
 
 
@@ -23,6 +23,11 @@ class IndexTarget:
 
 
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+
+ADR_DIR_REL = Path("docs/adr")
+ADR_STATUS_RE = re.compile(r"^## Status\s*\n\s*(.+?)\s*$", re.MULTILINE)
+ADR_DATED_HISTORY_RE = re.compile(r"^## Dated Status History\s*\n(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
+ADR_DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
 def is_skill_root(path: Path) -> bool:
@@ -103,7 +108,44 @@ def render_index(path: Path) -> str:
         lines.append("No child entries.")
         lines.append("")
 
+    rel_to_root = path.relative_to(ROOT)
+    if rel_to_root == ADR_DIR_REL:
+        lines.extend(render_adr_freshness_table(path))
+
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_adr_freshness_table(adr_dir: Path) -> list[str]:
+    """Render a per-ADR freshness table for the docs/adr INDEX.md.
+
+    Parses each ADR file for its Status and the most recent date in the
+    Dated Status History section. The "Last checked" column reflects the
+    most recent dated entry — workers update it by adding a dated status
+    history entry when they verify freshness.
+    """
+    adr_files = sorted(
+        (f for f in adr_dir.iterdir() if f.is_file() and f.name.startswith("ADR-") and f.suffix == ".md"),
+        key=lambda f: f.name,
+    )
+    if not adr_files:
+        return []
+
+    lines: list[str] = ["## ADR Freshness Table", ""]
+    lines.append("| ADR | Status | Last checked |")
+    lines.append("| --- | --- | --- |")
+    for adr_file in adr_files:
+        text = adr_file.read_text(encoding="utf-8")
+        status_match = ADR_STATUS_RE.search(text)
+        status = status_match.group(1).strip() if status_match else "unknown"
+        last_checked = "unknown"
+        history_match = ADR_DATED_HISTORY_RE.search(text)
+        if history_match:
+            dates = ADR_DATE_RE.findall(history_match.group(1))
+            if dates:
+                last_checked = max(dates)
+        lines.append(f"| [{adr_file.name}]({adr_file.name}) | {status} | {last_checked} |")
+    lines.append("")
+    return lines
 
 
 def normalize_text(text: str) -> str:

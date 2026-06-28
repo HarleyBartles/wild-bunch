@@ -24,3 +24,10 @@ Task 2: complete (commits 65cc149..2464ef9, review found 1 Important ordering bu
 Task 3: complete (commits 2464ef9..4f48590, review Approved with 5 Minor notes; fixup commit 4f48590 resolved #3 non-selectable fallback buttons + #1 weak selectedTownId test. Remaining Minor: error-state-as-loading, useEffect deps, gitignore comments — all non-blocking.)
 Task 4: complete (commits 4f48590..c0b6332, review Approved — no Critical/Important. 4 Phaser truth-boundary tests + 3 React-owned confirmation tests, all falsifiable. No production drift. 2 Minor notes non-blocking.)
 Task 5: complete (controller-owned validation: dotnet build 0/0, Application.Tests 170/170, Integration.Tests 142/142, EF migrations clean, frontend 173/173 typecheck clean. Browser proof: Phaser canvas rendered, fallback buttons filtered to selectable, React-owned confirmation → game created in Red Mesa. ADR-0035 added. Plan checkboxes checked off. All dev servers cleaned up.)
+
+## Post-review fixes (whole-branch review)
+- ADR-0011 marked superseded by ADR-0027 (was stale: status `planned` but ADR-0027 landed SPA shell with routing)
+- ADR freshness table added to docs/adr/INDEX.md via generate_index_mesh.py extension
+- .gitattributes added (eol=lf for INDEX.md + generator script) to stop CRLF/LF churn on Windows
+- output/ directory excluded from index generator (was listing git-ignored PNGs, would break CI --check)
+- Stale review diff artifact removed

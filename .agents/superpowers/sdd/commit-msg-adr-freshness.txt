@@ -1,0 +1,16 @@
+BUNCH-75: fix ADR freshness, add .gitattributes for LF harmonisation
+
+Post whole-branch review fixes:
+- Mark ADR-0011 superseded by ADR-0027 (was stale: planned status but
+  ADR-0027 landed SPA shell with routing, /debug route, /case promotion)
+- Add ADR freshness table to docs/adr/INDEX.md via generate_index_mesh.py
+  extension (parses Status + most recent Dated Status History date)
+- Add .gitattributes forcing eol=lf for INDEX.md and generator script to
+  stop CRLF/LF churn on Windows with core.autocrlf=true
+- Exclude output/ directory from index generator (was listing git-ignored
+  PNGs in screenshots INDEX.md, would break CI --check on fresh checkout)
+- Regenerate stale INDEX.md files with new-file entries from this branch
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
