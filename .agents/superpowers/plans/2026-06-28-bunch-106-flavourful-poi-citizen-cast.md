@@ -4,7 +4,7 @@
 
 **Goal:** Replace the generic "a town clerk from {town}" citizen fallback with a varied source-backed citizen cast. Each citizen has a named role (butcher, mortician, doctor, etc.) and a globally unique distinguishing feature. During POI lookaround, identity stays concealed: the player sees only "a stranger with {feature}." The citizen's role is revealed only after a mistaken take-in, when the sheriff identifies them, releases them, and fines the player. Dev overlay can force a specific available citizen role to be the next POI encounter.
 
-**Architecture:** A new `CitizenCast` static content catalog in `WildBunch.Domain.Game` defines named town roles and citizen-specific distinguishing features. `GameSession.LookAroundSaloon()` selects a citizen from the cast (deterministic pick based on town + clock state) instead of calling the hardcoded `DescribeTownCitizen()`. The lookaround descriptor becomes "a stranger with {feature}" (concealment), matching the suspect descriptor pattern. The citizen's role key is carried in the `SaloonPersonOfInterestSpotted` event and stored in `TownSourceVisitState` alongside the descriptor. The `BountyLoopCoordinator` citizen confrontation path reads the stored role and builds a reveal narration: "The sheriff identifies them as {role}, releases them, and fines you ${fineAmount}." The `DevSaloonOverride` record is extended with an optional forced citizen role key. The `SaloonDevContextDto` / `CitizenInfoDto` is updated to expose the available citizen roles. The frontend `SaloonDevPanel` gets a citizen role selector when forcing a Citizen override. The citizen feature pool is disjoint from the suspect feature pool by construction (different keys, different descriptions), with a cross-cutting test asserting no overlap.
+**Architecture:** A new `CitizenCast` static content catalog in `WildBunch.Domain.Game` defines named town roles and citizen-specific distinguishing features. `GameSession.LookAroundSaloon()` selects a citizen from the cast (deterministic pick based on town + day + turn + visitNumber) instead of calling the hardcoded `DescribeTownCitizen()`. The lookaround descriptor becomes "a stranger with {feature}" (concealment), matching the suspect descriptor pattern. The citizen's role key is carried in the `SaloonPersonOfInterestSpotted` event and stored in `TownVisitTownState` (accessed via `CurrentTownVisit.CurrentTownState`) alongside the descriptor. The `BountyLoopCoordinator` citizen confrontation path reads the stored role and builds a reveal narration: "The sheriff identifies them as {role}, releases them, and fines you ${fineAmount}." The `DevSaloonOverride` record is extended with an optional forced citizen role key. The `SaloonDevContextDto` / `CitizenInfoDto` is updated to expose the available citizen roles. The frontend `SaloonDevPanel` gets a citizen role selector when forcing a Citizen override. The citizen feature pool is disjoint from the suspect feature pool by construction (different keys, different descriptions), with a cross-cutting test asserting no overlap. Citizen feature descriptions are guardrailed to not reveal trade, role, office, or authority.
 
 **Tech Stack:** C#/.NET 10, ASP.NET Core Minimal APIs, EF Core, xUnit, React 18, TanStack Query, styled-components, Vitest.
 
@@ -29,17 +29,30 @@
 - Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
 - styled-components for component styling; reference design tokens via `var(--token-name)`. No plain CSS classes.
 - Adding a nullable field to an existing event record is backward-compatible for JSON event deserialization (missing fields default to null).
-- The `ActiveSaloonPersonOfInterestDescriptor` string in `TownSourceVisitState` remains the player-facing concealment descriptor. A new `ActiveSaloonCitizenRole` string? field stores the role key for the later reveal, separate from the descriptor.
+- The `ActiveSaloonPersonOfInterestDescriptor` string in `TownVisitTownState` (defined in `TownSourceVisitState.cs`, accessed via `CurrentTownVisit.CurrentTownState`) remains the player-facing concealment descriptor. A new `ActiveSaloonCitizenRole` string? field on `TownVisitTownState` stores the role key for the later reveal, separate from the descriptor. Note: `TownSourceVisitState` (line 13) is the per-source state class; `TownVisitTownState` (line 68) is the per-town-visit state class that owns the active saloon POI. The role belongs on `TownVisitTownState`, not `TownSourceVisitState`.
 
 ### Citizen cast content contract
 
 The `CitizenCast` catalog defines:
-- **Roles**: A static list of `CitizenRole` records, each with a `Key` (stable identifier), `DisplayName` (e.g. "the town butcher"), and `ShortName` (e.g. "butcher"). At least 10 roles to prove a full flavour cast.
-- **Features**: A static list of `CitizenFeature` records, each with a `Key` (stable identifier) and `Description` (e.g. "Wears a wide-brimmed hat with a rattlesnake rattle"). At least 10 features. Each role is paired with one feature by index, ensuring unique role→feature mapping.
-- **Select(townId, turn)**: Deterministic pick of a `CitizenEncounter` (role + feature) based on a stable hash of town ID + clock turn. This provides variety across visits and towns without requiring seed-source retention.
+- **Roles**: A static list of `CitizenRole` records, each with a `Key` (stable identifier), `DisplayName` (e.g. "the town butcher"), and `ShortName` (e.g. "butcher"). At least 12 roles to prove a full flavour cast.
+- **Features**: A static list of `CitizenFeature` records, each with a `Key` (stable identifier) and `Description` (e.g. "Wears a wide-brimmed hat with a rattlesnake rattle on the band"). At least 12 features. Each role is paired with one feature by index, ensuring unique role→feature mapping. Feature descriptions must NOT reveal a trade, role, office, or authority — see the non-role-revealing feature guardrail below.
+- **Select(townId, day, turn, visitNumber)**: Deterministic pick of a `CitizenEncounter` (role + feature) based on a stable manual hash of `townId + day + turn + visitNumber`. Using all four inputs provides substantially more variety than `townId + turn` alone, since different days, turns, and visit numbers within the same town resolve to different citizens. Still avoids `string.GetHashCode()` (not stable across process restarts); use a manual stable hash (e.g. sum of char codes with a prime multiplier). This provides variety across visits, towns, and play progression without requiring seed-source retention.
 - **SelectByRoleKey(roleKey)**: Look up a specific citizen by role key (for dev overlay forcing).
 - **ResolveDescriptor(encounter)**: Returns `"a stranger with {NormalizeFeatureDescriptor(feature.Description)}"` — the concealment descriptor shown during lookaround.
 - **ResolveRevealName(encounter)**: Returns the role display name (e.g. "the town butcher") — used in the sheriff reveal narration.
+
+### Non-role-revealing feature guardrail
+
+Citizen feature descriptions must NOT reveal the citizen's trade, role, office, or authority. The lookaround descriptor is "a stranger with {feature}" — if the feature itself reveals the role, the concealment is broken.
+
+Feature descriptions must NOT contain:
+- Any citizen role key, short name, or display name token (e.g. "butcher", "mortician", "doctor", "preacher", "sheriff", "marshal", "clerk").
+- Obvious trade/status/authority terms from the cast (e.g. "apron", "loupe", "badge", "star", "robes", "stethoscope", "ledger", "gavel", "pulpit", "embalming", "horseshoe", "anvil", "scissors", "telegraph key").
+- Items that strongly imply a specific Western trade (e.g. a pawnbroker's loupe, a tin star, a blacksmith's hammer, a barber's pole).
+
+Acceptable features are general physical markers visible on any stranger: hats, jewelry, clothing items, grooming, scars, gait, accessories that do not imply a trade.
+
+A test (`CitizenCast_FeaturesDoNotRevealRoleOrTrade`) asserts that no feature description contains any role key, short name, display name token, or a curated list of trade/status/authority terms. The curated term list is maintained in the test and covers the obvious leakage surface.
 
 ### Feature uniqueness contract
 
@@ -53,8 +66,8 @@ The `CitizenCast` catalog defines:
 Tests at both domain aggregate and integration levels must prove that:
 1. The `SaloonPersonOfInterestSpotted` event's `Descriptor` (player-facing) is "a stranger with {feature}" and does NOT contain the role name or role display name.
 2. The `SaloonPersonOfInterestSpotted` event's `Message` is "You look around the saloon and spot a stranger with {feature}." and does NOT contain the role name.
-3. The `ActiveSaloonPersonOfInterestDescriptor` stored in `TownSourceVisitState` is the concealment descriptor, not the role.
-4. The `ActiveSaloonCitizenRole` stored in `TownSourceVisitState` is the role key, not shown in player-facing DTOs.
+3. The `ActiveSaloonPersonOfInterestDescriptor` stored in `TownVisitTownState` is the concealment descriptor, not the role.
+4. The `ActiveSaloonCitizenRole` stored in `TownVisitTownState` is the role key, not shown in player-facing DTOs.
 5. The player-facing `ActiveSaloonPersonOfInterestDto.Descriptor` is the concealment descriptor.
 6. The `SaloonPersonOfInterestConfronted` event's `Message` DOES contain the role reveal (only after mistaken take-in).
 7. The `SaloonPersonOfInterestConfronted` event's `TargetName` is the concealment descriptor (what the player saw), not the role.
@@ -67,10 +80,10 @@ Tests at both domain aggregate and integration levels must prove that:
 
 | File | Responsibility |
 |------|----------------|
-| `Game/CitizenCast.cs` | New static content catalog: `CitizenRole` record, `CitizenFeature` record, `CitizenEncounter` record, `CitizenCast.Roles` / `CitizenCast.Features` static lists, `CitizenCast.Select(townId, turn)`, `CitizenCast.SelectByRoleKey(roleKey)`, `CitizenCast.ResolveDescriptor(encounter)`, `CitizenCast.ResolveRevealName(encounter)` |
-| `Game/GameSession.cs` (modify) | Replace `DescribeTownCitizen()` with `CitizenCast.Select()` calls in `LookAroundSaloon()` (both normal fallback path and dev-override citizen path). Emit `CitizenRole` in `SaloonPersonOfInterestSpotted` event. Store role in `TownSourceVisitState`. |
-| `Game/GameSession.BountyLoopCoordinator.cs` (modify) | Update citizen confrontation path to read `ActiveSaloonCitizenRole` and build role-reveal narration in `ProduceSaloonConfrontedEvent` for citizen wrong-declaration outcome |
-| `Game/TownSourceVisitState.cs` (modify) | Add `ActiveSaloonCitizenRole` (string?) property. Update `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)` to accept and store the role. Update `ClearActiveSaloonPersonOfInterest()` to clear the role. |
+| `Game/CitizenCast.cs` | New static content catalog: `CitizenRole` record, `CitizenFeature` record, `CitizenEncounter` record, `CitizenCast.Roles` / `CitizenCast.Features` static lists, `CitizenCast.Select(townId, day, turn, visitNumber)`, `CitizenCast.SelectByRoleKey(roleKey)`, `CitizenCast.ResolveDescriptor(encounter)`, `CitizenCast.ResolveRevealName(encounter)` |
+| `Game/GameSession.cs` (modify) | Replace `DescribeTownCitizen()` with `CitizenCast.Select(townId, day, turn, visitNumber)` calls in `LookAroundSaloon()` (both normal fallback path and dev-override citizen path). Emit `CitizenRole` in `SaloonPersonOfInterestSpotted` event. Store role in `TownVisitTownState` via `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)`. |
+| `Game/GameSession.BountyLoopCoordinator.cs` (modify) | Update citizen confrontation path to read `ActiveSaloonCitizenRole` from `TownVisitTownState` and build role-reveal narration in `ProduceSaloonConfrontedEvent` for citizen wrong-declaration outcome |
+| `Game/TownSourceVisitState.cs` (modify) | Add `ActiveSaloonCitizenRole` (string?) property to `TownVisitTownState` (line 68+). Update `TownVisitTownState` constructor to accept `activeSaloonCitizenRole`. Update `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)` to accept and store the role. Update `ClearActiveSaloonPersonOfInterest()` to clear the role. The `TownSourceVisitState` class (line 13) is NOT modified. |
 | `Game/DevSaloonOverride.cs` (modify) | Add `ForcedCitizenRoleKey` (string?) to the record. Add `ForCitizen(string? roleKey)` overload. Update `ForCitizen()` to call `ForCitizen(null)`. |
 | `Events/SaloonPersonOfInterestSpotted.cs` (modify) | Add `CitizenRole` (string?) field — the citizen role key, null for suspect/repeat POIs |
 | `Events/SaloonPersonOfInterestConfronted.cs` (modify) | Add `CitizenRole` (string?) field — the revealed citizen role key, null for suspect confrontations |
@@ -112,7 +125,7 @@ Tests at both domain aggregate and integration levels must prove that:
 
 | File | Responsibility |
 |------|----------------|
-| `tests/WildBunch.Domain.Tests/CitizenCastTests.cs` | New: verify cast has ≥10 roles, each role has a unique feature, no duplicate role keys, no duplicate feature keys, `Select()` is deterministic, `SelectByRoleKey()` resolves correctly, `ResolveDescriptor()` produces "a stranger with {feature}" and does NOT contain the role name |
+| `tests/WildBunch.Domain.Tests/CitizenCastTests.cs` | New: verify cast has ≥12 roles, each role has a unique feature, no duplicate role keys, no duplicate feature keys, `Select(townId, day, turn, visitNumber)` is deterministic and varied, `SelectByRoleKey()` resolves correctly, `ResolveDescriptor()` produces "a stranger with {feature}" and does NOT contain the role name, `FeaturesDoNotRevealRoleOrTrade` guardrail |
 | `tests/WildBunch.Domain.Tests/GameSessionSaloonPersonOfInterestTests.cs` (modify) | Update citizen tests to verify: lookaround descriptor is "a stranger with {feature}" (not "a town clerk"), `ActiveSaloonCitizenRole` is set, confrontation message reveals the role, player-facing DTO descriptor is the concealment descriptor |
 | `tests/WildBunch.Domain.Tests/DevSaloonOverrideTests.cs` (modify) | Update citizen override tests to verify forced citizen role key is consumed and the correct citizen is spotted |
 | `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs` (modify) | Add cross-cutting assertion: no `CitizenCast.Features` key matches any `CaseSuspectFeaturePool.FeaturePool` key, no description overlap |
@@ -146,9 +159,9 @@ Tests at both domain aggregate and integration levels must prove that:
   - `public sealed record CitizenEncounter(CitizenRole Role, CitizenFeature Feature)`
   - `public static class CitizenCast` with:
     - `Roles` — static readonly list of ≥12 `CitizenRole` records: butcher, mortician, doctor, blacksmith, schoolteacher, preacher, seamstress, hotel-keeper, banker, newspaperman, stable-hand, telegraph-operator, barber, undertaker, prospector, cook, stagecoach-agent, gunsmith, town-clerk
-    - `Features` — static readonly list of ≥12 `CitizenFeature` records, each visually distinct and NOT overlapping with suspect feature descriptions. Citizen features are general physical markers (hats, jewelry, clothing items, grooming) that do NOT reveal a trade/role. Examples: "Wears a wide-brimmed hat with a rattlesnake rattle on the band", "Has a silver pocket watch chain dangling from the vest", "Wears a red bandana around the neck", "Has a long braided beard tied with a leather cord", "Wears a pair of spurs that jingle when walking", "Has a missing front tooth", "Wears a dusty cavalry coat with brass buttons", "Has a burn scar across the back of one hand", "Wears a pawnbroker's loupe on a leather cord", "Has a tar-stained pipe clenched in the teeth", "Wears a woman's riding gloves of doeskin", "Has a tin star pinned to the vest" — none of these reveal a specific trade.
+    - `Features` — static readonly list of ≥12 `CitizenFeature` records, each visually distinct and NOT overlapping with suspect feature descriptions. Citizen features are general physical markers (hats, jewelry, clothing items, grooming) that do NOT reveal a trade, role, office, or authority. Examples: "Wears a wide-brimmed hat with a rattlesnake rattle on the band", "Has a silver pocket watch chain dangling from the vest", "Wears a red bandana around the neck", "Has a long braided beard tied with a leather cord", "Wears a pair of spurs that jingle when walking", "Has a missing front tooth", "Wears a dusty cavalry coat with brass buttons", "Has a burn scar across the back of one hand", "Keeps a tar-stained pipe clenched in the teeth", "Wears a woman's riding gloves of doeskin", "Has a silver concho belt with turquoise stones", "Wears a fringed buckskin jacket" — none of these reveal a specific trade, office, or authority. Do NOT use items like a pawnbroker's loupe, a tin star, a blacksmith's hammer, a barber's pole, or any item that strongly implies a specific Western trade.
     - `RoleFeaturePairs` — static readonly list of `CitizenEncounter` records, pairing each role with one feature by index. Roles and Features lists must have the same count.
-    - `Select(TownId townId, int turn)` — deterministic pick: `var index = Math.Abs((townId.Value, turn).GetHashCode()) % RoleFeaturePairs.Count; return RoleFeaturePairs[index];`. Note: `string.GetHashCode()` is not stable across runtimes; use a simple manual hash (e.g. sum char codes) for determinism across process restarts. Use a `StableHash` helper.
+    - `Select(TownId townId, int day, int turn, int visitNumber)` — deterministic pick using a stable manual hash of all four inputs: `var index = StableHash(townId.Value, day, turn, visitNumber) % RoleFeaturePairs.Count; return RoleFeaturePairs[index];`. Using `townId + day + turn + visitNumber` provides substantially more variety than `townId + turn` alone. Do NOT use `string.GetHashCode()` (not stable across process restarts); use a manual `StableHash` helper (e.g. sum of char codes with a prime multiplier over the concatenated string representation).
     - `SelectByRoleKey(string roleKey)` — `RoleFeaturePairs.FirstOrDefault(e => e.Role.Key == roleKey)` or throw if not found.
     - `ResolveDescriptor(CitizenEncounter encounter)` — `$"a stranger with {NormalizeFeatureDescriptor(encounter.Feature.Description)}"`. Reuse the same normalization logic as `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (strip "has a"/"wears a" prefixes → "a"/"an"). Extract a shared helper or duplicate the small normalization.
     - `ResolveRevealName(CitizenEncounter encounter)` — `encounter.Role.DisplayName` (e.g. "the town butcher").
@@ -161,13 +174,14 @@ Tests at both domain aggregate and integration levels must prove that:
   - `CitizenCast_NoDuplicateRoleKeys` — all role keys are distinct
   - `CitizenCast_NoDuplicateFeatureKeys` — all feature keys are distinct
   - `CitizenCast_NoDuplicateRoleDisplayNames` — all display names are distinct
-  - `CitizenCast_SelectIsDeterministic` — same town + turn → same encounter
-  - `CitizenCast_SelectDifferentTownsOrTurnsProducesVariedEncounters` — at least 3 distinct encounters across a range of inputs
+  - `CitizenCast_SelectIsDeterministic` — same town + day + turn + visitNumber → same encounter
+  - `CitizenCast_SelectDifferentInputsProduceVariedEncounters` — at least 5 distinct encounters across a range of town/day/turn/visitNumber inputs, proving the 4-input key provides meaningful variety
   - `CitizenCast_SelectByRoleKey_ResolvesCorrectly` — each role key resolves to the correct encounter
   - `CitizenCast_SelectByRoleKey_ThrowsForUnknownKey` — unknown key throws `ArgumentException`
   - `CitizenCast_ResolveDescriptor_ProducesConcealmentFormat` — starts with "a stranger with " and does NOT contain the role display name or short name
   - `CitizenCast_ResolveRevealName_ProducesRoleDisplayName` — returns the role display name
   - `CitizenCast_ResolveRevealNarration_ContainsRoleAndFine` — contains the role display name and the fine amount, and contains "sheriff identifies them as"
+  - `CitizenCast_FeaturesDoNotRevealRoleOrTrade` — for each feature description, assert it does NOT contain any role key, short name, display name token, or any term from a curated trade/status/authority blocklist (e.g. "butcher", "mortician", "doctor", "preacher", "sheriff", "marshal", "clerk", "apron", "loupe", "badge", "star", "robes", "stethoscope", "ledger", "gavel", "pulpit", "embalming", "horseshoe", "anvil", "scissors", "telegraph", "barber", "undertaker", "prospector", "gunsmith", "blacksmith", "seamstress", "banker", "newspaper", "stable"). The blocklist is maintained in the test and covers the obvious leakage surface. This is the non-role-revealing feature guardrail test.
 
 - [ ] 1.3 Update `src/WildBunch.Domain/Game/INDEX.md` to add `CitizenCast.cs` entry.
 
@@ -191,16 +205,18 @@ Tests at both domain aggregate and integration levels must prove that:
 
 - [ ] 2.2 Run `dotnet test` for `WildBunch.GameContent.Tests` to verify the disjointness test passes.
 
-### Task 3: Domain — extend TownSourceVisitState with citizen role
+### Task 3: Domain — extend TownVisitTownState with citizen role
 
 **Files:**
-- `src/WildBunch.Domain/Game/TownSourceVisitState.cs` (modify)
+- `src/WildBunch.Domain/Game/TownSourceVisitState.cs` (modify — `TownVisitTownState` class only, line 68+)
 
 **Steps:**
 
-- [ ] 3.1 Add `public string? ActiveSaloonCitizenRole { get; private set; }` property to `TownSourceVisitState`, adjacent to `ActiveSaloonPersonOfInterestDescriptor`.
+- [ ] 3.1 Add `public string? ActiveSaloonCitizenRole { get; private set; }` property to `TownVisitTownState` (line 68+), adjacent to `ActiveSaloonPersonOfInterestDescriptor`. Do NOT modify the `TownSourceVisitState` class (line 13).
 
-- [ ] 3.2 Update `SetActiveSaloonCitizenPersonOfInterest(string descriptor)` → `SetActiveSaloonCitizenPersonOfInterest(string descriptor, string? citizenRole)`:
+- [ ] 3.2 Update the `TownVisitTownState` constructor (line 72-80) to accept a new `string? activeSaloonCitizenRole = null` parameter, and assign it: `ActiveSaloonCitizenRole = activeSaloonCitizenRole;`. Place it after `activeSaloonPersonOfInterestKind` in the parameter list.
+
+- [ ] 3.3 Update `SetActiveSaloonCitizenPersonOfInterest(string descriptor)` → `SetActiveSaloonCitizenPersonOfInterest(string descriptor, string? citizenRole)`:
   ```csharp
   public void SetActiveSaloonCitizenPersonOfInterest(string descriptor, string? citizenRole)
   {
@@ -211,11 +227,9 @@ Tests at both domain aggregate and integration levels must prove that:
   }
   ```
 
-- [ ] 3.3 Update `ClearActiveSaloonPersonOfInterest()` to also clear `ActiveSaloonCitizenRole = null`.
+- [ ] 3.4 Update `ClearActiveSaloonPersonOfInterest()` to also clear `ActiveSaloonCitizenRole = null`.
 
-- [ ] 3.4 Update the constructor or factory method that sets `ActiveSaloonPersonOfInterestDescriptor` to also accept and set `ActiveSaloonCitizenRole`. Check the `TownSourceVisitState` constructor signature and the rehydration path.
-
-- [ ] 3.5 Run `dotnet build` to verify compilation. Existing callers of `SetActiveSaloonCitizenPersonOfInterest(descriptor)` will need updating (Task 4).
+- [ ] 3.5 Run `dotnet build` to verify compilation. Existing callers of `SetActiveSaloonCitizenPersonOfInterest(descriptor)` will need updating (Task 5). The `TownVisitTownState` constructor change is backward-compatible because the new parameter has a default of `null`.
 
 ### Task 4: Domain — extend events with CitizenRole field
 
@@ -269,7 +283,7 @@ Tests at both domain aggregate and integration levels must prove that:
   }
   else
   {
-      forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Turn);
+      forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber);
   }
   var forcedCitizenDescriptor = CitizenCast.ResolveDescriptor(forcedEncounter);
   var forcedCitizenMessage = $"You look around the saloon and spot {forcedCitizenDescriptor}.";
@@ -291,7 +305,7 @@ Tests at both domain aggregate and integration levels must prove that:
   ```
   Change to:
   ```csharp
-  var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Turn);
+  var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber);
   var citizenDescriptor = CitizenCast.ResolveDescriptor(citizenEncounter);
   var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
   var citizenEvent = new SaloonPersonOfInterestSpotted
@@ -430,22 +444,65 @@ Tests at both domain aggregate and integration levels must prove that:
 
 - [ ] 8.10 Run `dotnet build` to verify compilation. All existing `DevSaloonOverride` construction sites need updating to pass the new parameter (null for suspect overrides).
 
-### Task 9: Persistence — serialize ActiveSaloonCitizenRole
+### Task 9: Persistence — serialize ActiveSaloonCitizenRole via TownVisitTownStateSnapshot
 
 **Files:**
 - `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs` (modify)
 
 **Steps:**
 
-- [ ] 9.1 Find the snapshot record that serializes `ActiveSaloonPersonOfInterestDescriptor` (likely a `TownSourceVisitStateSnapshot` or similar inner record). Add `string? ActiveSaloonCitizenRole` to that snapshot record.
+The active saloon POI state is serialized through the private `TownVisitTownStateSnapshot` record (line 711-742 of `GameSessionJsonSerializer.Components.cs`), NOT through `TownSourceVisitStateSnapshot` (line 744+, which serializes per-source state). The role field must be routed through `TownVisitTownStateSnapshot`.
 
-- [ ] 9.2 Update the `FromDomain` mapping to read `ActiveSaloonCitizenRole` from the domain `TownSourceVisitState`.
+- [ ] 9.1 Add `string? ActiveSaloonCitizenRole` to the `TownVisitTownStateSnapshot` record signature (line 711-718), after `ActiveSaloonPersonOfInterestKind`:
+  ```csharp
+  private sealed record TownVisitTownStateSnapshot(
+      string TownId,
+      int VisitNumber,
+      IReadOnlyList<TownSourceVisitStateSnapshot>? SourceStates,
+      int WantedPostersLastCheckedVisitNumber,
+      string? ActiveSaloonPersonOfInterestId,
+      string? ActiveSaloonPersonOfInterestDescriptor,
+      SaloonPersonOfInterestKind? ActiveSaloonPersonOfInterestKind,
+      string? ActiveSaloonCitizenRole)
+  ```
 
-- [ ] 9.3 Update the `ToDomain` mapping to set `ActiveSaloonCitizenRole` on the rehydrated `TownSourceVisitState`. This may require a `GameSessionRehydrator.SetBackingField` call or a new setter on `TownSourceVisitState`.
+- [ ] 9.2 Update `TownVisitTownStateSnapshot.FromDomain(TownVisitTownState townState)` (line 720-731) to map the new field:
+  ```csharp
+  public static TownVisitTownStateSnapshot FromDomain(TownVisitTownState townState)
+      => new(
+          townState.TownId.Value,
+          townState.VisitNumber,
+          townState.SourceStates
+              .OrderBy(sourceState => sourceState.SourceKind)
+              .Select(TownSourceVisitStateSnapshot.FromDomain)
+              .ToArray(),
+          townState.WantedPostersLastCheckedVisitNumber,
+          townState.ActiveSaloonPersonOfInterestId?.Value,
+          townState.ActiveSaloonPersonOfInterestDescriptor,
+          townState.ActiveSaloonPersonOfInterestKind,
+          townState.ActiveSaloonCitizenRole);
+  ```
 
-- [ ] 9.4 The `DevSaloonOverride` JSON serialization automatically picks up the new `ForcedCitizenRoleKey` field via System.Text.Json — no manual changes needed for the override.
+- [ ] 9.3 Update `TownVisitTownStateSnapshot.ToDomain()` (line 733-741) to pass the role through the updated `TownVisitTownState` constructor:
+  ```csharp
+  public TownVisitTownState ToDomain()
+      => new(
+          new TownId(TownId),
+          VisitNumber,
+          SourceStates?.Select(snapshot => snapshot.ToDomain()),
+          wantedPostersSpent: WantedPostersLastCheckedVisitNumber == VisitNumber,
+          activeSaloonPersonOfInterestId: ActiveSaloonPersonOfInterestId is null ? null : new SuspectId(ActiveSaloonPersonOfInterestId),
+          activeSaloonPersonOfInterestDescriptor: ActiveSaloonPersonOfInterestDescriptor,
+          activeSaloonPersonOfInterestKind: ActiveSaloonPersonOfInterestKind,
+          activeSaloonCitizenRole: ActiveSaloonCitizenRole);
+  ```
+  This routes the role directly through the constructor (added in Task 3.2). No `GameSessionRehydrator.SetBackingField` hack is needed — the constructor accepts the role as a normal parameter.
 
-- [ ] 9.5 Run `dotnet build` to verify compilation.
+- [ ] 9.4 Old snapshots with a missing `ActiveSaloonCitizenRole` field deserialize as `null` via System.Text.Json's default behavior for missing nullable fields. This preserves the old generic mistaken-arrest narration fallback (the `BuildCitizenRevealNarration` helper in Task 7 handles `null` role keys by falling back to the old narration format).
+
+- [ ] 9.5 The `DevSaloonOverride` JSON serialization automatically picks up the new `ForcedCitizenRoleKey` field via System.Text.Json — no manual changes needed for the override.
+
+- [ ] 9.6 Run `dotnet build` to verify compilation.
 
 ### Task 10: Application — update dev DTOs and mapper
 
@@ -827,9 +884,9 @@ Screenshots are saved under `.agents/superpowers/output/screenshots/` (git-ignor
 
 ## AMBER Seams
 
-- **`string.GetHashCode()` instability:** `GetHashCode()` is not stable across .NET runtimes/process restarts. The `CitizenCast.Select(townId, turn)` method must use a manual stable hash (e.g. sum of char codes with a prime multiplier) to ensure deterministic selection across process restarts and event replay. If this is not done, rehydrated sessions may resolve a different citizen on the next look-around than the one stored in the event stream — but since the role is stored in the event and visit state, replay correctness is preserved. The hash only affects new look-around selections, not replay. Still, use a stable hash for consistency.
+- **`string.GetHashCode()` instability:** `GetHashCode()` is not stable across .NET runtimes/process restarts. The `CitizenCast.Select(townId, day, turn, visitNumber)` method must use a manual stable hash (e.g. sum of char codes with a prime multiplier) over the concatenated string representation of all four inputs to ensure deterministic selection across process restarts and event replay. If this is not done, rehydrated sessions may resolve a different citizen on the next look-around than the one stored in the event stream — but since the role is stored in the event and `TownVisitTownState`, replay correctness is preserved. The hash only affects new look-around selections, not replay. Still, use a stable hash for consistency.
 
-- **Backward compatibility for old sessions:** Old sessions persisted before this change will not have `ActiveSaloonCitizenRole` in their snapshot. The `BuildCitizenRevealNarration` fallback handles this: if `citizenRoleKey` is null, the old narration format is used. This is a deliberate compatibility seam, not a shim — old sessions simply don't have the role and get the generic narration. New sessions always have the role.
+- **Backward compatibility for old sessions:** Old sessions persisted before this change will not have `ActiveSaloonCitizenRole` in their `TownVisitTownStateSnapshot`. System.Text.Json deserializes missing nullable fields as `null`, so the `TownVisitTownState.ToDomain()` constructor receives `null` for the role. The `BuildCitizenRevealNarration` fallback handles this: if `citizenRoleKey` is null, the old narration format is used. This is a deliberate compatibility seam, not a shim — old sessions simply don't have the role and get the generic narration. New sessions always have the role.
 
 - **Event field addition:** Adding `CitizenRole` (string?) to `SaloonPersonOfInterestSpotted` and `SaloonPersonOfInterestConfronted` is backward-compatible for JSON deserialization (missing fields default to null). Old events in the stream will have `CitizenRole = null` after deserialization, which is correct (they predate the citizen cast).
 
