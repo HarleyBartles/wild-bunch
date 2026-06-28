@@ -48,20 +48,13 @@ internal static class TravelTestSeedCatalog
         GameEntropy.Boring);
 
     /// <summary>
-    /// Canonical world, Standard difficulty, Boring entropy.
-    /// Uses the alternate town set key. Transitional: was no-horse/light-loadout,
-    /// now gets transitional defaults (horse+saddle+Standard).
-    /// Encounters suppressed. Used for foot-travel resource tests.
+    /// Canonical world (all 8 towns), Standard difficulty, Boring entropy.
+    /// Transitional: was no-horse/light-loadout, now gets transitional defaults
+    /// (horse+saddle+Standard). Encounters suppressed. Used for foot-travel resource tests.
     /// BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
     /// </summary>
     internal static readonly SeedWorldEntry CanonicalFootBoringLight = new(
-        new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Canonical,
-            GameSetupDeterministicLabels.WorldTownSetAlternate,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0),
+        CreateFullTownSeedWorld(SeedWorldVariant.Canonical, 0, 3, 0),
         GameDifficulty.Standard,
         GameEntropy.Boring);
 
@@ -86,21 +79,14 @@ internal static class TravelTestSeedCatalog
         GameEntropy.Classic);
 
     /// <summary>
-    /// Frontier world, Standard difficulty, Classic entropy.
-    /// Uses the alternate town set key. Transitional: was no-horse/light-loadout,
-    /// now gets transitional defaults (horse+saddle+Standard).
-    /// Frontier variant makes pinecross->holloway Moderate/Hills/Spring.
+    /// Frontier world (all 8 towns), Standard difficulty, Classic entropy.
+    /// Transitional: was no-horse/light-loadout, now gets transitional defaults
+    /// (horse+saddle+Standard). Frontier variant makes pinecross->holloway Moderate/Hills/Spring.
     /// Foe-encounter determinism now comes from ForceDevTravelOverride, not from
     /// this seed profile. See BUNCH-87.
     /// </summary>
     internal static readonly SeedWorldEntry FrontierFootNormalFoe = new(
-        new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Frontier,
-            GameSetupDeterministicLabels.WorldTownSetAlternate,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0),
+        CreateFullTownSeedWorld(SeedWorldVariant.Frontier, 0, 3, 0),
         GameDifficulty.Standard,
         GameEntropy.Classic);
 
@@ -110,13 +96,7 @@ internal static class TravelTestSeedCatalog
     /// Used for NPC-encounter tests.
     /// </summary>
     internal static readonly SeedWorldEntry FrontierMountedHardNpc = new(
-        new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Frontier,
-            GameSetupDeterministicLabels.WorldTownSetDefault,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0),
+        CreateFullTownSeedWorld(SeedWorldVariant.Frontier, 0, 3, 0),
         GameDifficulty.Challenging,
         GameEntropy.Classic);
 
@@ -126,15 +106,28 @@ internal static class TravelTestSeedCatalog
     /// Used for high-risk trail-event tests (BadLuckSpookedHorse on High/Badlands/None).
     /// </summary>
     internal static readonly SeedWorldEntry FrontierMountedNormalHighRisk = new(
-        new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Frontier,
-            GameSetupDeterministicLabels.WorldTownSetDefault,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0),
+        CreateFullTownSeedWorld(SeedWorldVariant.Frontier, 0, 3, 0),
         GameDifficulty.Standard,
         GameEntropy.Classic);
+
+    /// <summary>
+    /// Creates a SeedWorld with all 8 towns selected (full catalog) for the given
+    /// variant and case fields. Used by travel test entries that need the full trail
+    /// graph for specific route assertions.
+    /// </summary>
+    private static SeedWorld CreateFullTownSeedWorld(SeedWorldVariant variant, int accusationIndex, int defaultCulpritIndex, int cashBonus)
+    {
+        var allTownIds = SeedWorldCatalog.AllTowns.Select(t => t.Id).ToArray();
+        var trails = SeedWorldResolver.BuildTrails(variant, allTownIds);
+        return new SeedWorld(
+            Guid.Empty,
+            variant,
+            allTownIds,
+            trails,
+            accusationIndex,
+            defaultCulpritIndex,
+            cashBonus);
+    }
 
     /// <summary>
     /// Derives a UUID seed code from a seed world. The seed world's SeedCode field is ignored;

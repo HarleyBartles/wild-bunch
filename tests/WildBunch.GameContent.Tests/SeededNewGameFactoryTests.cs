@@ -128,7 +128,7 @@ public sealed class SeededNewGameFactoryTests
     [Fact]
     public void FrontierDescriptorAddsTownSpecificCivicCluesForTheNextVisitedTown()
     {
-        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 0, 1, 3, 0, tail: 13));
+        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 1, 3, 0, tail: 13));
         var factory = new SeededNewGameFactory();
 
         var session = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode);
@@ -143,9 +143,9 @@ public sealed class SeededNewGameFactoryTests
     {
         var factory = new SeededNewGameFactory();
 
-        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 0, 1, 3, 0, tail: 11));
-        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 0, 1, 3, 0, tail: 11));
-        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 0, 1, 3, 0, tail: 12));
+        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 11));
+        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 11));
+        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 12));
 
         var first = factory.Create("Ranger Vale", GameDifficulty.Standard, seedA);
         var firstAgain = factory.Create("Ranger Vale", GameDifficulty.Easy, seedASame);
@@ -242,6 +242,6 @@ public sealed class SeededNewGameFactoryTests
     private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
 
-    private static Guid CreateSeedCode(byte worldVariant, byte townSetKey, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, townSetKey, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 }

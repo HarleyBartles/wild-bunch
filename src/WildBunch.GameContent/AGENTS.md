@@ -21,10 +21,24 @@ seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy
 
 ## Seed-Owned vs Pressure-Owned
 
-- **Seed-owned** (`SeedWorld`): world variant, town set key, accusation/default culprit candidates, cash bonus. The seed owns the map.
+- **Seed-owned** (`SeedWorld`): world variant, selected town IDs, trail graph (with baseline terrain/water/distance), accusation/default culprit candidates, cash bonus. The seed owns the map.
 - **Pressure-owned** (`DifficultyEnvelope`): difficulty, starting cash, loadout profile, horse/saddle posture, travel rules profile. BUNCH-94 will expand this.
 - **Entropy-owned** (`EntropyPolicy` + `MysteryTruthResolver`): salt mode, cash bonus cap, and (future) culprit reroll/feature reallocation. BUNCH-93 will expand this.
 - **Player/setup-owned** (`StartingTownPolicy`): starting town choice. The player can start in any town that exists in the generated world. The seed does NOT choose the starting town.
+
+## Seed-Derived Town Selection
+
+The seed deterministically derives the world map from the full town catalog:
+- **Town count**: seed-derived, range 6-8 (minimum 6 for playability, maximum 8 = full catalog).
+- **Town selection**: anchor towns (pinecross, redmesa, holloway) are always included to guarantee trail graph connectivity. The remaining towns are seed-selected from the catalog using a deterministic Fisher-Yates-like shuffle.
+- **Trail graph**: catalog trails where both endpoints are in the selected town set. Terrain/water/distance come from the catalog indexed by world variant.
+- `SeedWorld` holds `SelectedTownIds` and `Trails` (list of `SeedWorldTrail` with terrain/water/distance). The seed owns the default terrain and trail distances. Later difficulty can modify those values downstream of the seed codec.
+
+Design boundary:
+- SeedWorld owns the candidate/generated map.
+- Same seed + same difficulty should produce the same resolved map.
+- Difficulty may later influence map pressure/layout realization (distance bands, terrain harshness, connectivity constraints) downstream of the seed codec, not by hiding difficulty inside the seed.
+- Longer term, `SeedWorld + DifficultyEnvelope` may produce the final resolved world/map, while `StartingTownPolicy` validates the player's start choice against that world.
 
 ## Starting Town
 

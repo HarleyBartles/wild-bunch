@@ -30,8 +30,8 @@ public sealed class GameSetupResolverTests
     [Fact]
     public void DifferentSeedCodesCanChangeAtLeastOneSetupSurface()
     {
-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 0, 1, 3, 0, tail: 11));
-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(1, 1, 2, 4, 6, tail: 42));
+        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 11));
+        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(1, 2, 4, 6, tail: 42));
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
 
@@ -92,8 +92,8 @@ public sealed class GameSetupResolverTests
     [Fact]
     public void DifferentSeedCodesCanChangeSuspectTurfAssignments()
     {
-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 0, 1, 3, 0, tail: 31));
-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 0, 1, 3, 0, tail: 63));
+        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 31));
+        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 63));
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
 
@@ -136,13 +136,7 @@ public sealed class GameSetupResolverTests
     public void CashBonusIsCappedByEntropyPolicy()
     {
         // Template with cash bonus 5, Classic cap is 2 → applied bonus should be 2.
-        var seedWorld = new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Canonical,
-            GameSetupDeterministicLabels.WorldTownSetDefault,
-            AccusationIndex: 1,
-            DefaultCulpritIndex: 3,
-            CashBonus: 5);
+        var seedWorld = CreateCanonicalSeedWorldWithCashBonus(5);
 
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var classicEntropy = EntropyPolicy.For(GameEntropy.Classic);
@@ -187,6 +181,12 @@ public sealed class GameSetupResolverTests
     private static string DescribeClue(Clue clue)
         => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}";
 
-    private static Guid CreateSeedCode(byte worldVariant, byte townSetKey, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, townSetKey, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+
+    private static SeedWorld CreateCanonicalSeedWorldWithCashBonus(int cashBonus)
+    {
+        var canonical = SeedWorldResolver.CreateCanonicalSeedWorld();
+        return canonical with { CashBonus = cashBonus };
+    }
 }

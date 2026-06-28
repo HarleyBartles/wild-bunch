@@ -20,7 +20,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetAlternate, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetAlternate, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
+        Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
     [Fact]

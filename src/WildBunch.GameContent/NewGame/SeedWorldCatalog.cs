@@ -42,9 +42,8 @@ internal sealed record SeedTrailDefinition(
     SeedTrailVariant Canonical,
     SeedTrailVariant Variant)
 {
-    public Trail Create(SeedWorldVariant variant)
-    {
-        var selected = variant switch
+    public SeedTrailVariant ForVariant(SeedWorldVariant variant)
+        => variant switch
         {
             SeedWorldVariant.Canonical => Canonical,
             SeedWorldVariant.Frontier => Variant,
@@ -52,6 +51,9 @@ internal sealed record SeedTrailDefinition(
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Unsupported seed world variant.")
         };
 
+    public Trail Create(SeedWorldVariant variant)
+    {
+        var selected = ForVariant(variant);
         return new Trail(
             new TrailId(Id),
             new TownId(FromTownId),
@@ -63,11 +65,21 @@ internal sealed record SeedTrailDefinition(
     }
 }
 
+/// <summary>
+/// The full town and trail catalog. The seed-derived town selection model
+/// selects a subset of towns from this catalog and includes trails where
+/// both endpoints are selected. Terrain/water/distance are indexed by
+/// world variant. The seed determines which towns and trails are included;
+/// the catalog provides the base definitions.
+/// </summary>
 internal static class SeedWorldCatalog
 {
     public static TownId PinecrossId { get; } = new("pinecross");
 
-    private static readonly SeedTownDefinition[] Towns =
+    /// <summary>
+    /// All towns in the catalog, available for seed-derived selection.
+    /// </summary>
+    public static IReadOnlyList<SeedTownDefinition> AllTowns { get; } =
     [
         new("pinecross", "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard, TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard, TownServices.Supplies | TownServices.Lodging),
         new("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph, TownServices.Supplies | TownServices.Telegraph, TownServices.Supplies | TownServices.Telegraph | TownServices.NoticeBoard),
@@ -79,7 +91,11 @@ internal static class SeedWorldCatalog
         new("openpass", "Open Pass", TownServices.None, TownServices.None, TownServices.None)
     ];
 
-    private static readonly SeedTrailDefinition[] Trails =
+    /// <summary>
+    /// All trail definitions in the catalog. A trail is included in a
+    /// seed world only if both endpoints are in the selected town set.
+    /// </summary>
+    public static IReadOnlyList<SeedTrailDefinition> AllTrails { get; } =
     [
         new("trail-pine-red", "pinecross", "redmesa", TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m)),
         new("trail-pine-hollow", "pinecross", "holloway", TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 2m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 2m)),
@@ -92,57 +108,67 @@ internal static class SeedWorldCatalog
         new("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m))
     ];
 
-    // Alternate town set: replaces openpass with coppercreek.
-    // Copper Creek has Supplies (Open Pass has None) and a different
-    // trail profile (Hills/Spring/4m vs OpenRange/None/3m).
-    private static readonly SeedTownDefinition AlternateCoppercreek =
-        new("coppercreek", "Copper Creek",
-            TownServices.Supplies,
-            TownServices.Supplies | TownServices.NoticeBoard,
-            TownServices.Supplies);
+    /// <summary>
+    /// Anchor towns that must always be selected to guarantee trail graph
+    /// connectivity. pinecross is the safe starting-town default; redmesa
+    /// and holloway connect pinecross to the rest of the map.
+    /// </summary>
+    public static IReadOnlyList<string> AnchorTownIds { get; } = ["pinecross", "redmesa", "holloway"];
 
-    private static readonly SeedTrailDefinition AlternateTrailPineCoppercreek =
-        new("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low,
-            new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m),
-            new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m));
+    /// <summary>
+    /// Towns available for seed-derived selection (all catalog towns except
+    /// the anchors, which are always included).
+    /// </summary>
+    public static IReadOnlyList<string> SelectableTownIds { get; } =
+        AllTowns.Select(t => t.Id).Where(id => !AnchorTownIds.Contains(id)).ToArray();
 
-    private const string DefaultTownSet = GameSetupDeterministicLabels.WorldTownSetDefault;
-    private const string OpenPassTownId = "openpass";
-    private const string OpenPassTrailId = "trail-pine-openpass";
+    public static SeedTownDefinition GetTown(string id)
+        => AllTowns.First(t => t.Id == id);
 
-    public static World CreateWorld(SeedWorldVariant variant, string townSetKey)
+    /// <summary>
+    /// Builds a World from a seed world's selected town IDs and trail graph.
+    /// The seed world holds the trail terrain/water/distance; the catalog
+    /// provides town definitions (services per variant).
+    /// Future seam: DifficultyEnvelope may modify terrain/distance downstream.
+    /// </summary>
+    public static World CreateWorld(
+        SeedWorldVariant variant,
+        IReadOnlyList<string> selectedTownIds,
+        IReadOnlyList<SeedWorldTrail> trails)
     {
-        var useAlternate = townSetKey != DefaultTownSet;
-        var towns = GetTowns(useAlternate);
-        var trails = GetTrails(useAlternate);
-        return new World(
-            towns.Select(town => town.Create(variant)),
-            trails.Select(trail => trail.Create(variant)));
+        var towns = selectedTownIds
+            .Select(id => GetTown(id).Create(variant))
+            .ToArray();
+        var domainTrails = trails
+            .Select(t => new Trail(
+                new TrailId(t.Id),
+                new TownId(t.FromTownId),
+                new TownId(t.ToTownId),
+                t.Risk,
+                t.Terrain,
+                t.WaterFeature,
+                t.RideDayDistance))
+            .ToArray();
+        return new World(towns, domainTrails);
     }
 
-    private static IEnumerable<SeedTownDefinition> GetTowns(bool useAlternate)
+    /// <summary>
+    /// The canonical world: all 8 towns, all 9 trails, Canonical variant.
+    /// Used by SeedWorldMapLayout for the start-screen map.
+    /// </summary>
+    public static World CreateCanonicalWorld()
     {
-        foreach (var town in Towns)
-        {
-            if (useAlternate && town.Id == OpenPassTownId)
-                continue;
-            yield return town;
-        }
-
-        if (useAlternate)
-            yield return AlternateCoppercreek;
-    }
-
-    private static IEnumerable<SeedTrailDefinition> GetTrails(bool useAlternate)
-    {
-        foreach (var trail in Trails)
-        {
-            if (useAlternate && trail.Id == OpenPassTrailId)
-                continue;
-            yield return trail;
-        }
-
-        if (useAlternate)
-            yield return AlternateTrailPineCoppercreek;
+        var allTownIds = AllTowns.Select(t => t.Id).ToArray();
+        var canonicalTrails = AllTrails
+            .Select(t => new SeedWorldTrail(
+                t.Id,
+                t.FromTownId,
+                t.ToTownId,
+                t.Risk,
+                t.Canonical.Terrain,
+                t.Canonical.WaterFeature,
+                t.Canonical.RideDayDistance))
+            .ToArray();
+        return CreateWorld(SeedWorldVariant.Canonical, allTownIds, canonicalTrails);
     }
 }

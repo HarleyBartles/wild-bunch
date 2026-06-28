@@ -35,10 +35,12 @@ internal static class StartingWorldDescriptorSeedMixer
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
 
+        var sortedTownIds = string.Join(",", seedWorld.SelectedTownIds.OrderBy(id => id, StringComparer.OrdinalIgnoreCase));
+
         return string.Join(
             "|",
             seedWorld.WorldVariant.ToString(),
-            seedWorld.TownSetKey,
+            sortedTownIds,
             seedWorld.AccusationIndex.ToString(CultureInfo.InvariantCulture),
             seedWorld.DefaultCulpritIndex.ToString(CultureInfo.InvariantCulture),
             seedWorld.CashBonus.ToString(CultureInfo.InvariantCulture));

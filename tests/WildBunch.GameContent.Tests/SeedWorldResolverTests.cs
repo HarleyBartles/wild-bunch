@@ -14,7 +14,7 @@ public sealed class SeedWorldResolverTests
         var resolved = SeedWorldResolver.Resolve(seedCode);
 
         Assert.Equal(seedWorld.WorldVariant, resolved.WorldVariant);
-        Assert.Equal(seedWorld.TownSetKey, resolved.TownSetKey);
+        Assert.Equal(seedWorld.SelectedTownIds, resolved.SelectedTownIds);
         Assert.Equal(seedWorld.AccusationIndex, resolved.AccusationIndex);
         Assert.Equal(seedWorld.DefaultCulpritIndex, resolved.DefaultCulpritIndex);
         Assert.Equal(seedWorld.CashBonus, resolved.CashBonus);
@@ -24,14 +24,14 @@ public sealed class SeedWorldResolverTests
     [Fact]
     public void MultipleUuidSeedsCanResolveToTheSameSeedWorld()
     {
-        var seedA = CreateSeedCode(0, 0, 1, 3, 0, tail: 1);
-        var seedB = CreateSeedCode(0, 0, 1, 3, 0, tail: 2);
+        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 1);
+        var seedB = CreateSeedCode(0, 1, 3, 0, tail: 2);
 
         var seedWorldA = SeedWorldResolver.Resolve(seedA);
         var seedWorldB = SeedWorldResolver.Resolve(seedB);
 
         Assert.Equal(seedWorldA.WorldVariant, seedWorldB.WorldVariant);
-        Assert.Equal(seedWorldA.TownSetKey, seedWorldB.TownSetKey);
+        Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
         Assert.Equal(seedWorldA.AccusationIndex, seedWorldB.AccusationIndex);
         Assert.Equal(seedWorldA.DefaultCulpritIndex, seedWorldB.DefaultCulpritIndex);
         Assert.Equal(seedWorldA.CashBonus, seedWorldB.CashBonus);
@@ -73,7 +73,7 @@ public sealed class SeedWorldResolverTests
     {
         for (var index = 0; index < 64; index++)
         {
-            var seed = CreateSeedCode((byte)(index % 3), (byte)(index & 0x01), (byte)(index % 7), (byte)(index % 7), (byte)(index % 9), tail: (ulong)index << 16);
+            var seed = CreateSeedCode((byte)(index % 3), (byte)(index % 7), (byte)(index % 7), (byte)(index % 9), tail: (ulong)index << 16);
             var seedWorld = SeedWorldResolver.Resolve(seed);
             var validation = SeedWorldResolver.Validate(seedWorld);
 
@@ -96,7 +96,7 @@ public sealed class SeedWorldResolverTests
 
         var differenceScore = 0;
         if (seedWorldA.WorldVariant != seedWorldB.WorldVariant) differenceScore++;
-        if (seedWorldA.TownSetKey != seedWorldB.TownSetKey) differenceScore++;
+        if (!seedWorldA.SelectedTownIds.SequenceEqual(seedWorldB.SelectedTownIds)) differenceScore++;
         if (seedWorldA.AccusationIndex != seedWorldB.AccusationIndex) differenceScore++;
         if (seedWorldA.DefaultCulpritIndex != seedWorldB.DefaultCulpritIndex) differenceScore++;
         if (seedWorldA.CashBonus != seedWorldB.CashBonus) differenceScore++;
@@ -112,6 +112,67 @@ public sealed class SeedWorldResolverTests
         Assert.False(SeedWorldResolver.TryParseSeedCode("WB1-N-03-000000000000-0000", out _));
     }
 
-    private static Guid CreateSeedCode(byte worldVariant, byte townSetKey, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, townSetKey, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    [Fact]
+    public void ResolverDerivesTownCountFromSeed()
+    {
+        var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+        Assert.InRange(seedWorld.SelectedTownIds.Count, 6, 8);
+    }
+
+    [Fact]
+    public void ResolverAlwaysIncludesAnchorTowns()
+    {
+        for (var i = 0; i < 32; i++)
+        {
+            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            Assert.Contains("pinecross", seedWorld.SelectedTownIds);
+            Assert.Contains("redmesa", seedWorld.SelectedTownIds);
+            Assert.Contains("holloway", seedWorld.SelectedTownIds);
+        }
+    }
+
+    [Fact]
+    public void DifferentSeedsCanProduceDifferentTownCounts()
+    {
+        var counts = new HashSet<int>();
+        for (var i = 0; i < 128; i++)
+        {
+            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            counts.Add(seedWorld.SelectedTownIds.Count);
+        }
+        Assert.True(counts.Count >= 2, $"Expected at least 2 different town counts, got {counts.Count}");
+    }
+
+    [Fact]
+    public void DifferentSeedsCanProduceDifferentTownSelections()
+    {
+        var selections = new HashSet<string>();
+        for (var i = 0; i < 128; i++)
+        {
+            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            selections.Add(string.Join(",", seedWorld.SelectedTownIds.OrderBy(id => id)));
+        }
+        Assert.True(selections.Count >= 2, $"Expected at least 2 different town selections, got {selections.Count}");
+    }
+
+    [Fact]
+    public void SameSeedProducesSameSeedWorld()
+    {
+        var seed = Guid.NewGuid();
+        var seedWorldA = SeedWorldResolver.Resolve(seed);
+        var seedWorldB = SeedWorldResolver.Resolve(seed);
+        Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
+        Assert.Equal(seedWorldA.Trails.Count, seedWorldB.Trails.Count);
+    }
+
+    [Fact]
+    public void CanonicalSeedWorldHasAllEightTowns()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        Assert.Equal(8, seedWorld.SelectedTownIds.Count);
+        Assert.Equal(9, seedWorld.Trails.Count);
+    }
+
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 }

@@ -44,7 +44,7 @@ internal sealed class GameSetupResolver
 
         // 5. Build case file using resolved culprit/accusation indices from
         //    MysteryTruthResolution — NOT raw seed world defaults.
-        var isCanonical = IsCanonicalSeedWorld(seedWorld);
+        var isCanonical = SeedWorldBuilder.IsCanonicalSeedWorld(seedWorld);
         var caseFile = isCanonical
             ? SeedCaseBuilder.CreateCanonicalCaseFile(
                 source,
@@ -86,13 +86,6 @@ internal sealed class GameSetupResolver
             mysteryTruth.SaltSource,
             seedCodeText);
     }
-
-    private static bool IsCanonicalSeedWorld(SeedWorld seedWorld)
-        => seedWorld.WorldVariant == SeedWorldVariant.Canonical
-            && seedWorld.TownSetKey == GameSetupDeterministicLabels.WorldTownSetDefault
-            && seedWorld.AccusationIndex == 1
-            && seedWorld.DefaultCulpritIndex == 3
-            && seedWorld.CashBonus == 0;
 
     private static int StartingHealthFor(GameDifficulty gameDifficulty)
         => gameDifficulty switch

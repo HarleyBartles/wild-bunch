@@ -159,10 +159,13 @@ The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_me
 - If a needed design decision is missing, return `BLOCKED` or `AMBER` rather than inventing broad architecture.
 
 ## UUID Seed Codec
-- The game-start UUID encodes the seed-owned world/map layer: world variant, town set key, accusation/default culprit candidates, and seed-derived cash bonus.
+- The game-start UUID encodes the seed-owned world/map layer: world variant, selected town IDs, trail graph (with baseline terrain/water/distance), accusation/default culprit candidates, and seed-derived cash bonus.
 - `SeedWorldResolver.Resolve(Guid)` decodes UUID → `SeedWorld`. `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` encodes `SeedWorld` → UUID via round-trip search.
 - The seed does NOT encode difficulty, entropy, loadout, horse/saddle, final starting town, or final cash — those are pressure-owned (`DifficultyEnvelope`), entropy-owned (`EntropyPolicy` + `MysteryTruthResolver`), or player/setup-owned (`StartingTownPolicy`).
 - The starting town is NOT a seed-owned fact. The player can start in any town that exists in the generated world. `StartingTownPolicy` validates the choice and provides a safe default (pinecross). Future seam: difficulty may constrain eligibility.
+- The seed deterministically derives the world map from the full town catalog: town count (6-8), which towns are selected (anchor towns pinecross/redmesa/holloway always included, rest seed-selected), and the trail graph (catalog trails where both endpoints are selected, with terrain/water/distance from the catalog indexed by world variant). This is NOT a pair of canned named sets — it is true seed-derived town selection.
+- `SeedWorld` holds `SelectedTownIds` and `Trails` (list of `SeedWorldTrail` with terrain/water/distance). The seed owns the default terrain and trail distances. Later difficulty can modify those values downstream of the seed codec.
+- Design boundary: SeedWorld owns the candidate/generated map. Same seed + same difficulty should produce the same resolved map. Difficulty may later influence map pressure/layout realization (distance bands, terrain harshness, connectivity constraints) downstream of the seed codec, not by hiding difficulty inside the seed. Longer term, `SeedWorld + DifficultyEnvelope` may produce the final resolved world/map, while `StartingTownPolicy` validates the player's start choice against that world.
 - Both directions must stay in sync. When you add a new seed-owned field:
   1. Add the field to `SeedWorld` and the codec in `SeedWorldResolver.Resolve`.
   2. Add the field to the seed world signature in `StartingWorldDescriptorSeedMixer.CreateSeedWorldSignature` so `CreateRepresentativeSeedCode` can round-trip it.

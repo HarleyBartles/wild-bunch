@@ -37,7 +37,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v3|CanonicalMountedStandard|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
+        RequiredShapeSignature: "resolver-v4|CanonicalMountedStandard|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
         DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         PreviewDestinationTownId: "holloway",
@@ -49,7 +49,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v3|CanonicalPinecrossServices|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
+        RequiredShapeSignature: "resolver-v4|CanonicalPinecrossServices|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
         DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
@@ -67,7 +67,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v3|HighRiskFoeInterruptRoute|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
+        RequiredShapeSignature: "resolver-v4|HighRiskFoeInterruptRoute|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -92,7 +92,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Easy,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v3|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=redmesa:mounted:3/3",
+        RequiredShapeSignature: "resolver-v4|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=redmesa:mounted:3/3",
         DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {

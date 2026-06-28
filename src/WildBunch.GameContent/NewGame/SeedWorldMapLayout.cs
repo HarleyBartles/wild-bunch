@@ -24,7 +24,7 @@ public static class SeedWorldMapLayout
 
     public static IReadOnlyList<SeedMapTown> GetMapTowns()
     {
-        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldTownSetDefault);
+        var world = SeedWorldCatalog.CreateCanonicalWorld();
         return world.Towns
             .Select(town =>
             {
@@ -36,7 +36,7 @@ public static class SeedWorldMapLayout
 
     public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails()
     {
-        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldTownSetDefault);
+        var world = SeedWorldCatalog.CreateCanonicalWorld();
         return world.Trails
             .Select(trail => new SeedMapTrailEdge(
                 trail.Id.Value,

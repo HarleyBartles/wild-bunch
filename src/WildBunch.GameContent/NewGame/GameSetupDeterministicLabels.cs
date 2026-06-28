@@ -4,9 +4,8 @@ public static class GameSetupDeterministicLabels
 {
     public const string GameEntropy = "game.entropy";
     public const string WorldVariant = "world.variant";
-    public const string WorldTownSet = "world.townSet";
-    public const string WorldTownSetDefault = "world.townSet.default";
-    public const string WorldTownSetAlternate = "world.townSet.alternate";
+    public const string WorldTownCount = "world.townCount";
+    public const string WorldTownSelection = "world.townSelection";
     public const string PlayerLoadoutProfile = "player.loadout-profile";
     public const string PlayerHorsePosture = "player.horse-posture";
     public const string PlayerCashBonus = "player.cash-bonus";

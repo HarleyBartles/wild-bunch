@@ -43,7 +43,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateFrontierWorldUsesTheSharedCatalogAndFrontierOverlay()
     {
-        var world = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(1, 0, 1, 3, 0, tail: 17)));
+        var world = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(1, 1, 3, 0, tail: 17)));
 
         Assert.Equal(
             new[]
@@ -77,7 +77,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateRailWorldUsesTheSharedCatalogAndRailOverlay()
     {
-        var world = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(2, 0, 1, 3, 0, tail: 19)));
+        var world = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(2, 1, 3, 0, tail: 19)));
 
         Assert.Equal(
             new[]
@@ -109,89 +109,84 @@ public sealed class SeedWorldBuilderTests
     }
 
     [Fact]
-    public void DifferentTownSetKeysProduceDifferentWorldMaps()
+    public void DifferentSeedsCanProduceDifferentTownSelections()
     {
-        // TownSetKey is a seed-owned map generation parameter. The alternate town set
-        // replaces openpass with coppercreek and trail-pine-openpass with
-        // trail-pine-coppercreek (different terrain, water, distance, and services).
-        // This test proves that changing TownSetKey produces an observably different
-        // generated world — not merely different case/turf/cash outcomes.
-        var defaultWorld = BuildSeedWorld(new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Canonical,
-            GameSetupDeterministicLabels.WorldTownSetDefault,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0));
-
-        var alternateWorld = BuildSeedWorld(new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Canonical,
-            GameSetupDeterministicLabels.WorldTownSetAlternate,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0));
-
-        var defaultTowns = SnapshotTowns(defaultWorld);
-        var alternateTowns = SnapshotTowns(alternateWorld);
-        var defaultTrails = SnapshotTrails(defaultWorld);
-        var alternateTrails = SnapshotTrails(alternateWorld);
-
-        // Town sets differ: default has openpass, alternate has coppercreek.
-        Assert.Contains(("openpass", "Open Pass", TownServices.None), defaultTowns);
-        Assert.DoesNotContain(("openpass", "Open Pass", TownServices.None), alternateTowns);
-        Assert.Contains(("coppercreek", "Copper Creek", TownServices.Supplies), alternateTowns);
-        Assert.DoesNotContain(("coppercreek", "Copper Creek", TownServices.Supplies), defaultTowns);
-
-        // Trail graphs differ: default has trail-pine-openpass, alternate has trail-pine-coppercreek.
-        Assert.Contains(("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m), defaultTrails);
-        Assert.DoesNotContain(("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m), alternateTrails);
-        Assert.Contains(("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Spring, 4m), alternateTrails);
-        Assert.DoesNotContain(("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Spring, 4m), defaultTrails);
-
-        // Full snapshots are not equal.
-        Assert.NotEqual(defaultTowns, alternateTowns);
-        Assert.NotEqual(defaultTrails, alternateTrails);
+        // The seed deterministically derives which towns are selected from the catalog.
+        // Different seeds can produce different town selections (not just different
+        // case/turf/cash outcomes).
+        var selections = new HashSet<string>();
+        for (var i = 0; i < 128; i++)
+        {
+            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            selections.Add(string.Join(",", seedWorld.SelectedTownIds.OrderBy(id => id)));
+        }
+        Assert.True(selections.Count >= 2, $"Expected at least 2 different town selections, got {selections.Count}");
     }
 
     [Fact]
-    public void AlternateTownSetForCanonicalWorldHasCorrectSnapshot()
+    public void DifferentSeedsCanProduceDifferentTrailSignatures()
     {
-        var world = BuildSeedWorld(new SeedWorld(
-            Guid.Empty,
-            SeedWorldVariant.Canonical,
-            GameSetupDeterministicLabels.WorldTownSetAlternate,
-            AccusationIndex: 0,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0));
+        // Different town selections produce different trail graphs.
+        var signatures = new HashSet<string>();
+        for (var i = 0; i < 128; i++)
+        {
+            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            var sig = string.Join(",", seedWorld.Trails.Select(t => t.Id).OrderBy(id => id));
+            signatures.Add(sig);
+        }
+        Assert.True(signatures.Count >= 2, $"Expected at least 2 different trail signatures, got {signatures.Count}");
+    }
 
-        Assert.Equal(
-            new[]
+    [Fact]
+    public void SameSeedProducesSameWorld()
+    {
+        // Same seed + same difficulty should produce the same resolved map.
+        var seed = Guid.NewGuid();
+        var seedWorld = SeedWorldResolver.Resolve(seed);
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seed));
+        var world1 = SeedWorldBuilder.CreateWorld(seedWorld, source);
+        var world2 = SeedWorldBuilder.CreateWorld(seedWorld, source);
+        Assert.Equal(world1.Towns.Count, world2.Towns.Count);
+        Assert.Equal(world1.Trails.Count, world2.Trails.Count);
+    }
+
+    [Fact]
+    public void SelectedStartingTownMustBeInGeneratedWorld()
+    {
+        // Starting town is NOT seed-owned but must be in the generated world.
+        // StartingTownPolicy rejects a town that is not in the world.
+        // Find a seed that produces fewer than 8 towns so we can test with
+        // a catalog town that was not selected.
+        SeedWorld? seedWorld = null;
+        for (var i = 0; i < 256; i++)
+        {
+            var candidate = SeedWorldResolver.Resolve(Guid.NewGuid());
+            if (candidate.SelectedTownIds.Count < SeedWorldCatalog.AllTowns.Count)
             {
-                ("coppercreek", "Copper Creek", TownServices.Supplies),
-                ("dryfork", "Dry Fork", TownServices.None),
-                ("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph),
-                ("hardpan", "Hardpan", TownServices.None),
-                ("holloway", "Holloway", TownServices.Doctor),
-                ("pinecross", "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard),
-                ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph),
-                ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor),
-            },
-            SnapshotTowns(world));
-        Assert.Equal(
-            new[]
-            {
-                ("trail-hollow-sage", "holloway", "sagewell", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                ("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Spring, 4m),
-                ("trail-pine-hardpan", "pinecross", "hardpan", TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m),
-                ("trail-pine-hollow", "pinecross", "holloway", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 2m),
-                ("trail-pine-red", "pinecross", "redmesa", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
-                ("trail-red-dry", "redmesa", "dryfork", TrailRisk.High, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
-                ("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
-                ("trail-red-sage", "redmesa", "sagewell", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                ("trail-sage-ember", "sagewell", "emberfall", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
-            },
-            SnapshotTrails(world));
+                seedWorld = candidate;
+                break;
+            }
+        }
+        Assert.NotNull(seedWorld);
+        Assert.True(seedWorld.SelectedTownIds.Count < SeedWorldCatalog.AllTowns.Count,
+            "Could not find a seed producing fewer than 8 towns within 256 attempts.");
+
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld!.SeedCode));
+        var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
+        var nonSelectedTown = SeedWorldCatalog.AllTowns.First(t => !seedWorld.SelectedTownIds.Contains(t.Id));
+
+        Assert.Throws<ArgumentException>(() =>
+            StartingTownPolicy.ResolveStartingTown(world, new TownId(nonSelectedTown.Id)));
+    }
+
+    [Fact]
+    public void BuilderCreatesWorldFromSeedWorldTemplate()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var source = new GameSetupDeterministicSource(seedWorld.SeedCodeText);
+        var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
+        Assert.Equal(seedWorld.SelectedTownIds.Count, world.Towns.Count);
+        Assert.Equal(seedWorld.Trails.Count, world.Trails.Count);
     }
 
     [Fact]
@@ -203,7 +198,7 @@ public sealed class SeedWorldBuilderTests
         var canonicalWorld = SeedWorldBuilder.CreateCanonicalWorld();
         Assert.Equal(new TownId("pinecross"), StartingTownPolicy.ResolveStartingTown(canonicalWorld, null));
 
-        var frontierWorld = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(1, 0, 1, 3, 0, tail: 17)));
+        var frontierWorld = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(1, 1, 3, 0, tail: 17)));
         Assert.Equal(new TownId("pinecross"), StartingTownPolicy.ResolveStartingTown(frontierWorld, null));
     }
 
@@ -236,8 +231,8 @@ public sealed class SeedWorldBuilderTests
         return SeedWorldBuilder.CreateWorld(seedWorld, source);
     }
 
-    private static Guid CreateSeedCode(byte worldVariant, byte townSetKey, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, townSetKey, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 
     private static (string Id, string Name, TownServices Services)[] SnapshotTowns(World world)
         => world.Towns

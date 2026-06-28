@@ -52,7 +52,7 @@ seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy -> MysteryTruthRes
 **SeedWorld** (seed-owned, deterministic world/map layer decoded from the UUID):
 - `SeedCode` (Guid) — the UUID itself
 - `WorldVariant` (SeedWorldVariant) — seed-decoded
-- `TownSetKey` (string) — seed-owned map generation parameter (NOT a starting-town selector)
+- `TownSetKey` (string) — seed-owned map generation parameter (NOT a starting-town selector). TRANSITIONAL: the current two-set implementation (default vs alternate) is a narrow seam proof that TownSetKey affects generated world shape. It is NOT the intended long-term model. The follow-on model is seed-derived deterministic town selection over the whole town catalog — how many towns, which towns are selected, and enough trail connectivity to make the map playable — rather than choosing between named canned sets.
 - `AccusationIndex` (int) — seed-decoded default opening accusation
 - `DefaultCulpritIndex` (int) — seed-decoded default culprit for Boring replay (NEW)
 - `CashBonus` (int) — raw seed-derived cash bonus (0–8, NOT entropy-capped)
