@@ -401,13 +401,13 @@ public sealed partial class GameSessionJsonSerializer
             => new(snapshot.Name, snapshot.Kind);
     }
 
-    private sealed record SuspectIdentityFactSnapshot(string Description)
+    private sealed record SuspectIdentityFactSnapshot(string Description, bool IsPrimary)
     {
         public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
-            => new(fact.Description);
+            => new(fact.Description, fact.IsPrimary);
 
         public static SuspectIdentityFact ToDomain(SuspectIdentityFactSnapshot snapshot)
-            => new(snapshot.Description);
+            => new(snapshot.Description, snapshot.IsPrimary);
     }
 
     private sealed record SuspectTraitsSnapshot(

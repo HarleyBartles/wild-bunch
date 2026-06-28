@@ -1,6 +1,6 @@
 namespace WildBunch.Domain.Cases;
 
-public readonly record struct SuspectIdentityFact(string Description);
+public readonly record struct SuspectIdentityFact(string Description, bool IsPrimary = true);
 
 public readonly record struct SuspectAlias(string Name, AliasKind Kind);
 
