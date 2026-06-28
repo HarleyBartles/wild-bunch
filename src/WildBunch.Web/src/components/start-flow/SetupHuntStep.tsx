@@ -23,11 +23,13 @@ interface SetupHuntStepProps {
 
 const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
   { value: 0, label: "Standard" },
+  { value: 1, label: "Easy" },
   { value: 2, label: "Challenging" },
   { value: 3, label: "Brutal" },
 ];
 
 const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
+  { value: 0, label: "Boring" },
   { value: 1, label: "Classic" },
   { value: 2, label: "Adventurous" },
   { value: 3, label: "Wild" },

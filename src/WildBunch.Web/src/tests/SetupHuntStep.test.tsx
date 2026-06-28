@@ -233,7 +233,7 @@ describe("SetupHuntStep", () => {
     expect(onGameEntropyChange).toHaveBeenCalledWith(3);
   });
 
-  it("renders difficulty options as Standard, Challenging, Brutal in that order", () => {
+  it("renders difficulty options as Standard, Easy, Challenging, Brutal in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -241,13 +241,12 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Standard", "Challenging", "Brutal"]);
-    expect(labels).not.toContain("Easy");
+    expect(labels).toEqual(["Standard", "Easy", "Challenging", "Brutal"]);
     expect(labels).not.toContain("Normal");
     expect(labels).not.toContain("Hard");
   });
 
-  it("renders gameEntropy options as Classic, Adventurous, Wild in that order", () => {
+  it("renders gameEntropy options as Boring, Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -255,16 +254,32 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(entropyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Classic", "Adventurous", "Wild"]);
+    expect(labels).toEqual(["Boring", "Classic", "Adventurous", "Wild"]);
     expect(labels).not.toContain("Placid");
     expect(labels).not.toContain("Restless");
     expect(labels).not.toContain("Rowdy");
   });
 
-  it("does not render Boring as a player-facing gameEntropy option", () => {
-    renderStep();
+  it("calls onGameEntropyChange when Boring is selected", async () => {
+    const user = userEvent.setup();
+    const onGameEntropyChange = vi.fn();
+    renderStep({ stateful: true, onGameEntropyChange });
 
-    expect(screen.queryByRole("button", { name: /^boring$/i })).not.toBeInTheDocument();
+    const boring = screen.getByRole("button", { name: /^boring$/i });
+    await user.click(boring);
+
+    expect(onGameEntropyChange).toHaveBeenCalledWith(0);
+  });
+
+  it("calls onGameDifficultyChange when Easy is selected", async () => {
+    const user = userEvent.setup();
+    const onGameDifficultyChange = vi.fn();
+    renderStep({ stateful: true, onGameDifficultyChange });
+
+    const easy = screen.getByRole("button", { name: /^easy$/i });
+    await user.click(easy);
+
+    expect(onGameDifficultyChange).toHaveBeenCalledWith(1);
   });
 
   it("uses a single thumb element per segmented toggle (not per-option backgrounds)", () => {

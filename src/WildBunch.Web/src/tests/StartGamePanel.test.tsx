@@ -248,4 +248,31 @@ describe("StartGamePanel", () => {
     // The decodeSeed API is called but the UI doesn't expose entropy selection here.
     // Entropy selection behavior is tested in SetupHuntStep.test.tsx.
   });
+
+  it("renders Easy as a selectable difficulty option", async () => {
+    renderPanel();
+
+    const difficultySelect = await screen.findByLabelText(/Game difficulty/i);
+    const options = Array.from(difficultySelect.querySelectorAll("option"));
+    const labels = options.map((o) => o.textContent?.trim() ?? "");
+
+    expect(labels).toContain("Easy");
+  });
+
+  it("updates representative seed when difficulty changes to Easy", async () => {
+    const user = userEvent.setup();
+    mockedGetRepresentativeSeed.mockResolvedValue("easy1111-2222-3333-4444-555555555555");
+    renderPanel();
+
+    const seedInput = await screen.findByLabelText(/setup seed/i);
+    const beforeChange = (seedInput as HTMLInputElement).value;
+
+    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "1");
+
+    await waitFor(() => {
+      expect(mockedGetRepresentativeSeed).toHaveBeenCalledWith(1, 1);
+      expect((seedInput as HTMLInputElement).value).toBe("easy1111-2222-3333-4444-555555555555");
+      expect((seedInput as HTMLInputElement).value).not.toBe(beforeChange);
+    });
+  });
 });
