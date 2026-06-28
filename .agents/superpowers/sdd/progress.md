@@ -15,11 +15,12 @@ Plan: `.agents/superpowers/plans/2026-06-27-bunch-75-phaser-backed-world-map-poc
 - Task 2: Reuse the BUNCH-102 setup endpoint and expose map-ready data — complete
 - Task 3: Replace the BUNCH-102 `StartingTownStep` body with a Phaser-backed map host — complete
 - Task 4: Prove React owns the final confirmation and game creation — complete
-- Task 5: Validate the slice and capture browser proof — pending (controller-owned validation)
+- Task 5: Validate the slice and capture browser proof — complete
 
 ## Completion log
 Task 0: complete (controller-verified on `76d7e46`; BUNCH-102 seams present: StartingTownStep.tsx, PreSessionSurface.tsx handleStartWithTown, GET /api/games/starting-towns, StartGameRequest.StartingTownId)
 Task 1: complete (commits 76d7e46..65cc149, review clean — Approved, 3 Minor notes only: CreateWorld rebuilt per call, missing-key throws, unused cancellationToken. All non-blocking.)
 Task 2: complete (commits 65cc149..2464ef9, review found 1 Important ordering bug in integration test + 1 Minor trail-count; fixup commit 2464ef9 resolved both. Integration tests need PostgreSQL lane — controller to run in Task 5.)
 Task 3: complete (commits 2464ef9..4f48590, review Approved with 5 Minor notes; fixup commit 4f48590 resolved #3 non-selectable fallback buttons + #1 weak selectedTownId test. Remaining Minor: error-state-as-loading, useEffect deps, gitignore comments — all non-blocking.)
-Task 4: complete (added falsifiable boundary tests to PhaserMapHost.test.tsx + StartFlow.test.tsx; inspection confirmed no drift in PhaserMapHost/useCurrentGameSession/wildBunchApi. typecheck + 173 tests pass.)
+Task 4: complete (commits 4f48590..c0b6332, review Approved — no Critical/Important. 4 Phaser truth-boundary tests + 3 React-owned confirmation tests, all falsifiable. No production drift. 2 Minor notes non-blocking.)
+Task 5: complete (controller-owned validation: dotnet build 0/0, Application.Tests 170/170, Integration.Tests 142/142, EF migrations clean, frontend 173/173 typecheck clean. Browser proof: Phaser canvas rendered, fallback buttons filtered to selectable, React-owned confirmation → game created in Red Mesa. ADR-0035 added. Plan checkboxes checked off. All dev servers cleaned up.)
