@@ -53,10 +53,15 @@ export interface HiddenTruthDevDto {
   saloonLoopExplanation: string;
 }
 
+export interface CitizenArchetypeDto {
+  roleKey: string;
+  displayName: string;
+}
+
 export interface CitizenInfoDto {
   descriptor: string;
   hasNamedArchetypes: boolean;
-  availableArchetypes: string[];
+  availableArchetypes: CitizenArchetypeDto[];
 }
 
 export interface SaloonSuspectDevDto {
@@ -80,6 +85,7 @@ export interface DevSaloonOverrideDto {
   forcedKind: string;
   forcedSuspectId: string | null;
   forcedSuspectName: string | null;
+  forcedCitizenRoleKey: string | null;
 }
 
 export interface ActiveSaloonPoiDto {
@@ -87,6 +93,7 @@ export interface ActiveSaloonPoiDto {
   suspectName: string | null;
   descriptor: string | null;
   personOfInterestKind: string | null;
+  citizenRole: string | null;
 }
 
 export interface SaloonDevContextDto {
@@ -105,6 +112,7 @@ export interface SaloonDevContextDto {
 export interface ForceSaloonOverrideRequestDto {
   forcedKind: string;
   forcedSuspectId?: string | null;
+  forcedCitizenRoleKey?: string | null;
 }
 
 export interface SaltPostureDevDto {

@@ -36,7 +36,8 @@ public static class SaloonDevContextMapper
                 activePoiId?.Value,
                 activePoiName,
                 activePoiDescriptor,
-                activePoiKind?.ToString());
+                activePoiKind?.ToString(),
+                townState.ActiveSaloonCitizenRole);
         }
 
         var suspects = session.CaseFile.Suspects.Select(s =>
@@ -59,12 +60,14 @@ public static class SaloonDevContextMapper
                 WarrantSummary: warrant?.Summary);
         }).ToList();
 
-        // Citizen info — honestly describe what the backend supports
-        var citizenDescriptor = $"a town clerk from {session.CurrentTown.TownName}";
+        // Citizen info — source-backed cast of named town roles.
+        // Citizen features come from the shared suspect vocabulary, not a separate
+        // citizen-only feature pool. The role selector chooses the citizen role.
         var citizenInfo = new CitizenInfoDto(
-            Descriptor: citizenDescriptor,
-            HasNamedArchetypes: false,
-            AvailableArchetypes: Array.Empty<string>());
+            Descriptor: "a stranger with a distinguishing feature from the shared suspect vocabulary",
+            HasNamedArchetypes: true,
+            AvailableArchetypes: CitizenCast.Roles.Select(role =>
+                new CitizenArchetypeDto(role.Key, role.DisplayName)).ToList());
 
         // Hidden truth with saloon loop explanation
         var killerRelease = session.CaseFile.KillerReleaseState;
@@ -98,7 +101,8 @@ public static class SaloonDevContextMapper
             PendingDevOverride: devOverride is null ? null : new DevSaloonOverrideDto(
                 devOverride.ForcedKind.ToString(),
                 devOverride.ForcedSuspectId?.Value,
-                forcedSuspectName),
+                forcedSuspectName,
+                devOverride.ForcedCitizenRoleKey),
             HiddenTruth: hiddenTruth,
             CitizenInfo: citizenInfo,
             Suspects: suspects);
@@ -118,7 +122,9 @@ public static class SaloonDevContextMapper
             : "The killer trail is locked — the true culprit is gated out of saloon POI until the killer-release gate opens.");
 
         var eligibleCount = session.CaseFile.Suspects.Count(s => session.IsEligibleSaloonPersonOfInterestCandidate(s));
-        parts.Add($"{eligibleCount} suspect(s) are currently eligible as saloon POI candidates.");
+        var citizenCount = CitizenCast.Roles.Count;
+        parts.Add($"Saloon POI pool: {eligibleCount} suspect(s) + {citizenCount} citizen role(s) + nobody. " +
+                  "Any non-culprit suspect or citizen can appear in any saloon — no town presence or warrant gates.");
 
         return string.Join(" ", parts);
     }

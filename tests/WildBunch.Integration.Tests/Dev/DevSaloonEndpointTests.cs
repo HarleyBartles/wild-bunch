@@ -60,7 +60,7 @@ public sealed class DevSaloonEndpointTests
 
         var forceResponse = await client.PostAsJsonAsync(
             $"/api/dev/sessions/{gameId}/saloon/force-override",
-            new ForceSaloonOverrideRequestDto(ForcedKind: "Citizen", ForcedSuspectId: null));
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Citizen", ForcedSuspectId: null, ForcedCitizenRoleKey: null));
 
         Assert.Equal(HttpStatusCode.NoContent, forceResponse.StatusCode);
 
@@ -83,7 +83,7 @@ public sealed class DevSaloonEndpointTests
         // Send with empty ForcedKind - the endpoint validates this and returns 400
         var forceResponse = await client.PostAsJsonAsync(
             $"/api/dev/sessions/{gameId}/saloon/force-override",
-            new ForceSaloonOverrideRequestDto(ForcedKind: "", ForcedSuspectId: null));
+            new ForceSaloonOverrideRequestDto(ForcedKind: "", ForcedSuspectId: null, ForcedCitizenRoleKey: null));
 
         Assert.Equal(HttpStatusCode.BadRequest, forceResponse.StatusCode);
     }
@@ -98,7 +98,7 @@ public sealed class DevSaloonEndpointTests
 
         var forceResponse = await client.PostAsJsonAsync(
             $"/api/dev/sessions/{gameId}/saloon/force-override",
-            new ForceSaloonOverrideRequestDto(ForcedKind: "NotARealKind", ForcedSuspectId: null));
+            new ForceSaloonOverrideRequestDto(ForcedKind: "NotARealKind", ForcedSuspectId: null, ForcedCitizenRoleKey: null));
 
         Assert.Equal(HttpStatusCode.BadRequest, forceResponse.StatusCode);
     }
@@ -111,7 +111,7 @@ public sealed class DevSaloonEndpointTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/dev/sessions/{Guid.NewGuid()}/saloon/force-override",
-            new ForceSaloonOverrideRequestDto("Citizen", null));
+            new ForceSaloonOverrideRequestDto("Citizen", null, null));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -127,7 +127,7 @@ public sealed class DevSaloonEndpointTests
         // Force first
         await client.PostAsJsonAsync(
             $"/api/dev/sessions/{gameId}/saloon/force-override",
-            new ForceSaloonOverrideRequestDto("Citizen", null));
+            new ForceSaloonOverrideRequestDto("Citizen", null, null));
 
         // Clear
         var clearResponse = await client.PostAsync(

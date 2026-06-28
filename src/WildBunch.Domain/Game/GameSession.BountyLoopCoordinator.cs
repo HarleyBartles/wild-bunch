@@ -200,7 +200,8 @@ public sealed partial class GameSession
             var walletBefore = _session.Player.Wallet.Cash;
             var fineAmount = BountySettlementPolicy.CalculateCappedFine(walletBefore, GameSession.CitizenDeclarationFine);
             var citizenTargetName = activeSaloonPersonOfInterestDescriptor ?? throw new InvalidOperationException("A citizen person of interest descriptor is required.");
-            var citizenNarration = $"You bring {citizenTargetName} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
+            var citizenRoleKey = _session.CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole;
+            var citizenNarration = BuildCitizenRevealNarration(citizenTargetName, citizenRoleKey, fineAmount);
 
             ProduceSaloonConfrontedEvent(
                 citizenNarration,
@@ -210,7 +211,8 @@ public sealed partial class GameSession
                 outcome: SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
                 fineAmount: fineAmount,
                 walletBefore: walletBefore,
-                isCitizen: true);
+                isCitizen: true,
+                citizenRole: citizenRoleKey);
             return SaloonPersonOfInterestConfrontationResult.WrongWantedDeclaration(
                 declaredWantedIdentityHandle,
                 citizenTargetName,
@@ -221,6 +223,24 @@ public sealed partial class GameSession
                 isCitizen: true,
                 isAlive: null,
                 isSecured: null);
+        }
+
+        /// <summary>
+        /// Builds the mistaken-arrest reveal narration for a citizen POI. Resolves the
+        /// role display name by role key only via <see cref="CitizenCast.GetRoleByKey"/>,
+        /// using the stored concealment descriptor from active state. Does NOT re-select
+        /// a feature or require feature descriptions. Falls back to the old generic
+        /// narration if no role key is stored (old sessions or edge cases).
+        /// </summary>
+        private static string BuildCitizenRevealNarration(string concealmentDescriptor, string? roleKey, decimal fineAmount)
+        {
+            if (string.IsNullOrWhiteSpace(roleKey))
+            {
+                return $"You bring {concealmentDescriptor} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
+            }
+
+            var role = CitizenCast.GetRoleByKey(roleKey);
+            return $"You bring {concealmentDescriptor} to the sheriff. The sheriff identifies them as {role.DisplayName}, releases them, and fines you ${fineAmount:0.00}.";
         }
 
         /// <summary>
@@ -239,7 +259,8 @@ public sealed partial class GameSession
             bool? isSecured = null,
             decimal? fineAmount = null,
             decimal? walletBefore = null,
-            bool isCitizen = false)
+            bool isCitizen = false,
+            string? citizenRole = null)
         {
             var e = new SaloonPersonOfInterestConfronted
             {
@@ -254,7 +275,8 @@ public sealed partial class GameSession
                 WalletBefore = walletBefore,
                 WalletAfter = fineAmount is { } fine && walletBefore is { } before ? before - fine : walletBefore,
                 DeclaredWantedIdentityHandle = declaredWantedIdentityHandle,
-                IsCitizen = isCitizen
+                IsCitizen = isCitizen,
+                CitizenRole = citizenRole
             };
             _session.ProduceEvent(e);
         }

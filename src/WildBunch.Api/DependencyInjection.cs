@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Json;
 using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
@@ -8,8 +9,9 @@ using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Economy;
-using WildBunch.Domain.Journal;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
+using WildBunch.Domain.Journal;
 using WildBunch.Persistence;
 using WildBunch.GameContent;
 
@@ -27,6 +29,11 @@ public static class DependencyInjection
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
+        });
+
+        services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+        {
+            options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         });
         services.AddPersistence(configuration);
         services.AddGameContent();

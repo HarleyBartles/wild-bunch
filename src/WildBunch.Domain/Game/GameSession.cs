@@ -3,6 +3,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
@@ -434,7 +435,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
         else if (e.Descriptor is not null)
         {
-            CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(e.Descriptor);
+            CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest(e.Descriptor, e.CitizenRole);
         }
 
         _version++;
@@ -707,7 +708,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         _pendingDevSaloonOverride = new DevSaloonOverride(
             e.ForcedKind,
-            e.ForcedSuspectId);
+            e.ForcedSuspectId,
+            e.ForcedCitizenRoleKey);
         _version++;
     }
 
@@ -1076,7 +1078,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Dev command: forces the next saloon look-around to use the given override.
     /// Produces a DevSaloonOverrideForced event. The override is consumed once by
     /// the next LookAroundSaloon. Validates suspect eligibility at force time.
-    /// See BUNCH-90.
+    /// See BUNCH-90 and BUNCH-106 realignment.
     /// </summary>
     public void ForceDevSaloonOverride(DevSaloonOverride overrideValue)
     {
@@ -1087,11 +1089,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         // Validate specific-suspect eligibility at force time.
-        // Dev force must not break core saloon/culprit invariants.
-        // Uses the same gate-aware eligibility as the candidate list:
-        // IsEligibleSaloonPersonOfInterestCandidate. The true culprit is gated
-        // out while the killer-release gate is locked, but becomes eligible
-        // once the gate opens. No special permanent true-culprit rejection.
+        // The only ineligibility is being the unreleased true killer.
         if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
         {
             var suspectId = overrideValue.ForcedSuspectId.Value;
@@ -1103,7 +1101,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     $"Unknown suspect ID: {suspectId.Value}. Cannot force a saloon override for a suspect that does not exist.");
             }
 
-            // Use the same gate-aware eligibility as the candidate list.
             var suspect = CaseFile.Suspects.First(s => s.Id == overrideValue.ForcedSuspectId);
             if (!IsEligibleSaloonPersonOfInterestCandidate(suspect))
             {
@@ -1114,10 +1111,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             }
         }
 
+        if (overrideValue.ForcedKind is DevSaloonPoiKind.Citizen && overrideValue.ForcedCitizenRoleKey is not null)
+        {
+            if (!CitizenCast.Roles.Any(r => string.Equals(r.Key, overrideValue.ForcedCitizenRoleKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException(
+                    $"Unknown citizen role key: {overrideValue.ForcedCitizenRoleKey}. Cannot force a saloon override for a citizen role that does not exist.");
+            }
+        }
+
         ProduceEvent(new DevSaloonOverrideForced
         {
             ForcedKind = overrideValue.ForcedKind,
-            ForcedSuspectId = overrideValue.ForcedSuspectId
+            ForcedSuspectId = overrideValue.ForcedSuspectId,
+            ForcedCitizenRoleKey = overrideValue.ForcedCitizenRoleKey
         });
     }
 
@@ -2832,7 +2839,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 // If no specific suspect or the specific suspect is not found, use normal candidate selection.
                 if (forcedSuspect is null && pendingDevOverride.ForcedSuspectId is null)
                 {
-                    TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out forcedSuspect);
+                    TryGetEligibleSaloonSuspectCandidate(out forcedSuspect);
                 }
 
                 if (forcedSuspect is not null)
@@ -2852,12 +2859,36 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
                 }
             }
+            else if (pendingDevOverride.ForcedKind is DevSaloonPoiKind.None)
+            {
+                // Nobody of interest — the saloon is quiet.
+                var nobodyMessage = "You look around the saloon, but nobody of interest catches your eye.";
+                ProduceEvent(new SaloonPersonOfInterestSpotted
+                {
+                    SourceKind = InvestigationSourceKind.SaloonLookAround,
+                    TownId = CurrentTown.TownId,
+                    Message = nobodyMessage,
+                    RecordLog = true
+                });
+                return CaseInvestigationResult.Succeeded(nobodyMessage, sessionChanged: true);
+            }
             else
             {
-                // Citizen - spots a generic town citizen.
+                // Citizen - spots a citizen from the source-backed cast.
                 // The false-lead outcome comes from the normal confrontation flow
                 // when the player declares a wrong wanted identity on a citizen POI.
-                var forcedCitizenDescriptor = DescribeTownCitizen(CurrentTown);
+                // Citizen features are drawn from the shared suspect feature vocabulary.
+                var forcedFeatureDescriptions = CollectSuspectFeatureDescriptions();
+                CitizenEncounter forcedEncounter;
+                if (pendingDevOverride.ForcedCitizenRoleKey is not null)
+                {
+                    forcedEncounter = CitizenCast.SelectByRoleKey(pendingDevOverride.ForcedCitizenRoleKey, forcedFeatureDescriptions);
+                }
+                else
+                {
+                    forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, forcedFeatureDescriptions);
+                }
+                var forcedCitizenDescriptor = CitizenCast.ResolveDescriptor(forcedEncounter);
                 var forcedCitizenMessage = $"You look around the saloon and spot {forcedCitizenDescriptor}.";
                 ProduceEvent(new SaloonPersonOfInterestSpotted
                 {
@@ -2866,6 +2897,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                     Message = forcedCitizenMessage,
                     Descriptor = forcedCitizenDescriptor,
                     PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+                    CitizenRole = forcedEncounter.Role.Key,
                     RecordLog = false
                 });
                 return CaseInvestigationResult.Succeeded(forcedCitizenMessage, sessionChanged: true);
@@ -2887,8 +2919,36 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded(repeatMessage, sessionChanged: true);
         }
 
-        if (TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out var suspect))
+        // BUNCH-106: Simplified saloon POI selection.
+        // The candidate pool is: each eligible non-culprit suspect + each citizen role + one "nobody" slot.
+        // Any non-culprit suspect can walk into any saloon — no town presence, warrant, or poster gates.
+        // The true killer is excluded until the killer-release gate opens.
+        // The roll is deterministic using the salt source + town + day + turn + visit number.
+        var eligibleSuspects = CaseFile.Suspects.Where(IsEligibleSaloonPersonOfInterestCandidate).ToList();
+        var citizenRoleCount = CitizenCast.Roles.Count;
+        var poolSize = eligibleSuspects.Count + citizenRoleCount + 1; // +1 for "nobody"
+        var rollHash = StableSaloonRollHash(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, SaltSource.Salt);
+        var rollIndex = rollHash % poolSize;
+
+        // Nobody of interest.
+        if (rollIndex == poolSize - 1)
         {
+            var nobodyMessage = "You look around the saloon, but nobody of interest catches your eye.";
+            var nobodyEvent = new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = CurrentTown.TownId,
+                Message = nobodyMessage,
+                RecordLog = true
+            };
+            ProduceEvent(nobodyEvent);
+            return CaseInvestigationResult.Succeeded(nobodyMessage, sessionChanged: true);
+        }
+
+        // Suspect slot.
+        if (rollIndex < eligibleSuspects.Count)
+        {
+            var suspect = eligibleSuspects[rollIndex];
             var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
             var spotMessage = $"You look around the saloon and spot {descriptor}.";
             var spotEvent = new SaloonPersonOfInterestSpotted
@@ -2905,7 +2965,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
         }
 
-        var citizenDescriptor = DescribeTownCitizen(CurrentTown);
+        // Citizen slot.
+        var citizenFeatureDescriptions = CollectSuspectFeatureDescriptions();
+        var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, citizenFeatureDescriptions);
+        var citizenDescriptor = CitizenCast.ResolveDescriptor(citizenEncounter);
         var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
         var citizenEvent = new SaloonPersonOfInterestSpotted
         {
@@ -2914,10 +2977,36 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Message = citizenMessage,
             Descriptor = citizenDescriptor,
             PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+            CitizenRole = citizenEncounter.Role.Key,
             RecordLog = false
         };
         ProduceEvent(citizenEvent);
         return CaseInvestigationResult.Succeeded(citizenMessage, sessionChanged: true);
+    }
+
+    /// <summary>
+    /// Stable manual hash for deterministic saloon POI rolls. Uses the salt source
+    /// so different sessions get different rolls for the same town/day/turn/visit.
+    /// Does NOT use <see cref="string.GetHashCode()"/> (not stable across restarts).
+    /// </summary>
+    private static int StableSaloonRollHash(TownId townId, int day, int turn, int visitNumber, string salt)
+    {
+        unchecked
+        {
+            var hash = 17;
+            foreach (var c in salt)
+            {
+                hash = (hash * 31) + c;
+            }
+            foreach (var c in townId.Value)
+            {
+                hash = (hash * 31) + c;
+            }
+            hash = (hash * 31) + day;
+            hash = (hash * 31) + turn;
+            hash = (hash * 31) + visitNumber;
+            return Math.Abs(hash);
+        }
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
@@ -3357,8 +3446,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private static string DescribeClueLead(string description)
         => description.Trim().TrimEnd('.', '!', '?');
 
-    private static string DescribeTownCitizen(TownAggregate town)
-        => $"a town clerk from {town.TownName}";
+    private IReadOnlyList<string> CollectSuspectFeatureDescriptions()
+        => CaseFile.Suspects
+            .SelectMany(s => s.Profile.IdentifyingFacts)
+            .Where(f => f.IsPrimary)
+            .Select(f => f.Description)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
     private static bool IsPlayerKnownClue(Clue clue)
     {
@@ -3374,7 +3469,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             || !string.IsNullOrWhiteSpace(subject.Feature));
     }
 
-    private bool TryGetConfrontableSaloonPersonOfInterestCandidateInTown(out Suspect suspect)
+    private bool TryGetEligibleSaloonSuspectCandidate(out Suspect suspect)
     {
         foreach (var candidate in CaseFile.Suspects)
         {
@@ -3391,33 +3486,28 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return false;
     }
 
+    /// <summary>
+    /// A suspect is eligible as a saloon POI candidate if they are not the unreleased
+    /// true killer. Any non-culprit suspect can walk into any saloon — no town presence,
+    /// warrant, or poster state gates. The true killer is gated out until the killer-release
+    /// gate opens. See BUNCH-106 realignment.
+    /// </summary>
     internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
     {
         ArgumentNullException.ThrowIfNull(suspect);
 
         if (suspect.Id.Equals(CaseFile.TrueCulpritId))
         {
-            // Gate-aware: the true culprit is barred from saloon POI until the killer-release gate opens.
-            // Once the killer trail is released, the true culprit becomes a valid saloon POI candidate.
             return CaseFile.KillerReleaseState.IsReleased;
         }
 
-        if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
-        {
-            return true;
-        }
-
-        if (!_wantedSuspectPresenceLedger.TryGetState(suspect.Id, out var presenceState))
-        {
-            return false;
-        }
-
-        return presenceState is WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround;
+        return true;
     }
 
     /// <summary>
     /// Dev-only: describes why a suspect is ineligible as a saloon POI candidate.
-    /// Returns null if the suspect is eligible. See BUNCH-90.
+    /// Returns null if the suspect is eligible. The only ineligibility reason is
+    /// being the unreleased true killer. See BUNCH-90 and BUNCH-106 realignment.
     /// </summary>
     internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
     {
@@ -3425,32 +3515,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (suspect.Id.Equals(CaseFile.TrueCulpritId))
         {
-            // Gate-aware: the true culprit is gated out until the killer-release gate opens.
             var killerRelease = CaseFile.KillerReleaseState;
             if (killerRelease.IsReleased)
             {
-                return null; // Eligible — killer trail is released
+                return null;
             }
 
             return killerRelease.StatusText;
         }
 
-        if (!TryGetKnownWarrantForSuspect(suspect.Id, out _))
-        {
-            return null; // Eligible
-        }
-
-        if (!_wantedSuspectPresenceLedger.TryGetState(suspect.Id, out var presenceState))
-        {
-            return "Has known warrant but no tracked presence state.";
-        }
-
-        if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
-        {
-            return $"Has known warrant but presence state is {presenceState} (must be AvailableInTown or GoneToGround).";
-        }
-
-        return null; // Eligible
+        return null;
     }
 
     private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)

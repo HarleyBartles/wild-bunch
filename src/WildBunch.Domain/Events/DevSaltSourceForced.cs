@@ -1,4 +1,4 @@
-using WildBunch.Domain.Travel;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Domain.Events;
 

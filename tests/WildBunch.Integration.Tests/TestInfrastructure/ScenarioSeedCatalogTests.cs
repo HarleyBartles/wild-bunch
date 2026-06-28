@@ -1,3 +1,4 @@
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.GameContent.NewGame;
 using Xunit.Sdk;

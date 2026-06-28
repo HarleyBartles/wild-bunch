@@ -17,6 +17,12 @@ public sealed record SaloonPersonOfInterestSpotted : IDomainEvent
     public string? Descriptor { get; init; }
     public SaloonPersonOfInterestKind? PersonOfInterestKind { get; init; }
     /// <summary>
+    /// The citizen role key (e.g. "butcher"), null for suspect/repeat POIs.
+    /// Carries only the role key — the display name is resolved via CitizenCast.GetRoleByKey
+    /// at reveal time. Not shown in player-facing DTOs during lookaround (concealment).
+    /// </summary>
+    public string? CitizenRole { get; init; }
+    /// <summary>
     /// Whether to append a case-update log entry. The repeat path and suspect path
     /// log a message; the citizen path does not (preserving existing behavior).
     /// This does NOT advance the clock — clock advance comes from EnterActionContext.

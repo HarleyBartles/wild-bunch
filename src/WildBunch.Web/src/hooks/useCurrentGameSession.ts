@@ -81,6 +81,15 @@ export function useCurrentGameSession() {
     retry: false,
   });
 
+  // Load wanted posters from session state once they're known.
+  // The readWantedPosters API call adds them to KnownWarrants and the journal,
+  // but we should use the session DTO to avoid requiring a separate API call
+  // every time we want to declare an identity.
+  useEffect(() => {
+    const posters = sessionQuery.data?.wantedPosters;
+    setWantedPosters(posters ?? []);
+  }, [sessionQuery.data?.wantedPosters]);
+
   const actionsQuery = useQuery({
     queryKey: ["actions", gameId],
     queryFn: () => getAvailableActions(gameId as string),

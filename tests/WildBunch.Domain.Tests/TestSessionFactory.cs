@@ -419,6 +419,8 @@ public static class TestSessionFactory
             Wallet.Starting(25m), inventory: inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
         return session;

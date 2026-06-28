@@ -21,6 +21,8 @@ public sealed class ConfrontSaloonWantedSuspectHandlerTests
         var session = CreateSession();
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
         session.LookAroundSaloon();
         repository.Seed(session);
         var handler = new ConfrontSaloonWantedSuspectHandler(repository, repository);

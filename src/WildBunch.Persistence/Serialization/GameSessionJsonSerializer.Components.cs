@@ -4,7 +4,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
-using WildBunch.Domain.Travel;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
@@ -401,13 +401,13 @@ public sealed partial class GameSessionJsonSerializer
             => new(snapshot.Name, snapshot.Kind);
     }
 
-    private sealed record SuspectIdentityFactSnapshot(string Description)
+    private sealed record SuspectIdentityFactSnapshot(string Description, bool IsPrimary)
     {
         public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
-            => new(fact.Description);
+            => new(fact.Description, fact.IsPrimary);
 
         public static SuspectIdentityFact ToDomain(SuspectIdentityFactSnapshot snapshot)
-            => new(snapshot.Description);
+            => new(snapshot.Description, snapshot.IsPrimary);
     }
 
     private sealed record SuspectTraitsSnapshot(
@@ -715,7 +715,8 @@ public sealed partial class GameSessionJsonSerializer
         int WantedPostersLastCheckedVisitNumber,
         string? ActiveSaloonPersonOfInterestId,
         string? ActiveSaloonPersonOfInterestDescriptor,
-        SaloonPersonOfInterestKind? ActiveSaloonPersonOfInterestKind)
+        SaloonPersonOfInterestKind? ActiveSaloonPersonOfInterestKind,
+        string? ActiveSaloonCitizenRole)
     {
         public static TownVisitTownStateSnapshot FromDomain(TownVisitTownState townState)
             => new(
@@ -728,7 +729,8 @@ public sealed partial class GameSessionJsonSerializer
                 townState.WantedPostersLastCheckedVisitNumber,
                 townState.ActiveSaloonPersonOfInterestId?.Value,
                 townState.ActiveSaloonPersonOfInterestDescriptor,
-                townState.ActiveSaloonPersonOfInterestKind);
+                townState.ActiveSaloonPersonOfInterestKind,
+                townState.ActiveSaloonCitizenRole);
 
         public TownVisitTownState ToDomain()
             => new(
@@ -738,7 +740,8 @@ public sealed partial class GameSessionJsonSerializer
                 wantedPostersSpent: WantedPostersLastCheckedVisitNumber == VisitNumber,
                 activeSaloonPersonOfInterestId: ActiveSaloonPersonOfInterestId is null ? null : new SuspectId(ActiveSaloonPersonOfInterestId),
                 activeSaloonPersonOfInterestDescriptor: ActiveSaloonPersonOfInterestDescriptor,
-                activeSaloonPersonOfInterestKind: ActiveSaloonPersonOfInterestKind);
+                activeSaloonPersonOfInterestKind: ActiveSaloonPersonOfInterestKind,
+                activeSaloonCitizenRole: ActiveSaloonCitizenRole);
     }
 
     private sealed record TownSourceVisitStateSnapshot(

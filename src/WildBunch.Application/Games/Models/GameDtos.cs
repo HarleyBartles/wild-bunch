@@ -23,6 +23,7 @@ public sealed record GameSessionDto(
     TravelDiaryDto? TravelDiary,
     IReadOnlyList<GameLogEntryDto> LogEntries,
     ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest,
+    IReadOnlyList<WantedPosterDto> WantedPosters,
     HudProjection? HudProjection = null,
     DiaryProjection? DiaryProjection = null)
 {

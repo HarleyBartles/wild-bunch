@@ -112,7 +112,7 @@ public sealed class GameSetupPackageBuilderTests
         Assert.Equal(7, package.CaseFile.Suspects.Count);
         Assert.Single(package.CaseFile.Suspects, suspect => suspect.Id.Equals(package.CaseFile.TrueCulpritId));
         Assert.Equal(5, package.CaseFile.KillerReleaseThreshold);
-        Assert.Equal("The culprit has a scar on his left cheek.", package.CaseFile.OpeningLead.Description);
+        Assert.Equal("The culprit has a scar on the left cheek.", package.CaseFile.OpeningLead.Description);
         Assert.Equal("Butch Cassidy", package.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(InvestigationTargetKind.GangMember, package.CaseFile.PublicWarrants[0].Terms.TargetKind);
         Assert.DoesNotContain(package.CaseFile.PublicWarrants, warrant => warrant.TargetName == package.CaseFile.Suspects[3].Name);

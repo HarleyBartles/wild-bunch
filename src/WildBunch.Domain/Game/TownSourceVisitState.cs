@@ -77,13 +77,15 @@ public sealed class TownVisitTownState
         bool wantedPostersSpent = false,
         SuspectId? activeSaloonPersonOfInterestId = null,
         string? activeSaloonPersonOfInterestDescriptor = null,
-        SaloonPersonOfInterestKind? activeSaloonPersonOfInterestKind = null)
+        SaloonPersonOfInterestKind? activeSaloonPersonOfInterestKind = null,
+        string? activeSaloonCitizenRole = null)
     {
         TownId = townId;
         VisitNumber = visitNumber < 1 ? 1 : visitNumber;
         ActiveSaloonPersonOfInterestId = activeSaloonPersonOfInterestId;
         ActiveSaloonPersonOfInterestDescriptor = activeSaloonPersonOfInterestDescriptor;
         ActiveSaloonPersonOfInterestKind = activeSaloonPersonOfInterestKind;
+        ActiveSaloonCitizenRole = activeSaloonCitizenRole;
 
         if (sourceStates is not null)
         {
@@ -119,6 +121,8 @@ public sealed class TownVisitTownState
     public string? ActiveSaloonPersonOfInterestDescriptor { get; private set; }
 
     public SaloonPersonOfInterestKind? ActiveSaloonPersonOfInterestKind { get; private set; }
+
+    public string? ActiveSaloonCitizenRole { get; private set; }
 
     public SuspectId? ActiveSaloonWantedSuspectId => ActiveSaloonPersonOfInterestId;
 
@@ -156,11 +160,12 @@ public sealed class TownVisitTownState
             : SaloonPersonOfInterestKind.WantedSuspect;
     }
 
-    public void SetActiveSaloonCitizenPersonOfInterest(string descriptor)
+    public void SetActiveSaloonCitizenPersonOfInterest(string descriptor, string? citizenRole)
     {
         ActiveSaloonPersonOfInterestId = null;
         ActiveSaloonPersonOfInterestDescriptor = descriptor;
         ActiveSaloonPersonOfInterestKind = SaloonPersonOfInterestKind.Citizen;
+        ActiveSaloonCitizenRole = citizenRole;
     }
 
     public void ClearActiveSaloonPersonOfInterest()
@@ -168,6 +173,7 @@ public sealed class TownVisitTownState
         ActiveSaloonPersonOfInterestId = null;
         ActiveSaloonPersonOfInterestDescriptor = null;
         ActiveSaloonPersonOfInterestKind = null;
+        ActiveSaloonCitizenRole = null;
     }
 
     public void SetActiveSaloonWantedSuspect(SuspectId? suspectId)

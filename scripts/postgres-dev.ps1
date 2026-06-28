@@ -212,7 +212,23 @@ function Start-Cluster {
     }
 
     Ensure-Directory $LogDir
-    Invoke-PostgresBinary 'pg_ctl.exe' @('-D', $DataDir, '-l', $LogFile, '-w', '-o', "-p $Port -h $HostName", 'start')
+    # Redirect pg_ctl stdout/stderr to the log file (not the parent pipe).
+    # Without this, the postgres daemon inherits the calling shell's stdout/stderr
+    # pipe handles and holds them open indefinitely — the script finishes but the
+    # pipe never reaches EOF, so any background shell waiting on the pipe hangs
+    # forever. Routing through Start-Process with fresh handles breaks the chain.
+    # The -o argument value contains spaces, so it must be quoted as a single
+    # token in the argument string passed to Start-Process.
+    $argString = "-D `"$DataDir`" -l `"$LogFile`" -w -o `"-p $Port -h $HostName`" start"
+    $proc = Start-Process -FilePath (Get-BinaryPath 'pg_ctl.exe') -ArgumentList $argString -NoNewWindow -PassThru -RedirectStandardError (Join-Path $LogDir 'pg_ctl-start.err') -RedirectStandardOutput (Join-Path $LogDir 'pg_ctl-start.out')
+    $proc.WaitForExit()
+    # Refresh the process handle — Start-Process -PassThru does not always
+    # populate ExitCode immediately after WaitForExit() returns on Windows.
+    $proc.Refresh()
+    $exitCode = $proc.ExitCode
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+        throw "pg_ctl.exe failed with exit code $exitCode"
+    }
 }
 
 function Stop-Cluster {

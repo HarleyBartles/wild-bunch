@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Application.Abstractions;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
@@ -22,6 +23,12 @@ public sealed class SaloonConfrontationAcceptanceTests
         using var client = factory.CreateAuthenticatedClient();
 
         var createdSession = await SeedSessionWithAvailableSaloonSuspectAsync(factory);
+
+        // Force the suspect POI via the dev override so the probabilistic saloon
+        // roll deterministically surfaces suspect-1.
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/saloon/force-override",
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Suspect", ForcedSuspectId: "suspect-1", ForcedCitizenRoleKey: null));
 
         var lookAroundResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/look-around", content: null);
 
@@ -64,6 +71,12 @@ public sealed class SaloonConfrontationAcceptanceTests
 
         var createdSession = await SeedSessionWithAvailableSaloonSuspectAsync(factory);
 
+        // Force the suspect POI via the dev override so the probabilistic saloon
+        // roll deterministically surfaces suspect-1.
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/saloon/force-override",
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Suspect", ForcedSuspectId: "suspect-1", ForcedCitizenRoleKey: null));
+
         await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/look-around", content: null);
 
         var confrontationResponse = await client.PostAsJsonAsync(
@@ -88,12 +101,21 @@ public sealed class SaloonConfrontationAcceptanceTests
 
         var createdSession = await SeedSessionWithCitizenSaloonPersonOfInterestAsync(factory);
 
+        // Force a citizen POI via the dev override so the probabilistic saloon
+        // roll deterministically surfaces a citizen instead of nobody. Force the
+        // "town-clerk" role for a deterministic encounter.
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/saloon/force-override",
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Citizen", ForcedSuspectId: null, ForcedCitizenRoleKey: "town-clerk"));
+
         var lookAroundResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/look-around", content: null);
 
         Assert.Equal(HttpStatusCode.OK, lookAroundResponse.StatusCode);
 
         var surfacedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
-        Assert.Equal("a town clerk from Current Town", surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        // No suspects in the session, so no shared feature vocabulary — the
+        // concealment descriptor is the fallback "an unfamiliar face".
+        Assert.Equal("an unfamiliar face", surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
         Assert.Null(surfacedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         var confrontationResponse = await client.PostAsJsonAsync(
@@ -113,7 +135,7 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.Equal(4m, result.FineAmount);
         Assert.Equal(4m, result.WalletBefore);
         Assert.Equal(0m, result.WalletAfter);
-        Assert.Equal("a town clerk from Current Town", result.TargetName);
+        Assert.Equal("an unfamiliar face", result.TargetName);
         Assert.Null(result.CurrentSession.ActiveSaloonPersonOfInterest);
         Assert.Equal(0m, result.CurrentSession.Inventory.Wallet.Cash);
 

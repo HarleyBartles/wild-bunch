@@ -120,7 +120,7 @@ internal static class SeedCaseBuilder
         => new(
             id,
             profile.DisplayName,
-            new SuspectProfile(profile.GameAliases, feature.AllFeatures.Select(fact => new SuspectIdentityFact(fact.Description))),
+            new SuspectProfile(profile.GameAliases, feature.AllFeatures.Select(fact => new SuspectIdentityFact(fact.Description, fact.Kind == CaseFeatureKind.PrimaryMarker))),
             profile.Traits,
             SuspectStatus.AtLarge);
 

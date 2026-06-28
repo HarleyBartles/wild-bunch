@@ -57,6 +57,7 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
     logEntries: [],
     activeSaloonPersonOfInterest: null,
     ...overrides,
+    wantedPosters: overrides.wantedPosters ?? [],
   };
 }
 

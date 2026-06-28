@@ -64,6 +64,8 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
     public void SaloonPersonOfInterestPathsExposeAnExplicitKindSeam()
     {
         var citizenSession = CreateCitizenSession();
+        citizenSession.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
+        citizenSession.MarkEventsCommitted();
         citizenSession.LookAroundSaloon();
 
         var citizenMappedSession = GameSessionMapper.ToDto(citizenSession);
@@ -92,6 +94,8 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
                     "Wanted for a stage robbery.")
             });
         wantedSession.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        wantedSession.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        wantedSession.MarkEventsCommitted();
         wantedSession.LookAroundSaloon();
 
         var wantedMappedSession = GameSessionMapper.ToDto(wantedSession);
@@ -104,6 +108,8 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
     private static void AssertDescriptorParity(GameSession session, string expectedDescriptor)
     {
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
         var lookAround = session.LookAroundSaloon();
         var mappedSession = GameSessionMapper.ToDto(session);
 

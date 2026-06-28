@@ -483,6 +483,7 @@ export interface GameSessionDto {
   travelDiary: TravelDiaryDto | null;
   logEntries: GameLogEntryDto[];
   activeSaloonPersonOfInterest: ActiveSaloonPersonOfInterestDto | null;
+  wantedPosters: WantedPosterDto[];
   activeSaloonWantedSuspect?: ActiveSaloonWantedSuspectDto | null;
   hudProjection?: HudProjection | null;
   diaryProjection?: DiaryProjection | null;

@@ -23,7 +23,8 @@ public sealed record ActiveSaloonPoiDto(
     string? SuspectId,
     string? SuspectName,
     string? Descriptor,
-    string? PersonOfInterestKind);
+    string? PersonOfInterestKind,
+    string? CitizenRole);
 
 /// <summary>
 /// Dev-only DTO exposing hidden case truth and saloon loop explanation.
@@ -39,13 +40,25 @@ public sealed record HiddenTruthDevDto(
 
 /// <summary>
 /// Dev-only DTO describing the citizen POI shape the backend supports.
-/// Citizens are currently generic ("a town clerk from {town}") with no named
-/// archetypes. This DTO says that honestly rather than pretending named citizens exist.
+/// Citizens are drawn from a source-backed cast of named town roles. Citizen
+/// distinguishing features come from the same shared vocabulary as suspects —
+/// the role selector chooses the citizen role, not a separate citizen-only
+/// visual feature taxonomy.
 /// </summary>
 public sealed record CitizenInfoDto(
     string Descriptor,
     bool HasNamedArchetypes,
-    IReadOnlyList<string> AvailableArchetypes);
+    IReadOnlyList<CitizenArchetypeDto> AvailableArchetypes);
+
+/// <summary>
+/// A single citizen role in the source-backed cast, exposed for the dev overlay
+/// role selector. Carries only the role key and display name — no feature
+/// description, since the feature is chosen at lookaround time from the shared
+/// suspect vocabulary.
+/// </summary>
+public sealed record CitizenArchetypeDto(
+    string RoleKey,
+    string DisplayName);
 
 public sealed record SaloonSuspectDevDto(
     string SuspectId,
@@ -66,4 +79,5 @@ public sealed record SaloonSuspectDevDto(
 public sealed record DevSaloonOverrideDto(
     string ForcedKind,
     string? ForcedSuspectId,
-    string? ForcedSuspectName);
+    string? ForcedSuspectName,
+    string? ForcedCitizenRoleKey);

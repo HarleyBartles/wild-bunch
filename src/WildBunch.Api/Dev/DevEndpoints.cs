@@ -217,7 +217,7 @@ public static class DevEndpoints
                 return Results.BadRequest("ForcedKind is required.");
             }
             await handler.HandleAsync(new ForceSaloonOverrideCommand(
-                id, request.ForcedKind, request.ForcedSuspectId),
+                id, request.ForcedKind, request.ForcedSuspectId, request.ForcedCitizenRoleKey),
                 cancellationToken);
             return Results.NoContent();
         }

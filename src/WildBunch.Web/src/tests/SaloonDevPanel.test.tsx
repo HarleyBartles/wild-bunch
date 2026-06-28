@@ -102,9 +102,13 @@ function makeContext(overrides: Partial<SaloonDevContextDto> = {}): SaloonDevCon
       saloonLoopExplanation: "Saloon look-around source is available. The killer trail is locked.",
     },
     citizenInfo: {
-      descriptor: "a town clerk from Pinecross",
-      hasNamedArchetypes: false,
-      availableArchetypes: [],
+      descriptor: "a stranger with a distinguishing feature from the shared suspect vocabulary",
+      hasNamedArchetypes: true,
+      availableArchetypes: [
+        { roleKey: "butcher", displayName: "the town butcher" },
+        { roleKey: "mortician", displayName: "the town mortician" },
+        { roleKey: "doctor", displayName: "the town doctor" },
+      ],
     },
     suspects: [],
     ...overrides,
@@ -165,6 +169,7 @@ describe("SaloonDevPanel", () => {
           suspectName: "Mira Cline",
           descriptor: "a scar-faced drifter with a raven-feather pin",
           personOfInterestKind: "WantedSuspect",
+          citizenRole: null,
         },
         suspects: [makeSuspect()],
       }),
@@ -180,7 +185,7 @@ describe("SaloonDevPanel", () => {
     expect(screen.getByText(/scar-faced drifter/)).toBeInTheDocument();
   });
 
-  it("renders active citizen POI with honest generic descriptor", async () => {
+  it("renders active citizen POI with concealment descriptor and role", async () => {
     seedGameId("test-game-poi-citizen");
     mockedGetContext.mockResolvedValue(
       makeContext({
@@ -191,6 +196,7 @@ describe("SaloonDevPanel", () => {
           suspectName: null,
           descriptor: "a dusty rancher nursing a sarsaparilla",
           personOfInterestKind: "Citizen",
+          citizenRole: "butcher",
         },
       }),
     );
@@ -201,8 +207,9 @@ describe("SaloonDevPanel", () => {
       const poiSection = screen.getByText("Active saloon POI").closest("section");
       expect(poiSection?.textContent).toMatch(/Citizen/);
     });
-    expect(screen.getByText(/dusty rancher/)).toBeInTheDocument();
-    expect(screen.getByText(/Generic citizen POI/)).toBeInTheDocument();
+    expect(screen.getAllByText(/dusty rancher/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Citizen POI/)).toBeInTheDocument();
+    expect(screen.getByText(/role: butcher/)).toBeInTheDocument();
   });
 
   it("shows no-active-POI message when source not spent", async () => {
@@ -252,6 +259,7 @@ describe("SaloonDevPanel", () => {
           forcedKind: "Suspect",
           forcedSuspectId: "suspect-1",
           forcedSuspectName: "Mira Cline",
+          forcedCitizenRoleKey: null,
         },
         suspects: [makeSuspect()],
       }),
@@ -358,7 +366,7 @@ describe("SaloonDevPanel", () => {
     });
   });
 
-  it("shows honest citizen note when Citizen is selected", async () => {
+  it("shows citizen role selector when Citizen is selected and hasNamedArchetypes is true", async () => {
     seedGameId("test-game-citizen-force");
     mockedGetContext.mockResolvedValue(
       makeContext({
@@ -376,8 +384,36 @@ describe("SaloonDevPanel", () => {
     const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
     await user.selectOptions(kindSelect, "Citizen");
 
+    expect(screen.getByTestId("force-citizen-role-select")).toBeInTheDocument();
+    expect(screen.getByText(/Source-backed cast/)).toBeInTheDocument();
+    expect(screen.getByText(/shared suspect vocabulary/)).toBeInTheDocument();
+  });
+
+  it("shows generic citizen note when hasNamedArchetypes is false", async () => {
+    seedGameId("test-game-citizen-generic");
+    mockedGetContext.mockResolvedValue(
+      makeContext({
+        sessionId: "test-game-citizen-generic",
+        citizenInfo: {
+          descriptor: "a town clerk from Pinecross",
+          hasNamedArchetypes: false,
+          availableArchetypes: [],
+        },
+      }),
+    );
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Force next saloon look-around POI")).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    await user.selectOptions(kindSelect, "Citizen");
+
     expect(screen.getByText(/Generic citizen POI/)).toBeInTheDocument();
-    expect(screen.getByText(/no named archetypes/i)).toBeInTheDocument();
+    expect(screen.getByText(/a town clerk from Pinecross/)).toBeInTheDocument();
   });
 
   it("calls forceSaloonOverride when Force next POI button is clicked", async () => {
@@ -402,6 +438,66 @@ describe("SaloonDevPanel", () => {
     });
   });
 
+  it("sends forcedCitizenRoleKey when a citizen role is selected and Force is clicked", async () => {
+    seedGameId("test-game-citizen-role-force");
+    mockedGetContext.mockResolvedValue(makeContext({ sessionId: "test-game-citizen-role-force", hiddenTruth: null }));
+    mockedForce.mockResolvedValue(undefined);
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /force next poi/i })).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    await user.selectOptions(kindSelect, "Citizen");
+
+    const roleSelect = screen.getByTestId("force-citizen-role-select") as HTMLSelectElement;
+    await user.selectOptions(roleSelect, "butcher");
+
+    await user.click(screen.getByRole("button", { name: /force next poi/i }));
+
+    await waitFor(() => {
+      expect(mockedForce).toHaveBeenCalledWith(
+        "test-game-citizen-role-force",
+        expect.objectContaining({
+          forcedKind: "Citizen",
+          forcedCitizenRoleKey: "butcher",
+        }),
+      );
+    });
+  });
+
+  it("sends forcedKind None with no suspect or citizen role when None is selected and Force is clicked", async () => {
+    seedGameId("test-game-none-force");
+    mockedGetContext.mockResolvedValue(makeContext({ sessionId: "test-game-none-force", hiddenTruth: null }));
+    mockedForce.mockResolvedValue(undefined);
+
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /force next poi/i })).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    await user.selectOptions(kindSelect, "None");
+
+    await user.click(screen.getByRole("button", { name: /force next poi/i }));
+
+    await waitFor(() => {
+      expect(mockedForce).toHaveBeenCalledWith(
+        "test-game-none-force",
+        expect.objectContaining({
+          forcedKind: "None",
+          forcedSuspectId: null,
+          forcedCitizenRoleKey: null,
+        }),
+      );
+    });
+  });
+
   it("calls clearSaloonOverride when Clear override button is clicked", async () => {
     seedGameId("test-game-4");
     mockedGetContext.mockResolvedValue(
@@ -413,6 +509,7 @@ describe("SaloonDevPanel", () => {
           forcedKind: "Suspect",
           forcedSuspectId: "suspect-1",
           forcedSuspectName: "Mira Cline",
+          forcedCitizenRoleKey: null,
         },
         suspects: [makeSuspect()],
       }),

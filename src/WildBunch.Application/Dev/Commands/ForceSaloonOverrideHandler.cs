@@ -35,8 +35,12 @@ public sealed class ForceSaloonOverrideHandler : GameSessionCommandHandler
                     => DevSaloonOverride.ForSuspect(forcedSuspectId.Value),
                 DevSaloonPoiKind.Suspect
                     => DevSaloonOverride.ForAnySuspect(),
+                DevSaloonPoiKind.Citizen when !string.IsNullOrWhiteSpace(command.ForcedCitizenRoleKey)
+                    => DevSaloonOverride.ForCitizen(command.ForcedCitizenRoleKey),
                 DevSaloonPoiKind.Citizen
                     => DevSaloonOverride.ForCitizen(),
+                DevSaloonPoiKind.None
+                    => DevSaloonOverride.ForNone(),
                 _ => throw new ArgumentOutOfRangeException(nameof(command.ForcedKind))
             };
 

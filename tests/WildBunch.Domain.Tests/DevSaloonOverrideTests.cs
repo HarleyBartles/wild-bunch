@@ -108,29 +108,27 @@ public sealed class DevSaloonOverrideTests
     }
 
     [Fact]
-    public void ForceDevSaloonOverride_RejectsIneligibleSuspect_WithWarrantAndBadPresence()
+    public void ForceDevSaloonOverride_AcceptsSuspect_WithWarrantAndBadPresence()
     {
-        // This test requires a session where a non-culprit suspect has a known
-        // warrant but their presence state is SecuredAlive (not AvailableInTown
-        // or GoneToGround). The existing CreateWithWarrantedSuspect() factory
-        // makes the warranted suspect the true culprit, so it cannot be used
-        // directly. We use CreateWithIneligibleWarrantedSuspect() instead.
-        //
-        // This test only cares about the wanted-suspect eligibility condition:
-        // known warrant plus presence state not AvailableInTown or GoneToGround.
-        // Saloon availability is not part of this test - every town has a saloon.
-
+        // BUNCH-106 realignment: any non-culprit suspect can appear in any saloon.
+        // A suspect with a known warrant and SecuredAlive presence state is still
+        // eligible — no town presence, warrant, or poster state gates.
         var session = TestSessionFactory.CreateWithIneligibleWarrantedSuspect();
-        var ineligibleSuspectId = new SuspectId("suspect-1");
+        var suspectId = new SuspectId("suspect-1");
 
-        // Verify the test setup is correct: suspect-1 is not the true culprit
-        Assert.NotEqual(session.CaseFile.TrueCulpritId, ineligibleSuspectId);
-        // Verify suspect-1 has a known warrant (eligibility check should reach the warrant branch)
-        Assert.True(session.TryGetWantedSuspectPresenceState(ineligibleSuspectId, out var presence));
+        // Verify the test setup: suspect-1 is not the true culprit
+        Assert.NotEqual(session.CaseFile.TrueCulpritId, suspectId);
+        // Verify suspect-1 has a known warrant with SecuredAlive presence
+        Assert.True(session.TryGetWantedSuspectPresenceState(suspectId, out var presence));
         Assert.Equal(WantedSuspectPresenceState.SecuredAlive, presence);
 
-        Assert.Throws<InvalidOperationException>(() =>
-            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(ineligibleSuspectId)));
+        // Force should succeed — warrant/presence state no longer gates saloon POI eligibility
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
+
+        Assert.NotNull(session.PendingDevSaloonOverride);
+        Assert.Equal(DevSaloonPoiKind.Suspect, session.PendingDevSaloonOverride!.ForcedKind);
+        Assert.Equal(suspectId, session.PendingDevSaloonOverride.ForcedSuspectId);
     }
 
     [Fact]
@@ -184,8 +182,31 @@ public sealed class DevSaloonOverrideTests
         // Active saloon POI state is set as a citizen (no suspect id, descriptor present)
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.NotNull(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.StartsWith("a stranger with", session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.NotNull(spottedEvent.CitizenRole);
+        Assert.NotNull(session.CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen,
             session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind());
+    }
+
+    [Fact]
+    public void LookAroundSaloon_WithCitizenRoleOverride_ConsumesOverrideAndSpotsForcedCitizen()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen("butcher"));
+        session.MarkEventsCommitted();
+
+        var result = session.LookAroundSaloon();
+
+        Assert.True(result.Success);
+        var eventList = session.UncommittedEvents.ToList();
+        var spottedEvent = eventList.OfType<SaloonPersonOfInterestSpotted>().Single();
+        Assert.Null(spottedEvent.SuspectId);
+        Assert.Equal(SaloonPersonOfInterestKind.Citizen, spottedEvent.PersonOfInterestKind);
+        Assert.Equal("butcher", spottedEvent.CitizenRole);
+        Assert.StartsWith("a stranger with", spottedEvent.Descriptor);
+        Assert.Null(session.PendingDevSaloonOverride);
+        Assert.Equal("butcher", session.CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole);
     }
 
     [Fact]
@@ -202,6 +223,32 @@ public sealed class DevSaloonOverrideTests
         Assert.NotNull(spottedEvent.SuspectId);
         Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, spottedEvent.PersonOfInterestKind);
         Assert.Null(session.PendingDevSaloonOverride);
+    }
+
+    [Fact]
+    public void LookAroundSaloon_WithNoneOverride_ConsumesOverrideAndSpotsNobody()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForNone());
+        session.MarkEventsCommitted();
+
+        var result = session.LookAroundSaloon();
+
+        Assert.True(result.Success);
+        var eventList = session.UncommittedEvents.ToList();
+        var consumedIndex = eventList.FindIndex(e => e is DevSaloonOverrideConsumed);
+        var spottedIndex = eventList.FindIndex(e => e is SaloonPersonOfInterestSpotted);
+        Assert.True(consumedIndex >= 0 && spottedIndex >= 0);
+        Assert.True(consumedIndex < spottedIndex);
+        var spottedEvent = eventList.OfType<SaloonPersonOfInterestSpotted>().Single();
+        Assert.Null(spottedEvent.SuspectId);
+        Assert.Null(spottedEvent.Descriptor);
+        Assert.Null(spottedEvent.PersonOfInterestKind);
+        Assert.Null(spottedEvent.CitizenRole);
+        Assert.Null(session.PendingDevSaloonOverride);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
     }
 
     [Fact]

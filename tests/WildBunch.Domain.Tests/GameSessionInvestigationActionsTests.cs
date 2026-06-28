@@ -196,6 +196,8 @@ public sealed class GameSessionInvestigationActionsTests
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-2"), WantedSuspectPresenceState.SecuredAlive);
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-3"), WantedSuspectPresenceState.GoneToGround);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
 
         var first = session.LookAroundSaloon();
         var repeatSameVisit = session.LookAroundSaloon();
@@ -217,6 +219,8 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.False(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround));
 
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
         var afterReturn = session.LookAroundSaloon();
 
         Assert.True(afterReturn.Success);
@@ -231,6 +235,8 @@ public sealed class GameSessionInvestigationActionsTests
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.SecuredDead);
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-2"), WantedSuspectPresenceState.GoneToGround);
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-3"), WantedSuspectPresenceState.SecuredAlive);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-3")));
+        session.MarkEventsCommitted();
 
         var result = session.LookAroundSaloon();
 

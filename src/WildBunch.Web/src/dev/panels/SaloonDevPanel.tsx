@@ -5,7 +5,7 @@ import { useGameSession } from "../../state/useGameSession";
 import { clearSaloonOverride, forceSaloonOverride, getSaloonDevContext } from "../devApi";
 import type { SaloonSuspectDevDto } from "../types";
 
-const POI_KINDS = ["Suspect", "Citizen"] as const;
+const POI_KINDS = ["Suspect", "Citizen", "None"] as const;
 type PoiKind = (typeof POI_KINDS)[number];
 
 interface SaloonDevPanelProps {
@@ -18,6 +18,7 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
 
   const [forcedKind, setForcedKind] = useState<PoiKind>("Suspect");
   const [selectedSuspectId, setSelectedSuspectId] = useState<string>("");
+  const [selectedCitizenRoleKey, setSelectedCitizenRoleKey] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
@@ -51,6 +52,9 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
         forcedKind,
         forcedSuspectId: forcedKind === "Suspect" && selectedSuspectId !== ""
           ? selectedSuspectId
+          : null,
+        forcedCitizenRoleKey: forcedKind === "Citizen" && selectedCitizenRoleKey !== ""
+          ? selectedCitizenRoleKey
           : null,
       });
       refresh();
@@ -129,7 +133,8 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
               )}
               {!data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
                 <MutedText>
-                  Generic citizen POI — no named entity. {data.citizenInfo?.descriptor ?? ""}
+                  Citizen POI — {data.activeSaloonPoi.descriptor}
+                  {data.activeSaloonPoi.citizenRole && ` (role: ${data.activeSaloonPoi.citizenRole})`}
                 </MutedText>
               )}
             </PoiCard>
@@ -202,6 +207,7 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
               onChange={(e) => {
                 setForcedKind(e.target.value as PoiKind);
                 setSelectedSuspectId("");
+                setSelectedCitizenRoleKey("");
               }}
               data-testid="force-kind-select"
             >
@@ -230,13 +236,37 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
             </Field>
           )}
           {forcedKind === "Citizen" && (
-            <CitizenNote>
-              {data?.citizenInfo
-                ? data.citizenInfo.hasNamedArchetypes
-                  ? `Available archetypes: ${data.citizenInfo.availableArchetypes.join(", ")}`
-                  : `Generic citizen POI — ${data.citizenInfo.descriptor}. No named archetypes exist.`
-                : "Generic citizen POI — no named archetypes."}
-            </CitizenNote>
+            <CitizenSection>
+              {data?.citizenInfo?.hasNamedArchetypes ? (
+                <>
+                  <Field>
+                    <Label>Citizen role:</Label>
+                    <Select
+                      value={selectedCitizenRoleKey}
+                      onChange={(e) => setSelectedCitizenRoleKey(e.target.value)}
+                      data-testid="force-citizen-role-select"
+                    >
+                      <option value="">Any citizen (deterministic pick)</option>
+                      {data.citizenInfo.availableArchetypes.map((a) => (
+                        <option key={a.roleKey} value={a.roleKey}>
+                          {a.displayName}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <CitizenNote>
+                    Source-backed cast of {data.citizenInfo.availableArchetypes.length} citizen roles.
+                    Citizen features come from the shared suspect vocabulary — the role selector
+                    chooses the citizen role, not a separate visual feature. The feature is
+                    concealed during lookaround and revealed only after mistaken take-in.
+                  </CitizenNote>
+                </>
+              ) : (
+                <CitizenNote>
+                  Generic citizen POI — {data?.citizenInfo?.descriptor ?? "no named archetypes."}
+                </CitizenNote>
+              )}
+            </CitizenSection>
           )}
           <ButtonRow>
             <Button type="button" onClick={handleForce} disabled={actionPending}>
@@ -344,12 +374,16 @@ const LeftColumn = styled.div`
   display: grid;
   gap: 16px;
   grid-column: 1;
+  min-width: 0;
+  overflow: hidden;
 `;
 
 const RightColumn = styled.div`
   display: grid;
   gap: 16px;
   grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
 
   @media (max-width: 700px) {
     grid-column: 1;
@@ -393,6 +427,7 @@ const Field = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
+  min-width: 0;
 `;
 
 const Select = styled.select`
@@ -403,6 +438,9 @@ const Select = styled.select`
   background: var(--bg);
   color: var(--text);
   font-size: 0.82rem;
+  min-width: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const ButtonRow = styled.div`
@@ -453,6 +491,8 @@ const SuspectRow = styled.div`
   font-size: 0.82rem;
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const SuspectName = styled.span`
@@ -463,11 +503,15 @@ const SuspectName = styled.span`
 const SuspectDetail = styled.span`
   color: var(--muted);
   font-size: 0.78rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const SuspectFact = styled.span`
   color: var(--muted);
   font-size: 0.76rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const SuspectReason = styled.span`
@@ -542,6 +586,11 @@ const CitizenNote = styled.p`
   font-size: 0.78rem;
   margin: 0;
   padding: 4px 0;
+`;
+
+const CitizenSection = styled.div`
+  display: grid;
+  gap: 8px;
 `;
 
 const MismatchWarning = styled.div`
