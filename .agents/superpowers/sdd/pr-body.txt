@@ -1,0 +1,57 @@
+## Summary
+
+BUNCH-75: Phaser-backed world map POC for starting-town selection and trail awareness.
+
+- **Backend read model:** `SeedWorldMapLayout` adds deterministic town coordinates and trail edges next to the existing `SeedWorldCatalog`. `GetStartingTownMapHandler` returns all towns (no `candidateIds` filtering) — all listed towns are valid starting towns. Exposed via `GET /api/games/starting-town-map` (setup-scoped, no session required).
+- **Phaser host:** `PhaserMapHost.tsx` mounts a Phaser scene that renders towns and trail edges from backend-sourced map data, emits `townSelected` intent to React, and unmounts cleanly. Phaser has no API client, no fetch access, no mutation access. `selectedTownId` is `public readonly` on the scene.
+- **React-owned confirmation:** `StartingTownStep.tsx` wires the Phaser host but keeps selection state, detail panel, and confirm action in React. Game creation still flows through `POST /api/games` via React-owned confirmation — Phaser never calls it. Falsifiable tests prove this boundary.
+- **ADR-0035:** Records the durable React shell + Phaser playfield boundary (React owns truth/confirmation, Phaser renders and emits intent).
+- **UI realignments:** Fixed chrome/content overlap (removed explicit height calculation from AppShell), green map background with black trail lines, removed "Start in X" fallback buttons (map is now the sole selection UI).
+- **Dev-server automation:** `scripts/dev-servers.ps1` provides worktree-aware API + Vite dev server management (port allocation, health checks, process tracking, clean shutdown). Replaces the manual port-conflict workflow that blocked browser proofing.
+- **ADR freshness fixes:** Marked ADR-0011 `superseded by ADR-0027` (was stale). Added ADR freshness table to `docs/adr/INDEX.md` via `generate_index_mesh.py` extension. Added `.gitattributes` (eol=lf for INDEX.md + generator) to stop CRLF/LF churn on Windows.
+
+## Architecture guardrails
+
+- `GameSession` remains the live-play aggregate root — no gameplay truth moved to frontend.
+- Backend stays authoritative for town identity, route distance, and all towns are valid starting towns (no `selectable` property).
+- Phaser is renderer/input adapter only — 4 truth-boundary tests prove it has no API surface, doesn't call fetch, can't mutate `selectedTownId`.
+- No persistence changes (EF migrations list unchanged by this slice).
+- No UUID seed codec changes.
+
+## Test coverage (23 new falsifiable tests)
+
+- `GetStartingTownMapHandlerTests.cs` — 8 unit tests (towns, trails, coordinates, hidden-truth guardrail, all towns returned without `candidateIds` filtering)
+- `StartingTownMapEndpointTests.cs` — 5 integration tests (endpoint contract, deterministic data, hidden-truth fields not exposed, no `selectable` property in DTO)
+- `PhaserMapHost.test.tsx` — 11 tests (mount/unmount, selection intent, 4 truth-boundary tests, green background/black trails styling)
+- `StartFlow.test.tsx` — 3 new React-owned confirmation tests (game not created until confirmation, town selection flows through React, no fallback button list)
+
+## Validation
+
+- `dotnet build` — 0 warnings, 0 errors
+- `Application.Tests` — 170/170 passed
+- `Integration.Tests` (PostgreSQL lane) — 142/142 passed
+- EF migrations list — clean (no persistence changes)
+- Frontend `npm run typecheck` — clean
+- Frontend `npm test` — 173/173 passed
+- `python scripts/generate_index_mesh.py --check` — OK: 94 indexes current
+- Browser proof: Phaser canvas rendered with green background and black trail lines, all listed towns selectable via map selection (no fallback button list), React-owned confirmation → game created (screenshots in git-ignored `.agents/superpowers/output/screenshots/`)
+- Rebased onto `main` at `13e75b0` (BUNCH-104 merge) — one mechanical conflict in `generate_index_mesh.py` exclusion sets, resolved by union
+
+## Plan
+
+- Plan: `.agents/superpowers/plans/2026-06-27-bunch-75-phaser-backed-world-map-poc-for-starting-town-selection-and-trail-awareness.md`
+- All task checkboxes (Tasks 0-5) checked off.
+- SDD progress ledger, task briefs, and reports published under `.agents/superpowers/sdd/` (intentionally un-ignored for PR publication).
+
+#### Test plan
+
+- [ ] CI backend job passes (build + tests on Ubuntu)
+- [ ] CI frontend job passes (typecheck + tests + build)
+- [ ] CI index-mesh job passes (`generate_index_mesh.py --check`)
+- [ ] Reviewer confirms Phaser truth boundary (no API/fetch/mutation access in scene)
+- [ ] Reviewer confirms React-owned confirmation (game creation only via `POST /api/games` from React)
+- [ ] Reviewer confirms UI realignments: green map background, black trail lines, no fallback buttons, all towns selectable
+- [ ] Reviewer confirms ADR-0011 supersession is accurate
+- [ ] Reviewer confirms `.gitattributes` LF harmonisation is correct for CI + local Windows
+
+Generated with [Devin](https://devin.ai)

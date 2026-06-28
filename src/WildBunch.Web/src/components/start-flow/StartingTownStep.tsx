@@ -1,7 +1,8 @@
 import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../ui/sharedStyled";
-import { getStartingTowns } from "../../api/wildBunchApi";
+import { getStartingTownMap } from "../../api/wildBunchApi";
+import { PhaserMapHost } from "./PhaserMapHost";
 
 interface StartingTownStepProps {
   selectedTownId: string | null;
@@ -9,15 +10,15 @@ interface StartingTownStepProps {
 }
 
 export function StartingTownStep({ selectedTownId, onSelectTown }: StartingTownStepProps) {
-  const townsQuery = useQuery({
-    queryKey: ["starting-towns"],
-    queryFn: () => getStartingTowns(),
+  const mapQuery = useQuery({
+    queryKey: ["starting-town-map"],
+    queryFn: () => getStartingTownMap(),
     staleTime: Infinity,
     retry: false,
   });
 
-  const towns = townsQuery.data ?? [];
-  const isPending = townsQuery.isLoading || townsQuery.isError || towns.length === 0;
+  const mapData = mapQuery.data ?? null;
+  const isPending = mapQuery.isLoading || mapQuery.isError || !mapData || mapData.towns.length === 0;
 
   return (
     <StepCard>
@@ -35,20 +36,14 @@ export function StartingTownStep({ selectedTownId, onSelectTown }: StartingTownS
       {isPending ? (
         <TownLoading>Saddling up the map…</TownLoading>
       ) : (
-        <TownList>
-          {towns.map((town) => (
-            <TownCard key={town.id}>
-              <TownName>{town.name}</TownName>
-              <Button
-                type="button"
-                $variant={selectedTownId === town.id ? "primary" : "ghost"}
-                onClick={() => onSelectTown(town.id)}
-              >
-                Start in {town.name}
-              </Button>
-            </TownCard>
-          ))}
-        </TownList>
+        <>
+          <PhaserMapHost
+            mapData={mapData}
+            selectedTownId={selectedTownId}
+            onTownSelected={onSelectTown}
+          />
+          <MapLegend>Click a town on the map to ride out from there.</MapLegend>
+        </>
       )}
     </StepCard>
   );
@@ -90,25 +85,8 @@ const TownLoading = styled.p`
   font-size: 0.92rem;
 `;
 
-const TownList = styled.ul`
-  display: grid;
-  gap: 12px;
+const MapLegend = styled.p`
   margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-
-const TownCard = styled.li`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-`;
-
-const TownName = styled.span`
-  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.88rem;
 `;

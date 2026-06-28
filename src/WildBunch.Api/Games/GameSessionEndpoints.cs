@@ -22,6 +22,10 @@ public static class GameSessionEndpoints
             .WithName("GetStartingTowns")
             .Produces<IReadOnlyList<StartingTownDto>>(StatusCodes.Status200OK);
 
+        games.MapGet("starting-town-map", GetStartingTownMapAsync)
+            .WithName("GetStartingTownMap")
+            .Produces<StartingTownMapDto>(StatusCodes.Status200OK);
+
         games.MapGet("prologue", GetPrologueAsync)
             .WithName("GetPrologue")
             .Produces<PrologueDto>(StatusCodes.Status200OK);
@@ -62,6 +66,14 @@ public static class GameSessionEndpoints
     {
         var towns = await handler.HandleAsync(new GetStartingTownsQuery(), cancellationToken);
         return Results.Ok(towns);
+    }
+
+    private static async Task<IResult> GetStartingTownMapAsync(
+        GetStartingTownMapHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var map = await handler.HandleAsync(new GetStartingTownMapQuery(), cancellationToken);
+        return Results.Ok(map);
     }
 
     private static async Task<IResult> GetPrologueAsync(

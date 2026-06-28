@@ -7,10 +7,10 @@ import type { DevSurface } from "./DevSurfaceContext";
 interface DevOverlayProps {
   open: boolean;
   onClose: () => void;
-  top: number;
+  top?: number;
 }
 
-export function DevOverlay({ open, onClose, top }: DevOverlayProps) {
+export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
   const surface = useDevSurface();
   const availablePanels = useMemo(() => getAvailablePanels(surface), [surface]);
   const defaultPanelId = useMemo(() => getDefaultPanelId(surface), [surface]);
@@ -138,9 +138,9 @@ const slideDown = keyframes`
   }
 `;
 
-const ClickAway = styled.div<{ $top: number }>`
+const ClickAway = styled.div<{ $top?: number }>`
   position: fixed;
-  top: ${(props) => props.$top}px;
+  top: ${(props) => props.$top ?? 0}px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -148,13 +148,13 @@ const ClickAway = styled.div<{ $top: number }>`
   background: transparent;
 `;
 
-const Drawer = styled.div<{ $expanded: boolean; $top: number }>`
+const Drawer = styled.div<{ $expanded: boolean; $top?: number }>`
   position: fixed;
-  top: ${(props) => props.$top}px;
+  top: ${(props) => props.$top ?? 0}px;
   left: 0;
   right: 0;
-  height: ${(props) => (props.$expanded ? `calc(80dvh - ${props.$top}px)` : `calc(40dvh - ${props.$top}px)`)};
-  max-height: calc(100dvh - ${(props) => props.$top}px);
+  height: ${(props) => (props.$expanded ? `calc(80dvh - ${props.$top ?? 0}px)` : `calc(40dvh - ${props.$top ?? 0}px)`)};
+  max-height: calc(100dvh - ${(props) => props.$top ?? 0}px);
   z-index: 1000;
   display: flex;
   flex-direction: column;

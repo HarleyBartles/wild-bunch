@@ -1,6 +1,6 @@
 # BUNCH-75: Phaser-Backed World Map POC for Starting-Town Selection and Trail Awareness — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a minimal React-hosted Phaser map POC that enhances the BUNCH-102 starting-town step with spatial map selection, lets the player pick a starting town by clicking the map, and confirms that choice through the normal start flow without moving game truth into the frontend.
 
@@ -64,29 +64,29 @@ If execution proceeds after the BUNCH-102 gate opens, the intended touchpoints a
 - Inspect: `src/WildBunch.Web/src/shell/AppShell.tsx`
 - Inspect: `src/WildBunch.Web/src/api/types.ts`
 - Inspect: `src/WildBunch.Api/Games/GameSessionEndpoints.cs`
-- Inspect: `docs/superpowers/plans/2026-06-27-bunch-102-start-over-settings-and-prologue-start-loop.md`
+- Inspect: `.agents/superpowers/plans/2026-06-27-bunch-102-start-over-settings-and-prologue-start-loop.md`
 
 **Interfaces:**
 - Consumes: the checked-in BUNCH-102 plan, the expected upstream start-flow seams, and refreshed `main` at execution time.
 - Produces: a go/no-go decision for execution. If the BUNCH-102 implementation is still absent on refreshed `main`, stop AMBER and do not start the code slice.
 
-- [ ] **Step 1: Read the checked-in BUNCH-102 plan and identify the expected upstream seams.**
+- [x] **Step 1: Read the checked-in BUNCH-102 plan and identify the expected upstream seams.**
 
-Use: `docs/superpowers/plans/2026-06-27-bunch-102-start-over-settings-and-prologue-start-loop.md`
+Use: `.agents/superpowers/plans/2026-06-27-bunch-102-start-over-settings-and-prologue-start-loop.md`
 
 Expected: the plan establishes the upstream `StartingTownId` chain, `GET /api/games/starting-towns`, and the React start-flow step that BUNCH-75 must enhance.
 
-- [ ] **Step 2: On execution, revalidate refreshed `main` against the expected BUNCH-102 seams.**
+- [x] **Step 2: On execution, revalidate refreshed `main` against the expected BUNCH-102 seams.**
 
 Run: `rg -n "StartingTownId|starting-towns|StartingTownStep|StorySoFar|PhaserMapHost" src/WildBunch.Web src/WildBunch.Api src/WildBunch.Application`
 
 Expected: the upstream seam exists on source, or a landed variant can be reconciled before implementing BUNCH-75.
 
-- [ ] **Step 3: If BUNCH-102 has landed differently from the plan, reconcile against landed source before implementing.**
+- [x] **Step 3: If BUNCH-102 has landed differently from the plan, reconcile against landed source before implementing.**
 
 Do not duplicate start-request, start-command, or setup-endpoint work. Reuse the landed seam or adjust the plan against it before coding.
 
-- [ ] **Step 4: Stop if the BUNCH-102 implementation is still absent on refreshed `main`.**
+- [x] **Step 4: Stop if the BUNCH-102 implementation is still absent on refreshed `main`.**
 
 If the upstream implementation has not landed, return AMBER and do not continue into implementation tasks.
 
@@ -102,15 +102,15 @@ If the upstream implementation has not landed, return AMBER and do not continue 
 - Consumes: the BUNCH-102 setup-town candidate source and the seeded world/trail truth.
 - Produces: a deterministic map layout extension with town coordinates and route edges that reuses the same eligibility/candidate source as BUNCH-102.
 
-- [ ] **Step 1: Add a deterministic coordinate layout for the seeded towns.**
+- [x] **Step 1: Add a deterministic coordinate layout for the seeded towns.**
 
 The layout should stay static and modest. Use coordinates that make the trail graph readable; do not generate procedural map art.
 
-- [ ] **Step 2: Extend the setup-town read model or add a companion map projection, but keep the candidate source shared.**
+- [x] **Step 2: Extend the setup-town read model or add a companion map projection, but keep the candidate source shared.**
 
 The map view may add x/y coordinates and trail-edge labels, but the allowed-town list must come from the same eligibility logic BUNCH-102 already owns.
 
-- [ ] **Step 3: Keep the map source next to the existing seeded world catalog and setup read model.**
+- [x] **Step 3: Keep the map source next to the existing seeded world catalog and setup read model.**
 
 Do not move map truth into the web project. The frontend should consume read data only.
 
@@ -126,15 +126,15 @@ Do not move map truth into the web project. The frontend should consume read dat
 - Consumes: the BUNCH-102 setup-town candidate source and the map coordinate extension.
 - Produces: a setup-scoped read endpoint that returns the existing candidate towns plus optional map-ready coordinates and trail edges.
 
-- [ ] **Step 1: Verify and reuse the BUNCH-102 setup-town endpoint rather than creating a second eligibility algorithm.**
+- [x] **Step 1: Verify and reuse the BUNCH-102 setup-town endpoint rather than creating a second eligibility algorithm.**
 
 If the existing endpoint can carry coordinates and edges, extend it; otherwise add a clearly named companion map endpoint that still uses the same candidate source.
 
-- [ ] **Step 2: Add or extend the API route without duplicating eligibility.**
+- [x] **Step 2: Add or extend the API route without duplicating eligibility.**
 
 Use a setup-scoped map route rather than forcing the caller to create a session first.
 
-- [ ] **Step 3: Add tests that prove the map data is deterministic, backend-sourced, and shares the candidate list with BUNCH-102.**
+- [x] **Step 3: Add tests that prove the map data is deterministic, backend-sourced, and shares the candidate list with BUNCH-102.**
 
 The tests should assert town ids, coordinates, trail distances, and candidate eligibility without depending on frontend state.
 
@@ -152,19 +152,19 @@ The tests should assert town ids, coordinates, trail distances, and candidate el
 - Consumes: the BUNCH-102 setup-town candidate response and the current React-owned selected-town state.
 - Produces: a mounted Phaser scene that emits `townSelected` intent and unmounts cleanly on route change.
 
-- [ ] **Step 1: Add the Phaser host component with explicit mount/unmount cleanup.**
+- [x] **Step 1: Add the Phaser host component with explicit mount/unmount cleanup.**
 
 The host should create the Phaser game in `useEffect`, destroy it on cleanup, and respond to resize without taking over React state.
 
-- [ ] **Step 2: Wire the host into the BUNCH-102 starting-town step.**
+- [x] **Step 2: Wire the host into the BUNCH-102 starting-town step.**
 
 React owns the selected town, the detail panel, and the confirm action. Phaser only raises selection intent.
 
-- [ ] **Step 3: Keep explanatory copy and confirmation controls in DOM/React.**
+- [x] **Step 3: Keep explanatory copy and confirmation controls in DOM/React.**
 
 The Phaser canvas should not own buttons, validation, or final confirmation.
 
-- [ ] **Step 4: Add component tests for the adapter seam.**
+- [x] **Step 4: Add component tests for the adapter seam.**
 
 Tests should prove the host mounts and unmounts cleanly and that selection intent flows back into React state.
 
@@ -182,19 +182,19 @@ Tests should prove the host mounts and unmounts cleanly and that selection inten
 - Consumes: the React-selected starting town and the existing `startNewGame` mutation from BUNCH-102.
 - Produces: proof that the final `POST /api/games` call still comes from React-owned confirmation, not Phaser.
 
-- [ ] **Step 1: Verify the selected-town request and command seams already exist from BUNCH-102.**
+- [x] **Step 1: Verify the selected-town request and command seams already exist from BUNCH-102.**
 
 Do not re-add `StartingTownId` to the request chain; just confirm the upstream seam and reuse it.
 
-- [ ] **Step 2: Keep Phaser out of the game-creation path.**
+- [x] **Step 2: Keep Phaser out of the game-creation path.**
 
 React owns the selection state and the confirm action. Phaser must not call `POST /api/games`.
 
-- [ ] **Step 3: Add tests proving the final confirmation still happens through the normal start flow.**
+- [x] **Step 3: Add tests proving the final confirmation still happens through the normal start flow.**
 
 The map can select a town, but the game should only start after React-owned confirmation.
 
-- [ ] **Step 4: Add falsifiable proof that Phaser does not own game truth.**
+- [x] **Step 4: Add falsifiable proof that Phaser does not own game truth.**
 
 Tests should prove Phaser does not call `POST /api/games`, does not decide eligibility, does not store selected-town truth, and does not bypass the React-owned final confirmation.
 
@@ -208,23 +208,23 @@ Tests should prove Phaser does not call `POST /api/games`, does not decide eligi
 - Consumes: the completed backend read model, Phaser host, and start-flow integration.
 - Produces: build/test output, browser screenshots, and any required ADR/doc update.
 
-- [ ] **Step 1: Run backend validation.**
+- [x] **Step 1: Run backend validation.**
 
 Run: `dotnet build WildBunch.sln`
 
 Run: `dotnet test WildBunch.sln`
 
-- [ ] **Step 2: Run frontend validation.**
+- [x] **Step 2: Run frontend validation.**
 
 Run: `cd src/WildBunch.Web; npm run build`
 
 Run: `cd src/WildBunch.Web; npm test`
 
-- [ ] **Step 3: Perform a browser smoke test.**
+- [x] **Step 3: Perform a browser smoke test.**
 
 Prove the map mounts, towns are clickable, the selected town is reflected in React, and the confirm action completes the normal start flow.
 
-- [ ] **Step 4: Update durable docs if the Phaser seam is now a lasting frontend boundary.**
+- [x] **Step 4: Update durable docs if the Phaser seam is now a lasting frontend boundary.**
 
 If the Phaser host becomes a standing architecture decision, update the relevant ADR or frontend docs in the same PR.
 

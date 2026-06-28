@@ -2,12 +2,20 @@
 
 ## Status
 
-planned
+superseded by ADR-0027
 
 ## Dated Status History
 
 - 2026-06-01 - planned: future major play surfaces should open as cockpit-hosted
   modals before they become permanent routes.
+- 2026-06-28 - superseded by ADR-0027: the v0.1 SPA shell (ADR-0027) landed
+  TanStack Router with dedicated player routes and a separated `/debug` Dev tools
+  route. The case file was promoted from a cockpit-hosted modal to a canonical
+  `/case` route, triggering ADR-0011's own review condition ("when route
+  promotion becomes the clearer default"). The cockpit is no longer a
+  pre-route staging area; it is a temporary dev surface behind a dedicated
+  route. ADR-0011's "no cockpit route exists in the current source" claim is
+  no longer accurate.
 
 ## Decision Type
 
@@ -16,6 +24,7 @@ ui, architecture
 ## Related ADRs
 
 - `depends on`: ADR-0002, ADR-0007
+- `superseded by`: ADR-0027
 
 ## Context
 
@@ -81,8 +90,10 @@ modal and cockpit-hosted unless a later ADR says otherwise.
 
 ## Implementation Status or Plan
 
-Planned only. There is no dedicated cockpit route in the current source
-surfaces.
+Superseded. ADR-0027 landed the v0.1 SPA shell with TanStack Router, player
+routes, and a separated `/debug` Dev tools route. The case file was promoted
+from cockpit modal to `/case` route. The cockpit-hosted modal staging pattern
+described here is no longer the active direction.
 
 ## Related Stable Source Surfaces
 
@@ -92,8 +103,10 @@ surfaces.
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-There is no current cockpit route or modal play shell in the source tree. This
-ADR records the intended future direction only.
+Superseded by ADR-0027. The cockpit route (`/debug`) and player routes
+(`/case`, `/hunt`, `/trail`, etc.) now exist in `src/WildBunch.Web/src/shell/`.
+The modal-staging pattern this ADR described was overtaken by the routed
+shell approach in ADR-0027.
 
 ## Review Triggers
 

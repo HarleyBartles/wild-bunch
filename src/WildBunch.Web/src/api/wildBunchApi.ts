@@ -10,6 +10,7 @@ import type {
   ResolveJourneyEncounterRequest,
   StartGameRequest,
   StartingTownDto,
+  StartingTownMapDto,
   TownStoreOffersDto,
   GameDifficulty,
   TravelRequest,
@@ -165,4 +166,8 @@ export function getPrologue(
 
 export function getStartingTowns() {
   return requestJson<StartingTownDto[]>("/api/games/starting-towns");
+}
+
+export function getStartingTownMap() {
+  return requestJson<StartingTownMapDto>("/api/games/starting-town-map");
 }
