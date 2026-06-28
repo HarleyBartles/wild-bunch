@@ -40,8 +40,9 @@ The `CitizenCast` catalog defines:
 - **CitizenEncounter**: A record carrying `CitizenRole Role` + `string FeatureDescription` (a feature description string from the shared suspect vocabulary, not a separate citizen feature type).
 - **Select(townId, day, turn, visitNumber, IReadOnlyList<string> featureDescriptions)**: Deterministic pick of a `CitizenEncounter` (role + feature) based on a stable manual hash of `townId + day + turn + visitNumber`. The role is picked from `Roles` and the feature is picked from the provided `featureDescriptions` (the suspect feature vocabulary from the `CaseFile`). Using all four inputs provides substantially more variety than `townId + turn` alone. Still avoids `string.GetHashCode()` (not stable across process restarts); use a manual stable hash (e.g. sum of char codes with a prime multiplier). If `featureDescriptions` is empty, fall back to a neutral descriptor like "an unfamiliar face" (edge case — should not occur in normal play since the case always has suspects with features).
 - **SelectByRoleKey(roleKey, IReadOnlyList<string> featureDescriptions)**: Look up a specific citizen by role key and pick a feature from the provided descriptions (for dev overlay forcing). The feature pick is deterministic based on the role key + feature descriptions.
+- **GetRoleByKey(roleKey)**: Look up a `CitizenRole` by key only — no feature, no `featureDescriptions` parameter. Used by the confrontation reveal path, which only needs the role display name and already has the concealment descriptor from active state. Throw `ArgumentException` if the role key is not found.
 - **ResolveDescriptor(encounter)**: Returns `"a stranger with {NormalizeFeatureDescriptor(encounter.FeatureDescription)}"` — the concealment descriptor shown during lookaround. Reuses the same normalization logic as `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (strip "has a"/"wears a" prefixes → "a"/"an"). Extract a shared helper or duplicate the small normalization.
-- **ResolveRevealName(encounter)**: Returns the role display name (e.g. "the town butcher") — used in the sheriff reveal narration.
+- **ResolveRevealName(encounter)**: Returns the role display name (e.g. "the town butcher") — used in contexts where an encounter is already available. The confrontation reveal path uses `GetRoleByKey(roleKey).DisplayName` directly instead, since it does not have or need an encounter.
 
 ### Shared feature vocabulary (mistaken-identity invariant)
 
@@ -92,7 +93,7 @@ Tests at both domain aggregate and integration levels must prove that:
 
 | File | Responsibility |
 |------|----------------|
-| `Game/CitizenCast.cs` | New static content catalog: `CitizenRole` record, `CitizenEncounter` record (role + feature description string), `CitizenCast.Roles` static list, `CitizenCast.Select(townId, day, turn, visitNumber, featureDescriptions)`, `CitizenCast.SelectByRoleKey(roleKey, featureDescriptions)`, `CitizenCast.ResolveDescriptor(encounter)`, `CitizenCast.ResolveRevealName(encounter)`. No separate `CitizenFeature` pool — features come from the shared suspect vocabulary passed as a parameter. |
+| `Game/CitizenCast.cs` | New static content catalog: `CitizenRole` record, `CitizenEncounter` record (role + feature description string), `CitizenCast.Roles` static list, `CitizenCast.Select(townId, day, turn, visitNumber, featureDescriptions)`, `CitizenCast.SelectByRoleKey(roleKey, featureDescriptions)`, `CitizenCast.GetRoleByKey(roleKey)`, `CitizenCast.ResolveDescriptor(encounter)`, `CitizenCast.ResolveRevealName(encounter)`. No separate `CitizenFeature` pool — features come from the shared suspect vocabulary passed as a parameter. |
 | `Game/GameSession.cs` (modify) | Replace `DescribeTownCitizen()` with `CitizenCast.Select(townId, day, turn, visitNumber, featureDescriptions)` calls in `LookAroundSaloon()` (both normal fallback path and dev-override citizen path). Collect `featureDescriptions` from `CaseFile.Suspects[].Profile.IdentifyingFacts[].Description`. Emit `CitizenRole` in `SaloonPersonOfInterestSpotted` event. Store role in `TownVisitTownState` via `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)`. |
 | `Game/GameSession.BountyLoopCoordinator.cs` (modify) | Update citizen confrontation path to read `ActiveSaloonCitizenRole` from `TownVisitTownState` and build role-reveal narration in `ProduceSaloonConfrontedEvent` for citizen wrong-declaration outcome |
 | `Game/TownSourceVisitState.cs` (modify) | Add `ActiveSaloonCitizenRole` (string?) property to `TownVisitTownState` (line 68+). Update `TownVisitTownState` constructor to accept `activeSaloonCitizenRole`. Update `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)` to accept and store the role. Update `ClearActiveSaloonPersonOfInterest()` to clear the role. The `TownSourceVisitState` class (line 13) is NOT modified. |
@@ -172,10 +173,11 @@ Tests at both domain aggregate and integration levels must prove that:
     - `Roles` — static readonly list of ≥12 `CitizenRole` records: butcher, mortician, doctor, blacksmith, schoolteacher, preacher, seamstress, hotel-keeper, banker, newspaperman, stable-hand, telegraph-operator, barber, undertaker, prospector, cook, stagecoach-agent, gunsmith, town-clerk
     - NO `Features` list. NO `CitizenFeature` record. NO `RoleFeaturePairs`. Citizen features come from the shared suspect vocabulary passed as a parameter to `Select`.
     - `Select(TownId townId, int day, int turn, int visitNumber, IReadOnlyList<string> featureDescriptions)` — deterministic pick of a role + a feature from the provided `featureDescriptions`. Role index: `StableHash(townId.Value, day, turn, visitNumber) % Roles.Count`. Feature index: `StableHash(townId.Value, day, turn, visitNumber, "feature") % featureDescriptions.Count`. Using all four inputs provides substantially more variety than `townId + turn` alone. Do NOT use `string.GetHashCode()` (not stable across process restarts); use a manual `StableHash` helper (e.g. sum of char codes with a prime multiplier over the concatenated string representation). If `featureDescriptions` is empty, return an encounter with `FeatureDescription = null` (edge case — `ResolveDescriptor` falls back to "an unfamiliar face").
-    - `SelectByRoleKey(string roleKey, IReadOnlyList<string> featureDescriptions)` — look up the role by key, pick a feature from `featureDescriptions` deterministically (using the role key as the hash input). Throw `ArgumentException` if the role key is not found.
+    - `SelectByRoleKey(string roleKey, IReadOnlyList<string> featureDescriptions)` — look up the role by key, pick a feature from `featureDescriptions` deterministically (using the role key as the hash input). Throw `ArgumentException` if the role key is not found. Used by the dev overlay forcing path (which has featureDescriptions available from the CaseFile).
+    - `GetRoleByKey(string roleKey)` — look up a `CitizenRole` by key only. No feature, no `featureDescriptions` parameter. Throw `ArgumentException` if the role key is not found. Used by the confrontation reveal path (`BuildCitizenRevealNarration`), which only needs the role display name and already has the concealment descriptor from active state. Does NOT call `Select(...)`, does NOT re-pick a feature.
     - `ResolveDescriptor(CitizenEncounter encounter)` — if `encounter.FeatureDescription` is null/empty, return `"an unfamiliar face"`. Otherwise: `$"a stranger with {NormalizeFeatureDescriptor(encounter.FeatureDescription)}"`. Reuse the same normalization logic as `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (strip "has a"/"wears a" prefixes → "a"/"an"). Extract a shared helper or duplicate the small normalization.
-    - `ResolveRevealName(CitizenEncounter encounter)` — `encounter.Role.DisplayName` (e.g. "the town butcher").
-    - `ResolveRevealNarration(CitizenEncounter encounter, decimal fineAmount)` — `$"You bring {ResolveDescriptor(encounter)} to the sheriff. The sheriff identifies them as {encounter.Role.DisplayName}, releases them, and fines you ${fineAmount:0.00}."`.
+    - `ResolveRevealName(CitizenEncounter encounter)` — `encounter.Role.DisplayName` (e.g. "the town butcher"). Used in contexts where an encounter is already available. The confrontation reveal path uses `GetRoleByKey(roleKey).DisplayName` directly instead.
+    - `ResolveRevealNarration(CitizenEncounter encounter, decimal fineAmount)` — `$"You bring {ResolveDescriptor(encounter)} to the sheriff. The sheriff identifies them as {encounter.Role.DisplayName}, releases them, and fines you ${fineAmount:0.00}."`. (Note: the actual confrontation path in `BountyLoopCoordinator` does NOT use this method — it uses `GetRoleByKey` + the stored concealment descriptor. This method is a convenience helper for other contexts if needed.)
 
 - [ ] 1.2 Create `tests/WildBunch.Domain.Tests/CitizenCastTests.cs` with tests:
   - `CitizenCast_HasAtLeastTwelveRoles` — `Assert.True(CitizenCast.Roles.Count >= 12)`
@@ -187,6 +189,9 @@ Tests at both domain aggregate and integration levels must prove that:
   - `CitizenCast_Select_WithEmptyFeatureDescriptions_FallsBackGracefully` — returns an encounter with null `FeatureDescription`; `ResolveDescriptor` returns "an unfamiliar face"
   - `CitizenCast_SelectByRoleKey_ResolvesCorrectly` — each role key resolves to the correct role, with a feature from the provided descriptions
   - `CitizenCast_SelectByRoleKey_ThrowsForUnknownKey` — unknown key throws `ArgumentException`
+  - `CitizenCast_GetRoleByKey_ResolvesCorrectly` — each role key resolves to the correct `CitizenRole` with the correct display name
+  - `CitizenCast_GetRoleByKey_ThrowsForUnknownKey` — unknown key throws `ArgumentException`
+  - `CitizenCast_GetRoleByKey_DoesNotRequireFeatureDescriptions` — `GetRoleByKey` can be called with only a role key, no feature descriptions parameter
   - `CitizenCast_ResolveDescriptor_ProducesConcealmentFormat` — starts with "a stranger with " and does NOT contain the role display name or short name
   - `CitizenCast_ResolveRevealName_ProducesRoleDisplayName` — returns the role display name
   - `CitizenCast_ResolveRevealNarration_ContainsRoleAndFine` — contains the role display name and the fine amount, and contains "sheriff identifies them as"
@@ -346,10 +351,6 @@ Tests at both domain aggregate and integration levels must prove that:
 
 - [ ] 6.5 Run `dotnet build` to verify compilation.
 
-- [ ] 6.3 Remove or mark obsolete the `DescribeTownCitizen` method (~line 3298-3299). If no other callers remain, delete it. Check for references in plans/other files — plan references are informational only and do not block deletion.
-
-- [ ] 6.4 Run `dotnet build` to verify compilation.
-
 ### Task 7: Domain — update BountyLoopCoordinator citizen confrontation
 
 **Files:**
@@ -368,7 +369,7 @@ Tests at both domain aggregate and integration levels must prove that:
   var citizenRoleKey = _session.CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole;
   var citizenNarration = BuildCitizenRevealNarration(citizenTargetName, citizenRoleKey, fineAmount);
   ```
-  Where `BuildCitizenRevealNarration` is a new helper:
+  Where `BuildCitizenRevealNarration` is a new helper that resolves the role by key only — it does NOT call `Select(...)`, does NOT re-pick a feature, and does NOT require `featureDescriptions`. The reveal already has the concealment descriptor from active state; it only needs the citizen role display name:
   ```csharp
   private static string BuildCitizenRevealNarration(string concealmentDescriptor, string? roleKey, decimal fineAmount)
   {
@@ -377,9 +378,8 @@ Tests at both domain aggregate and integration levels must prove that:
           // Backward-compatible fallback: no role stored (old sessions or edge cases).
           return $"You bring {concealmentDescriptor} to the sheriff, but the declaration is wrong. The sheriff releases them and fines you ${fineAmount:0.00}.";
       }
-      var encounter = CitizenCast.SelectByRoleKey(roleKey);
-      var revealName = CitizenCast.ResolveRevealName(encounter);
-      return $"You bring {concealmentDescriptor} to the sheriff. The sheriff identifies them as {revealName}, releases them, and fines you ${fineAmount:0.00}.";
+      var role = CitizenCast.GetRoleByKey(roleKey);
+      return $"You bring {concealmentDescriptor} to the sheriff. The sheriff identifies them as {role.DisplayName}, releases them, and fines you ${fineAmount:0.00}.";
   }
   ```
 
