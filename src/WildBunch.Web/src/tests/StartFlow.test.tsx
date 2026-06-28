@@ -137,7 +137,7 @@ function primeMocks() {
   mockedGetPrologue.mockResolvedValue({
     heading: "The story so far",
     body: "A culprit is on the run. The trail is fresh, but it won't stay that way for long.",
-    primaryAction: "I understand. Keep riding.",
+    primaryAction: "Ride on",
     variantId: "variant-1",
   });
   mockedGetStartingTowns.mockResolvedValue([
@@ -177,7 +177,7 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
@@ -206,7 +206,7 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
@@ -226,7 +226,7 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
@@ -251,7 +251,7 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
@@ -274,7 +274,7 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
@@ -305,7 +305,7 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /i understand\. keep riding\./i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();

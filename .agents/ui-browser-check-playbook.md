@@ -23,12 +23,21 @@ Browser checks are not a replacement for unit, acceptance, integration, or provi
 
 ## Verified Local Route
 
-Use the repo-verified launch path:
+Use the repo-verified launch path. These are the canonical ports for browser proof — determine them from `launchSettings.json` and `vite.config.ts`/`package.json` before starting any server.
 
 - API: `dotnet run --project src/WildBunch.Api --launch-profile http`
-- API URL: `http://localhost:5275`
+- API URL: `http://localhost:5275` (from `Properties/launchSettings.json`, `http` profile `applicationUrl`)
 - Web: `npm run dev` from `src/WildBunch.Web`
-- Web URL: `http://localhost:5173`
+- Web URL: `http://localhost:5173` (from `vite.config.ts` `server.port`)
+- PostgreSQL: `localhost:5434` (repo-local shared service, via `.\scripts\postgres-dev.ps1 ensure`)
+
+### Canonical topology is binding for browser proof
+
+- Browser proof must use the canonical dev topology above, unless current repo config explicitly changes those ports.
+- Fallback ports are not allowed for browser proof. Do not start the API or frontend on an alternate port and then take screenshots.
+- Screenshots from an alternate-port or miswired frontend/API setup do not count as evidence.
+- Before starting servers, verify the expected ports are free. If a required port is occupied, identify the owning process (`Get-NetTCPConnection -LocalPort <port> -State Listen`). Reuse or stop only worker-owned stale processes. If the process is not worker-owned or cannot be safely resolved, return `BLOCKED` with the port, PID, process name, and command line — do not fall back to another port.
+- Before taking screenshots, prove the frontend can reach the API through the configured base URL (e.g. the prologue or another known endpoint returns real data through the browser's fetch path).
 
 If the persistent PostgreSQL lane is not already ready, set it up first:
 

@@ -15,7 +15,7 @@ public static class PrologueContent
 
     // Story so far copy
     public const string StorySoFarHeading = "The story so far";
-    public const string StorySoFarPrimaryAction = "I understand. Keep riding.";
+    public const string StorySoFarPrimaryAction = "Ride on";
 
     // Starting town copy
     public const string StartingTownHeading = "Pick a starting town";

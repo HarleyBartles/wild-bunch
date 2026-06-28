@@ -1,15 +1,16 @@
 import styled from "styled-components";
 import type { FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eyebrow, Button } from "../ui/sharedStyled";
+import { Button, BackButton } from "../ui/sharedStyled";
 import { getPrologue } from "../../api/wildBunchApi";
 
 interface StorySoFarStepProps {
   onContinue: () => void;
+  onBack: () => void;
   seedCode?: string | null;
 }
 
-export function StorySoFarStep({ onContinue, seedCode }: StorySoFarStepProps) {
+export function StorySoFarStep({ onContinue, onBack, seedCode }: StorySoFarStepProps) {
   const prologueQuery = useQuery({
     queryKey: ["prologue", seedCode ?? null],
     queryFn: () => getPrologue(seedCode),
@@ -19,7 +20,7 @@ export function StorySoFarStep({ onContinue, seedCode }: StorySoFarStepProps) {
 
   const heading = prologueQuery.data?.heading ?? "The story so far";
   const body = prologueQuery.data?.body ?? null;
-  const primaryAction = prologueQuery.data?.primaryAction ?? "I understand. Keep riding.";
+  const primaryAction = prologueQuery.data?.primaryAction ?? "Ride on";
   const canAdvance = !prologueQuery.isLoading && !prologueQuery.isError;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -32,7 +33,6 @@ export function StorySoFarStep({ onContinue, seedCode }: StorySoFarStepProps) {
 
   return (
     <StepCard>
-      <Eyebrow>Step 2 of 3</Eyebrow>
       <StepHeading>{heading}</StepHeading>
 
       {prologueQuery.isLoading ? (
@@ -53,6 +53,9 @@ export function StorySoFarStep({ onContinue, seedCode }: StorySoFarStepProps) {
         <Button type="submit" $variant="primary" disabled={!canAdvance}>
           {primaryAction}
         </Button>
+        <BackButton type="button" onClick={onBack}>
+          Back
+        </BackButton>
       </StepForm>
     </StepCard>
   );

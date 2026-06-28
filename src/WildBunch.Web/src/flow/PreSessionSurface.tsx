@@ -63,6 +63,7 @@ export function PreSessionSurface() {
       {flow.step === "story" && (
         <StorySoFarStep
           onContinue={flow.advance}
+          onBack={flow.goBack}
           seedCode={flow.seedState.seedCode}
         />
       )}

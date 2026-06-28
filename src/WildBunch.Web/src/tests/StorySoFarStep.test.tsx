@@ -21,13 +21,13 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
   return {
     heading: "The story so far",
     body: "A culprit known as Black Bart is on the run. The trail is fresh, but it won't stay that way for long.",
-    primaryAction: "I understand. Keep riding.",
+    primaryAction: "Ride on",
     variantId: "variant-1",
     ...overrides,
   };
 }
 
-function renderStep(overrides: { seedCode?: string | null; onContinue?: () => void } = {}) {
+function renderStep(overrides: { seedCode?: string | null; onContinue?: () => void; onBack?: () => void } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -36,17 +36,19 @@ function renderStep(overrides: { seedCode?: string | null; onContinue?: () => vo
   });
 
   const onContinue = overrides.onContinue ?? vi.fn();
+  const onBack = overrides.onBack ?? vi.fn();
 
   render(
     <QueryClientProvider client={queryClient}>
       <StorySoFarStep
         onContinue={onContinue}
+        onBack={onBack}
         seedCode={overrides.seedCode ?? "SEED-CODE-1"}
       />
     </QueryClientProvider>,
   );
 
-  return { onContinue, queryClient };
+  return { onContinue, onBack, queryClient };
 }
 
 describe("StorySoFarStep", () => {
@@ -55,7 +57,7 @@ describe("StorySoFarStep", () => {
       createPrologue({
         heading: "The story so far",
         body: "The outlaw known as Black Bart robbed the Dust Fork bank and fled east.",
-        primaryAction: "I understand. Keep riding.",
+        primaryAction: "Ride on",
       }),
     );
 
@@ -66,7 +68,7 @@ describe("StorySoFarStep", () => {
       await screen.findByText(/the outlaw known as black bart robbed the dust fork bank/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /i understand\. keep riding\./i }),
+      screen.getByRole("button", { name: /ride on/i }),
     ).toBeInTheDocument();
   });
 
@@ -116,7 +118,7 @@ describe("StorySoFarStep", () => {
 
     renderStep();
 
-    const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
+    const primaryButton = screen.getByRole("button", { name: /ride on/i });
     expect(primaryButton).toBeDisabled();
   });
 
@@ -127,7 +129,7 @@ describe("StorySoFarStep", () => {
 
     await screen.findByText(/black bart/i);
 
-    const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
+    const primaryButton = screen.getByRole("button", { name: /ride on/i });
     expect(primaryButton).toBeEnabled();
   });
 
@@ -141,7 +143,7 @@ describe("StorySoFarStep", () => {
 
     await screen.findByText(/black bart/i);
 
-    const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
+    const primaryButton = screen.getByRole("button", { name: /ride on/i });
     await user.click(primaryButton);
 
     await waitFor(() => {
@@ -157,7 +159,7 @@ describe("StorySoFarStep", () => {
 
     renderStep({ onContinue });
 
-    const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
+    const primaryButton = screen.getByRole("button", { name: /ride on/i });
     expect(primaryButton).toBeDisabled();
     await user.click(primaryButton);
 
@@ -185,7 +187,7 @@ describe("StorySoFarStep", () => {
 
     expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
 
-    const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
+    const primaryButton = screen.getByRole("button", { name: /ride on/i });
     expect(primaryButton).toBeDisabled();
   });
 
@@ -202,7 +204,7 @@ describe("StorySoFarStep", () => {
 
     await screen.findByText(/black bart/i);
     expect(
-      screen.getByRole("button", { name: /i understand\. keep riding\./i }),
+      screen.getByRole("button", { name: /ride on/i }),
     ).toBeEnabled();
   });
 
@@ -215,12 +217,20 @@ describe("StorySoFarStep", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
-  it("does not render a Back button", async () => {
+  it("renders a quiet Back affordance that calls onBack", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
-    renderStep();
+    const onBack = vi.fn();
+    const user = userEvent.setup();
+
+    renderStep({ onBack });
 
     await screen.findByText(/black bart/i);
-    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
+
+    const backButton = screen.getByRole("button", { name: /back/i });
+    expect(backButton).toBeInTheDocument();
+    await user.click(backButton);
+
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

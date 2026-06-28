@@ -79,7 +79,7 @@ public sealed class PrologueContentTests
         Assert.Equal("Tell me what name you go by before we ride on.", PrologueContent.NameEntryValidation);
 
         Assert.Equal("The story so far", PrologueContent.StorySoFarHeading);
-        Assert.Equal("I understand. Keep riding.", PrologueContent.StorySoFarPrimaryAction);
+        Assert.Equal("Ride on", PrologueContent.StorySoFarPrimaryAction);
 
         Assert.Equal("Pick a starting town", PrologueContent.StartingTownHeading);
         Assert.Equal("Saddling up the map…", PrologueContent.StartingTownEmptyState);
