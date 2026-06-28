@@ -101,7 +101,6 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     setGameDifficulty: seed.setGameDifficulty,
     setGameEntropy: seed.setGameEntropy,
     setSeedDraft: seed.setSeedDraft,
-    applySeed: seed.applySeed,
     randomizeSeed: seed.randomizeSeed,
     goToStep,
     advance,
