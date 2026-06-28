@@ -9,7 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddGameContent(this IServiceCollection services)
     {
         services.AddSingleton<INewGameFactory, SeededNewGameFactory>();
-        services.AddSingleton<ITravelRandomnessSource, RuntimeTravelRandomnessSource>();
+        services.AddSingleton<ISaltSourceFactory, RuntimeSaltSourceFactory>();
         return services;
     }
 }

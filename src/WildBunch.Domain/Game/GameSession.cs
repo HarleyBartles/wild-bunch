@@ -56,9 +56,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameClock clock,
         GameStatus status,
         TravelJourney? journey,
-        TravelDifficulty travelDifficulty,
-        TravelRandomnessState travelRandomness,
-        AdventureRandomnessPolicy entropy,
+        GameDifficulty gameDifficulty,
+        SaltSource saltSource,
+        GameEntropy gameEntropy,
         TownVisitState? currentTownVisit,
         IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
@@ -71,9 +71,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Clock = clock;
         Status = status;
         Journey = journey;
-        TravelDifficulty = travelDifficulty;
-        Entropy = entropy;
-        TravelRandomness = travelRandomness;
+        GameDifficulty = gameDifficulty;
+        GameEntropy = gameEntropy;
+        SaltSource = saltSource;
         _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
         if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
         {
@@ -109,17 +109,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourney? Journey { get; private set; }
 
-    public TravelDifficulty TravelDifficulty { get; private set; }
+    public GameDifficulty GameDifficulty { get; private set; }
 
-    public AdventureRandomnessPolicy Entropy { get; private set; }
+    public GameEntropy GameEntropy { get; private set; }
 
-    public TravelRandomnessState TravelRandomness { get; private set; }
+    public SaltSource SaltSource { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown;
 
     public TownVisitState CurrentTownVisit => _currentTown.VisitState;
 
-    public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
+    public TravelRulesProfile TravelRules => TravelRulesProfile.For(GameDifficulty);
 
     /// <summary>
     /// Pending dev override for the next travel-day generation. Dev-only state.
@@ -749,7 +749,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard);
 
     public static GameSession StartNew(
         string playerName,
@@ -758,9 +758,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         TownId? startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet,
         DomainInventory? inventory,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
-        TravelRandomnessState? travelRandomness = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
+        SaltSource? saltSource = null,
+        GameEntropy gameEntropy = GameEntropy.Classic)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -768,10 +768,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var resolvedTownId = startingTownId ?? world.Towns.First().Id;
         var startingTown = world.GetTown(resolvedTownId);
-        var resolvedTravelRandomness = travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted();
+        var resolvedSaltSource = saltSource ?? SaltSource.CreateRuntime();
         var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
         var resolvedInventory = inventory ?? DomainInventory.Empty();
-        var startingHealth = StartingHealthFor(travelDifficulty);
+        var startingHealth = StartingHealthFor(gameDifficulty);
 
         // Build the typed domain event from the resolved starting values.
         var e = new GameStarted
@@ -782,14 +782,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             StartingHealth = startingHealth,
             StartingWallet = resolvedWallet.Cash,
             StartingInventoryItems = resolvedInventory.Items.ToArray(),
-            Difficulty = travelDifficulty,
-            TravelRandomness = resolvedTravelRandomness,
-            Entropy = entropy
+            GameDifficulty = gameDifficulty,
+            SaltSource = resolvedSaltSource,
+            GameEntropy = gameEntropy
         };
 
         // Construct a placeholder session (like RehydrateFromEvents).
         // Apply(GameStarted) is the single mutation path — it sets Player,
-        // Status, TravelDifficulty, TravelRandomness, and Entropy from the event.
+        // Status, GameDifficulty, SaltSource, and GameEntropy from the event.
         // The constructor only sets world/caseFile/clock/pursuit references that
         // are external inputs, not event-derived state.
         var placeholderPlayer = new Player(
@@ -808,9 +808,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             new GameClock(),
             GameStatus.Active,
             journey: null,
-            travelDifficulty,
-            resolvedTravelRandomness,
-            entropy,
+            gameDifficulty,
+            resolvedSaltSource,
+            gameEntropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
@@ -855,11 +855,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         ProduceEvent(e);
     }
 
-    private static int StartingHealthFor(TravelDifficulty travelDifficulty)
-        => travelDifficulty switch
+    private static int StartingHealthFor(GameDifficulty gameDifficulty)
+        => gameDifficulty switch
         {
-            TravelDifficulty.Easy => 1250,
-            TravelDifficulty.Hard => 800,
+            GameDifficulty.Easy => 1250,
+            GameDifficulty.Challenging => 800,
+            GameDifficulty.Brutal => 600,
             _ => 1000
         };
 
@@ -877,9 +878,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             WildBunch.Domain.Economy.Wallet.Starting(e.StartingWallet),
             inventory);
         Status = GameStatus.Active;
-        TravelDifficulty = e.Difficulty;
-        TravelRandomness = e.TravelRandomness;
-        Entropy = e.Entropy;
+        GameDifficulty = e.GameDifficulty;
+        SaltSource = e.SaltSource;
+        GameEntropy = e.GameEntropy;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
         _version++;
     }
@@ -1781,9 +1782,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             recentTrailEventIds,
             recentEncounterCategories,
             HasHorse: horseState is not null && !horseState.IsDeadFor(TravelRules),
-            TravelRandomness.Mode,
-            TravelRandomness.Salt,
-            Entropy);
+            SaltSource.Mode,
+            SaltSource.Salt,
+            GameEntropy);
     }
 
     private static TravelPressureBand CreateFoodPressureBand(int foodRemaining, int remainingDays)
@@ -2463,7 +2464,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Player.Health,
             Player.Wallet.Cash,
             PursuitState.Heat,
-            TravelRandomness.Salt,
+            SaltSource.Salt,
             encounter.Message);
 
         var foeProfile = JourneyEncounterResolutionEngine.CreateFoeProfile(context, TravelRules, fallbackSeed);

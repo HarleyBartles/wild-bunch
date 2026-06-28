@@ -10,30 +10,30 @@ namespace WildBunch.GameContent.NewGame;
 public sealed class SeededNewGameFactory : INewGameFactory
 {
     private readonly GameSetupPackageBuilder _setupPackageBuilder = new();
-    private readonly ITravelRandomnessSource _travelRandomnessSource;
+    private readonly ISaltSourceFactory _saltSourceFactory;
 
     public SeededNewGameFactory()
-        : this(new RuntimeTravelRandomnessSource())
+        : this(new RuntimeSaltSourceFactory())
     {
     }
 
-    public SeededNewGameFactory(ITravelRandomnessSource travelRandomnessSource)
+    public SeededNewGameFactory(ISaltSourceFactory saltSourceFactory)
     {
-        _travelRandomnessSource = travelRandomnessSource;
+        _saltSourceFactory = saltSourceFactory;
     }
 
     public GameSession Create(
         string playerName,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        GameEntropy gameEntropy = GameEntropy.Classic,
         string? startingTownId = null)
     {
-        var descriptor = ResolveDescriptor(travelDifficulty, setupSeedCode, entropy);
+        var descriptor = ResolveDescriptor(gameDifficulty, setupSeedCode, gameEntropy);
         var setupPackage = _setupPackageBuilder.Build(descriptor);
-        var travelRandomnessState = descriptor.AdventureRandomnessPolicy == AdventureRandomnessPolicy.Boring
-            ? TravelRandomnessState.CreateDeterministic(descriptor.SeedCodeText)
-            : _travelRandomnessSource.Create(descriptor.SeedCodeText, setupPackage.TravelDifficulty);
+        var saltSource = descriptor.GameEntropy == GameEntropy.Boring
+            ? SaltSource.CreateFixed(descriptor.SeedCodeText)
+            : _saltSourceFactory.Create(descriptor.SeedCodeText, setupPackage.GameDifficulty);
 
         // Player-chosen town overrides the seed-derived default; null falls back to the seed default.
         var resolvedStartingTownId = startingTownId is null
@@ -47,13 +47,13 @@ public sealed class SeededNewGameFactory : INewGameFactory
             resolvedStartingTownId,
             setupPackage.StartingWallet,
             setupPackage.StartingInventory,
-            setupPackage.TravelDifficulty,
-            travelRandomnessState,
-            descriptor.AdventureRandomnessPolicy);
+            setupPackage.GameDifficulty,
+            saltSource,
+            descriptor.GameEntropy);
     }
 
-    private static StartingWorldDescriptor ResolveDescriptor(TravelDifficulty travelDifficulty, string? setupSeedCode, AdventureRandomnessPolicy entropy)
+    private static StartingWorldDescriptor ResolveDescriptor(GameDifficulty gameDifficulty, string? setupSeedCode, GameEntropy gameEntropy)
     {
-        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, travelDifficulty, entropy);
+        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, gameDifficulty, gameEntropy);
     }
 }

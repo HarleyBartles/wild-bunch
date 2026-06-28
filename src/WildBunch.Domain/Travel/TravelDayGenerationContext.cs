@@ -57,7 +57,7 @@ public sealed record TravelDayGenerationContext(
     TrailRisk Risk,
     TrailTerrain Terrain,
     WaterFeature WaterFeature,
-    TravelDifficulty Difficulty,
+    GameDifficulty GameDifficulty,
     int RemainingDays,
     decimal RemainingRideDayDistance,
     TravelPressureBand FoodPressure,
@@ -69,9 +69,9 @@ public sealed record TravelDayGenerationContext(
     IReadOnlyList<JourneyTrailEventId> RecentTrailEventIds,
     IReadOnlyList<TravelDayEncounterCategory> RecentEncounterCategories,
     bool HasHorse,
-    TravelRandomnessMode RandomnessMode,
-    string RandomnessSalt,
-    AdventureRandomnessPolicy Entropy = AdventureRandomnessPolicy.Standard)
+    SaltSourceMode SaltSourceMode,
+    string Salt,
+    GameEntropy GameEntropy = GameEntropy.Classic)
 {
     public bool WaterSecure => WaterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
 

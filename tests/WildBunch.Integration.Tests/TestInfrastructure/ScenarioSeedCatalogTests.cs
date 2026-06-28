@@ -17,9 +17,9 @@ public sealed class ScenarioSeedCatalogTests
     {
         var fixture = new ScenarioSeedFixture(
             Name: "DriftedFixture",
-            SeedCode: ScenarioSeedCatalog.CanonicalMountedNormal.SeedCode,
-            TravelDifficulty: TravelDifficulty.Normal,
-            Entropy: AdventureRandomnessPolicy.Standard,
+            SeedCode: ScenarioSeedCatalog.CanonicalMountedStandard.SeedCode,
+            GameDifficulty: GameDifficulty.Standard,
+            GameEntropy: GameEntropy.Classic,
             ResolverContractVersion: StartingWorldDescriptorResolver.ResolverContractVersion,
             RequiredShapeSignature: "resolver-v2|DriftedFixture|unexpected-shape",
             DescribeShapeSignature: static (_, _) => "resolver-v2|DriftedFixture|actual-shape",

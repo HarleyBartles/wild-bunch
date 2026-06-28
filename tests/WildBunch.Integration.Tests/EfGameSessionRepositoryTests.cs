@@ -21,7 +21,7 @@ namespace WildBunch.Integration.Tests;
 
 public sealed class EfGameSessionRepositoryTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public async Task SaveAndLoadNewSessionRoundTripsThroughPostgreSql()
@@ -55,7 +55,7 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Fact]
-    public async Task SaveAndLoadEasyTravelSessionRetainsTravelDifficulty()
+    public async Task SaveAndLoadEasyTravelSessionRetainsGameDifficulty()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture, out var unitOfWork);
@@ -65,9 +65,9 @@ public sealed class EfGameSessionRepositoryTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(TravelDifficulty.Easy, reloaded!.TravelDifficulty);
+        Assert.Equal(GameDifficulty.Easy, reloaded!.GameDifficulty);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Capacity);
-        Assert.True(reloaded.Player.Inventory.GetHorseState()!.CanProvideMountedTravelFor(TravelRulesProfile.For(TravelDifficulty.Easy)));
+        Assert.True(reloaded.Player.Inventory.GetHorseState()!.CanProvideMountedTravelFor(TravelRulesProfile.For(GameDifficulty.Easy)));
     }
 
     [Fact]
@@ -87,6 +87,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -105,7 +106,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
-        Assert.Equal(2, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(1, reloaded.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Contains(GameSessionLogProjection.Project(reloaded), entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal(TrailTerrain.Hills, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).Terrain);
         Assert.Equal(WaterFeature.River, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).WaterFeature);
@@ -128,6 +129,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -284,6 +286,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -315,6 +318,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -406,7 +410,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(sessionRead);
         Assert.Equal(loaded!.Status, sessionRead!.Status);
-        Assert.Equal(loaded.TravelDifficulty, sessionRead.TravelDifficulty);
+        Assert.Equal(loaded.GameDifficulty, sessionRead.GameDifficulty);
         Assert.Equal(loaded.Player.CurrentTownId, sessionRead.Player.CurrentTownId);
         Assert.Equal(loaded.Player.Wallet.Cash, sessionRead.Player.Wallet.Cash);
         Assert.NotNull(sessionRead.Journey);
@@ -493,7 +497,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 4)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateLuckySession()
@@ -533,7 +537,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateEasySession()
@@ -570,7 +574,7 @@ public sealed class EfGameSessionRepositoryTests
             dustvale.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+            GameDifficulty.Easy, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateDryTravelSession()
@@ -601,7 +605,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateHorseLossFallbackSession()
@@ -625,7 +629,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Challenging, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateJourneyHistorySession()
@@ -651,7 +655,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
     }
 
     private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
@@ -703,7 +707,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
     }
 
     private static CaseFile CreateCaseFile()
@@ -741,6 +745,6 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 }

@@ -84,7 +84,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         entity!.UpdatedAtUtc = now;
         entity.Status = session.Status.ToString();
-        entity.TravelDifficulty = (int)session.TravelDifficulty;
+        entity.GameDifficulty = (int)session.GameDifficulty;
         entity.SchemaVersion = SchemaVersion;
 
         // Append uncommitted events to the event stream
@@ -115,8 +115,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         UpsertComponent(entity.Id, GameSessionComponentNames.CaseFile, _serializer.SerializeCaseFile(session.CaseFile), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.Clock, _serializer.SerializeClock(session.Clock), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.PursuitState, _serializer.SerializePursuitState(session.PursuitState), now);
-        UpsertComponent(entity.Id, GameSessionComponentNames.Setup, _serializer.SerializeSetup(session.Entropy), now);
-        UpsertComponent(entity.Id, GameSessionComponentNames.TravelRandomness, _serializer.SerializeTravelRandomness(session.TravelRandomness), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.Setup, _serializer.SerializeSetup(session.GameEntropy), now);
+        UpsertComponent(entity.Id, GameSessionComponentNames.SaltSource, _serializer.SerializeSaltSource(session.SaltSource), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.TownVisitState, _serializer.SerializeTownVisitState(session.CurrentTownVisit), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.CurrentActionContext, _serializer.SerializeCurrentActionContext(session.CurrentActionContext, session.CurrentActionContextTownId), now);
 
@@ -265,8 +265,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
         var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
-        var entropy = entropyJson is null ? AdventureRandomnessPolicy.Standard : _serializer.DeserializeSetup(entropyJson);
-        var randomness = _serializer.DeserializeTravelRandomness(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.TravelRandomness));
+        var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
+        var saltSource = _serializer.DeserializeSaltSource(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.SaltSource));
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
         var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey);
@@ -295,14 +295,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var session = _serializer.RehydrateGameSession(
             store.Envelope.Id,
             Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
-            (TravelDifficulty)store.Envelope.TravelDifficulty,
+            (GameDifficulty)store.Envelope.GameDifficulty,
             entropy,
             player,
             world,
             caseFile,
             clock,
             pursuitState,
-            randomness,
+            saltSource,
             townVisitState,
             journey,
             completedJourneyHistory,

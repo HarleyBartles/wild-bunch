@@ -13,7 +13,7 @@ namespace WildBunch.Domain.Tests;
 
 public sealed class ActionAvailabilityResolverTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public void TownWithSuppliesAndLodgingExposesSupplyAndLodgingActions()
@@ -166,7 +166,7 @@ public sealed class ActionAvailabilityResolverTests
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: null, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: null, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateHighRiskSession()
@@ -197,6 +197,6 @@ public sealed class ActionAvailabilityResolverTests
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, WildBunch.Domain.Economy.Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, WildBunch.Domain.Economy.Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 }

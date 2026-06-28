@@ -19,11 +19,11 @@ public static class PrologueDescriptorResolver
     /// Resolves the player-visible true-culprit descriptor for the prologue from a seed code.
     /// </summary>
     public static string ResolveTrueCulpritDescriptor(
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
+        GameEntropy entropy = GameEntropy.Classic)
     {
-        var descriptor = StartingWorldDescriptorResolver.Resolve(setupSeedCode, travelDifficulty, entropy);
+        var descriptor = StartingWorldDescriptorResolver.Resolve(setupSeedCode, gameDifficulty, entropy);
         var setupPackage = new GameSetupPackageBuilder().Build(descriptor);
         var trueCulprit = setupPackage.CaseFile.Suspects.First(s => s.Id == setupPackage.CaseFile.TrueCulpritId);
         return SaloonPersonOfInterestDescriptor.Describe(trueCulprit, setupPackage.CaseFile);

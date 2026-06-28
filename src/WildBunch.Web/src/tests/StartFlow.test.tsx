@@ -45,7 +45,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
   return {
     id: "game-1",
     status: 0,
-    travelDifficulty: 0,
+    gameDifficulty: 0,
+    gameEntropy: 1,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
@@ -236,7 +237,7 @@ describe("StartFlow", () => {
     expect(mockedCreateGame).not.toHaveBeenCalled();
   });
 
-  it("calls createGame with playerName, difficulty, entropy, and startingTownId at the final step", async () => {
+  it("calls createGame with playerName, difficulty, gameEntropy, and startingTownId at the final step", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
@@ -244,8 +245,8 @@ describe("StartFlow", () => {
     const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
 
-    // Select Hard (difficulty 2) and Wild (entropy 3)
-    await user.click(screen.getByRole("button", { name: /^hard$/i }));
+    // Select Challenging (difficulty 2) and Wild (gameEntropy 3)
+    await user.click(screen.getByRole("button", { name: /^challenging$/i }));
     await user.click(screen.getByRole("button", { name: /^wild$/i }));
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
@@ -270,8 +271,8 @@ describe("StartFlow", () => {
     expect(request.playerName).toBe("Ranger Vale");
     expect(request.startingTownId).toBe("t-town");
     expect(request.seedCode).toBeTruthy();
-    expect(request.travelDifficulty).toBe(2);
-    expect(request.entropy).toBe(3);
+    expect(request.gameDifficulty).toBe(2);
+    expect(request.gameEntropy).toBe(3);
   });
 
   it("shows the creating step after selecting a town", async () => {

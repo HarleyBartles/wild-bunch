@@ -13,8 +13,8 @@ public sealed class StartingWorldDescriptorResolverTests
         var seedCode = StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor);
         var resolved = StartingWorldDescriptorResolver.Resolve(seedCode);
 
-        Assert.Equal(descriptor.Difficulty, resolved.Difficulty);
-        Assert.Equal(descriptor.AdventureRandomnessPolicy, resolved.AdventureRandomnessPolicy);
+        Assert.Equal(descriptor.GameDifficulty, resolved.GameDifficulty);
+        Assert.Equal(descriptor.GameEntropy, resolved.GameEntropy);
         Assert.Equal(descriptor.World, resolved.World);
         Assert.Equal(descriptor.Player, resolved.Player);
         Assert.Equal(descriptor.Case, resolved.Case);
@@ -30,8 +30,8 @@ public sealed class StartingWorldDescriptorResolverTests
         var descriptorA = StartingWorldDescriptorResolver.Resolve(seedA);
         var descriptorB = StartingWorldDescriptorResolver.Resolve(seedB);
 
-        Assert.Equal(descriptorA.Difficulty, descriptorB.Difficulty);
-        Assert.Equal(descriptorA.AdventureRandomnessPolicy, descriptorB.AdventureRandomnessPolicy);
+        Assert.Equal(descriptorA.GameDifficulty, descriptorB.GameDifficulty);
+        Assert.Equal(descriptorA.GameEntropy, descriptorB.GameEntropy);
         Assert.Equal(descriptorA.World, descriptorB.World);
         Assert.Equal(descriptorA.Player, descriptorB.Player);
         Assert.Equal(descriptorA.Case, descriptorB.Case);
@@ -41,19 +41,19 @@ public sealed class StartingWorldDescriptorResolverTests
     public void ExplicitSeedResolutionIgnoresRequestedDifficultyAndEntropy()
     {
         var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Easy,
-            AdventureRandomnessPolicy.Boring);
+            GameDifficulty.Easy,
+            GameEntropy.Boring);
         var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(
             StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
 
         var baseline = StartingWorldDescriptorResolver.Resolve(
             seedCode,
-            TravelDifficulty.Easy,
-            AdventureRandomnessPolicy.Boring);
+            GameDifficulty.Easy,
+            GameEntropy.Boring);
         var challenged = StartingWorldDescriptorResolver.Resolve(
             seedCode,
-            TravelDifficulty.Hard,
-            AdventureRandomnessPolicy.Wild);
+            GameDifficulty.Challenging,
+            GameEntropy.Wild);
 
         Assert.Equal(baseline, challenged);
     }
@@ -97,7 +97,7 @@ public sealed class StartingWorldDescriptorResolverTests
             var validation = StartingWorldDescriptorResolver.Validate(descriptor);
 
             Assert.True(validation.Success, validation.ErrorMessage);
-            Assert.Contains(descriptor.AdventureRandomnessPolicy, Enum.GetValues<AdventureRandomnessPolicy>());
+            Assert.Contains(descriptor.GameEntropy, Enum.GetValues<GameEntropy>());
             Assert.Contains(descriptor.World.Variant, Enum.GetValues<SeedWorldVariant>());
             Assert.Contains(descriptor.Player.LoadoutProfile, Enum.GetValues<StartingLoadoutProfile>());
             Assert.InRange(descriptor.Player.StartingCash, 10m, 40m);
@@ -106,12 +106,12 @@ public sealed class StartingWorldDescriptorResolverTests
     }
 
     [Fact]
-    public void AdventureRandomnessPolicyStaysDescriptorLevelAndWildStaysLegal()
+    public void GameEntropyStaysDescriptorLevelAndWildStaysLegal()
     {
         var wildSeed = CreateSeedCode(3, 0, 0, 0, 1, 8, 1, tail: 0);
         var descriptor = StartingWorldDescriptorResolver.Resolve(wildSeed);
 
-        Assert.Equal(AdventureRandomnessPolicy.Wild, descriptor.AdventureRandomnessPolicy);
+        Assert.Equal(GameEntropy.Wild, descriptor.GameEntropy);
         Assert.Equal(GameSetupDeterministicLabels.WorldStartingTownHorse, descriptor.World.StartingTownSelectionKey);
 
         var validation = StartingWorldDescriptorResolver.Validate(descriptor);
@@ -130,8 +130,8 @@ public sealed class StartingWorldDescriptorResolverTests
         var descriptorB = StartingWorldDescriptorResolver.Resolve(seedB);
 
         var differenceScore = 0;
-        if (descriptorA.Difficulty != descriptorB.Difficulty) differenceScore++;
-        if (descriptorA.AdventureRandomnessPolicy != descriptorB.AdventureRandomnessPolicy) differenceScore++;
+        if (descriptorA.GameDifficulty != descriptorB.GameDifficulty) differenceScore++;
+        if (descriptorA.GameEntropy != descriptorB.GameEntropy) differenceScore++;
         if (descriptorA.World != descriptorB.World) differenceScore++;
         if (descriptorA.Player != descriptorB.Player) differenceScore++;
         if (descriptorA.Case != descriptorB.Case) differenceScore++;

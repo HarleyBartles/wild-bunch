@@ -21,7 +21,7 @@ internal static partial class TravelDayPlanGenerator
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var rules = TravelRulesProfile.For(context.Difficulty);
+        var rules = TravelRulesProfile.For(context.GameDifficulty);
         var baseSeed = ComposeSeed(context);
         var encounterCount = SelectWeighted(BuildEncounterCountWeights(context), Roll(baseSeed, "count"), fallback: 1);
 
@@ -62,7 +62,7 @@ internal static partial class TravelDayPlanGenerator
             context.Risk.ToString(),
             context.Terrain.ToString(),
             context.WaterFeature.ToString(),
-            context.Difficulty.ToString(),
+            context.GameDifficulty.ToString(),
             context.RemainingDays.ToString(),
             context.RemainingRideDayDistance.ToString(),
             context.FoodPressure.ToString(),
@@ -76,9 +76,9 @@ internal static partial class TravelDayPlanGenerator
             context.HasHorse.ToString()
         };
 
-        if (context.RandomnessMode == TravelRandomnessMode.RuntimeSalted && !string.IsNullOrEmpty(context.RandomnessSalt))
+        if (context.SaltSourceMode == SaltSourceMode.Runtime && !string.IsNullOrEmpty(context.Salt))
         {
-            seedParts.Insert(1, context.RandomnessSalt);
+            seedParts.Insert(1, context.Salt);
         }
 
         return string.Join("|", seedParts);
@@ -109,21 +109,26 @@ internal static partial class TravelDayPlanGenerator
             (3, context.Risk == TrailRisk.Low ? 0 : context.Risk == TrailRisk.Moderate ? 0 : 1)
         };
 
-        switch (context.Difficulty)
+        switch (context.GameDifficulty)
         {
-            case TravelDifficulty.Easy:
+            case GameDifficulty.Easy:
                 AddWeight(weights, 0, 1);
                 AddWeight(weights, 1, 2);
                 AddWeight(weights, 2, -1);
                 break;
-            case TravelDifficulty.Normal:
+            case GameDifficulty.Standard:
                 AddWeight(weights, 1, 1);
                 AddWeight(weights, 2, 0);
                 break;
-            case TravelDifficulty.Hard:
+            case GameDifficulty.Challenging:
                 AddWeight(weights, 1, -1);
                 AddWeight(weights, 2, 2);
                 AddWeight(weights, 3, 1);
+                break;
+            case GameDifficulty.Brutal:
+                AddWeight(weights, 1, -2);
+                AddWeight(weights, 2, 3);
+                AddWeight(weights, 3, 2);
                 break;
         }
 
@@ -217,21 +222,26 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse ? -1 : 0);
         }
 
-        switch (context.Difficulty)
+        switch (context.GameDifficulty)
         {
-            case TravelDifficulty.Easy:
+            case GameDifficulty.Easy:
                 AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 2);
                 AddWeight(weights, TravelDayEncounterCategory.Resource, 1);
                 AddWeight(weights, TravelDayEncounterCategory.Quiet, 1);
                 break;
-            case TravelDifficulty.Normal:
+            case GameDifficulty.Standard:
                 AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
                 AddWeight(weights, TravelDayEncounterCategory.Resource, 1);
                 break;
-            case TravelDifficulty.Hard:
+            case GameDifficulty.Challenging:
                 AddWeight(weights, TravelDayEncounterCategory.Foe, 1);
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 1);
                 AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? 1 : 0);
+                break;
+            case GameDifficulty.Brutal:
+                AddWeight(weights, TravelDayEncounterCategory.Foe, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, 2);
+                AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? 2 : 0);
                 break;
         }
 
@@ -366,41 +376,41 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, TravelDayEncounterCategory.Quiet, 2);
         }
 
-        if (context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.Hills && context.WaterFeature == WaterFeature.River && context.Difficulty == TravelDifficulty.Normal)
+        if (context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.Hills && context.WaterFeature == WaterFeature.River && context.GameDifficulty == GameDifficulty.Standard)
         {
             AddWeight(weights, TravelDayEncounterCategory.Quiet, 2);
         }
 
-        if (context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.Badlands && context.WaterFeature == WaterFeature.None && context.Difficulty == TravelDifficulty.Normal)
+        if (context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.Badlands && context.WaterFeature == WaterFeature.None && context.GameDifficulty == GameDifficulty.Standard)
         {
             AddWeight(weights, TravelDayEncounterCategory.Quiet, 10);
             AddWeight(weights, TravelDayEncounterCategory.Resource, 2);
             AddWeight(weights, TravelDayEncounterCategory.Unlucky, -1);
         }
 
-        if (context.Difficulty == TravelDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
+        if (context.GameDifficulty == GameDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
         {
             AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 10);
         }
 
-        if (context.Difficulty == TravelDifficulty.Easy && context.WaterFeature == WaterFeature.None && context.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
+        if (context.GameDifficulty == GameDifficulty.Easy && context.WaterFeature == WaterFeature.None && context.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
         {
             AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 6);
             AddWeight(weights, TravelDayEncounterCategory.Quiet, 1);
         }
 
-        if (context.Difficulty == TravelDifficulty.Normal && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
+        if (context.GameDifficulty == GameDifficulty.Standard && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None)
         {
             AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 3);
         }
 
-        if (context.Difficulty == TravelDifficulty.Hard && context.Terrain == TrailTerrain.Badlands && context.WaterFeature == WaterFeature.None && context.Risk != TrailRisk.High)
+        if (context.GameDifficulty == GameDifficulty.Challenging && context.Terrain == TrailTerrain.Badlands && context.WaterFeature == WaterFeature.None && context.Risk != TrailRisk.High)
         {
             AddWeight(weights, TravelDayEncounterCategory.Unlucky, 8);
             AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : -1);
         }
 
-        if (context.Difficulty == TravelDifficulty.Hard && context.HasHorse && context.IsMounted && context.HorseConditionBand != HorseConditionBand.None && context.Terrain == TrailTerrain.Hills && context.WaterFeature == WaterFeature.River)
+        if (context.GameDifficulty == GameDifficulty.Challenging && context.HasHorse && context.IsMounted && context.HorseConditionBand != HorseConditionBand.None && context.Terrain == TrailTerrain.Hills && context.WaterFeature == WaterFeature.River)
         {
             AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, 16);
             AddWeight(weights, TravelDayEncounterCategory.Quiet, -1);
@@ -576,9 +586,9 @@ internal static partial class TravelDayPlanGenerator
     {
         var choice = context.Risk == TrailRisk.Low && context.WaterFeature == WaterFeature.Creek
             ? 0
-            : travelRulesProfile.Difficulty == TravelDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None
+            : travelRulesProfile.Difficulty == GameDifficulty.Easy && context.Risk == TrailRisk.Low && context.Terrain == TrailTerrain.OpenRange && context.WaterFeature == WaterFeature.None
                 ? 1
-                : travelRulesProfile.Difficulty == TravelDifficulty.Easy && context.WaterFeature == WaterFeature.None && context.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands
+                : travelRulesProfile.Difficulty == GameDifficulty.Easy && context.WaterFeature == WaterFeature.None && context.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands
                     ? 2
                     : context.FoodPressure >= TravelPressureBand.High
                         ? 1

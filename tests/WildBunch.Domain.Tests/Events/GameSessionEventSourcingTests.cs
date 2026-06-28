@@ -25,8 +25,8 @@ public class GameSessionEventSourcingTests
         Assert.Equal("Pinecross", gameStarted.StartingTownName);
         Assert.Equal(1000, gameStarted.StartingHealth);
         Assert.Equal(25m, gameStarted.StartingWallet);
-        Assert.Equal(TravelDifficulty.Normal, gameStarted.Difficulty);
-        Assert.Equal(AdventureRandomnessPolicy.Standard, gameStarted.Entropy);
+        Assert.Equal(GameDifficulty.Standard, gameStarted.GameDifficulty);
+        Assert.Equal(GameEntropy.Classic, gameStarted.GameEntropy);
     }
 
     [Fact]
@@ -106,8 +106,8 @@ public class GameSessionEventSourcingTests
         Assert.Equal(session.Player.CurrentTownId, rehydrated.Player.CurrentTownId);
         Assert.Equal(session.Player.Health, rehydrated.Player.Health);
         Assert.Equal(session.Player.Wallet.Cash, rehydrated.Player.Wallet.Cash);
-        Assert.Equal(session.TravelDifficulty, rehydrated.TravelDifficulty);
-        Assert.Equal(session.Entropy, rehydrated.Entropy);
+        Assert.Equal(session.GameDifficulty, rehydrated.GameDifficulty);
+        Assert.Equal(session.GameEntropy, rehydrated.GameEntropy);
         Assert.Equal(session.Version, rehydrated.Version);
         Assert.Empty(rehydrated.UncommittedEvents);
     }
@@ -218,9 +218,9 @@ public class GameSessionEventSourcingTests
                 StartingHealth = 1000,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<InventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
-                TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-                Entropy = AdventureRandomnessPolicy.Standard
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed("test"),
+                GameEntropy = GameEntropy.Classic
             },
             new UnknownTestEvent()
         };
@@ -257,9 +257,9 @@ public class GameSessionEventSourcingTests
             StartingHealth = session.Player.Health,
             StartingWallet = 25m,
             StartingInventoryItems = Array.Empty<InventoryItem>(),
-            Difficulty = session.TravelDifficulty,
-            TravelRandomness = session.TravelRandomness,
-            Entropy = session.Entropy
+            GameDifficulty = session.GameDifficulty,
+            SaltSource = session.SaltSource,
+            GameEntropy = session.GameEntropy
         };
         var allEvents = new List<IDomainEvent> { gameStartedEvent };
         allEvents.AddRange(investigationEvents);

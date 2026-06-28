@@ -85,8 +85,8 @@ public sealed class GameSetupPackageBuilderTests
     [Fact]
     public void DifferentDifficultyChangesTravelRulesAndStartingCash()
     {
-        var easyDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy);
-        var hardDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Hard);
+        var easyDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Easy);
+        var hardDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Challenging);
 
         var easyPackage = BuildPackage(easyDescriptor);
         var hardPackage = BuildPackage(hardDescriptor);
@@ -151,8 +151,8 @@ public sealed class GameSetupPackageBuilderTests
         => string.Join(
             "|",
             package.Descriptor.SeedCode,
-            package.Descriptor.Difficulty,
-            package.Descriptor.AdventureRandomnessPolicy,
+            package.Descriptor.GameDifficulty,
+            package.Descriptor.GameEntropy,
             package.Descriptor.World.Variant,
             package.Descriptor.Player.StartWithHorse,
             package.Descriptor.Player.LoadoutProfile,

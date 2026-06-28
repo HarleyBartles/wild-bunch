@@ -52,7 +52,7 @@ public sealed class MigrationTests
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
             Assert.Equal(9, await verificationContext.GameSessionComponents.CountAsync());
             Assert.Equal(
-                new[] { "caseFile", "clock", "currentActionContext", "player", "pursuitState", "setup", "townVisitState", "travelRandomness", "world" },
+                new[] { "caseFile", "clock", "currentActionContext", "player", "pursuitState", "saltSource", "setup", "townVisitState", "world" },
                 await verificationContext.GameSessionComponents
                     .Where(component => component.SessionId == session.Id.Value)
                     .OrderBy(component => component.ComponentName)
@@ -83,7 +83,7 @@ public sealed class MigrationTests
 
         Assert.DoesNotContain("StateJson", columns);
         Assert.Contains("SchemaVersion", columns);
-        Assert.Contains("TravelDifficulty", columns);
+        Assert.Contains("GameDifficulty", columns);
     }
 
     private static async Task AssertJsonbColumnTypesAsync(NpgsqlConnection connection)

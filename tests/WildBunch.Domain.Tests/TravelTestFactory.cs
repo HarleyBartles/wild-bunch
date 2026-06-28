@@ -16,7 +16,7 @@ namespace WildBunch.Domain.Tests;
 
 /// <summary>
 /// Factory methods for deterministic travel test scenarios.
-/// All scenarios use <see cref="TravelRandomnessState.CreateDeterministic"/>
+/// All scenarios use <see cref="SaltSource.CreateDeterministic"/>
 /// for reproducible day plans and encounter generation. Each factory returns
 /// the session alongside the resolved <see cref="TravelPreview"/> so callers
 /// can decide whether to start the journey via <see cref="GameSession.StartJourney"/>.
@@ -26,7 +26,7 @@ internal static class TravelTestFactory
     /// <summary>
     /// Creates a session with a short low-risk journey from Current Town to Connected Town.
     /// Inventory: 4 Food, 1 Canteen (full 10), 1 Horse (Healthy), 1 Saddle.
-    /// Wallet: $25. TravelDifficulty: Easy.
+    /// Wallet: $25. GameDifficulty: Easy.
     /// This reuses <see cref="TestSessionFactory.CreateDefault"/> world setup.
     /// </summary>
     internal static (GameSession session, TravelPreview preview) CreateEasyShortJourney()
@@ -75,8 +75,8 @@ internal static class TravelTestFactory
             session.Player.CurrentTownId,
             session.Player.Wallet,
             session.Player.Inventory,
-            session.TravelDifficulty,
-            session.TravelRandomness);
+            session.GameDifficulty,
+            session.SaltSource);
         return Assert.IsType<GameStarted>(seed.UncommittedEvents.Single());
     }
 
@@ -117,8 +117,8 @@ internal static class TravelTestFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile,
             pinecross.Id, Wallet.Starting(25m), inventory,
-            TravelDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            GameDifficulty.Easy,
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, dryfork.Id);
@@ -128,7 +128,7 @@ internal static class TravelTestFactory
     /// <summary>
     /// Creates a session with a low-risk journey designed to complete without interruption.
     /// Uses TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, ride-day distance 3m
-    /// (foot travel). TravelDifficulty.Easy. Inventory: 8 Food, 1 Canteen (6/10 charges),
+    /// (foot travel). GameDifficulty.Easy. Inventory: 8 Food, 1 Canteen (6/10 charges),
     /// 1 Knife. The deterministic day-plan generator produces no choice-requiring encounters
     /// for this exact combination of trail id, town ids, terrain and difficulty, so the
     /// journey reliably reaches <see cref="JourneyStatus.Completed"/>.
@@ -164,8 +164,8 @@ internal static class TravelTestFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile,
             origin.Id, Wallet.Starting(25m), inventory,
-            TravelDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            GameDifficulty.Easy,
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, destination.Id);

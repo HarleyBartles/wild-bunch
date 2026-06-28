@@ -4,7 +4,7 @@ namespace WildBunch.Api.Games;
 
 public sealed record StartGameRequest(
     string PlayerName,
-    TravelDifficulty TravelDifficulty = TravelDifficulty.Normal,
+    GameDifficulty GameDifficulty = GameDifficulty.Standard,
     string? SeedCode = null,
-    AdventureRandomnessPolicy Entropy = AdventureRandomnessPolicy.Standard,
+    GameEntropy GameEntropy = GameEntropy.Classic,
     string? StartingTownId = null);

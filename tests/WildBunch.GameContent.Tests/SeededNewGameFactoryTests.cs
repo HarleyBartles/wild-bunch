@@ -17,8 +17,8 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Equal("Ranger Vale", session.Player.Name);
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
-        Assert.Equal(TravelDifficulty.Normal, session.TravelDifficulty);
-        Assert.Equal(AdventureRandomnessPolicy.Standard, session.Entropy);
+        Assert.Equal(GameDifficulty.Standard, session.GameDifficulty);
+        Assert.Equal(GameEntropy.Classic, session.GameEntropy);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(8, session.Player.Inventory.Items.Count);
         Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
@@ -131,7 +131,7 @@ public sealed class SeededNewGameFactoryTests
         var descriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 1, 0, 0, 1, 0, 1, tail: 13));
         var factory = new SeededNewGameFactory();
 
-        var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, StartingWorldDescriptorResolver.FormatSeedCode(descriptor.SeedCode));
+        var session = factory.Create("Ranger Vale", GameDifficulty.Standard, StartingWorldDescriptorResolver.FormatSeedCode(descriptor.SeedCode));
 
         Assert.Contains(session.Player.CurrentTownId.Value, new[] { "pinecross", "holloway", "redmesa", "sagewell", "emberfall" });
         Assert.True(session.CaseFile.PublicClues.Count > 6);
@@ -147,9 +147,9 @@ public sealed class SeededNewGameFactoryTests
         var seedASame = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
         var seedB = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 12));
 
-        var first = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedA);
-        var firstAgain = factory.Create("Ranger Vale", TravelDifficulty.Easy, seedASame);
-        var second = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedB);
+        var first = factory.Create("Ranger Vale", GameDifficulty.Standard, seedA);
+        var firstAgain = factory.Create("Ranger Vale", GameDifficulty.Easy, seedASame);
+        var second = factory.Create("Ranger Vale", GameDifficulty.Standard, seedB);
 
         Assert.Equal(RosterSignature(first), RosterSignature(firstAgain));
         Assert.Equal(WarrantSignature(first), WarrantSignature(firstAgain));
@@ -163,14 +163,14 @@ public sealed class SeededNewGameFactoryTests
     [Fact]
     public void RandomizedNoHorseLightLoadoutSeedCreatesNoHorseOrSaddle()
     {
-        var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy) with
+        var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Easy) with
         {
-            AdventureRandomnessPolicy = AdventureRandomnessPolicy.Boring,
-            World = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy).World with
+            GameEntropy = GameEntropy.Boring,
+            World = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Easy).World with
             {
                 StartingTownSelectionKey = GameSetupDeterministicLabels.WorldStartingTownFoot
             },
-            Player = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(TravelDifficulty.Easy).Player with
+            Player = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Easy).Player with
             {
                 StartWithHorse = false,
                 LoadoutProfile = StartingLoadoutProfile.Light,
@@ -181,10 +181,10 @@ public sealed class SeededNewGameFactoryTests
         var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
         var factory = new SeededNewGameFactory();
 
-        var session = factory.Create("Ranger Vale", TravelDifficulty.Normal, seedCode);
+        var session = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode);
 
-        Assert.Equal(TravelDifficulty.Easy, session.TravelDifficulty);
-        Assert.Equal(AdventureRandomnessPolicy.Boring, session.Entropy);
+        Assert.Equal(GameDifficulty.Easy, session.GameDifficulty);
+        Assert.Equal(GameEntropy.Boring, session.GameEntropy);
         Assert.Null(session.Player.Inventory.GetHorseState());
         Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
         Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
@@ -201,24 +201,24 @@ public sealed class SeededNewGameFactoryTests
         var runtimeFirst = factory.Create("Ranger Vale");
         var runtimeSecond = factory.Create("Ranger Vale");
 
-        Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeFirst.TravelRandomness.Mode);
-        Assert.Equal(TravelRandomnessMode.RuntimeSalted, runtimeSecond.TravelRandomness.Mode);
-        Assert.Equal(AdventureRandomnessPolicy.Standard, runtimeFirst.Entropy);
-        Assert.Equal(AdventureRandomnessPolicy.Standard, runtimeSecond.Entropy);
-        Assert.NotEqual(runtimeFirst.TravelRandomness.Salt, runtimeSecond.TravelRandomness.Salt);
+        Assert.Equal(SaltSourceMode.Runtime, runtimeFirst.SaltSource.Mode);
+        Assert.Equal(SaltSourceMode.Runtime, runtimeSecond.SaltSource.Mode);
+        Assert.Equal(GameEntropy.Classic, runtimeFirst.GameEntropy);
+        Assert.Equal(GameEntropy.Classic, runtimeSecond.GameEntropy);
+        Assert.NotEqual(runtimeFirst.SaltSource.Salt, runtimeSecond.SaltSource.Salt);
 
         var boringDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
         {
-            AdventureRandomnessPolicy = AdventureRandomnessPolicy.Boring
+            GameEntropy = GameEntropy.Boring
         };
         var boringSeed = StartingWorldDescriptorResolver.FormatSeedCode(StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(boringDescriptor));
 
         var deterministicFirst = factory.Create("Ranger Vale", setupSeedCode: boringSeed);
         var deterministicSecond = factory.Create("Ranger Vale", setupSeedCode: boringSeed);
 
-        Assert.Equal(TravelRandomnessMode.Deterministic, deterministicFirst.TravelRandomness.Mode);
-        Assert.Equal(TravelRandomnessMode.Deterministic, deterministicSecond.TravelRandomness.Mode);
-        Assert.Equal(deterministicFirst.TravelRandomness.Salt, deterministicSecond.TravelRandomness.Salt);
+        Assert.Equal(SaltSourceMode.Fixed, deterministicFirst.SaltSource.Mode);
+        Assert.Equal(SaltSourceMode.Fixed, deterministicSecond.SaltSource.Mode);
+        Assert.Equal(deterministicFirst.SaltSource.Salt, deterministicSecond.SaltSource.Salt);
     }
 
     [Fact]

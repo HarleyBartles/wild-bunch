@@ -18,35 +18,35 @@ namespace WildBunch.GameContent.Tests;
 internal static class TravelTestSeedCatalog
 {
     /// <summary>
-    /// Canonical world, Normal difficulty, Standard entropy, mounted.
+    /// Canonical world, Standard difficulty, Classic entropy, mounted.
     /// Starts in Pinecross. Used as a baseline for mounted travel tests.
     /// Route: pinecross -> redmesa (Low/OpenRange/Creek, 4m).
     /// </summary>
-    internal static readonly StartingWorldDescriptor CanonicalMountedNormal =
+    internal static readonly StartingWorldDescriptor CanonicalMountedStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Normal,
-            AdventureRandomnessPolicy.Standard);
+            GameDifficulty.Standard,
+            GameEntropy.Classic);
 
     /// <summary>
-    /// Canonical world, Normal difficulty, Boring entropy, mounted.
+    /// Canonical world, Standard difficulty, Boring entropy, mounted.
     /// Encounters suppressed. Used for resource-mechanics and trail-event tests
     /// that need a quiet journey without heat priming.
     /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure.
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedBoring =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Normal,
-            AdventureRandomnessPolicy.Boring);
+            GameDifficulty.Standard,
+            GameEntropy.Boring);
 
     /// <summary>
-    /// Canonical world, Normal difficulty, Boring entropy, no horse, light loadout.
+    /// Canonical world, Standard difficulty, Boring entropy, no horse, light loadout.
     /// Encounters suppressed. Used for foot-travel resource tests.
     /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure on foot.
     /// </summary>
     internal static StartingWorldDescriptor CanonicalFootBoringLight = new(
         Guid.Empty,
-        TravelDifficulty.Normal,
-        AdventureRandomnessPolicy.Boring,
+        GameDifficulty.Standard,
+        GameEntropy.Boring,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownFoot),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: false,
@@ -67,8 +67,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedEasyStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Easy,
-            AdventureRandomnessPolicy.Standard);
+            GameDifficulty.Easy,
+            GameEntropy.Classic);
 
     /// <summary>
     /// Canonical world, Hard difficulty, Standard entropy, mounted.
@@ -77,20 +77,22 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedHardStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Hard,
-            AdventureRandomnessPolicy.Standard);
+            GameDifficulty.Challenging,
+            GameEntropy.Classic);
 
     /// <summary>
-    /// Frontier world, Normal difficulty, Standard entropy, no horse, light loadout.
+    /// Frontier world, Standard difficulty, Classic entropy, no horse, light loadout.
     /// Frontier variant makes pinecross->holloway Moderate/Hills/Spring.
-    /// Used for foe-encounter tests — this route profile produces a foe on day 1 at Calm heat.
+    /// Route/setup guardrail for tests that need a moderate-risk foot journey shape.
+    /// Foe-encounter determinism now comes from ForceDevTravelOverride, not from
+    /// this seed profile. See BUNCH-87.
     /// Note: starting town is seed-derived; the guardrail test verifies a route matching
     /// the expected profile exists from wherever the session starts.
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierFootNormalFoe = new(
         Guid.Empty,
-        TravelDifficulty.Normal,
-        AdventureRandomnessPolicy.Standard,
+        GameDifficulty.Standard,
+        GameEntropy.Classic,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownFoot),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: false,
@@ -111,8 +113,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierMountedHardNpc = new(
         Guid.Empty,
-        TravelDifficulty.Hard,
-        AdventureRandomnessPolicy.Standard,
+        GameDifficulty.Challenging,
+        GameEntropy.Classic,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: true,
@@ -133,8 +135,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierMountedNormalHighRisk = new(
         Guid.Empty,
-        TravelDifficulty.Normal,
-        AdventureRandomnessPolicy.Standard,
+        GameDifficulty.Standard,
+        GameEntropy.Classic,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: true,
@@ -168,9 +170,9 @@ internal static class TravelTestSeedCatalog
         var factory = new SeededNewGameFactory();
         return factory.Create(
             playerName,
-            descriptor.Difficulty,
+            descriptor.GameDifficulty,
             seedCode,
-            descriptor.AdventureRandomnessPolicy);
+            descriptor.GameEntropy);
     }
 
     /// <summary>

@@ -20,7 +20,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
   return {
     id: "game-1",
     status: 0,
-    travelDifficulty: 0,
+    gameDifficulty: 0,
+    gameEntropy: 1,
     player: {
       name: "Ruth",
       currentTownId: "pinecross",

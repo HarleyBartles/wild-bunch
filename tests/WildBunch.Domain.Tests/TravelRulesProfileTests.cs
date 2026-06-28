@@ -26,7 +26,7 @@ public sealed class TravelRulesProfileTests
     {
         var profile = TravelRulesProfile.Default;
 
-        Assert.Equal(TravelDifficulty.Normal, profile.Difficulty);
+        Assert.Equal(GameDifficulty.Standard, profile.Difficulty);
         Assert.Equal(10, profile.CanteenCapacity);
         Assert.Equal(3, profile.HorseHungerDeathThreshold);
         Assert.Equal(2, profile.HorseThirstDeathThreshold);
@@ -52,7 +52,7 @@ public sealed class TravelRulesProfileTests
     [Fact]
     public void NonDefaultProfileCanChangeTravelTuningWithoutDuplicatingRules()
     {
-        var easyProfile = TravelRulesProfile.For(TravelDifficulty.Easy);
+        var easyProfile = TravelRulesProfile.For(GameDifficulty.Easy);
         var horseState = new DomainHorseTravelState(3, 2, 3);
         var inventory = new DomainInventory(new[]
         {
@@ -72,7 +72,7 @@ public sealed class TravelRulesProfileTests
                 new DomainTrail(new DomainTrailId("trail-easy"), new DomainTownId("pinecross"), new DomainTownId("holloway"), DomainTrailRisk.Low, DomainTrailTerrain.OpenRange, DomainWaterFeature.None, 5m)
             });
         var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, new DomainTownId("pinecross"), Wallet.Starting(25m), inventory, TravelDifficulty.Easy);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, new DomainTownId("pinecross"), Wallet.Starting(25m), inventory, GameDifficulty.Easy);
 
         Assert.False(horseState.CanProvideMountedTravel);
         Assert.True(horseState.CanProvideMountedTravelFor(easyProfile));
@@ -87,7 +87,7 @@ public sealed class TravelRulesProfileTests
         Assert.Equal(1.5m, preview.Preview.RouteProfile.MountedRideDayProgress);
         Assert.Equal(0.75m, preview.Preview.RouteProfile.FootRideDayProgress);
         Assert.Equal(10, preview.Preview.AvailableCanteenCharges);
-        Assert.Equal(TravelDifficulty.Easy, session.TravelDifficulty);
+        Assert.Equal(GameDifficulty.Easy, session.GameDifficulty);
         Assert.Equal(4, easyProfile.LuckyTrailCoinReward);
         Assert.Equal(2, easyProfile.LuckyTrailFoodReward);
         Assert.Equal(2, easyProfile.LuckyTrailWaterRecovery);

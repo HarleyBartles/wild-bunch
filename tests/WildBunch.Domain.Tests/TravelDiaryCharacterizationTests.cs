@@ -10,7 +10,7 @@ namespace WildBunch.Domain.Tests;
 /// Characterization tests pinning exact travel diary and Travel-kind log entry
 /// accumulation behavior. These tests MUST pass before and after the Phase 2
 /// event-sourcing migration. All values are captured from deterministic scenarios
-/// using TravelRandomnessState.CreateDeterministic(string.Empty) and ForcedRoll.
+/// using SaltSource.CreateFixed(string.Empty) and ForcedRoll.
 /// </summary>
 public sealed class TravelDiaryCharacterizationTests
 {

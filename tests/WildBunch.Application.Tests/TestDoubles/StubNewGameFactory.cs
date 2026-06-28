@@ -19,23 +19,23 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<string> RequestedPlayerNames { get; } = [];
 
-    public List<TravelDifficulty> RequestedTravelDifficulties { get; } = [];
+    public List<GameDifficulty> RequestedGameDifficulties { get; } = [];
 
     public List<string?> RequestedSetupSeedCodes { get; } = [];
 
-    public List<AdventureRandomnessPolicy> RequestedEntropies { get; } = [];
+    public List<GameEntropy> RequestedEntropies { get; } = [];
 
     public List<string?> RequestedStartingTownIds { get; } = [];
 
     public GameSession Create(
         string playerName,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty GameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        GameEntropy entropy = GameEntropy.Classic,
         string? startingTownId = null)
     {
         RequestedPlayerNames.Add(playerName);
-        RequestedTravelDifficulties.Add(travelDifficulty);
+        RequestedGameDifficulties.Add(GameDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
         RequestedEntropies.Add(entropy);
         RequestedStartingTownIds.Add(startingTownId);
@@ -95,6 +95,6 @@ public sealed class StubNewGameFactory : INewGameFactory
             dustvale.Id,
             Wallet.Starting(25m),
             inventory,
-            travelRandomness: TravelRandomnessState.CreateDeterministic("application-tests"));
+            saltSource: SaltSource.CreateFixed("application-tests"));
     }
 }

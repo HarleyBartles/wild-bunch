@@ -76,14 +76,14 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     playerName,
-    travelDifficulty,
+    gameDifficulty,
     seedState,
     seedDraft,
     seedDirty,
     decodeError,
     setPlayerName,
     setSeedDraft,
-    setTravelDifficulty,
+    setGameDifficulty,
     applySeed,
     randomizeSeed,
   } = useStartGameSeed({ session, resetToken });
@@ -101,7 +101,7 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
     const seedCode = await encodeGameSetupSeed(seedState);
     await onStartGame({
       playerName: trimmedName,
-      travelDifficulty,
+      gameDifficulty,
       seedCode,
     });
   }
@@ -115,13 +115,13 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
       <StartGameForm onSubmit={(event: FormEvent<HTMLFormElement>) => void handleSubmit(event)}>
         <StartGameOptionsForm
           playerName={playerName}
-          travelDifficulty={travelDifficulty}
+          gameDifficulty={gameDifficulty}
           seedDraft={seedDraft}
           seedDirty={seedDirty}
           decodeError={decodeError}
           onPlayerNameChange={setPlayerName}
           onSeedDraftChange={setSeedDraft}
-          onTravelDifficultyChange={setTravelDifficulty}
+          onGameDifficultyChange={setGameDifficulty}
         />
 
         <SetupSeedSummary seedState={seedState} />

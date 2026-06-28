@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using WildBunch.Api;
 using WildBunch.Api.Games;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Travel;
 using WildBunch.Integration.Tests.TestInfrastructure;
@@ -176,6 +177,11 @@ public sealed class GameApiTests
         Assert.Equal(startingFood, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
 
+        // Force Quiet days so the journey is not interrupted by seed-dependent encounters.
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
+            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
+
         var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
         Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
@@ -202,6 +208,10 @@ public sealed class GameApiTests
         Assert.Contains($"{preview.Preview.BaselineRideDays}-day", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("by mounted travel", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("without a horse", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
+            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
 
         var secondAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -379,6 +389,12 @@ public sealed class GameApiTests
         Assert.Null(dryForkTravel.Journey!.PendingEncounter);
         Assert.Equal(0, dryForkTravel.CurrentSession.Journey!.DaysTravelled);
 
+        // Force an NPC encounter so the test gets the expected encounter kind
+        // regardless of the deterministic seed hash (BUNCH-104 enum rename shifted rolls).
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
+            new ForceTravelOverrideRequestDto("Npc", null, null, null, null));
+
         var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
         Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
@@ -470,6 +486,11 @@ public sealed class GameApiTests
     {
         for (var step = 0; step < 20; step++)
         {
+            // Force Quiet days so the journey is not interrupted by seed-dependent encounters.
+            await client.PostAsJsonAsync(
+                $"/api/dev/sessions/{gameId}/travel/force-override",
+                new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
+
             var advanceResponse = await client.PostAsync($"/api/games/{gameId}/travel/advance", content: null);
 
             Assert.Equal(HttpStatusCode.OK, advanceResponse.StatusCode);

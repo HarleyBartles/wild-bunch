@@ -23,27 +23,48 @@ internal static class ScenarioSeedCatalog
     private static readonly string CanonicalMountedSeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
         StartingWorldDescriptorResolver.CreateCanonicalSeedCode());
 
-    private static readonly string NoHorseLightEasySeedCode = "7d455293-f269-a642-72af-0193fdbdfb51";
+    // Descriptor-derived seed code for the NoHorseLightEasy fixture.
+    // Per AGENTS.md, do NOT store UUIDs in test fixtures — store descriptors and
+    // derive UUIDs on the fly via CreateRepresentativeSeedCode so they stay fresh
+    // when the codec evolves.
+    private static readonly string NoHorseLightEasySeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
+        StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(
+            new StartingWorldDescriptor(
+                Guid.Empty,
+                GameDifficulty.Easy,
+                GameEntropy.Boring,
+                new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownFoot),
+                new StartingWorldDescriptorPlayer(
+                    StartWithHorse: false,
+                    LoadoutProfile: StartingLoadoutProfile.Light,
+                    StartingCash: 23m,
+                    Loadout: new StartingWorldDescriptorLoadout(
+                        Food: 3,
+                        HorseFeed: 2,
+                        RevolverAmmo: 4,
+                        IncludeHorse: false,
+                        IncludeSaddle: false)),
+                new StartingWorldDescriptorCase(1))));
 
-    public static readonly ScenarioSeedFixture CanonicalMountedNormal = new(
-        Name: "CanonicalMountedNormal",
+    public static readonly ScenarioSeedFixture CanonicalMountedStandard = new(
+        Name: "CanonicalMountedStandard",
         SeedCode: CanonicalMountedSeedCode,
-        TravelDifficulty: TravelDifficulty.Normal,
-        Entropy: AdventureRandomnessPolicy.Standard,
+        GameDifficulty: GameDifficulty.Standard,
+        GameEntropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|CanonicalMountedNormal|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
+        RequiredShapeSignature: "resolver-v2|CanonicalMountedStandard|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
         DescribeShapeSignature: DescribeCanonicalMountedShape,
-        AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedNormal", session),
+        AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         PreviewDestinationTownId: "holloway",
-        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedNormal", session, destinationTownId, preview));
+        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedStandard", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture CanonicalPinecrossServices = new(
         Name: "CanonicalPinecrossServices",
-        SeedCode: CanonicalMountedNormal.SeedCode,
-        TravelDifficulty: TravelDifficulty.Normal,
-        Entropy: AdventureRandomnessPolicy.Standard,
+        SeedCode: CanonicalMountedStandard.SeedCode,
+        GameDifficulty: GameDifficulty.Standard,
+        GameEntropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|CanonicalPinecrossServices|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
+        RequiredShapeSignature: "resolver-v2|CanonicalPinecrossServices|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
         DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
@@ -57,11 +78,11 @@ internal static class ScenarioSeedCatalog
 
     public static readonly ScenarioSeedFixture HighRiskFoeInterruptRoute = new(
         Name: "HighRiskFoeInterruptRoute",
-        SeedCode: CanonicalMountedNormal.SeedCode,
-        TravelDifficulty: TravelDifficulty.Normal,
-        Entropy: AdventureRandomnessPolicy.Standard,
+        SeedCode: CanonicalMountedStandard.SeedCode,
+        GameDifficulty: GameDifficulty.Standard,
+        GameEntropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
+        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -80,15 +101,15 @@ internal static class ScenarioSeedCatalog
     public static readonly ScenarioSeedFixture NoHorseLightEasy = new(
         Name: "NoHorseLightEasy",
         SeedCode: NoHorseLightEasySeedCode,
-        TravelDifficulty: TravelDifficulty.Easy,
-        Entropy: AdventureRandomnessPolicy.Boring,
+        GameDifficulty: GameDifficulty.Easy,
+        GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
         RequiredShapeSignature: "resolver-v2|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=absent|saddle=absent|health=1250|travel=foot|preview=redmesa:foot:false",
         DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {
-            RequireEqual("NoHorseLightEasy", "start-game.travelDifficulty", TravelDifficulty.Easy, session.TravelDifficulty);
-            RequireEqual("NoHorseLightEasy", "start-game.entropy", AdventureRandomnessPolicy.Boring, session.Entropy);
+            RequireEqual("NoHorseLightEasy", "start-game.GameDifficulty", GameDifficulty.Easy, session.GameDifficulty);
+            RequireEqual("NoHorseLightEasy", "start-game.entropy", GameEntropy.Boring, session.GameEntropy);
             RequireEqual("NoHorseLightEasy", "start-game.health", 1250, session.Player.Health);
             RequireEqual("NoHorseLightEasy", "start-game.horseState", null, session.Inventory.HorseState);
             Require("NoHorseLightEasy", "start-game.inventory.noHorseItem", !session.Inventory.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to omit a horse.");
@@ -117,7 +138,7 @@ internal static class ScenarioSeedCatalog
     public static IReadOnlyList<ScenarioSeedFixture> All { get; } =
         new[]
         {
-            CanonicalMountedNormal,
+            CanonicalMountedStandard,
             CanonicalPinecrossServices,
             HighRiskFoeInterruptRoute,
             NoHorseLightEasy
@@ -225,9 +246,9 @@ internal static class ScenarioSeedCatalog
     public static StartGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)
         => new(
             playerName,
-            fixture.TravelDifficulty,
+            fixture.GameDifficulty,
             fixture.SeedCode,
-            fixture.Entropy);
+            fixture.GameEntropy);
 
     public static void AssertCreatedSession(this ScenarioSeedFixture fixture, GameSessionDto session)
         => fixture.AssertCreatedSessionContract(session);
@@ -254,8 +275,8 @@ internal static class ScenarioSeedCatalog
 
     private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
     {
-        RequireEqual(scenarioName, "start-game.travelDifficulty", TravelDifficulty.Normal, session.TravelDifficulty);
-        RequireEqual(scenarioName, "start-game.entropy", AdventureRandomnessPolicy.Standard, session.Entropy);
+        RequireEqual(scenarioName, "start-game.GameDifficulty", GameDifficulty.Standard, session.GameDifficulty);
+        RequireEqual(scenarioName, "start-game.entropy", GameEntropy.Classic, session.GameEntropy);
         RequireEqual(scenarioName, "start-game.currentTownId", "pinecross", session.Player.CurrentTownId);
         RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
         RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
@@ -326,8 +347,8 @@ internal static class ScenarioSeedCatalog
         => string.Join(
             "|",
             ResolverContractVersion,
-            "CanonicalMountedNormal",
-            $"entropy={session.Entropy}",
+            "CanonicalMountedStandard",
+            $"entropy={session.GameEntropy}",
             $"start={session.Player.CurrentTownId}",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
@@ -340,7 +361,7 @@ internal static class ScenarioSeedCatalog
             "|",
             ResolverContractVersion,
             "CanonicalPinecrossServices",
-            $"entropy={session.Entropy}",
+            $"entropy={session.GameEntropy}",
             $"start={session.Player.CurrentTownId}",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
@@ -362,7 +383,7 @@ internal static class ScenarioSeedCatalog
             "|",
             ResolverContractVersion,
             "HighRiskFoeInterruptRoute",
-            $"entropy={session.Entropy}",
+            $"entropy={session.GameEntropy}",
             $"start={session.Player.CurrentTownId}",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
@@ -377,8 +398,8 @@ internal static class ScenarioSeedCatalog
             "|",
             ResolverContractVersion,
             "NoHorseLightEasy",
-            $"entropy={session.Entropy}",
-            $"difficulty={session.TravelDifficulty}",
+            $"entropy={session.GameEntropy}",
+            $"difficulty={session.GameDifficulty}",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"health={session.Player.Health}",

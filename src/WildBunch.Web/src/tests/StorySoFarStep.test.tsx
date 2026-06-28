@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
 import { getPrologue } from "../api/wildBunchApi";
-import type { AdventureRandomnessPolicy, PrologueDto, TravelDifficulty } from "../api/types";
+import type { GameEntropy, PrologueDto, GameDifficulty } from "../api/types";
 
 vi.mock("../api/wildBunchApi", () => ({
   getPrologue: vi.fn(),
@@ -27,7 +27,7 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
   };
 }
 
-function renderStep(overrides: { seedCode?: string | null; travelDifficulty?: TravelDifficulty; entropy?: AdventureRandomnessPolicy; onContinue?: () => void } = {}) {
+function renderStep(overrides: { seedCode?: string | null; gameDifficulty?: GameDifficulty; gameEntropy?: GameEntropy; onContinue?: () => void } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -42,8 +42,8 @@ function renderStep(overrides: { seedCode?: string | null; travelDifficulty?: Tr
       <StorySoFarStep
         onContinue={onContinue}
         seedCode={overrides.seedCode ?? "SEED-CODE-1"}
-        travelDifficulty={overrides.travelDifficulty}
-        entropy={overrides.entropy}
+        gameDifficulty={overrides.gameDifficulty}
+        gameEntropy={overrides.gameEntropy}
       />
     </QueryClientProvider>,
   );
@@ -166,10 +166,10 @@ describe("StorySoFarStep", () => {
     expect(onContinue).not.toHaveBeenCalled();
   });
 
-  it("passes the seedCode, travelDifficulty, and entropy to getPrologue", async () => {
+  it("passes the seedCode, gameDifficulty, and gameEntropy to getPrologue", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
-    renderStep({ seedCode: "MY-SEED-42", travelDifficulty: 2 as TravelDifficulty, entropy: 3 as AdventureRandomnessPolicy });
+    renderStep({ seedCode: "MY-SEED-42", gameDifficulty: 2 as GameDifficulty, gameEntropy: 3 as GameEntropy });
 
     await screen.findByText(/black bart/i);
 

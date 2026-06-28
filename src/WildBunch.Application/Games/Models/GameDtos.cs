@@ -11,8 +11,8 @@ namespace WildBunch.Application.Games.Models;
 public sealed record GameSessionDto(
     Guid Id,
     GameStatus Status,
-    TravelDifficulty TravelDifficulty,
-    AdventureRandomnessPolicy Entropy,
+    GameDifficulty GameDifficulty,
+    GameEntropy GameEntropy,
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,

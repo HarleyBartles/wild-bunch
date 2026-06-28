@@ -12,7 +12,7 @@ namespace WildBunch.Application.Tests;
 
 public sealed class ResolveJourneyEncounterHandlerTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public async Task HandleAsyncReturnsFirstPersonDiaryForResolvedRunChoice()
@@ -207,10 +207,14 @@ public sealed class ResolveJourneyEncounterHandlerTests
             new InventoryItem(ItemKind.RevolverAmmo, 2)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        // Force a foe encounter so the tests don't depend on the deterministic seed
+        // producing a foe. The seed hash changed when the difficulty enum was renamed
+        // (Normal -> Standard), which shifted which encounters the generator produces.
+        session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         return session;
     }
 }

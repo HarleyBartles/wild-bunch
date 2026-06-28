@@ -159,8 +159,8 @@ public sealed class ClockTurnCorrectionTests
         });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory, TravelDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
+            SaltSource.CreateFixed(string.Empty));
         gameStarted = Assert.IsType<GameStarted>(session.UncommittedEvents.Single());
         return session;
     }

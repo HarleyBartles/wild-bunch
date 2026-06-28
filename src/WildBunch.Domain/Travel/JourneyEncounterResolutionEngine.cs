@@ -52,10 +52,10 @@ internal static class JourneyEncounterResolutionEngine
                 _ => 0
             })
             + (context.TravelMode == TravelMode.Mounted ? 0 : 1)
-            + (context.Difficulty switch
+            + (context.GameDifficulty switch
             {
-                TravelDifficulty.Hard => 1,
-                TravelDifficulty.Easy => -1,
+                GameDifficulty.Challenging => 1,
+                GameDifficulty.Easy => -1,
                 _ => 0
             });
 
@@ -74,10 +74,10 @@ internal static class JourneyEncounterResolutionEngine
                 TrailTerrain.Mountains => 2,
                 _ => 0
             })
-            + (context.Difficulty switch
+            + (context.GameDifficulty switch
             {
-                TravelDifficulty.Hard => 1,
-                TravelDifficulty.Easy => -1,
+                GameDifficulty.Challenging => 1,
+                GameDifficulty.Easy => -1,
                 _ => 0
             });
 

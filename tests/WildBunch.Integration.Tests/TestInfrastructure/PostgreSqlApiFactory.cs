@@ -34,12 +34,12 @@ public sealed class PostgreSqlApiFactory : WebApplicationFactory<Program>, IDisp
             services.RemoveAll<DbContextOptions<WildBunchDbContext>>();
             services.RemoveAll<WildBunchDbContext>();
             services.RemoveAll<IGameSessionRepository>();
-            services.RemoveAll<ITravelRandomnessSource>();
+            services.RemoveAll<ISaltSourceFactory>();
 
             services.AddSingleton(_database);
             services.AddDbContext<WildBunchDbContext>((_, options) => options.UseNpgsql(_database.ConnectionString));
             services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
-            services.AddSingleton<ITravelRandomnessSource, DeterministicTravelRandomnessSource>();
+            services.AddSingleton<ISaltSourceFactory, DeterministicSaltSourceFactory>();
         });
     }
 

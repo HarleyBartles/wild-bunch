@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { AdventureRandomnessPolicy, TravelDifficulty } from "../api/types";
+import type { GameEntropy, GameDifficulty } from "../api/types";
 import { SetupHuntStep } from "../components/start-flow/SetupHuntStep";
 
 afterEach(() => {
@@ -11,8 +11,8 @@ afterEach(() => {
 
 interface StepHandlers {
   onPlayerNameChange: (value: string) => void;
-  onTravelDifficultyChange: (difficulty: TravelDifficulty) => void;
-  onEntropyChange: (entropy: AdventureRandomnessPolicy) => void;
+  onGameDifficultyChange: (difficulty: GameDifficulty) => void;
+  onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
   onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
@@ -21,39 +21,39 @@ interface StepHandlers {
 
 function StatefulSetupHuntStep({
   initialName = "",
-  initialDifficulty = 0 as TravelDifficulty,
-  initialEntropy = 1 as AdventureRandomnessPolicy,
+  initialDifficulty = 0 as GameDifficulty,
+  initialGameEntropy = 1 as GameEntropy,
   initialSeedDraft = "00000000-0000-0000-0000-000000000000",
   onPlayerNameChange,
-  onTravelDifficultyChange,
-  onEntropyChange,
+  onGameDifficultyChange,
+  onGameEntropyChange,
   onSeedDraftChange,
   onApplySeed,
   onRandomizeSeed,
   onContinue,
 }: {
   initialName?: string;
-  initialDifficulty?: TravelDifficulty;
-  initialEntropy?: AdventureRandomnessPolicy;
+  initialDifficulty?: GameDifficulty;
+  initialGameEntropy?: GameEntropy;
   initialSeedDraft?: string;
   onPlayerNameChange: (value: string) => void;
-  onTravelDifficultyChange: (difficulty: TravelDifficulty) => void;
-  onEntropyChange: (entropy: AdventureRandomnessPolicy) => void;
+  onGameDifficultyChange: (difficulty: GameDifficulty) => void;
+  onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
   onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }) {
   const [playerName, setPlayerName] = useState(initialName);
-  const [difficulty, setDifficulty] = useState<TravelDifficulty>(initialDifficulty);
-  const [entropy, setEntropy] = useState<AdventureRandomnessPolicy>(initialEntropy);
+  const [difficulty, setDifficulty] = useState<GameDifficulty>(initialDifficulty);
+  const [gameEntropy, setGameEntropy] = useState<GameEntropy>(initialGameEntropy);
   const [seedDraft, setSeedDraft] = useState(initialSeedDraft);
   const [seedDirty, setSeedDirty] = useState(false);
   return (
     <SetupHuntStep
       playerName={playerName}
-      travelDifficulty={difficulty}
-      entropy={entropy}
+      gameDifficulty={difficulty}
+      gameEntropy={gameEntropy}
       seedDraft={seedDraft}
       seedDirty={seedDirty}
       decodeError={null}
@@ -61,13 +61,13 @@ function StatefulSetupHuntStep({
         setPlayerName(value);
         onPlayerNameChange(value);
       }}
-      onTravelDifficultyChange={(value) => {
+      onGameDifficultyChange={(value) => {
         setDifficulty(value);
-        onTravelDifficultyChange(value);
+        onGameDifficultyChange(value);
       }}
-      onEntropyChange={(value) => {
-        setEntropy(value);
-        onEntropyChange(value);
+      onGameEntropyChange={(value) => {
+        setGameEntropy(value);
+        onGameEntropyChange(value);
       }}
       onSeedDraftChange={(value) => {
         setSeedDraft(value);
@@ -83,15 +83,15 @@ function StatefulSetupHuntStep({
 
 function renderStep(overrides: Partial<{
   playerName: string;
-  travelDifficulty: TravelDifficulty;
-  entropy: AdventureRandomnessPolicy;
+  gameDifficulty: GameDifficulty;
+  gameEntropy: GameEntropy;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   stateful: boolean;
   onPlayerNameChange: (value: string) => void;
-  onTravelDifficultyChange: (difficulty: TravelDifficulty) => void;
-  onEntropyChange: (entropy: AdventureRandomnessPolicy) => void;
+  onGameDifficultyChange: (difficulty: GameDifficulty) => void;
+  onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
   onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
@@ -99,8 +99,8 @@ function renderStep(overrides: Partial<{
 }> = {}) {
   const handlers: StepHandlers = {
     onPlayerNameChange: overrides.onPlayerNameChange ?? vi.fn(),
-    onTravelDifficultyChange: overrides.onTravelDifficultyChange ?? vi.fn(),
-    onEntropyChange: overrides.onEntropyChange ?? vi.fn(),
+    onGameDifficultyChange: overrides.onGameDifficultyChange ?? vi.fn(),
+    onGameEntropyChange: overrides.onGameEntropyChange ?? vi.fn(),
     onSeedDraftChange: overrides.onSeedDraftChange ?? vi.fn(),
     onApplySeed: overrides.onApplySeed ?? vi.fn().mockResolvedValue(undefined),
     onRandomizeSeed: overrides.onRandomizeSeed ?? vi.fn(),
@@ -111,12 +111,12 @@ function renderStep(overrides: Partial<{
     render(
       <StatefulSetupHuntStep
         initialName={overrides.playerName ?? ""}
-        initialDifficulty={overrides.travelDifficulty ?? 0}
-        initialEntropy={overrides.entropy ?? 1}
+        initialDifficulty={overrides.gameDifficulty ?? 0}
+        initialGameEntropy={overrides.gameEntropy ?? 1}
         initialSeedDraft={overrides.seedDraft ?? "00000000-0000-0000-0000-000000000000"}
         onPlayerNameChange={handlers.onPlayerNameChange}
-        onTravelDifficultyChange={handlers.onTravelDifficultyChange}
-        onEntropyChange={handlers.onEntropyChange}
+        onGameDifficultyChange={handlers.onGameDifficultyChange}
+        onGameEntropyChange={handlers.onGameEntropyChange}
         onSeedDraftChange={handlers.onSeedDraftChange}
         onApplySeed={handlers.onApplySeed}
         onRandomizeSeed={handlers.onRandomizeSeed}
@@ -127,14 +127,14 @@ function renderStep(overrides: Partial<{
     render(
       <SetupHuntStep
         playerName={overrides.playerName ?? ""}
-        travelDifficulty={overrides.travelDifficulty ?? 0}
-        entropy={overrides.entropy ?? 1}
+        gameDifficulty={overrides.gameDifficulty ?? 0}
+        gameEntropy={overrides.gameEntropy ?? 1}
         seedDraft={overrides.seedDraft ?? "00000000-0000-0000-0000-000000000000"}
         seedDirty={overrides.seedDirty ?? false}
         decodeError={overrides.decodeError ?? null}
         onPlayerNameChange={handlers.onPlayerNameChange}
-        onTravelDifficultyChange={handlers.onTravelDifficultyChange}
-        onEntropyChange={handlers.onEntropyChange}
+        onGameDifficultyChange={handlers.onGameDifficultyChange}
+        onGameEntropyChange={handlers.onGameEntropyChange}
         onSeedDraftChange={handlers.onSeedDraftChange}
         onApplySeed={handlers.onApplySeed}
         onRandomizeSeed={handlers.onRandomizeSeed}
@@ -211,29 +211,29 @@ describe("SetupHuntStep", () => {
     expect(screen.getByText(/tell me what name you go by before we ride on\./i)).toBeInTheDocument();
   });
 
-  it("calls onTravelDifficultyChange when a difficulty option is selected", async () => {
+  it("calls onGameDifficultyChange when a difficulty option is selected", async () => {
     const user = userEvent.setup();
-    const onTravelDifficultyChange = vi.fn();
-    renderStep({ stateful: true, onTravelDifficultyChange });
+    const onGameDifficultyChange = vi.fn();
+    renderStep({ stateful: true, onGameDifficultyChange });
 
-    const hard = screen.getByRole("button", { name: /^hard$/i });
-    await user.click(hard);
+    const challenging = screen.getByRole("button", { name: /^challenging$/i });
+    await user.click(challenging);
 
-    expect(onTravelDifficultyChange).toHaveBeenCalledWith(2);
+    expect(onGameDifficultyChange).toHaveBeenCalledWith(2);
   });
 
-  it("calls onEntropyChange when an entropy option is selected", async () => {
+  it("calls onGameEntropyChange when a gameEntropy option is selected", async () => {
     const user = userEvent.setup();
-    const onEntropyChange = vi.fn();
-    renderStep({ stateful: true, onEntropyChange });
+    const onGameEntropyChange = vi.fn();
+    renderStep({ stateful: true, onGameEntropyChange });
 
     const wild = screen.getByRole("button", { name: /^wild$/i });
     await user.click(wild);
 
-    expect(onEntropyChange).toHaveBeenCalledWith(3);
+    expect(onGameEntropyChange).toHaveBeenCalledWith(3);
   });
 
-  it("renders difficulty options as Easy, Normal, Hard in that order", () => {
+  it("renders difficulty options as Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -241,13 +241,13 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Easy", "Normal", "Hard"]);
-    expect(labels).not.toContain("Greenhorn");
-    expect(labels).not.toContain("Trail hand");
-    expect(labels).not.toContain("Iron rider");
+    expect(labels).toEqual(["Standard", "Challenging", "Brutal"]);
+    expect(labels).not.toContain("Easy");
+    expect(labels).not.toContain("Normal");
+    expect(labels).not.toContain("Hard");
   });
 
-  it("renders entropy options as Classic, Adventurous, Wild in that order", () => {
+  it("renders gameEntropy options as Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -261,7 +261,7 @@ describe("SetupHuntStep", () => {
     expect(labels).not.toContain("Rowdy");
   });
 
-  it("does not render Boring as a player-facing entropy option", () => {
+  it("does not render Boring as a player-facing gameEntropy option", () => {
     renderStep();
 
     expect(screen.queryByRole("button", { name: /^boring$/i })).not.toBeInTheDocument();

@@ -1,6 +1,6 @@
 export type GameStatus = 0 | 1 | 2 | 3;
-export type TravelDifficulty = 0 | 1 | 2;
-export type AdventureRandomnessPolicy = 0 | 1 | 2 | 3;
+export type GameDifficulty = 0 | 1 | 2 | 3;
+export type GameEntropy = 0 | 1 | 2 | 3;
 export type JourneyStatus = 0 | 1 | 2 | 3;
 export const JourneyStatus = {
   Active: 0,
@@ -48,9 +48,9 @@ export type CaseIdentityStatus = 0 | 1 | 2 | 3;
 
 export interface StartGameRequest {
   playerName: string;
-  travelDifficulty: TravelDifficulty;
+  gameDifficulty: GameDifficulty;
   seedCode?: string | null;
-  entropy?: AdventureRandomnessPolicy;
+  gameEntropy?: GameEntropy;
   startingTownId?: string | null;
 }
 
@@ -471,7 +471,8 @@ export interface JourneyTrailEventDto {
 export interface GameSessionDto {
   id: string;
   status: GameStatus;
-  travelDifficulty: TravelDifficulty;
+  gameDifficulty: GameDifficulty;
+  gameEntropy: GameEntropy;
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;

@@ -74,6 +74,9 @@ namespace WildBunch.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("GameDifficulty")
+                        .HasColumnType("integer");
+
                     b.Property<int>("SchemaVersion")
                         .HasColumnType("integer");
 
@@ -87,9 +90,6 @@ namespace WildBunch.Persistence.Migrations
 
                     b.Property<long>("StreamVersion")
                         .HasColumnType("bigint");
-
-                    b.Property<int>("TravelDifficulty")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");

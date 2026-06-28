@@ -15,7 +15,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
   return {
     id: "game-1",
     status: 0,
-    travelDifficulty: 0,
+    gameDifficulty: 0,
+    gameEntropy: 1,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
@@ -94,7 +95,7 @@ describe("StartGamePanel", () => {
     const { onStartGame } = renderPanel();
 
     const playerName = screen.getByLabelText(/player name/i);
-    const difficulty = screen.getByLabelText(/travel difficulty/i);
+    const difficulty = screen.getByLabelText(/Game difficulty/i);
     const seedInput = await screen.findByLabelText(/setup seed/i);
 
     await waitFor(() => {
@@ -111,7 +112,7 @@ describe("StartGamePanel", () => {
 
     const [request] = onStartGame.mock.calls[0];
     expect(request.playerName).toBe("Ranger Vale");
-    expect(request.travelDifficulty).toBe(2);
+    expect(request.gameDifficulty).toBe(2);
     expect(request.seedCode).toBe((seedInput as HTMLInputElement).value);
   });
 
@@ -156,7 +157,7 @@ describe("StartGamePanel", () => {
 
     const [request] = onStartGame.mock.calls[0];
     expect(request.seedCode).toBe(canonicalSeedCode);
-    expect(request.travelDifficulty).toBe(0);
+    expect(request.gameDifficulty).toBe(0);
   });
 
   it("randomizes the seed to a fresh UUID and sends it to the backend", async () => {
@@ -167,7 +168,7 @@ describe("StartGamePanel", () => {
     const seedInput = await screen.findByLabelText(/setup seed/i);
     const beforeRandomize = (seedInput as HTMLInputElement).value;
 
-    await user.selectOptions(screen.getByLabelText(/travel difficulty/i), "1");
+    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "2");
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
 
     await waitFor(() => {
@@ -184,7 +185,7 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.travelDifficulty).toBe(1);
+    expect(request.gameDifficulty).toBe(2);
     expect(request.seedCode).toBe("11111111-2222-3333-4444-555555555555");
   });
 });

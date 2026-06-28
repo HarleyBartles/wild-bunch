@@ -35,7 +35,7 @@ public sealed class FullAuditProjector : IDomainEventProjector<FullAuditProjecti
 
     private static string Summarize(IDomainEvent e) => e switch
     {
-        GameStarted gs => $"Game started: {gs.PlayerName} in {gs.StartingTownName} ({gs.Difficulty}).",
+        GameStarted gs => $"Game started: {gs.PlayerName} in {gs.StartingTownName} ({gs.GameDifficulty}).",
         StoreItemPurchased purchase => $"Purchased {purchase.Quantity}x {purchase.DisplayName} for {purchase.TotalPrice:C} (wallet: {purchase.WalletAfter:C}).",
         TownActionContextEntered contextEntered => $"Entered {FormatTownContext(contextEntered.Context)} in {contextEntered.TownId.Value} on day {contextEntered.Day}, turn {contextEntered.Turn} ({contextEntered.TimeOfDay}); heat {contextEntered.PursuitHeat}.",
         InvestigationPerformed investigation => $"Investigated {FormatInvestigationSource(investigation.SourceKind)} in {investigation.TownId.Value}: {investigation.Message}",

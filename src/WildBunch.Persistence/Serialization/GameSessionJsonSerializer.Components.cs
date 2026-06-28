@@ -81,16 +81,16 @@ public sealed partial class GameSessionJsonSerializer
         return PursuitStateSnapshot.ToDomain(snapshot);
     }
 
-    public string SerializeTravelRandomness(TravelRandomnessState travelRandomness)
+    public string SerializeSaltSource(SaltSource saltSource)
     {
-        ArgumentNullException.ThrowIfNull(travelRandomness);
-        return JsonSerializer.Serialize(TravelRandomnessSnapshot.FromDomain(travelRandomness), Options);
+        ArgumentNullException.ThrowIfNull(saltSource);
+        return JsonSerializer.Serialize(SaltSourceSnapshot.FromDomain(saltSource), Options);
     }
 
-    public TravelRandomnessState DeserializeTravelRandomness(string json)
+    public SaltSource DeserializeSaltSource(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<TravelRandomnessSnapshot>(json);
+        var snapshot = Deserialize<SaltSourceSnapshot>(json);
         return snapshot.ToDomain();
     }
 
@@ -667,12 +667,12 @@ public sealed partial class GameSessionJsonSerializer
         }
     }
 
-    private sealed record TravelRandomnessSnapshot(TravelRandomnessMode Mode, string Salt)
+    private sealed record SaltSourceSnapshot(SaltSourceMode Mode, string Salt)
     {
-        public static TravelRandomnessSnapshot FromDomain(TravelRandomnessState randomnessState)
-            => new(randomnessState.Mode, randomnessState.Salt);
+        public static SaltSourceSnapshot FromDomain(SaltSource saltSource)
+            => new(saltSource.Mode, saltSource.Salt);
 
-        public TravelRandomnessState ToDomain()
+        public SaltSource ToDomain()
             => new(Mode, Salt);
     }
 

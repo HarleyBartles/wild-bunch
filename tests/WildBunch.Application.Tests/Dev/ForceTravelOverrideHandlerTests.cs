@@ -86,8 +86,8 @@ public sealed class ForceTravelOverrideHandlerTests
         });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id,
-            Wallet.Starting(25m), inventory, TravelDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var resolver = new TravelResolver();

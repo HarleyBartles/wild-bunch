@@ -37,8 +37,8 @@ internal static class StartingWorldDescriptorSeedMixer
 
         return string.Join(
             "|",
-            descriptor.Difficulty.ToString(),
-            descriptor.AdventureRandomnessPolicy.ToString(),
+            descriptor.GameDifficulty.ToString(),
+            descriptor.GameEntropy.ToString(),
             descriptor.World.Variant.ToString(),
             descriptor.World.StartingTownSelectionKey,
             descriptor.Player.StartWithHorse.ToString(),

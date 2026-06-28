@@ -13,14 +13,16 @@ export function formatGameStatus(status: number) {
   }
 }
 
-export function formatTravelDifficulty(difficulty: number) {
+export function formatGameDifficulty(difficulty: number) {
   switch (difficulty) {
     case 0:
-      return "Normal";
+      return "Standard";
     case 1:
       return "Easy";
     case 2:
-      return "Hard";
+      return "Challenging";
+    case 3:
+      return "Brutal";
     default:
       return `Difficulty ${difficulty}`;
   }
