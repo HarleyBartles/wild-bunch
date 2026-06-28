@@ -129,3 +129,50 @@ describe("PhaserMapHost", () => {
     expect(Phaser.Game).toBeDefined();
   });
 });
+
+describe("PhaserMapHost truth boundary", () => {
+  it("does not give the scene access to createGame or any API function", () => {
+    renderHost();
+
+    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    expect((scene as unknown as Record<string, unknown>).createGame).toBeUndefined();
+    expect((scene as unknown as Record<string, unknown>).api).toBeUndefined();
+    expect((scene as unknown as Record<string, unknown>).requestJson).toBeUndefined();
+    expect((scene as unknown as Record<string, unknown>).fetch).toBeUndefined();
+    expect((scene as unknown as Record<string, unknown>).getStartingTownMap).toBeUndefined();
+  });
+
+  it("selectTown only calls onTownSelected and does not call fetch or any API", () => {
+    const onTownSelected = vi.fn();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    renderHost({ onTownSelected });
+
+    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    scene.selectTown("t-town");
+
+    expect(onTownSelected).toHaveBeenCalledTimes(1);
+    expect(onTownSelected).toHaveBeenCalledWith("t-town");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("does not mutate selectedTownId when selectTown is called", () => {
+    renderHost({ selectedTownId: null });
+
+    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    const before = scene.selectedTownId;
+    scene.selectTown("t-town");
+
+    expect(scene.selectedTownId).toBe(before);
+    expect(scene.selectedTownId).toBeNull();
+  });
+
+  it("receives selectedTownId as a readonly prop, not as stored truth", () => {
+    renderHost({ selectedTownId: "dust-fork" });
+
+    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    expect(scene.selectedTownId).toBe("dust-fork");
+    scene.selectTown("t-town");
+    expect(scene.selectedTownId).toBe("dust-fork");
+  });
+});

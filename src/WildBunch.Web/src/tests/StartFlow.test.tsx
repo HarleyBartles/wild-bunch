@@ -7,12 +7,17 @@ import { PreSessionSurface } from "../flow/PreSessionSurface";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
 import { createGame, getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns, getStartingTownMap } from "../api/wildBunchApi";
 
+const phaserMockState = vi.hoisted(() => ({
+  games: [] as Array<{ config: { scene: { selectTown: (townId: string) => void } } }>,
+}));
+
 vi.mock("phaser", () => {
   class Game {
     public config: unknown;
     public destroyed = false;
     constructor(config: unknown) {
       this.config = config;
+      phaserMockState.games.push(this as never);
     }
     destroy() {
       this.destroyed = true;
@@ -59,6 +64,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   window.localStorage.clear();
+  phaserMockState.games.length = 0;
 });
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
@@ -350,5 +356,99 @@ describe("StartFlow", () => {
     });
 
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
+  });
+
+  it("calls createGame with the correct startingTownId when a town is selected via the map host", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    const nameInput = await screen.findByLabelText(/your name/i);
+    await user.type(nameInput, "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(phaserMockState.games.length).toBeGreaterThan(0);
+    });
+
+    const scene = phaserMockState.games[0].config.scene;
+    scene.selectTown("dust-fork");
+
+    await waitFor(() => {
+      expect(mockedCreateGame).toHaveBeenCalledTimes(1);
+    });
+
+    const request: StartGameRequest = mockedCreateGame.mock.calls[0][0];
+    expect(request.startingTownId).toBe("dust-fork");
+    expect(request.playerName).toBe("Ranger Vale");
+  });
+
+  it("mounts the Phaser map but does not call createGame until a town is selected", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    const nameInput = await screen.findByLabelText(/your name/i);
+    await user.type(nameInput, "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(phaserMockState.games.length).toBeGreaterThan(0);
+    });
+
+    expect(mockedCreateGame).not.toHaveBeenCalled();
+
+    const scene = phaserMockState.games[0].config.scene;
+    scene.selectTown("t-town");
+
+    await waitFor(() => {
+      expect(mockedCreateGame).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("does not call createGame when the map mounts and no town is selected", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    const nameInput = await screen.findByLabelText(/your name/i);
+    await user.type(nameInput, "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(phaserMockState.games.length).toBeGreaterThan(0);
+    });
+
+    expect(mockedCreateGame).not.toHaveBeenCalled();
   });
 });
