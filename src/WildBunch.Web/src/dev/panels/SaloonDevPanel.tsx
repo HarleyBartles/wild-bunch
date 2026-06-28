@@ -375,6 +375,7 @@ const LeftColumn = styled.div`
   gap: 16px;
   grid-column: 1;
   min-width: 0;
+  overflow: hidden;
 `;
 
 const RightColumn = styled.div`
@@ -382,6 +383,7 @@ const RightColumn = styled.div`
   gap: 16px;
   grid-column: 2;
   min-width: 0;
+  overflow: hidden;
 
   @media (max-width: 700px) {
     grid-column: 1;
@@ -425,6 +427,7 @@ const Field = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
+  min-width: 0;
 `;
 
 const Select = styled.select`
@@ -435,6 +438,9 @@ const Select = styled.select`
   background: var(--bg);
   color: var(--text);
   font-size: 0.82rem;
+  min-width: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const ButtonRow = styled.div`
@@ -485,6 +491,8 @@ const SuspectRow = styled.div`
   font-size: 0.82rem;
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const SuspectName = styled.span`
@@ -495,11 +503,15 @@ const SuspectName = styled.span`
 const SuspectDetail = styled.span`
   color: var(--muted);
   font-size: 0.78rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const SuspectFact = styled.span`
   color: var(--muted);
   font-size: 0.76rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const SuspectReason = styled.span`
