@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the generic "a town clerk from {town}" citizen fallback with a varied source-backed citizen cast. Each citizen has a named role (butcher, mortician, doctor, etc.) and a globally unique distinguishing feature. During POI lookaround, identity stays concealed: the player sees only "a stranger with {feature}." The citizen's role is revealed only after a mistaken take-in, when the sheriff identifies them, releases them, and fines the player. Dev overlay can force a specific available citizen role to be the next POI encounter.
+**Goal:** Replace the generic "a town clerk from {town}" citizen fallback with a varied source-backed citizen cast. Each citizen has a named role (butcher, mortician, doctor, etc.) and a distinguishing feature drawn from the same shared feature vocabulary as suspects — so a citizen can plausibly be mistaken for a suspect. During POI lookaround, identity stays concealed: the player sees only "a stranger with {feature}." The citizen's role is revealed only after a mistaken take-in, when the sheriff identifies them, releases them, and fines the player. Dev overlay can force a specific available citizen role to be the next POI encounter.
 
-**Architecture:** A new `CitizenCast` static content catalog in `WildBunch.Domain.Game` defines named town roles and citizen-specific distinguishing features. `GameSession.LookAroundSaloon()` selects a citizen from the cast (deterministic pick based on town + day + turn + visitNumber) instead of calling the hardcoded `DescribeTownCitizen()`. The lookaround descriptor becomes "a stranger with {feature}" (concealment), matching the suspect descriptor pattern. The citizen's role key is carried in the `SaloonPersonOfInterestSpotted` event and stored in `TownVisitTownState` (accessed via `CurrentTownVisit.CurrentTownState`) alongside the descriptor. The `BountyLoopCoordinator` citizen confrontation path reads the stored role and builds a reveal narration: "The sheriff identifies them as {role}, releases them, and fines you ${fineAmount}." The `DevSaloonOverride` record is extended with an optional forced citizen role key. The `SaloonDevContextDto` / `CitizenInfoDto` is updated to expose the available citizen roles. The frontend `SaloonDevPanel` gets a citizen role selector when forcing a Citizen override. The citizen feature pool is disjoint from the suspect feature pool by construction (different keys, different descriptions), with a cross-cutting test asserting no overlap. Citizen feature descriptions are guardrailed to not reveal trade, role, office, or authority.
+**Architecture:** A new `CitizenCast` static content catalog in `WildBunch.Domain.Game` defines named town roles. Citizen distinguishing features are NOT a separate pool — they are drawn from the same feature vocabulary as suspects. `GameSession.LookAroundSaloon()` collects the suspect feature descriptions from `CaseFile.Suspects` (their `SuspectProfile.IdentifyingFacts`) and passes them to `CitizenCast.Select(townId, day, turn, visitNumber, featureDescriptions)`, which deterministically picks a citizen role and a feature from the provided suspect feature vocabulary. This preserves mistaken-identity play: a citizen can have the same visible feature as a wanted suspect, and the player cannot tell them apart by feature alone. The lookaround descriptor becomes "a stranger with {feature}" (concealment), matching the suspect descriptor pattern. The citizen's role key is carried in the `SaloonPersonOfInterestSpotted` event and stored in `TownVisitTownState` (accessed via `CurrentTownVisit.CurrentTownState`) alongside the descriptor. The `BountyLoopCoordinator` citizen confrontation path reads the stored role and builds a reveal narration: "The sheriff identifies them as {role}, releases them, and fines you ${fineAmount}." The `DevSaloonOverride` record is extended with an optional forced citizen role key. The `SaloonDevContextDto` / `CitizenInfoDto` is updated to expose the available citizen roles. The frontend `SaloonDevPanel` gets a citizen role selector when forcing a Citizen override. The non-role-revealing guardrail verifies that suspect feature descriptions (the shared vocabulary) do not contain citizen role names — but does NOT create a separate citizen-only feature vocabulary.
 
 **Tech Stack:** C#/.NET 10, ASP.NET Core Minimal APIs, EF Core, xUnit, React 18, TanStack Query, styled-components, Vitest.
 
@@ -21,7 +21,8 @@
 - The culprit is always a gang member; this issue does not touch culprit/seed logic.
 - Do not implement a frontend-only citizen roster or frontend-only role labels.
 - The citizen cast is source-backed in `WildBunch.Domain.Game.CitizenCast`, not a frontend list.
-- Citizen features are disjoint from suspect features by construction (separate pools, different keys). A test asserts no key or description overlap.
+- Citizen distinguishing features are NOT a separate pool. Citizens draw from the same feature vocabulary as suspects — the `IdentifyingFacts` descriptions from `CaseFile.Suspects`. This preserves mistaken-identity play: a citizen can have the same visible feature as a wanted suspect, and the player cannot tell them apart by feature alone. The citizen is innocent because of their role, not because of a separate civilian-only feature set.
+- `WildBunch.Domain` cannot reference `WildBunch.GameContent` (dependency direction is `GameContent → Domain`). The shared feature vocabulary flows from `GameContent` into `Domain` at seed time through `CaseFile.Suspects[].Profile.IdentifyingFacts`. `GameSession` collects these descriptions and passes them to `CitizenCast.Select(...)` as a parameter. No cross-project reference is needed.
 - POI lookaround does not reveal the citizen role/name; it exposes only the distinguishing feature via "a stranger with {feature}" copy.
 - The citizen role is revealed only in the sheriff mistaken-arrest resolution narration.
 - The `DevSaloonOverride` consume-once lifecycle is preserved. A forced citizen role is consumed by the next `LookAroundSaloon()` call.
@@ -35,31 +36,42 @@
 
 The `CitizenCast` catalog defines:
 - **Roles**: A static list of `CitizenRole` records, each with a `Key` (stable identifier), `DisplayName` (e.g. "the town butcher"), and `ShortName` (e.g. "butcher"). At least 12 roles to prove a full flavour cast.
-- **Features**: A static list of `CitizenFeature` records, each with a `Key` (stable identifier) and `Description` (e.g. "Wears a wide-brimmed hat with a rattlesnake rattle on the band"). At least 12 features. Each role is paired with one feature by index, ensuring unique role→feature mapping. Feature descriptions must NOT reveal a trade, role, office, or authority — see the non-role-revealing feature guardrail below.
-- **Select(townId, day, turn, visitNumber)**: Deterministic pick of a `CitizenEncounter` (role + feature) based on a stable manual hash of `townId + day + turn + visitNumber`. Using all four inputs provides substantially more variety than `townId + turn` alone, since different days, turns, and visit numbers within the same town resolve to different citizens. Still avoids `string.GetHashCode()` (not stable across process restarts); use a manual stable hash (e.g. sum of char codes with a prime multiplier). This provides variety across visits, towns, and play progression without requiring seed-source retention.
-- **SelectByRoleKey(roleKey)**: Look up a specific citizen by role key (for dev overlay forcing).
-- **ResolveDescriptor(encounter)**: Returns `"a stranger with {NormalizeFeatureDescriptor(feature.Description)}"` — the concealment descriptor shown during lookaround.
+- **No separate feature pool**: Citizens do NOT have a separate `CitizenFeature` pool. Citizen distinguishing features are drawn from the same feature vocabulary as suspects — the `IdentifyingFacts` descriptions from `CaseFile.Suspects`, which originate from `CaseSuspectFeaturePool` at seed time. This is the core design intent: a citizen can plausibly be mistaken for a suspect because they share the same visible feature vocabulary (limps, scars, earrings, hats, etc.).
+- **CitizenEncounter**: A record carrying `CitizenRole Role` + `string FeatureDescription` (a feature description string from the shared suspect vocabulary, not a separate citizen feature type).
+- **Select(townId, day, turn, visitNumber, IReadOnlyList<string> featureDescriptions)**: Deterministic pick of a `CitizenEncounter` (role + feature) based on a stable manual hash of `townId + day + turn + visitNumber`. The role is picked from `Roles` and the feature is picked from the provided `featureDescriptions` (the suspect feature vocabulary from the `CaseFile`). Using all four inputs provides substantially more variety than `townId + turn` alone. Still avoids `string.GetHashCode()` (not stable across process restarts); use a manual stable hash (e.g. sum of char codes with a prime multiplier). If `featureDescriptions` is empty, fall back to a neutral descriptor like "an unfamiliar face" (edge case — should not occur in normal play since the case always has suspects with features).
+- **SelectByRoleKey(roleKey, IReadOnlyList<string> featureDescriptions)**: Look up a specific citizen by role key and pick a feature from the provided descriptions (for dev overlay forcing). The feature pick is deterministic based on the role key + feature descriptions.
+- **ResolveDescriptor(encounter)**: Returns `"a stranger with {NormalizeFeatureDescriptor(encounter.FeatureDescription)}"` — the concealment descriptor shown during lookaround. Reuses the same normalization logic as `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (strip "has a"/"wears a" prefixes → "a"/"an"). Extract a shared helper or duplicate the small normalization.
 - **ResolveRevealName(encounter)**: Returns the role display name (e.g. "the town butcher") — used in the sheriff reveal narration.
 
-### Non-role-revealing feature guardrail
+### Shared feature vocabulary (mistaken-identity invariant)
 
-Citizen feature descriptions must NOT reveal the citizen's trade, role, office, or authority. The lookaround descriptor is "a stranger with {feature}" — if the feature itself reveals the role, the concealment is broken.
+Citizens and suspects share the same distinguishing-feature vocabulary. This is the core design intent: a citizen can plausibly be mistaken for a suspect because they share the same visible feature vocabulary.
 
-Feature descriptions must NOT contain:
-- Any citizen role key, short name, or display name token (e.g. "butcher", "mortician", "doctor", "preacher", "sheriff", "marshal", "clerk").
-- Obvious trade/status/authority terms from the cast (e.g. "apron", "loupe", "badge", "star", "robes", "stethoscope", "ledger", "gavel", "pulpit", "embalming", "horseshoe", "anvil", "scissors", "telegraph key").
-- Items that strongly imply a specific Western trade (e.g. a pawnbroker's loupe, a tin star, a blacksmith's hammer, a barber's pole).
+- Citizen features are drawn from `CaseFile.Suspects[].Profile.IdentifyingFacts[].Description` — the same feature descriptions that suspects have.
+- There is NO separate citizen feature pool, NO disjointness requirement, and NO disjointness test.
+- A citizen may have the same feature as a suspect in the current case. This is intentional — it creates mistaken-identity play.
+- Within a generated case / active encounter set, the feature used for the currently surfaced citizen must still be distinguishable enough for the player to tell POIs apart visually, but citizens and suspects are allowed (and expected) to use the same kind of feature vocabulary.
+- The feature pool supports mistaken identity, not prevents it.
 
-Acceptable features are general physical markers visible on any stranger: hats, jewelry, clothing items, grooming, scars, gait, accessories that do not imply a trade.
+### Non-role-revealing feature guardrail (shared vocabulary)
 
-A test (`CitizenCast_FeaturesDoNotRevealRoleOrTrade`) asserts that no feature description contains any role key, short name, display name token, or a curated list of trade/status/authority terms. The curated term list is maintained in the test and covers the obvious leakage surface.
+Since citizens now draw from the suspect feature vocabulary, the guardrail verifies that the shared feature descriptions (the suspect `IdentifyingFacts` from `CaseSuspectFeaturePool`) do not contain citizen role names. This prevents a feature like "wears a butcher's apron" from leaking the citizen's role through the concealment descriptor.
 
-### Feature uniqueness contract
+This guardrail does NOT create a separate citizen-only feature vocabulary. It only verifies that the shared vocabulary (suspect features) is safe for citizen concealment.
 
-- Citizen feature keys are disjoint from `CaseSuspectFeaturePool` feature keys by construction.
-- Citizen feature descriptions are disjoint from suspect feature descriptions by construction.
-- A cross-cutting test in `WildBunch.GameContent.Tests` asserts no key overlap and no description overlap between `CitizenCast.Features` and `CaseSuspectFeaturePool.FeaturePool`.
-- Within the citizen cast, each role has exactly one feature, and no two roles share a feature.
+A test (`SharedFeatures_DoNotRevealCitizenRoleNames`) asserts that no feature description from `CaseSuspectFeaturePool.FeaturePool` contains any citizen role key, short name, or display name token. The citizen role names are drawn from `CitizenCast.Roles`. This test lives in `WildBunch.GameContent.Tests` (where both `CaseSuspectFeaturePool` and `CitizenCast` are accessible — `CitizenCast` is in `WildBunch.Domain` which `GameContent` references).
+
+### Feature uniqueness contract (replaced — shared vocabulary)
+
+The previous "disjoint from suspect features" contract has been removed. Citizens and suspects share the same feature vocabulary. There is:
+- NO "no key overlap" test.
+- NO "no description overlap" test.
+- NO "separate pools by construction" language.
+
+The correct invariant is:
+- Within a generated case / active encounter set, the feature used for the currently surfaced citizen must still be unique enough for the player to distinguish the visible POI.
+- But citizens and suspects are allowed, and in fact expected, to use the same kind of feature vocabulary.
+- The feature pool should support mistaken identity, not prevent it.
 
 ### Concealment falsification proof
 
@@ -80,8 +92,8 @@ Tests at both domain aggregate and integration levels must prove that:
 
 | File | Responsibility |
 |------|----------------|
-| `Game/CitizenCast.cs` | New static content catalog: `CitizenRole` record, `CitizenFeature` record, `CitizenEncounter` record, `CitizenCast.Roles` / `CitizenCast.Features` static lists, `CitizenCast.Select(townId, day, turn, visitNumber)`, `CitizenCast.SelectByRoleKey(roleKey)`, `CitizenCast.ResolveDescriptor(encounter)`, `CitizenCast.ResolveRevealName(encounter)` |
-| `Game/GameSession.cs` (modify) | Replace `DescribeTownCitizen()` with `CitizenCast.Select(townId, day, turn, visitNumber)` calls in `LookAroundSaloon()` (both normal fallback path and dev-override citizen path). Emit `CitizenRole` in `SaloonPersonOfInterestSpotted` event. Store role in `TownVisitTownState` via `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)`. |
+| `Game/CitizenCast.cs` | New static content catalog: `CitizenRole` record, `CitizenEncounter` record (role + feature description string), `CitizenCast.Roles` static list, `CitizenCast.Select(townId, day, turn, visitNumber, featureDescriptions)`, `CitizenCast.SelectByRoleKey(roleKey, featureDescriptions)`, `CitizenCast.ResolveDescriptor(encounter)`, `CitizenCast.ResolveRevealName(encounter)`. No separate `CitizenFeature` pool — features come from the shared suspect vocabulary passed as a parameter. |
+| `Game/GameSession.cs` (modify) | Replace `DescribeTownCitizen()` with `CitizenCast.Select(townId, day, turn, visitNumber, featureDescriptions)` calls in `LookAroundSaloon()` (both normal fallback path and dev-override citizen path). Collect `featureDescriptions` from `CaseFile.Suspects[].Profile.IdentifyingFacts[].Description`. Emit `CitizenRole` in `SaloonPersonOfInterestSpotted` event. Store role in `TownVisitTownState` via `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)`. |
 | `Game/GameSession.BountyLoopCoordinator.cs` (modify) | Update citizen confrontation path to read `ActiveSaloonCitizenRole` from `TownVisitTownState` and build role-reveal narration in `ProduceSaloonConfrontedEvent` for citizen wrong-declaration outcome |
 | `Game/TownSourceVisitState.cs` (modify) | Add `ActiveSaloonCitizenRole` (string?) property to `TownVisitTownState` (line 68+). Update `TownVisitTownState` constructor to accept `activeSaloonCitizenRole`. Update `SetActiveSaloonCitizenPersonOfInterest(descriptor, role)` to accept and store the role. Update `ClearActiveSaloonPersonOfInterest()` to clear the role. The `TownSourceVisitState` class (line 13) is NOT modified. |
 | `Game/DevSaloonOverride.cs` (modify) | Add `ForcedCitizenRoleKey` (string?) to the record. Add `ForCitizen(string? roleKey)` overload. Update `ForCitizen()` to call `ForCitizen(null)`. |
@@ -125,10 +137,10 @@ Tests at both domain aggregate and integration levels must prove that:
 
 | File | Responsibility |
 |------|----------------|
-| `tests/WildBunch.Domain.Tests/CitizenCastTests.cs` | New: verify cast has ≥12 roles, each role has a unique feature, no duplicate role keys, no duplicate feature keys, `Select(townId, day, turn, visitNumber)` is deterministic and varied, `SelectByRoleKey()` resolves correctly, `ResolveDescriptor()` produces "a stranger with {feature}" and does NOT contain the role name, `FeaturesDoNotRevealRoleOrTrade` guardrail |
-| `tests/WildBunch.Domain.Tests/GameSessionSaloonPersonOfInterestTests.cs` (modify) | Update citizen tests to verify: lookaround descriptor is "a stranger with {feature}" (not "a town clerk"), `ActiveSaloonCitizenRole` is set, confrontation message reveals the role, player-facing DTO descriptor is the concealment descriptor |
+| `tests/WildBunch.Domain.Tests/CitizenCastTests.cs` | New: verify cast has ≥12 roles, no duplicate role keys, no duplicate role display names, `Select(townId, day, turn, visitNumber, featureDescriptions)` is deterministic and varied, `SelectByRoleKey(roleKey, featureDescriptions)` resolves correctly, `ResolveDescriptor()` produces "a stranger with {feature}" and does NOT contain the role name, `Select()` with empty feature descriptions falls back gracefully |
+| `tests/WildBunch.Domain.Tests/GameSessionSaloonPersonOfInterestTests.cs` (modify) | Update citizen tests to verify: lookaround descriptor is "a stranger with {feature}" (not "a town clerk"), `ActiveSaloonCitizenRole` is set, confrontation message reveals the role, player-facing DTO descriptor is the concealment descriptor, citizen feature comes from the suspect feature vocabulary |
 | `tests/WildBunch.Domain.Tests/DevSaloonOverrideTests.cs` (modify) | Update citizen override tests to verify forced citizen role key is consumed and the correct citizen is spotted |
-| `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs` (modify) | Add cross-cutting assertion: no `CitizenCast.Features` key matches any `CaseSuspectFeaturePool.FeaturePool` key, no description overlap |
+| `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs` (modify) | Add `SharedFeatures_DoNotRevealCitizenRoleNames` guardrail: no `CaseSuspectFeaturePool.FeaturePool` description contains any `CitizenCast.Roles` key, short name, or display name token. This verifies the shared vocabulary is safe for citizen concealment — NOT a disjointness test. |
 | `tests/WildBunch.Application.Tests/Dev/GetSaloonDevContextHandlerTests.cs` (modify) | Verify `CitizenInfoDto.HasNamedArchetypes` is true and `AvailableArchetypes` is non-empty |
 | `tests/WildBunch.Application.Tests/Dev/ForceSaloonOverrideHandlerTests.cs` (modify) | Verify forced citizen role key is persisted and consumed |
 | `tests/WildBunch.Application.Tests/SaloonPersonOfInterestDescriptorParityTests.cs` (modify) | Update citizen parity test to verify descriptor is "a stranger with {feature}" |
@@ -155,33 +167,29 @@ Tests at both domain aggregate and integration levels must prove that:
 
 - [ ] 1.1 Create `src/WildBunch.Domain/Game/CitizenCast.cs` with:
   - `public sealed record CitizenRole(string Key, string DisplayName, string ShortName)` — e.g. `new("butcher", "the town butcher", "butcher")`
-  - `public sealed record CitizenFeature(string Key, string Description)` — e.g. `new("wide-brim-rattlesnake-hat", "Wears a wide-brimmed hat with a rattlesnake rattle on the band")`
-  - `public sealed record CitizenEncounter(CitizenRole Role, CitizenFeature Feature)`
+  - `public sealed record CitizenEncounter(CitizenRole Role, string FeatureDescription)` — the feature description is a string from the shared suspect vocabulary (passed to `Select`), NOT a separate citizen feature type.
   - `public static class CitizenCast` with:
     - `Roles` — static readonly list of ≥12 `CitizenRole` records: butcher, mortician, doctor, blacksmith, schoolteacher, preacher, seamstress, hotel-keeper, banker, newspaperman, stable-hand, telegraph-operator, barber, undertaker, prospector, cook, stagecoach-agent, gunsmith, town-clerk
-    - `Features` — static readonly list of ≥12 `CitizenFeature` records, each visually distinct and NOT overlapping with suspect feature descriptions. Citizen features are general physical markers (hats, jewelry, clothing items, grooming) that do NOT reveal a trade, role, office, or authority. Examples: "Wears a wide-brimmed hat with a rattlesnake rattle on the band", "Has a silver pocket watch chain dangling from the vest", "Wears a red bandana around the neck", "Has a long braided beard tied with a leather cord", "Wears a pair of spurs that jingle when walking", "Has a missing front tooth", "Wears a dusty cavalry coat with brass buttons", "Has a burn scar across the back of one hand", "Keeps a tar-stained pipe clenched in the teeth", "Wears a woman's riding gloves of doeskin", "Has a silver concho belt with turquoise stones", "Wears a fringed buckskin jacket" — none of these reveal a specific trade, office, or authority. Do NOT use items like a pawnbroker's loupe, a tin star, a blacksmith's hammer, a barber's pole, or any item that strongly implies a specific Western trade.
-    - `RoleFeaturePairs` — static readonly list of `CitizenEncounter` records, pairing each role with one feature by index. Roles and Features lists must have the same count.
-    - `Select(TownId townId, int day, int turn, int visitNumber)` — deterministic pick using a stable manual hash of all four inputs: `var index = StableHash(townId.Value, day, turn, visitNumber) % RoleFeaturePairs.Count; return RoleFeaturePairs[index];`. Using `townId + day + turn + visitNumber` provides substantially more variety than `townId + turn` alone. Do NOT use `string.GetHashCode()` (not stable across process restarts); use a manual `StableHash` helper (e.g. sum of char codes with a prime multiplier over the concatenated string representation).
-    - `SelectByRoleKey(string roleKey)` — `RoleFeaturePairs.FirstOrDefault(e => e.Role.Key == roleKey)` or throw if not found.
-    - `ResolveDescriptor(CitizenEncounter encounter)` — `$"a stranger with {NormalizeFeatureDescriptor(encounter.Feature.Description)}"`. Reuse the same normalization logic as `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (strip "has a"/"wears a" prefixes → "a"/"an"). Extract a shared helper or duplicate the small normalization.
+    - NO `Features` list. NO `CitizenFeature` record. NO `RoleFeaturePairs`. Citizen features come from the shared suspect vocabulary passed as a parameter to `Select`.
+    - `Select(TownId townId, int day, int turn, int visitNumber, IReadOnlyList<string> featureDescriptions)` — deterministic pick of a role + a feature from the provided `featureDescriptions`. Role index: `StableHash(townId.Value, day, turn, visitNumber) % Roles.Count`. Feature index: `StableHash(townId.Value, day, turn, visitNumber, "feature") % featureDescriptions.Count`. Using all four inputs provides substantially more variety than `townId + turn` alone. Do NOT use `string.GetHashCode()` (not stable across process restarts); use a manual `StableHash` helper (e.g. sum of char codes with a prime multiplier over the concatenated string representation). If `featureDescriptions` is empty, return an encounter with `FeatureDescription = null` (edge case — `ResolveDescriptor` falls back to "an unfamiliar face").
+    - `SelectByRoleKey(string roleKey, IReadOnlyList<string> featureDescriptions)` — look up the role by key, pick a feature from `featureDescriptions` deterministically (using the role key as the hash input). Throw `ArgumentException` if the role key is not found.
+    - `ResolveDescriptor(CitizenEncounter encounter)` — if `encounter.FeatureDescription` is null/empty, return `"an unfamiliar face"`. Otherwise: `$"a stranger with {NormalizeFeatureDescriptor(encounter.FeatureDescription)}"`. Reuse the same normalization logic as `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (strip "has a"/"wears a" prefixes → "a"/"an"). Extract a shared helper or duplicate the small normalization.
     - `ResolveRevealName(CitizenEncounter encounter)` — `encounter.Role.DisplayName` (e.g. "the town butcher").
-    - `ResolveRevealNarration(CitizenEncounter encounter, decimal fineAmount)` — `$"You bring a stranger with {NormalizeFeatureDescriptor(encounter.Feature.Description)} to the sheriff. The sheriff identifies them as {encounter.Role.DisplayName}, releases them, and fines you ${fineAmount:0.00}."`.
+    - `ResolveRevealNarration(CitizenEncounter encounter, decimal fineAmount)` — `$"You bring {ResolveDescriptor(encounter)} to the sheriff. The sheriff identifies them as {encounter.Role.DisplayName}, releases them, and fines you ${fineAmount:0.00}."`.
 
 - [ ] 1.2 Create `tests/WildBunch.Domain.Tests/CitizenCastTests.cs` with tests:
   - `CitizenCast_HasAtLeastTwelveRoles` — `Assert.True(CitizenCast.Roles.Count >= 12)`
-  - `CitizenCast_HasAtLeastTwelveFeatures` — `Assert.True(CitizenCast.Features.Count >= 12)`
-  - `CitizenCast_RolesAndFeaturesHaveSameCount` — `Assert.Equal(CitizenCast.Roles.Count, CitizenCast.Features.Count)`
   - `CitizenCast_NoDuplicateRoleKeys` — all role keys are distinct
-  - `CitizenCast_NoDuplicateFeatureKeys` — all feature keys are distinct
   - `CitizenCast_NoDuplicateRoleDisplayNames` — all display names are distinct
-  - `CitizenCast_SelectIsDeterministic` — same town + day + turn + visitNumber → same encounter
-  - `CitizenCast_SelectDifferentInputsProduceVariedEncounters` — at least 5 distinct encounters across a range of town/day/turn/visitNumber inputs, proving the 4-input key provides meaningful variety
-  - `CitizenCast_SelectByRoleKey_ResolvesCorrectly` — each role key resolves to the correct encounter
+  - `CitizenCast_SelectIsDeterministic` — same town + day + turn + visitNumber + same featureDescriptions → same encounter
+  - `CitizenCast_SelectDifferentInputsProduceVariedEncounters` — at least 5 distinct role picks across a range of town/day/turn/visitNumber inputs (using a fixed featureDescriptions list), proving the 4-input key provides meaningful variety
+  - `CitizenCast_Select_PicksFeatureFromProvidedDescriptions` — the encounter's `FeatureDescription` is one of the provided descriptions
+  - `CitizenCast_Select_WithEmptyFeatureDescriptions_FallsBackGracefully` — returns an encounter with null `FeatureDescription`; `ResolveDescriptor` returns "an unfamiliar face"
+  - `CitizenCast_SelectByRoleKey_ResolvesCorrectly` — each role key resolves to the correct role, with a feature from the provided descriptions
   - `CitizenCast_SelectByRoleKey_ThrowsForUnknownKey` — unknown key throws `ArgumentException`
   - `CitizenCast_ResolveDescriptor_ProducesConcealmentFormat` — starts with "a stranger with " and does NOT contain the role display name or short name
   - `CitizenCast_ResolveRevealName_ProducesRoleDisplayName` — returns the role display name
   - `CitizenCast_ResolveRevealNarration_ContainsRoleAndFine` — contains the role display name and the fine amount, and contains "sheriff identifies them as"
-  - `CitizenCast_FeaturesDoNotRevealRoleOrTrade` — for each feature description, assert it does NOT contain any role key, short name, display name token, or any term from a curated trade/status/authority blocklist (e.g. "butcher", "mortician", "doctor", "preacher", "sheriff", "marshal", "clerk", "apron", "loupe", "badge", "star", "robes", "stethoscope", "ledger", "gavel", "pulpit", "embalming", "horseshoe", "anvil", "scissors", "telegraph", "barber", "undertaker", "prospector", "gunsmith", "blacksmith", "seamstress", "banker", "newspaper", "stable"). The blocklist is maintained in the test and covers the obvious leakage surface. This is the non-role-revealing feature guardrail test.
 
 - [ ] 1.3 Update `src/WildBunch.Domain/Game/INDEX.md` to add `CitizenCast.cs` entry.
 
@@ -189,21 +197,21 @@ Tests at both domain aggregate and integration levels must prove that:
 
 - [ ] 1.5 Run `dotnet build` and `dotnet test` for the new test project to verify the catalog compiles and tests pass.
 
-### Task 2: Cross-cutting feature uniqueness test
+### Task 2: Shared-features non-role-revealing guardrail test
 
 **Files:**
 - `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs` (modify)
 
 **Steps:**
 
-- [ ] 2.1 Add a test `CitizenFeatures_AreDisjointFromSuspectFeatures` to `CaseCharacterRosterTests.cs`:
-  - Collect all `CitizenCast.Features` keys and descriptions.
-  - Collect all `CaseSuspectFeaturePool.FeaturePool` keys and descriptions (both primary and accessory features).
-  - Assert no citizen feature key matches any suspect feature key (case-insensitive).
-  - Assert no citizen feature description matches any suspect feature description (case-insensitive, after trimming).
-  - This test proves the disjointness invariant by construction + test.
+- [ ] 2.1 Add a test `SharedFeatures_DoNotRevealCitizenRoleNames` to `CaseCharacterRosterTests.cs`:
+  - Collect all `CaseSuspectFeaturePool.FeaturePool` descriptions (both primary and accessory features).
+  - Collect all `CitizenCast.Roles` keys, short names, and display name tokens.
+  - Assert that no suspect feature description contains any citizen role key, short name, or display name token (case-insensitive).
+  - This verifies that the shared feature vocabulary (suspect features) is safe for citizen concealment — a suspect feature like "wears a butcher's apron" would leak the citizen's role through the concealment descriptor. This is NOT a disjointness test; it is a non-role-revealing guardrail on the shared vocabulary.
+  - Note: `CitizenCast` is in `WildBunch.Domain` which `WildBunch.GameContent` references, so `CaseCharacterRosterTests` can access both `CaseSuspectFeaturePool` and `CitizenCast.Roles`.
 
-- [ ] 2.2 Run `dotnet test` for `WildBunch.GameContent.Tests` to verify the disjointness test passes.
+- [ ] 2.2 Run `dotnet test` for `WildBunch.GameContent.Tests` to verify the guardrail test passes.
 
 ### Task 3: Domain — extend TownVisitTownState with citizen role
 
@@ -276,14 +284,15 @@ Tests at both domain aggregate and integration levels must prove that:
   ```
   Change to:
   ```csharp
+  var featureDescriptions = CollectSuspectFeatureDescriptions();
   CitizenEncounter? forcedEncounter = null;
   if (pendingDevOverride.ForcedCitizenRoleKey is not null)
   {
-      forcedEncounter = CitizenCast.SelectByRoleKey(pendingDevOverride.ForcedCitizenRoleKey);
+      forcedEncounter = CitizenCast.SelectByRoleKey(pendingDevOverride.ForcedCitizenRoleKey, featureDescriptions);
   }
   else
   {
-      forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber);
+      forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, featureDescriptions);
   }
   var forcedCitizenDescriptor = CitizenCast.ResolveDescriptor(forcedEncounter);
   var forcedCitizenMessage = $"You look around the saloon and spot {forcedCitizenDescriptor}.";
@@ -305,7 +314,8 @@ Tests at both domain aggregate and integration levels must prove that:
   ```
   Change to:
   ```csharp
-  var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber);
+  var featureDescriptions = CollectSuspectFeatureDescriptions();
+  var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, featureDescriptions);
   var citizenDescriptor = CitizenCast.ResolveDescriptor(citizenEncounter);
   var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
   var citizenEvent = new SaloonPersonOfInterestSpotted
@@ -319,6 +329,22 @@ Tests at both domain aggregate and integration levels must prove that:
       RecordLog = false
   };
   ```
+
+- [ ] 6.3 Add a private helper `CollectSuspectFeatureDescriptions()` to `GameSession`:
+  ```csharp
+  private IReadOnlyList<string> CollectSuspectFeatureDescriptions()
+      => CaseFile.Suspects
+          .SelectMany(s => s.Profile.IdentifyingFacts)
+          .Select(f => f.Description)
+          .Where(d => !string.IsNullOrWhiteSpace(d))
+          .Distinct(StringComparer.OrdinalIgnoreCase)
+          .ToList();
+  ```
+  This collects the shared feature vocabulary from the case's suspects — the same `IdentifyingFacts` descriptions that `SaloonPersonOfInterestDescriptor.Describe` uses for suspect descriptors. Citizens draw from this same vocabulary.
+
+- [ ] 6.4 Remove or mark obsolete the `DescribeTownCitizen` method (~line 3298-3299). If no other callers remain, delete it. Check for references in plans/other files — plan references are informational only and do not block deletion.
+
+- [ ] 6.5 Run `dotnet build` to verify compilation.
 
 - [ ] 6.3 Remove or mark obsolete the `DescribeTownCitizen` method (~line 3298-3299). If no other callers remain, delete it. Check for references in plans/other files — plan references are informational only and do not block deletion.
 
@@ -523,10 +549,9 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
 
   public sealed record CitizenArchetypeDto(
       string RoleKey,
-      string DisplayName,
-      string FeatureDescription);
+      string DisplayName);
   ```
-  Update the doc comment: "Citizens are drawn from a source-backed cast of named town roles, each with a unique distinguishing feature."
+  Update the doc comment: "Citizens are drawn from a source-backed cast of named town roles. Citizen distinguishing features come from the same shared vocabulary as suspects — the role selector chooses the citizen role, not a separate citizen-only visual feature taxonomy."
 
 - [ ] 10.2 Update `SaloonDevContextMapper.cs` `ToDto` method (~line 62-67). Replace:
   ```csharp
@@ -539,17 +564,12 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
   With:
   ```csharp
   var citizenInfo = new CitizenInfoDto(
-      Descriptor: "a stranger with a unique distinguishing feature",
+      Descriptor: "a stranger with a distinguishing feature from the shared suspect vocabulary",
       HasNamedArchetypes: true,
       AvailableArchetypes: CitizenCast.Roles.Select(role =>
-      {
-          var encounter = CitizenCast.SelectByRoleKey(role.Key);
-          return new CitizenArchetypeDto(
-              role.Key,
-              role.DisplayName,
-              encounter.Feature.Description);
-      }).ToList());
+          new CitizenArchetypeDto(role.Key, role.DisplayName)).ToList());
   ```
+  Note: the archetype DTO carries only the role key and display name — no feature description. The feature is chosen at lookaround time from the shared suspect vocabulary, not fixed per role. The role selector chooses the citizen role; it does not imply a separate citizen-only visual feature taxonomy.
 
 - [ ] 10.3 Add `ForcedCitizenRoleKey` (string?) to `ForceSaloonOverrideCommand` record.
 
@@ -594,7 +614,6 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
   export interface CitizenArchetypeDto {
     roleKey: string;
     displayName: string;
-    featureDescription: string;
   }
 
   export interface CitizenInfoDto {
@@ -603,6 +622,7 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
     availableArchetypes: CitizenArchetypeDto[];
   }
   ```
+  Note: no `featureDescription` field — the feature is chosen at lookaround time from the shared suspect vocabulary, not fixed per role.
 
 - [ ] 12.2 Update `ForceSaloonOverrideRequestDto` in `types.ts`:
   ```typescript
@@ -667,14 +687,16 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
               <option value="">Any citizen (deterministic pick)</option>
               {data.citizenInfo.availableArchetypes.map((a) => (
                 <option key={a.roleKey} value={a.roleKey}>
-                  {a.displayName} — {a.featureDescription}
+                  {a.displayName}
                 </option>
               ))}
             </Select>
           </Field>
           <CitizenNote>
             Source-backed cast of {data.citizenInfo.availableArchetypes.length} citizen roles.
-            Each citizen has a unique distinguishing feature concealed during lookaround.
+            Citizen features come from the shared suspect vocabulary — the role selector
+            chooses the citizen role, not a separate visual feature. The feature is
+            concealed during lookaround and revealed only after mistaken take-in.
           </CitizenNote>
         </>
       ) : (
@@ -819,7 +841,7 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
 1. **`dotnet build WildBunch.sln`** — zero errors.
 2. **`dotnet test WildBunch.sln`** (via `.\scripts\postgres-dev.ps1 test`) — all tests pass, including:
    - `CitizenCastTests` — catalog integrity, determinism, concealment.
-   - `CaseCharacterRosterTests` — feature disjointness.
+   - `CaseCharacterRosterTests` — shared-features non-role-revealing guardrail (`SharedFeatures_DoNotRevealCitizenRoleNames`).
    - `GameSessionSaloonPersonOfInterestTests` — citizen lookaround concealment + confrontation reveal.
    - `DevSaloonOverrideTests` — forced citizen role forcing.
    - `GetSaloonDevContextHandlerTests` — dev DTO shape.
@@ -843,10 +865,10 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
 1. A domain test asserts the `SaloonPersonOfInterestSpotted` event's `Descriptor` for a citizen POI starts with "a stranger with" and does NOT contain the role display name or short name.
 2. A domain test asserts the `SaloonPersonOfInterestConfronted` event's `Message` for a citizen wrong-declaration DOES contain "sheriff identifies them as" and the role display name.
 
-### Uniqueness proof
+### Shared vocabulary proof (replaces uniqueness proof)
 
-1. A `WildBunch.GameContent.Tests` test asserts no `CitizenCast.Features` key matches any `CaseSuspectFeaturePool` feature key.
-2. The same test asserts no `CitizenCast.Features` description matches any `CaseSuspectFeaturePool` feature description.
+1. A `WildBunch.GameContent.Tests` test (`SharedFeatures_DoNotRevealCitizenRoleNames`) asserts that no `CaseSuspectFeaturePool.FeaturePool` description contains any `CitizenCast.Roles` key, short name, or display name token. This verifies the shared vocabulary is safe for citizen concealment.
+2. A domain test asserts that the citizen's `FeatureDescription` (in the `CitizenEncounter`) is one of the descriptions from `CaseFile.Suspects[].Profile.IdentifyingFacts` — proving citizens draw from the same vocabulary as suspects, not a separate pool.
 
 ---
 
@@ -891,6 +913,10 @@ Screenshots are saved under `.agents/superpowers/output/screenshots/` (git-ignor
 - **Event field addition:** Adding `CitizenRole` (string?) to `SaloonPersonOfInterestSpotted` and `SaloonPersonOfInterestConfronted` is backward-compatible for JSON deserialization (missing fields default to null). Old events in the stream will have `CitizenRole = null` after deserialization, which is correct (they predate the citizen cast).
 
 - **`DevSaloonOverride` record signature change:** Adding `ForcedCitizenRoleKey` to the record changes its constructor signature. All construction sites must be updated. The JSON serializer will handle old snapshots that lack the field (defaulting to null). This is acceptable per the repo's "current mainline model correctness wins over old-save compatibility" posture.
+
+- **Shared feature vocabulary edge case:** `CitizenCast.Select(...)` receives `featureDescriptions` from `CaseFile.Suspects[].Profile.IdentifyingFacts`. In normal play, the case always has suspects with features, so this list is non-empty. If it is somehow empty (edge case, test fixture, or future case shape), `ResolveDescriptor` falls back to "an unfamiliar face" — the lookaround still works, just without a specific feature. This is a graceful degradation, not a crash.
+
+- **Mistaken-identity by design:** Citizens and suspects share the same feature vocabulary. A citizen may have the same visible feature as a wanted suspect. This is intentional — the player cannot tell them apart by feature alone, and the citizen is innocent because of their role, not their feature. The confrontation path checks `ActiveSaloonPersonOfInterestKind` (Citizen vs WantedSuspect), not feature matching, so a citizen with the same feature as a suspect is still correctly resolved as a wrong declaration.
 
 ---
 
