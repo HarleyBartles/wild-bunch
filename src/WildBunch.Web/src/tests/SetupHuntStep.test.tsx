@@ -236,13 +236,12 @@ describe("SetupHuntStep", () => {
   it("renders difficulty options as Easy, Normal, Hard in that order", () => {
     renderStep();
 
-    const difficultyLabel = screen.getByText("Difficulty");
-    const toggle = difficultyLabel.parentElement!.querySelector("div")!;
-    const buttons = Array.from(toggle.querySelectorAll("button"));
+    const groups = screen.getAllByRole("group");
+    const difficultyGroup = groups[0];
+    const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
     expect(labels).toEqual(["Easy", "Normal", "Hard"]);
-    // Guard against invented Western-flavoured labels.
     expect(labels).not.toContain("Greenhorn");
     expect(labels).not.toContain("Trail hand");
     expect(labels).not.toContain("Iron rider");
@@ -251,13 +250,12 @@ describe("SetupHuntStep", () => {
   it("renders entropy options as Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
-    const entropyLabel = screen.getByText("Entropy");
-    const toggle = entropyLabel.parentElement!.querySelector("div")!;
-    const buttons = Array.from(toggle.querySelectorAll("button"));
+    const groups = screen.getAllByRole("group");
+    const entropyGroup = groups[1];
+    const buttons = Array.from(entropyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
     expect(labels).toEqual(["Classic", "Adventurous", "Wild"]);
-    // Guard against invented Western-flavoured labels.
     expect(labels).not.toContain("Placid");
     expect(labels).not.toContain("Restless");
     expect(labels).not.toContain("Rowdy");
@@ -269,17 +267,33 @@ describe("SetupHuntStep", () => {
     expect(screen.queryByRole("button", { name: /^boring$/i })).not.toBeInTheDocument();
   });
 
+  it("uses a single thumb element per segmented toggle (not per-option backgrounds)", () => {
+    renderStep();
+
+    const groups = document.querySelectorAll('[role="group"]');
+    expect(groups).toHaveLength(2);
+
+    for (const group of Array.from(groups)) {
+      // One thumb div (aria-hidden) that slides, separate from the label buttons.
+      const thumbs = group.querySelectorAll('div[aria-hidden="true"]');
+      expect(thumbs).toHaveLength(1);
+
+      // Label buttons must not have their own background styling for selection.
+      // The thumb provides the selected visual; buttons are transparent.
+      const buttons = Array.from(group.querySelectorAll("button"));
+      for (const btn of buttons) {
+        const bg = window.getComputedStyle(btn).backgroundColor;
+        expect(bg).toBe("rgba(0, 0, 0, 0)"); // transparent
+      }
+    }
+  });
+
   it("renders each segmented toggle as a single non-wrapping flex row", () => {
     renderStep();
 
-    const toggles = document.querySelectorAll("div[style*='border-radius: 999px'], div");
-    const difficultyLabel = screen.getByText("Difficulty");
-    const entropyLabel = screen.getByText("Entropy");
-
-    for (const label of [difficultyLabel, entropyLabel]) {
-      const toggle = label.parentElement!.querySelector("div")!;
-      const style = window.getComputedStyle(toggle);
-      // The segmented toggle must not wrap — it stays one horizontal row.
+    const groups = document.querySelectorAll('[role="group"]');
+    for (const group of Array.from(groups)) {
+      const style = window.getComputedStyle(group);
       expect(style.flexWrap).toBe("nowrap");
     }
   });

@@ -3,6 +3,7 @@ import styled from "styled-components";
 import type { FormEvent } from "react";
 import type { AdventureRandomnessPolicy, TravelDifficulty } from "../../api/types";
 import { Button, FlowError } from "../ui/sharedStyled";
+import { SegmentedToggle } from "./SegmentedToggle";
 
 interface SetupHuntStepProps {
   playerName: string;
@@ -94,36 +95,20 @@ export function SetupHuntStep({
 
         <FieldGroup>
           <GroupLabel>Difficulty</GroupLabel>
-          <SegmentedToggle>
-            {difficultyOptions.map((option) => (
-              <Segment
-                key={option.value}
-                type="button"
-                $selected={travelDifficulty === option.value}
-                onClick={() => onTravelDifficultyChange(option.value)}
-                aria-pressed={travelDifficulty === option.value}
-              >
-                {option.label}
-              </Segment>
-            ))}
-          </SegmentedToggle>
+          <SegmentedToggle
+            options={difficultyOptions}
+            value={travelDifficulty}
+            onSelect={onTravelDifficultyChange}
+          />
         </FieldGroup>
 
         <FieldGroup>
           <GroupLabel>Entropy</GroupLabel>
-          <SegmentedToggle>
-            {entropyOptions.map((option) => (
-              <Segment
-                key={option.value}
-                type="button"
-                $selected={entropy === option.value}
-                onClick={() => onEntropyChange(option.value)}
-                aria-pressed={entropy === option.value}
-              >
-                {option.label}
-              </Segment>
-            ))}
-          </SegmentedToggle>
+          <SegmentedToggle
+            options={entropyOptions}
+            value={entropy}
+            onSelect={onEntropyChange}
+          />
         </FieldGroup>
 
         <Field>
@@ -241,48 +226,6 @@ const SeedRow = styled.div`
 
   input {
     flex: 1 1 280px;
-  }
-`;
-
-const SegmentedToggle = styled.div`
-  display: flex;
-  width: 100%;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 3px;
-  gap: 0;
-  overflow: hidden;
-`;
-
-const Segment = styled.button<{ $selected: boolean }>`
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 999px;
-  background: ${({ $selected }) =>
-    $selected ? "color-mix(in srgb, var(--accent) 22%, transparent)" : "transparent"};
-  color: ${({ $selected }) =>
-    $selected ? "var(--text)" : "color-mix(in srgb, var(--text) 65%, transparent)"};
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    color: var(--text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
-    outline-offset: -2px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 0.8rem;
-    padding: 8px 6px;
   }
 `;
 
