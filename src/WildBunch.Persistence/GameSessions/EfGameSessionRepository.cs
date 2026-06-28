@@ -85,6 +85,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         entity!.UpdatedAtUtc = now;
         entity.Status = session.Status.ToString();
         entity.GameDifficulty = (int)session.GameDifficulty;
+        entity.SeedCode = session.SeedCode;
         entity.SchemaVersion = SchemaVersion;
 
         // Append uncommitted events to the event stream
@@ -303,6 +304,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             clock,
             pursuitState,
             saltSource,
+            store.Envelope.SeedCode,
             townVisitState,
             journey,
             completedJourneyHistory,

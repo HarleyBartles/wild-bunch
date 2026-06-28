@@ -25,10 +25,7 @@ public static class SessionDevContextMapper
             CurrentTownName: session.CurrentTown.TownName,
             CurrentActionContext: session.CurrentActionContext.ToString(),
             HasActiveJourney: session.Journey is not null,
-            // The original game-start UUID seed code is not retained on the live
-            // GameSession (it is consumed at StartNew to derive world/difficulty/entropy/salt).
-            // Session dev says this honestly rather than fabricate a seed code.
-            SeedCodeRetained: false,
-            SeedCodeText: null);
+            SeedCodeRetained: session.SeedCode is not null,
+            SeedCodeText: session.SeedCode);
     }
 }

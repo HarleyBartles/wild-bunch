@@ -59,6 +59,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty gameDifficulty,
         SaltSource saltSource,
         GameEntropy gameEntropy,
+        string? seedCode,
         TownVisitState? currentTownVisit,
         IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
@@ -74,6 +75,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty = gameDifficulty;
         GameEntropy = gameEntropy;
         SaltSource = saltSource;
+        SeedCode = seedCode;
         _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
         if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
         {
@@ -114,6 +116,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public GameEntropy GameEntropy { get; private set; }
 
     public SaltSource SaltSource { get; private set; }
+
+    public string? SeedCode { get; }
 
     public TownAggregate CurrentTown => _currentTown;
 
@@ -778,7 +782,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard);
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard, seedCode: null);
 
     public static GameSession StartNew(
         string playerName,
@@ -789,7 +793,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         DomainInventory? inventory,
         GameDifficulty gameDifficulty = GameDifficulty.Standard,
         SaltSource? saltSource = null,
-        GameEntropy gameEntropy = GameEntropy.Classic)
+        GameEntropy gameEntropy = GameEntropy.Classic,
+        string? seedCode = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -840,6 +845,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             gameDifficulty,
             resolvedSaltSource,
             gameEntropy,
+            seedCode,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());

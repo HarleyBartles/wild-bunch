@@ -15,6 +15,7 @@ public sealed partial class GameSessionJsonSerializer
         GameDifficulty GameDifficulty,
         GameEntropy? GameEntropy,
         SaltSourceSnapshot? SaltSource,
+        string? SeedCode,
         TownVisitStateSnapshot? CurrentTownVisit,
         PlayerSnapshot Player,
         WorldSnapshot World,
@@ -38,6 +39,7 @@ public sealed partial class GameSessionJsonSerializer
                 session.GameDifficulty,
                 session.GameEntropy,
                 SaltSourceSnapshot.FromDomain(session.SaltSource),
+                session.SeedCode,
                 TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
                 PlayerSnapshot.FromDomain(session.Player),
                 WorldSnapshot.FromDomain(session.World),
@@ -75,6 +77,7 @@ public sealed partial class GameSessionJsonSerializer
                 GameDifficulty,
                 SaltSource?.ToDomain() ?? WildBunch.Domain.Travel.SaltSource.CreateRuntime(),
                 GameEntropy ?? WildBunch.Domain.Travel.GameEntropy.Classic,
+                SeedCode,
                 townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());

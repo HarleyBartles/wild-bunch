@@ -54,7 +54,7 @@ internal sealed record BoringScenario(
         Fixture.AssertCachedFixtureContract();
 
         return new SeededNewGameFactory(new DeterministicSaltSourceFactory())
-            .Create(playerName, GameDifficulty, SeedCode);
+            .Create(playerName, GameDifficulty, SeedCode, Fixture.GameEntropy);
     }
 
     public GameSessionDto CreateSessionDto(string playerName = "Fixture Validator")

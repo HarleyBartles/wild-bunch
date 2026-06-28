@@ -22,7 +22,7 @@ public sealed class DevSessionEndpointTests
         Assert.NotNull(context);
         Assert.Equal(gameId, context!.SessionId);
         Assert.NotNull(context.SaltPosture);
-        Assert.False(context.SeedCodeRetained);
+        Assert.True(context.SeedCodeRetained); // Seed code is now always retained for debugging
     }
 
     [Fact]

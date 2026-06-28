@@ -65,6 +65,7 @@ public sealed partial class GameSession
             gameStarted.GameDifficulty,
             gameStarted.SaltSource,
             gameStarted.GameEntropy,
+            seedCode: null, // Seed code is stored separately in persistence, not in events
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());

@@ -12,6 +12,8 @@ public sealed class GameSessionEntity
 
     public int GameDifficulty { get; set; }
 
+    public string? SeedCode { get; set; }
+
     public int SchemaVersion { get; set; }
 
     public long StreamVersion { get; set; }

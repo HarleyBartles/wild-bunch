@@ -26,6 +26,9 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
         builder.Property(e => e.GameDifficulty)
             .IsRequired();
 
+        builder.Property(e => e.SeedCode)
+            .HasMaxLength(36);
+
         builder.Property(e => e.SchemaVersion)
             .IsRequired();
 

@@ -130,12 +130,12 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
             <Value>{data?.saltPosture?.mode}</Value>
           </Row>
           <Row>
-            <Label>Salt:</Label>
+            <Label>Salt value:</Label>
             <Value>{data?.saltPosture?.salt ?? "—"}</Value>
           </Row>
           <Row>
             <Label>Seed code:</Label>
-            <Value>{data?.seedCodeRetained ? data.seedCodeText : "No — not retained on live session"}</Value>
+            <Value>{data?.seedCodeRetained ? data.seedCodeText : "No seed provided"}</Value>
           </Row>
         </Section>
 
@@ -171,7 +171,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
 const Container = styled.div<{ $expanded: boolean }>`
   display: grid;
   gap: 16px;
-  grid-template-columns: ${({ $expanded }) => ($expanded ? "1fr 1fr" : "1fr")};
+  grid-template-columns: 1fr 1fr;
 
   @media (max-width: 700px) {
     grid-template-columns: 1fr;
