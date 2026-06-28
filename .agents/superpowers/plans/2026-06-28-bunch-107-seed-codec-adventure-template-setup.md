@@ -4,13 +4,13 @@
 
 **Goal:** Refactor the seed codec and game-setup seams so the seed produces a stable adventure/world template, not final player pressure settings or direct runtime truth. This creates a clean foundation for BUNCH-94 (difficulty controls) and BUNCH-93 (entropy controls) without side-questing into seed codec repairs.
 
-**Architecture:** Split the current `StartingWorldDescriptor` — which mixes seed-owned facts (world variant, accusation index) with pressure-owned facts (difficulty, entropy, horse posture, loadout profile, final cash) — into three explicit seams: `AdventureTemplate` (seed-owned), `DifficultyEnvelope` (player-selected pressure), and `EntropyPolicy` (player-selected entropy/salt mode). A `ResolvedGameSetup` record composes the final session-start facts after template + difficulty + entropy are applied. `GameSession.StartNew` consumes `ResolvedGameSetup` instead of reinterpreting the seed during live play.
+**Architecture:** Split the current `StartingWorldDescriptor` — which mixes seed-owned facts (world variant, accusation index) with pressure-owned facts (difficulty, entropy, horse posture, loadout profile, final cash) — into four explicit seams: `AdventureTemplate` (seed-owned), `DifficultyEnvelope` (player-selected pressure), `EntropyPolicy` (player-selected entropy/salt mode), and `MysteryTruthResolution` (entropy-applied mystery-truth seam between template and resolved setup). A `ResolvedGameSetup` record composes the final session-start facts after template + difficulty + entropy + mystery-truth resolution are applied. `GameSession.StartNew` consumes `ResolvedGameSetup` instead of reinterpreting the seed during live play. The `MysteryTruthResolution` seam is installed now (transitional pass-through) so BUNCH-93 can expand entropy/salt remix policy there without side-questing into setup-pipeline design.
 
 **Tech Stack:** C# / .NET, EF Core (PostgreSQL), xUnit, React + TypeScript, styled-components.
 
 ## Plan Status
 
-- Plan status: preflight complete, plan written, awaiting approval
+- Plan status: preflight complete, plan written and repaired per review feedback, awaiting approval
 - Current route state: `preflight_complete`
 - This PR is plan-only and contains no implementation.
 - Base commit: `6b9fcbf` (BUNCH-106: Add flavourful citizen cast for POI encounters, #118)
@@ -44,7 +44,7 @@
 The target pipeline, made explicit in source:
 
 ```
-seed code -> AdventureTemplate -> DifficultyEnvelope -> EntropyPolicy -> ResolvedGameSetup -> GameSession
+seed code -> AdventureTemplate -> DifficultyEnvelope -> EntropyPolicy -> MysteryTruthResolution -> ResolvedGameSetup -> GameSession
 ```
 
 ### Seam Definitions (to install in source)
@@ -71,18 +71,25 @@ seed code -> AdventureTemplate -> DifficultyEnvelope -> EntropyPolicy -> Resolve
 - `SaltSourceMode` (SaltSourceMode) — Fixed for Boring, Runtime for others
 - `CashBonusCap` (int) — max seed cash bonus applied (Boring=0, Classic=2, Adventurous=5, Wild=8)
 
+**MysteryTruthResolution** (entropy-applied mystery-truth seam, between template and resolved setup):
+- `ResolvedCulpritIndex` (int) — final culprit index after entropy policy is applied
+- `ResolvedAccusationIndex` (int) — final opening accusation index after entropy policy is applied
+- `SaltSource` (SaltSource) — the salt source resolved from entropy policy
+- `AppliedCashBonus` (int) — seed cash bonus after entropy cap is applied
+- This seam is the **single extension point** for BUNCH-93. Transitional behavior: all entropy modes pass through the template defaults (`ResolvedCulpritIndex = template.DefaultCulpritIndex`, `ResolvedAccusationIndex = template.AccusationIndex`, `AppliedCashBonus = min(template.CashBonus, entropy.CashBonusCap)`). BUNCH-93 will expand this seam to add salted culprit reroll, feature reallocation, and Adventurous/Wild variance — without touching `AdventureTemplate`, `AdventureTemplateResolver`, or the seed codec.
+
 **ResolvedGameSetup** (final session-start facts after all stages applied):
 - `AdventureTemplate` — the seed-owned template (retained for reproducibility)
 - `GameDifficulty` — player-selected
 - `GameEntropy` — player-selected
 - `World` (World) — resolved world domain object
 - `StartingTownId` (TownId) — resolved starting town
-- `CaseFile` (CaseFile) — resolved case file with final culprit
+- `CaseFile` (CaseFile) — resolved case file with final culprit from `MysteryTruthResolution`
 - `StartingWallet` (Wallet) — final wallet
 - `StartingInventory` (Inventory) — final inventory
 - `StartingHealth` (int) — final starting health
 - `TravelRulesProfile` (TravelRulesProfile) — from difficulty
-- `SaltSource` (SaltSource) — from entropy
+- `SaltSource` (SaltSource) — from `MysteryTruthResolution`
 - `SeedCodeText` (string) — for debugging/reproducibility
 
 ---
@@ -142,11 +149,13 @@ In `WildBunch.GameContent/NewGame/`:
 - `AdventureTemplateResolver.cs` — replaces `StartingWorldDescriptorResolver` for seed→template resolution
 - `DifficultyEnvelope.cs` — new record, difficulty pressure facts
 - `EntropyPolicy.cs` — new record, entropy/salt mode facts
+- `MysteryTruthResolution.cs` — new record, entropy-applied mystery-truth resolution (culprit index, accusation index, salt source, cash bonus after cap)
+- `MysteryTruthResolver.cs` — new resolver: applies `EntropyPolicy` to `AdventureTemplate` defaults → `MysteryTruthResolution` (transitional pass-through; BUNCH-93 expansion point)
 - `ResolvedGameSetup.cs` — new record, final session-start facts
-- `GameSetupResolver.cs` — new orchestrator: template + difficulty + entropy → resolved setup
+- `GameSetupResolver.cs` — new orchestrator: template + difficulty + entropy → mystery-truth resolution → resolved setup
 - `SeededNewGameFactory.cs` — refactored to use `GameSetupResolver` instead of directly building from descriptor
 - `GameSetupPackageBuilder.cs` — refactored to build from `ResolvedGameSetup` (or absorbed into `GameSetupResolver`)
-- `SeedCaseBuilder.cs` — refactored to use seed-encoded culprit index instead of hardcoded `suspect-4`
+- `SeedCaseBuilder.cs` — refactored to use resolved culprit index from `MysteryTruthResolution` instead of hardcoded `suspect-4`
 - `SeedInventoryBuilder.cs` — refactored to build from `DifficultyEnvelope` instead of `StartingWorldDescriptorPlayer`
 - `SeedWorldBuilder.cs` — refactored to use `AdventureTemplate` instead of `StartingWorldDescriptor`
 - `GameSetupGenerationPlan.cs` — refactored or replaced to carry `AdventureTemplate` + `DifficultyEnvelope` instead of `StartingWorldDescriptor`
@@ -155,7 +164,8 @@ In `WildBunch.GameContent/NewGame/`:
 
 - `DifficultyEnvelope.For(GameDifficulty)` preserves the CURRENT difficulty behavior (base cash, starting health, travel rules). The horse/saddle envelope and loadout envelope from the execution notes are documented as the BUNCH-94 target but NOT implemented — all difficulties get canonical defaults (horse+saddle, Standard loadout) as a transitional state.
 - `EntropyPolicy.For(GameEntropy)` preserves the CURRENT entropy behavior (Boring=Fixed salt + 0 cash bonus, others=Runtime salt + capped seed bonus). The Classic/Adventurous/Wild remix logic (salted culprit reroll, feature reallocation) is BUNCH-93 — for now, all entropy modes use the seed-encoded default culprit.
-- The seams exist as records with factory methods. BUNCH-94 will expand `DifficultyEnvelope.For(...)` to add the full horse/saddle/loadout/travel/clue pressure. BUNCH-93 will expand `EntropyPolicy.For(...)` to add salted remix logic.
+- `MysteryTruthResolver.Resolve(AdventureTemplate, EntropyPolicy)` is the **explicit seam** between template and resolved setup. Transitional behavior is pass-through: `ResolvedCulpritIndex = template.DefaultCulpritIndex`, `ResolvedAccusationIndex = template.AccusationIndex`, `AppliedCashBonus = min(template.CashBonus, entropy.CashBonusCap)`, `SaltSource` from entropy mode. BUNCH-93 expands this seam to add salted culprit reroll, feature reallocation, and Adventurous/Wild variance — without changing `AdventureTemplate`, `AdventureTemplateResolver`, or the seed codec. BUNCH-93 does NOT need to add a new pipeline step; the step already exists.
+- The seams exist as records with factory methods. BUNCH-94 will expand `DifficultyEnvelope.For(...)` to add the full horse/saddle/loadout/travel/clue pressure. BUNCH-93 will expand `MysteryTruthResolver.Resolve(...)` to add salted remix logic.
 
 ### Question 6: What exact tests will prove that BUNCH-93 and BUNCH-94 can build on the refactor?
 
@@ -164,7 +174,8 @@ In `WildBunch.GameContent/NewGame/`:
 - **Difficulty/entropy absence from seed identity:** `AdventureTemplate` has no `GameDifficulty` or `GameEntropy` field. Grep proof that the codec does not reference difficulty or entropy during `Resolve(Guid)`.
 - **Resolved setup behavior:** `ResolvedGameSetup` carries final wallet, inventory, health, case file, and salt source. `GameSession.StartNew` consumes it without reinterpreting the seed.
 - **Boring determinism:** same seed + same difficulty + Boring entropy → same session (same culprit, same salt, same world).
-- **Classic salted replacement capability:** the `EntropyPolicy` seam exposes `SaltSourceMode` and `CashBonusCap` such that BUNCH-93 can add salted culprit reroll without touching the codec.
+- **Mystery-truth resolution seam exists and is pass-through:** `MysteryTruthResolver.Resolve(template, entropy)` returns `MysteryTruthResolution` with `ResolvedCulpritIndex == template.DefaultCulpritIndex` for all entropy modes in the transitional implementation. Test proves the seam is called by `GameSetupResolver` and that its output feeds `SeedCaseBuilder` and `ResolvedGameSetup`.
+- **Classic salted replacement extension point:** test proves that `MysteryTruthResolver.Resolve` is the single method BUNCH-93 needs to change to add salted culprit reroll — no changes to `AdventureTemplate`, `AdventureTemplateResolver`, `StartingWorldDescriptorSeedMixer`, or `GameSetupDeterministicLabels` are required. The test asserts that `MysteryTruthResolution` carries `ResolvedCulpritIndex` and `SaltSource` as the outputs BUNCH-93 will vary.
 - **Difficulty envelope extensibility:** the `DifficultyEnvelope` record has fields for horse/saddle/loadout/health/travel rules such that BUNCH-94 can expand the mapping without touching the codec.
 
 ### Question 7: Which repo guidance must change?
@@ -298,12 +309,68 @@ public sealed record EntropyPolicy(
 - `SaltSourceMode`: Boring=Fixed, others=Runtime (current `SeededNewGameFactory` logic)
 - `CashBonusCap`: Boring=0, Classic=2, Adventurous=5, Wild=8 (current `maxPolicyBonus`)
 
-Add a doc comment: "Transitional mapping. BUNCH-93 will expand this to add salted culprit reroll, feature reallocation, and Adventurous/Wild variance boundaries."
+Add a doc comment: "Transitional mapping. BUNCH-93 will expand `MysteryTruthResolver` to add salted culprit reroll, feature reallocation, and Adventurous/Wild variance boundaries."
 
 - [ ] Create `EntropyPolicy.cs` with `For(GameEntropy)` factory
 - [ ] Write unit tests for EntropyPolicy.For mapping
 
-### Task 4: Create ResolvedGameSetup record and GameSetupResolver
+### Task 4: Create MysteryTruthResolution record and MysteryTruthResolver
+
+**Files:**
+- Create: `src/WildBunch.GameContent/NewGame/MysteryTruthResolution.cs`
+- Create: `src/WildBunch.GameContent/NewGame/MysteryTruthResolver.cs`
+
+**Details:**
+
+Create `MysteryTruthResolution` record:
+```csharp
+internal sealed record MysteryTruthResolution(
+    int ResolvedCulpritIndex,
+    int ResolvedAccusationIndex,
+    int AppliedCashBonus,
+    SaltSource SaltSource);
+```
+
+Create `MysteryTruthResolver` — the **single entropy-applied mystery-truth seam** between `AdventureTemplate` and `ResolvedGameSetup`:
+```csharp
+internal static class MysteryTruthResolver
+{
+    public static MysteryTruthResolution Resolve(
+        AdventureTemplate template,
+        EntropyPolicy entropy)
+    {
+        // Transitional pass-through:
+        // - ResolvedCulpritIndex = template.DefaultCulpritIndex (all entropy modes)
+        // - ResolvedAccusationIndex = template.AccusationIndex (all entropy modes)
+        // - AppliedCashBonus = min(template.CashBonus, entropy.CashBonusCap)
+        // - SaltSource = Fixed(seedCodeText) for Boring, Runtime for others
+        //
+        // BUNCH-93 will expand this method to:
+        // - Boring: preserve template defaults deterministically (current behavior)
+        // - Classic: salted replacement of culprit index and feature allocation
+        // - Adventurous: more RNG variance than Classic, still inside normal rules
+        // - Wild: Adventurous variance + rule-bending while preserving coherence
+        //
+        // BUNCH-93 changes ONLY this method and MysteryTruthResolution.
+        // It does NOT change AdventureTemplate, AdventureTemplateResolver,
+        // StartingWorldDescriptorSeedMixer, GameSetupDeterministicLabels,
+        // or the seed codec.
+    }
+}
+```
+
+The `SaltSource` construction:
+- Boring: `SaltSource.CreateFixed(template.SeedCodeText)` (deterministic)
+- Classic/Adventurous/Wild: `SaltSource.CreateRuntime()` (transitional — BUNCH-93 may use the salt to drive reroll, but the salt source itself is already resolved here)
+
+Add a doc comment on `MysteryTruthResolver`: "This is the single extension point for BUNCH-93 entropy/salt remix. Transitional implementation is pass-through. BUNCH-93 expands `Resolve(...)` here without touching the seed codec or adventure template."
+
+- [ ] Create `MysteryTruthResolution.cs`
+- [ ] Create `MysteryTruthResolver.cs` with `Resolve(AdventureTemplate, EntropyPolicy)` (transitional pass-through)
+- [ ] Write unit tests proving pass-through for all entropy modes
+- [ ] Write unit test proving `MysteryTruthResolver.Resolve` is the single method BUNCH-93 changes (assert no `AdventureTemplate`/`AdventureTemplateResolver`/`StartingWorldDescriptorSeedMixer`/`GameSetupDeterministicLabels` changes are needed to vary `ResolvedCulpritIndex`)
+
+### Task 5: Create ResolvedGameSetup record and GameSetupResolver
 
 **Files:**
 - Create: `src/WildBunch.GameContent/NewGame/ResolvedGameSetup.cs`
@@ -338,35 +405,39 @@ internal sealed class GameSetupResolver
         EntropyPolicy entropy,
         TownId? playerChosenStartingTownId = null)
     {
-        // 1. Build world from template
-        // 2. Build case file from template (use DefaultCulpritIndex)
-        // 3. Compute final cash: difficulty.BaseCash + loadoutBonus + horseBonus + min(template.CashBonus, entropy.CashBonusCap)
-        // 4. Build inventory from difficulty envelope
-        // 5. Build wallet from final cash
-        // 6. Resolve salt source from entropy
+        // 1. Resolve mystery truth: MysteryTruthResolver.Resolve(template, entropy)
+        //    -> MysteryTruthResolution (ResolvedCulpritIndex, ResolvedAccusationIndex, AppliedCashBonus, SaltSource)
+        // 2. Build world from template
+        // 3. Build case file using mysteryTruth.ResolvedCulpritIndex and mysteryTruth.ResolvedAccusationIndex
+        // 4. Compute final cash: difficulty.BaseCash + loadoutBonus + horseBonus + mysteryTruth.AppliedCashBonus
+        // 5. Build inventory from difficulty envelope
+        // 6. Build wallet from final cash
         // 7. Resolve starting town (player override or seed-derived)
-        // 8. Return ResolvedGameSetup
+        // 8. Return ResolvedGameSetup (carrying mysteryTruth.SaltSource)
     }
 }
 ```
 
+The resolver MUST call `MysteryTruthResolver.Resolve` as an explicit step — not inline the pass-through logic. This makes the seam observable in source and tests, and ensures BUNCH-93 expands a named method rather than adding a new pipeline step.
+
 This absorbs the logic currently spread across `GameSetupPackageBuilder`, `SeedWorldBuilder`, `SeedCaseBuilder`, `SeedInventoryBuilder`, and `SeededNewGameFactory`.
 
 - [ ] Create `ResolvedGameSetup.cs`
-- [ ] Create `GameSetupResolver.cs` with full pipeline orchestration
+- [ ] Create `GameSetupResolver.cs` with full pipeline orchestration (must call `MysteryTruthResolver.Resolve` explicitly)
 - [ ] Write unit tests for GameSetupResolver
+- [ ] Write unit test proving `GameSetupResolver` calls `MysteryTruthResolver` (e.g. the resolved culprit index matches `MysteryTruthResolver.Resolve(template, entropy).ResolvedCulpritIndex`)
 
-### Task 5: Refactor SeedCaseBuilder to use seed-encoded culprit index
+### Task 6: Refactor SeedCaseBuilder to use resolved culprit index
 
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs`
 
 **Details:**
 
-- Replace hardcoded `TrueCulpritId = new SuspectId("suspect-4")` and `trueCulpritIndex: 3` with the seed-encoded `DefaultCulpritIndex` from `AdventureTemplate`.
-- The `CreateCaseFile` method should accept `AdventureTemplate` (or the resolved setup plan) and use `template.DefaultCulpritIndex` as the culprit index.
-- The canonical case file should use `DefaultCulpritIndex = 3` (preserving the current canonical culprit).
-- Keep the `AccusationIndex` from the template as the opening accusation.
+- Replace hardcoded `TrueCulpritId = new SuspectId("suspect-4")` and `trueCulpritIndex: 3` with the resolved culprit index from `MysteryTruthResolution.ResolvedCulpritIndex`.
+- The `CreateCaseFile` method should accept the resolved culprit index and accusation index (from `MysteryTruthResolution`), not the raw template defaults. This makes it explicit that entropy may reroll the culprit before case building.
+- The canonical case file should use `ResolvedCulpritIndex = 3` (preserving the current canonical culprit, since the transitional `MysteryTruthResolver` passes through `DefaultCulpritIndex = 3`).
+- Keep the `ResolvedAccusationIndex` from `MysteryTruthResolution` as the opening accusation.
 - Keep all other case-building logic (roster, features, clues, warrants, turf) unchanged.
 - The culprit is still always a gang member (index into the 7-suspect roster). The seed just determines which one is the default.
 
@@ -374,7 +445,7 @@ This absorbs the logic currently spread across `GameSetupPackageBuilder`, `SeedW
 - [ ] Update canonical case file to use culprit index 3
 - [ ] Verify case file tests still pass
 
-### Task 6: Refactor SeededNewGameFactory to use the new pipeline
+### Task 7: Refactor SeededNewGameFactory to use the new pipeline
 
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`
@@ -430,7 +501,7 @@ public GameSession Create(
 - [ ] Refactor `PrologueDescriptorResolver` to use new pipeline
 - [ ] Verify no dead code remains
 
-### Task 7: Remove or gate old StartingWorldDescriptor
+### Task 8: Remove or gate old StartingWorldDescriptor
 
 **Files:**
 - Modify or remove: `src/WildBunch.GameContent/NewGame/GameSetupSeed.cs`
@@ -455,7 +526,7 @@ public GameSession Create(
 - [ ] Update `DependencyInjection.cs` if needed
 - [ ] Grep proof: no remaining references to `StartingWorldDescriptor` in production source
 
-### Task 8: Update test helpers and catalogs
+### Task 9: Update test helpers and catalogs
 
 **Files:**
 - Modify: `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorSeedCodeFactory.cs`
@@ -494,7 +565,7 @@ public GameSession Create(
 - [ ] Update `ScenarioSeedFixture` and `BoringScenarioBuilder`
 - [ ] Document transitional gaps where horse/loadout variety was lost
 
-### Task 9: Update existing tests for new codec shape
+### Task 10: Update existing tests for new codec shape
 
 **Files:**
 - Modify: `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorResolverTests.cs` → rename to `AdventureTemplateResolverTests.cs`
@@ -535,7 +606,7 @@ public GameSession Create(
 - [ ] Update/replace package builder tests
 - [ ] Document all transitional behavior changes in test comments
 
-### Task 10: Update repo guidance
+### Task 11: Update repo guidance
 
 **Files:**
 - Modify: `AGENTS.md` (root)
@@ -572,7 +643,7 @@ Create `.agents/docs/setup-pipeline-doctrine.md`:
 - [ ] Create `.agents/docs/setup-pipeline-doctrine.md`
 - [ ] Grep proof: no remaining guidance says UUID seed always directly encodes final culprit truth
 
-### Task 11: Regenerate index mesh and run full validation
+### Task 12: Regenerate index mesh and run full validation
 
 **Files:**
 - Regenerate: all `INDEX.md` files via `python scripts/generate_index_mesh.py`
@@ -591,6 +662,8 @@ Create `.agents/docs/setup-pipeline-doctrine.md`:
 - [ ] Run `python scripts/generate_index_mesh.py --check` — must pass
 - [ ] Grep proof: no `StartingWorldDescriptor` in production source
 - [ ] Grep proof: no `GameDifficulty`/`GameEntropy` in `AdventureTemplate`/`AdventureTemplateResolver`
+- [ ] Grep proof: `GameSetupResolver` calls `MysteryTruthResolver.Resolve` as an explicit step
+- [ ] Grep proof: `MysteryTruthResolver` is the only mystery-truth resolution seam (no inline culprit resolution in `GameSetupResolver` or `SeedCaseBuilder`)
 
 ---
 
@@ -608,6 +681,8 @@ The implementation return must include:
 - Grep/source proof that stale seed/difficulty/entropy guidance was removed
 - Grep/source proof that `StartingWorldDescriptor` no longer exists in production source
 - Grep/source proof that `AdventureTemplate` does not reference `GameDifficulty` or `GameEntropy`
+- Grep/source proof that `GameSetupResolver` calls `MysteryTruthResolver.Resolve` as an explicit step
+- Grep/source proof that `MysteryTruthResolver` is the only mystery-truth resolution seam (no inline culprit resolution in `GameSetupResolver` or `SeedCaseBuilder`)
 
 ---
 
@@ -616,13 +691,13 @@ The implementation return must include:
 | DOD Check | How This Plan Proves It |
 |---|---|
 | Same seed resolves the same adventure template | Task 1 tests: AdventureTemplate round-trip + determinism |
-| Seed codec does not carry selected difficulty or entropy | Task 1+7: AdventureTemplate has no difficulty/entropy fields; grep proof |
+| Seed codec does not carry selected difficulty or entropy | Task 1+8: AdventureTemplate has no difficulty/entropy fields; grep proof |
 | Seed codec does not directly carry final starting health, final horse/saddle state, or direct inventory/loadout facts | Task 1+2: these are in DifficultyEnvelope, not AdventureTemplate |
 | Seed-derived cash bonus/multiplier is stable for the same seed | Task 1: CashBonus is seed-decoded, not entropy-capped |
-| Boring can preserve template/default mystery truth deterministically | Task 3+5: Boring uses Fixed salt + seed-encoded DefaultCulpritIndex |
-| Classic can preserve the same template while resolving salted private truth differently | Task 3: EntropyPolicy exposes SaltSourceMode for BUNCH-93 to add salted reroll |
-| Resolved setup is explicit enough that GameSession starts from final setup facts | Task 4+6: ResolvedGameSetup carries all final facts; GameSession.StartNew consumes it |
-| Repo guidance no longer teaches that UUID seed is always the final answer key | Task 10: AGENTS.md + doctrine file updated; grep proof |
+| Boring can preserve template/default mystery truth deterministically | Task 3+4: Boring uses Fixed salt + `MysteryTruthResolver` passes through `DefaultCulpritIndex` |
+| Classic salted replacement extension point exists without codec changes | Task 4+5: `MysteryTruthResolver.Resolve` is the single method BUNCH-93 changes to add salted culprit reroll. Test proves `MysteryTruthResolution` carries `ResolvedCulpritIndex` + `SaltSource` as the outputs BUNCH-93 will vary, and that no `AdventureTemplate`/`AdventureTemplateResolver`/`StartingWorldDescriptorSeedMixer`/`GameSetupDeterministicLabels` changes are required. BUNCH-107 does NOT implement salted reroll itself — it proves the extension point. |
+| Resolved setup is explicit enough that GameSession starts from final setup facts | Task 5+7: ResolvedGameSetup carries all final facts; GameSession.StartNew consumes it |
+| Repo guidance no longer teaches that UUID seed is always the final answer key | Task 11: AGENTS.md + doctrine file updated; grep proof |
 | BUNCH-93 and BUNCH-94 have clear rebase/plan-repair instructions | See Handoff below |
 
 ---
@@ -641,9 +716,9 @@ After this PR lands:
 
 ### BUNCH-93 (Entropy Setup and Controls)
 - Rebase and repair plan so entropy/salt policy applies after adventure-template resolution.
-- Expand `EntropyPolicy.For(GameEntropy)` to add salted culprit reroll for Classic/Adventurous/Wild (using `SaltSource` to reroll `DefaultCulpritIndex` from the template).
-- Expand `EntropyPolicy.For(GameEntropy)` to add feature reallocation and Adventurous/Wild variance boundaries.
-- Implement the entropy/salt contract: Boring=deterministic, Classic=salted replacement, Adventurous=more variance, Wild=rule-bending.
+- Expand `MysteryTruthResolver.Resolve(AdventureTemplate, EntropyPolicy)` to add salted culprit reroll for Classic/Adventurous/Wild (using `SaltSource` to reroll `DefaultCulpritIndex` from the template). This seam already exists and is called by `GameSetupResolver` — BUNCH-93 does NOT need to add a new pipeline step.
+- Expand `MysteryTruthResolver.Resolve` to add feature reallocation and Adventurous/Wild variance boundaries.
+- Implement the entropy/salt contract: Boring=deterministic (pass-through, current behavior), Classic=salted replacement, Adventurous=more variance, Wild=rule-bending.
 - Add visible entropy controls to the start-flow UI (the `SetupHuntStep` already has an entropy selector — wire it to the new policy).
-- The `AdventureTemplate` and `AdventureTemplateResolver` should NOT need changes — entropy is downstream of the template.
-- The `GameSetupResolver` may need a new step between template and resolved setup where entropy applies salted remix. This should be added as a dedicated method, not by expanding the template.
+- The `AdventureTemplate`, `AdventureTemplateResolver`, `StartingWorldDescriptorSeedMixer`, and `GameSetupDeterministicLabels` should NOT need changes — entropy is downstream of the template and the mystery-truth resolution seam is already installed.
+- `MysteryTruthResolution` may gain new fields if BUNCH-93 needs to carry additional resolved truth (e.g. resolved feature allocation), but the seam itself does not move.
