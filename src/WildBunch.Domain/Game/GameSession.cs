@@ -3470,7 +3470,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         // Secondary identifiers (things people wear - exclude)
-        if (d.Contains("wears") || d.Contains("wearing") || d.Contains("ribbon") || d.Contains("glove") || d.Contains("spur") || d.Contains("hat") || d.Contains("duster") || d.Contains("cuff") || d.Contains("gauntlet"))
+        if (d.Contains("wears") || d.Contains("wearing") || d.Contains("ribbon") || d.Contains("glove") || d.Contains("spur") || d.Contains("hat") || d.Contains("duster") || d.Contains("cuff") || d.Contains("gauntlet") || d.Contains("tied") || d.Contains("sash") || d.Contains("scarf") || d.Contains("spectacles") || d.Contains("pocket"))
         {
             return false;
         }
