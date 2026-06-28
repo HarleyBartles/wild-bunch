@@ -52,13 +52,13 @@ export function PreSessionSurface() {
       {flow.step === "name" && (
         <SetupHuntStep
           playerName={flow.playerName}
-          travelDifficulty={flow.travelDifficulty}
+          gameDifficulty={flow.gameDifficulty}
           entropy={flow.entropy}
           seedDraft={flow.seedDraft}
           seedDirty={flow.seedDirty}
           decodeError={flow.decodeError}
           onPlayerNameChange={flow.setPlayerName}
-          onTravelDifficultyChange={flow.setTravelDifficulty}
+          onGameDifficultyChange={flow.setGameDifficulty}
           onEntropyChange={flow.setEntropy}
           onSeedDraftChange={flow.setSeedDraft}
           onApplySeed={flow.applySeed}
@@ -71,7 +71,7 @@ export function PreSessionSurface() {
         <StorySoFarStep
           onContinue={flow.advance}
           seedCode={flow.seedState.seedCode}
-          travelDifficulty={flow.travelDifficulty}
+          gameDifficulty={flow.gameDifficulty}
           entropy={flow.entropy}
         />
       )}

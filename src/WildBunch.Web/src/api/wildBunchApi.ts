@@ -1,5 +1,5 @@
 import type {
-  AdventureRandomnessPolicy,
+  GameEntropy,
   AvailableActionDto,
   BuyStoreItemRequest,
   InvestigationActionResultDto,
@@ -11,7 +11,7 @@ import type {
   StartGameRequest,
   StartingTownDto,
   TownStoreOffersDto,
-  TravelDifficulty,
+  GameDifficulty,
   TravelRequest,
   TravelPreviewResultDto,
   SaloonPersonOfInterestConfrontationResultDto,
@@ -146,15 +146,15 @@ export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdenti
 
 export function getPrologue(
   seedCode?: string | null,
-  travelDifficulty?: TravelDifficulty,
-  entropy?: AdventureRandomnessPolicy,
+  gameDifficulty?: GameDifficulty,
+  entropy?: GameEntropy,
 ) {
   const params = new URLSearchParams();
   if (seedCode) {
     params.set("seedCode", seedCode);
   }
-  if (travelDifficulty != null) {
-    params.set("travelDifficulty", String(travelDifficulty));
+  if (gameDifficulty != null) {
+    params.set("gameDifficulty", String(gameDifficulty));
   }
   if (entropy != null) {
     params.set("entropy", String(entropy));

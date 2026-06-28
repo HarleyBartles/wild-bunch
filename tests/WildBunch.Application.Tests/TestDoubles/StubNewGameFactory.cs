@@ -19,7 +19,7 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<string> RequestedPlayerNames { get; } = [];
 
-    public List<GameDifficulty> RequestedTravelDifficulties { get; } = [];
+    public List<GameDifficulty> RequestedGameDifficulties { get; } = [];
 
     public List<string?> RequestedSetupSeedCodes { get; } = [];
 
@@ -35,7 +35,7 @@ public sealed class StubNewGameFactory : INewGameFactory
         string? startingTownId = null)
     {
         RequestedPlayerNames.Add(playerName);
-        RequestedTravelDifficulties.Add(GameDifficulty);
+        RequestedGameDifficulties.Add(GameDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
         RequestedEntropies.Add(entropy);
         RequestedStartingTownIds.Add(startingTownId);

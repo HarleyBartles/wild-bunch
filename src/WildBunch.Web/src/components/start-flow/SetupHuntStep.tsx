@@ -1,33 +1,33 @@
 import { useState } from "react";
 import styled from "styled-components";
 import type { FormEvent } from "react";
-import type { AdventureRandomnessPolicy, TravelDifficulty } from "../../api/types";
+import type { GameEntropy, GameDifficulty } from "../../api/types";
 import { Button, FlowError } from "../ui/sharedStyled";
 import { SegmentedToggle } from "./SegmentedToggle";
 
 interface SetupHuntStepProps {
   playerName: string;
-  travelDifficulty: TravelDifficulty;
-  entropy: AdventureRandomnessPolicy;
+  gameDifficulty: GameDifficulty;
+  entropy: GameEntropy;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   onPlayerNameChange: (value: string) => void;
-  onTravelDifficultyChange: (difficulty: TravelDifficulty) => void;
-  onEntropyChange: (entropy: AdventureRandomnessPolicy) => void;
+  onGameDifficultyChange: (difficulty: GameDifficulty) => void;
+  onEntropyChange: (entropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
   onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }
 
-const difficultyOptions: ReadonlyArray<{ value: TravelDifficulty; label: string }> = [
+const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
   { value: 1, label: "Easy" },
   { value: 0, label: "Normal" },
   { value: 2, label: "Hard" },
 ];
 
-const entropyOptions: ReadonlyArray<{ value: AdventureRandomnessPolicy; label: string }> = [
+const entropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
   { value: 1, label: "Classic" },
   { value: 2, label: "Adventurous" },
   { value: 3, label: "Wild" },
@@ -35,13 +35,13 @@ const entropyOptions: ReadonlyArray<{ value: AdventureRandomnessPolicy; label: s
 
 export function SetupHuntStep({
   playerName,
-  travelDifficulty,
+  gameDifficulty,
   entropy,
   seedDraft,
   seedDirty,
   decodeError,
   onPlayerNameChange,
-  onTravelDifficultyChange,
+  onGameDifficultyChange,
   onEntropyChange,
   onSeedDraftChange,
   onApplySeed,
@@ -97,8 +97,8 @@ export function SetupHuntStep({
           <GroupLabel>Difficulty</GroupLabel>
           <SegmentedToggle
             options={difficultyOptions}
-            value={travelDifficulty}
-            onSelect={onTravelDifficultyChange}
+            value={gameDifficulty}
+            onSelect={onGameDifficultyChange}
           />
         </FieldGroup>
 

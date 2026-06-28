@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { AdventureRandomnessPolicy, GameSessionDto, StartGameRequest, TravelDifficulty } from "../api/types";
+import type { GameEntropy, GameSessionDto, StartGameRequest, GameDifficulty } from "../api/types";
 import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { useStartGameSeed } from "./useStartGameSeed";
 
@@ -14,8 +14,8 @@ export interface UseStartFlowArgs {
 
 export interface StartFlowRequest {
   playerName: string;
-  travelDifficulty: TravelDifficulty;
-  entropy: AdventureRandomnessPolicy;
+  gameDifficulty: GameDifficulty;
+  entropy: GameEntropy;
   seedCode: string;
   startingTownId: string;
 }
@@ -24,16 +24,16 @@ export interface UseStartFlowResult {
   step: StartFlowStep;
   playerName: string;
   selectedTownId: string | null;
-  travelDifficulty: TravelDifficulty;
-  entropy: AdventureRandomnessPolicy;
+  gameDifficulty: GameDifficulty;
+  entropy: GameEntropy;
   seedState: ReturnType<typeof useStartGameSeed>["seedState"];
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   setPlayerName: (value: string) => void;
   setSelectedTownId: (value: string | null) => void;
-  setTravelDifficulty: (difficulty: TravelDifficulty) => void;
-  setEntropy: (entropy: AdventureRandomnessPolicy) => void;
+  setGameDifficulty: (difficulty: GameDifficulty) => void;
+  setEntropy: (entropy: GameEntropy) => void;
   setSeedDraft: (value: string) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
@@ -78,20 +78,20 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
       const trimmedName = seed.playerName.trim();
       return {
         playerName: trimmedName,
-        travelDifficulty: seed.travelDifficulty,
+        gameDifficulty: seed.gameDifficulty,
         entropy: seed.entropy,
         seedCode,
         startingTownId: townId,
       };
     },
-    [seed.playerName, seed.seedState, seed.travelDifficulty, seed.entropy],
+    [seed.playerName, seed.seedState, seed.gameDifficulty, seed.entropy],
   );
 
   return {
     step,
     playerName: seed.playerName,
     selectedTownId,
-    travelDifficulty: seed.travelDifficulty,
+    gameDifficulty: seed.gameDifficulty,
     entropy: seed.entropy,
     seedState: seed.seedState,
     seedDraft: seed.seedDraft,
@@ -99,7 +99,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     decodeError: seed.decodeError,
     setPlayerName: seed.setPlayerName,
     setSelectedTownId,
-    setTravelDifficulty: seed.setTravelDifficulty,
+    setGameDifficulty: seed.setGameDifficulty,
     setEntropy: seed.setEntropy,
     setSeedDraft: seed.setSeedDraft,
     applySeed: seed.applySeed,

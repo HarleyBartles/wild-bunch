@@ -17,7 +17,7 @@ public sealed class StartNewGameHandlerTests
         var result = await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
 
         Assert.Equal("Ranger Vale", factory.RequestedPlayerNames.Single());
-        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Normal, factory.RequestedTravelDifficulties.Single());
+        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Normal, factory.RequestedGameDifficulties.Single());
         Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Standard, factory.RequestedEntropies.Single());
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
@@ -41,7 +41,7 @@ public sealed class StartNewGameHandlerTests
 
         await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", WildBunch.Domain.Travel.GameDifficulty.Easy));
 
-        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Easy, factory.RequestedTravelDifficulties.Single());
+        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Easy, factory.RequestedGameDifficulties.Single());
     }
 
     [Fact]

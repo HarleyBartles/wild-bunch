@@ -45,7 +45,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
   return {
     id: "game-1",
     status: 0,
-    travelDifficulty: 0,
+    gameDifficulty: 0,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
@@ -270,7 +270,7 @@ describe("StartFlow", () => {
     expect(request.playerName).toBe("Ranger Vale");
     expect(request.startingTownId).toBe("t-town");
     expect(request.seedCode).toBeTruthy();
-    expect(request.travelDifficulty).toBe(2);
+    expect(request.gameDifficulty).toBe(2);
     expect(request.entropy).toBe(3);
   });
 
