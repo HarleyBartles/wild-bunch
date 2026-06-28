@@ -31,6 +31,8 @@ public sealed class SeededNewGameFactory : INewGameFactory
     {
         var descriptor = ResolveDescriptor(gameDifficulty, setupSeedCode, gameEntropy);
         var setupPackage = _setupPackageBuilder.Build(descriptor);
+        
+        // Salt is determined by entropy: Boring = Fixed (deterministic), others = Runtime (variable)
         var saltSource = descriptor.GameEntropy == GameEntropy.Boring
             ? SaltSource.CreateFixed(descriptor.SeedCodeText)
             : _saltSourceFactory.Create(descriptor.SeedCodeText, setupPackage.GameDifficulty);
@@ -40,6 +42,7 @@ public sealed class SeededNewGameFactory : INewGameFactory
             ? setupPackage.StartingTownId
             : new TownId(startingTownId);
 
+        // Always retain the seed code for debugging/reproducibility of the world
         return GameSession.StartNew(
             playerName,
             setupPackage.World,
@@ -49,7 +52,8 @@ public sealed class SeededNewGameFactory : INewGameFactory
             setupPackage.StartingInventory,
             setupPackage.GameDifficulty,
             saltSource,
-            descriptor.GameEntropy);
+            descriptor.GameEntropy,
+            descriptor.SeedCodeText);
     }
 
     private static StartingWorldDescriptor ResolveDescriptor(GameDifficulty gameDifficulty, string? setupSeedCode, GameEntropy gameEntropy)

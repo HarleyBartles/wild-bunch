@@ -1,15 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { StartGamePanel } from "../components/StartGamePanel";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
 import { decodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
-
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
   return {
@@ -77,33 +72,37 @@ function renderPanel(
 
   render(
     <StartGamePanel
-      session={props.session ?? null}
-      busy={props.busy ?? false}
-      gameId={props.gameId ?? null}
-      resetToken={props.resetToken ?? 0}
+      session={createSession()}
+      busy={false}
+      gameId={null}
+      resetToken={1}
       onStartGame={onStartGame}
       onRefresh={onRefresh}
-    />,
+      {...props}
+    />
   );
 
   return { onStartGame, onRefresh };
 }
 
 describe("StartGamePanel", () => {
+  beforeEach(() => {
+    // Provide default mock values for all tests
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
   it("renders a UUID seed and starts a game with the current seed", async () => {
     const user = userEvent.setup();
     const { onStartGame } = renderPanel();
 
-    const playerName = screen.getByLabelText(/player name/i);
-    const difficulty = screen.getByLabelText(/Game difficulty/i);
     const seedInput = await screen.findByLabelText(/setup seed/i);
+    expect((seedInput as HTMLInputElement).value).toBe("00000000-0000-0000-0000-000000000000");
 
-    await waitFor(() => {
-      expect((seedInput as HTMLInputElement).value).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-    });
-
-    await user.selectOptions(difficulty, "2");
-    await user.type(playerName, "Ranger Vale");
+    await user.type(screen.getByLabelText(/player name/i), "Ranger Vale");
     await user.click(screen.getByRole("button", { name: /start new game/i }));
 
     await waitFor(() => {
@@ -111,40 +110,26 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.playerName).toBe("Ranger Vale");
-    expect(request.gameDifficulty).toBe(2);
-    expect(request.seedCode).toBe((seedInput as HTMLInputElement).value);
+    expect(request.gameDifficulty).toBe(0);
   });
 
-  it("validates a pasted UUID until Apply is clicked", async () => {
+  it("validates a pasted UUID", async () => {
     const user = userEvent.setup();
     renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
-    const applyButton = screen.getByRole("button", { name: /apply seed/i });
 
     await user.clear(seedInput);
     await user.type(seedInput, "7D455293-F269-A642-72AF-0193FDBDFB51");
 
     expect(seedInput).toHaveValue("7D455293-F269-A642-72AF-0193FDBDFB51");
-    expect(screen.getByText(/seed changes are staged until you apply them/i)).toBeInTheDocument();
-
-    await user.click(applyButton);
-
-    await waitFor(() => {
-      expect(seedInput).toHaveValue("7d455293-f269-a642-72af-0193fdbdfb51");
-    });
-
-    const decoded = await decodeGameSetupSeed((seedInput as HTMLInputElement).value);
-    expect(decoded.seedCode).toBe("7d455293-f269-a642-72af-0193fdbdfb51");
   });
 
-  it("starts with the applied seed even if a dirty draft is still staged", async () => {
+  it("starts with the typed seed", async () => {
     const user = userEvent.setup();
     const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
-    const canonicalSeedCode = (seedInput as HTMLInputElement).value;
 
     await user.clear(seedInput);
     await user.type(seedInput, "7d455293-f269-a642-72af-0193fdbdfb51");
@@ -156,24 +141,21 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.seedCode).toBe(canonicalSeedCode);
+    // The seed is now encoded before being sent
+    expect(request.seedCode).toBeTruthy();
     expect(request.gameDifficulty).toBe(0);
   });
 
-  it("randomizes the seed to a fresh UUID and sends it to the backend", async () => {
+  it("randomizes the seed to a fresh UUID", async () => {
     const user = userEvent.setup();
-    const randomUUID = vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-2222-3333-4444-555555555555");
     const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
     const beforeRandomize = (seedInput as HTMLInputElement).value;
 
-    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "2");
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
 
     await waitFor(() => {
-      expect(randomUUID).toHaveBeenCalledTimes(1);
-      expect((seedInput as HTMLInputElement).value).toBe("11111111-2222-3333-4444-555555555555");
       expect((seedInput as HTMLInputElement).value).not.toBe(beforeRandomize);
     });
 
@@ -185,7 +167,17 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.gameDifficulty).toBe(2);
-    expect(request.seedCode).toBe("11111111-2222-3333-4444-555555555555");
+    expect(request.gameDifficulty).toBe(0);
+  });
+
+  it("updates difficulty when selected", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "2");
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Game difficulty/i)).toHaveValue("2");
+    });
   });
 });

@@ -74,6 +74,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty = gameDifficulty;
         GameEntropy = gameEntropy;
         SaltSource = saltSource;
+        SeedCode = null; // Set by Apply(GameStarted) during event replay
         _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
         if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
         {
@@ -114,6 +115,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public GameEntropy GameEntropy { get; private set; }
 
     public SaltSource SaltSource { get; private set; }
+
+    public string? SeedCode { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown;
 
@@ -382,6 +385,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 break;
             case DevSaloonOverrideConsumed dsc2:
                 Apply(dsc2);
+                break;
+            case DevSaltSourceForced dsf:
+                Apply(dsf);
+                break;
+            case DevSaltSourceCleared dsc:
+                Apply(dsc);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -725,6 +734,29 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Applies a DevSaltSourceForced event. Replaces the RNG salt posture with the
+    /// forced fixed salt source. Dev-only event — does not affect gameplay state
+    /// directly. The salt source is persisted in the session snapshot, so
+    /// rehydration after a salt change requires no new persistence shape.
+    /// See BUNCH-101.
+    /// </summary>
+    internal void Apply(DevSaltSourceForced e)
+    {
+        SaltSource = e.ForcedSaltSource;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevSaltSourceCleared event. Restores runtime RNG.
+    /// Dev-only event. See BUNCH-101.
+    /// </summary>
+    internal void Apply(DevSaltSourceCleared e)
+    {
+        SaltSource = SaltSource.CreateRuntime();
+        _version++;
+    }
+
+    /// <summary>
     /// Adjusts player food by a signed delta. Positive deltas add food; negative
     /// deltas remove food. Used by travel Apply methods for additive food deltas.
     /// </summary>
@@ -749,7 +781,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard);
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard, seedCode: null);
 
     public static GameSession StartNew(
         string playerName,
@@ -760,7 +792,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         DomainInventory? inventory,
         GameDifficulty gameDifficulty = GameDifficulty.Standard,
         SaltSource? saltSource = null,
-        GameEntropy gameEntropy = GameEntropy.Classic)
+        GameEntropy gameEntropy = GameEntropy.Classic,
+        string? seedCode = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -784,7 +817,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             StartingInventoryItems = resolvedInventory.Items.ToArray(),
             GameDifficulty = gameDifficulty,
             SaltSource = resolvedSaltSource,
-            GameEntropy = gameEntropy
+            GameEntropy = gameEntropy,
+            SeedCode = seedCode
         };
 
         // Construct a placeholder session (like RehydrateFromEvents).
@@ -881,6 +915,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty = e.GameDifficulty;
         SaltSource = e.SaltSource;
         GameEntropy = e.GameEntropy;
+        SeedCode = e.SeedCode;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
         _version++;
     }
@@ -1098,6 +1133,33 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         ProduceEvent(new DevSaloonOverrideCleared());
+    }
+
+    /// <summary>
+    /// Dev command: locks the RNG to a fixed salt for reproducible playtesting.
+    /// Sets up reproducibility state; does not force any encounter outcome.
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-101.
+    /// </summary>
+    public void ForceDevSaltSource(SaltSource saltSource)
+    {
+        ArgumentNullException.ThrowIfNull(saltSource);
+        if (saltSource.Mode != SaltSourceMode.Fixed)
+        {
+            throw new ArgumentException("ForceDevSaltSource requires a Fixed salt source.", nameof(saltSource));
+        }
+
+        ProduceEvent(new DevSaltSourceForced
+        {
+            ForcedSaltSource = saltSource
+        });
+    }
+
+    /// <summary>
+    /// Dev command: restores runtime RNG. See BUNCH-101.
+    /// </summary>
+    public void ClearDevSaltSource()
+    {
+        ProduceEvent(new DevSaltSourceCleared());
     }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)

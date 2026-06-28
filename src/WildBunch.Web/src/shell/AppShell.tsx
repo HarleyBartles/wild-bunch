@@ -9,11 +9,19 @@ import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 function ShellChrome() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
   const [devOverlayOpen, setDevOverlayOpen] = useState(false);
+  const chromeBarRef = useRef<HTMLDivElement>(null);
+  const [chromeBarHeight, setChromeBarHeight] = useState(0);
+
+  useEffect(() => {
+    if (chromeBarRef.current) {
+      setChromeBarHeight(chromeBarRef.current.offsetHeight);
+    }
+  }, [devOverlayOpen]);
 
   return (
     <DevSurfaceProvider>
       <Shell>
-        <ChromeBar>
+        <ChromeBar ref={chromeBarRef}>
           <Hud
             onOpenJournal={() => setOpenOverlay("journal")}
             onOpenGameSettings={() => setOpenOverlay("game-settings")}
@@ -40,6 +48,7 @@ function ShellChrome() {
         <DevOverlay
           open={devOverlayOpen}
           onClose={() => setDevOverlayOpen(false)}
+          top={chromeBarHeight}
         />
       </Shell>
     </DevSurfaceProvider>

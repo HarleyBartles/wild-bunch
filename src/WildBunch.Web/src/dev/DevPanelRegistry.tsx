@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { SessionAuditDevPanel } from "./panels/SessionAuditDevPanel";
 import { TravelDevPanel } from "./panels/TravelDevPanel";
 import { SaloonDevPanel } from "./panels/SaloonDevPanel";
+import { SessionDevPanel } from "./panels/SessionDevPanel";
 import type { DevSurface } from "./DevSurfaceContext";
 
 export interface DevPanelRenderProps {
@@ -36,6 +37,12 @@ export const devPanels: DevPanelDefinition[] = [
     label: "Session audit",
     render: () => <SessionAuditDevPanel />,
     // Session audit is broadly available on all gameplay surfaces
+  },
+  {
+    id: "session-dev",
+    label: "Session dev",
+    render: ({ expanded }) => <SessionDevPanel expanded={expanded} />,
+    // Available on all surfaces; not a surface owner (per dev-overlay doctrine §3)
   },
   {
     id: "travel-dev",

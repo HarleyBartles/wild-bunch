@@ -16,18 +16,19 @@ interface SetupHuntStepProps {
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }
 
 const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
+  { value: 1, label: "Easy" },
   { value: 0, label: "Standard" },
   { value: 2, label: "Challenging" },
   { value: 3, label: "Brutal" },
 ];
 
 const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
+  { value: 0, label: "Boring" },
   { value: 1, label: "Classic" },
   { value: 2, label: "Adventurous" },
   { value: 3, label: "Wild" },
@@ -44,7 +45,6 @@ export function SetupHuntStep({
   onGameDifficultyChange,
   onGameEntropyChange,
   onSeedDraftChange,
-  onApplySeed,
   onRandomizeSeed,
   onContinue,
 }: SetupHuntStepProps) {
@@ -124,14 +124,6 @@ export function SetupHuntStep({
               aria-invalid={Boolean(decodeError)}
               aria-describedby={decodeError ? "start-flow-seed-validation" : undefined}
             />
-            <Button
-              type="button"
-              $variant="ghost"
-              onClick={() => void onApplySeed()}
-              disabled={!seedDirty}
-            >
-              Apply
-            </Button>
             <Button type="button" $variant="ghost" onClick={onRandomizeSeed}>
               Randomize
             </Button>

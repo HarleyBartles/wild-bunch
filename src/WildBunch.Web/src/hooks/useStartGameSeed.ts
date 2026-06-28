@@ -4,7 +4,6 @@ import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
   encodeGameSetupSeed,
-  withRandomSeed,
   type GameSetupSeedState,
 } from "../ui/gameSetupSeedCodec";
 
@@ -25,7 +24,6 @@ export interface UseStartGameSeedResult {
   setSeedDraft: (value: string) => void;
   setGameDifficulty: (difficulty: GameDifficulty) => void;
   setGameEntropy: (gameEntropy: GameEntropy) => void;
-  applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
 
@@ -72,21 +70,6 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDraft(seedState.seedCode);
   }, [seedState.seedCode]);
 
-  async function applySeed() {
-    if (!seedDirty) {
-      return;
-    }
-
-    try {
-      const decoded = await decodeGameSetupSeed(seedDraft);
-      setDecodeError(null);
-      setSeedDirty(false);
-      setSeedState(decoded);
-    } catch (error) {
-      setDecodeError(getErrorMessage(error));
-    }
-  }
-
   function handleSeedDraftChange(value: string) {
     setDecodeError(null);
     setSeedDraft(value);
@@ -105,7 +88,9 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
   function randomizeSeed() {
     setDecodeError(null);
     setSeedDirty(false);
-    setSeedState((current) => withRandomSeed(current));
+    const randomSeed = crypto.randomUUID();
+    setSeedState({ seedCode: randomSeed });
+    setSeedDraft(randomSeed);
   }
 
   return {
@@ -120,7 +105,6 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDraft: handleSeedDraftChange,
     setGameDifficulty: handleGameDifficultyChange,
     setGameEntropy: handleGameEntropyChange,
-    applySeed,
     randomizeSeed,
   };
 }

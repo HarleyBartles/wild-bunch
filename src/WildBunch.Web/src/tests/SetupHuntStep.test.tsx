@@ -14,7 +14,6 @@ interface StepHandlers {
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }
@@ -28,7 +27,6 @@ function StatefulSetupHuntStep({
   onGameDifficultyChange,
   onGameEntropyChange,
   onSeedDraftChange,
-  onApplySeed,
   onRandomizeSeed,
   onContinue,
 }: {
@@ -40,7 +38,6 @@ function StatefulSetupHuntStep({
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }) {
@@ -74,7 +71,6 @@ function StatefulSetupHuntStep({
         setSeedDirty(true);
         onSeedDraftChange(value);
       }}
-      onApplySeed={onApplySeed}
       onRandomizeSeed={onRandomizeSeed}
       onContinue={onContinue}
     />
@@ -93,7 +89,6 @@ function renderStep(overrides: Partial<{
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }> = {}) {
@@ -102,7 +97,6 @@ function renderStep(overrides: Partial<{
     onGameDifficultyChange: overrides.onGameDifficultyChange ?? vi.fn(),
     onGameEntropyChange: overrides.onGameEntropyChange ?? vi.fn(),
     onSeedDraftChange: overrides.onSeedDraftChange ?? vi.fn(),
-    onApplySeed: overrides.onApplySeed ?? vi.fn().mockResolvedValue(undefined),
     onRandomizeSeed: overrides.onRandomizeSeed ?? vi.fn(),
     onContinue: overrides.onContinue ?? vi.fn(),
   };
@@ -118,7 +112,6 @@ function renderStep(overrides: Partial<{
         onGameDifficultyChange={handlers.onGameDifficultyChange}
         onGameEntropyChange={handlers.onGameEntropyChange}
         onSeedDraftChange={handlers.onSeedDraftChange}
-        onApplySeed={handlers.onApplySeed}
         onRandomizeSeed={handlers.onRandomizeSeed}
         onContinue={handlers.onContinue}
       />,
@@ -136,7 +129,6 @@ function renderStep(overrides: Partial<{
         onGameDifficultyChange={handlers.onGameDifficultyChange}
         onGameEntropyChange={handlers.onGameEntropyChange}
         onSeedDraftChange={handlers.onSeedDraftChange}
-        onApplySeed={handlers.onApplySeed}
         onRandomizeSeed={handlers.onRandomizeSeed}
         onContinue={handlers.onContinue}
       />,
@@ -233,7 +225,7 @@ describe("SetupHuntStep", () => {
     expect(onGameEntropyChange).toHaveBeenCalledWith(3);
   });
 
-  it("renders difficulty options as Standard, Challenging, Brutal in that order", () => {
+  it("renders difficulty options as Easy, Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -241,13 +233,12 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Standard", "Challenging", "Brutal"]);
-    expect(labels).not.toContain("Easy");
+    expect(labels).toEqual(["Easy", "Standard", "Challenging", "Brutal"]);
     expect(labels).not.toContain("Normal");
     expect(labels).not.toContain("Hard");
   });
 
-  it("renders gameEntropy options as Classic, Adventurous, Wild in that order", () => {
+  it("renders gameEntropy options as Boring, Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -255,16 +246,32 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(entropyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Classic", "Adventurous", "Wild"]);
+    expect(labels).toEqual(["Boring", "Classic", "Adventurous", "Wild"]);
     expect(labels).not.toContain("Placid");
     expect(labels).not.toContain("Restless");
     expect(labels).not.toContain("Rowdy");
   });
 
-  it("does not render Boring as a player-facing gameEntropy option", () => {
-    renderStep();
+  it("calls onGameEntropyChange when Boring is selected", async () => {
+    const user = userEvent.setup();
+    const onGameEntropyChange = vi.fn();
+    renderStep({ stateful: true, onGameEntropyChange });
 
-    expect(screen.queryByRole("button", { name: /^boring$/i })).not.toBeInTheDocument();
+    const boring = screen.getByRole("button", { name: /^boring$/i });
+    await user.click(boring);
+
+    expect(onGameEntropyChange).toHaveBeenCalledWith(0);
+  });
+
+  it("calls onGameDifficultyChange when Easy is selected", async () => {
+    const user = userEvent.setup();
+    const onGameDifficultyChange = vi.fn();
+    renderStep({ stateful: true, onGameDifficultyChange });
+
+    const easy = screen.getByRole("button", { name: /^easy$/i });
+    await user.click(easy);
+
+    expect(onGameDifficultyChange).toHaveBeenCalledWith(1);
   });
 
   it("uses a single thumb element per segmented toggle (not per-option backgrounds)", () => {
@@ -306,28 +313,6 @@ describe("SetupHuntStep", () => {
     await user.click(screen.getByRole("button", { name: /randomize/i }));
 
     expect(onRandomizeSeed).toHaveBeenCalledTimes(1);
-  });
-
-  it("disables Apply until the seed draft is dirty", () => {
-    renderStep({ seedDirty: false });
-
-    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
-  });
-
-  it("enables Apply when the seed draft is dirty", () => {
-    renderStep({ seedDirty: true });
-
-    expect(screen.getByRole("button", { name: /apply/i })).not.toBeDisabled();
-  });
-
-  it("calls onApplySeed when Apply is clicked with a dirty seed", async () => {
-    const user = userEvent.setup();
-    const onApplySeed = vi.fn().mockResolvedValue(undefined);
-    renderStep({ seedDirty: true, onApplySeed });
-
-    await user.click(screen.getByRole("button", { name: /apply/i }));
-
-    expect(onApplySeed).toHaveBeenCalledTimes(1);
   });
 
   it("shows the decode error when provided", () => {

@@ -35,7 +35,6 @@ export interface UseStartFlowResult {
   setGameDifficulty: (difficulty: GameDifficulty) => void;
   setGameEntropy: (gameEntropy: GameEntropy) => void;
   setSeedDraft: (value: string) => void;
-  applySeed: () => Promise<void>;
   randomizeSeed: () => void;
   goToStep: (step: StartFlowStep) => void;
   advance: () => void;
@@ -102,7 +101,6 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     setGameDifficulty: seed.setGameDifficulty,
     setGameEntropy: seed.setGameEntropy,
     setSeedDraft: seed.setSeedDraft,
-    applySeed: seed.applySeed,
     randomizeSeed: seed.randomizeSeed,
     goToStep,
     advance,

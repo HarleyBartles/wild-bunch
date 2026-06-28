@@ -15,6 +15,7 @@ public sealed partial class GameSessionJsonSerializer
         GameDifficulty GameDifficulty,
         GameEntropy? GameEntropy,
         SaltSourceSnapshot? SaltSource,
+        string? SeedCode,
         TownVisitStateSnapshot? CurrentTownVisit,
         PlayerSnapshot Player,
         WorldSnapshot World,
@@ -38,6 +39,7 @@ public sealed partial class GameSessionJsonSerializer
                 session.GameDifficulty,
                 session.GameEntropy,
                 SaltSourceSnapshot.FromDomain(session.SaltSource),
+                session.SeedCode,
                 TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
                 PlayerSnapshot.FromDomain(session.Player),
                 WorldSnapshot.FromDomain(session.World),
@@ -81,6 +83,13 @@ public sealed partial class GameSessionJsonSerializer
 
             TownId? contextTownId = CurrentActionContextTownId is null ? null : new TownId(CurrentActionContextTownId);
             GameSessionRehydrator.SetCurrentActionContext(session, CurrentActionContext, contextTownId);
+            
+            // Set SeedCode from snapshot as a cache. The true source of truth is the
+            // GameStarted event, which will be applied during event replay if there are
+            // post-snapshot events. When the snapshot is current, this restores the
+            // persisted seed code. See BUNCH-101.
+            GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", SeedCode);
+            
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             if (PendingDevTravelOverride is not null)

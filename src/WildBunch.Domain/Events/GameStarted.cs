@@ -18,4 +18,9 @@ public sealed record GameStarted : IDomainEvent
     public required GameDifficulty GameDifficulty { get; init; }
     public required SaltSource SaltSource { get; init; }
     public required GameEntropy GameEntropy { get; init; }
+    /// <summary>
+    /// The seed code used for world generation. This is the UUID encoding of the starting world descriptor.
+    /// Same seed means same starting world under the same setup envelope. Does not change during play.
+    /// </summary>
+    public string? SeedCode { get; init; }
 }

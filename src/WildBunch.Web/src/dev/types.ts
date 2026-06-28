@@ -106,3 +106,33 @@ export interface ForceSaloonOverrideRequestDto {
   forcedKind: string;
   forcedSuspectId?: string | null;
 }
+
+export interface SaltPostureDevDto {
+  mode: string;
+  salt: string | null;
+}
+
+export interface ClockDevDto {
+  day: number;
+  turn: number;
+  timeOfDay: string;
+}
+
+export interface SessionDevContextDto {
+  sessionId: string;
+  status: string;
+  gameDifficulty: string;
+  gameEntropy: string;
+  saltPosture: SaltPostureDevDto;
+  clock: ClockDevDto;
+  currentTownId: string | null;
+  currentTownName: string | null;
+  currentActionContext: string;
+  hasActiveJourney: boolean;
+  seedCodeRetained: boolean;
+  seedCodeText: string | null;
+}
+
+export interface LockRngRequestDto {
+  salt?: string | null;
+}

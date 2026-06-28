@@ -10,10 +10,10 @@ internal static class StartingWorldDescriptorSeedCodeFactory
     internal static Guid CreateSeedCode(byte policy, byte worldVariant, byte loadoutProfile, byte startWithHorse, byte accusationIndex, byte startingCashBonus, byte difficulty, ulong salt)
     {
         var descriptor = CreateDescriptor(policy, worldVariant, loadoutProfile, startWithHorse, accusationIndex, startingCashBonus, difficulty);
-        return FindSeedCode(descriptor, salt);
+        return FindSeedCode(descriptor, salt, (GameDifficulty)difficulty, (GameEntropy)policy);
     }
 
-    internal static Guid FindSeedCode(StartingWorldDescriptor descriptor, ulong salt = 0)
+    internal static Guid FindSeedCode(StartingWorldDescriptor descriptor, ulong salt = 0, GameDifficulty requestedDifficulty = GameDifficulty.Standard, GameEntropy requestedEntropy = GameEntropy.Classic)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 
@@ -27,8 +27,8 @@ internal static class StartingWorldDescriptorSeedCodeFactory
         for (var attempt = 0; attempt < SearchLimit; attempt++)
         {
             var candidate = StartingWorldDescriptorSeedMixer.CreateCandidateSeed(descriptorSignature, salt, attempt);
-            var resolved = StartingWorldDescriptorResolver.Resolve(candidate);
-            if (descriptor with { SeedCode = resolved.SeedCode } == resolved)
+            var resolved = StartingWorldDescriptorResolver.Resolve(candidate, requestedDifficulty, requestedEntropy);
+            if (HasSameSemantics(descriptor, resolved))
             {
                 return candidate;
             }
@@ -36,6 +36,11 @@ internal static class StartingWorldDescriptorSeedCodeFactory
 
         throw new InvalidOperationException("Could not find a representative UUID-shaped seed for the requested descriptor.");
     }
+
+    private static bool HasSameSemantics(StartingWorldDescriptor left, StartingWorldDescriptor right)
+        => left.World == right.World
+            && left.Player == right.Player
+            && left.Case == right.Case;
 
     private static StartingWorldDescriptor CreateDescriptor(byte policy, byte worldVariant, byte loadoutProfile, byte startWithHorse, byte accusationIndex, byte startingCashBonus, byte difficulty)
     {

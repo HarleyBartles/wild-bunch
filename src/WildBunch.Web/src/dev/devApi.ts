@@ -1,5 +1,5 @@
 import { requestJson } from "../api/httpClient";
-import type { ForceSaloonOverrideRequestDto, ForceTravelOverrideRequestDto, SaloonDevContextDto, SessionAuditDto, TravelDevContextDto } from "./types";
+import type { ForceSaloonOverrideRequestDto, ForceTravelOverrideRequestDto, LockRngRequestDto, SaloonDevContextDto, SessionAuditDto, SessionDevContextDto, TravelDevContextDto } from "./types";
 
 export function getSessionAudit(gameId: string) {
   return requestJson<SessionAuditDto>(`/api/dev/sessions/${gameId}/audit`);
@@ -35,6 +35,23 @@ export function forceSaloonOverride(gameId: string, request: ForceSaloonOverride
 
 export function clearSaloonOverride(gameId: string) {
   return requestJson<void>(`/api/dev/sessions/${gameId}/saloon/clear-override`, {
+    method: "POST",
+  });
+}
+
+export function getSessionDevContext(gameId: string) {
+  return requestJson<SessionDevContextDto>(`/api/dev/sessions/${gameId}/session-context`);
+}
+
+export function lockRng(gameId: string, request: LockRngRequestDto) {
+  return requestJson<void>(`/api/dev/sessions/${gameId}/session/lock-rng`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export function clearRng(gameId: string) {
+  return requestJson<void>(`/api/dev/sessions/${gameId}/session/clear-rng`, {
     method: "POST",
   });
 }

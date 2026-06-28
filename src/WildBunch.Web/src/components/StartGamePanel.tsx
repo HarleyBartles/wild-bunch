@@ -42,15 +42,11 @@ function StartGameHeader({ busy, gameId, seedDirty, session }: { busy: boolean; 
 function ActionBar({
   busy,
   gameId,
-  seedDirty,
-  onApplySeed,
   onRandomizeSeed,
   onRefresh,
 }: {
   busy: boolean;
   gameId: string | null;
-  seedDirty: boolean;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onRefresh: () => Promise<void>;
 }) {
@@ -59,9 +55,6 @@ function ActionBar({
       <PrimaryButton type="submit" disabled={busy}>
         {busy ? "Starting..." : "Start new game"}
       </PrimaryButton>
-      <GhostButton type="button" onClick={() => void onApplySeed()} disabled={!seedDirty || busy}>
-        Apply seed
-      </GhostButton>
       <GhostButton type="button" onClick={() => void onRandomizeSeed()} disabled={busy}>
         Randomize seed
       </GhostButton>
@@ -84,7 +77,6 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
     setPlayerName,
     setSeedDraft,
     setGameDifficulty,
-    applySeed,
     randomizeSeed,
   } = useStartGameSeed({ session, resetToken });
 
@@ -125,7 +117,7 @@ export function StartGamePanel({ session, busy, gameId, resetToken, onStartGame,
         />
 
         <SetupSeedSummary seedState={seedState} />
-        <ActionBar busy={busy} gameId={gameId} seedDirty={seedDirty} onApplySeed={applySeed} onRandomizeSeed={randomizeSeed} onRefresh={onRefresh} />
+        <ActionBar busy={busy} gameId={gameId} onRandomizeSeed={randomizeSeed} onRefresh={onRefresh} />
       </StartGameForm>
     </StartGameStage>
   );

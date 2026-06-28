@@ -61,7 +61,6 @@ export function PreSessionSurface() {
           onGameDifficultyChange={flow.setGameDifficulty}
           onGameEntropyChange={flow.setGameEntropy}
           onSeedDraftChange={flow.setSeedDraft}
-          onApplySeed={flow.applySeed}
           onRandomizeSeed={flow.randomizeSeed}
           onContinue={flow.advance}
         />

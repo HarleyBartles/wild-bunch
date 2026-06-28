@@ -80,6 +80,10 @@ namespace WildBunch.Persistence.Migrations
                     b.Property<int>("SchemaVersion")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SeedCode")
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
                     b.Property<long?>("SnapshotVersion")
                         .HasColumnType("bigint");
 
