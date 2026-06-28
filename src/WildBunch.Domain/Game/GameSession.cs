@@ -59,7 +59,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty gameDifficulty,
         SaltSource saltSource,
         GameEntropy gameEntropy,
-        string? seedCode,
         TownVisitState? currentTownVisit,
         IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
@@ -75,7 +74,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty = gameDifficulty;
         GameEntropy = gameEntropy;
         SaltSource = saltSource;
-        SeedCode = seedCode;
+        SeedCode = null; // Set by Apply(GameStarted) during event replay
         _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
         if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
         {
@@ -117,7 +116,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SaltSource SaltSource { get; private set; }
 
-    public string? SeedCode { get; }
+    public string? SeedCode { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown;
 
@@ -818,7 +817,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             StartingInventoryItems = resolvedInventory.Items.ToArray(),
             GameDifficulty = gameDifficulty,
             SaltSource = resolvedSaltSource,
-            GameEntropy = gameEntropy
+            GameEntropy = gameEntropy,
+            SeedCode = seedCode
         };
 
         // Construct a placeholder session (like RehydrateFromEvents).
@@ -845,7 +845,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             gameDifficulty,
             resolvedSaltSource,
             gameEntropy,
-            seedCode,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
@@ -916,6 +915,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameDifficulty = e.GameDifficulty;
         SaltSource = e.SaltSource;
         GameEntropy = e.GameEntropy;
+        SeedCode = e.SeedCode;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
         _version++;
     }

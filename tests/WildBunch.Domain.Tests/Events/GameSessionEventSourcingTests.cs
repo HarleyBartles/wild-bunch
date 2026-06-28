@@ -30,6 +30,91 @@ public class GameSessionEventSourcingTests
     }
 
     [Fact]
+    public void StartNew_WithSeedCode_Produces_GameStarted_Event_WithSeedCode()
+    {
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var seedCode = "test-seed-code-12345";
+
+        var session = GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            new TownId("pinecross"),
+            wallet: null,
+            inventory: null,
+            GameDifficulty.Standard,
+            SaltSource.CreateRuntime(),
+            GameEntropy.Classic,
+            seedCode);
+
+        var single = Assert.Single(session.UncommittedEvents);
+        var gameStarted = Assert.IsType<GameStarted>(single);
+        Assert.Equal(seedCode, gameStarted.SeedCode);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_Restores_SeedCode_From_GameStarted_Event()
+    {
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var seedCode = "test-seed-code-67890";
+
+        var session = GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            new TownId("pinecross"),
+            wallet: null,
+            inventory: null,
+            GameDifficulty.Standard,
+            SaltSource.CreateRuntime(),
+            GameEntropy.Classic,
+            seedCode);
+
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id,
+            world,
+            caseFile,
+            events);
+
+        Assert.Equal(seedCode, rehydrated.SeedCode);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_WithOldGameStarted_Handles_Null_SeedCode()
+    {
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+
+        // Simulate an old GameStarted event without SeedCode
+        var oldGameStarted = new GameStarted
+        {
+            PlayerName = "Ranger Vale",
+            StartingTownId = new TownId("pinecross"),
+            StartingTownName = "Pinecross",
+            StartingHealth = 1000,
+            StartingWallet = 25m,
+            StartingInventoryItems = Array.Empty<InventoryItem>(),
+            GameDifficulty = GameDifficulty.Standard,
+            SaltSource = SaltSource.CreateRuntime(),
+            GameEntropy = GameEntropy.Classic,
+            SeedCode = null // Old event without seed code
+        };
+
+        var rehydrated = GameSession.RehydrateFromEvents(
+            GameSessionId.New(),
+            world,
+            caseFile,
+            new[] { oldGameStarted });
+
+        Assert.Null(rehydrated.SeedCode);
+    }
+
+    [Fact]
     public void StartNew_Increments_Version_To_One()
     {
         var session = CreateSession();
@@ -220,7 +305,8 @@ public class GameSessionEventSourcingTests
                 StartingInventoryItems = Array.Empty<InventoryItem>(),
                 GameDifficulty = GameDifficulty.Standard,
                 SaltSource = SaltSource.CreateFixed("test"),
-                GameEntropy = GameEntropy.Classic
+                GameEntropy = GameEntropy.Classic,
+                SeedCode = null
             },
             new UnknownTestEvent()
         };

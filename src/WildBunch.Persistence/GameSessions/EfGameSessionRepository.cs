@@ -304,7 +304,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             clock,
             pursuitState,
             saltSource,
-            store.Envelope.SeedCode,
             townVisitState,
             journey,
             completedJourneyHistory,
@@ -325,6 +324,12 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             ? (int)store.Envelope.SnapshotVersion.GetValueOrDefault()
             : (int)store.Envelope.StreamVersion;
         GameSessionRehydrator.SetVersion(session, initialVersion);
+
+        // Set SeedCode from snapshot as a cache. The true source of truth is the
+        // GameStarted event, which will be applied during event replay if there are
+        // post-snapshot events. When the snapshot is current, this restores the
+        // persisted seed code. See BUNCH-101.
+        GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", store.Envelope.SeedCode);
 
         // Set CurrentActionContext from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).

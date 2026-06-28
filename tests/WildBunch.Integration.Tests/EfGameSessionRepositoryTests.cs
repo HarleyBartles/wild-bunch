@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Mapping;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
@@ -52,6 +53,60 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.CaseFile.DiscoveredSuspectIds, reloaded.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(session.CaseFile.Suspects[0].Profile.Aliases.Count, reloaded.CaseFile.Suspects[0].Profile.Aliases.Count);
         Assert.Equal(WantedSuspectPresenceState.AvailableInTown, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
+    }
+
+    [Fact]
+    public async Task SaveAndLoadWithSeedCode_RetainsSeedCode()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var seedCode = "test-seed-code-event-sourced-12345";
+        var session = CreateSessionWithSeedCode(seedCode);
+
+        await PersistAsync(repository, unitOfWork, session);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        // Seed code is restored from the GameStarted event via event replay
+        Assert.Equal(seedCode, reloaded!.SeedCode);
+    }
+
+    [Fact]
+    public async Task BoringEntropy_SeedAndSaltMayHaveSameValueButReportedSeparately()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var seedCode = "same-value-for-testing";
+        var session = CreateSessionWithSeedCode(seedCode, GameEntropy.Boring, SaltSource.CreateFixed(seedCode));
+
+        await PersistAsync(repository, unitOfWork, session);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        // Seed code and salt may have the same value (for Boring entropy)
+        // but they are separate concepts and reported separately
+        Assert.Equal(seedCode, reloaded!.SeedCode);
+        Assert.Equal(WildBunch.Domain.Travel.SaltSourceMode.Fixed, reloaded.SaltSource.Mode);
+        Assert.Equal(seedCode, reloaded.SaltSource.Salt); // Boring uses seed as salt
+    }
+
+    [Fact]
+    public async Task ClassicEntropy_SeedRetainedWhileSaltRuntime()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var seedCode = "test-seed-code-classic-entropy";
+        var session = CreateSessionWithSeedCode(seedCode, GameEntropy.Classic, SaltSource.CreateRuntime());
+
+        await PersistAsync(repository, unitOfWork, session);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        // Seed code is retained for debugging
+        Assert.Equal(seedCode, reloaded!.SeedCode);
+        // Salt is runtime (not seed-derived) for Classic entropy
+        Assert.Equal(WildBunch.Domain.Travel.SaltSourceMode.Runtime, reloaded.SaltSource.Mode);
+        Assert.NotEqual(seedCode, reloaded.SaltSource.Salt);
     }
 
     [Fact]
@@ -448,6 +503,64 @@ public sealed class EfGameSessionRepositoryTests
     {
         await repository.StoreAsync(session);
         await unitOfWork.CommitAsync();
+    }
+
+    private static GameSession CreateSessionWithSeedCode(string seedCode, GameEntropy gameEntropy = GameEntropy.Classic, SaltSource? saltSource = null)
+    {
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
+
+        var world = new WildBunch.Domain.World.World(
+            new[] { dustvale, silvercreek, holloway, dryridge },
+            new[]
+            {
+                new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low),
+                new Trail(new TrailId("trail-2"), dustvale.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.River)
+            });
+
+        var suspects = new[]
+        {
+            new Suspect(
+                new SuspectId("suspect-1"),
+                "Ira Flint",
+                new SuspectProfile(
+                    new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
+                    new[] { new SuspectIdentityFact("Wears a brass buckle with a cracked star engraving.") }),
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
+                SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            new SuspectId("suspect-1"),
+            CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
+            Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 4),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: DomainCanteenState.Full(10)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, DomainHorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1)
+        });
+
+        var session = GameSession.StartNew(
+            "Ranger Vale",
+            world,
+            caseFile,
+            dustvale.Id,
+            WildBunch.Domain.Economy.Wallet.Starting(25m),
+            inventory,
+            GameDifficulty.Standard,
+            saltSource ?? DeterministicSaltSource,
+            gameEntropy,
+            seedCode);
+        session.MarkEventsCommitted();
+        return session;
     }
 
     private static GameSession CreateSession()

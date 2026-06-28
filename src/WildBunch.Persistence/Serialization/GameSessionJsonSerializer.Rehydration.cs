@@ -19,7 +19,6 @@ public sealed partial class GameSessionJsonSerializer
         GameClock clock,
         PursuitState pursuitState,
         SaltSource saltSource,
-        string? seedCode,
         TownVisitState? townVisitState,
         TravelJourneySnapshot? journey,
         IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory,
@@ -39,7 +38,6 @@ public sealed partial class GameSessionJsonSerializer
             gameDifficulty,
             saltSource,
             entropy,
-            seedCode,
             townVisitState,
             completedJourneyHistory,
             wantedSuspectPresenceEntries);
