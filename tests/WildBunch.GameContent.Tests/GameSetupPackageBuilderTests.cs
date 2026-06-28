@@ -86,7 +86,7 @@ public sealed class GameSetupPackageBuilderTests
     public void DifferentDifficultyChangesTravelRulesAndStartingCash()
     {
         var easyDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Easy);
-        var hardDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Hard);
+        var hardDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(GameDifficulty.Challenging);
 
         var easyPackage = BuildPackage(easyDescriptor);
         var hardPackage = BuildPackage(hardDescriptor);

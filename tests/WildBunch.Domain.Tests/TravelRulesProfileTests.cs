@@ -26,7 +26,7 @@ public sealed class TravelRulesProfileTests
     {
         var profile = TravelRulesProfile.Default;
 
-        Assert.Equal(GameDifficulty.Normal, profile.Difficulty);
+        Assert.Equal(GameDifficulty.Standard, profile.Difficulty);
         Assert.Equal(10, profile.CanteenCapacity);
         Assert.Equal(3, profile.HorseHungerDeathThreshold);
         Assert.Equal(2, profile.HorseThirstDeathThreshold);

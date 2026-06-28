@@ -4,7 +4,7 @@ namespace WildBunch.Application.Games.Commands;
 
 public sealed record StartNewGameCommand(
     string PlayerName,
-    GameDifficulty GameDifficulty = GameDifficulty.Normal,
+    GameDifficulty GameDifficulty = GameDifficulty.Standard,
     string? SetupSeedCode = null,
-    GameEntropy Entropy = GameEntropy.Standard,
+    GameEntropy Entropy = GameEntropy.Classic,
     string? StartingTownId = null);

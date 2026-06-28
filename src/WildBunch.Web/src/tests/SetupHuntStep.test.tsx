@@ -216,8 +216,8 @@ describe("SetupHuntStep", () => {
     const onGameDifficultyChange = vi.fn();
     renderStep({ stateful: true, onGameDifficultyChange });
 
-    const hard = screen.getByRole("button", { name: /^hard$/i });
-    await user.click(hard);
+    const challenging = screen.getByRole("button", { name: /^challenging$/i });
+    await user.click(challenging);
 
     expect(onGameDifficultyChange).toHaveBeenCalledWith(2);
   });
@@ -233,7 +233,7 @@ describe("SetupHuntStep", () => {
     expect(onEntropyChange).toHaveBeenCalledWith(3);
   });
 
-  it("renders difficulty options as Easy, Normal, Hard in that order", () => {
+  it("renders difficulty options as Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -241,10 +241,10 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Easy", "Normal", "Hard"]);
-    expect(labels).not.toContain("Greenhorn");
-    expect(labels).not.toContain("Trail hand");
-    expect(labels).not.toContain("Iron rider");
+    expect(labels).toEqual(["Standard", "Challenging", "Brutal"]);
+    expect(labels).not.toContain("Easy");
+    expect(labels).not.toContain("Normal");
+    expect(labels).not.toContain("Hard");
   });
 
   it("renders entropy options as Classic, Adventurous, Wild in that order", () => {

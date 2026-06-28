@@ -25,8 +25,8 @@ public class GameSessionEventSourcingTests
         Assert.Equal("Pinecross", gameStarted.StartingTownName);
         Assert.Equal(1000, gameStarted.StartingHealth);
         Assert.Equal(25m, gameStarted.StartingWallet);
-        Assert.Equal(GameDifficulty.Normal, gameStarted.Difficulty);
-        Assert.Equal(GameEntropy.Standard, gameStarted.Entropy);
+        Assert.Equal(GameDifficulty.Standard, gameStarted.Difficulty);
+        Assert.Equal(GameEntropy.Classic, gameStarted.Entropy);
     }
 
     [Fact]
@@ -218,9 +218,9 @@ public class GameSessionEventSourcingTests
                 StartingHealth = 1000,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<InventoryItem>(),
-                Difficulty = GameDifficulty.Normal,
+                Difficulty = GameDifficulty.Standard,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-                Entropy = GameEntropy.Standard
+                Entropy = GameEntropy.Classic
             },
             new UnknownTestEvent()
         };

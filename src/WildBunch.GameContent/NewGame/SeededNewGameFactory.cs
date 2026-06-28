@@ -24,9 +24,9 @@ public sealed class SeededNewGameFactory : INewGameFactory
 
     public GameSession Create(
         string playerName,
-        GameDifficulty gameDifficulty = GameDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        GameEntropy entropy = GameEntropy.Standard,
+        GameEntropy entropy = GameEntropy.Classic,
         string? startingTownId = null)
     {
         var descriptor = ResolveDescriptor(gameDifficulty, setupSeedCode, entropy);

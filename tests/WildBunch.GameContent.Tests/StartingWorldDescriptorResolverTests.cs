@@ -52,7 +52,7 @@ public sealed class StartingWorldDescriptorResolverTests
             GameEntropy.Boring);
         var challenged = StartingWorldDescriptorResolver.Resolve(
             seedCode,
-            GameDifficulty.Hard,
+            GameDifficulty.Challenging,
             GameEntropy.Wild);
 
         Assert.Equal(baseline, challenged);

@@ -24,8 +24,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedNormal =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Normal,
-            GameEntropy.Standard);
+            GameDifficulty.Standard,
+            GameEntropy.Classic);
 
     /// <summary>
     /// Canonical world, Normal difficulty, Boring entropy, mounted.
@@ -35,7 +35,7 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedBoring =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Normal,
+            GameDifficulty.Standard,
             GameEntropy.Boring);
 
     /// <summary>
@@ -45,7 +45,7 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static StartingWorldDescriptor CanonicalFootBoringLight = new(
         Guid.Empty,
-        GameDifficulty.Normal,
+        GameDifficulty.Standard,
         GameEntropy.Boring,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownFoot),
         new StartingWorldDescriptorPlayer(
@@ -68,7 +68,7 @@ internal static class TravelTestSeedCatalog
     internal static readonly StartingWorldDescriptor CanonicalMountedEasyStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
             GameDifficulty.Easy,
-            GameEntropy.Standard);
+            GameEntropy.Classic);
 
     /// <summary>
     /// Canonical world, Hard difficulty, Standard entropy, mounted.
@@ -77,20 +77,22 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedHardStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Hard,
-            GameEntropy.Standard);
+            GameDifficulty.Challenging,
+            GameEntropy.Classic);
 
     /// <summary>
-    /// Frontier world, Normal difficulty, Standard entropy, no horse, light loadout.
+    /// Frontier world, Standard difficulty, Classic entropy, no horse, light loadout.
     /// Frontier variant makes pinecross->holloway Moderate/Hills/Spring.
-    /// Used for foe-encounter tests — this route profile produces a foe on day 1 at Calm heat.
+    /// Route/setup guardrail for tests that need a moderate-risk foot journey shape.
+    /// Foe-encounter determinism now comes from ForceDevTravelOverride, not from
+    /// this seed profile. See BUNCH-87.
     /// Note: starting town is seed-derived; the guardrail test verifies a route matching
     /// the expected profile exists from wherever the session starts.
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierFootNormalFoe = new(
         Guid.Empty,
-        GameDifficulty.Normal,
-        GameEntropy.Standard,
+        GameDifficulty.Standard,
+        GameEntropy.Classic,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownFoot),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: false,
@@ -111,8 +113,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierMountedHardNpc = new(
         Guid.Empty,
-        GameDifficulty.Hard,
-        GameEntropy.Standard,
+        GameDifficulty.Challenging,
+        GameEntropy.Classic,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: true,
@@ -133,8 +135,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierMountedNormalHighRisk = new(
         Guid.Empty,
-        GameDifficulty.Normal,
-        GameEntropy.Standard,
+        GameDifficulty.Standard,
+        GameEntropy.Classic,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: true,

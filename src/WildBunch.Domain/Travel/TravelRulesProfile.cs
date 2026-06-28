@@ -43,7 +43,7 @@ public sealed record TravelRulesProfile(
     int EncounterFightHeatIncrease)
 {
     public static TravelRulesProfile Default { get; } = new(
-        GameDifficulty.Normal,
+        GameDifficulty.Standard,
         CanteenCapacity: 10,
         HorseHungerDeathThreshold: 3,
         HorseThirstDeathThreshold: 2,
@@ -72,7 +72,7 @@ public sealed record TravelRulesProfile(
     public static TravelRulesProfile For(GameDifficulty difficulty)
         => difficulty switch
         {
-            GameDifficulty.Normal => Default,
+            GameDifficulty.Standard => Default,
             GameDifficulty.Easy => new TravelRulesProfile(
                 GameDifficulty.Easy,
                 CanteenCapacity: 10,
@@ -99,8 +99,8 @@ public sealed record TravelRulesProfile(
                 EncounterFightAmmoHealthLoss: 3,
                 EncounterFightUnarmedHealthLoss: 6,
                 EncounterFightHeatIncrease: 1),
-            GameDifficulty.Hard => new TravelRulesProfile(
-                GameDifficulty.Hard,
+            GameDifficulty.Challenging => new TravelRulesProfile(
+                GameDifficulty.Challenging,
                 CanteenCapacity: 1,
                 HorseHungerDeathThreshold: 2,
                 HorseThirstDeathThreshold: 2,
@@ -125,6 +125,32 @@ public sealed record TravelRulesProfile(
                 EncounterFightAmmoHealthLoss: 7,
                 EncounterFightUnarmedHealthLoss: 12,
                 EncounterFightHeatIncrease: 2),
+            GameDifficulty.Brutal => new TravelRulesProfile(
+                GameDifficulty.Brutal,
+                CanteenCapacity: 1,
+                HorseHungerDeathThreshold: 2,
+                HorseThirstDeathThreshold: 1,
+                HorseExhaustionLameThreshold: 2,
+                HorseExhaustionDeathThreshold: 3,
+                MountedRideDayProgress: 0.5m,
+                FootRideDayProgress: 0.4m,
+                LuckyTrailCoinReward: 1,
+                LuckyTrailFoodReward: 1,
+                LuckyTrailWaterRecovery: 1,
+                BadLuckTrailDelayDays: 3,
+                BadLuckTrailFoodLoss: 2,
+                BadLuckTrailCanteenLoss: 1,
+                BadLuckTrailHorseExhaustion: 2,
+                BadLuckTrailHorseThirst: 2,
+                TrailEventHeatIncrease: 3,
+                EncounterRunMountedHeatIncrease: 3,
+                EncounterRunMountedHorseExhaustion: 3,
+                EncounterRunFootHeatIncrease: 4,
+                EncounterRunFootHealthLoss: 12,
+                EncounterBribeCash: 12m,
+                EncounterFightAmmoHealthLoss: 10,
+                EncounterFightUnarmedHealthLoss: 16,
+                EncounterFightHeatIncrease: 3),
             _ => Default
         };
 

@@ -87,6 +87,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -105,7 +106,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
-        Assert.Equal(2, reloaded.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.Equal(1, reloaded.Player.Inventory.GetCanteenState()!.Charges);
         Assert.Contains(GameSessionLogProjection.Project(reloaded), entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal(TrailTerrain.Hills, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).Terrain);
         Assert.Equal(WaterFeature.River, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).WaterFeature);
@@ -128,6 +129,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -284,6 +286,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -315,6 +318,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
@@ -625,7 +629,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Challenging, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateJourneyHistorySession()

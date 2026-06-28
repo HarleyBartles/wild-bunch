@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using WildBunch.Api.Games;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -188,6 +189,11 @@ public sealed class GameApiJournalTests
     {
         for (var step = 0; step < 12; step++)
         {
+            // Force a Quiet day so the journey is not interrupted by seed-dependent encounters.
+            await client.PostAsJsonAsync(
+                $"/api/dev/sessions/{gameId}/travel/force-override",
+                new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
+
             var advanceResponse = await client.PostAsync($"/api/games/{gameId}/travel/advance", content: null);
 
             Assert.Equal(HttpStatusCode.OK, advanceResponse.StatusCode);

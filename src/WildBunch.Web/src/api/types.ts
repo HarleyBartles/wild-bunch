@@ -1,5 +1,5 @@
 export type GameStatus = 0 | 1 | 2 | 3;
-export type GameDifficulty = 0 | 1 | 2;
+export type GameDifficulty = 0 | 1 | 2 | 3;
 export type GameEntropy = 0 | 1 | 2 | 3;
 export type JourneyStatus = 0 | 1 | 2 | 3;
 export const JourneyStatus = {

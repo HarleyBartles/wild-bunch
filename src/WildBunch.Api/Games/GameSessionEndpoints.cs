@@ -73,9 +73,9 @@ public static class GameSessionEndpoints
         CancellationToken cancellationToken = default)
     {
         var query = new GetPrologueQuery(
-            gameDifficulty ?? GameDifficulty.Normal,
+            gameDifficulty ?? GameDifficulty.Standard,
             seedCode,
-            entropy ?? GameEntropy.Standard,
+            entropy ?? GameEntropy.Classic,
             variantId);
         var dto = await handler.HandleAsync(query, cancellationToken);
         return Results.Ok(dto);

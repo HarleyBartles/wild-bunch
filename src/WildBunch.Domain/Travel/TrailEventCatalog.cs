@@ -47,7 +47,7 @@ internal static class TrailEventCatalog
                 delayDays: travelRulesProfile.BadLuckTrailDelayDays);
         }
 
-        if (travelRulesProfile.Difficulty == GameDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
+        if (travelRulesProfile.Difficulty == GameDifficulty.Challenging && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
         {
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckFoodLoss,
@@ -59,7 +59,7 @@ internal static class TrailEventCatalog
                 delayDays: travelRulesProfile.BadLuckTrailDelayDays);
         }
 
-        if (travelRulesProfile.Difficulty == GameDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && journey.HorseState is not null && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
+        if (travelRulesProfile.Difficulty == GameDifficulty.Challenging && journey.TravelMode == TravelMode.Mounted && journey.HorseState is not null && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
         {
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckSpookedHorse,

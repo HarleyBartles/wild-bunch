@@ -211,6 +211,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
+        // Force a foe encounter so the tests don't depend on the deterministic seed
+        // producing a foe. The seed hash changed when the difficulty enum was renamed
+        // (Normal -> Standard), which shifted which encounters the generator produces.
+        session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         return session;
     }
 }

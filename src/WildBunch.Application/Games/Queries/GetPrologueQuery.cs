@@ -7,7 +7,7 @@ namespace WildBunch.Application.Games.Queries;
 /// if null, the handler uses the first variant (deterministic default).
 /// </summary>
 public sealed record GetPrologueQuery(
-    GameDifficulty GameDifficulty = GameDifficulty.Normal,
+    GameDifficulty GameDifficulty = GameDifficulty.Standard,
     string? SeedCode = null,
-    GameEntropy Entropy = GameEntropy.Standard,
+    GameEntropy Entropy = GameEntropy.Classic,
     string? VariantId = null);

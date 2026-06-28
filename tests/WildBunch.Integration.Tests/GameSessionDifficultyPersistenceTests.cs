@@ -37,12 +37,12 @@ public sealed class GameSessionDifficultyPersistenceTests
     public void MissingEntropyInLegacySessionJsonDefaultsToStandard()
     {
         var serializer = new GameSessionJsonSerializer();
-        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Normal, GameEntropy.Boring)))!.AsObject();
+        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Standard, GameEntropy.Boring)))!.AsObject();
         legacySnapshot.Remove("entropy");
 
         var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
 
-        Assert.Equal(GameEntropy.Standard, reloaded.Entropy);
+        Assert.Equal(GameEntropy.Classic, reloaded.Entropy);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     public void WantedSuspectPresenceLedgerRoundTripsThroughFullSessionJsonSnapshot()
     {
         var serializer = new GameSessionJsonSerializer();
-        var session = CreateSession(GameDifficulty.Normal, GameEntropy.Boring);
+        var session = CreateSession(GameDifficulty.Standard, GameEntropy.Boring);
         var suspectId = new SuspectId("suspect-1");
 
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.SecuredAlive);
@@ -87,7 +87,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     public void LegacyFullSessionJsonWithoutWantedSuspectPresenceLedgerDefaultsToEmptyLedger()
     {
         var serializer = new GameSessionJsonSerializer();
-        var session = CreateSession(GameDifficulty.Normal, GameEntropy.Boring);
+        var session = CreateSession(GameDifficulty.Standard, GameEntropy.Boring);
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.GoneToGround);
 
         var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();

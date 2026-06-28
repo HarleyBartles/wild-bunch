@@ -16,30 +16,31 @@ public static class StartingWorldDescriptorResolver
     };
 
     private static readonly Lazy<Guid> CanonicalEasySeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Easy), true);
-    private static readonly Lazy<Guid> CanonicalNormalSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Normal), true);
-    private static readonly Lazy<Guid> CanonicalHardSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Hard), true);
+    private static readonly Lazy<Guid> CanonicalStandardSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Standard), true);
+    private static readonly Lazy<Guid> CanonicalChallengingSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Challenging), true);
+    private static readonly Lazy<Guid> CanonicalBrutalSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Brutal), true);
 
-    public static Guid CreateCanonicalSeedCode(GameDifficulty difficulty = GameDifficulty.Normal)
+    public static Guid CreateCanonicalSeedCode(GameDifficulty difficulty = GameDifficulty.Standard)
         => GetCanonicalSeedCode(difficulty);
 
     public static Guid GenerateRandomSeedCode()
         => Guid.NewGuid();
 
     public static StartingWorldDescriptor CreateCanonicalDescriptor(
-        GameDifficulty difficulty = GameDifficulty.Normal,
-        GameEntropy entropy = GameEntropy.Standard)
+        GameDifficulty difficulty = GameDifficulty.Standard,
+        GameEntropy entropy = GameEntropy.Classic)
     {
         var descriptor = CreateCanonicalDescriptorShape(difficulty, entropy);
 
-        return entropy == GameEntropy.Standard
+        return entropy == GameEntropy.Classic
             ? descriptor with { SeedCode = GetCanonicalSeedCode(difficulty) }
             : descriptor with { SeedCode = CreateRepresentativeSeedCode(descriptor) };
     }
 
     internal static StartingWorldDescriptor Resolve(
         string? seedCode,
-        GameDifficulty requestedDifficulty = GameDifficulty.Normal,
-        GameEntropy requestedEntropy = GameEntropy.Standard)
+        GameDifficulty requestedDifficulty = GameDifficulty.Standard,
+        GameEntropy requestedEntropy = GameEntropy.Classic)
     {
         if (string.IsNullOrWhiteSpace(seedCode))
         {
@@ -152,7 +153,7 @@ public static class StartingWorldDescriptorResolver
         var maxBonus = descriptor.Entropy switch
         {
             GameEntropy.Boring => 0m,
-            GameEntropy.Standard => 2m,
+            GameEntropy.Classic => 2m,
             GameEntropy.Adventurous => 5m,
             GameEntropy.Wild => 8m,
             _ => 0m
@@ -216,7 +217,8 @@ public static class StartingWorldDescriptorResolver
         var startingCash = difficulty switch
         {
             GameDifficulty.Easy => 30m,
-            GameDifficulty.Hard => 20m,
+            GameDifficulty.Challenging => 20m,
+            GameDifficulty.Brutal => 15m,
             _ => 25m
         };
 
@@ -242,12 +244,13 @@ public static class StartingWorldDescriptorResolver
         => difficulty switch
         {
             GameDifficulty.Easy => CanonicalEasySeedCode.Value,
-            GameDifficulty.Hard => CanonicalHardSeedCode.Value,
-            _ => CanonicalNormalSeedCode.Value
+            GameDifficulty.Challenging => CanonicalChallengingSeedCode.Value,
+            GameDifficulty.Brutal => CanonicalBrutalSeedCode.Value,
+            _ => CanonicalStandardSeedCode.Value
         };
 
     private static Guid CreateCanonicalSeedCodeCore(GameDifficulty difficulty)
-        => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty, GameEntropy.Standard));
+        => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty, GameEntropy.Classic));
 
     private static bool HasSameSemantics(StartingWorldDescriptor left, StartingWorldDescriptor right)
         => left.Difficulty == right.Difficulty
@@ -260,7 +263,7 @@ public static class StartingWorldDescriptorResolver
         => (seedValue % 4UL) switch
         {
             0 => GameEntropy.Boring,
-            1 => GameEntropy.Standard,
+            1 => GameEntropy.Classic,
             2 => GameEntropy.Adventurous,
             _ => GameEntropy.Wild
         };
@@ -288,11 +291,12 @@ public static class StartingWorldDescriptorResolver
         => (int)(seedValue % 7UL);
 
     private static GameDifficulty ResolveDifficulty(ulong seedValue)
-        => (seedValue % 3UL) switch
+        => (seedValue % 4UL) switch
         {
             0 => GameDifficulty.Easy,
-            1 => GameDifficulty.Normal,
-            _ => GameDifficulty.Hard
+            1 => GameDifficulty.Standard,
+            2 => GameDifficulty.Challenging,
+            _ => GameDifficulty.Brutal
         };
 
     private static (int Food, int HorseFeed, int RevolverAmmo) ResolveLoadoutCounts(StartingLoadoutProfile profile)
@@ -316,7 +320,7 @@ public static class StartingWorldDescriptorResolver
         var maxPolicyBonus = policy switch
         {
             GameEntropy.Boring => 0UL,
-            GameEntropy.Standard => 2UL,
+            GameEntropy.Classic => 2UL,
             GameEntropy.Adventurous => 5UL,
             GameEntropy.Wild => 8UL,
             _ => 0UL
@@ -330,7 +334,8 @@ public static class StartingWorldDescriptorResolver
         => difficulty switch
         {
             GameDifficulty.Easy => 28m,
-            GameDifficulty.Hard => 18m,
+            GameDifficulty.Challenging => 18m,
+            GameDifficulty.Brutal => 13m,
             _ => 23m
         };
 

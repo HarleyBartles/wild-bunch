@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using WildBunch.Api.Games;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
@@ -140,9 +141,18 @@ public sealed class GameApiWantedPostersTests
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
+        // Force Quiet days so the journey completes without seed-dependent encounter interruption.
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
+            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
+
         var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
         Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
+
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
+            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
 
         var secondAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 

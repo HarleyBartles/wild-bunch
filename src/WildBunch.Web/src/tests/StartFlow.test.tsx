@@ -244,8 +244,8 @@ describe("StartFlow", () => {
     const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
 
-    // Select Hard (difficulty 2) and Wild (entropy 3)
-    await user.click(screen.getByRole("button", { name: /^hard$/i }));
+    // Select Challenging (difficulty 2) and Wild (entropy 3)
+    await user.click(screen.getByRole("button", { name: /^challenging$/i }));
     await user.click(screen.getByRole("button", { name: /^wild$/i }));
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));

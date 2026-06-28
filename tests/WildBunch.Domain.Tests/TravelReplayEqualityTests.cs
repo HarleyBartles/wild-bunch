@@ -67,9 +67,12 @@ public sealed class TravelReplayEqualityTests
             TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
         commandSession.StartJourney(preview);
 
+        // Force quiet days through the dev-travel override seam so the journey
+        // completes without seed-dependent encounter interruptions. See BUNCH-87.
         TravelJourneyStepResult result;
         do
         {
+            commandSession.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
             result = commandSession.AdvanceJourneyDay();
         } while (result.Status == JourneyStatus.Active && result.Success);
         commandSession.AcknowledgeJourneyArrival();
@@ -106,12 +109,10 @@ public sealed class TravelReplayEqualityTests
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(commandSession);
         commandSession.StartJourney(preview);
 
-        // Advance until an encounter interrupts the journey.
-        TravelJourneyStepResult step;
-        do
-        {
-            step = commandSession.AdvanceJourneyDay();
-        } while (step.Status == JourneyStatus.Active && step.Success);
+        // Force a foe encounter through the dev-travel override seam instead of
+        // looping until the seed produces one. See BUNCH-87.
+        commandSession.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
+        var step = commandSession.AdvanceJourneyDay();
         Assert.Equal(JourneyStatus.Interrupted, step.Status);
 
         var resolved = commandSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);

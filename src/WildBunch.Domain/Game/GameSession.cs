@@ -749,7 +749,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Normal);
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard);
 
     public static GameSession StartNew(
         string playerName,
@@ -758,9 +758,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         TownId? startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet,
         DomainInventory? inventory,
-        GameDifficulty gameDifficulty = GameDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
         TravelRandomnessState? travelRandomness = null,
-        GameEntropy entropy = GameEntropy.Standard)
+        GameEntropy entropy = GameEntropy.Classic)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -859,7 +859,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => gameDifficulty switch
         {
             GameDifficulty.Easy => 1250,
-            GameDifficulty.Hard => 800,
+            GameDifficulty.Challenging => 800,
+            GameDifficulty.Brutal => 600,
             _ => 1000
         };
 

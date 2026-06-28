@@ -23,15 +23,36 @@ internal static class ScenarioSeedCatalog
     private static readonly string CanonicalMountedSeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
         StartingWorldDescriptorResolver.CreateCanonicalSeedCode());
 
-    private static readonly string NoHorseLightEasySeedCode = "7d455293-f269-a642-72af-0193fdbdfb51";
+    // Descriptor-derived seed code for the NoHorseLightEasy fixture.
+    // Per AGENTS.md, do NOT store UUIDs in test fixtures — store descriptors and
+    // derive UUIDs on the fly via CreateRepresentativeSeedCode so they stay fresh
+    // when the codec evolves.
+    private static readonly string NoHorseLightEasySeedCode = StartingWorldDescriptorResolver.FormatSeedCode(
+        StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(
+            new StartingWorldDescriptor(
+                Guid.Empty,
+                GameDifficulty.Easy,
+                GameEntropy.Boring,
+                new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownFoot),
+                new StartingWorldDescriptorPlayer(
+                    StartWithHorse: false,
+                    LoadoutProfile: StartingLoadoutProfile.Light,
+                    StartingCash: 23m,
+                    Loadout: new StartingWorldDescriptorLoadout(
+                        Food: 3,
+                        HorseFeed: 2,
+                        RevolverAmmo: 4,
+                        IncludeHorse: false,
+                        IncludeSaddle: false)),
+                new StartingWorldDescriptorCase(1))));
 
     public static readonly ScenarioSeedFixture CanonicalMountedNormal = new(
         Name: "CanonicalMountedNormal",
         SeedCode: CanonicalMountedSeedCode,
-        GameDifficulty: GameDifficulty.Normal,
-        Entropy: GameEntropy.Standard,
+        GameDifficulty: GameDifficulty.Standard,
+        Entropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|CanonicalMountedNormal|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
+        RequiredShapeSignature: "resolver-v2|CanonicalMountedNormal|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|preview=holloway:mounted:2/2",
         DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedNormal", session),
         PreviewDestinationTownId: "holloway",
@@ -40,10 +61,10 @@ internal static class ScenarioSeedCatalog
     public static readonly ScenarioSeedFixture CanonicalPinecrossServices = new(
         Name: "CanonicalPinecrossServices",
         SeedCode: CanonicalMountedNormal.SeedCode,
-        GameDifficulty: GameDifficulty.Normal,
-        Entropy: GameEntropy.Standard,
+        GameDifficulty: GameDifficulty.Standard,
+        Entropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|CanonicalPinecrossServices|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
+        RequiredShapeSignature: "resolver-v2|CanonicalPinecrossServices|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|services=pinecross|preview=holloway:mounted:2/2",
         DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
@@ -58,10 +79,10 @@ internal static class ScenarioSeedCatalog
     public static readonly ScenarioSeedFixture HighRiskFoeInterruptRoute = new(
         Name: "HighRiskFoeInterruptRoute",
         SeedCode: CanonicalMountedNormal.SeedCode,
-        GameDifficulty: GameDifficulty.Normal,
-        Entropy: GameEntropy.Standard,
+        GameDifficulty: GameDifficulty.Standard,
+        Entropy: GameEntropy.Classic,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|entropy=Standard|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
+        RequiredShapeSignature: "resolver-v2|HighRiskFoeInterruptRoute|entropy=Classic|start=pinecross|horse=healthy|saddle=present|wallet=25|items=8|routes=hardpan,holloway,openpass,redmesa|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -254,8 +275,8 @@ internal static class ScenarioSeedCatalog
 
     private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
     {
-        RequireEqual(scenarioName, "start-game.GameDifficulty", GameDifficulty.Normal, session.GameDifficulty);
-        RequireEqual(scenarioName, "start-game.entropy", GameEntropy.Standard, session.Entropy);
+        RequireEqual(scenarioName, "start-game.GameDifficulty", GameDifficulty.Standard, session.GameDifficulty);
+        RequireEqual(scenarioName, "start-game.entropy", GameEntropy.Classic, session.Entropy);
         RequireEqual(scenarioName, "start-game.currentTownId", "pinecross", session.Player.CurrentTownId);
         RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
         RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);

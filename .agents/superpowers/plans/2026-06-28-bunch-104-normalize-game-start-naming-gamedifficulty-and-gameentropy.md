@@ -10,12 +10,13 @@
 
 ## Plan Status
 
-- Plan status: preflight complete, pending approval (revised — added Staleness Gate / BUNCH-102 interaction section)
-- Current route state: `preflight_complete_pending_approval`
-- This PR is plan-only and contains no implementation.
-- After this plan PR is merged, a later implementation worker should execute the checked-in plan from current `main`.
+- Plan status: implementation complete (taxonomy addendum + BUNCH-87 folded in, all tests passing, ready for commit)
+- Current route state: `implementation_complete`
+- Base commit: `a4db54f` (BUNCH-102: Player start-over settings and prologue start loop, #113)
+- Branch head: pending commit (taxonomy addendum + BUNCH-87 test fixes)
+- The staleness gate was executed after BUNCH-102 merged to `main`. See "Staleness Gate Execution Record" below.
+- The taxonomy addendum (Section T) was folded in after the staleness gate. See "Taxonomy Addendum" below.
 - Implementation must still follow the plan's validation and falsification steps; approval of the plan is not approval to skip verification.
-- The preflight surface inventory is base-state evidence at `73fd9fa`; the implementation worker must refresh from `main` and re-run the surface search per the Staleness Gate section before editing.
 
 ## Global Constraints
 
@@ -73,6 +74,83 @@ Critical Scope Decision D6 ("Frontend `Entropy` is not consumed today") is **bas
 ### G5: Stop AMBER if refreshed main changes the work beyond a surface update
 
 If the refreshed `main` changes the work beyond a straightforward surface update (e.g. BUNCH-102 restructured the start-flow in a way that makes the rename task list materially wrong, introduced new concepts that overlap with difficulty/entropy naming, or changed aggregate/persistence boundaries in the rename path), the implementation worker MUST **stop AMBER** and report the changed seams rather than improvising. Report the exact files/seams that diverge from this plan and request a plan refresh. Do not silently expand scope.
+
+---
+
+## Staleness Gate Execution Record
+
+**Executed:** 2026-06-28, after BUNCH-102 merged to `main` as PR #113 (`a4db54f`).
+
+**G1 — Refresh from current main:**
+- Rebased `harleydbartles/bunch-104-normalize-game-start-naming-gamedifficulty-and-gameentropy` onto `a4db54f`.
+- 10 conflict files resolved (BUNCH-102 added `StartingTownId` parameter, prologue endpoint, start-flow components; BUNCH-104 rename applied on top of the new structure).
+- New base commit: `a4db54f`. Branch head after rebase + staleness-gate commit: `efc2c5f`.
+
+**G2 — New BUNCH-102 surfaces found and renamed:**
+- Backend: `PrologueDescriptorResolver.cs`, `GetPrologueQuery.cs`, `GetPrologueHandler.cs`, `GameSessionEndpoints.cs` (GetPrologueAsync)
+- Frontend: `useStartFlow.ts`, `PreSessionSurface.tsx`, `SetupHuntStep.tsx`, `StorySoFarStep.tsx`, `wildBunchApi.ts`
+- Frontend tests: `SetupHuntStep.test.tsx`, `StorySoFarStep.test.tsx`, `StartFlow.test.tsx`, `StartOverRegression.test.tsx`, `StartOverConfirmation.test.tsx`, `GameSettingsOverlay.test.tsx`
+- Test double: `StubNewGameFactory.RequestedTravelDifficulties` → `RequestedGameDifficulties`
+
+**G3/G4 — Frontend entropy surface:**
+- BUNCH-102 introduced entropy state/handlers in `useStartFlow.ts` and `useStartGameSeed.ts`. These were renamed from `AdventureRandomnessPolicy` to `GameEntropy` during the rebase conflict resolution.
+
+**G5 — Scope assessment:**
+- The rebase conflicts were straightforward surface updates (BUNCH-102 added new parameters/components using old names; BUNCH-104 rename applied on top). No material scope change. Proceeded with execution.
+
+**Validation after staleness gate:**
+- Full solution builds clean (0 errors, 0 warnings).
+- 716 backend tests pass (358 Domain + 162 Application + 59 GameContent + 137 Integration).
+- 157 frontend tests pass (20 test files).
+
+---
+
+## Taxonomy Addendum (Section T)
+
+**Authorized after BUNCH-102 merged.** The product taxonomy decision folds into the end-to-end game-start taxonomy normalization. This is NOT a frontend-only display-name mask — it changes domain enum values, codec behavior, and all downstream surfaces.
+
+### T1: Difficulty taxonomy
+
+**Current enum:** `Normal=0, Easy=1, Hard=2` (3 values, codec `% 3`)
+**New enum:** `Standard=0, Easy=1, Challenging=2, Brutal=3` (4 values, codec `% 4`)
+
+- `Standard` (was `Normal`): playable, value 0 unchanged
+- `Easy`: hidden/dev-only, value 1 unchanged
+- `Challenging` (was `Hard`): playable, value 2 unchanged
+- `Brutal`: new, playable, value 3
+
+**Codec change:** `ResolveDifficulty` modulo changes from 3 to 4. `CreateCanonicalDescriptorShape` and `GetCanonicalSeedCode` gain a `Brutal` case. New canonical seed code: `CanonicalBrutalSeedCode`. Existing canonical seed codes for Standard/Challenging are derived from the renamed values.
+
+**Gameplay parameters for Brutal** (extrapolated from existing pattern):
+- `StartingHealthFor`: 600 (pattern: -250 Easy→Standard, -200 Standard→Challenging, -200 Challenging→Brutal)
+- `GetBaseStartingCash`: 13 (pattern: -5 per step)
+- `CreateCanonicalDescriptorShape` canonical cash: 15
+
+**Round-trip impact:** Adding a 4th value changes what UUIDs resolve to (modulo 3→4). Per AGENTS.md "current codec correctness wins" in greenfield, no compat shim. `CreateRepresentativeSeedCode` search mechanism is preserved. Guardrail tests updated.
+
+### T2: Entropy taxonomy
+
+**Current enum:** `Boring=0, Standard=1, Adventurous=2, Wild=3, Classic=Standard(=1)`
+**New enum:** `Boring=0, Classic=1, Adventurous=2, Wild=3` (remove `Standard`, make `Classic` primary)
+
+- `Classic` (was `Standard`): playable, value 1 unchanged
+- `Adventurous`: playable, value 2 unchanged
+- `Wild`: playable, value 3 unchanged
+- `Boring`: dev-only, value 0 unchanged
+
+**Codec change:** `ResolveGameEntropy` maps value 1 to `GameEntropy.Classic` instead of `GameEntropy.Standard`. Modulo stays `% 4`. No round-trip threat — pure rename at same value.
+
+### T3: Frontend player-setup surface
+
+The player-facing setup UI (SetupHuntStep, StartGameOptionsForm) must show only playable values:
+- Difficulty: Standard, Challenging, Brutal (hide Easy)
+- Entropy: Classic, Adventurous, Wild (hide Boring)
+
+`Easy` and `Boring` remain in the domain enum and are resolvable via the codec, but are not offered in the ordinary player setup flow. They are dev-overlay / future-territory.
+
+### T4: Scope guard
+
+If the codec change (difficulty modulo 3→4) reveals a round-trip incompatibility that cannot be fixed by updating the guardrail tests and codec mapping, stop AMBER and report the exact seam. Per AGENTS.md, no compatibility shims for old UUIDs in this greenfield repo.
 
 ---
 
@@ -513,3 +591,33 @@ Return branch, PR URL, final head SHA, changed files, validation outputs (dotnet
 - No stray active-code `TravelDifficulty` or `AdventureRandomnessPolicy` references remain except intentional historical text (old migrations, old plans, codec label strings).
 - ADR-0021 is updated to reflect the new names.
 - All validation passes: `dotnet build`, `dotnet test`, EF migration list, PostgreSQL validate, frontend build, frontend tests.
+
+
+---
+
+## BUNCH-87 Addendum (Section B87)
+
+**Folded into this PR during taxonomy addendum work.** BUNCH-87's goal � replacing seed-dependent retry loops in travel tests with ForceDevTravelOverride deterministic control � was accelerated by the taxonomy change. The enum value renames (Normal->Standard, Hard->Challenging) and the Brutal addition (codec modulo 3->4) shifted deterministic seed outputs, breaking seed-dependent test assertions. Fixing those failures with ForceDevTravelOverride completed the BUNCH-87 work in the same pass.
+
+### B87-1: TravelEncounterResolutionCharacterizationTests
+
+- Replaced the AdvanceUntilInterrupted retry loop (up to 10 days) with ForceDevTravelOverride(DevTravelOverride.ForFoe(...)) � a single forced foe encounter with an explicit JourneyFoeProfile(Speed: 3, FightStrength: 3, MinimumBribe: 9m) matching the bribe-cost assertions.
+- All 6 characterization tests pass with the forced-foe fixture.
+
+### B87-2: TravelReplayEqualityTests
+
+- Replay_FullJourneyCycle: replaced the unbounded advance loop with ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet)) before each advance, ensuring the journey completes without seed-dependent interruptions.
+- Replay_ResolveJourneyEncounter: replaced the retry-until-interrupted loop with ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe)) for a single deterministic interruption.
+- All 4 replay tests pass.
+
+### B87-3: Stale seed-catalog comments
+
+- TravelTestSeedCatalog.FrontierFootNormalFoe: reworded the XML doc comment. The old comment claimed the seed profile "produces a foe on day 1" � stale after the taxonomy change shifted seed outputs. New comment clarifies the profile is a route/setup guardrail and foe determinism comes from ForceDevTravelOverride.
+
+### B87-4: Integration tests
+
+- 9 integration tests fixed using ForceDevTravelOverride (via domain seam or dev-travel API endpoint) instead of relying on seed-dependent encounter outcomes. See the integration test subagent's return for details.
+
+### B87-5: Scope note
+
+The CreateForcedFoeJourney helper on TravelTestFactory (originally planned as a BUNCH-87 Task 1 step) was not added as a separate helper because DevTravelOverride.ForFoe(...) + session.ForceDevTravelOverride(...) is already a one-line seam. Adding a wrapper would duplicate the existing dev-travel API without adding clarity. The end-to-end forced-foe dev-travel integration test (BUNCH-87 Task 2) is covered by the existing HighRiskTravelCanPauseResolveAndResumeWithoutSkippingTheTrail integration test, which now uses ForceTravelOverrideRequestDto("Npc", ...) to force a deterministic encounter.

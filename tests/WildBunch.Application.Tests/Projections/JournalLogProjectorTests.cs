@@ -18,9 +18,9 @@ public sealed class JournalLogProjectorTests
         StartingHealth = 100,
         StartingWallet = 25m,
         StartingInventoryItems = Array.Empty<InventoryItem>(),
-        Difficulty = GameDifficulty.Normal,
+        Difficulty = GameDifficulty.Standard,
         TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-        Entropy = GameEntropy.Standard
+        Entropy = GameEntropy.Classic
     };
 
     [Fact]

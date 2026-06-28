@@ -74,7 +74,7 @@ public sealed partial class GameSessionJsonSerializer
                 journey,
                 GameDifficulty,
                 TravelRandomness?.ToDomain() ?? TravelRandomnessState.CreateRuntimeSalted(),
-                Entropy ?? GameEntropy.Standard,
+                Entropy ?? GameEntropy.Classic,
                 townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());

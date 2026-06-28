@@ -167,7 +167,7 @@ describe("StartGamePanel", () => {
     const seedInput = await screen.findByLabelText(/setup seed/i);
     const beforeRandomize = (seedInput as HTMLInputElement).value;
 
-    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "1");
+    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "2");
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
 
     await waitFor(() => {
@@ -184,7 +184,7 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.gameDifficulty).toBe(1);
+    expect(request.gameDifficulty).toBe(2);
     expect(request.seedCode).toBe("11111111-2222-3333-4444-555555555555");
   });
 });

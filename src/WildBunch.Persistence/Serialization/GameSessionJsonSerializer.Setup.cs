@@ -20,6 +20,6 @@ public sealed partial class GameSessionJsonSerializer
             => new(entropy);
 
         public GameEntropy ToDomain()
-            => Entropy ?? GameEntropy.Standard;
+            => Entropy ?? GameEntropy.Classic;
     }
 }

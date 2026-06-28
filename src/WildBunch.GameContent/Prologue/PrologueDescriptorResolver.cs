@@ -19,9 +19,9 @@ public static class PrologueDescriptorResolver
     /// Resolves the player-visible true-culprit descriptor for the prologue from a seed code.
     /// </summary>
     public static string ResolveTrueCulpritDescriptor(
-        GameDifficulty gameDifficulty = GameDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        GameEntropy entropy = GameEntropy.Standard)
+        GameEntropy entropy = GameEntropy.Classic)
     {
         var descriptor = StartingWorldDescriptorResolver.Resolve(setupSeedCode, gameDifficulty, entropy);
         var setupPackage = new GameSetupPackageBuilder().Build(descriptor);

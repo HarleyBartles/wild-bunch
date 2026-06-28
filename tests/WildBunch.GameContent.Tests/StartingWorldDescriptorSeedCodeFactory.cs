@@ -78,7 +78,7 @@ internal static class StartingWorldDescriptorSeedCodeFactory
         var baseCash = difficulty switch
         {
             GameDifficulty.Easy => 28m,
-            GameDifficulty.Hard => 18m,
+            GameDifficulty.Challenging => 18m,
             _ => 23m
         };
 
@@ -93,7 +93,7 @@ internal static class StartingWorldDescriptorSeedCodeFactory
         var maxPolicyBonus = policy switch
         {
             GameEntropy.Boring => 0,
-            GameEntropy.Standard => 2,
+            GameEntropy.Classic => 2,
             GameEntropy.Adventurous => 5,
             GameEntropy.Wild => 8,
             _ => 0

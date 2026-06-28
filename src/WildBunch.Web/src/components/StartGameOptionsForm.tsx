@@ -40,9 +40,9 @@ export function StartGameOptionsForm({
       <Field>
         <Label htmlFor="difficulty">Game difficulty</Label>
         <Select id="difficulty" value={gameDifficulty} onChange={(event) => onGameDifficultyChange(Number(event.target.value) as GameDifficulty)}>
-          <option value={0}>Normal</option>
-          <option value={1}>Easy</option>
-          <option value={2}>Hard</option>
+          <option value={0}>Standard</option>
+          <option value={2}>Challenging</option>
+          <option value={3}>Brutal</option>
         </Select>
       </Field>
 

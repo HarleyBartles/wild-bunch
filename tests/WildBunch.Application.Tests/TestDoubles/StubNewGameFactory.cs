@@ -29,9 +29,9 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public GameSession Create(
         string playerName,
-        GameDifficulty GameDifficulty = GameDifficulty.Normal,
+        GameDifficulty GameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        GameEntropy entropy = GameEntropy.Standard,
+        GameEntropy entropy = GameEntropy.Classic,
         string? startingTownId = null)
     {
         RequestedPlayerNames.Add(playerName);

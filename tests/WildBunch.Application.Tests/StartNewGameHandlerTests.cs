@@ -17,15 +17,15 @@ public sealed class StartNewGameHandlerTests
         var result = await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
 
         Assert.Equal("Ranger Vale", factory.RequestedPlayerNames.Single());
-        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Normal, factory.RequestedGameDifficulties.Single());
-        Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Standard, factory.RequestedEntropies.Single());
+        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Standard, factory.RequestedGameDifficulties.Single());
+        Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Classic, factory.RequestedEntropies.Single());
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(factory.CreatedSession.Id.Value, result.Id);
         Assert.Equal("Ranger Vale", result.Player.Name);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, result.Status);
-        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Normal, result.GameDifficulty);
-        Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Standard, result.Entropy);
+        Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Standard, result.GameDifficulty);
+        Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Classic, result.Entropy);
         Assert.Equal("dustvale", result.Player.CurrentTownId);
         Assert.NotEmpty(result.LogEntries);
         Assert.Contains(result.LogEntries, entry => entry.Kind == WildBunch.Domain.Game.GameLogEntryKind.Opening);

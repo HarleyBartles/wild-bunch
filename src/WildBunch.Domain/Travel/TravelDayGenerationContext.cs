@@ -71,7 +71,7 @@ public sealed record TravelDayGenerationContext(
     bool HasHorse,
     TravelRandomnessMode RandomnessMode,
     string RandomnessSalt,
-    GameEntropy Entropy = GameEntropy.Standard)
+    GameEntropy Entropy = GameEntropy.Classic)
 {
     public bool WaterSecure => WaterFeature is WaterFeature.Creek or WaterFeature.River or WaterFeature.Spring;
 

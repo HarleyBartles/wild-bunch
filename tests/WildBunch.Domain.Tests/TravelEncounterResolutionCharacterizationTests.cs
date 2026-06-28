@@ -14,20 +14,21 @@ namespace WildBunch.Domain.Tests;
 public sealed class TravelEncounterResolutionCharacterizationTests
 {
     /// <summary>
-    /// Helper: advance journey until interrupted by encounter.
-    /// Fails the test if the journey doesn't interrupt within 10 days.
+    /// Helper: force a foe encounter through the dev-travel override seam and
+    /// advance one day. Uses a foe profile with MinimumBribe=9m to match the
+    /// bribe-cost assertions in these characterization tests. See BUNCH-87 —
+    /// deterministic foe control comes from ForceDevTravelOverride, not
+    /// seed-dependent retry loops.
     /// </summary>
     private static void AdvanceUntilInterrupted(GameSession session)
     {
-        for (var i = 0; i < 10; i++)
+        session.ForceDevTravelOverride(DevTravelOverride.ForFoe(
+            new JourneyFoeProfile(Speed: 3, FightStrength: 3, MinimumBribe: 9m)));
+        var result = session.AdvanceJourneyDay();
+        if (result.Status != JourneyStatus.Interrupted)
         {
-            var result = session.AdvanceJourneyDay();
-            if (result.Status == JourneyStatus.Interrupted)
-                return;
-            if (result.Status == JourneyStatus.Completed || !result.Success)
-                Assert.Fail($"Journey did not interrupt — it {result.Status} on day {i + 1}. Adjust TravelTestFactory.CreateHighRiskJourney().");
+            Assert.Fail($"Forced foe encounter did not interrupt — journey {result.Status}. Check ForceDevTravelOverride seam.");
         }
-        Assert.Fail("Journey did not interrupt within 10 days. Adjust TravelTestFactory.CreateHighRiskJourney().");
     }
 
     [Fact]
