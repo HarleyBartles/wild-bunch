@@ -4,13 +4,15 @@ public static class GameSetupDeterministicLabels
 {
     public const string GameEntropy = "game.entropy";
     public const string WorldVariant = "world.variant";
-    public const string WorldStartingTownHorse = "world.startingTown.horse";
-    public const string WorldStartingTownFoot = "world.startingTown.foot";
+    public const string WorldTownSet = "world.townSet";
+    public const string WorldTownSetDefault = "world.townSet.default";
+    public const string WorldTownSetAlternate = "world.townSet.alternate";
     public const string PlayerLoadoutProfile = "player.loadout-profile";
     public const string PlayerHorsePosture = "player.horse-posture";
     public const string PlayerCashBonus = "player.cash-bonus";
     public const string GameDifficulty = "game.difficulty";
     public const string CaseAccusationIndex = "case.accusation-index";
+    public const string CaseDefaultCulprit = "case.default-culprit";
     public const string CaseCulprit = "case.culprit";
     public const string CaseAccusation = "case.accusation";
     public const string CaseSuspectTurf = "case.suspect-turf";

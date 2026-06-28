@@ -243,7 +243,7 @@ public sealed class GameApiTests
     }
 
     [Fact]
-    public async Task PostGamesWithSubmittedSeedCodeKeepsTheNoHorseOptionsAndExposesASixDayRoute()
+    public async Task PostGamesWithSubmittedSeedCodeExposesTheRedMesaToDryForkRoute()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
@@ -267,7 +267,7 @@ public sealed class GameApiTests
             .ToArray();
 
         Assert.Contains(connectedTownIds, townId => townId == "redmesa");
-        Assert.Contains(connectedTownIds, townId => townId == "sagewell");
+        Assert.Contains(connectedTownIds, townId => townId == "holloway");
 
         var redMesaPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/redmesa");
         Assert.Equal(HttpStatusCode.OK, redMesaPreviewResponse.StatusCode);

@@ -23,9 +23,9 @@ internal sealed record ScenarioSeedFixture(
 {
     public void AssertCachedFixtureContract()
     {
-        if (!string.Equals(ResolverContractVersion, StartingWorldDescriptorResolver.ResolverContractVersion, StringComparison.Ordinal))
+        if (!string.Equals(ResolverContractVersion, SeedWorldResolver.ResolverContractVersion, StringComparison.Ordinal))
         {
-            ThrowDrift($"Resolver contract version changed from '{ResolverContractVersion}' to '{StartingWorldDescriptorResolver.ResolverContractVersion}'.");
+            ThrowDrift($"Resolver contract version changed from '{ResolverContractVersion}' to '{SeedWorldResolver.ResolverContractVersion}'.");
         }
 
         var session = CreateSession();

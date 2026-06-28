@@ -6,26 +6,35 @@ using WildBunch.GameContent.NewGame;
 namespace WildBunch.GameContent.Tests;
 
 /// <summary>
-/// Catalog of starting-world descriptors for deterministic travel tests.
-/// Each entry describes a world state (variant, difficulty, entropy, loadout) and
-/// the expected day-1 travel behavior when journeying along a specific route profile.
+/// Catalog of seed worlds + difficulty/entropy for deterministic travel tests.
+/// Each entry describes a world state (variant, difficulty, entropy) and the expected
+/// day-1 travel behavior when journeying along a specific route profile.
 ///
-/// Tests derive UUIDs on the fly via <see cref="StartingWorldDescriptorResolver.CreateRepresentativeSeedCode"/>
-/// rather than storing UUIDs. When the codec evolves, the same descriptor still resolves to a valid UUID.
+/// Tests derive UUIDs on the fly via <see cref="SeedWorldResolver.CreateRepresentativeSeedCode"/>
+/// rather than storing UUIDs. When the codec evolves, the same seed world still resolves to a valid UUID.
 ///
-/// See AGENTS.md "UUID Seed Codec" section for the full guidance.
+/// BUNCH-107 transitional note: horse/saddle/loadout variety was lost when these fields moved
+/// from seed-owned to difficulty-owned. All entries now get horse+saddle+Standard loadout
+/// (transitional defaults from DifficultyEnvelope). BUNCH-94 will restore variety via
+/// difficulty-owned horse/saddle/loadout envelopes. Entries that previously specified no-horse
+/// or light-loadout (CanonicalFootBoringLight, FrontierFootNormalFoe) now get the transitional
+/// defaults — their difficulty/entropy/world-variant are preserved but the horse/loadout posture
+/// is transitional.
+///
+/// Starting town is NOT seed-owned. All entries default to pinecross (the safe default from
+/// StartingTownPolicy) unless a test explicitly passes a starting town override.
 /// </summary>
 internal static class TravelTestSeedCatalog
 {
     /// <summary>
     /// Canonical world, Standard difficulty, Classic entropy, mounted.
-    /// Starts in Pinecross. Used as a baseline for mounted travel tests.
+    /// Starts in Pinecross (safe default). Used as a baseline for mounted travel tests.
     /// Route: pinecross -> redmesa (Low/OpenRange/Creek, 4m).
     /// </summary>
-    internal static readonly StartingWorldDescriptor CanonicalMountedStandard =
-        StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Standard,
-            GameEntropy.Classic);
+    internal static readonly SeedWorldEntry CanonicalMountedStandard = new(
+        SeedWorldResolver.CreateCanonicalSeedWorld(),
+        GameDifficulty.Standard,
+        GameEntropy.Classic);
 
     /// <summary>
     /// Canonical world, Standard difficulty, Boring entropy, mounted.
@@ -33,146 +42,123 @@ internal static class TravelTestSeedCatalog
     /// that need a quiet journey without heat priming.
     /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure.
     /// </summary>
-    internal static readonly StartingWorldDescriptor CanonicalMountedBoring =
-        StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Standard,
-            GameEntropy.Boring);
+    internal static readonly SeedWorldEntry CanonicalMountedBoring = new(
+        SeedWorldResolver.CreateCanonicalSeedWorld(),
+        GameDifficulty.Standard,
+        GameEntropy.Boring);
 
     /// <summary>
-    /// Canonical world, Standard difficulty, Boring entropy, no horse, light loadout.
+    /// Canonical world, Standard difficulty, Boring entropy.
+    /// Uses the alternate town set key. Transitional: was no-horse/light-loadout,
+    /// now gets transitional defaults (horse+saddle+Standard).
     /// Encounters suppressed. Used for foot-travel resource tests.
-    /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure on foot.
+    /// BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
     /// </summary>
-    internal static StartingWorldDescriptor CanonicalFootBoringLight = new(
-        Guid.Empty,
+    internal static readonly SeedWorldEntry CanonicalFootBoringLight = new(
+        new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Canonical,
+            GameSetupDeterministicLabels.WorldTownSetAlternate,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0),
         GameDifficulty.Standard,
-        GameEntropy.Boring,
-        new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownFoot),
-        new StartingWorldDescriptorPlayer(
-            StartWithHorse: false,
-            LoadoutProfile: StartingLoadoutProfile.Light,
-            StartingCash: 18m,
-            Loadout: new StartingWorldDescriptorLoadout(
-                Food: 3,
-                HorseFeed: 2,
-                RevolverAmmo: 4,
-                IncludeHorse: false,
-                IncludeSaddle: false)),
-        new StartingWorldDescriptorCase(AccusationIndex: 0));
+        GameEntropy.Boring);
 
     /// <summary>
     /// Canonical world, Easy difficulty, Standard entropy, mounted.
     /// Used for lucky trail-event tests (LuckyFoodCache, LuckyCoinCache).
     /// Routes from Pinecross: redmesa (Low/OpenRange/Creek), hardpan (Low/Badlands/None), openpass (Low/OpenRange/None).
     /// </summary>
-    internal static readonly StartingWorldDescriptor CanonicalMountedEasyStandard =
-        StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Easy,
-            GameEntropy.Classic);
+    internal static readonly SeedWorldEntry CanonicalMountedEasyStandard = new(
+        SeedWorldResolver.CreateCanonicalSeedWorld(),
+        GameDifficulty.Easy,
+        GameEntropy.Classic);
 
     /// <summary>
     /// Canonical world, Hard difficulty, Standard entropy, mounted.
     /// Used for bad-luck trail-event tests (BadLuckSpookedHorse) and NPC encounters.
     /// Routes from Pinecross: redmesa (Low/OpenRange/Creek), hardpan (Low/Badlands/None), openpass (Low/OpenRange/None).
     /// </summary>
-    internal static readonly StartingWorldDescriptor CanonicalMountedHardStandard =
-        StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            GameDifficulty.Challenging,
-            GameEntropy.Classic);
+    internal static readonly SeedWorldEntry CanonicalMountedHardStandard = new(
+        SeedWorldResolver.CreateCanonicalSeedWorld(),
+        GameDifficulty.Challenging,
+        GameEntropy.Classic);
 
     /// <summary>
-    /// Frontier world, Standard difficulty, Classic entropy, no horse, light loadout.
+    /// Frontier world, Standard difficulty, Classic entropy.
+    /// Uses the alternate town set key. Transitional: was no-horse/light-loadout,
+    /// now gets transitional defaults (horse+saddle+Standard).
     /// Frontier variant makes pinecross->holloway Moderate/Hills/Spring.
-    /// Route/setup guardrail for tests that need a moderate-risk foot journey shape.
     /// Foe-encounter determinism now comes from ForceDevTravelOverride, not from
     /// this seed profile. See BUNCH-87.
-    /// Note: starting town is seed-derived; the guardrail test verifies a route matching
-    /// the expected profile exists from wherever the session starts.
     /// </summary>
-    internal static readonly StartingWorldDescriptor FrontierFootNormalFoe = new(
-        Guid.Empty,
+    internal static readonly SeedWorldEntry FrontierFootNormalFoe = new(
+        new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Frontier,
+            GameSetupDeterministicLabels.WorldTownSetAlternate,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0),
         GameDifficulty.Standard,
-        GameEntropy.Classic,
-        new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownFoot),
-        new StartingWorldDescriptorPlayer(
-            StartWithHorse: false,
-            LoadoutProfile: StartingLoadoutProfile.Light,
-            StartingCash: 18m,
-            Loadout: new StartingWorldDescriptorLoadout(
-                Food: 3,
-                HorseFeed: 2,
-                RevolverAmmo: 4,
-                IncludeHorse: false,
-                IncludeSaddle: false)),
-        new StartingWorldDescriptorCase(AccusationIndex: 0));
+        GameEntropy.Classic);
 
     /// <summary>
     /// Frontier world, Hard difficulty, Standard entropy, mounted.
     /// Frontier variant makes holloway->sagewell Low/Hills/River.
     /// Used for NPC-encounter tests.
     /// </summary>
-    internal static readonly StartingWorldDescriptor FrontierMountedHardNpc = new(
-        Guid.Empty,
+    internal static readonly SeedWorldEntry FrontierMountedHardNpc = new(
+        new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Frontier,
+            GameSetupDeterministicLabels.WorldTownSetDefault,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0),
         GameDifficulty.Challenging,
-        GameEntropy.Classic,
-        new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
-        new StartingWorldDescriptorPlayer(
-            StartWithHorse: true,
-            LoadoutProfile: StartingLoadoutProfile.Standard,
-            StartingCash: 20m,
-            Loadout: new StartingWorldDescriptorLoadout(
-                Food: 4,
-                HorseFeed: 3,
-                RevolverAmmo: 6,
-                IncludeHorse: true,
-                IncludeSaddle: true)),
-        new StartingWorldDescriptorCase(AccusationIndex: 0));
+        GameEntropy.Classic);
 
     /// <summary>
     /// Frontier world, Normal difficulty, Standard entropy, mounted.
     /// Frontier variant makes redmesa->dryfork High/Badlands/None and pinecross->holloway Moderate/Hills/Spring.
     /// Used for high-risk trail-event tests (BadLuckSpookedHorse on High/Badlands/None).
     /// </summary>
-    internal static readonly StartingWorldDescriptor FrontierMountedNormalHighRisk = new(
-        Guid.Empty,
+    internal static readonly SeedWorldEntry FrontierMountedNormalHighRisk = new(
+        new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Frontier,
+            GameSetupDeterministicLabels.WorldTownSetDefault,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0),
         GameDifficulty.Standard,
-        GameEntropy.Classic,
-        new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
-        new StartingWorldDescriptorPlayer(
-            StartWithHorse: true,
-            LoadoutProfile: StartingLoadoutProfile.Standard,
-            StartingCash: 25m,
-            Loadout: new StartingWorldDescriptorLoadout(
-                Food: 4,
-                HorseFeed: 3,
-                RevolverAmmo: 6,
-                IncludeHorse: true,
-                IncludeSaddle: true)),
-        new StartingWorldDescriptorCase(AccusationIndex: 0));
+        GameEntropy.Classic);
 
     /// <summary>
-    /// Derives a UUID seed code from a descriptor. The descriptor's SeedCode field is ignored;
+    /// Derives a UUID seed code from a seed world. The seed world's SeedCode field is ignored;
     /// a fresh UUID is found via round-trip search through the codec.
     /// </summary>
-    internal static string ResolveSeedCode(StartingWorldDescriptor descriptor)
+    internal static string ResolveSeedCode(SeedWorldEntry entry)
     {
-        var seedCode = StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor);
-        return StartingWorldDescriptorResolver.FormatSeedCode(seedCode);
+        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(entry.SeedWorld);
+        return SeedWorldResolver.FormatSeedCode(seedCode);
     }
 
     /// <summary>
-    /// Creates a game session from a descriptor by deriving a UUID and passing it through
+    /// Creates a game session from a seed world entry by deriving a UUID and passing it through
     /// <see cref="SeededNewGameFactory"/>. This is the canonical way to start a test game.
     /// </summary>
-    internal static GameSession CreateSession(StartingWorldDescriptor descriptor, string playerName = "Ranger Vale")
+    internal static GameSession CreateSession(SeedWorldEntry entry, string playerName = "Ranger Vale")
     {
-        var seedCode = ResolveSeedCode(descriptor);
+        var seedCode = ResolveSeedCode(entry);
         var factory = new SeededNewGameFactory();
         return factory.Create(
             playerName,
-            descriptor.GameDifficulty,
+            entry.GameDifficulty,
             seedCode,
-            descriptor.GameEntropy);
+            entry.GameEntropy);
     }
 
     /// <summary>
@@ -204,3 +190,12 @@ internal static class TravelTestSeedCatalog
     internal static TownId ResolveDestination(GameSession session, Trail trail)
         => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId;
 }
+
+/// <summary>
+/// A seed world paired with player-selected difficulty and entropy.
+/// Replaces the former StartingWorldDescriptor-based catalog entries.
+/// </summary>
+internal sealed record SeedWorldEntry(
+    SeedWorld SeedWorld,
+    GameDifficulty GameDifficulty,
+    GameEntropy GameEntropy);

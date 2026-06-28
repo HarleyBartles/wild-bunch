@@ -1,47 +1,29 @@
-using System.Security.Cryptography;
-using System.Text;
-using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
 
-internal sealed record SeedWorldSetup(World World, TownId StartingTownId);
-
 internal static class SeedWorldBuilder
 {
-    public static SeedWorldSetup CreateCanonicalWorld()
-    {
-        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical);
-        return new SeedWorldSetup(world, SeedWorldCatalog.PinecrossId);
-    }
+    public static World CreateCanonicalWorld()
+        => SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical);
 
-    public static SeedWorldSetup CreateWorld(StartingWorldGenerationPlan plan)
+    public static World CreateWorld(SeedWorld seedWorld, GameSetupDeterministicSource source)
     {
-        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(seedWorld);
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (plan.IsCanonical)
+        if (IsCanonicalSeedWorld(seedWorld))
         {
             return CreateCanonicalWorld();
         }
 
-        var world = SeedWorldCatalog.CreateWorld(plan.WorldVariant);
-        return new SeedWorldSetup(world, PickStartingTown(plan, world));
+        return SeedWorldCatalog.CreateWorld(seedWorld.WorldVariant);
     }
 
-    private static TownId PickStartingTown(StartingWorldGenerationPlan plan, World world)
-    {
-        var candidates = world.Towns
-            .Where(town => (town.Services & TownServices.Supplies) != 0 || (town.Services & TownServices.NoticeBoard) != 0)
-            .OrderBy(town => town.Name, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (candidates.Length == 0)
-        {
-            return world.Towns.First().Id;
-        }
-
-        var label = plan.Descriptor.World.StartingTownSelectionKey;
-        var index = plan.Source.PickIndex(label, candidates.Length);
-        return candidates[index].Id;
-    }
+    private static bool IsCanonicalSeedWorld(SeedWorld seedWorld)
+        => seedWorld.WorldVariant == SeedWorldVariant.Canonical
+            && seedWorld.TownSetKey == GameSetupDeterministicLabels.WorldTownSetDefault
+            && seedWorld.AccusationIndex == 1
+            && seedWorld.DefaultCulpritIndex == 3
+            && seedWorld.CashBonus == 0;
 }

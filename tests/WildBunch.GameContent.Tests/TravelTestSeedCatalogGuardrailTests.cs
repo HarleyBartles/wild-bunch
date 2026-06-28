@@ -6,9 +6,9 @@ namespace WildBunch.GameContent.Tests;
 
 /// <summary>
 /// Guardrail tests for <see cref="TravelTestSeedCatalog"/>.
-/// Each test round-trips a descriptor through CreateRepresentativeSeedCode -> Resolve
+/// Each test round-trips a seed world through CreateRepresentativeSeedCode -> Resolve
 /// and verifies the codec produces the expected semantics. If the codec evolves and a
-/// descriptor no longer resolves to the expected world state, these tests fail and tell
+/// seed world no longer resolves to the expected world state, these tests fail and tell
 /// you exactly which catalog entry is stale.
 /// </summary>
 public sealed class TravelTestSeedCatalogGuardrailTests
@@ -17,87 +17,87 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     public void CanonicalMountedStandard_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedStandard);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedStandard.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedStandard.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
-        Assert.True(resolved.Player.StartWithHorse);
+        Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
     }
 
     [Fact]
     public void CanonicalMountedBoring_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedBoring);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedBoring.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedBoring.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
-        Assert.True(resolved.Player.StartWithHorse);
+        Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
     }
 
     [Fact]
     public void CanonicalFootBoringLight_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalFootBoringLight);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalFootBoringLight.GameDifficulty, TravelTestSeedCatalog.CanonicalFootBoringLight.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
-        Assert.False(resolved.Player.StartWithHorse);
-        Assert.Equal(StartingLoadoutProfile.Light, resolved.Player.LoadoutProfile);
+        Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetAlternate, resolved.TownSetKey);
     }
 
     [Fact]
     public void CanonicalMountedEasyStandard_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedEasyStandard);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedEasyStandard.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedEasyStandard.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
-        Assert.True(resolved.Player.StartWithHorse);
+        Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
     }
 
     [Fact]
     public void CanonicalMountedHardStandard_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.CanonicalMountedHardStandard);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.CanonicalMountedHardStandard.GameDifficulty, TravelTestSeedCatalog.CanonicalMountedHardStandard.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Canonical, resolved.World.Variant);
-        Assert.True(resolved.Player.StartWithHorse);
+        Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
     }
 
     [Fact]
     public void FrontierFootNormalFoe_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierFootNormalFoe);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.FrontierFootNormalFoe.GameDifficulty, TravelTestSeedCatalog.FrontierFootNormalFoe.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Frontier, resolved.World.Variant);
-        Assert.False(resolved.Player.StartWithHorse);
-        Assert.Equal(StartingLoadoutProfile.Light, resolved.Player.LoadoutProfile);
+        Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetAlternate, resolved.TownSetKey);
     }
 
     [Fact]
     public void FrontierMountedHardNpc_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierMountedHardNpc);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.FrontierMountedHardNpc.GameDifficulty, TravelTestSeedCatalog.FrontierMountedHardNpc.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Frontier, resolved.World.Variant);
-        Assert.True(resolved.Player.StartWithHorse);
+        Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
     }
 
     [Fact]
     public void FrontierMountedNormalHighRisk_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierMountedNormalHighRisk);
-        var resolved = StartingWorldDescriptorResolver.Resolve(seedCode, TravelTestSeedCatalog.FrontierMountedNormalHighRisk.GameDifficulty, TravelTestSeedCatalog.FrontierMountedNormalHighRisk.GameEntropy);
+        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
-        Assert.Equal(SeedWorldVariant.Frontier, resolved.World.Variant);
-        Assert.True(resolved.Player.StartWithHorse);
+        Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
+        Assert.Equal(GameSetupDeterministicLabels.WorldTownSetDefault, resolved.TownSetKey);
     }
 
     [Fact]
     public void CanonicalWorld_AlwaysStartsInPinecross()
     {
+        // Starting town is NOT seed-owned. The safe default from StartingTownPolicy
+        // is pinecross for all world variants.
         var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedStandard);
         Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
     }
@@ -127,7 +127,6 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     {
         var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.FrontierFootNormalFoe);
         // Frontier variant: pinecross->holloway is Moderate/Hills/Spring
-        // The starting town is seed-derived, so we check if the route exists in the world
         var trail = session.World.Trails.FirstOrDefault(t =>
             t.Risk == TrailRisk.Moderate && t.Terrain == TrailTerrain.Hills && t.WaterFeature == WaterFeature.Spring);
         Assert.NotNull(trail);

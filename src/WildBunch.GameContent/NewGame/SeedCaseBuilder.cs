@@ -6,47 +6,49 @@ namespace WildBunch.GameContent.NewGame;
 internal static class SeedCaseBuilder
 {
     private const int NormalReleaseThreshold = 5;
-    private static readonly SuspectId TrueCulpritId = new("suspect-4");
 
-    public static CaseFile CreateCanonicalCaseFile(StartingWorldGenerationPlan plan, World world)
+    public static CaseFile CreateCanonicalCaseFile(
+        GameSetupDeterministicSource source,
+        World world,
+        int resolvedCulpritIndex,
+        int resolvedAccusationIndex)
     {
-        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(world);
 
         return BuildCase(
-            plan.Source,
+            source,
             world,
             CaseCharacterRoster.SelectCanonicalGangRoster(),
-            CaseSuspectFeaturePool.SelectCanonicalAssignedFeatures(plan.Source),
-            accusationIndex: 1,
-            trueCulpritIndex: 3,
+            CaseSuspectFeaturePool.SelectCanonicalAssignedFeatures(source),
+            accusationIndex: resolvedAccusationIndex,
+            trueCulpritIndex: resolvedCulpritIndex,
             publicWarrant1: CaseCharacterRoster.CreateGangMemberWarrant(CaseCharacterRoster.SelectCanonicalGangRoster()[0]),
             publicWarrant2: CaseCharacterRoster.CreateCanonicalUnrelatedWarrant(),
             startingTownId: SeedWorldCatalog.PinecrossId);
     }
 
-    public static CaseFile CreateCaseFile(StartingWorldGenerationPlan plan, World world, TownId? startingTownId = null)
+    public static CaseFile CreateCaseFile(
+        GameSetupDeterministicSource source,
+        World world,
+        int resolvedCulpritIndex,
+        int resolvedAccusationIndex,
+        TownId? startingTownId = null)
     {
-        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(world);
 
-        if (plan.IsCanonical)
-        {
-            return CreateCanonicalCaseFile(plan, world);
-        }
-
-        var roster = CaseCharacterRoster.SelectGangRoster(plan.Source);
-        var features = CaseSuspectFeaturePool.SelectAssignedFeatures(plan.Source);
-        var accusationIndex = plan.Descriptor.Case.AccusationIndex;
+        var roster = CaseCharacterRoster.SelectGangRoster(source);
+        var features = CaseSuspectFeaturePool.SelectAssignedFeatures(source);
         return BuildCase(
-            plan.Source,
+            source,
             world,
             roster,
             features,
-            accusationIndex,
-            3,
+            resolvedAccusationIndex,
+            resolvedCulpritIndex,
             CaseCharacterRoster.CreateGangMemberWarrant(roster[0]),
-            CaseCharacterRoster.SelectUnrelatedWarrant(plan.Source),
+            CaseCharacterRoster.SelectUnrelatedWarrant(source),
             startingTownId ?? world.Towns.First().Id);
     }
 
@@ -78,7 +80,7 @@ internal static class SeedCaseBuilder
             CreateSuspect(new SuspectId("suspect-1"), roster[0], features[0]),
             CreateSuspect(new SuspectId("suspect-2"), roster[1], features[1]),
             CreateSuspect(new SuspectId("suspect-3"), roster[2], features[2]),
-            CreateSuspect(TrueCulpritId, roster[3], features[3]),
+            CreateSuspect(new SuspectId("suspect-4"), roster[3], features[3]),
             CreateSuspect(new SuspectId("suspect-5"), roster[4], features[4]),
             CreateSuspect(new SuspectId("suspect-6"), roster[5], features[5]),
             CreateSuspect(new SuspectId("suspect-7"), roster[6], features[6])
@@ -87,7 +89,7 @@ internal static class SeedCaseBuilder
         var culprit = suspects[trueCulpritIndex];
         var suspectTurfAssignments = SelectSuspectTurfAssignments(source, world, suspects);
         var openingLead = CaseOpeningLead.Create(CaseSuspectFeaturePool.BuildOpeningLead(features[trueCulpritIndex].PrimaryFeature));
-        var knownClues = CreateKnownClues(source, features[trueCulpritIndex].PrimaryFeature);
+        var knownClues = CreateKnownClues(source, features[trueCulpritIndex].PrimaryFeature, culprit.Id);
         var publicClues = CreatePublicClues(
             source,
             world,
@@ -95,6 +97,7 @@ internal static class SeedCaseBuilder
             features,
             suspectTurfAssignments,
             features[trueCulpritIndex].PrimaryFeature,
+            culprit.Id,
             startingTownId);
         var publicWarrants = CreatePublicWarrants(
             source,
@@ -124,7 +127,7 @@ internal static class SeedCaseBuilder
             profile.Traits,
             SuspectStatus.AtLarge);
 
-    private static IReadOnlyList<Clue> CreateKnownClues(GameSetupDeterministicSource source, CaseSuspectFeatureProfile culpritFeature)
+    private static IReadOnlyList<Clue> CreateKnownClues(GameSetupDeterministicSource source, CaseSuspectFeatureProfile culpritFeature, SuspectId trueCulpritId)
         => new[]
         {
             CreateClue(
@@ -133,7 +136,7 @@ internal static class SeedCaseBuilder
                 1,
                 ClueKind.CulpritTrail,
                 CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature),
-                TrueCulpritId,
+                trueCulpritId,
                 InvestigationTargetKind.TrueCulprit,
                 "trail witness",
                 "Opening lead",
@@ -156,6 +159,7 @@ internal static class SeedCaseBuilder
         IReadOnlyList<CaseSuspectFeatureAssignment> features,
         IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments,
         CaseSuspectFeatureProfile culpritFeature,
+        SuspectId trueCulpritId,
         TownId startingTownId)
     {
         var publicClues = new List<Clue>
@@ -242,7 +246,7 @@ internal static class SeedCaseBuilder
                 5,
                 ClueKind.IdentityFact,
                 $"A witness tied the rider to {DescribePersonWithFeature(culpritFeature, "a man")}.",
-                TrueCulpritId,
+                trueCulpritId,
                 InvestigationTargetKind.TrueCulprit,
                 "telegraph ledger",
                 "Identity match",
@@ -262,7 +266,7 @@ internal static class SeedCaseBuilder
                 6,
                 ClueKind.Whereabouts,
                 "Boot prints and a waystation note place the rider on the Red Mesa road after dusk.",
-                TrueCulpritId,
+                trueCulpritId,
                 InvestigationTargetKind.TrueCulprit,
                 "waystation clerk",
                 "Route lead",

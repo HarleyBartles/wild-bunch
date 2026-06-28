@@ -1,10 +1,10 @@
-# BUNCH-107: Refactor Seed Codec into Adventure Template Setup
+# BUNCH-107: Refactor Seed Codec into SeedWorld Setup
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Refactor the seed codec and game-setup seams so the seed produces a stable adventure/world template, not final player pressure settings or direct runtime truth. This creates a clean foundation for BUNCH-94 (difficulty controls) and BUNCH-93 (entropy controls) without side-questing into seed codec repairs.
 
-**Architecture:** Split the current `StartingWorldDescriptor` — which mixes seed-owned facts (world variant, accusation index) with pressure-owned facts (difficulty, entropy, horse posture, loadout profile, final cash) — into four explicit seams: `AdventureTemplate` (seed-owned), `DifficultyEnvelope` (player-selected pressure), `EntropyPolicy` (player-selected entropy/salt mode), and `MysteryTruthResolution` (entropy-applied mystery-truth seam between template and resolved setup). A `ResolvedGameSetup` record composes the final session-start facts after template + difficulty + entropy + mystery-truth resolution are applied. `GameSession.StartNew` consumes `ResolvedGameSetup` instead of reinterpreting the seed during live play. The `MysteryTruthResolution` seam is installed now (transitional pass-through) so BUNCH-93 can expand entropy/salt remix policy there without side-questing into setup-pipeline design.
+**Architecture:** Split the current `StartingWorldDescriptor` — which mixes seed-owned facts (world variant, accusation index) with pressure-owned facts (difficulty, entropy, horse posture, loadout profile, final cash) — into explicit seams: `SeedWorld` (seed-owned world/map layer), `DifficultyEnvelope` (player-selected pressure), `EntropyPolicy` (player-selected entropy/salt mode), `MysteryTruthResolution` (entropy-applied mystery-truth seam between seed world and resolved setup), and `StartingTownPolicy` (player/setup-owned starting town choice). A `ResolvedGameSetup` record composes the final session-start facts after seed world + difficulty + entropy + mystery-truth resolution + starting town policy are applied. `GameSession.StartNew` consumes `ResolvedGameSetup` instead of reinterpreting the seed during live play. The `MysteryTruthResolution` seam is installed now (transitional pass-through) so BUNCH-93 can expand entropy/salt remix policy there without side-questing into setup-pipeline design. The `StartingTownPolicy` seam is installed now (permissive: any town in the generated world) so future work can make starting-town eligibility difficulty-based and accusation-town-aware.
 
 **Tech Stack:** C# / .NET, EF Core (PostgreSQL), xUnit, React + TypeScript, styled-components.
 
@@ -44,18 +44,23 @@
 The target pipeline, made explicit in source:
 
 ```
-seed code -> AdventureTemplate -> DifficultyEnvelope -> EntropyPolicy -> MysteryTruthResolution -> ResolvedGameSetup -> GameSession
+seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy -> MysteryTruthResolution -> ResolvedGameSetup -> GameSession
 ```
 
 ### Seam Definitions (to install in source)
 
-**AdventureTemplate** (seed-owned, shareable replay identity for world setup):
+**SeedWorld** (seed-owned, deterministic world/map layer decoded from the UUID):
 - `SeedCode` (Guid) — the UUID itself
 - `WorldVariant` (SeedWorldVariant) — seed-decoded
-- `StartingTownSelectionKey` (string) — seed-owned, independent of horse posture
+- `TownSetKey` (string) — seed-owned map generation parameter (NOT a starting-town selector)
 - `AccusationIndex` (int) — seed-decoded default opening accusation
 - `DefaultCulpritIndex` (int) — seed-decoded default culprit for Boring replay (NEW)
 - `CashBonus` (int) — raw seed-derived cash bonus (0–8, NOT entropy-capped)
+
+**StartingTownPolicy** (player/setup-owned, validates starting town against generated world):
+- Validates player's chosen starting town exists in the generated world
+- If no town supplied, uses safe default (pinecross — a fixed property of the world catalog, NOT a seed-authored selector)
+- Future seam: difficulty may constrain eligible starting towns; accusation/black-spot town may become non-stoppable. Difficulty should not redraw the map — it only filters eligibility.
 
 **DifficultyEnvelope** (player-selected pressure, applied after template resolution):
 - `GameDifficulty` (enum)
@@ -245,10 +250,10 @@ Add new label to `GameSetupDeterministicLabels`:
 
 Update `CreateDescriptorSignature` equivalent (`CreateTemplateSignature`) to include: WorldVariant, StartingTownSelectionKey, AccusationIndex, DefaultCulpritIndex, CashBonus. Remove all Player fields from the signature.
 
-- [ ] Create `AdventureTemplate.cs`
-- [ ] Create `AdventureTemplateResolver.cs` with Resolve, CreateCanonicalTemplate, CreateRepresentativeSeedCode, TryParseSeedCode, FormatSeedCode, Validate
-- [ ] Add `WorldStartingTown` and `CaseDefaultCulprit` labels to `GameSetupDeterministicLabels.cs`
-- [ ] Write unit tests for AdventureTemplate round-trip, validation, avalanche, determinism
+- [x] Create `AdventureTemplate.cs`
+- [x] Create `AdventureTemplateResolver.cs` with Resolve, CreateCanonicalTemplate, CreateRepresentativeSeedCode, TryParseSeedCode, FormatSeedCode, Validate
+- [x] Add `WorldStartingTown` and `CaseDefaultCulprit` labels to `GameSetupDeterministicLabels.cs`
+- [x] Write unit tests for AdventureTemplate round-trip, validation, avalanche, determinism
 
 ### Task 2: Create DifficultyEnvelope record
 
@@ -284,8 +289,8 @@ public sealed record DifficultyEnvelope(
 
 Add a doc comment: "Transitional mapping. BUNCH-94 will expand this to the full difficulty-owned horse/saddle envelope, loadout envelope, and travel harshness."
 
-- [ ] Create `DifficultyEnvelope.cs` with `For(GameDifficulty)` factory
-- [ ] Write unit tests for DifficultyEnvelope.For mapping
+- [x] Create `DifficultyEnvelope.cs` with `For(GameDifficulty)` factory
+- [x] Write unit tests for DifficultyEnvelope.For mapping
 
 ### Task 3: Create EntropyPolicy record
 
@@ -311,8 +316,8 @@ public sealed record EntropyPolicy(
 
 Add a doc comment: "Transitional mapping. BUNCH-93 will expand `MysteryTruthResolver` to add salted culprit reroll, feature reallocation, and Adventurous/Wild variance boundaries."
 
-- [ ] Create `EntropyPolicy.cs` with `For(GameEntropy)` factory
-- [ ] Write unit tests for EntropyPolicy.For mapping
+- [x] Create `EntropyPolicy.cs` with `For(GameEntropy)` factory
+- [x] Write unit tests for EntropyPolicy.For mapping
 
 ### Task 4: Create MysteryTruthResolution record and MysteryTruthResolver
 
@@ -365,10 +370,10 @@ The `SaltSource` construction:
 
 Add a doc comment on `MysteryTruthResolver`: "This is the single extension point for BUNCH-93 entropy/salt remix. Transitional implementation is pass-through. BUNCH-93 expands `Resolve(...)` here without touching the seed codec or adventure template."
 
-- [ ] Create `MysteryTruthResolution.cs`
-- [ ] Create `MysteryTruthResolver.cs` with `Resolve(AdventureTemplate, EntropyPolicy)` (transitional pass-through)
-- [ ] Write unit tests proving pass-through for all entropy modes
-- [ ] Write unit test proving `MysteryTruthResolver.Resolve` is the single method BUNCH-93 changes (assert no `AdventureTemplate`/`AdventureTemplateResolver`/`StartingWorldDescriptorSeedMixer`/`GameSetupDeterministicLabels` changes are needed to vary `ResolvedCulpritIndex`)
+- [x] Create `MysteryTruthResolution.cs`
+- [x] Create `MysteryTruthResolver.cs` with `Resolve(AdventureTemplate, EntropyPolicy)` (transitional pass-through)
+- [x] Write unit tests proving pass-through for all entropy modes
+- [x] Write unit test proving `MysteryTruthResolver.Resolve` is the single method BUNCH-93 changes (assert no `AdventureTemplate`/`AdventureTemplateResolver`/`StartingWorldDescriptorSeedMixer`/`GameSetupDeterministicLabels` changes are needed to vary `ResolvedCulpritIndex`)
 
 ### Task 5: Create ResolvedGameSetup record and GameSetupResolver
 
@@ -422,10 +427,10 @@ The resolver MUST call `MysteryTruthResolver.Resolve` as an explicit step — no
 
 This absorbs the logic currently spread across `GameSetupPackageBuilder`, `SeedWorldBuilder`, `SeedCaseBuilder`, `SeedInventoryBuilder`, and `SeededNewGameFactory`.
 
-- [ ] Create `ResolvedGameSetup.cs`
-- [ ] Create `GameSetupResolver.cs` with full pipeline orchestration (must call `MysteryTruthResolver.Resolve` explicitly)
-- [ ] Write unit tests for GameSetupResolver
-- [ ] Write unit test proving `GameSetupResolver` calls `MysteryTruthResolver` (e.g. the resolved culprit index matches `MysteryTruthResolver.Resolve(template, entropy).ResolvedCulpritIndex`)
+- [x] Create `ResolvedGameSetup.cs`
+- [x] Create `GameSetupResolver.cs` with full pipeline orchestration (must call `MysteryTruthResolver.Resolve` explicitly)
+- [x] Write unit tests for GameSetupResolver
+- [x] Write unit test proving `GameSetupResolver` calls `MysteryTruthResolver` (e.g. the resolved culprit index matches `MysteryTruthResolver.Resolve(template, entropy).ResolvedCulpritIndex`)
 
 ### Task 6: Refactor SeedCaseBuilder to use resolved culprit index
 
@@ -441,9 +446,9 @@ This absorbs the logic currently spread across `GameSetupPackageBuilder`, `SeedW
 - Keep all other case-building logic (roster, features, clues, warrants, turf) unchanged.
 - The culprit is still always a gang member (index into the 7-suspect roster). The seed just determines which one is the default.
 
-- [ ] Refactor `SeedCaseBuilder` to accept culprit index from template
-- [ ] Update canonical case file to use culprit index 3
-- [ ] Verify case file tests still pass
+- [x] Refactor `SeedCaseBuilder` to accept culprit index from template
+- [x] Update canonical case file to use culprit index 3
+- [x] Verify case file tests still pass
 
 ### Task 7: Refactor SeededNewGameFactory to use the new pipeline
 
@@ -493,13 +498,13 @@ public GameSession Create(
 - `SeedInventoryBuilder` should accept `DifficultyEnvelope` instead of `StartingWorldDescriptorPlayer` for loadout/wallet building.
 - `PrologueDescriptorResolver` should use the new pipeline to resolve the prologue culprit descriptor.
 
-- [ ] Refactor `SeededNewGameFactory.Create` to use new pipeline
-- [ ] Refactor or absorb `GameSetupPackageBuilder`/`GameSetupPackage`
-- [ ] Refactor or replace `GameSetupGenerationPlan`
-- [ ] Refactor `SeedWorldBuilder` to use `AdventureTemplate`
-- [ ] Refactor `SeedInventoryBuilder` to use `DifficultyEnvelope`
-- [ ] Refactor `PrologueDescriptorResolver` to use new pipeline
-- [ ] Verify no dead code remains
+- [x] Refactor `SeededNewGameFactory.Create` to use new pipeline
+- [x] Refactor or absorb `GameSetupPackageBuilder`/`GameSetupPackage`
+- [x] Refactor or replace `GameSetupGenerationPlan`
+- [x] Refactor `SeedWorldBuilder` to use `AdventureTemplate`
+- [x] Refactor `SeedInventoryBuilder` to use `DifficultyEnvelope`
+- [x] Refactor `PrologueDescriptorResolver` to use new pipeline
+- [x] Verify no dead code remains
 
 ### Task 8: Remove or gate old StartingWorldDescriptor
 
@@ -519,12 +524,12 @@ public GameSession Create(
 - `StartingWorldDescriptorPlayer`, `StartingWorldDescriptorWorld`, `StartingWorldDescriptorLoadout`, `StartingWorldDescriptorCase`, `StartingWorldDescriptorValidationResult`: remove. Their fields are either in `AdventureTemplate`, `DifficultyEnvelope`, or `ResolvedGameSetup`.
 - `StartingLoadoutProfile` enum: keep (used by `DifficultyEnvelope`).
 
-- [ ] Remove `StartingWorldDescriptor` and related records
-- [ ] Remove `StartingWorldDescriptorResolver` (logic moved to `AdventureTemplateResolver`)
-- [ ] Update `StartingWorldDescriptorSeedMixer` to produce template signatures
-- [ ] Update `StartingWorldDescriptorCodeValidator` to reference new resolver
-- [ ] Update `DependencyInjection.cs` if needed
-- [ ] Grep proof: no remaining references to `StartingWorldDescriptor` in production source
+- [x] Remove `StartingWorldDescriptor` and related records
+- [x] Remove `StartingWorldDescriptorResolver` (logic moved to `AdventureTemplateResolver`)
+- [x] Update `StartingWorldDescriptorSeedMixer` to produce template signatures
+- [x] Update `StartingWorldDescriptorCodeValidator` to reference new resolver
+- [x] Update `DependencyInjection.cs` if needed
+- [x] Grep proof: no remaining references to `StartingWorldDescriptor` in production source
 
 ### Task 9: Update test helpers and catalogs
 
@@ -558,12 +563,12 @@ public GameSession Create(
 `ScenarioSeedFixture` and `BoringScenarioBuilder`:
 - Update any references to `StartingWorldDescriptor` or `StartingWorldDescriptorResolver`.
 
-- [ ] Rename and update `StartingWorldDescriptorSeedCodeFactory` → `AdventureTemplateSeedCodeFactory`
-- [ ] Update `TravelTestSeedCatalog` to use `AdventureTemplate` + difficulty/entropy
-- [ ] Update `TravelTestSeedCatalogGuardrailTests`
-- [ ] Update `ScenarioSeedCatalog` seed code derivation
-- [ ] Update `ScenarioSeedFixture` and `BoringScenarioBuilder`
-- [ ] Document transitional gaps where horse/loadout variety was lost
+- [x] Rename and update `StartingWorldDescriptorSeedCodeFactory` → `AdventureTemplateSeedCodeFactory`
+- [x] Update `TravelTestSeedCatalog` to use `AdventureTemplate` + difficulty/entropy
+- [x] Update `TravelTestSeedCatalogGuardrailTests`
+- [x] Update `ScenarioSeedCatalog` seed code derivation
+- [x] Update `ScenarioSeedFixture` and `BoringScenarioBuilder`
+- [x] Document transitional gaps where horse/loadout variety was lost
 
 ### Task 10: Update existing tests for new codec shape
 
@@ -600,11 +605,11 @@ public GameSession Create(
 - Update or replace with `GameSetupResolverTests` if the package builder is absorbed.
 - Tests that asserted loadout profile / horse posture changes should be converted to difficulty envelope tests.
 
-- [ ] Rename and update resolver tests
-- [ ] Update factory tests for transitional defaults
-- [ ] Update world builder tests
-- [ ] Update/replace package builder tests
-- [ ] Document all transitional behavior changes in test comments
+- [x] Rename and update resolver tests
+- [x] Update factory tests for transitional defaults
+- [x] Update world builder tests
+- [x] Update/replace package builder tests
+- [x] Document all transitional behavior changes in test comments
 
 ### Task 11: Update repo guidance
 
@@ -637,11 +642,11 @@ Create `.agents/docs/setup-pipeline-doctrine.md`:
 - Document the entropy/salt contract for BUNCH-93
 - State that hidden culprit truth remains internal after resolution
 
-- [ ] Update root `AGENTS.md` UUID Seed Codec section
-- [ ] Update root `AGENTS.md` Architecture Guardrails section
-- [ ] Update `WildBunch.GameContent/AGENTS.md`
-- [ ] Create `.agents/docs/setup-pipeline-doctrine.md`
-- [ ] Grep proof: no remaining guidance says UUID seed always directly encodes final culprit truth
+- [x] Update root `AGENTS.md` UUID Seed Codec section
+- [x] Update root `AGENTS.md` Architecture Guardrails section
+- [x] Update `WildBunch.GameContent/AGENTS.md`
+- [x] Create `.agents/docs/setup-pipeline-doctrine.md`
+- [x] Grep proof: no remaining guidance says UUID seed always directly encodes final culprit truth
 
 ### Task 12: Regenerate index mesh and run full validation
 
@@ -656,14 +661,14 @@ Create `.agents/docs/setup-pipeline-doctrine.md`:
 - Grep proof: `grep -r "StartingWorldDescriptor" src/` returns no production source hits
 - Grep proof: `grep -r "GameDifficulty\|GameEntropy" src/WildBunch.GameContent/NewGame/AdventureTemplate*.cs` returns no hits (seed-owned facts don't reference pressure inputs)
 
-- [ ] Run `dotnet build` — must pass
-- [ ] Run `dotnet test` — must pass
-- [ ] Run `.\scripts\postgres-dev.ps1 validate` — must pass
-- [ ] Run `python scripts/generate_index_mesh.py --check` — must pass
-- [ ] Grep proof: no `StartingWorldDescriptor` in production source
-- [ ] Grep proof: no `GameDifficulty`/`GameEntropy` in `AdventureTemplate`/`AdventureTemplateResolver`
-- [ ] Grep proof: `GameSetupResolver` calls `MysteryTruthResolver.Resolve` as an explicit step
-- [ ] Grep proof: `MysteryTruthResolver` is the only mystery-truth resolution seam (no inline culprit resolution in `GameSetupResolver` or `SeedCaseBuilder`)
+- [x] Run `dotnet build` — must pass
+- [x] Run `dotnet test` — must pass
+- [x] Run `.\scripts\postgres-dev.ps1 validate` — must pass
+- [x] Run `python scripts/generate_index_mesh.py --check` — must pass
+- [x] Grep proof: no `StartingWorldDescriptor` in production source
+- [x] Grep proof: no `GameDifficulty`/`GameEntropy` in `AdventureTemplate`/`AdventureTemplateResolver`
+- [x] Grep proof: `GameSetupResolver` calls `MysteryTruthResolver.Resolve` as an explicit step
+- [x] Grep proof: `MysteryTruthResolver` is the only mystery-truth resolution seam (no inline culprit resolution in `GameSetupResolver` or `SeedCaseBuilder`)
 
 ---
 

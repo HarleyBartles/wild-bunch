@@ -8,7 +8,7 @@ namespace WildBunch.GameContent.NewGame;
 internal static class StartingWorldDescriptorSeedMixer
 {
     private const string ResolverNamespace = "wild-bunch.gamecontent.starting-world-descriptor";
-    private const string ResolverVersion = StartingWorldDescriptorResolver.ResolverContractVersion;
+    private const string ResolverVersion = SeedWorldResolver.ResolverContractVersion;
 
     public static ulong CreateSeedRoot(Guid seedCode)
     {
@@ -31,23 +31,17 @@ internal static class StartingWorldDescriptorSeedMixer
         return Mix64(seedRoot ^ labelHash);
     }
 
-    public static string CreateDescriptorSignature(StartingWorldDescriptor descriptor)
+    public static string CreateSeedWorldSignature(SeedWorld seedWorld)
     {
-        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(seedWorld);
 
         return string.Join(
             "|",
-            descriptor.World.Variant.ToString(),
-            descriptor.World.StartingTownSelectionKey,
-            descriptor.Player.StartWithHorse.ToString(),
-            descriptor.Player.LoadoutProfile.ToString(),
-            descriptor.Player.StartingCash.ToString(CultureInfo.InvariantCulture),
-            descriptor.Player.Loadout.Food.ToString(CultureInfo.InvariantCulture),
-            descriptor.Player.Loadout.HorseFeed.ToString(CultureInfo.InvariantCulture),
-            descriptor.Player.Loadout.RevolverAmmo.ToString(CultureInfo.InvariantCulture),
-            descriptor.Player.Loadout.IncludeHorse.ToString(),
-            descriptor.Player.Loadout.IncludeSaddle.ToString(),
-            descriptor.Case.AccusationIndex.ToString(CultureInfo.InvariantCulture));
+            seedWorld.WorldVariant.ToString(),
+            seedWorld.TownSetKey,
+            seedWorld.AccusationIndex.ToString(CultureInfo.InvariantCulture),
+            seedWorld.DefaultCulpritIndex.ToString(CultureInfo.InvariantCulture),
+            seedWorld.CashBonus.ToString(CultureInfo.InvariantCulture));
     }
 
     public static Guid CreateCandidateSeed(string descriptorSignature, ulong salt, int attempt)

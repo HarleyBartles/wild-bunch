@@ -128,10 +128,10 @@ public sealed class SeededNewGameFactoryTests
     [Fact]
     public void FrontierDescriptorAddsTownSpecificCivicCluesForTheNextVisitedTown()
     {
-        var descriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 1, 0, 0, 1, 0, 1, tail: 13), GameDifficulty.Standard, GameEntropy.Classic);
+        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 0, 1, 3, 0, tail: 13));
         var factory = new SeededNewGameFactory();
 
-        var session = factory.Create("Ranger Vale", GameDifficulty.Standard, StartingWorldDescriptorResolver.FormatSeedCode(descriptor.SeedCode));
+        var session = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode);
 
         Assert.Contains(session.Player.CurrentTownId.Value, new[] { "pinecross", "holloway", "redmesa", "sagewell", "emberfall" });
         Assert.True(session.CaseFile.PublicClues.Count > 6);
@@ -143,9 +143,9 @@ public sealed class SeededNewGameFactoryTests
     {
         var factory = new SeededNewGameFactory();
 
-        var seedA = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
-        var seedASame = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
-        var seedB = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 12));
+        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 0, 1, 3, 0, tail: 11));
+        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 0, 1, 3, 0, tail: 11));
+        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 0, 1, 3, 0, tail: 12));
 
         var first = factory.Create("Ranger Vale", GameDifficulty.Standard, seedA);
         var firstAgain = factory.Create("Ranger Vale", GameDifficulty.Easy, seedASame);
@@ -161,18 +161,20 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void RandomizedNoHorseLightLoadoutSeedCreatesNoHorseOrSaddle()
+    public void AllDifficultiesGetTransitionalHorseAndSaddleDefaults()
     {
-        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(Guid.NewGuid());
+        // BUNCH-107 transitional: all difficulties get horse+saddle+Standard loadout.
+        // BUNCH-94 will expand DifficultyEnvelope to add difficulty-owned variety.
         var factory = new SeededNewGameFactory();
+        var seedCode = SeedWorldResolver.FormatSeedCode(Guid.NewGuid());
 
-        var session = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Boring);
+        var easySession = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Boring);
+        var brutalSession = factory.Create("Ranger Vale", GameDifficulty.Brutal, seedCode, GameEntropy.Boring);
 
-        Assert.Equal(GameDifficulty.Easy, session.GameDifficulty);
-        Assert.Equal(GameEntropy.Boring, session.GameEntropy);
-        // Loadout profile is now seed-derived, not parameter-derived
-        // Just verify that the session was created successfully
-        Assert.NotNull(session);
+        Assert.True(easySession.Player.Inventory.HasItem(ItemKind.Horse));
+        Assert.True(easySession.Player.Inventory.HasItem(ItemKind.Saddle));
+        Assert.True(brutalSession.Player.Inventory.HasItem(ItemKind.Horse));
+        Assert.True(brutalSession.Player.Inventory.HasItem(ItemKind.Saddle));
     }
 
     [Fact]
@@ -189,11 +191,10 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(GameEntropy.Classic, runtimeSecond.GameEntropy);
         Assert.NotEqual(runtimeFirst.SaltSource.Salt, runtimeSecond.SaltSource.Salt);
 
-        var boringDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
-        {
-            GameEntropy = GameEntropy.Boring
-        };
-        var boringSeed = StartingWorldDescriptorResolver.FormatSeedCode(StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(boringDescriptor));
+        // Boring entropy uses Fixed salt derived from the seed code.
+        var boringTemplate = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var boringSeed = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(boringTemplate));
 
         var deterministicFirst = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
         var deterministicSecond = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
@@ -222,13 +223,13 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void CreateWithNullStartingTownIdUsesSeedDefault()
+    public void CreateWithNullStartingTownIdUsesSafeDefault()
     {
         var factory = new SeededNewGameFactory();
 
         var session = factory.Create("Ranger Vale", startingTownId: null);
 
-        // The seed-derived default for the canonical descriptor is "pinecross".
+        // The safe default from StartingTownPolicy is pinecross — not seed-authored.
         Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
     }
 
@@ -241,6 +242,6 @@ public sealed class SeededNewGameFactoryTests
     private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
 
-    private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
-        => StartingWorldDescriptorSeedCodeFactory.CreateSeedCode(byte0, byte1, byte2, byte3, byte4, byte5, byte6, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte townSetKey, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, townSetKey, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 }

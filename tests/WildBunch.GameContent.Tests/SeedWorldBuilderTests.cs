@@ -9,9 +9,8 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateCanonicalWorldUsesTheSharedCatalog()
     {
-        var setup = SeedWorldBuilder.CreateCanonicalWorld();
+        var world = SeedWorldBuilder.CreateCanonicalWorld();
 
-        Assert.Equal(new TownId("pinecross"), setup.StartingTownId);
         Assert.Equal(
             new[]
             {
@@ -24,7 +23,7 @@ public sealed class SeedWorldBuilderTests
                 ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph),
                 ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor),
             },
-            SnapshotTowns(setup.World));
+            SnapshotTowns(world));
         Assert.Equal(
             new[]
             {
@@ -38,13 +37,13 @@ public sealed class SeedWorldBuilderTests
                 ("trail-red-sage", "redmesa", "sagewell", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
                 ("trail-sage-ember", "sagewell", "emberfall", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
             },
-            SnapshotTrails(setup.World));
+            SnapshotTrails(world));
     }
 
     [Fact]
     public void CreateFrontierWorldUsesTheSharedCatalogAndFrontierOverlay()
     {
-        var setup = BuildSeedWorld(StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 1, 0, 0, 1, 0, 1, tail: 17)));
+        var world = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(1, 0, 1, 3, 0, tail: 17)));
 
         Assert.Equal(
             new[]
@@ -58,7 +57,7 @@ public sealed class SeedWorldBuilderTests
                 ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph),
                 ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor),
             },
-            SnapshotTowns(setup.World));
+            SnapshotTowns(world));
         Assert.Equal(
             new[]
             {
@@ -72,18 +71,13 @@ public sealed class SeedWorldBuilderTests
                 ("trail-red-sage", "redmesa", "sagewell", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Creek, 3m),
                 ("trail-sage-ember", "sagewell", "emberfall", TrailRisk.Moderate, TrailTerrain.Mountains, WaterFeature.Spring, 5m),
             },
-            SnapshotTrails(setup.World));
-
-        Assert.Equal(
-            new[] { "emberfall", "holloway", "pinecross", "redmesa", "sagewell" },
-            GetStartingTownCandidateIds(setup.World));
-        Assert.Contains(setup.StartingTownId.Value, GetStartingTownCandidateIds(setup.World));
+            SnapshotTrails(world));
     }
 
     [Fact]
     public void CreateRailWorldUsesTheSharedCatalogAndRailOverlay()
     {
-        var setup = BuildSeedWorld(StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 2, 0, 0, 1, 0, 1, tail: 19)));
+        var world = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(2, 0, 1, 3, 0, tail: 19)));
 
         Assert.Equal(
             new[]
@@ -97,7 +91,7 @@ public sealed class SeedWorldBuilderTests
                 ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph | TownServices.NoticeBoard),
                 ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor | TownServices.NoticeBoard),
             },
-            SnapshotTowns(setup.World));
+            SnapshotTowns(world));
         Assert.Equal(
             new[]
             {
@@ -111,71 +105,82 @@ public sealed class SeedWorldBuilderTests
                 ("trail-red-sage", "redmesa", "sagewell", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Creek, 3m),
                 ("trail-sage-ember", "sagewell", "emberfall", TrailRisk.Moderate, TrailTerrain.Mountains, WaterFeature.Spring, 5m),
             },
-            SnapshotTrails(setup.World));
-
-        Assert.Equal(
-            new[] { "emberfall", "pinecross", "redmesa", "sagewell" },
-            GetStartingTownCandidateIds(setup.World));
-        Assert.Contains(setup.StartingTownId.Value, GetStartingTownCandidateIds(setup.World));
+            SnapshotTrails(world));
     }
 
     [Fact]
-    public void StartingTownSelectionUsesDistinctHorseAndFootLabels()
+    public void DefaultAndAlternateTownSetKeysProduceTheSameWorldToday()
     {
-        // Guardrail: horse and foot descriptors use different StartingTownSelectionKey
-        // labels, and both resolve to a valid starting town from the candidate list.
-        // The specific town picked is a hash consequence and may or may not differ —
-        // the invariant is that both labels are distinct and both resolve validly.
-        var horseDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
-        {
-            World = new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
-            Player = StartingWorldDescriptorResolver.CreateCanonicalDescriptor().Player with
-            {
-                StartWithHorse = true,
-                Loadout = StartingWorldDescriptorResolver.CreateCanonicalDescriptor().Player.Loadout with
-                {
-                    IncludeHorse = true,
-                    IncludeSaddle = true
-                }
-            }
-        };
+        // The TownSetKey is a seed-owned map generation parameter. Today it does not
+        // change the world — the world is fully determined by WorldVariant. In the
+        // future, it may control different town sets or map layouts. This guardrail
+        // verifies that both key values produce valid worlds with the same town/trail
+        // structure for the same variant. If future work makes TownSetKey affect the
+        // world, this test should be updated to reflect the new mapping.
+        var defaultWorld = BuildSeedWorld(new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Frontier,
+            GameSetupDeterministicLabels.WorldTownSetDefault,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0));
 
-        var footDescriptor = horseDescriptor with
-        {
-            World = horseDescriptor.World with { StartingTownSelectionKey = GameSetupDeterministicLabels.WorldStartingTownFoot },
-            Player = horseDescriptor.Player with
-            {
-                StartWithHorse = false,
-                Loadout = horseDescriptor.Player.Loadout with
-                {
-                    IncludeHorse = false,
-                    IncludeSaddle = false
-                }
-            }
-        };
+        var alternateWorld = BuildSeedWorld(new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Frontier,
+            GameSetupDeterministicLabels.WorldTownSetAlternate,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0));
 
-        Assert.NotEqual(horseDescriptor.World.StartingTownSelectionKey, footDescriptor.World.StartingTownSelectionKey);
-
-        var horseSetup = BuildSeedWorld(horseDescriptor);
-        var footSetup = BuildSeedWorld(footDescriptor);
-
-        Assert.Equal(GetStartingTownCandidateIds(horseSetup.World), GetStartingTownCandidateIds(footSetup.World));
-        Assert.Contains(horseSetup.StartingTownId.Value, GetStartingTownCandidateIds(horseSetup.World));
-        Assert.Contains(footSetup.StartingTownId.Value, GetStartingTownCandidateIds(footSetup.World));
+        Assert.Equal(SnapshotTowns(defaultWorld), SnapshotTowns(alternateWorld));
+        Assert.Equal(SnapshotTrails(defaultWorld), SnapshotTrails(alternateWorld));
     }
 
-    private static SeedWorldSetup BuildSeedWorld(StartingWorldDescriptor descriptor)
-        => SeedWorldBuilder.CreateWorld(StartingWorldGenerationPlan.Create(descriptor));
+    [Fact]
+    public void StartingTownPolicyDefaultsToPinecrossForAllVariants()
+    {
+        // Starting town is NOT seed-owned. The safe default from StartingTownPolicy
+        // is pinecross for all world variants — it is a fixed property of the world
+        // catalog, not a hash of the seed code.
+        var canonicalWorld = SeedWorldBuilder.CreateCanonicalWorld();
+        Assert.Equal(new TownId("pinecross"), StartingTownPolicy.ResolveStartingTown(canonicalWorld, null));
 
-    private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
-        => StartingWorldDescriptorSeedCodeFactory.CreateSeedCode(byte0, byte1, byte2, byte3, byte4, byte5, byte6, tail);
+        var frontierWorld = BuildSeedWorld(SeedWorldResolver.Resolve(CreateSeedCode(1, 0, 1, 3, 0, tail: 17)));
+        Assert.Equal(new TownId("pinecross"), StartingTownPolicy.ResolveStartingTown(frontierWorld, null));
+    }
 
-    private static string[] GetStartingTownCandidateIds(World world)
-        => world.Towns
-            .Where(town => (town.Services & TownServices.Supplies) != 0 || (town.Services & TownServices.NoticeBoard) != 0)
-            .OrderBy(town => town.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(town => town.Id.Value)
-            .ToArray();
+    [Fact]
+    public void StartingTownPolicyAcceptsAnyValidTownChoice()
+    {
+        // The player can start in any town that exists in the generated world.
+        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var chosenTown = world.Towns.First(t => t.Id.Value != "pinecross");
+
+        var resolved = StartingTownPolicy.ResolveStartingTown(world, chosenTown.Id);
+        Assert.Equal(chosenTown.Id, resolved);
+    }
+
+    [Fact]
+    public void StartingTownPolicyRejectsInvalidTownChoice()
+    {
+        var world = SeedWorldBuilder.CreateCanonicalWorld();
+
+        Assert.Throws<ArgumentException>(() =>
+            StartingTownPolicy.ResolveStartingTown(world, new TownId("nonexistent-town")));
+    }
+
+    private static World BuildSeedWorld(SeedWorld seedWorld)
+    {
+        var seedCode = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode == Guid.Empty
+            ? SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld)
+            : seedWorld.SeedCode);
+        var source = new GameSetupDeterministicSource(seedCode);
+        return SeedWorldBuilder.CreateWorld(seedWorld, source);
+    }
+
+    private static Guid CreateSeedCode(byte worldVariant, byte townSetKey, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, townSetKey, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 
     private static (string Id, string Name, TownServices Services)[] SnapshotTowns(World world)
         => world.Towns

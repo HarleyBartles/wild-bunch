@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -12,50 +10,49 @@ public static class SeedInventoryBuilder
     {
         travelRulesProfile ??= TravelRulesProfile.Default;
 
-        return CreateStartingLoadout(travelRulesProfile, StartingWorldDescriptorResolver.CreateCanonicalDescriptor().Player);
+        return CreateStartingLoadout(travelRulesProfile, DifficultyEnvelope.For(GameDifficulty.Standard));
     }
 
-    internal static Inventory CreateStartingLoadout(TravelRulesProfile travelRulesProfile, StartingWorldDescriptorPlayer player)
+    internal static Inventory CreateStartingLoadout(TravelRulesProfile travelRulesProfile, DifficultyEnvelope difficulty)
     {
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(difficulty);
+
+        var (food, horseFeed, revolverAmmo) = ResolveLoadoutCounts(difficulty.LoadoutProfile);
 
         var items = new List<InventoryItem>
         {
-            new(ItemKind.Food, player.Loadout.Food),
-            new(ItemKind.HorseFeed, player.Loadout.HorseFeed),
+            new(ItemKind.Food, food),
+            new(ItemKind.HorseFeed, horseFeed),
             new(ItemKind.Canteen, 1, canteenState: CanteenState.Full(travelRulesProfile.CanteenCapacity))
         };
 
-        if (player.Loadout.IncludeHorse)
+        if (difficulty.StartWithHorse)
         {
             items.Add(new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy));
-            items.Add(new InventoryItem(ItemKind.Saddle, 1));
+            if (difficulty.IncludeSaddle)
+            {
+                items.Add(new InventoryItem(ItemKind.Saddle, 1));
+            }
         }
 
         items.Add(new InventoryItem(ItemKind.Knife, 1));
         items.Add(new InventoryItem(ItemKind.Revolver, 1));
-        items.Add(new InventoryItem(ItemKind.RevolverAmmo, player.Loadout.RevolverAmmo));
+        items.Add(new InventoryItem(ItemKind.RevolverAmmo, revolverAmmo));
 
         return new Inventory(items);
     }
 
-    internal static Inventory CreateStartingLoadout(TravelRulesProfile travelRulesProfile, StartingWorldGenerationPlan plan)
+    internal static Wallet CreateStartingWallet(decimal startingCash)
     {
-        ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        ArgumentNullException.ThrowIfNull(plan);
+        return Wallet.Starting(startingCash);
+    }
 
-        if (plan.IsCanonical)
+    private static (int Food, int HorseFeed, int RevolverAmmo) ResolveLoadoutCounts(StartingLoadoutProfile profile)
+        => profile switch
         {
-            return CreateCanonicalLoadout(travelRulesProfile);
-        }
-
-        return CreateStartingLoadout(travelRulesProfile, plan.Descriptor.Player);
-    }
-
-    internal static Wallet CreateStartingWallet(StartingWorldGenerationPlan plan)
-    {
-        ArgumentNullException.ThrowIfNull(plan);
-        return Wallet.Starting(plan.Descriptor.Player.StartingCash);
-    }
+            StartingLoadoutProfile.Light => (3, 2, 4),
+            StartingLoadoutProfile.Stocked => (6, 4, 8),
+            _ => (4, 3, 6)
+        };
 }

@@ -1,6 +1,4 @@
-using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
-using WildBunch.Domain.Economy;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.GameContent.Abstractions;
@@ -9,7 +7,7 @@ namespace WildBunch.GameContent.NewGame;
 
 public sealed class SeededNewGameFactory : INewGameFactory
 {
-    private readonly GameSetupPackageBuilder _setupPackageBuilder = new();
+    private readonly GameSetupResolver _setupResolver = new();
     private readonly ISaltSourceFactory _saltSourceFactory;
 
     public SeededNewGameFactory()
@@ -29,35 +27,36 @@ public sealed class SeededNewGameFactory : INewGameFactory
         GameEntropy gameEntropy = GameEntropy.Classic,
         string? startingTownId = null)
     {
-        var descriptor = ResolveDescriptor(gameDifficulty, setupSeedCode, gameEntropy);
-        var setupPackage = _setupPackageBuilder.Build(descriptor);
-        
-        // Salt is determined by entropy: Boring = Fixed (deterministic), others = Runtime (variable)
-        var saltSource = descriptor.GameEntropy == GameEntropy.Boring
-            ? SaltSource.CreateFixed(descriptor.SeedCodeText)
-            : _saltSourceFactory.Create(descriptor.SeedCodeText, setupPackage.GameDifficulty);
+        var seed = ParseOrGenerateSeed(setupSeedCode);
+        var seedWorld = SeedWorldResolver.Resolve(seed);
+        var difficulty = DifficultyEnvelope.For(gameDifficulty);
+        var entropy = EntropyPolicy.For(gameEntropy);
+        var resolvedSetup = _setupResolver.Resolve(
+            seedWorld,
+            difficulty,
+            entropy,
+            ParseOptionalTown(startingTownId));
 
-        // Player-chosen town overrides the seed-derived default; null falls back to the seed default.
-        var resolvedStartingTownId = startingTownId is null
-            ? setupPackage.StartingTownId
-            : new TownId(startingTownId);
-
-        // Always retain the seed code for debugging/reproducibility of the world
         return GameSession.StartNew(
             playerName,
-            setupPackage.World,
-            setupPackage.CaseFile,
-            resolvedStartingTownId,
-            setupPackage.StartingWallet,
-            setupPackage.StartingInventory,
-            setupPackage.GameDifficulty,
-            saltSource,
-            descriptor.GameEntropy,
-            descriptor.SeedCodeText);
+            resolvedSetup.World,
+            resolvedSetup.CaseFile,
+            resolvedSetup.StartingTownId,
+            resolvedSetup.StartingWallet,
+            resolvedSetup.StartingInventory,
+            resolvedSetup.GameDifficulty,
+            resolvedSetup.SaltSource,
+            resolvedSetup.GameEntropy,
+            resolvedSetup.SeedCodeText);
     }
 
-    private static StartingWorldDescriptor ResolveDescriptor(GameDifficulty gameDifficulty, string? setupSeedCode, GameEntropy gameEntropy)
-    {
-        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, gameDifficulty, gameEntropy);
-    }
+    private static Guid ParseOrGenerateSeed(string? setupSeedCode)
+        => string.IsNullOrWhiteSpace(setupSeedCode)
+            ? SeedWorldResolver.CreateCanonicalSeedCode()
+            : SeedWorldResolver.TryParseSeedCode(setupSeedCode, out var parsed)
+                ? parsed
+                : throw new ArgumentException("Seed code must be a UUID-shaped string.", nameof(setupSeedCode));
+
+    private static TownId? ParseOptionalTown(string? startingTownId)
+        => string.IsNullOrWhiteSpace(startingTownId) ? null : new TownId(startingTownId);
 }

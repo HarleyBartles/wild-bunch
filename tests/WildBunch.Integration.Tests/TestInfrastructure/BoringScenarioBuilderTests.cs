@@ -35,8 +35,12 @@ public sealed class BoringScenarioBuilderTests
     }
 
     [Fact]
-    public void NoHorseFootTravelReadyCreatesDeterministicFootSession()
+    public void NoHorseFootTravelReadyCreatesDeterministicSessionWithTransitionalDefaults()
     {
+        // BUNCH-107 transitional: NoHorseLightEasy now gets horse+saddle (transitional defaults).
+        // This test was renamed from ...FootSession to ...TransitionalDefaults to reflect
+        // that horse/saddle/loadout are now difficulty-owned, not seed-owned.
+        // BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
         var scenario = BoringScenarioBuilder.NoHorseFootTravelReady();
 
         scenario.AssertReady();
@@ -52,12 +56,12 @@ public sealed class BoringScenarioBuilderTests
         Assert.Equal("NoHorseFootTravelReady", scenario.ScenarioName);
         Assert.Equal(GameDifficulty.Easy, scenario.GameDifficulty);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Null(session.Player.Inventory.GetHorseState());
-        Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
-        Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
-        Assert.Equal(TravelMode.Foot, previewValue.TravelMode);
-        Assert.False(previewValue.MountedTravelAvailable);
-        Assert.Equal(0, previewValue.RequiredHorseFeed);
+        // Transitional: all difficulties now get horse+saddle.
+        Assert.NotNull(session.Player.Inventory.GetHorseState());
+        Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
+        Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
+        Assert.Equal(TravelMode.Mounted, previewValue.TravelMode);
+        Assert.True(previewValue.MountedTravelAvailable);
         Assert.Equal("redmesa", previewValue.DestinationTownId);
     }
 
