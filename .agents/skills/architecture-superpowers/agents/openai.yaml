@@ -1,0 +1,11 @@
+interface:
+  display_name: Architecture Superpowers
+  short_description: Route architecture work through the smallest applicable specialist skill.
+  default_prompt: Use /architecture-superpowers to route architecture work through the smallest applicable specialist skill. Keep CQRS and Event Sourcing non-default, route to architecture-pack or domain skills only when the problem names a real architecture reason, and use /connector-safety before any Linear or GitHub write.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

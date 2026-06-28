@@ -1,0 +1,23 @@
+{
+  "issue": "MARK-226",
+  "skill": "connector-safety",
+  "canonical_source_path": "sources/first_party/skills/connector-safety",
+  "public_name": "connector-safety",
+  "provenance_name": "MARK-226 canonical first-party source for connector-safety",
+  "scope": [
+    "connector and tool safety blocks",
+    "discover-before-mutation flow",
+    "exact-state guarded writes",
+    "blocked-write recovery",
+    "narrow retries",
+    "invalid-attempt handling",
+    "post-create read chains",
+    "safe-action reporting"
+  ],
+  "projected_paths": [
+    "sources/first_party/skills/connector-safety",
+    "sources/first_party/skills/connector-safety"
+  ],
+  "gpt_overlay": "direct export by default",
+  "notes": "House Skills and repo-worker-pack are projection surfaces only."
+}

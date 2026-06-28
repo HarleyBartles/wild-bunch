@@ -50,19 +50,23 @@ README files are human-facing. They are not a mesh.
 ## 6. Plugin posture
 
 - Default-installed plugins are declared in `.agents/plugins/marketplace.json`.
-- Do not vendor copied `.agents/skills/` folders for skills that have a marketplace plugin home. Genuinely uncovered skills may be retained as temporary project custody with a named reason and proposed follow-up.
 - `house-skills` is not default-installed in this repo.
-- Plugin skills are sourced from `HarleyBartles/agent-asset-marketplace`; this repo does not re-vendor plugin internals.
+- Plugin skills are sourced from `HarleyBartles/agent-asset-marketplace`.
+- Devin CLI discovers repo skills only from local `.agents/skills/<name>/SKILL.md` directories; it has no Codex-marketplace plugin install path. Plugin skills are therefore vendored into `.agents/skills/` from the marketplace source so they are invocable and discoverable by any agent working in this repo.
+- The marketplace source is pinned as a git submodule at `.agents/plugins/marketplace-source/`. Vendored skills are synced from the submodule by `scripts/sync-skills.ps1`, which reads `marketplace.json`, copies each default-installed plugin's `skills/<name>/` directories into `.agents/skills/<name>/`, and records provenance (source commit SHA) in `.agents/skills/.provenance.json`.
+- To refresh vendored skills after upstream plugin updates: `git submodule update --remote .agents/plugins/marketplace-source`, then `.\scripts\sync-skills.ps1`. The sync script is idempotent and skips work when the submodule HEAD matches recorded provenance.
+- Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync.
+- Genuinely uncovered skills (no marketplace plugin home) may also live in `.agents/skills/` as temporary project custody — see section 7.
 
 ## 7. Temporary project-custody skills
 
-`.agents/skills/` may retain genuinely uncovered skills that have no current marketplace plugin home. These are temporary Wild Bunch project custody, not vendored plugin copies.
+`.agents/skills/` may also retain genuinely uncovered skills that have no current marketplace plugin home. These are temporary Wild Bunch project custody, distinct from vendored plugin copies.
 
-- Each retained skill must have a named reason: why no current plugin covers it, whether it should later move into a marketplace plugin, and a proposed follow-up MARK issue category.
-- The `.agents/skills/INDEX.md` for this folder is generated navigation (owned by `scripts/generate_index_mesh.py`). It lists retained skill folders as links to their `SKILL.md` entrypoints. It does not carry the custody explanation — that lives here.
-- When a retained skill gains a marketplace plugin home, remove it from `.agents/skills/` and regenerate the index mesh in the same PR.
-- Do not add plugin-covered skills here. If a skill is covered by a default-installed or AVAILABLE marketplace pack, it belongs in the plugin, not in local custody.
+- Each retained custody skill must have a named reason: why no current plugin covers it, whether it should later move into a marketplace plugin, and a proposed follow-up MARK issue category.
+- The `.agents/skills/INDEX.md` for this folder is generated navigation (owned by `scripts/generate_index_mesh.py`). It lists all skill folders (vendored and custody) as links to their `SKILL.md` entrypoints. It does not carry the custody explanation — that lives here.
+- When a retained custody skill gains a marketplace plugin home, remove the custody copy and re-sync from the plugin in the same PR.
+- Do not duplicate a vendored plugin skill as a custody skill. If a skill is covered by a default-installed or AVAILABLE marketplace pack, it belongs in the vendored set, not in local custody.
 
 ### Current retained project-custody skills
 
-- `crew` — Crew thinking-model doctrine. No marketplace plugin projects this skill today (it is first-party source-custody in the marketplace repo but not in any pack). Should later move into a marketplace plugin. Proposed follow-up: `crew-pack` or a future thinking-model/reasoning-doctrine pack.
+_None. All repo skills are vendored from default-installed marketplace plugins via `scripts/sync-skills.ps1`._

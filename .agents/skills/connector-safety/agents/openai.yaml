@@ -1,0 +1,16 @@
+interface:
+  display_name: Connector Safety
+  short_description: Keep connector writes safe, narrow, auditable, and verified.
+  default_prompt: Use /connector-safety when use this skill to keep connector and
+    tool-side-effect work safe, auditable, and boring when a connector or tool call
+    is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or
+    validation-rejected, when a planned action could be sensitive, destructive, permission-changing,
+    or easy to over-bundle, or when mutation work should follow discover -> read ->
+    write -> verify or step back up the connector discovery chain.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

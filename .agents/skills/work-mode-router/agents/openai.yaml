@@ -1,0 +1,19 @@
+interface:
+  display_name: GPT Bootstrap
+  short_description: Routes new project sessions through one-time bootstrap, safe
+    request classification, and reserved output-shape guards.
+  default_prompt: Use /work-mode-router when cross-runtime bootstrap router for new
+    project sessions and workflow-sensitive starts after linear/codex adoption. use
+    when a project context begins, a session resumes, or a request may involve continuity
+    ingress, repo/source evidence, coding dispatch, codex workers, linear issues,
+    artifacts, verification, issue work, skill/package work, mutation, or publication.
+    owns first classification, ordinary-chat escape hatch, bounded skill-read stop
+    rules, and routing normal coding work to /using-superpowers with the discovered
+    mode instead of legacy dispatch stacks.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

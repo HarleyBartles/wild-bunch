@@ -1,0 +1,13 @@
+interface:
+  display_name: Wild Bunch Worker Verification
+  short_description: Verify Wild Bunch work against the issue goal and publication
+    contract
+  default_prompt: Check Wild Bunch changes against the issue goal and report the result
+    with publication evidence.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

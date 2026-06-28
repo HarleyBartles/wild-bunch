@@ -1,0 +1,12 @@
+[
+  {
+    "issue": "MARK-226",
+    "source_id": "github-operations-v1",
+    "source_path": "sources/first_party/skills/github-operations",
+    "public_name": "github-operations",
+    "provenance_name": "MARK-226 canonical first-party source for github-operations",
+    "import_state": "canonical",
+    "scope": "GitHub evidence, PR review routing, and publication proof",
+    "notes": "Canonical first-party source for github-operations. Projects into House Skills and repo-worker-pack; House Skills is a projection surface only."
+  }
+]

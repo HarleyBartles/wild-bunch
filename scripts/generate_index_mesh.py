@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output"}
-EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output"}
+EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output", "marketplace-source", ".codex", ".playwright-mcp"}
+EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output", "marketplace-source", ".codex", ".playwright-mcp"}
 EXCLUDED_FILE_NAMES = {".git"}
 
 

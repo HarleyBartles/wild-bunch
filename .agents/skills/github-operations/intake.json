@@ -1,0 +1,18 @@
+{
+  "issue": "MARK-226",
+  "skill": "github-operations",
+  "canonical_source_path": "sources/first_party/skills/github-operations",
+  "public_name": "github-operations",
+  "provenance_name": "MARK-226 canonical first-party source for github-operations",
+  "scope": [
+    "GitHub evidence",
+    "PR review routing",
+    "publication proof"
+  ],
+  "projected_paths": [
+    "sources/first_party/skills/github-operations",
+    "sources/first_party/skills/github-operations"
+  ],
+  "gpt_overlay": "direct export by default",
+  "notes": "House Skills and repo-worker-pack are projection surfaces only."
+}

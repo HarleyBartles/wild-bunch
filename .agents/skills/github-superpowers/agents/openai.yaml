@@ -1,0 +1,11 @@
+interface:
+  display_name: GitHub Superpowers
+  short_description: Shape GitHub-facing work with the smallest applicable workflow skill.
+  default_prompt: Use $github-superpowers to shape GitHub work packets so they name the smallest applicable workflow skill, explain why it applies, list the evidence required to prove it was followed, and use @connector-safety before any GitHub mutation or blocked-write recovery.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

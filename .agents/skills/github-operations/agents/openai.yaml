@@ -1,0 +1,17 @@
+interface:
+  display_name: GitHub Operations
+  short_description: Verify GitHub evidence, repo publication, and issue-goal conformance.
+  default_prompt: Use /github-operations when verify github repository evidence without
+    taking over coding workflow routing. use after a linear/codex task has a github
+    pr, branch, commit, review, merge, status, or file-state question; when checking
+    publication proof, pr diff scope, mergeability, ci/status evidence, final main
+    state, or github-specific closure proof. do not use as the default issue/dispatch
+    controller for coding work when linear/codex is available; route worker state
+    and issue planning through the linear/codex control plane first.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

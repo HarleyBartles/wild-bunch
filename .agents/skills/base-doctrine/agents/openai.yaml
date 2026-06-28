@@ -1,0 +1,18 @@
+interface:
+  display_name: Base Doctrine
+  short_description: Cross-runtime doctrine contracts for prompt limits, tool honesty,
+    evidence posture, doctrine routing, and output-shape authority.
+  default_prompt: Use /base-doctrine when cross-runtime doctrine store for cross-project
+    operating invariants not owned by a more specific skill. use when work involves
+    system-prompt limits, tool/source evidence honesty, durable doctrine routing,
+    bounded skill/reference read loops, correction/trust posture, canonical agent
+    asset source truth, or output artifact-shape authority such as reserved yaml,
+    dispatch/session-buster confusion, worker-copy attention guards, and lower-skill
+    format conflicts.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
