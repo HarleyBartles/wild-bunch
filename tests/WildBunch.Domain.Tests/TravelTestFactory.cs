@@ -16,7 +16,7 @@ namespace WildBunch.Domain.Tests;
 
 /// <summary>
 /// Factory methods for deterministic travel test scenarios.
-/// All scenarios use <see cref="TravelRandomnessState.CreateDeterministic"/>
+/// All scenarios use <see cref="SaltSource.CreateDeterministic"/>
 /// for reproducible day plans and encounter generation. Each factory returns
 /// the session alongside the resolved <see cref="TravelPreview"/> so callers
 /// can decide whether to start the journey via <see cref="GameSession.StartJourney"/>.
@@ -76,7 +76,7 @@ internal static class TravelTestFactory
             session.Player.Wallet,
             session.Player.Inventory,
             session.GameDifficulty,
-            session.TravelRandomness);
+            session.SaltSource);
         return Assert.IsType<GameStarted>(seed.UncommittedEvents.Single());
     }
 
@@ -118,7 +118,7 @@ internal static class TravelTestFactory
         var session = GameSession.StartNew("Ranger Vale", world, caseFile,
             pinecross.Id, Wallet.Starting(25m), inventory,
             GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, dryfork.Id);
@@ -165,7 +165,7 @@ internal static class TravelTestFactory
         var session = GameSession.StartNew("Ranger Vale", world, caseFile,
             origin.Id, Wallet.Starting(25m), inventory,
             GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, destination.Id);

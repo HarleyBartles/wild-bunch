@@ -344,7 +344,7 @@ public sealed class GameSessionInvestigationActionsTests
             Wallet.Starting(25m),
             inventory,
             GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
     }
 
     private static GameSession CreateTownSourceRefreshableSession()
@@ -567,7 +567,7 @@ public sealed class GameSessionInvestigationActionsTests
             Wallet.Starting(25m),
             inventory,
             GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
     }
 
     private static GameSession CreateWantedPosterRefreshableSession()
@@ -641,7 +641,7 @@ public sealed class GameSessionInvestigationActionsTests
             Wallet.Starting(25m),
             inventory,
             GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
     }
 
     private static GameSession CreateSaloonLookAroundSession()

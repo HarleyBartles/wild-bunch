@@ -6,5 +6,5 @@ public sealed record StartNewGameCommand(
     string PlayerName,
     GameDifficulty GameDifficulty = GameDifficulty.Standard,
     string? SetupSeedCode = null,
-    GameEntropy Entropy = GameEntropy.Classic,
+    GameEntropy GameEntropy = GameEntropy.Classic,
     string? StartingTownId = null);

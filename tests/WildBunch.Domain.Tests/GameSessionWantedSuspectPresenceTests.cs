@@ -11,7 +11,7 @@ namespace WildBunch.Domain.Tests;
 
 public sealed class GameSessionWantedSuspectPresenceTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public void WantedSuspectPresenceDefaultsToUnavailableUntilSet()
@@ -86,6 +86,6 @@ public sealed class GameSessionWantedSuspectPresenceTests
             pinecross.Id,
             Wallet.Starting(25m),
             inventory,
-            travelRandomness: DeterministicTravelRandomness);
+            saltSource: DeterministicSaltSource);
     }
 }

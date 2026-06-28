@@ -9,13 +9,13 @@ interface StorySoFarStepProps {
   onContinue: () => void;
   seedCode?: string | null;
   gameDifficulty?: GameDifficulty;
-  entropy?: GameEntropy;
+  gameEntropy?: GameEntropy;
 }
 
-export function StorySoFarStep({ onContinue, seedCode, gameDifficulty, entropy }: StorySoFarStepProps) {
+export function StorySoFarStep({ onContinue, seedCode, gameDifficulty, gameEntropy }: StorySoFarStepProps) {
   const prologueQuery = useQuery({
-    queryKey: ["prologue", seedCode ?? null, gameDifficulty ?? null, entropy ?? null],
-    queryFn: () => getPrologue(seedCode, gameDifficulty, entropy),
+    queryKey: ["prologue", seedCode ?? null, gameDifficulty ?? null, gameEntropy ?? null],
+    queryFn: () => getPrologue(seedCode, gameDifficulty, gameEntropy),
     staleTime: Infinity,
     retry: false,
   });

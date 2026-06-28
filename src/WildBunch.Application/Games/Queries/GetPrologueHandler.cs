@@ -15,7 +15,7 @@ public sealed class GetPrologueHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var trueCulpritDescriptor = PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(
-            query.GameDifficulty, query.SeedCode, query.Entropy);
+            query.GameDifficulty, query.SeedCode, query.GameEntropy);
 
         var variant = query.VariantId is null
             ? PrologueContent.Variants[0]

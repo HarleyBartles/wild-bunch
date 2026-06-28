@@ -27,13 +27,13 @@ public static class StartingWorldDescriptorResolver
         => Guid.NewGuid();
 
     public static StartingWorldDescriptor CreateCanonicalDescriptor(
-        GameDifficulty difficulty = GameDifficulty.Standard,
-        GameEntropy entropy = GameEntropy.Classic)
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
+        GameEntropy gameEntropy = GameEntropy.Classic)
     {
-        var descriptor = CreateCanonicalDescriptorShape(difficulty, entropy);
+        var descriptor = CreateCanonicalDescriptorShape(gameDifficulty, gameEntropy);
 
-        return entropy == GameEntropy.Classic
-            ? descriptor with { SeedCode = GetCanonicalSeedCode(difficulty) }
+        return gameEntropy == GameEntropy.Classic
+            ? descriptor with { SeedCode = GetCanonicalSeedCode(gameDifficulty) }
             : descriptor with { SeedCode = CreateRepresentativeSeedCode(descriptor) };
     }
 
@@ -97,12 +97,12 @@ public static class StartingWorldDescriptorResolver
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 
-        if (!Enum.IsDefined(typeof(GameDifficulty), descriptor.Difficulty))
+        if (!Enum.IsDefined(typeof(GameDifficulty), descriptor.GameDifficulty))
         {
             return StartingWorldDescriptorValidationResult.Failed("Travel difficulty is invalid.");
         }
 
-        if (!Enum.IsDefined(typeof(GameEntropy), descriptor.Entropy))
+        if (!Enum.IsDefined(typeof(GameEntropy), descriptor.GameEntropy))
         {
             return StartingWorldDescriptorValidationResult.Failed("Adventure randomness policy is invalid.");
         }
@@ -146,11 +146,11 @@ public static class StartingWorldDescriptorResolver
             return StartingWorldDescriptorValidationResult.Failed("Starting cash is outside the legal envelope.");
         }
 
-        var baseCash = GetBaseStartingCash(descriptor.Difficulty);
+        var baseCash = GetBaseStartingCash(descriptor.GameDifficulty);
         var profileBonus = GetLoadoutProfileBonus(descriptor.Player.LoadoutProfile);
         var horseBonus = descriptor.Player.StartWithHorse ? 2m : 0m;
         var bonus = descriptor.Player.StartingCash - baseCash - profileBonus - horseBonus;
-        var maxBonus = descriptor.Entropy switch
+        var maxBonus = descriptor.GameEntropy switch
         {
             GameEntropy.Boring => 0m,
             GameEntropy.Classic => 2m,
@@ -253,8 +253,8 @@ public static class StartingWorldDescriptorResolver
         => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty, GameEntropy.Classic));
 
     private static bool HasSameSemantics(StartingWorldDescriptor left, StartingWorldDescriptor right)
-        => left.Difficulty == right.Difficulty
-            && left.Entropy == right.Entropy
+        => left.GameDifficulty == right.GameDifficulty
+            && left.GameEntropy == right.GameEntropy
             && left.World == right.World
             && left.Player == right.Player
             && left.Case == right.Case;

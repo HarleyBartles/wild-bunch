@@ -9,6 +9,6 @@ public interface INewGameFactory
         string playerName,
         GameDifficulty gameDifficulty = GameDifficulty.Standard,
         string? setupSeedCode = null,
-        GameEntropy entropy = GameEntropy.Classic,
+        GameEntropy gameEntropy = GameEntropy.Classic,
         string? startingTownId = null);
 }

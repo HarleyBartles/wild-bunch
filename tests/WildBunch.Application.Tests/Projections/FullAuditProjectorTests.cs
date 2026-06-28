@@ -30,9 +30,9 @@ public sealed class FullAuditProjectorTests
                     new DomainInventoryItem(DomainItemKind.Food, 3),
                     new DomainInventoryItem(DomainItemKind.Canteen, 1)
                 },
-                Difficulty = GameDifficulty.Standard,
-                TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = GameEntropy.Classic
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
             },
             new StoreItemPurchased
             {

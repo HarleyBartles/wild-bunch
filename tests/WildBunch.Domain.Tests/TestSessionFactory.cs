@@ -60,7 +60,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -101,7 +101,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -145,7 +145,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -173,7 +173,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -219,7 +219,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -268,7 +268,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -319,7 +319,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(
             new SuspectId("suspect-1"), WantedSuspectPresenceState.SecuredAlive);
         session.MarkEventsCommitted();
@@ -417,7 +417,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: inventory, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
@@ -474,7 +474,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }
@@ -568,7 +568,7 @@ public static class TestSessionFactory
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }

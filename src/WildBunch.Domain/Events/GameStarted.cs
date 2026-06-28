@@ -15,7 +15,7 @@ public sealed record GameStarted : IDomainEvent
     public required int StartingHealth { get; init; }
     public required decimal StartingWallet { get; init; }
     public required IReadOnlyList<InventoryItem> StartingInventoryItems { get; init; }
-    public required GameDifficulty Difficulty { get; init; }
-    public required TravelRandomnessState TravelRandomness { get; init; }
-    public required GameEntropy Entropy { get; init; }
+    public required GameDifficulty GameDifficulty { get; init; }
+    public required SaltSource SaltSource { get; init; }
+    public required GameEntropy GameEntropy { get; init; }
 }

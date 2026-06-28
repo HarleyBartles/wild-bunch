@@ -12,7 +12,7 @@ public sealed record GameSessionDto(
     Guid Id,
     GameStatus Status,
     GameDifficulty GameDifficulty,
-    GameEntropy Entropy,
+    GameEntropy GameEntropy,
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,

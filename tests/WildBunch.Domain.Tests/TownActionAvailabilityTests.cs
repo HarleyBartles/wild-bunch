@@ -47,7 +47,7 @@ public sealed class TownActionAvailabilityTests
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            TravelRandomnessState.CreateDeterministic(string.Empty));
+            SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
         return session;
     }

@@ -21,7 +21,7 @@ namespace WildBunch.Integration.Tests;
 
 public sealed class EfGameSessionRepositoryTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public async Task SaveAndLoadNewSessionRoundTripsThroughPostgreSql()
@@ -497,7 +497,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 4)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateLuckySession()
@@ -537,7 +537,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateEasySession()
@@ -574,7 +574,7 @@ public sealed class EfGameSessionRepositoryTests
             dustvale.Id,
             Wallet.Starting(25m),
             inventory,
-            GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+            GameDifficulty.Easy, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateDryTravelSession()
@@ -605,7 +605,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateHorseLossFallbackSession()
@@ -629,7 +629,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Challenging, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Challenging, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateJourneyHistorySession()
@@ -655,7 +655,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
     }
 
     private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
@@ -707,7 +707,7 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
     }
 
     private static CaseFile CreateCaseFile()
@@ -745,6 +745,6 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
     }
 }

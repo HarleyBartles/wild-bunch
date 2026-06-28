@@ -9,5 +9,5 @@ namespace WildBunch.Application.Games.Queries;
 public sealed record GetPrologueQuery(
     GameDifficulty GameDifficulty = GameDifficulty.Standard,
     string? SeedCode = null,
-    GameEntropy Entropy = GameEntropy.Classic,
+    GameEntropy GameEntropy = GameEntropy.Classic,
     string? VariantId = null);

@@ -151,8 +151,8 @@ public sealed class GameSetupPackageBuilderTests
         => string.Join(
             "|",
             package.Descriptor.SeedCode,
-            package.Descriptor.Difficulty,
-            package.Descriptor.Entropy,
+            package.Descriptor.GameDifficulty,
+            package.Descriptor.GameEntropy,
             package.Descriptor.World.Variant,
             package.Descriptor.Player.StartWithHorse,
             package.Descriptor.Player.LoadoutProfile,

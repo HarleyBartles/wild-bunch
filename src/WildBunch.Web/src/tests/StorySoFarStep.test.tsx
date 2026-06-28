@@ -27,7 +27,7 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
   };
 }
 
-function renderStep(overrides: { seedCode?: string | null; gameDifficulty?: GameDifficulty; entropy?: GameEntropy; onContinue?: () => void } = {}) {
+function renderStep(overrides: { seedCode?: string | null; gameDifficulty?: GameDifficulty; gameEntropy?: GameEntropy; onContinue?: () => void } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -43,7 +43,7 @@ function renderStep(overrides: { seedCode?: string | null; gameDifficulty?: Game
         onContinue={onContinue}
         seedCode={overrides.seedCode ?? "SEED-CODE-1"}
         gameDifficulty={overrides.gameDifficulty}
-        entropy={overrides.entropy}
+        gameEntropy={overrides.gameEntropy}
       />
     </QueryClientProvider>,
   );
@@ -166,10 +166,10 @@ describe("StorySoFarStep", () => {
     expect(onContinue).not.toHaveBeenCalled();
   });
 
-  it("passes the seedCode, gameDifficulty, and entropy to getPrologue", async () => {
+  it("passes the seedCode, gameDifficulty, and gameEntropy to getPrologue", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
-    renderStep({ seedCode: "MY-SEED-42", gameDifficulty: 2 as GameDifficulty, entropy: 3 as GameEntropy });
+    renderStep({ seedCode: "MY-SEED-42", gameDifficulty: 2 as GameDifficulty, gameEntropy: 3 as GameEntropy });
 
     await screen.findByText(/black bart/i);
 

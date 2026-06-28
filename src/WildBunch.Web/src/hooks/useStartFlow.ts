@@ -15,7 +15,7 @@ export interface UseStartFlowArgs {
 export interface StartFlowRequest {
   playerName: string;
   gameDifficulty: GameDifficulty;
-  entropy: GameEntropy;
+  gameEntropy: GameEntropy;
   seedCode: string;
   startingTownId: string;
 }
@@ -25,7 +25,7 @@ export interface UseStartFlowResult {
   playerName: string;
   selectedTownId: string | null;
   gameDifficulty: GameDifficulty;
-  entropy: GameEntropy;
+  gameEntropy: GameEntropy;
   seedState: ReturnType<typeof useStartGameSeed>["seedState"];
   seedDraft: string;
   seedDirty: boolean;
@@ -33,7 +33,7 @@ export interface UseStartFlowResult {
   setPlayerName: (value: string) => void;
   setSelectedTownId: (value: string | null) => void;
   setGameDifficulty: (difficulty: GameDifficulty) => void;
-  setEntropy: (entropy: GameEntropy) => void;
+  setGameEntropy: (gameEntropy: GameEntropy) => void;
   setSeedDraft: (value: string) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
@@ -79,12 +79,12 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
       return {
         playerName: trimmedName,
         gameDifficulty: seed.gameDifficulty,
-        entropy: seed.entropy,
+        gameEntropy: seed.gameEntropy,
         seedCode,
         startingTownId: townId,
       };
     },
-    [seed.playerName, seed.seedState, seed.gameDifficulty, seed.entropy],
+    [seed.playerName, seed.seedState, seed.gameDifficulty, seed.gameEntropy],
   );
 
   return {
@@ -92,7 +92,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     playerName: seed.playerName,
     selectedTownId,
     gameDifficulty: seed.gameDifficulty,
-    entropy: seed.entropy,
+    gameEntropy: seed.gameEntropy,
     seedState: seed.seedState,
     seedDraft: seed.seedDraft,
     seedDirty: seed.seedDirty,
@@ -100,7 +100,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     setPlayerName: seed.setPlayerName,
     setSelectedTownId,
     setGameDifficulty: seed.setGameDifficulty,
-    setEntropy: seed.setEntropy,
+    setGameEntropy: seed.setGameEntropy,
     setSeedDraft: seed.setSeedDraft,
     applySeed: seed.applySeed,
     randomizeSeed: seed.randomizeSeed,

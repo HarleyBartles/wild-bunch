@@ -14,12 +14,12 @@ public sealed partial class GameSessionJsonSerializer
         return Deserialize<SetupSnapshot>(json).ToDomain();
     }
 
-    private sealed record SetupSnapshot(GameEntropy? Entropy)
+    private sealed record SetupSnapshot(GameEntropy? GameEntropy)
     {
-        public static SetupSnapshot FromDomain(GameEntropy entropy)
-            => new(entropy);
+        public static SetupSnapshot FromDomain(GameEntropy gameEntropy)
+            => new(gameEntropy);
 
         public GameEntropy ToDomain()
-            => Entropy ?? GameEntropy.Classic;
+            => GameEntropy ?? WildBunch.Domain.Travel.GameEntropy.Classic;
     }
 }

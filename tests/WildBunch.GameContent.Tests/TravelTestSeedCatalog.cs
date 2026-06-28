@@ -18,17 +18,17 @@ namespace WildBunch.GameContent.Tests;
 internal static class TravelTestSeedCatalog
 {
     /// <summary>
-    /// Canonical world, Normal difficulty, Standard entropy, mounted.
+    /// Canonical world, Standard difficulty, Classic entropy, mounted.
     /// Starts in Pinecross. Used as a baseline for mounted travel tests.
     /// Route: pinecross -> redmesa (Low/OpenRange/Creek, 4m).
     /// </summary>
-    internal static readonly StartingWorldDescriptor CanonicalMountedNormal =
+    internal static readonly StartingWorldDescriptor CanonicalMountedStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
             GameDifficulty.Standard,
             GameEntropy.Classic);
 
     /// <summary>
-    /// Canonical world, Normal difficulty, Boring entropy, mounted.
+    /// Canonical world, Standard difficulty, Boring entropy, mounted.
     /// Encounters suppressed. Used for resource-mechanics and trail-event tests
     /// that need a quiet journey without heat priming.
     /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure.
@@ -39,7 +39,7 @@ internal static class TravelTestSeedCatalog
             GameEntropy.Boring);
 
     /// <summary>
-    /// Canonical world, Normal difficulty, Boring entropy, no horse, light loadout.
+    /// Canonical world, Standard difficulty, Boring entropy, no horse, light loadout.
     /// Encounters suppressed. Used for foot-travel resource tests.
     /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure on foot.
     /// </summary>
@@ -170,9 +170,9 @@ internal static class TravelTestSeedCatalog
         var factory = new SeededNewGameFactory();
         return factory.Create(
             playerName,
-            descriptor.Difficulty,
+            descriptor.GameDifficulty,
             seedCode,
-            descriptor.Entropy);
+            descriptor.GameEntropy);
     }
 
     /// <summary>

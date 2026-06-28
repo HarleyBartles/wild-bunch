@@ -267,7 +267,7 @@ public sealed class GameApiTests
             .ToArray();
 
         Assert.Contains(connectedTownIds, townId => townId == "redmesa");
-        Assert.Contains(connectedTownIds, townId => townId == "holloway");
+        Assert.Contains(connectedTownIds, townId => townId == "sagewell");
 
         var redMesaPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/redmesa");
         Assert.Equal(HttpStatusCode.OK, redMesaPreviewResponse.StatusCode);

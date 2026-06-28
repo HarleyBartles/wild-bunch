@@ -62,9 +62,9 @@ public sealed partial class GameSession
             new GameClock(),
             GameStatus.Active,
             journey: null,
-            gameStarted.Difficulty,
-            gameStarted.TravelRandomness,
-            gameStarted.Entropy,
+            gameStarted.GameDifficulty,
+            gameStarted.SaltSource,
+            gameStarted.GameEntropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());

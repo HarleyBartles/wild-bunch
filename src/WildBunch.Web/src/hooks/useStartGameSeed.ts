@@ -16,7 +16,7 @@ interface UseStartGameSeedArgs {
 export interface UseStartGameSeedResult {
   playerName: string;
   gameDifficulty: GameDifficulty;
-  entropy: GameEntropy;
+  gameEntropy: GameEntropy;
   seedState: GameSetupSeedState;
   seedDraft: string;
   seedDirty: boolean;
@@ -24,7 +24,7 @@ export interface UseStartGameSeedResult {
   setPlayerName: (value: string) => void;
   setSeedDraft: (value: string) => void;
   setGameDifficulty: (difficulty: GameDifficulty) => void;
-  setEntropy: (entropy: GameEntropy) => void;
+  setGameEntropy: (gameEntropy: GameEntropy) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
@@ -44,7 +44,7 @@ function getErrorMessage(error: unknown) {
 export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs): UseStartGameSeedResult {
   const [playerName, setPlayerName] = useState("");
   const [gameDifficulty, setGameDifficulty] = useState<GameDifficulty>(0);
-  const [entropy, setEntropy] = useState<GameEntropy>(1);
+  const [gameEntropy, setGameEntropy] = useState<GameEntropy>(1);
   const [seedState, setSeedState] = useState(createCanonicalSeedState());
   const [seedDraft, setSeedDraft] = useState(createCanonicalSeedState().seedCode);
   const [seedDirty, setSeedDirty] = useState(false);
@@ -61,7 +61,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
 
     const resetSeed = createCanonicalSeedState();
     setGameDifficulty(0);
-    setEntropy(1);
+    setGameEntropy(1);
     setSeedState(resetSeed);
     setSeedDraft(resetSeed.seedCode);
     setSeedDirty(false);
@@ -98,8 +98,8 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setGameDifficulty(difficulty);
   }
 
-  function handleEntropyChange(value: GameEntropy) {
-    setEntropy(value);
+  function handleGameEntropyChange(value: GameEntropy) {
+    setGameEntropy(value);
   }
 
   function randomizeSeed() {
@@ -111,7 +111,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
   return {
     playerName,
     gameDifficulty,
-    entropy,
+    gameEntropy,
     seedState,
     seedDraft,
     seedDirty,
@@ -119,7 +119,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setPlayerName,
     setSeedDraft: handleSeedDraftChange,
     setGameDifficulty: handleGameDifficultyChange,
-    setEntropy: handleEntropyChange,
+    setGameEntropy: handleGameEntropyChange,
     applySeed,
     randomizeSeed,
   };

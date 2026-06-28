@@ -11,8 +11,8 @@ public enum StartingLoadoutProfile
 
 public sealed record StartingWorldDescriptor(
     Guid SeedCode,
-    GameDifficulty Difficulty,
-    GameEntropy Entropy,
+    GameDifficulty GameDifficulty,
+    GameEntropy GameEntropy,
     StartingWorldDescriptorWorld World,
     StartingWorldDescriptorPlayer Player,
     StartingWorldDescriptorCase Case)

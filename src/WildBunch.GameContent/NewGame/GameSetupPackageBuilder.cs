@@ -19,7 +19,7 @@ internal sealed class GameSetupPackageBuilder
 
         return new GameSetupPackage(
             descriptor,
-            descriptor.Difficulty,
+            descriptor.GameDifficulty,
             plan.TravelRulesProfile,
             worldSetup.World,
             worldSetup.StartingTownId,

@@ -14,7 +14,7 @@ namespace WildBunch.Application.Tests;
 
 public sealed class AdvanceTravelDayHandlerTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public async Task HandleAsyncReturnsStructuredTrailEventOnTheTurnResult()
@@ -176,7 +176,7 @@ public sealed class AdvanceTravelDayHandlerTests
             new InventoryItem(ItemKind.Knife, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -206,7 +206,7 @@ public sealed class AdvanceTravelDayHandlerTests
             new InventoryItem(ItemKind.RevolverAmmo, 2)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -236,7 +236,7 @@ public sealed class AdvanceTravelDayHandlerTests
             new InventoryItem(ItemKind.Knife, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, sixmile.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -275,7 +275,7 @@ public sealed class AdvanceTravelDayHandlerTests
             items.Add(new InventoryItem(ItemKind.Saddle, 1));
         }
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new Inventory(items), GameDifficulty, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new Inventory(items), GameDifficulty, saltSource: DeterministicSaltSource);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, midway.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);

@@ -25,7 +25,7 @@ public sealed class StartNewGameHandlerTests
         Assert.Equal("Ranger Vale", result.Player.Name);
         Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, result.Status);
         Assert.Equal(WildBunch.Domain.Travel.GameDifficulty.Standard, result.GameDifficulty);
-        Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Classic, result.Entropy);
+        Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Classic, result.GameEntropy);
         Assert.Equal("dustvale", result.Player.CurrentTownId);
         Assert.NotEmpty(result.LogEntries);
         Assert.Contains(result.LogEntries, entry => entry.Kind == WildBunch.Domain.Game.GameLogEntryKind.Opening);
@@ -52,7 +52,7 @@ public sealed class StartNewGameHandlerTests
         var handler = new StartNewGameHandler(factory, repository, repository,
             new HudProjector(), new DiaryProjector());
 
-        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", Entropy: WildBunch.Domain.Travel.GameEntropy.Boring));
+        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", GameEntropy: WildBunch.Domain.Travel.GameEntropy.Boring));
 
         Assert.Equal(WildBunch.Domain.Travel.GameEntropy.Boring, factory.RequestedEntropies.Single());
     }

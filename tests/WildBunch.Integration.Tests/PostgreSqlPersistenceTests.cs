@@ -20,7 +20,7 @@ namespace WildBunch.Integration.Tests;
 public sealed class PostgreSqlPersistenceTests
 {
     private const string PostgreSqlConnectionStringEnvironmentVariable = "ConnectionStrings__WildBunchPostgresDb";
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public void AddPersistence_UsesPostgreSqlWhenConfigured()
@@ -144,7 +144,7 @@ public sealed class PostgreSqlPersistenceTests
             Assert.Contains(componentRows, component => component.ComponentName == "clock");
             Assert.Contains(componentRows, component => component.ComponentName == "pursuitState");
             Assert.Contains(componentRows, component => component.ComponentName == "setup");
-            Assert.Contains(componentRows, component => component.ComponentName == "travelRandomness");
+            Assert.Contains(componentRows, component => component.ComponentName == "saltSource");
             Assert.Contains(componentRows, component => component.ComponentName == "journey");
             Assert.All(componentRows, component => Assert.False(string.IsNullOrWhiteSpace(component.PayloadJson)));
 
@@ -247,7 +247,7 @@ public sealed class PostgreSqlPersistenceTests
             Wallet.Starting(25m),
             inventory,
             GameDifficulty.Easy,
-            travelRandomness: DeterministicTravelRandomness);
+            saltSource: DeterministicSaltSource);
 
         var preview = CreatePostgreSqlLanePreview(session.Player.CurrentTownId, holloway.Id, "Dustvale", "Holloway");
         Assert.True(preview.Success);

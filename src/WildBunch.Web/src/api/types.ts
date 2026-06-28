@@ -50,7 +50,7 @@ export interface StartGameRequest {
   playerName: string;
   gameDifficulty: GameDifficulty;
   seedCode?: string | null;
-  entropy?: GameEntropy;
+  gameEntropy?: GameEntropy;
   startingTownId?: string | null;
 }
 

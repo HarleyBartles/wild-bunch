@@ -13,7 +13,7 @@ internal static class BoringScenarioBuilder
     public static BoringScenario MountedTravelReady()
         => new(
             ScenarioName: "MountedTravelReady",
-            Fixture: ScenarioSeedCatalog.CanonicalMountedNormal,
+            Fixture: ScenarioSeedCatalog.CanonicalMountedStandard,
             PreviewDestinationTownId: "holloway");
 
     public static BoringScenario NoHorseFootTravelReady()
@@ -53,7 +53,7 @@ internal sealed record BoringScenario(
     {
         Fixture.AssertCachedFixtureContract();
 
-        return new SeededNewGameFactory(new DeterministicTravelRandomnessSource())
+        return new SeededNewGameFactory(new DeterministicSaltSourceFactory())
             .Create(playerName, GameDifficulty, SeedCode);
     }
 

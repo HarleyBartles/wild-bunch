@@ -236,7 +236,7 @@ describe("StartFlow", () => {
     expect(mockedCreateGame).not.toHaveBeenCalled();
   });
 
-  it("calls createGame with playerName, difficulty, entropy, and startingTownId at the final step", async () => {
+  it("calls createGame with playerName, difficulty, gameEntropy, and startingTownId at the final step", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
@@ -244,7 +244,7 @@ describe("StartFlow", () => {
     const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
 
-    // Select Challenging (difficulty 2) and Wild (entropy 3)
+    // Select Challenging (difficulty 2) and Wild (gameEntropy 3)
     await user.click(screen.getByRole("button", { name: /^challenging$/i }));
     await user.click(screen.getByRole("button", { name: /^wild$/i }));
 
@@ -271,7 +271,7 @@ describe("StartFlow", () => {
     expect(request.startingTownId).toBe("t-town");
     expect(request.seedCode).toBeTruthy();
     expect(request.gameDifficulty).toBe(2);
-    expect(request.entropy).toBe(3);
+    expect(request.gameEntropy).toBe(3);
   });
 
   it("shows the creating step after selecting a town", async () => {

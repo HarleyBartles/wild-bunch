@@ -12,7 +12,7 @@ internal sealed record ScenarioSeedFixture(
     string Name,
     string SeedCode,
     GameDifficulty GameDifficulty,
-    GameEntropy Entropy,
+    GameEntropy GameEntropy,
     string ResolverContractVersion,
     string RequiredShapeSignature,
     Func<GameSessionDto, TravelPreviewResultDto?, string> DescribeShapeSignature,
@@ -74,8 +74,8 @@ internal sealed record ScenarioSeedFixture(
 
     private GameSession CreateSession()
     {
-        return new SeededNewGameFactory(new DeterministicTravelRandomnessSource())
-            .Create("Fixture Validator", GameDifficulty, setupSeedCode: SeedCode, entropy: Entropy);
+        return new SeededNewGameFactory(new DeterministicSaltSourceFactory())
+            .Create("Fixture Validator", GameDifficulty, setupSeedCode: SeedCode, gameEntropy: GameEntropy);
     }
 
     private static TravelPreviewResultDto CreatePreview(GameSession session, string destinationTownId)

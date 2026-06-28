@@ -10,7 +10,7 @@ public sealed record GameSessionReadModel(
     Guid Id,
     GameStatus Status,
     GameDifficulty GameDifficulty,
-    GameEntropy Entropy,
+    GameEntropy GameEntropy,
     Player Player,
     World World,
     CaseFile CaseFile,

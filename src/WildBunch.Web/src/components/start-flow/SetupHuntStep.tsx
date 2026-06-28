@@ -8,13 +8,13 @@ import { SegmentedToggle } from "./SegmentedToggle";
 interface SetupHuntStepProps {
   playerName: string;
   gameDifficulty: GameDifficulty;
-  entropy: GameEntropy;
+  gameEntropy: GameEntropy;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   onPlayerNameChange: (value: string) => void;
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
-  onEntropyChange: (entropy: GameEntropy) => void;
+  onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
   onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
@@ -27,7 +27,7 @@ const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }>
   { value: 3, label: "Brutal" },
 ];
 
-const entropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
+const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
   { value: 1, label: "Classic" },
   { value: 2, label: "Adventurous" },
   { value: 3, label: "Wild" },
@@ -36,13 +36,13 @@ const entropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
 export function SetupHuntStep({
   playerName,
   gameDifficulty,
-  entropy,
+  gameEntropy,
   seedDraft,
   seedDirty,
   decodeError,
   onPlayerNameChange,
   onGameDifficultyChange,
-  onEntropyChange,
+  onGameEntropyChange,
   onSeedDraftChange,
   onApplySeed,
   onRandomizeSeed,
@@ -105,9 +105,9 @@ export function SetupHuntStep({
         <FieldGroup>
           <GroupLabel>Entropy</GroupLabel>
           <SegmentedToggle
-            options={entropyOptions}
-            value={entropy}
-            onSelect={onEntropyChange}
+            options={gameEntropyOptions}
+            value={gameEntropy}
+            onSelect={onGameEntropyChange}
           />
         </FieldGroup>
 

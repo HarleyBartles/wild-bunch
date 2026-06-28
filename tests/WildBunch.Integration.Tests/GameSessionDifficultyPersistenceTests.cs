@@ -28,7 +28,7 @@ public sealed class GameSessionDifficultyPersistenceTests
 
         Assert.NotNull(reloaded);
         Assert.Equal(GameDifficulty.Easy, reloaded!.GameDifficulty);
-        Assert.Equal(GameEntropy.Wild, reloaded.Entropy);
+        Assert.Equal(GameEntropy.Wild, reloaded.GameEntropy);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Capacity);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Charges);
     }
@@ -38,11 +38,11 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         var serializer = new GameSessionJsonSerializer();
         var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Standard, GameEntropy.Boring)))!.AsObject();
-        legacySnapshot.Remove("entropy");
+        legacySnapshot.Remove("gameEntropy");
 
         var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
 
-        Assert.Equal(GameEntropy.Classic, reloaded.Entropy);
+        Assert.Equal(GameEntropy.Classic, reloaded.GameEntropy);
     }
 
     [Fact]
@@ -261,16 +261,16 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
-    public void MissingTravelRandomnessInLegacySessionJsonFallsBackToRuntimeSalted()
+    public void MissingSaltSourceInLegacySessionJsonFallsBackToRuntimeSalted()
     {
         var serializer = new GameSessionJsonSerializer();
         var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Easy, GameEntropy.Boring)))!.AsObject();
-        legacySnapshot.Remove("travelRandomness");
+        legacySnapshot.Remove("saltSource");
 
         var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
 
-        Assert.Equal(TravelRandomnessMode.RuntimeSalted, reloaded.TravelRandomness.Mode);
-        Assert.False(string.IsNullOrWhiteSpace(reloaded.TravelRandomness.Salt));
+        Assert.Equal(SaltSourceMode.Runtime, reloaded.SaltSource.Mode);
+        Assert.False(string.IsNullOrWhiteSpace(reloaded.SaltSource.Salt));
     }
 
     [Fact]
@@ -438,7 +438,7 @@ public sealed class GameSessionDifficultyPersistenceTests
             Wallet.Starting(25m),
             inventory,
             GameDifficulty,
-            entropy: entropy);
+            gameEntropy: entropy);
     }
 
     private static GameSession CreateTownVisitSession()

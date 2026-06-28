@@ -45,9 +45,9 @@ public class TypedDomainEventTests
         Assert.Equal("Dodge City", e.StartingTownName);
         Assert.Equal(1000, e.StartingHealth);
         Assert.Equal(25m, e.StartingWallet);
-        Assert.Equal(GameDifficulty.Standard, e.Difficulty);
-        Assert.Equal(TravelRandomnessState.CreateDeterministic("test-salt").Mode, e.TravelRandomness.Mode);
-        Assert.Equal(GameEntropy.Classic, e.Entropy);
+        Assert.Equal(GameDifficulty.Standard, e.GameDifficulty);
+        Assert.Equal(SaltSource.CreateFixed("test-salt").Mode, e.SaltSource.Mode);
+        Assert.Equal(GameEntropy.Classic, e.GameEntropy);
     }
 
     [Fact]
@@ -138,9 +138,9 @@ public class TypedDomainEventTests
         StartingHealth = 1000,
         StartingWallet = 25m,
         StartingInventoryItems = Array.Empty<InventoryItem>(),
-        Difficulty = GameDifficulty.Standard,
-        TravelRandomness = TravelRandomnessState.CreateDeterministic("test-salt"),
-        Entropy = GameEntropy.Classic
+        GameDifficulty = GameDifficulty.Standard,
+        SaltSource = SaltSource.CreateFixed("test-salt"),
+        GameEntropy = GameEntropy.Classic
     };
 
     private static StoreItemPurchased NewStoreItemPurchased() => new()

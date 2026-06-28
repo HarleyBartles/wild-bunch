@@ -147,7 +147,7 @@ export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdenti
 export function getPrologue(
   seedCode?: string | null,
   gameDifficulty?: GameDifficulty,
-  entropy?: GameEntropy,
+  gameEntropy?: GameEntropy,
 ) {
   const params = new URLSearchParams();
   if (seedCode) {
@@ -156,8 +156,8 @@ export function getPrologue(
   if (gameDifficulty != null) {
     params.set("gameDifficulty", String(gameDifficulty));
   }
-  if (entropy != null) {
-    params.set("entropy", String(entropy));
+  if (gameEntropy != null) {
+    params.set("gameEntropy", String(gameEntropy));
   }
   const query = params.toString();
   return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);

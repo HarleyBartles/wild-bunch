@@ -95,6 +95,6 @@ public sealed class StubNewGameFactory : INewGameFactory
             dustvale.Id,
             Wallet.Starting(25m),
             inventory,
-            travelRandomness: TravelRandomnessState.CreateDeterministic("application-tests"));
+            saltSource: SaltSource.CreateFixed("application-tests"));
     }
 }

@@ -19,7 +19,7 @@ namespace WildBunch.Domain.Tests;
 
 public sealed class GameSessionJourneyHistoryTests
 {
-    private static readonly TravelRandomnessState DeterministicTravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty);
+    private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
     public void StartJourneyAssignsSessionScopedSequenceAndArchivesCompletedJourneyHistory()
@@ -92,7 +92,7 @@ public sealed class GameSessionJourneyHistoryTests
             Wallet.Starting(25m),
             inventory,
             GameDifficulty.Easy,
-            travelRandomness: DeterministicTravelRandomness);
+            saltSource: DeterministicSaltSource);
     }
 
     private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
