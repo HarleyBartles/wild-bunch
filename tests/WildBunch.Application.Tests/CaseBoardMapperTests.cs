@@ -228,6 +228,9 @@ public sealed class CaseBoardMapperTests
         var capturedSuspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(capturedSuspectId, WantedSuspectPresenceState.AvailableInTown);
 
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(capturedSuspectId));
+        session.MarkEventsCommitted();
+
         var lookAround = session.LookAroundSaloon();
         var turnIn = session.ConfrontSaloonPersonOfInterest("warrant-mira");
         var caseFile = GameSessionMapper.ToDto(session).CaseFile;

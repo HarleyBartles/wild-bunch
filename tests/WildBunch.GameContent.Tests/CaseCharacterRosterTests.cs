@@ -1,4 +1,5 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.GameContent.NewGame;
 
@@ -126,6 +127,45 @@ public sealed class CaseCharacterRosterTests
                 additional => Assert.All(
                     assignment.AdditionalFeatures.Where(other => !ReferenceEquals(other, additional)),
                     other => Assert.True(additional.IsCompatibleWith(other)))));
+    }
+
+    /// <summary>
+    /// Guardrail: the shared suspect feature vocabulary (CaseSuspectFeaturePool.FeaturePool
+    /// descriptions) must not contain any citizen role key, short name, or display name
+    /// token. This prevents a feature like "wears a butcher's apron" from leaking the
+    /// citizen's role through the concealment descriptor ("a stranger with ...").
+    /// This is NOT a disjointness test — citizens and suspects share the same feature
+    /// vocabulary. It only verifies the shared vocabulary is safe for citizen concealment.
+    /// </summary>
+    [Fact]
+    public void SharedFeatures_DoNotRevealCitizenRoleNames()
+    {
+        var featureDescriptions = CaseSuspectFeaturePool.FeaturePool
+            .Select(feature => feature.Description)
+            .Where(description => !string.IsNullOrWhiteSpace(description))
+            .ToList();
+
+        var roleTokens = CitizenCast.Roles
+            .SelectMany(role => new[] { role.Key, role.ShortName, role.DisplayName })
+            .Where(token => !string.IsNullOrWhiteSpace(token))
+            .Select(token => token.ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        var offending = new List<string>();
+        foreach (var description in featureDescriptions)
+        {
+            var lower = description.ToLowerInvariant();
+            foreach (var token in roleTokens)
+            {
+                if (lower.Contains(token))
+                {
+                    offending.Add($"Feature '{description}' contains role token '{token}'.");
+                }
+            }
+        }
+
+        Assert.Empty(offending);
     }
 
     private static string CreateSeedCode(ulong entropy)

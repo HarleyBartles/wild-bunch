@@ -42,9 +42,9 @@ public sealed class GetSaloonDevContextHandlerTests
 
         // Citizen info is honestly described
         Assert.NotNull(result.CitizenInfo);
-        Assert.False(result.CitizenInfo!.HasNamedArchetypes);
-        Assert.Empty(result.CitizenInfo.AvailableArchetypes);
-        Assert.Contains("Current Town", result.CitizenInfo.Descriptor);
+        Assert.True(result.CitizenInfo!.HasNamedArchetypes);
+        Assert.NotEmpty(result.CitizenInfo.AvailableArchetypes);
+        Assert.Contains("shared suspect vocabulary", result.CitizenInfo.Descriptor);
 
         // Suspects list includes eligibility info and warrant-shaped facts
         Assert.Equal(2, result.Suspects.Count);
@@ -67,6 +67,8 @@ public sealed class GetSaloonDevContextHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSessionWithSaloonSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
         repository.Seed(session);

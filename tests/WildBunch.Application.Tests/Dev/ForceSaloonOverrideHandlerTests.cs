@@ -26,7 +26,8 @@ public sealed class ForceSaloonOverrideHandlerTests
         await handler.HandleAsync(new ForceSaloonOverrideCommand(
             session.Id.Value,
             ForcedKind: "Suspect",
-            ForcedSuspectId: "suspect-1"));
+            ForcedSuspectId: "suspect-1",
+            ForcedCitizenRoleKey: null));
 
         Assert.Equal(1, repository.StoreCalls);
         var reloaded = await repository.GetByIdAsync(session.Id);
@@ -47,12 +48,35 @@ public sealed class ForceSaloonOverrideHandlerTests
         await handler.HandleAsync(new ForceSaloonOverrideCommand(
             session.Id.Value,
             ForcedKind: "Citizen",
-            ForcedSuspectId: null));
+            ForcedSuspectId: null,
+            ForcedCitizenRoleKey: null));
 
         var reloaded = await repository.GetByIdAsync(session.Id);
         Assert.NotNull(reloaded!.PendingDevSaloonOverride);
         Assert.Equal(DevSaloonPoiKind.Citizen, reloaded.PendingDevSaloonOverride!.ForcedKind);
         Assert.Null(reloaded.PendingDevSaloonOverride.ForcedSuspectId);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ForcesNoneOverride_AndPersists()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSessionWithSaloonSuspect();
+        repository.Seed(session);
+
+        var handler = new ForceSaloonOverrideHandler(repository, repository);
+
+        await handler.HandleAsync(new ForceSaloonOverrideCommand(
+            session.Id.Value,
+            ForcedKind: "None",
+            ForcedSuspectId: null,
+            ForcedCitizenRoleKey: null));
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded!.PendingDevSaloonOverride);
+        Assert.Equal(DevSaloonPoiKind.None, reloaded.PendingDevSaloonOverride!.ForcedKind);
+        Assert.Null(reloaded.PendingDevSaloonOverride.ForcedSuspectId);
+        Assert.Null(reloaded.PendingDevSaloonOverride.ForcedCitizenRoleKey);
     }
 
     [Fact]
@@ -71,7 +95,8 @@ public sealed class ForceSaloonOverrideHandlerTests
             handler.HandleAsync(new ForceSaloonOverrideCommand(
                 session.Id.Value,
                 ForcedKind: "Suspect",
-                ForcedSuspectId: "suspect-2")));
+                ForcedSuspectId: "suspect-2",
+                ForcedCitizenRoleKey: null)));
 
         // Gate-aware rejection, not "must never appear"
         Assert.Contains("killer trail is locked", ex.Message.ToLowerInvariant());
@@ -94,7 +119,8 @@ public sealed class ForceSaloonOverrideHandlerTests
         await handler.HandleAsync(new ForceSaloonOverrideCommand(
             session.Id.Value,
             ForcedKind: "Suspect",
-            ForcedSuspectId: "suspect-2"));
+            ForcedSuspectId: "suspect-2",
+            ForcedCitizenRoleKey: null));
 
         var reloaded = await repository.GetByIdAsync(session.Id);
         Assert.NotNull(reloaded!.PendingDevSaloonOverride);

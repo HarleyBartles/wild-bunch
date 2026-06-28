@@ -20,6 +20,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     {
         var session = CreateSessionWithoutKnownWarrants();
         var suspectId = new SuspectId("suspect-1");
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var lookAround = session.LookAroundSaloon();
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
@@ -67,6 +69,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var session = CreateSession();
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.GoneToGround);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var firstVisit = session.LookAroundSaloon();
 
@@ -80,6 +84,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
         session.ResetActionContextForTownChange();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var secondVisit = session.LookAroundSaloon();
 
@@ -93,12 +99,10 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     {
         var session = CreateSessionWithoutKnownWarrants();
 
-        var result = session.LookAroundSaloon();
-
-        Assert.True(result.Success);
-        Assert.Equal("You look around the saloon and spot a stranger with a scar on the left cheek.", result.Message);
-        Assert.Equal(new SuspectId("suspect-1"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        Assert.NotEqual(new SuspectId("suspect-2"), session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        // The true culprit (suspect-2) is still gated — forcing it throws.
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-2"))));
+        Assert.Contains("killer trail is locked", ex.Message);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
     }
 
@@ -106,6 +110,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     public void LookAroundSaloonUsesAPublicDescriptorWhenOneIsAvailable()
     {
         var session = CreateSessionWithPublicDescriptor();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
 
         var result = session.LookAroundSaloon();
 
@@ -121,6 +127,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var session = CreateSessionWithPublicDescriptor();
         var activePersonOfInterest = new SuspectId("suspect-1");
         var declaredWantedIdentityHandle = "public-warrant-99";
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(activePersonOfInterest));
+        session.MarkEventsCommitted();
 
         var lookAround = session.LookAroundSaloon();
 
@@ -153,6 +161,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.True(capabilityResolver.Resolve(session.Player.Inventory).FirearmThreatAvailable);
 
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
         var lookAround = session.LookAroundSaloon();
         Assert.True(lookAround.Success);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
@@ -201,6 +211,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.False(capabilityResolver.Resolve(session.Player.Inventory).FirearmThreatAvailable);
 
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
         var lookAround = session.LookAroundSaloon();
         Assert.True(lookAround.Success);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
@@ -238,22 +250,32 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     [Fact]
     public void LookAroundSaloonCanSurfaceATownCitizenAndWrongDeclarationCapsTheFineAtTheAvailableWallet()
     {
-        var session = CreateCitizenSession(wallet: Wallet.Starting(4m));
+        // Use dev override to force a citizen POI — the proper test seam per BUNCH-106 realignment.
+        // Use a session with suspects that have identifying facts so the shared feature vocabulary is non-empty.
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        session.Player.AdjustCash(4m - session.Player.Wallet.Cash);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
+        session.MarkEventsCommitted();
         var initialLogCount = GameSessionLogProjection.Project(session).Count;
 
         var lookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
-        Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", lookAround.Message);
+        Assert.Contains("a stranger with", lookAround.Message);
+        Assert.DoesNotContain("town clerk", lookAround.Message);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
+        Assert.NotNull(session.CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole);
         Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
-        var result = session.ConfrontSaloonPersonOfInterest("warrant-1");
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-public-1");
 
         Assert.True(result.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
-        Assert.Equal("You bring a town clerk from Current Town to the sheriff, but the declaration is wrong. The sheriff releases them and fines you $4.00.", result.Message);
+        Assert.Contains("sheriff identifies them as", result.Message);
+        Assert.Contains("releases them", result.Message);
+        Assert.Contains("$4.00", result.Message);
+        Assert.DoesNotContain("town clerk", result.Message);
         Assert.True(result.IsCitizen);
         Assert.Equal(4m, result.FineAmount);
         Assert.Equal(4m, result.WalletBefore);
@@ -263,11 +285,11 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(result.IsSecured);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, result.PersonOfInterestKind);
         Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
-        Assert.DoesNotContain(GameSessionLogProjection.Project(session), entry => entry.Message.Contains("town clerk", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(0m, session.Player.Wallet.Cash);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
 
+        // Repeat visit: force citizen again to verify the flow works on a fresh visit.
         session.Player.TravelTo(new TownId("connected"));
         session.CurrentTownVisit.Reset(new TownId("connected"));
         session.ResetActionContextForTownChange();
@@ -275,10 +297,13 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         session.CurrentTownVisit.Reset(new TownId("current"));
         session.ResetActionContextForTownChange();
 
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
+        session.MarkEventsCommitted();
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(repeatLookAround.Success);
-        Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", repeatLookAround.Message);
+        Assert.Contains("a stranger with", repeatLookAround.Message);
+        Assert.DoesNotContain("town clerk", repeatLookAround.Message);
         Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
     }
 
@@ -289,6 +314,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         session.Player.AdjustCash(4m - session.Player.Wallet.Cash);
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var lookAround = session.LookAroundSaloon();
 
@@ -324,6 +351,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         session.Player.AdjustCash(4m - session.Player.Wallet.Cash);
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var lookAround = session.LookAroundSaloon();
 

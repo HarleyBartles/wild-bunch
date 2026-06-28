@@ -17,6 +17,8 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         var session = CreateSession();
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var lookAround = session.LookAroundSaloon();
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonWantedSuspectId);
@@ -49,6 +51,8 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
         session.Player.TravelTo(new TownId("current"));
         session.CurrentTownVisit.Reset(new TownId("current"));
         session.ResetActionContextForTownChange();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var afterReturn = session.LookAroundSaloon();
 
@@ -111,11 +115,13 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
     }
 
     [Fact]
-    public void LookAroundSaloonDoesNotSurfaceAWantedSuspectWithoutAKnownWarrant()
+    public void LookAroundSaloonCanSurfaceAWantedSuspectWithoutAKnownWarrant()
     {
         var session = CreateSessionWithoutKnownWarrants();
         var suspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
 
         var result = session.LookAroundSaloon();
 

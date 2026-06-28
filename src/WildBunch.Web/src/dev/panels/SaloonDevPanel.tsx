@@ -5,7 +5,7 @@ import { useGameSession } from "../../state/useGameSession";
 import { clearSaloonOverride, forceSaloonOverride, getSaloonDevContext } from "../devApi";
 import type { SaloonSuspectDevDto } from "../types";
 
-const POI_KINDS = ["Suspect", "Citizen"] as const;
+const POI_KINDS = ["Suspect", "Citizen", "None"] as const;
 type PoiKind = (typeof POI_KINDS)[number];
 
 interface SaloonDevPanelProps {
@@ -18,6 +18,7 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
 
   const [forcedKind, setForcedKind] = useState<PoiKind>("Suspect");
   const [selectedSuspectId, setSelectedSuspectId] = useState<string>("");
+  const [selectedCitizenRoleKey, setSelectedCitizenRoleKey] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
@@ -51,6 +52,9 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
         forcedKind,
         forcedSuspectId: forcedKind === "Suspect" && selectedSuspectId !== ""
           ? selectedSuspectId
+          : null,
+        forcedCitizenRoleKey: forcedKind === "Citizen" && selectedCitizenRoleKey !== ""
+          ? selectedCitizenRoleKey
           : null,
       });
       refresh();
@@ -129,7 +133,8 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
               )}
               {!data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
                 <MutedText>
-                  Generic citizen POI — no named entity. {data.citizenInfo?.descriptor ?? ""}
+                  Citizen POI — {data.activeSaloonPoi.descriptor}
+                  {data.activeSaloonPoi.citizenRole && ` (role: ${data.activeSaloonPoi.citizenRole})`}
                 </MutedText>
               )}
             </PoiCard>
@@ -202,6 +207,7 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
               onChange={(e) => {
                 setForcedKind(e.target.value as PoiKind);
                 setSelectedSuspectId("");
+                setSelectedCitizenRoleKey("");
               }}
               data-testid="force-kind-select"
             >
@@ -230,13 +236,37 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
             </Field>
           )}
           {forcedKind === "Citizen" && (
-            <CitizenNote>
-              {data?.citizenInfo
-                ? data.citizenInfo.hasNamedArchetypes
-                  ? `Available archetypes: ${data.citizenInfo.availableArchetypes.join(", ")}`
-                  : `Generic citizen POI — ${data.citizenInfo.descriptor}. No named archetypes exist.`
-                : "Generic citizen POI — no named archetypes."}
-            </CitizenNote>
+            <CitizenSection>
+              {data?.citizenInfo?.hasNamedArchetypes ? (
+                <>
+                  <Field>
+                    <Label>Citizen role:</Label>
+                    <Select
+                      value={selectedCitizenRoleKey}
+                      onChange={(e) => setSelectedCitizenRoleKey(e.target.value)}
+                      data-testid="force-citizen-role-select"
+                    >
+                      <option value="">Any citizen (deterministic pick)</option>
+                      {data.citizenInfo.availableArchetypes.map((a) => (
+                        <option key={a.roleKey} value={a.roleKey}>
+                          {a.displayName}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <CitizenNote>
+                    Source-backed cast of {data.citizenInfo.availableArchetypes.length} citizen roles.
+                    Citizen features come from the shared suspect vocabulary — the role selector
+                    chooses the citizen role, not a separate visual feature. The feature is
+                    concealed during lookaround and revealed only after mistaken take-in.
+                  </CitizenNote>
+                </>
+              ) : (
+                <CitizenNote>
+                  Generic citizen POI — {data?.citizenInfo?.descriptor ?? "no named archetypes."}
+                </CitizenNote>
+              )}
+            </CitizenSection>
           )}
           <ButtonRow>
             <Button type="button" onClick={handleForce} disabled={actionPending}>
@@ -542,6 +572,11 @@ const CitizenNote = styled.p`
   font-size: 0.78rem;
   margin: 0;
   padding: 4px 0;
+`;
+
+const CitizenSection = styled.div`
+  display: grid;
+  gap: 8px;
 `;
 
 const MismatchWarning = styled.div`

@@ -26,14 +26,17 @@ public sealed class BountySaloonEventSourcingTests
     public void LookAroundSaloonWithSuspectProducesSpottedEvent()
     {
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        session.MarkEventsCommitted();
         var result = session.LookAroundSaloon();
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        // Two events: TownActionContextEntered (context change) + SaloonPersonOfInterestSpotted
-        Assert.Equal(2, session.UncommittedEvents.Count);
+        // Three events: TownActionContextEntered (context change) + DevSaloonOverrideConsumed + SaloonPersonOfInterestSpotted
+        Assert.Equal(3, session.UncommittedEvents.Count);
         Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
-        var e = Assert.IsType<SaloonPersonOfInterestSpotted>(session.UncommittedEvents[1]);
+        Assert.IsType<DevSaloonOverrideConsumed>(session.UncommittedEvents[1]);
+        var e = Assert.IsType<SaloonPersonOfInterestSpotted>(session.UncommittedEvents[2]);
         Assert.Equal(InvestigationSourceKind.SaloonLookAround, e.SourceKind);
         Assert.NotNull(e.Descriptor);
         Assert.NotNull(e.SuspectId);
@@ -51,6 +54,8 @@ public sealed class BountySaloonEventSourcingTests
         var spottedEvent = session.UncommittedEvents.OfType<SaloonPersonOfInterestSpotted>().Single();
         Assert.Null(spottedEvent.SuspectId);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, spottedEvent.PersonOfInterestKind);
+        Assert.NotNull(spottedEvent.Descriptor);
+        Assert.NotNull(spottedEvent.CitizenRole);
         Assert.False(spottedEvent.RecordLog);
     }
 

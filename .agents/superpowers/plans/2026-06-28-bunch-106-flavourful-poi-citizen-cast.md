@@ -717,6 +717,49 @@ The active saloon POI state is serialized through the private `TownVisitTownStat
     </MutedText>
   )}
   ```
+
+---
+
+## Realignment: Simplified Saloon POI Selection (mid-implementation)
+
+> **Date:** 2026-06-28. The original plan preserved the old saloon POI eligibility logic (town presence, known warrant, poster state gates). The product direction has changed: saloon POI selection is now much simpler. This section supersedes the eligibility-related parts of the original plan.
+
+### New product rule
+
+Any non-culprit suspect can walk into any saloon. Any citizen can walk into any saloon. The saloon POI opportunity can be:
+- a suspect,
+- a citizen,
+- or nobody of interest.
+
+Do NOT gate ordinary suspect or citizen saloon POI eligibility on town presence, known warrant poster state, viewed poster state, clue visibility, town source state, or whether the suspect has a local presence. A suspect or citizen being in the saloon is just a rolled opportunity.
+
+The only special case is the true killer. The true killer remains gated behind the existing killer-release gameplay gate. Do not fix the broader killer-release model in BUNCH-106.
+
+### Implementation changes
+
+1. **`IsEligibleSaloonPersonOfInterestCandidate`**: Simplified to only exclude the unreleased true killer. No warrant, presence, or poster checks.
+2. **`GetSaloonPoiIneligibilityReason`**: Simplified to only report the unreleased true killer reason.
+3. **`TryGetConfrontableSaloonPersonOfInterestCandidateInTown`**: Renamed/repurposed to `TryGetEligibleSaloonSuspectCandidate` — iterates suspects, skips only the unreleased true killer.
+4. **Normal `LookAroundSaloon` path**: Build candidate pool from non-culprit suspects + citizen cast + nobody outcome. Roll deterministically using the salt source. The pool is: each eligible suspect, each citizen role, and a "nobody" slot. The roll picks one deterministically.
+5. **`DevSaloonPoiKind`**: Add `None` for forcing "nobody of interest."
+6. **`DevSaloonOverride`**: Add `ForNone()` factory.
+7. **`ForceDevSaloonOverride` validation**: Only reject the unreleased true killer for specific suspect force. No warrant/presence checks.
+8. **Tests**: Use dev override seams to force specific outcomes. Do NOT remove suspects or rely on ineligibility to get citizen/nobody outcomes.
+
+### Test expectations (realigned)
+
+- A non-culprit suspect can be selected as saloon POI without town presence (no `SetWantedSuspectPresenceState` call).
+- A citizen can be selected as saloon POI via dev override without suspect ineligibility hacks.
+- Nobody of interest is a possible saloon outcome (force via dev override).
+- Unreleased true killer is not selected by ordinary saloon POI roll.
+- Dev override can force citizen/suspect/nobody cleanly.
+- Citizen concealment/reveal tests from the original plan are preserved.
+
+### Out of scope (reported as follow-up)
+
+- The existing sheriff turn-in rule where the UI lets you name a suspect but the turn-in path blocks with "you did not have enough information" is wrong as a product rule. If the game lets the player name a suspect for confrontation/take-in, that should be enough to perform the take-in attempt. This is NOT fixed in BUNCH-106 unless it blocks tests. Report as a separate issue candidate.
+- The killer-release model redesign (clue-count → gang-members-taken-in count) is out of scope.
+
   Note: This requires adding `citizenRole` to `ActiveSaloonPoiDto` in the dev DTO. Update `ActiveSaloonPoiDto` in `SaloonDevContextDto.cs` to add `string? CitizenRole` and map it in `SaloonDevContextMapper.cs`.
 
 - [ ] 13.6 Run frontend typecheck and tests to verify.

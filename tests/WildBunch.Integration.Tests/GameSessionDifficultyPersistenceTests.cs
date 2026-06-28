@@ -332,14 +332,14 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         var serializer = new GameSessionJsonSerializer();
         var session = CreateTownVisitSession();
-        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest("a town clerk from Current Town");
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonCitizenPersonOfInterest("a stranger with a limp in the left leg", "butcher");
 
         var json = serializer.SerializeTownVisitState(session.CurrentTownVisit);
         var reloaded = serializer.DeserializeTownVisitState(json);
 
         Assert.Contains("\"activeSaloonPersonOfInterestDescriptor\"", json, StringComparison.Ordinal);
         Assert.Null(reloaded.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        Assert.Equal("a town clerk from Current Town", reloaded.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+        Assert.Equal("a stranger with a limp in the left leg", reloaded.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
     }
 
     [Fact]

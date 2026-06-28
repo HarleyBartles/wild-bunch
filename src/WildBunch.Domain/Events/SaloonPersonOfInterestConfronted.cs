@@ -23,4 +23,9 @@ public sealed record SaloonPersonOfInterestConfronted : IDomainEvent
     public decimal? WalletAfter { get; init; }
     public string? DeclaredWantedIdentityHandle { get; init; }
     public bool IsCitizen { get; init; }
+    /// <summary>
+    /// The revealed citizen role key (e.g. "butcher"), null for suspect confrontations.
+    /// The display name is resolved via CitizenCast.GetRoleByKey at narration build time.
+    /// </summary>
+    public string? CitizenRole { get; init; }
 }

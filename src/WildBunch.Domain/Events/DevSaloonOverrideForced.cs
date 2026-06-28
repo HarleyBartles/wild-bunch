@@ -14,4 +14,5 @@ public sealed record DevSaloonOverrideForced : IDomainEvent
 {
     public required DevSaloonPoiKind ForcedKind { get; init; }
     public SuspectId? ForcedSuspectId { get; init; }
+    public string? ForcedCitizenRoleKey { get; init; }
 }
