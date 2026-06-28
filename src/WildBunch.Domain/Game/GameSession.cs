@@ -383,6 +383,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case DevSaloonOverrideConsumed dsc2:
                 Apply(dsc2);
                 break;
+            case DevSaltSourceForced dsf:
+                Apply(dsf);
+                break;
+            case DevSaltSourceCleared dsc:
+                Apply(dsc);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -721,6 +727,29 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(DevSaloonOverrideConsumed e)
     {
         _pendingDevSaloonOverride = null;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevSaltSourceForced event. Replaces the RNG salt posture with the
+    /// forced fixed salt source. Dev-only event — does not affect gameplay state
+    /// directly. The salt source is persisted in the session snapshot, so
+    /// rehydration after a salt change requires no new persistence shape.
+    /// See BUNCH-101.
+    /// </summary>
+    internal void Apply(DevSaltSourceForced e)
+    {
+        SaltSource = e.ForcedSaltSource;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevSaltSourceCleared event. Restores runtime RNG.
+    /// Dev-only event. See BUNCH-101.
+    /// </summary>
+    internal void Apply(DevSaltSourceCleared e)
+    {
+        SaltSource = SaltSource.CreateRuntime();
         _version++;
     }
 
@@ -1098,6 +1127,33 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         ProduceEvent(new DevSaloonOverrideCleared());
+    }
+
+    /// <summary>
+    /// Dev command: locks the RNG to a fixed salt for reproducible playtesting.
+    /// Sets up reproducibility state; does not force any encounter outcome.
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-101.
+    /// </summary>
+    public void ForceDevSaltSource(SaltSource saltSource)
+    {
+        ArgumentNullException.ThrowIfNull(saltSource);
+        if (saltSource.Mode != SaltSourceMode.Fixed)
+        {
+            throw new ArgumentException("ForceDevSaltSource requires a Fixed salt source.", nameof(saltSource));
+        }
+
+        ProduceEvent(new DevSaltSourceForced
+        {
+            ForcedSaltSource = saltSource
+        });
+    }
+
+    /// <summary>
+    /// Dev command: restores runtime RNG. See BUNCH-101.
+    /// </summary>
+    public void ClearDevSaltSource()
+    {
+        ProduceEvent(new DevSaltSourceCleared());
     }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
