@@ -62,10 +62,7 @@ export function PreSessionSurface() {
 
       {flow.step === "story" && (
         <StorySoFarStep
-          storyAcknowledged={flow.storyAcknowledged}
-          onStoryAcknowledgedChange={flow.setStoryAcknowledged}
           onContinue={flow.advance}
-          onBack={flow.goBack}
           seedCode={flow.seedState.seedCode}
         />
       )}

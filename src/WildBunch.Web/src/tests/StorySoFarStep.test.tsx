@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
 import { getPrologue } from "../api/wildBunchApi";
 import type { PrologueDto } from "../api/types";
@@ -28,46 +27,7 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
   };
 }
 
-interface StepHarnessProps {
-  seedCode?: string | null;
-  initialAcknowledged?: boolean;
-  onContinue?: () => void;
-  onStoryAcknowledgedChange?: (value: boolean) => void;
-}
-
-function StepHarness({
-  seedCode = "SEED-CODE-1",
-  initialAcknowledged = false,
-  onContinue,
-  onStoryAcknowledgedChange,
-}: StepHarnessProps) {
-  const [acknowledged, setAcknowledged] = useState(initialAcknowledged);
-  const [continueHandler] = useState(() => onContinue ?? vi.fn());
-  const [ackChangeHandler] = useState(
-    () =>
-      onStoryAcknowledgedChange ??
-      ((value: boolean) => {
-        setAcknowledged(value);
-      }),
-  );
-
-  return (
-    <StorySoFarStep
-      storyAcknowledged={acknowledged}
-      onStoryAcknowledgedChange={ackChangeHandler}
-      onContinue={continueHandler}
-      onBack={vi.fn()}
-      seedCode={seedCode}
-    />
-  );
-}
-
-function renderStep(overrides: {
-  seedCode?: string | null;
-  initialAcknowledged?: boolean;
-  onContinue?: () => void;
-  onStoryAcknowledgedChange?: (value: boolean) => void;
-} = {}) {
+function renderStep(overrides: { seedCode?: string | null; onContinue?: () => void } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -79,11 +39,9 @@ function renderStep(overrides: {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <StepHarness
-        seedCode={overrides.seedCode ?? "SEED-CODE-1"}
-        initialAcknowledged={overrides.initialAcknowledged ?? false}
+      <StorySoFarStep
         onContinue={onContinue}
-        onStoryAcknowledgedChange={overrides.onStoryAcknowledgedChange}
+        seedCode={overrides.seedCode ?? "SEED-CODE-1"}
       />
     </QueryClientProvider>,
   );
@@ -145,37 +103,43 @@ describe("StorySoFarStep", () => {
     expect(text).not.toContain("variant-1");
   });
 
-  it("shows a loading state while the prologue is fetching", () => {
+  it("shows an in-world loading state while the prologue is fetching", () => {
     mockedGetPrologue.mockReturnValue(new Promise(() => {}));
 
     renderStep();
 
-    expect(screen.getByText(/loading the story so far/i)).toBeInTheDocument();
+    expect(screen.getByText(/the trail ahead is still coming into focus/i)).toBeInTheDocument();
   });
 
-  it("disables the primary action until the story is acknowledged", async () => {
-    mockedGetPrologue.mockResolvedValue(createPrologue());
+  it("disables the primary action while the prologue is loading", () => {
+    mockedGetPrologue.mockReturnValue(new Promise(() => {}));
 
-    renderStep({ initialAcknowledged: false });
-
-    await screen.findByText(/black bart/i);
+    renderStep();
 
     const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
     expect(primaryButton).toBeDisabled();
   });
 
-  it("advances when acknowledged and the primary action is clicked", async () => {
+  it("enables the primary action once the prologue has loaded", async () => {
+    mockedGetPrologue.mockResolvedValue(createPrologue());
+
+    renderStep();
+
+    await screen.findByText(/black bart/i);
+
+    const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
+    expect(primaryButton).toBeEnabled();
+  });
+
+  it("advances when the primary action is clicked after the prologue loads", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
     const onContinue = vi.fn();
     const user = userEvent.setup();
 
-    renderStep({ initialAcknowledged: false, onContinue });
+    renderStep({ onContinue });
 
     await screen.findByText(/black bart/i);
-
-    const checkbox = screen.getByRole("checkbox", { name: /i've read the story so far/i });
-    await user.click(checkbox);
 
     const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
     await user.click(primaryButton);
@@ -185,17 +149,14 @@ describe("StorySoFarStep", () => {
     });
   });
 
-  it("does not advance when the primary action is clicked without acknowledgement", async () => {
-    mockedGetPrologue.mockResolvedValue(createPrologue());
+  it("does not advance while the prologue is still loading", async () => {
+    mockedGetPrologue.mockReturnValue(new Promise(() => {}));
 
     const onContinue = vi.fn();
     const user = userEvent.setup();
 
-    renderStep({ initialAcknowledged: false, onContinue });
+    renderStep({ onContinue });
 
-    await screen.findByText(/black bart/i);
-
-    // The button is disabled, so clicking it should not fire onContinue.
     const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
     expect(primaryButton).toBeDisabled();
     await user.click(primaryButton);
@@ -213,25 +174,53 @@ describe("StorySoFarStep", () => {
     expect(mockedGetPrologue).toHaveBeenCalledWith("MY-SEED-42");
   });
 
-  it("shows an error state when the prologue fetch fails", async () => {
+  it("shows an in-world error state with a retry button when the prologue fetch fails", async () => {
     mockedGetPrologue.mockRejectedValue(new Error("Network down"));
 
     renderStep();
 
     await waitFor(() => {
-      expect(screen.getByText(/couldn't load the prologue/i)).toBeInTheDocument();
+      expect(screen.getByText(/the trail fades into dust/i)).toBeInTheDocument();
     });
+
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
 
     const primaryButton = screen.getByRole("button", { name: /i understand\. keep riding\./i });
     expect(primaryButton).toBeDisabled();
   });
 
-  it("renders the Back button", async () => {
+  it("retries the prologue fetch when the retry button is clicked", async () => {
+    mockedGetPrologue.mockRejectedValueOnce(new Error("Network down"));
+    mockedGetPrologue.mockResolvedValueOnce(createPrologue());
+
+    const user = userEvent.setup();
+
+    renderStep();
+
+    const retryButton = await screen.findByRole("button", { name: /try again/i });
+    await user.click(retryButton);
+
+    await screen.findByText(/black bart/i);
+    expect(
+      screen.getByRole("button", { name: /i understand\. keep riding\./i }),
+    ).toBeEnabled();
+  });
+
+  it("does not render a checkbox acknowledgement gate", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
     renderStep();
 
     await screen.findByText(/black bart/i);
-    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  it("does not render a Back button", async () => {
+    mockedGetPrologue.mockResolvedValue(createPrologue());
+
+    renderStep();
+
+    await screen.findByText(/black bart/i);
+    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
 });

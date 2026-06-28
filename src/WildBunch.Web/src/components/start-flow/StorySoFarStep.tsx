@@ -1,24 +1,15 @@
 import styled from "styled-components";
 import type { FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eyebrow, Button, BackButton } from "../ui/sharedStyled";
+import { Eyebrow, Button } from "../ui/sharedStyled";
 import { getPrologue } from "../../api/wildBunchApi";
 
 interface StorySoFarStepProps {
-  storyAcknowledged: boolean;
-  onStoryAcknowledgedChange: (value: boolean) => void;
   onContinue: () => void;
-  onBack: () => void;
   seedCode?: string | null;
 }
 
-export function StorySoFarStep({
-  storyAcknowledged,
-  onStoryAcknowledgedChange,
-  onContinue,
-  onBack,
-  seedCode,
-}: StorySoFarStepProps) {
+export function StorySoFarStep({ onContinue, seedCode }: StorySoFarStepProps) {
   const prologueQuery = useQuery({
     queryKey: ["prologue", seedCode ?? null],
     queryFn: () => getPrologue(seedCode),
@@ -29,10 +20,11 @@ export function StorySoFarStep({
   const heading = prologueQuery.data?.heading ?? "The story so far";
   const body = prologueQuery.data?.body ?? null;
   const primaryAction = prologueQuery.data?.primaryAction ?? "I understand. Keep riding.";
+  const canAdvance = !prologueQuery.isLoading && !prologueQuery.isError;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!storyAcknowledged || prologueQuery.isLoading || prologueQuery.isError) {
+    if (!canAdvance) {
       return;
     }
     onContinue();
@@ -44,41 +36,23 @@ export function StorySoFarStep({
       <StepHeading>{heading}</StepHeading>
 
       {prologueQuery.isLoading ? (
-        <PrologueLoading>Loading the story so far…</PrologueLoading>
+        <ProloguePending>The trail ahead is still coming into focus…</ProloguePending>
       ) : prologueQuery.isError ? (
         <PrologueError>
-          Couldn't load the prologue. Check your connection and try again.
+          The trail fades into dust before you can make sense of it. Give it a moment and try
+          again.
+          <RetryButton type="button" onClick={() => prologueQuery.refetch()}>
+            Try again
+          </RetryButton>
         </PrologueError>
       ) : (
         <PrologueBody>{body}</PrologueBody>
       )}
 
       <StepForm onSubmit={handleSubmit}>
-        <Field>
-          <CheckboxRow>
-            <input
-              id="start-flow-story-ack"
-              type="checkbox"
-              checked={storyAcknowledged}
-              onChange={(event) => onStoryAcknowledgedChange(event.target.checked)}
-              disabled={prologueQuery.isLoading || prologueQuery.isError}
-            />
-            <Label htmlFor="start-flow-story-ack">I've read the story so far</Label>
-          </CheckboxRow>
-        </Field>
-
-        <StepActions>
-          <BackButton type="button" onClick={onBack}>
-            Back
-          </BackButton>
-          <Button
-            type="submit"
-            $variant="primary"
-            disabled={!storyAcknowledged || prologueQuery.isLoading || prologueQuery.isError}
-          >
-            {primaryAction}
-          </Button>
-        </StepActions>
+        <Button type="submit" $variant="primary" disabled={!canAdvance}>
+          {primaryAction}
+        </Button>
       </StepForm>
     </StepCard>
   );
@@ -116,7 +90,7 @@ const PrologueBody = styled.p`
   max-width: 60ch;
 `;
 
-const PrologueLoading = styled.p`
+const ProloguePending = styled.p`
   margin: 0;
   padding: 14px 16px;
   border-radius: 14px;
@@ -126,8 +100,9 @@ const PrologueLoading = styled.p`
   font-size: 0.92rem;
 `;
 
-const PrologueError = styled.p`
-  margin: 0;
+const PrologueError = styled.div`
+  display: grid;
+  gap: 10px;
   padding: 14px 16px;
   border-radius: 14px;
   background: color-mix(in srgb, var(--danger) 12%, transparent);
@@ -136,36 +111,24 @@ const PrologueError = styled.p`
   font-size: 0.92rem;
 `;
 
-const StepForm = styled.form`
-  display: grid;
-  gap: 16px;
-`;
+const RetryButton = styled.button`
+  justify-self: start;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: transparent;
+  color: var(--danger-text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
 
-const Field = styled.div`
-  display: grid;
-  gap: 6px;
-`;
-
-const CheckboxRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--accent-strong);
+  &:hover {
+    border-color: var(--danger);
   }
 `;
 
-const Label = styled.label`
-  color: color-mix(in srgb, var(--text) 75%, transparent);
-  font-size: 0.94rem;
-`;
-
-const StepActions = styled.div`
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
+const StepForm = styled.form`
+  display: grid;
+  gap: 16px;
 `;

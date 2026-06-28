@@ -22,7 +22,6 @@ export interface StartFlowRequest {
 export interface UseStartFlowResult {
   step: StartFlowStep;
   playerName: string;
-  storyAcknowledged: boolean;
   selectedTownId: string | null;
   travelDifficulty: TravelDifficulty;
   seedState: ReturnType<typeof useStartGameSeed>["seedState"];
@@ -30,7 +29,6 @@ export interface UseStartFlowResult {
   seedDirty: boolean;
   decodeError: string | null;
   setPlayerName: (value: string) => void;
-  setStoryAcknowledged: (value: boolean) => void;
   setSelectedTownId: (value: string | null) => void;
   setTravelDifficulty: (difficulty: TravelDifficulty) => void;
   setSeedDraft: (value: string) => void;
@@ -45,7 +43,6 @@ export interface UseStartFlowResult {
 export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStartFlowResult {
   const seed = useStartGameSeed({ session, resetToken });
   const [step, setStep] = useState<StartFlowStep>("name");
-  const [storyAcknowledged, setStoryAcknowledged] = useState(false);
   const [selectedTownId, setSelectedTownId] = useState<string | null>(null);
 
   const advance = useCallback(() => {
@@ -89,7 +86,6 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
   return {
     step,
     playerName: seed.playerName,
-    storyAcknowledged,
     selectedTownId,
     travelDifficulty: seed.travelDifficulty,
     seedState: seed.seedState,
@@ -97,7 +93,6 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     seedDirty: seed.seedDirty,
     decodeError: seed.decodeError,
     setPlayerName: seed.setPlayerName,
-    setStoryAcknowledged,
     setSelectedTownId,
     setTravelDifficulty: seed.setTravelDifficulty,
     setSeedDraft: seed.setSeedDraft,
