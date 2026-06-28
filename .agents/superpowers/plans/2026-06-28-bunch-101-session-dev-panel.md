@@ -1,8 +1,8 @@
-# Session Dev Panel Implementation Plan
+﻿# Session Dev Panel Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Add a `session-dev` dev overlay panel that owns game/session-level setup and control state — session identity/status/phase, seed/setup posture (RNG salt), difficulty/entropy inspection, and a safe high-level scenario setup control (lock/clear the RNG salt) — without implementing BUNCH-93 entropy semantics or BUNCH-94 difficulty semantics.
+**Goal:** Add a `session-dev` dev overlay panel that owns game/session-level setup and control state â€” session identity/status/phase, seed/setup posture (RNG salt), difficulty/entropy inspection, and a safe high-level scenario setup control (lock/clear the RNG salt) â€” without implementing BUNCH-93 entropy semantics or BUNCH-94 difficulty semantics.
 
 **Architecture:** The panel registers through the existing `DevPanelRegistry` and is available on all gameplay surfaces (it is not a surface owner, so it never displaces Saloon/Travel defaults). It fetches a new `SessionDevContextDto` from a guarded `/api/dev/sessions/{id}/session-context` query endpoint and dispatches dev commands to `/api/dev/sessions/{id}/session/lock-rng` and `/api/dev/sessions/{id}/session/clear-rng`. Dev commands flow through Application handlers that load `GameSession` via the repository, invoke new aggregate command methods (`ForceDevSaltSource` / `ClearDevSaltSource`), and produce typed domain events (`DevSaltSourceForced` / `DevSaltSourceCleared`) that are part of the event stream. The `SaltSource` (RNG posture) is already persisted in the session snapshot, so rehydration after a salt change requires no new persistence shape. Difficulty and entropy are inspection-only in this slice; their mutation semantics are owned by BUNCH-94 and BUNCH-93.
 
@@ -13,12 +13,12 @@
 - `GameSession` is the live-play aggregate root; all gameplay mutation flows through it.
 - Typed domain events are plain sealed records implementing `IDomainEvent`; `Apply` is the single mutation path.
 - Dev endpoints live under `/api/dev/` and are gated by `DevRoleGuard.EnsureDevAccess()`.
-- Dev DTOs are separate types from player DTOs (per ADR-0030 §7).
+- Dev DTOs are separate types from player DTOs (per ADR-0030 Â§7).
 - Normal player APIs must remain clean of dev-only state and must not gain dev mutation powers.
 - Do not implement BUNCH-94 difficulty semantics or BUNCH-93 entropy semantics. Difficulty and entropy are inspection-only here.
 - Do not replace Session Audit's read-heavy event/log role.
 - Do not turn Session dev into a universal editor for player, travel, saloon, casefile, suspect, inventory, or final gameplay outcomes.
-- Do not force normal gameplay actions or final gameplay outcomes (dev-overlay doctrine §1 state/action boundary).
+- Do not force normal gameplay actions or final gameplay outcomes (dev-overlay doctrine Â§1 state/action boundary).
 - The RNG salt lock sets up reproducibility state; it does not force any encounter result. Normal gameplay still resolves encounters through existing rules.
 - **RNG mutation falsification:** Tests must prove that `lock-rng` / `clear-rng` only change the session's `SaltSource` and produce the expected dev event. They must NOT mutate journey state, current action context, player state (wallet, inventory, health), journal entries, player-facing DTOs, saloon state, or any forced encounter/travel/saloon outcome.
 - The original game-start UUID seed code is not retained on the live `GameSession` (it is consumed at `StartNew` to derive world/difficulty/entropy/salt). Session dev must say this honestly rather than fabricate a seed code.
@@ -26,21 +26,21 @@
 - Worker environment uses PowerShell; do not use `&&` for command chaining.
 - Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
 - styled-components for component styling; reference design tokens via `var(--token-name)`. No plain CSS classes.
-- Expanded mode must use width (cards/columns), not a tall single column (dev-overlay doctrine §4).
+- Expanded mode must use width (cards/columns), not a tall single column (dev-overlay doctrine Â§4).
 
 ### Salt contract (explicit/generated)
 
-- **Empty or omitted salt** (`null`, `""`, whitespace-only) means "generate a fixed salt" — the handler produces a 32-char hex token via `RandomNumberGenerator.GetBytes(16)` and passes it to `SaltSource.CreateFixed`.
-- **Supplied non-empty text** means "use this exact reproducibility token" — the handler passes the trimmed value verbatim to `SaltSource.CreateFixed`.
+- **Empty or omitted salt** (`null`, `""`, whitespace-only) means "generate a fixed salt" â€” the handler produces a 32-char hex token via `RandomNumberGenerator.GetBytes(16)` and passes it to `SaltSource.CreateFixed`.
+- **Supplied non-empty text** means "use this exact reproducibility token" â€” the handler passes the trimmed value verbatim to `SaltSource.CreateFixed`.
 - `SaltSource.CreateFixed` currently validates non-null only. If future domain validation is added, the handler must propagate the error as a 400/ArgumentException rather than silently generating.
 - Handler/API tests must cover: null path, empty-string path, whitespace-only path, and explicit-salt path.
-- Frontend sends `{ salt: null }` when the input is blank (not an empty string — normalize blank→null client-side).
+- Frontend sends `{ salt: null }` when the input is blank (not an empty string â€” normalize blankâ†’null client-side).
 
 ### RNG mutation falsification proof
 
 Tests at both domain aggregate and integration levels must prove that `lock-rng` / `clear-rng`:
 1. Only change `SaltSource` posture on the session.
-2. Only produce the corresponding dev event (`DevSaltSourceForced` / `DevSaltSourceCleared`) — no journey, player, saloon, or gameplay events.
+2. Only produce the corresponding dev event (`DevSaltSourceForced` / `DevSaltSourceCleared`) â€” no journey, player, saloon, or gameplay events.
 3. Do NOT mutate: journey state, current action context, player state (wallet, inventory, health), journal entries, player-facing DTOs (no `saltPosture` field), saloon state, difficulty, entropy, or any forced encounter/travel/saloon/gameplay outcome.
 
 This is the falsification counterpart to the positive tests: the RNG lock sets reproducibility posture only.
@@ -64,14 +64,14 @@ This is the falsification counterpart to the positive tests: the RNG lock sets r
 | File | Responsibility |
 |------|----------------|
 | `Dev/Models/SessionDevContextDto.cs` | New dev DTO: session identity, status, phase/clock, current town, difficulty, entropy, salt posture |
-| `Dev/Models/LockRngRequestDto.cs` | New dev DTO: request shape for locking RNG. Contract: null/empty/whitespace salt → handler generates a fresh fixed salt; non-empty string → use as exact reproducibility token. `SaltSource.CreateFixed` validates non-null only; handler must normalize blank → generated before calling it. |
+| `Dev/Models/LockRngRequestDto.cs` | New dev DTO: request shape for locking RNG. Contract: null/empty/whitespace salt â†’ handler generates a fresh fixed salt; non-empty string â†’ use as exact reproducibility token. `SaltSource.CreateFixed` validates non-null only; handler must normalize blank â†’ generated before calling it. |
 | `Dev/Queries/GetSessionDevContextQuery.cs` | New query record |
 | `Dev/Queries/GetSessionDevContextHandler.cs` | New query handler: loads session, maps dev context |
 | `Dev/Commands/ForceDevSaltSourceCommand.cs` | New command record |
-| `Dev/Commands/ForceDevSaltSourceHandler.cs` | New command handler: load → aggregate command → store → commit |
+| `Dev/Commands/ForceDevSaltSourceHandler.cs` | New command handler: load â†’ aggregate command â†’ store â†’ commit |
 | `Dev/Commands/ClearDevSaltSourceCommand.cs` | New command record |
-| `Dev/Commands/ClearDevSaltSourceHandler.cs` | New command handler: load → aggregate command → store → commit |
-| `Dev/Mapping/SessionDevContextMapper.cs` | New mapper: domain session → dev DTO (separate from player mappers) |
+| `Dev/Commands/ClearDevSaltSourceHandler.cs` | New command handler: load â†’ aggregate command â†’ store â†’ commit |
+| `Dev/Mapping/SessionDevContextMapper.cs` | New mapper: domain session â†’ dev DTO (separate from player mappers) |
 
 ### API layer (src/WildBunch.Api/)
 
@@ -95,7 +95,7 @@ This is the falsification counterpart to the positive tests: the RNG lock sets r
 | File | Responsibility |
 |------|----------------|
 | `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs` | New handler unit tests: inspection DTO shape, salt posture, difficulty/entropy read |
-| `tests/WildBunch.Application.Tests/Dev/ForceDevSaltSourceHandlerTests.cs` | New handler unit tests: explicit salt path, null/empty/whitespace → generated salt, exact salt preserved |
+| `tests/WildBunch.Application.Tests/Dev/ForceDevSaltSourceHandlerTests.cs` | New handler unit tests: explicit salt path, null/empty/whitespace â†’ generated salt, exact salt preserved |
 | `tests/WildBunch.Application.Tests/Dev/ClearDevSaltSourceHandlerTests.cs` | New handler unit tests: clear RNG restores runtime mode |
 | `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs` | New aggregate unit tests: Force/ClearDevSaltSource + Apply round-trip + RNG mutation falsification proof (journey, action context, player state, difficulty/entropy unchanged; single-event isolation) |
 | `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` | New integration tests: 200/403/404, lock/clear round-trip, normal API boundary unchanged, player DTO unchanged after lock, null/empty salt generates, context fields unchanged except salt posture |
@@ -109,7 +109,7 @@ This is the falsification counterpart to the positive tests: the RNG lock sets r
 
 ---
 
-## Task 1: Domain — DevSaltSource events + aggregate command methods
+## Task 1: Domain â€” DevSaltSource events + aggregate command methods
 
 **Files:**
 - Create: `src/WildBunch.Domain/Events/DevSaltSourceForced.cs`
@@ -122,9 +122,9 @@ This is the falsification counterpart to the positive tests: the RNG lock sets r
 - Consumes: `WildBunch.Domain.Travel.SaltSource` (existing record `SaltSource(SaltSourceMode Mode, string Salt)` with `CreateRuntime()` / `CreateFixed(string)`).
 - Produces: `GameSession.ForceDevSaltSource(SaltSource saltSource)`, `GameSession.ClearDevSaltSource()`, `GameSession.Apply(DevSaltSourceForced)`, `GameSession.Apply(DevSaltSourceCleared)`, events `DevSaltSourceForced(Guid GameSessionId, SaltSource SaltSource)`, `DevSaltSourceCleared(Guid GameSessionId)`.
 
-- [ ] **Step 1: Write the failing aggregate test**
+- [x] **Step 1: Write the failing aggregate test**
 
-Create `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs`. Use the existing `SeededNewGameFactory` to build a session through the seed system (per AGENTS.md UUID seed codec rules — do not bypass the seed system for session construction). Derive a seed UUID via `StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor)` from a descriptor.
+Create `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs`. Use the existing `SeededNewGameFactory` to build a session through the seed system (per AGENTS.md UUID seed codec rules â€” do not bypass the seed system for session construction). Derive a seed UUID via `StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor)` from a descriptor.
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -251,20 +251,20 @@ public sealed class DevSaltSourceTests
 }
 ```
 
-Note: `UncommittedEvents` / `MarkEventsCommitted` are the existing aggregate event hooks used by `DevSaloonOverrideTests.cs` — match the exact names exposed there. If `UncommittedEvents` is not public, use the same reflection/inspection pattern `DevSaloonOverrideTests` uses.
+Note: `UncommittedEvents` / `MarkEventsCommitted` are the existing aggregate event hooks used by `DevSaloonOverrideTests.cs` â€” match the exact names exposed there. If `UncommittedEvents` is not public, use the same reflection/inspection pattern `DevSaloonOverrideTests` uses.
 
 > **Falsification principle:** These tests prove that RNG lock/clear only changes `SaltSource` posture and emits the corresponding dev event. Journey state, current action context, player state (wallet, inventory), difficulty, entropy, and event stream isolation are all explicitly asserted as unchanged.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaltSourceTests"`
 Expected: FAIL with "ForceDevSaltSource not defined" / "DevSaltSourceForced not found".
 
-- [ ] **Step 3: Add the SeededSessionFactory test helper (if not already present)**
+- [x] **Step 3: Add the SeededSessionFactory test helper (if not already present)**
 
 Inspect `tests/WildBunch.Domain.Tests/DevSaloonOverrideTests.cs` for the exact session-construction helper it uses. If a shared `SeededSessionFactory.Build()` (or equivalent) already exists, reuse it. If not, add a small helper in the test project that builds a session via `SeededNewGameFactory` + a descriptor-derived UUID (do not store a UUID in the fixture; derive it on the fly via `StartingWorldDescriptorResolver.CreateRepresentativeSeedCode`). Match the construction pattern used by `DevSaloonOverrideTests.cs` to stay consistent.
 
-- [ ] **Step 4: Create the DevSaltSourceForced event**
+- [x] **Step 4: Create the DevSaltSourceForced event**
 
 Create `src/WildBunch.Domain/Events/DevSaltSourceForced.cs`:
 
@@ -280,9 +280,9 @@ public sealed record DevSaltSourceForced(Guid GameSessionId, SaltSource SaltSour
 }
 ```
 
-Match the exact `IDomainEvent` implementation pattern used by `DevSaloonOverrideForced.cs` (read that file first and mirror its shape — some events use a base class or explicit interface implementation).
+Match the exact `IDomainEvent` implementation pattern used by `DevSaloonOverrideForced.cs` (read that file first and mirror its shape â€” some events use a base class or explicit interface implementation).
 
-- [ ] **Step 5: Create the DevSaltSourceCleared event**
+- [x] **Step 5: Create the DevSaltSourceCleared event**
 
 Create `src/WildBunch.Domain/Events/DevSaltSourceCleared.cs`, mirroring `DevSaloonOverrideCleared.cs`:
 
@@ -297,7 +297,7 @@ public sealed record DevSaltSourceCleared(Guid GameSessionId) : IDomainEvent
 }
 ```
 
-- [ ] **Step 6: Add aggregate command + Apply methods to GameSession.cs**
+- [x] **Step 6: Add aggregate command + Apply methods to GameSession.cs**
 
 In `src/WildBunch.Domain/Game/GameSession.cs`, near the existing `ForceDevSaloonOverride` / `ClearDevSaloonOverride` methods (search for `ForceDevSaloonOverride` to find the exact region), add:
 
@@ -305,7 +305,7 @@ In `src/WildBunch.Domain/Game/GameSession.cs`, near the existing `ForceDevSaloon
 /// <summary>
 /// Dev command: lock the RNG to a fixed salt for reproducible playtesting.
 /// Sets up reproducibility state; does not force any encounter outcome.
-/// Per dev-overlay doctrine §1 (state/action boundary).
+/// Per dev-overlay doctrine Â§1 (state/action boundary).
 /// </summary>
 internal void ForceDevSaltSource(SaltSource saltSource)
 {
@@ -342,7 +342,7 @@ internal void Apply(DevSaltSourceCleared e)
 }
 ```
 
-- [ ] **Step 7: Add produce-time dispatch cases to ApplyProducedEvent**
+- [x] **Step 7: Add produce-time dispatch cases to ApplyProducedEvent**
 
 In `src/WildBunch.Domain/Game/GameSession.cs`, in the `ApplyProducedEvent(IDomainEvent e)` switch (search for `case DevSaloonOverrideForced dsf:` to find the region), add:
 
@@ -355,7 +355,7 @@ case DevSaltSourceCleared dsc:
     break;
 ```
 
-- [ ] **Step 8: Add replay cases to GameSessionEventReplay.cs**
+- [x] **Step 8: Add replay cases to GameSessionEventReplay.cs**
 
 In `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`, in the `ApplyEvent` switch (search for `case DevSaloonOverrideForced dsf:`), add:
 
@@ -368,17 +368,17 @@ case DevSaltSourceCleared dsc:
     break;
 ```
 
-- [ ] **Step 9: Run the aggregate tests to verify they pass**
+- [x] **Step 9: Run the aggregate tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaltSourceTests"`
-Expected: PASS (10 tests — 3 core + 7 falsification proof).
+Expected: PASS (10 tests â€” 3 core + 7 falsification proof).
 
-- [ ] **Step 10: Run full domain test suite to verify no regressions**
+- [x] **Step 10: Run full domain test suite to verify no regressions**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests`
 Expected: PASS, no regressions.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Events/DevSaltSourceForced.cs src/WildBunch.Domain/Events/DevSaltSourceCleared.cs src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Domain/Game/GameSessionEventReplay.cs tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs
@@ -387,7 +387,7 @@ git commit -m "feat(domain): add DevSaltSource forced/cleared events and aggrega
 
 ---
 
-## Task 2: Application — SessionDevContext query (inspection DTO + handler + mapper)
+## Task 2: Application â€” SessionDevContext query (inspection DTO + handler + mapper)
 
 **Files:**
 - Create: `src/WildBunch.Application/Dev/Models/SessionDevContextDto.cs`
@@ -400,7 +400,7 @@ git commit -m "feat(domain): add DevSaltSource forced/cleared events and aggrega
 - Consumes: `IGameSessionRepository` (existing), `GameSession` properties: `Id`, `Status`, `GameDifficulty`, `GameEntropy`, `SaltSource`, `Clock` (Day/Turn/TimeOfDay), `CurrentTown` (TownId/TownName), `CurrentActionContext`, `Journey`.
 - Produces: `SessionDevContextDto`, `GetSessionDevContextHandler.HandleAsync(GetSessionDevContextQuery)`.
 
-- [ ] **Step 1: Write the failing handler test**
+- [x] **Step 1: Write the failing handler test**
 
 Create `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs`. Mirror the construction pattern from `GetSaloonDevContextHandlerTests.cs` (use the same `InMemoryGameSessionRepository` and session builder). Build a session, seed it, call the handler, assert the DTO shape.
 
@@ -464,12 +464,12 @@ public sealed class GetSessionDevContextHandlerTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Application.Tests --filter "FullyQualifiedName~GetSessionDevContextHandlerTests"`
 Expected: FAIL with "SessionDevContextDto / GetSessionDevContextHandler not found".
 
-- [ ] **Step 3: Create the SessionDevContextDto**
+- [x] **Step 3: Create the SessionDevContextDto**
 
 Create `src/WildBunch.Application/Dev/Models/SessionDevContextDto.cs`:
 
@@ -495,9 +495,9 @@ public sealed record SaltPostureDevDto(string Mode, string Salt);
 public sealed record ClockDevDto(int Day, int Turn, string TimeOfDay);
 ```
 
-`SeedCodeRetained` is always `false` and `SeedCodeText` is always `null` in this slice — the original game-start UUID is not retained on the live session. This is the honest dev-overlay answer (dev-overlay unslop: do not invent missing domain categories).
+`SeedCodeRetained` is always `false` and `SeedCodeText` is always `null` in this slice â€” the original game-start UUID is not retained on the live session. This is the honest dev-overlay answer (dev-overlay unslop: do not invent missing domain categories).
 
-- [ ] **Step 4: Create the query record**
+- [x] **Step 4: Create the query record**
 
 Create `src/WildBunch.Application/Dev/Queries/GetSessionDevContextQuery.cs`, mirroring `GetSaloonDevContextQuery.cs`:
 
@@ -507,7 +507,7 @@ namespace WildBunch.Application.Dev.Queries;
 public sealed record GetSessionDevContextQuery(Guid SessionId);
 ```
 
-- [ ] **Step 5: Create the mapper**
+- [x] **Step 5: Create the mapper**
 
 Create `src/WildBunch.Application/Dev/Mapping/SessionDevContextMapper.cs`:
 
@@ -542,7 +542,7 @@ public static class SessionDevContextMapper
 }
 ```
 
-- [ ] **Step 6: Create the handler**
+- [x] **Step 6: Create the handler**
 
 Create `src/WildBunch.Application/Dev/Queries/GetSessionDevContextHandler.cs`, mirroring `GetSaloonDevContextHandler.cs`:
 
@@ -578,12 +578,12 @@ public sealed class GetSessionDevContextHandler
 }
 ```
 
-- [ ] **Step 7: Run the handler tests to verify they pass**
+- [x] **Step 7: Run the handler tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Application.Tests --filter "FullyQualifiedName~GetSessionDevContextHandlerTests"`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/WildBunch.Application/Dev/Models/SessionDevContextDto.cs src/WildBunch.Application/Dev/Queries/GetSessionDevContextQuery.cs src/WildBunch.Application/Dev/Queries/GetSessionDevContextHandler.cs src/WildBunch.Application/Dev/Mapping/SessionDevContextMapper.cs tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs
@@ -592,7 +592,7 @@ git commit -m "feat(application): add SessionDevContext query for BUNCH-101"
 
 ---
 
-## Task 3: Application — ForceDevSaltSource / ClearDevSaltSource command handlers
+## Task 3: Application â€” ForceDevSaltSource / ClearDevSaltSource command handlers
 
 **Files:**
 - Create: `src/WildBunch.Application/Dev/Models/LockRngRequestDto.cs`
@@ -607,7 +607,7 @@ git commit -m "feat(application): add SessionDevContext query for BUNCH-101"
 - Consumes: `IGameSessionRepository`, `IGameSessionUnitOfWork` (via `GameSessionCommandHandler` base), `GameSession.ForceDevSaltSource` / `ClearDevSaltSource` (from Task 1), `SaltSource.CreateFixed` / `CreateRuntime`.
 - Produces: `ForceDevSaltSourceHandler.HandleAsync(ForceDevSaltSourceCommand)`, `ClearDevSaltSourceHandler.HandleAsync(ClearDevSaltSourceCommand)`.
 
-- [ ] **Step 1: Write the failing command handler tests**
+- [x] **Step 1: Write the failing command handler tests**
 
 Create `tests/WildBunch.Application.Tests/Dev/ForceDevSaltSourceHandlerTests.cs` and `ClearDevSaltSourceHandlerTests.cs`. Mirror the handler-test pattern from the existing saloon/travel command handler tests (use `InMemoryGameSessionRepository` + the unit-of-work test double used by `ForceSaloonOverrideHandler` tests). Build a seeded session, seed the repo, invoke the handler, reload, assert the salt posture changed and the event is in the stream.
 
@@ -705,12 +705,12 @@ public sealed class ForceDevSaltSourceHandlerTests
 
 `ClearDevSaltSourceHandlerTests` asserts that after a forced salt, clearing restores `SaltSourceMode.Runtime`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `dotnet test tests/WildBunch.Application.Tests --filter "FullyQualifiedName~ForceDevSaltSourceHandlerTests|FullyQualifiedName~ClearDevSaltSourceHandlerTests"`
 Expected: FAIL with handlers not found.
 
-- [ ] **Step 3: Create the request DTO**
+- [x] **Step 3: Create the request DTO**
 
 Create `src/WildBunch.Application/Dev/Models/LockRngRequestDto.cs`:
 
@@ -720,8 +720,8 @@ namespace WildBunch.Application.Dev.Models;
 /// <summary>
 /// Request DTO for the lock-rng dev endpoint.
 /// Salt contract:
-///   - null / empty / whitespace → handler generates a fresh 32-char hex fixed salt.
-///   - Non-empty trimmed string  → handler uses this exact value as the reproducibility token.
+///   - null / empty / whitespace â†’ handler generates a fresh 32-char hex fixed salt.
+///   - Non-empty trimmed string  â†’ handler uses this exact value as the reproducibility token.
 /// SaltSource.CreateFixed validates non-null only (no length/format constraint today).
 /// If format validation is added to SaltSource later, the handler and tests must surface
 /// that error to the caller rather than silently generating.
@@ -730,11 +730,11 @@ public sealed record LockRngRequestDto(string? Salt);
 ```
 
 **Explicit salt contract:**
-- `null`, `""`, or whitespace-only → handler generates a fresh fixed salt via `SaltSource.CreateFixed(Convert.ToHexString(RandomNumberGenerator.GetBytes(16)))`.
-- Non-empty string after trimming → handler uses it verbatim as the salt token via `SaltSource.CreateFixed(command.Salt)`.
+- `null`, `""`, or whitespace-only â†’ handler generates a fresh fixed salt via `SaltSource.CreateFixed(Convert.ToHexString(RandomNumberGenerator.GetBytes(16)))`.
+- Non-empty string after trimming â†’ handler uses it verbatim as the salt token via `SaltSource.CreateFixed(command.Salt)`.
 - `SaltSource.CreateFixed` currently validates only non-null. If future validation is added (length, charset), `ForceDevSaltSourceHandler` must propagate the domain error as a 400 Bad Request rather than swallowing it.
 
-- [ ] **Step 4: Create the command records**
+- [x] **Step 4: Create the command records**
 
 Create `src/WildBunch.Application/Dev/Commands/ForceDevSaltSourceCommand.cs`:
 
@@ -752,7 +752,7 @@ namespace WildBunch.Application.Dev.Commands;
 public sealed record ClearDevSaltSourceCommand(Guid GameSessionId);
 ```
 
-- [ ] **Step 5: Create the ForceDevSaltSourceHandler**
+- [x] **Step 5: Create the ForceDevSaltSourceHandler**
 
 Create `src/WildBunch.Application/Dev/Commands/ForceDevSaltSourceHandler.cs`, mirroring `ForceSaloonOverrideHandler.cs` (extends `GameSessionCommandHandler`):
 
@@ -792,7 +792,7 @@ public sealed class ForceDevSaltSourceHandler : GameSessionCommandHandler
 }
 ```
 
-- [ ] **Step 6: Create the ClearDevSaltSourceHandler**
+- [x] **Step 6: Create the ClearDevSaltSourceHandler**
 
 Create `src/WildBunch.Application/Dev/Commands/ClearDevSaltSourceHandler.cs`, mirroring `ClearSaloonOverrideHandler.cs`:
 
@@ -827,12 +827,12 @@ public sealed class ClearDevSaltSourceHandler : GameSessionCommandHandler
 }
 ```
 
-- [ ] **Step 7: Run the command handler tests to verify they pass**
+- [x] **Step 7: Run the command handler tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Application.Tests --filter "FullyQualifiedName~ForceDevSaltSourceHandlerTests|FullyQualifiedName~ClearDevSaltSourceHandlerTests"`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/WildBunch.Application/Dev/Models/LockRngRequestDto.cs src/WildBunch.Application/Dev/Commands/ForceDevSaltSourceCommand.cs src/WildBunch.Application/Dev/Commands/ForceDevSaltSourceHandler.cs src/WildBunch.Application/Dev/Commands/ClearDevSaltSourceCommand.cs src/WildBunch.Application/Dev/Commands/ClearDevSaltSourceHandler.cs tests/WildBunch.Application.Tests/Dev/ForceDevSaltSourceHandlerTests.cs tests/WildBunch.Application.Tests/Dev/ClearDevSaltSourceHandlerTests.cs
@@ -841,7 +841,7 @@ git commit -m "feat(application): add ForceDevSaltSource/ClearDevSaltSource comm
 
 ---
 
-## Task 4: API — wire dev endpoints + DI registration
+## Task 4: API â€” wire dev endpoints + DI registration
 
 **Files:**
 - Modify: `src/WildBunch.Api/Dev/DevEndpoints.cs`
@@ -849,10 +849,10 @@ git commit -m "feat(application): add ForceDevSaltSource/ClearDevSaltSource comm
 - Test: `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs`
 
 **Interfaces:**
-- Consumes: `GetSessionDevContextHandler`, `ForceDevSaltSourceHandler`, `ClearDevSaltSourceHandler` (from Tasks 2–3), `DevRoleGuard`, `GameSessionNotFoundException`.
+- Consumes: `GetSessionDevContextHandler`, `ForceDevSaltSourceHandler`, `ClearDevSaltSourceHandler` (from Tasks 2â€“3), `DevRoleGuard`, `GameSessionNotFoundException`.
 - Produces: `GET /api/dev/sessions/{id}/session-context`, `POST /api/dev/sessions/{id}/session/lock-rng`, `POST /api/dev/sessions/{id}/session/clear-rng`.
 
-- [ ] **Step 1: Write the failing integration tests**
+- [x] **Step 1: Write the failing integration tests**
 
 Create `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs`, mirroring `DevSaloonEndpointTests.cs` (uses `PostgreSqlApiFactory`, `NonDevApiFactory`, and the `CreateSessionAsync` helper from that file). Cover: 200 in dev, 403 in non-dev, 404 when session missing, lock-rng 204 + reflected in context, clear-rng 204 + reflected in context, and a normal API boundary check (player `GET /api/games/{id}` DTO does not contain a `saltPosture` field).
 
@@ -1036,7 +1036,7 @@ public sealed class DevSessionEndpointTests
         Assert.Equal(contextBefore.CurrentTownName, contextAfter.CurrentTownName);
         Assert.Equal(contextBefore.CurrentActionContext, contextAfter.CurrentActionContext);
         Assert.Equal(contextBefore.HasActiveJourney, contextAfter.HasActiveJourney);
-        // Salt posture DID change — that's the point
+        // Salt posture DID change â€” that's the point
         Assert.Equal("Fixed", contextAfter.SaltPosture.Mode);
         Assert.Equal("test-salt", contextAfter.SaltPosture.Salt);
     }
@@ -1046,12 +1046,12 @@ public sealed class DevSessionEndpointTests
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (requires PostgreSQL lane): `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests --filter "FullyQualifiedName~DevSessionEndpointTests"`
 Expected: FAIL with route not found / 404 on the dev routes.
 
-- [ ] **Step 3: Register handlers in DI**
+- [x] **Step 3: Register handlers in DI**
 
 In `src/WildBunch.Api/DependencyInjection.cs`, in the dev-only services block (after `services.AddScoped<ClearSaloonOverrideHandler>();`), add:
 
@@ -1061,7 +1061,7 @@ services.AddScoped<ForceDevSaltSourceHandler>();
 services.AddScoped<ClearDevSaltSourceHandler>();
 ```
 
-- [ ] **Step 4: Add the endpoints to DevEndpoints.cs**
+- [x] **Step 4: Add the endpoints to DevEndpoints.cs**
 
 In `src/WildBunch.Api/Dev/DevEndpoints.cs`, in `MapDevEndpoints` (after the saloon endpoints, before `return app;`), add:
 
@@ -1085,14 +1085,14 @@ dev.MapPost("/sessions/{id:guid}/session/clear-rng", ClearRngAsync)
     .Produces(StatusCodes.Status404NotFound);
 ```
 
-Add the three private handler methods, mirroring the exact try/catch shape of `GetSaloonDevContextAsync` / `ForceSaloonOverrideAsync` / `ClearSaloonOverrideAsync` (catch `DevAccessDeniedException` → 403, `GameSessionNotFoundException` → 404). `LockRngAsync` binds `LockRngRequestDto request` and calls `ForceDevSaltSourceHandler` with `new ForceDevSaltSourceCommand(id, request.Salt)`. `ClearRngAsync` calls `ClearDevSaltSourceHandler` with `new ClearDevSaltSourceCommand(id)` and sends `null` body.
+Add the three private handler methods, mirroring the exact try/catch shape of `GetSaloonDevContextAsync` / `ForceSaloonOverrideAsync` / `ClearSaloonOverrideAsync` (catch `DevAccessDeniedException` â†’ 403, `GameSessionNotFoundException` â†’ 404). `LockRngAsync` binds `LockRngRequestDto request` and calls `ForceDevSaltSourceHandler` with `new ForceDevSaltSourceCommand(id, request.Salt)`. `ClearRngAsync` calls `ClearDevSaltSourceHandler` with `new ClearDevSaltSourceCommand(id)` and sends `null` body.
 
-- [ ] **Step 5: Run the integration tests to verify they pass**
+- [x] **Step 5: Run the integration tests to verify they pass**
 
 Run: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests --filter "FullyQualifiedName~DevSessionEndpointTests"`
-Expected: PASS (10 tests — 6 core + 4 RNG mutation falsification/salt contract).
+Expected: PASS (10 tests â€” 6 core + 4 RNG mutation falsification/salt contract).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.Api/Dev/DevEndpoints.cs src/WildBunch.Api/DependencyInjection.cs tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs
@@ -1101,7 +1101,7 @@ git commit -m "feat(api): wire Session dev endpoints (session-context, lock-rng,
 
 ---
 
-## Task 5: Frontend — SessionDevPanel + devApi + types + registry
+## Task 5: Frontend â€” SessionDevPanel + devApi + types + registry
 
 **Files:**
 - Modify: `src/WildBunch.Web/src/dev/types.ts`
@@ -1114,7 +1114,7 @@ git commit -m "feat(api): wire Session dev endpoints (session-context, lock-rng,
 - Consumes: `useGameSession` (existing), `useQuery`/`useQueryClient` (TanStack Query), `requestJson` (existing httpClient), `DevPanelRenderProps` (existing).
 - Produces: `SessionDevPanel` component, `getSessionDevContext`/`lockRng`/`clearRng` client functions, `SessionDevContextDto`/`LockRngRequestDto`/`SaltPostureDevDto`/`ClockDevDto` TS types, `session-dev` registry entry.
 
-- [ ] **Step 1: Write the failing frontend test**
+- [x] **Step 1: Write the failing frontend test**
 
 Create `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx`, mirroring `TravelDevPanel.test.tsx` (mock `devApi`, mock `wildBunchApi`, `GameSessionProvider`, `QueryClientProvider`, `seedGameId` via localStorage). Cover: no-active-session message, renders session context when loaded, lock-rng button calls `lockRng`, clear-rng button calls `clearRng`, expanded prop is accepted.
 
@@ -1201,12 +1201,12 @@ describe("SessionDevPanel", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `src/WildBunch.Web`): `npx vitest run src/tests/SessionDevPanel.test.tsx`
 Expected: FAIL with module not found / `SessionDevPanel` not defined.
 
-- [ ] **Step 3: Add the TypeScript types**
+- [x] **Step 3: Add the TypeScript types**
 
 In `src/WildBunch.Web/src/dev/types.ts`, append:
 
@@ -1242,7 +1242,7 @@ export interface LockRngRequestDto {
 }
 ```
 
-- [ ] **Step 4: Add the devApi client functions**
+- [x] **Step 4: Add the devApi client functions**
 
 In `src/WildBunch.Web/src/dev/devApi.ts`, add the import for the new types and:
 
@@ -1265,18 +1265,18 @@ export function clearRng(gameId: string) {
 }
 ```
 
-- [ ] **Step 5: Create the SessionDevPanel component**
+- [x] **Step 5: Create the SessionDevPanel component**
 
-Create `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`. Mirror the styled-components structure of `TravelDevPanel.tsx` / `SaloonDevPanel.tsx` (Container, Section, SectionTitle, Row, Label, Value, Field, Input, Button, ButtonRow, MutedText, ErrorText). Accept `expanded?: boolean` and use a two-column layout in expanded mode (LeftColumn / RightColumn) per dev-overlay doctrine §4. Compact mode stacks vertically.
+Create `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`. Mirror the styled-components structure of `TravelDevPanel.tsx` / `SaloonDevPanel.tsx` (Container, Section, SectionTitle, Row, Label, Value, Field, Input, Button, ButtonRow, MutedText, ErrorText). Accept `expanded?: boolean` and use a two-column layout in expanded mode (LeftColumn / RightColumn) per dev-overlay doctrine Â§4. Compact mode stacks vertically.
 
 Sections:
-1. **Session** — SessionId (truncated), Status, Current action context, Has active journey.
-2. **Clock** — Day, Turn, Time of day.
-3. **Location** — Current town id + name.
-4. **Setup posture** — GameDifficulty (inspection-only, labeled "Difficulty (inspect)"), GameEntropy (inspection-only, labeled "Entropy (inspect)"), Salt posture mode + salt, Seed code retained (honestly "No — not retained on live session").
-5. **RNG controls** — Optional salt input + "Lock RNG" button + "Clear RNG" button. A note: "Locking RNG makes the run reproducible. It does not force encounter outcomes."
+1. **Session** â€” SessionId (truncated), Status, Current action context, Has active journey.
+2. **Clock** â€” Day, Turn, Time of day.
+3. **Location** â€” Current town id + name.
+4. **Setup posture** â€” GameDifficulty (inspection-only, labeled "Difficulty (inspect)"), GameEntropy (inspection-only, labeled "Entropy (inspect)"), Salt posture mode + salt, Seed code retained (honestly "No â€” not retained on live session").
+5. **RNG controls** â€” Optional salt input + "Lock RNG" button + "Clear RNG" button. A note: "Locking RNG makes the run reproducible. It does not force encounter outcomes."
 
-Use domain-facing labels, not raw IDs, for difficulty/entropy (they are enum names already). The salt input is an explicit dev field, not a domain candidate select — this is acceptable because the salt is a dev-only reproducibility token with no domain candidates (dev-overlay unslop §4 is about domain candidates; a free-form salt token is the honest shape here).
+Use domain-facing labels, not raw IDs, for difficulty/entropy (they are enum names already). The salt input is an explicit dev field, not a domain candidate select â€” this is acceptable because the salt is a dev-only reproducibility token with no domain candidates (dev-overlay unslop Â§4 is about domain candidates; a free-form salt token is the honest shape here).
 
 ```tsx
 import { useState } from "react";
@@ -1344,7 +1344,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
 
 (Full styled-components definitions mirror `TravelDevPanel.tsx`. The `expanded` prop switches `Container` to `display: grid; grid-template-columns: 1fr 1fr;` when true.)
 
-- [ ] **Step 6: Register the panel in DevPanelRegistry**
+- [x] **Step 6: Register the panel in DevPanelRegistry**
 
 In `src/WildBunch.Web/src/dev/DevPanelRegistry.tsx`, add the import and a new entry in `devPanels`. Session dev is available on all surfaces (no `surfaces` filter) and is NOT a surface owner (no `isSurfaceOwner`), so it never displaces Saloon/Travel defaults:
 
@@ -1355,18 +1355,18 @@ import { SessionDevPanel } from "./panels/SessionDevPanel";
   id: "session-dev",
   label: "Session dev",
   render: ({ expanded }) => <SessionDevPanel expanded={expanded} />,
-  // Available on all surfaces; not a surface owner (per dev-overlay doctrine §3)
+  // Available on all surfaces; not a surface owner (per dev-overlay doctrine Â§3)
 },
 ```
 
 Place it after `session-audit` and before the surface-owner panels.
 
-- [ ] **Step 7: Run the frontend test to verify it passes**
+- [x] **Step 7: Run the frontend test to verify it passes**
 
 Run (from `src/WildBunch.Web`): `npx vitest run src/tests/SessionDevPanel.test.tsx`
 Expected: PASS (4 tests).
 
-- [ ] **Step 8: Run frontend typecheck + build + styling enforcement**
+- [x] **Step 8: Run frontend typecheck + build + styling enforcement**
 
 Run (from `src/WildBunch.Web`):
 ```
@@ -1376,7 +1376,7 @@ npx vitest run src/tests/stylingEnforcement.test.ts
 ```
 Expected: PASS (no styled-components violations, no plain CSS classes).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/WildBunch.Web/src/dev/types.ts src/WildBunch.Web/src/dev/devApi.ts src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx src/WildBunch.Web/src/dev/DevPanelRegistry.tsx src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx
@@ -1388,10 +1388,10 @@ git commit -m "feat(web): add SessionDevPanel with RNG posture controls for BUNC
 ## Task 6: Validation, browser proof, plan closeout, index mesh
 
 **Files:**
-- Modify: `.agents/superpowers/plans/2026-06-28-bunch-101-session-dev-panel.md` (this file — check off boxes)
+- Modify: `.agents/superpowers/plans/2026-06-28-bunch-101-session-dev-panel.md` (this file â€” check off boxes)
 - Modify: `.agents/superpowers/plans/INDEX.md` (regenerated)
 
-- [ ] **Step 1: Run the full backend validation suite**
+- [x] **Step 1: Run the full backend validation suite**
 
 ```
 .\scripts\postgres-dev.ps1 ensure
@@ -1401,7 +1401,7 @@ dotnet test
 ```
 Expected: build clean, all tests pass, EF migrations list clean.
 
-- [ ] **Step 2: Run the full frontend validation suite**
+- [x] **Step 2: Run the full frontend validation suite**
 
 ```
 cd src/WildBunch.Web
@@ -1412,35 +1412,35 @@ cd ../..
 ```
 Expected: typecheck clean, build clean, all Vitest suites pass.
 
-- [ ] **Step 3: Regenerate the index mesh**
+- [x] **Step 3: Regenerate the index mesh**
 
 ```
 python scripts/generate_index_mesh.py
 ```
 Expected: `INDEX.md` files updated to include the new plan file and any new source files. Commit any changed `INDEX.md` files.
 
-- [ ] **Step 4: Browser/screenshot proof (compact + expanded)**
+- [x] **Step 4: Browser/screenshot proof (compact + expanded)**
 
-Start the API + web dev servers, start a game, open the dev overlay, select "Session dev", capture compact and expanded screenshots. Save screenshots under `.agents/superpowers/output/screenshots/` (git-ignored — do NOT commit). Cite the local filenames in the PR body. Verify:
+Start the API + web dev servers, start a game, open the dev overlay, select "Session dev", capture compact and expanded screenshots. Save screenshots under `.agents/superpowers/output/screenshots/` (git-ignored â€” do NOT commit). Cite the local filenames in the PR body. Verify:
 - Session dev appears in the panel sidebar on a town surface and on a trail surface.
 - Saloon surface still defaults to Saloon dev (Session dev does not steal the default).
-- Lock RNG → context refresh shows Fixed salt; Clear RNG → context refresh shows Runtime.
+- Lock RNG â†’ context refresh shows Fixed salt; Clear RNG â†’ context refresh shows Runtime.
 - Expanded mode uses two columns, not a tall single column.
 
-- [ ] **Step 5: Normal gameplay unchanged proof**
+- [x] **Step 5: Normal gameplay unchanged proof**
 
 With no dev command issued, perform a normal saloon look-around and a normal travel action. Confirm the player `GET /api/games/{id}` DTO and journal are unchanged (no `saltPosture`, no dev fields). Cite the integration test `PlayerGameDto_DoesNotContainDevSaltPosture` as the automated proof, plus the browser check.
 
-- [ ] **Step 6: Check off all plan checkboxes and commit the plan closeout**
+- [x] **Step 6: Check off all plan checkboxes and commit the plan closeout**
 
-Update every `- [ ]` in this plan to `- [x]`. Commit:
+Update every `- [x]` in this plan to `- [x]`. Commit:
 
 ```bash
 git add .agents/superpowers/plans/2026-06-28-bunch-101-session-dev-panel.md .agents/superpowers/plans/INDEX.md
 git commit -m "chore(plan): close out BUNCH-101 session dev panel plan checkboxes"
 ```
 
-- [ ] **Step 7: Push the branch and open the PR**
+- [x] **Step 7: Push the branch and open the PR**
 
 ```bash
 git push -u origin bunch-101-exec
@@ -1482,4 +1482,4 @@ Stop and split or return AMBER if the work requires:
 - Normalizing runtime session state into new database tables.
 - A PR too large for meaningful review (split into query-only + command slices).
 
-If the SaltSource mutation turns out to require changing the `GameStarted` event shape or breaking the snapshot/rehydration contract, stop and report — do not silently widen persistence scope.
+If the SaltSource mutation turns out to require changing the `GameStarted` event shape or breaking the snapshot/rehydration contract, stop and report â€” do not silently widen persistence scope.
