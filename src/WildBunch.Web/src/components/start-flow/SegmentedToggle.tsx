@@ -30,7 +30,13 @@ export function SegmentedToggle<T extends string | number>({
 
   return (
     <ToggleTrack role="group">
-      <ToggleThumb $count={count} $index={selectedIndex} aria-hidden="true" />
+      <ToggleThumb
+        $count={count}
+        $index={selectedIndex}
+        $isFirst={selectedIndex === 0}
+        $isLast={selectedIndex === count - 1}
+        aria-hidden="true"
+      />
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -61,16 +67,20 @@ const ToggleTrack = styled.div`
   overflow: hidden;
 `;
 
-const ToggleThumb = styled.div<{ $count: number; $index: number }>`
+const ToggleThumb = styled.div<{ $count: number; $index: number; $isFirst: boolean; $isLast: boolean }>`
   position: absolute;
   top: 3px;
   bottom: 3px;
   left: 3px;
   width: calc((100% - 6px) / ${({ $count }) => $count});
-  border-radius: 999px;
+  border-radius: ${({ $isFirst, $isLast }) => {
+    if ($isFirst) return "999px 0 0 999px";
+    if ($isLast) return "0 999px 999px 0";
+    return "0";
+  }};
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   transform: translateX(calc(${({ $index }) => $index} * 100%));
-  transition-property: transform;
+  transition-property: transform, border-radius;
   transition-duration: 0.18s;
   transition-timing-function: ease;
 
