@@ -9,24 +9,11 @@ import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 function ShellChrome() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
   const [devOverlayOpen, setDevOverlayOpen] = useState(false);
-  const chromeBarRef = useRef<HTMLDivElement | null>(null);
-  const [chromeBarHeight, setChromeBarHeight] = useState(0);
-
-  useEffect(() => {
-    const el = chromeBarRef.current;
-    if (!el) return;
-    const update = () => setChromeBarHeight(el.offsetHeight);
-    update();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <DevSurfaceProvider>
       <Shell>
-        <ChromeBar ref={chromeBarRef}>
+        <ChromeBar>
           <Hud
             onOpenJournal={() => setOpenOverlay("journal")}
             onOpenGameSettings={() => setOpenOverlay("game-settings")}
@@ -45,7 +32,7 @@ function ShellChrome() {
             </DevNav>
           </OverlayBar>
         </ChromeBar>
-        <RouteOutlet aria-live="polite" $chromeBarHeight={chromeBarHeight}>
+        <RouteOutlet aria-live="polite">
           <Route>
             <Outlet />
           </Route>
@@ -53,7 +40,6 @@ function ShellChrome() {
         <DevOverlay
           open={devOverlayOpen}
           onClose={() => setDevOverlayOpen(false)}
-          top={chromeBarHeight}
         />
       </Shell>
     </DevSurfaceProvider>
@@ -136,14 +122,12 @@ const DevToggleButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const RouteOutlet = styled.main<{ $chromeBarHeight: number }>`
+const RouteOutlet = styled.main`
   flex: 1;
   padding: 24px;
-  padding-top: ${(props) => props.$chromeBarHeight + 24}px;
 
   @media (max-width: 640px) {
     padding: 14px;
-    padding-top: ${(props) => props.$chromeBarHeight + 14}px;
   }
 `;
 
