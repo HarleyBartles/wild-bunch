@@ -14,7 +14,6 @@ interface StepHandlers {
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }
@@ -28,7 +27,6 @@ function StatefulSetupHuntStep({
   onGameDifficultyChange,
   onGameEntropyChange,
   onSeedDraftChange,
-  onApplySeed,
   onRandomizeSeed,
   onContinue,
 }: {
@@ -40,7 +38,6 @@ function StatefulSetupHuntStep({
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }) {
@@ -74,7 +71,6 @@ function StatefulSetupHuntStep({
         setSeedDirty(true);
         onSeedDraftChange(value);
       }}
-      onApplySeed={onApplySeed}
       onRandomizeSeed={onRandomizeSeed}
       onContinue={onContinue}
     />
@@ -93,7 +89,6 @@ function renderStep(overrides: Partial<{
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;
   onGameEntropyChange: (gameEntropy: GameEntropy) => void;
   onSeedDraftChange: (value: string) => void;
-  onApplySeed: () => Promise<void>;
   onRandomizeSeed: () => void;
   onContinue: () => void;
 }> = {}) {
@@ -102,7 +97,6 @@ function renderStep(overrides: Partial<{
     onGameDifficultyChange: overrides.onGameDifficultyChange ?? vi.fn(),
     onGameEntropyChange: overrides.onGameEntropyChange ?? vi.fn(),
     onSeedDraftChange: overrides.onSeedDraftChange ?? vi.fn(),
-    onApplySeed: overrides.onApplySeed ?? vi.fn().mockResolvedValue(undefined),
     onRandomizeSeed: overrides.onRandomizeSeed ?? vi.fn(),
     onContinue: overrides.onContinue ?? vi.fn(),
   };
@@ -118,7 +112,6 @@ function renderStep(overrides: Partial<{
         onGameDifficultyChange={handlers.onGameDifficultyChange}
         onGameEntropyChange={handlers.onGameEntropyChange}
         onSeedDraftChange={handlers.onSeedDraftChange}
-        onApplySeed={handlers.onApplySeed}
         onRandomizeSeed={handlers.onRandomizeSeed}
         onContinue={handlers.onContinue}
       />,
@@ -136,7 +129,6 @@ function renderStep(overrides: Partial<{
         onGameDifficultyChange={handlers.onGameDifficultyChange}
         onGameEntropyChange={handlers.onGameEntropyChange}
         onSeedDraftChange={handlers.onSeedDraftChange}
-        onApplySeed={handlers.onApplySeed}
         onRandomizeSeed={handlers.onRandomizeSeed}
         onContinue={handlers.onContinue}
       />,
@@ -321,28 +313,6 @@ describe("SetupHuntStep", () => {
     await user.click(screen.getByRole("button", { name: /randomize/i }));
 
     expect(onRandomizeSeed).toHaveBeenCalledTimes(1);
-  });
-
-  it("disables Apply until the seed draft is dirty", () => {
-    renderStep({ seedDirty: false });
-
-    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
-  });
-
-  it("enables Apply when the seed draft is dirty", () => {
-    renderStep({ seedDirty: true });
-
-    expect(screen.getByRole("button", { name: /apply/i })).not.toBeDisabled();
-  });
-
-  it("calls onApplySeed when Apply is clicked with a dirty seed", async () => {
-    const user = userEvent.setup();
-    const onApplySeed = vi.fn().mockResolvedValue(undefined);
-    renderStep({ seedDirty: true, onApplySeed });
-
-    await user.click(screen.getByRole("button", { name: /apply/i }));
-
-    expect(onApplySeed).toHaveBeenCalledTimes(1);
   });
 
   it("shows the decode error when provided", () => {

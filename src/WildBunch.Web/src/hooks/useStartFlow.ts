@@ -35,7 +35,6 @@ export interface UseStartFlowResult {
   setGameDifficulty: (difficulty: GameDifficulty) => void;
   setGameEntropy: (gameEntropy: GameEntropy) => void;
   setSeedDraft: (value: string) => void;
-  applySeed: () => Promise<void>;
   randomizeSeed: () => void;
   goToStep: (step: StartFlowStep) => void;
   advance: () => void;
@@ -74,7 +73,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
 
   const buildStartGameRequest = useCallback(
     async (townId: string): Promise<StartFlowRequest> => {
-      const seedCode = await encodeGameSetupSeed(seed.seedState);
+      const seedCode = seed.seedDraft;
       const trimmedName = seed.playerName.trim();
       return {
         playerName: trimmedName,
@@ -84,7 +83,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
         startingTownId: townId,
       };
     },
-    [seed.playerName, seed.seedState, seed.gameDifficulty, seed.gameEntropy],
+    [seed.playerName, seed.seedDraft, seed.gameDifficulty, seed.gameEntropy],
   );
 
   return {

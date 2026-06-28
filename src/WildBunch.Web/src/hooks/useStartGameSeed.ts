@@ -25,7 +25,6 @@ export interface UseStartGameSeedResult {
   setSeedDraft: (value: string) => void;
   setGameDifficulty: (difficulty: GameDifficulty) => void;
   setGameEntropy: (gameEntropy: GameEntropy) => void;
-  applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
 
@@ -72,30 +71,19 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDraft(seedState.seedCode);
   }, [seedState.seedCode]);
 
-  async function applySeed() {
-    if (!seedDirty) {
-      return;
-    }
-
-    try {
-      const decoded = await decodeGameSetupSeed(seedDraft);
-      setDecodeError(null);
-      setSeedDirty(false);
-      setSeedState(decoded);
-
-      // Decode the seed to get the encoded difficulty and entropy
-      const seedDecoded = await decodeSeed(decoded.seedCode);
-      setGameDifficulty(seedDecoded.gameDifficulty);
-      setGameEntropy(seedDecoded.gameEntropy);
-    } catch (error) {
-      setDecodeError(getErrorMessage(error));
-    }
-  }
-
-  function handleSeedDraftChange(value: string) {
+  async function handleSeedDraftChange(value: string) {
     setDecodeError(null);
     setSeedDraft(value);
     setSeedDirty(true);
+
+    // Decode the seed to get the encoded difficulty and entropy
+    try {
+      const seedDecoded = await decodeSeed(value);
+      setGameDifficulty(seedDecoded.gameDifficulty);
+      setGameEntropy(seedDecoded.gameEntropy);
+    } catch (error) {
+      // Don't show error on typing, only on validation
+    }
   }
 
   async function handleGameDifficultyChange(difficulty: GameDifficulty) {
@@ -150,7 +138,6 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDraft: handleSeedDraftChange,
     setGameDifficulty: handleGameDifficultyChange,
     setGameEntropy: handleGameEntropyChange,
-    applySeed,
     randomizeSeed,
   };
 }
