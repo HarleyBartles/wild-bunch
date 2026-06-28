@@ -5,7 +5,7 @@ namespace WildBunch.GameContent.NewGame;
 internal static class SeedWorldBuilder
 {
     public static World CreateCanonicalWorld()
-        => SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical);
+        => SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldTownSetDefault);
 
     public static World CreateWorld(SeedWorld seedWorld, GameSetupDeterministicSource source)
     {
@@ -17,7 +17,7 @@ internal static class SeedWorldBuilder
             return CreateCanonicalWorld();
         }
 
-        return SeedWorldCatalog.CreateWorld(seedWorld.WorldVariant);
+        return SeedWorldCatalog.CreateWorld(seedWorld.WorldVariant, seedWorld.TownSetKey);
     }
 
     private static bool IsCanonicalSeedWorld(SeedWorld seedWorld)

@@ -10,7 +10,7 @@ public static class StartingTownCatalog
     /// </summary>
     public static IReadOnlyList<Town> GetStartingTownCandidates()
     {
-        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical);
+        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldTownSetDefault);
         return world.Towns
             .Where(town => (town.Services & TownServices.Supplies) != 0 || (town.Services & TownServices.NoticeBoard) != 0)
             .OrderBy(town => town.Name, StringComparer.OrdinalIgnoreCase)

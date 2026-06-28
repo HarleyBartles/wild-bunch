@@ -18,12 +18,13 @@ public static class SeedWorldMapLayout
             ["dryfork"] = (700, 300),
             ["emberfall"] = (800, 500),
             ["hardpan"] = (100, 300),
-            ["openpass"] = (80, 700)
+            ["openpass"] = (80, 700),
+            ["coppercreek"] = (120, 720)
         };
 
     public static IReadOnlyList<SeedMapTown> GetMapTowns()
     {
-        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical);
+        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldTownSetDefault);
         return world.Towns
             .Select(town =>
             {
@@ -35,7 +36,7 @@ public static class SeedWorldMapLayout
 
     public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails()
     {
-        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical);
+        var world = SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldTownSetDefault);
         return world.Trails
             .Select(trail => new SeedMapTrailEdge(
                 trail.Id.Value,

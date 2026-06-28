@@ -92,8 +92,57 @@ internal static class SeedWorldCatalog
         new("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m))
     ];
 
-    public static World CreateWorld(SeedWorldVariant variant)
-        => new(
-            Towns.Select(town => town.Create(variant)),
-            Trails.Select(trail => trail.Create(variant)));
+    // Alternate town set: replaces openpass with coppercreek.
+    // Copper Creek has Supplies (Open Pass has None) and a different
+    // trail profile (Hills/Spring/4m vs OpenRange/None/3m).
+    private static readonly SeedTownDefinition AlternateCoppercreek =
+        new("coppercreek", "Copper Creek",
+            TownServices.Supplies,
+            TownServices.Supplies | TownServices.NoticeBoard,
+            TownServices.Supplies);
+
+    private static readonly SeedTrailDefinition AlternateTrailPineCoppercreek =
+        new("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low,
+            new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m),
+            new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m));
+
+    private const string DefaultTownSet = GameSetupDeterministicLabels.WorldTownSetDefault;
+    private const string OpenPassTownId = "openpass";
+    private const string OpenPassTrailId = "trail-pine-openpass";
+
+    public static World CreateWorld(SeedWorldVariant variant, string townSetKey)
+    {
+        var useAlternate = townSetKey != DefaultTownSet;
+        var towns = GetTowns(useAlternate);
+        var trails = GetTrails(useAlternate);
+        return new World(
+            towns.Select(town => town.Create(variant)),
+            trails.Select(trail => trail.Create(variant)));
+    }
+
+    private static IEnumerable<SeedTownDefinition> GetTowns(bool useAlternate)
+    {
+        foreach (var town in Towns)
+        {
+            if (useAlternate && town.Id == OpenPassTownId)
+                continue;
+            yield return town;
+        }
+
+        if (useAlternate)
+            yield return AlternateCoppercreek;
+    }
+
+    private static IEnumerable<SeedTrailDefinition> GetTrails(bool useAlternate)
+    {
+        foreach (var trail in Trails)
+        {
+            if (useAlternate && trail.Id == OpenPassTrailId)
+                continue;
+            yield return trail;
+        }
+
+        if (useAlternate)
+            yield return AlternateTrailPineCoppercreek;
+    }
 }

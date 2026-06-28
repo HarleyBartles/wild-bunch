@@ -109,17 +109,16 @@ public sealed class SeedWorldBuilderTests
     }
 
     [Fact]
-    public void DefaultAndAlternateTownSetKeysProduceTheSameWorldToday()
+    public void DifferentTownSetKeysProduceDifferentWorldMaps()
     {
-        // The TownSetKey is a seed-owned map generation parameter. Today it does not
-        // change the world — the world is fully determined by WorldVariant. In the
-        // future, it may control different town sets or map layouts. This guardrail
-        // verifies that both key values produce valid worlds with the same town/trail
-        // structure for the same variant. If future work makes TownSetKey affect the
-        // world, this test should be updated to reflect the new mapping.
+        // TownSetKey is a seed-owned map generation parameter. The alternate town set
+        // replaces openpass with coppercreek and trail-pine-openpass with
+        // trail-pine-coppercreek (different terrain, water, distance, and services).
+        // This test proves that changing TownSetKey produces an observably different
+        // generated world — not merely different case/turf/cash outcomes.
         var defaultWorld = BuildSeedWorld(new SeedWorld(
             Guid.Empty,
-            SeedWorldVariant.Frontier,
+            SeedWorldVariant.Canonical,
             GameSetupDeterministicLabels.WorldTownSetDefault,
             AccusationIndex: 0,
             DefaultCulpritIndex: 3,
@@ -127,14 +126,72 @@ public sealed class SeedWorldBuilderTests
 
         var alternateWorld = BuildSeedWorld(new SeedWorld(
             Guid.Empty,
-            SeedWorldVariant.Frontier,
+            SeedWorldVariant.Canonical,
             GameSetupDeterministicLabels.WorldTownSetAlternate,
             AccusationIndex: 0,
             DefaultCulpritIndex: 3,
             CashBonus: 0));
 
-        Assert.Equal(SnapshotTowns(defaultWorld), SnapshotTowns(alternateWorld));
-        Assert.Equal(SnapshotTrails(defaultWorld), SnapshotTrails(alternateWorld));
+        var defaultTowns = SnapshotTowns(defaultWorld);
+        var alternateTowns = SnapshotTowns(alternateWorld);
+        var defaultTrails = SnapshotTrails(defaultWorld);
+        var alternateTrails = SnapshotTrails(alternateWorld);
+
+        // Town sets differ: default has openpass, alternate has coppercreek.
+        Assert.Contains(("openpass", "Open Pass", TownServices.None), defaultTowns);
+        Assert.DoesNotContain(("openpass", "Open Pass", TownServices.None), alternateTowns);
+        Assert.Contains(("coppercreek", "Copper Creek", TownServices.Supplies), alternateTowns);
+        Assert.DoesNotContain(("coppercreek", "Copper Creek", TownServices.Supplies), defaultTowns);
+
+        // Trail graphs differ: default has trail-pine-openpass, alternate has trail-pine-coppercreek.
+        Assert.Contains(("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m), defaultTrails);
+        Assert.DoesNotContain(("trail-pine-openpass", "pinecross", "openpass", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m), alternateTrails);
+        Assert.Contains(("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Spring, 4m), alternateTrails);
+        Assert.DoesNotContain(("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Spring, 4m), defaultTrails);
+
+        // Full snapshots are not equal.
+        Assert.NotEqual(defaultTowns, alternateTowns);
+        Assert.NotEqual(defaultTrails, alternateTrails);
+    }
+
+    [Fact]
+    public void AlternateTownSetForCanonicalWorldHasCorrectSnapshot()
+    {
+        var world = BuildSeedWorld(new SeedWorld(
+            Guid.Empty,
+            SeedWorldVariant.Canonical,
+            GameSetupDeterministicLabels.WorldTownSetAlternate,
+            AccusationIndex: 0,
+            DefaultCulpritIndex: 3,
+            CashBonus: 0));
+
+        Assert.Equal(
+            new[]
+            {
+                ("coppercreek", "Copper Creek", TownServices.Supplies),
+                ("dryfork", "Dry Fork", TownServices.None),
+                ("emberfall", "Emberfall", TownServices.Supplies | TownServices.Lodging | TownServices.Telegraph),
+                ("hardpan", "Hardpan", TownServices.None),
+                ("holloway", "Holloway", TownServices.Doctor),
+                ("pinecross", "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard),
+                ("redmesa", "Red Mesa", TownServices.Supplies | TownServices.Telegraph),
+                ("sagewell", "Sagewell", TownServices.Supplies | TownServices.Doctor),
+            },
+            SnapshotTowns(world));
+        Assert.Equal(
+            new[]
+            {
+                ("trail-hollow-sage", "holloway", "sagewell", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                ("trail-pine-coppercreek", "pinecross", "coppercreek", TrailRisk.Low, TrailTerrain.Hills, WaterFeature.Spring, 4m),
+                ("trail-pine-hardpan", "pinecross", "hardpan", TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m),
+                ("trail-pine-hollow", "pinecross", "holloway", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 2m),
+                ("trail-pine-red", "pinecross", "redmesa", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
+                ("trail-red-dry", "redmesa", "dryfork", TrailRisk.High, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
+                ("trail-red-ember", "redmesa", "emberfall", TrailRisk.High, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
+                ("trail-red-sage", "redmesa", "sagewell", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                ("trail-sage-ember", "sagewell", "emberfall", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 5m),
+            },
+            SnapshotTrails(world));
     }
 
     [Fact]
