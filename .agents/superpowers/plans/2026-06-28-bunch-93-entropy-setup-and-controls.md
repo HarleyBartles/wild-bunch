@@ -1,0 +1,272 @@
+# BUNCH-93 — Entropy setup and controls
+
+**Issue:** [BUNCH-93 — Entropy setup and controls](https://linear.app/harleys-workspace/issue/BUNCH-93/entropy-setup-and-controls)
+**Branch:** `harleydbartles/bunch-93-entropy-setup-and-controls`
+**Base commit:** `6b9fcbfbfb2d33a81dca3ef9a73ecbb1a6537efe` (== `origin/main` at preflight time)
+**Plan type:** Preflight → execution plan (plan-only draft PR first; execution after approval)
+**Parallel issue:** BUNCH-94 (difficulty) — may run in parallel; not blocked on it landing. Rebase onto current main if BUNCH-94 lands while this executes; repair mechanical overlap only.
+
+## Repo-skill grounding (read during preflight)
+
+- `.agents/skills/wild-bunch-project-doctrine/references/difficulty-entropy-seeded-world-setup.md` — canonical entropy envelope definitions (Boring/Classic/Adventurous/Wild). Task 1 design aligns with this.
+- `.agents/skills/wild-bunch-domain-modeling/SKILL.md` — GameSession aggregate root, travel/journey state, trail-day progression.
+- `.agents/skills/wild-bunch-dotnet-architecture/SKILL.md` — domain owns rules, application orchestrates, persistence is JSON snapshot, no early table normalization.
+- `.agents/skills/wild-bunch-worker-verification/SKILL.md` — return evidence + issue-goal conformance + falsification.
+- `.agents/skills/game-playtest/SKILL.md` — browser playtest + screenshot evidence for the player/dev-facing control proof.
+- `.agents/skills/repo-worker-base/SKILL.md` — fresh-main invariant, worktree isolation gate, GREEN gate, required return evidence.
+
+## Preflight investigation summary (current main)
+
+### What is already complete on main (preserve, do not redo)
+
+- `GameEntropy` enum (`Boring`, `Classic`, `Adventurous`, `Wild`) — `src/WildBunch.Domain/Travel/GameEntropy.cs`.
+- `GameDifficulty` enum — `src/WildBunch.Domain/Travel/GameDifficulty.cs`.
+- `StartingWorldDescriptor` carries `GameEntropy` — `src/WildBunch.GameContent/NewGame/GameSetupSeed.cs:15`.
+- Seed codec resolves/validates entropy, uses it in starting-cash bonus envelope — `src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs:55,100,148-155`.
+- `SeededNewGameFactory` selects salt source by entropy (Boring=Fixed, others=Runtime) — `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs:36-38`.
+- `GameSession.StartNew` accepts + stores `GameEntropy` — `src/WildBunch.Domain/Game/GameSession.cs:797,849,919`.
+- `GameStarted` event carries entropy — `src/WildBunch.Domain/Events/GameStarted.cs:21`.
+- Event replay restores entropy — `src/WildBunch.Domain/Game/GameSessionEventReplay.cs:68`.
+- Persistence round-trips entropy (snapshot + setup component) — `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs:16,40,79` + `GameSessionJsonSerializer.Setup.cs` + `EfGameSessionRepository.cs:119,269`. Legacy snapshots default to `Classic`.
+- API/DTO/mapper pass entropy through — `StartGameRequest.cs:9`, `StartNewGameCommand.cs:9`, `StartNewGameHandler.cs:59`, `GameDtos.cs:15`, `GameSessionMapper.cs:42,68,90`.
+- Frontend start-flow entropy selection — `SetupHuntStep.tsx:30-35`, `useStartGameSeed.ts`, `useStartFlow.ts`, `wildBunchApi.ts:151`.
+- Dev overlay exposes entropy as **inspect-only** — `SessionDevContextDto.cs:13`, `SessionDevContextMapper.cs:16`, `SessionDevPanel.tsx:124-127` ("Entropy (inspect):").
+- Existing tests cover setup/persistence/round-trip/salt — see Test inventory below.
+
+### The central gap
+
+**`GameEntropy` does NOT yet affect runtime variance behavior.** It is plumbed end-to-end and stored, but no runtime code branches on it to change variance/surprise. `TravelDayGenerationContext` carries `GameEntropy` (line 76) but `TravelDayPlanGenerator.Context.cs` (`BuildCategoryWeights`, `BuildEncounterCountWeights`) and `JourneyEncounterResolutionEngine.cs` never read it. The only entropy branches today are setup-time: starting-cash bonus envelope and salt-source selection (Boring=Fixed).
+
+### Secondary gaps
+
+1. **Boring is player-facing** in `SetupHuntStep.tsx:31` (value 0, label "Boring"). The issue says Boring should NOT be a normal player-facing option; it is reserved for test/dev determinism.
+2. **Dev overlay has no entropy control** — only inspect. The dev-overlay doctrine (`.agents/dev-overlay/DOCTRINE.md` §2) says "Session dev owns game/session-level setup: difficulty, randomness, entropy/seed posture," so a dev entropy control belongs here, following the existing `ForceDevSaltSource`/`ClearDevSaltSource` pattern.
+3. **No test proves entropy affects a variance seam** while difficulty stays separately controlled. All existing entropy tests verify setup/persistence/round-trip, not runtime variance branching.
+4. **Frontend entropy labels** say "Boring/Classic/Adventurous/Wild" without framing entropy as volatility/surprise vs. difficulty pressure.
+
+### Test inventory (existing, preserve)
+
+- `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs` — round-trip + legacy default.
+- `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs` — Boring/Classic salt behavior.
+- `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` — default Classic, Boring fixed salt.
+- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorResolverTests.cs` — entropy resolution + Wild legality.
+- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorSeedCodeFactory.cs` — entropy in signature.
+- `tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs` — event captures + rehydrate restores.
+- `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs` — dev salt does not mutate entropy.
+- `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs` — dev context includes entropy.
+- `tests/WildBunch.Application.Tests/StartNewGameHandlerTests.cs` — handler passes entropy.
+- `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` — dev endpoint entropy exposure.
+- `tests/WildBunch.Web/src/tests/SetupHuntStep.test.tsx` — frontend entropy selection (will need update when Boring is removed from player options).
+
+## Goal (observable repo state)
+
+After execution, Harley can:
+
+1. Start a game with Classic/Adventurous/Wild entropy and observe **materially different travel variance** (lucky/unlucky/rare/encounter-surprise frequency) — not just different cash or salt.
+2. Use the dev overlay Session dev panel to set entropy on a live test session and observe the variance difference immediately.
+3. See entropy framed as volatility/surprise in the setup UI, distinct from difficulty pressure.
+4. NOT see Boring as a normal player-facing setup option (it remains reachable via seed/dev).
+5. Read tests proving entropy changes variance while difficulty stays constant, and vice versa.
+
+## Guardrails (binding)
+
+- Do not rename `GameEntropy` back to journey-only/randomness-policy language.
+- Do not collapse entropy and difficulty into one control. Entropy = variance/surprise/story volatility inside coherent rules; difficulty = pressure/harder.
+- Do not let Wild bypass hard domain invariants or break game coherence.
+- Do not expose hidden culprit truth through normal player APIs.
+- Do not move gameplay authority into React state. Dev mutations go through backend commands + dev events.
+- Do not normalize live session state into new database tables.
+- Do not broaden into BUNCH-94 difficulty behavior except for coordination and compile conflicts.
+- Keep temporary cockpit/debug-shell UI light; do not polish it for its own sake.
+- Entropy weight changes must be additive adjustments on top of the existing difficulty/risk/terrain/pressure weights, not a replacement of them. Difficulty stays the pressure axis; entropy stays the variance axis.
+
+## Implementation plan
+
+### Task 1: Wire entropy into the travel variance seam (core)
+
+**Files:**
+- `src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs`
+
+**What:** Add entropy-based weight adjustments to `BuildCategoryWeights` (line 170) and `BuildEncounterCountWeights` (line 103) so that entropy changes variance/surprise without simply increasing difficulty pressure.
+
+**Design (variance, not pressure) — aligned with the canonical entropy doctrine at `.agents/skills/wild-bunch-project-doctrine/references/difficulty-entropy-seeded-world-setup.md`:**
+- **Boring:** deterministic by seed and world state. Dampen variance — flatten Lucky/Unlucky spikes, reduce rare-category appearance, lean toward Quiet/Resource. The same action against the same world state should produce the same result. This is the test/reproduction envelope.
+- **Classic:** normal play. Baseline (current weights unchanged). Rolls, shuffles, and outcome selection are normally weighted, then shaped by difficulty and feature-specific weights.
+- **Adventurous:** increases surprise while preserving the same rules. Rare or unexpected events appear more often. Increase Lucky and Unlucky weights, increase rare-category (Environmental, HorseTrouble, Npc) appearance, slight increase in encounter-count spread. Difficulty still leans the game; adventurous entropy sprinkles rare lucky or unlucky variance into the deck.
+- **Wild:** may bend ordinary assumptions while preserving game coherence. Larger Lucky/Unlucky swings, rare events appear more often, wider encounter-count spread, but **do not** increase Foe pressure the way Brutal does. Wild is volatility/story-bending, not lethality. (Doctrine example: a lawman may move unusually fast; a random citizen may look exactly like Elzy Lay. This slice wires the variance seam; later slices can add wild-specific story bends.)
+
+**Constraints:**
+- Entropy adjustments are applied AFTER the existing difficulty/risk/terrain/pressure switches, as an additional `switch (context.GameEntropy)` block. Do not modify the existing difficulty branches.
+- Keep weights non-negative after adjustment (clamp via the existing `AddWeight` pattern; the `FilterCategoryWeightsForLegality` path already handles zero/negative).
+- Do not change `BuildEncounterCountWeights` difficulty branches; add a separate entropy block.
+- The variance must be observable in category distribution over a deterministic sample, not just theoretical.
+
+**Checkboxes:**
+- [ ] Add `switch (context.GameEntropy)` block to `BuildCategoryWeights` adjusting Lucky/Unlucky/rare categories per the design above.
+- [ ] Add `switch (context.GameEntropy)` block to `BuildEncounterCountWeights` adjusting count spread per the design above.
+- [ ] Verify no existing difficulty/risk/terrain branches were modified.
+- [ ] Verify weights stay legal (non-negative after filter) for all entropy × difficulty combinations.
+
+### Task 2: Tests proving entropy affects variance while difficulty stays separate
+
+**Files:**
+- `tests/WildBunch.Domain.Tests/Travel/TravelDayPlanGeneratorEntropyTests.cs` (new)
+
+**What:** Deterministic tests that prove entropy changes the travel-day category distribution while difficulty stays constant, and that difficulty changes it while entropy stays constant. This is the falsification guardrail that proves entropy ≠ difficulty.
+
+**Approach:**
+- Use the seed system (`SeededNewGameFactory` / `StartingWorldDescriptorResolver.CreateRepresentativeSeedCode`) to build sessions — do NOT bypass the seed system (per AGENTS.md UUID Seed Codec rules). Use descriptors, not stored UUIDs.
+- Use `GameEntropy.Boring` + fixed salt for deterministic category sampling across many rolls, OR construct `TravelDayGenerationContext` directly with controlled fields and call the weight builders + a fixed roll sequence to assert category/count differences.
+- Assert: holding difficulty constant at `Standard`, the category weight distributions for `Classic` vs `Adventurous` vs `Wild` vs `Boring` are materially different (e.g., Wild has higher Lucky+Unlucky combined weight than Classic, Boring has lower).
+- Assert: holding entropy constant at `Classic`, the category weight distributions for `Easy` vs `Brutal` are materially different (existing behavior, proves difficulty still owns pressure).
+- Assert: the entropy effect and difficulty effect are independent — changing entropy does not replicate the difficulty pressure pattern (e.g., Wild does not just equal Brutal's Foe weight).
+
+**Checkboxes:**
+- [ ] Create `TravelDayPlanGeneratorEntropyTests.cs` with deterministic context construction.
+- [ ] Assert entropy changes category/count distribution with difficulty held constant.
+- [ ] Assert difficulty changes category/count distribution with entropy held constant.
+- [ ] Assert Wild ≠ Brutal pattern (variance vs pressure independence).
+- [ ] Do not store UUIDs in fixtures; derive via `CreateRepresentativeSeedCode` where seed-derived sessions are needed.
+
+### Task 3: Remove Boring from player-facing setup options
+
+**Files:**
+- `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx:30-35`
+- `src/WildBunch.Web/src/tests/SetupHuntStep.test.tsx` (update assertions)
+
+**What:** Remove the `Boring` option from `gameEntropyOptions` so the player-facing segmented toggle shows only Classic/Adventurous/Wild. Boring remains reachable via seed code and dev overlay for test/dev determinism.
+
+**Constraints:**
+- Do not remove `Boring` from the `GameEntropy` enum or the seed codec — it stays a legal entropy level for dev/test.
+- Do not change the default (Classic, value 1).
+- Update `SetupHuntStep.test.tsx` to no longer assert Boring is present in the player options, and add an assertion that Boring is NOT shown.
+
+**Checkboxes:**
+- [ ] Remove `{ value: 0, label: "Boring" }` from `gameEntropyOptions` in `SetupHuntStep.tsx`.
+- [ ] Update `SetupHuntStep.test.tsx` to assert Boring is absent from player-facing options.
+- [ ] Verify the enum and codec still accept Boring (no enum/codec change).
+
+### Task 4: Dev overlay entropy control (Session dev panel)
+
+**Files:**
+- `src/WildBunch.Domain/Events/DevEntropyChanged.cs` (new)
+- `src/WildBunch.Domain/Game/GameSession.cs` — add `SetDevEntropy` method + `Apply(DevEntropyChanged)`
+- `src/WildBunch.Domain/Game/GameSessionEventReplay.cs` — wire Apply
+- `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs` — serialize/deserialize event
+- `src/WildBunch.Application/Dev/Commands/SetDevEntropyCommand.cs` (new)
+- `src/WildBunch.Application/Dev/Commands/SetDevEntropyHandler.cs` (new)
+- `src/WildBunch.Application/Dev/Models/SetDevEntropyRequestDto.cs` (new)
+- `src/WildBunch.Api/Dev/DevEndpoints.cs` — map POST `/sessions/{id}/session/set-entropy`
+- `src/WildBunch.Api/DependencyInjection.cs` — register handler (if needed)
+- `src/WildBunch.Web/src/dev/devApi.ts` — add `setDevEntropy` call
+- `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx` — change "Entropy (inspect)" to an editable control
+- `src/WildBunch.Web/src/dev/types.ts` — add request type if needed
+
+**What:** Follow the existing `ForceDevSaltSource`/`ClearDevSaltSource` pattern (BUNCH-101) to add a dev-only command that sets `GameSession.GameEntropy` via a dev event. This lets Harley change entropy on a live test session and observe the variance difference immediately without restarting.
+
+**Pattern (from `ForceDevSaltSourceHandler.cs` + `DevSaltSourceForced.cs` + `GameSession.ForceDevSaltSource` at line 1150):**
+1. `DevEntropyChanged` event record carrying `GameEntropy NewEntropy`.
+2. `GameSession.SetDevEntropy(GameEntropy entropy)` — validates `Enum.IsDefined`, calls `ProduceEvent(new DevEntropyChanged { NewEntropy = entropy })`.
+3. `Apply(DevEntropyChanged e)` — sets `GameEntropy = e.NewEntropy; _version++`.
+4. Wire into `GameSessionEventReplay.cs`.
+5. Serialize/deserialize in `GameSessionJsonSerializer.Events.cs` (follow the `DevSaltSourceForced` serialization shape).
+6. `SetDevEntropyCommand` + `SetDevEntropyHandler` extending `GameSessionCommandHandler`.
+7. `SetDevEntropyRequestDto` with `GameEntropy` string field.
+8. Dev endpoint POST `/sessions/{id}/session/set-entropy` — guarded by `DevRoleGuard.EnsureDevAccess()`.
+9. Frontend `devApi.ts` + `SessionDevPanel.tsx` — replace inspect-only row with a control (select or segmented toggle) that calls the new endpoint and refreshes the dev context.
+
+**Doctrine compliance (`.agents/dev-overlay/DOCTRINE.md`):**
+- §1 State/action boundary: setting entropy is setting state (variance posture), not forcing a gameplay outcome. Valid.
+- §2 Panel ownership: Session dev owns entropy/seed posture. Valid.
+- §7 Backend authority: mutation goes through backend command + dev event, not frontend fabrication. Valid.
+- §9 Closeout proof: event-stream proof for dev entropy change.
+
+**Constraints:**
+- Do not expose this through normal player APIs. Dev-only, `DevRoleGuard`-guarded.
+- The dev event is persisted in the event stream and rehydrated.
+- Changing entropy mid-session affects future travel-day generation, not already-generated days.
+
+**Checkboxes:**
+- [ ] Create `DevEntropyChanged` event.
+- [ ] Add `GameSession.SetDevEntropy` + `Apply(DevEntropyChanged)`.
+- [ ] Wire event replay.
+- [ ] Add event serialization/deserialization.
+- [ ] Create `SetDevEntropyCommand` + `SetDevEntropyHandler` + `SetDevEntropyRequestDto`.
+- [ ] Map dev endpoint in `DevEndpoints.cs`.
+- [ ] Register handler in `DependencyInjection.cs` if needed.
+- [ ] Add `setDevEntropy` to `devApi.ts`.
+- [ ] Replace inspect-only entropy row in `SessionDevPanel.tsx` with an editable control.
+- [ ] Add backend test for `SetDevEntropyHandler` (entropy changes + event emitted + dev guard).
+- [ ] Add dev endpoint integration test.
+
+### Task 5: Frontend setup copy — frame entropy as volatility/surprise
+
+**Files:**
+- `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx` — labels/group label
+
+**What:** Update entropy labels and group label so the player understands entropy as variance/surprise/volatility, not pressure. Keep it short and in-world; do not over-explain.
+
+**Draft labels:**
+- Group label: "Entropy" → keep, or "Story Volatility" if clearer. Prefer keeping "Entropy" with a one-line subtitle if the existing pattern supports it; otherwise keep the single label.
+- Option labels: "Classic" / "Adventurous" / "Wild" (already good). Do not add long descriptions to the segmented toggle.
+
+**Constraints:**
+- Follow `src/WildBunch.Web/AGENTS.md` + `.agents/unslop/play-surface-ui.md` — keep player-facing surfaces in-world, not cockpit chrome. Cut labels that don't help the player.
+- Do not add a tooltip/help system unless the existing pattern has one.
+
+**Checkboxes:**
+- [ ] Review and adjust entropy group label / option labels for volatility framing (only if current labels are misleading; keep minimal).
+- [ ] Update `SetupHuntStep.test.tsx` if label assertions change.
+
+### Task 6: Validation
+
+**Commands:**
+- `dotnet build`
+- `dotnet test` (full suite)
+- `.\scripts\postgres-dev.ps1 ensure` then `.\scripts\postgres-dev.ps1 validate` (if persistence/event tests touch PostgreSQL-backed paths; the dev event + entropy tests are likely in-process, but run the validate lane to be safe)
+- `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api` (only if persistence schema changed — it should NOT, since entropy is JSON snapshot; skip unless a migration was added)
+- Frontend: `npm run typecheck` + `npm run build` + `npm test` (from `src/WildBunch.Web`)
+- Grep proof: `rg "journey-only|randomness-policy|RandomnessPolicy" src/` returns no reintroduced old names.
+
+**Browser/playtest proof:**
+- Start a session with Wild entropy via the normal setup flow; advance several trail days; screenshot the travel/event variety.
+- Use the dev overlay Session dev panel to switch entropy from Classic → Wild on a live session; advance trail days; screenshot the variance difference.
+- Provide a short explanation of the observed Classic vs Adventurous vs Wild difference in this slice.
+
+**Checkboxes:**
+- [ ] `dotnet build` passes.
+- [ ] `dotnet test` passes (including new entropy variance tests + dev entropy handler tests).
+- [ ] `.\scripts\postgres-dev.ps1 validate` passes (or report why it was skipped if no PostgreSQL-dependent path was touched).
+- [ ] Frontend `npm run typecheck` + `npm run build` + `npm test` pass.
+- [ ] Grep proof: no old journey-only/randomness-policy names reintroduced.
+- [ ] Browser/playtest screenshot: Wild entropy shows more variance than Classic.
+- [ ] Browser/playtest screenshot: dev overlay entropy control changes variance on a live session.
+- [ ] Short written explanation of Classic vs Adventurous vs Wild observed difference.
+
+### Task 7: Index mesh + cleanup
+
+**Files:**
+- `scripts/generate_index_mesh.py` output (run if files were added/removed)
+- `.agents/superpowers/plans/INDEX.md` (if the generator covers it)
+
+**Checkboxes:**
+- [ ] Run `python scripts/generate_index_mesh.py` and commit updated INDEX.md files if any were added/removed.
+- [ ] Ensure no loose agent artifacts at repo root or in product folders.
+- [ ] Ensure no screenshots committed to the repo (they go under git-ignored `.agents/superpowers/output/screenshots/`).
+
+## BUNCH-94 coordination
+
+Shared files both issues may touch: `SetupHuntStep.tsx`, `useStartGameSeed.ts`, `SessionDevPanel.tsx`, `GameSetupSeedCodec.cs`, `SeededNewGameFactory.cs`, `StartGameRequest.cs`, `GameDtos.cs`, `GameSessionMapper.cs`, snapshot/setup serializers, `EfGameSessionRepository.cs`.
+
+- This plan touches `SetupHuntStep.tsx` (remove Boring), `SessionDevPanel.tsx` (entropy control), `TravelDayPlanGenerator.Context.cs` (variance seam — BUNCH-94 unlikely to touch), and the dev command/event pattern.
+- If BUNCH-94 lands first and conflicts on `SetupHuntStep.tsx` or `SessionDevPanel.tsx`, rebase onto current main and repair mechanical overlap. Keep entropy and difficulty changes in separate regions of the same files where possible.
+- Do not overwrite difficulty-axis changes from BUNCH-94.
+
+## DOD mapping (entropy stayed distinct from difficulty)
+
+- Entropy changes variance (lucky/unlucky/rare frequency) — proven by Task 2 tests.
+- Difficulty changes pressure (foe/unlucky pressure) — existing behavior, unchanged.
+- Wild ≠ Brutal — proven by Task 2 independence assertion.
+- Entropy control is dev-only (Session dev panel) — not a normal player API.
+- Boring is not player-facing — removed from `SetupHuntStep.tsx`.
+- No old journey-only/randomness-policy names reintroduced — grep proof.
