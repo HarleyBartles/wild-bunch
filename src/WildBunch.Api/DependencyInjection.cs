@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Json;
 using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
@@ -27,6 +28,11 @@ public static class DependencyInjection
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
+        });
+
+        services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+        {
+            options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         });
         services.AddPersistence(configuration);
         services.AddGameContent();
