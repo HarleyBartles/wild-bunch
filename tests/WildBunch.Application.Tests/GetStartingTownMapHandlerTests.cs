@@ -25,52 +25,11 @@ public sealed class GetStartingTownMapHandlerTests
     }
 
     [Fact]
-    public async Task SelectableTownsMatchStartingTownCandidates()
+    public async Task AllTownsAreSelectable()
     {
         var handler = new GetStartingTownMapHandler();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery());
-        var candidateIds = StartingTownCatalog.GetStartingTownCandidates()
-            .Select(t => t.Id.Value)
-            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        var selectableIds = result.Towns
-            .Where(t => t.Selectable)
-            .Select(t => t.Id)
-            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        Assert.Equal(candidateIds, selectableIds);
-    }
-
-    [Fact]
-    public async Task SelectableTownsAreTheFourCanonicalCandidates()
-    {
-        var handler = new GetStartingTownMapHandler();
-        var result = await handler.HandleAsync(new GetStartingTownMapQuery());
-        var selectableIds = result.Towns
-            .Where(t => t.Selectable)
-            .Select(t => t.Id)
-            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        Assert.Equal(new[] { "emberfall", "pinecross", "redmesa", "sagewell" }, selectableIds);
-    }
-
-    [Fact]
-    public async Task SelectableTownIdsMatchGetStartingTownsHandlerResult()
-    {
-        var mapHandler = new GetStartingTownMapHandler();
-        var mapResult = await mapHandler.HandleAsync(new GetStartingTownMapQuery());
-        var townsHandler = new GetStartingTownsHandler();
-        var townsResult = await townsHandler.HandleAsync(new GetStartingTownsQuery());
-        var mapSelectableIds = mapResult.Towns
-            .Where(t => t.Selectable)
-            .Select(t => t.Id)
-            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        var townIds = townsResult
-            .Select(t => t.Id)
-            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        Assert.Equal(townIds, mapSelectableIds);
+        Assert.Equal(8, result.Towns.Count);
     }
 
     [Fact]

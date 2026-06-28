@@ -36,9 +36,9 @@ afterEach(() => {
 function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTownMapDto {
   return {
     towns: [
-      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500, selectable: true },
-      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400, selectable: true },
-      { id: "hardpan", name: "Hardpan", services: 0, x: 100, y: 300, selectable: false },
+      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
+      { id: "hardpan", name: "Hardpan", services: 0, x: 100, y: 300 },
     ],
     trails: [
       { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
@@ -84,7 +84,7 @@ describe("PhaserMapHost", () => {
     expect(mockState.games[0].destroyed).toBe(true);
   });
 
-  it("emits onTownSelected when a selectable town is selected through the scene", () => {
+  it("emits onTownSelected when a town is selected through the scene", () => {
     const onTownSelected = vi.fn();
     renderHost({ onTownSelected });
 
@@ -92,16 +92,6 @@ describe("PhaserMapHost", () => {
     scene.selectTown("t-town");
 
     expect(onTownSelected).toHaveBeenCalledWith("t-town");
-  });
-
-  it("does not emit onTownSelected for a non-selectable town", () => {
-    const onTownSelected = vi.fn();
-    renderHost({ onTownSelected });
-
-    const scene = mockState.games[0].config.scene;
-    scene.selectTown("hardpan");
-
-    expect(onTownSelected).not.toHaveBeenCalled();
   });
 
   it("does not emit onTownSelected for an unknown town id", () => {

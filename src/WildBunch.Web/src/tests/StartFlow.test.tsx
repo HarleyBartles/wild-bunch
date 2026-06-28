@@ -8,7 +8,7 @@ import type { GameSessionDto, StartGameRequest } from "../api/types";
 import { createGame, getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns, getStartingTownMap } from "../api/wildBunchApi";
 
 const phaserMockState = vi.hoisted(() => ({
-  games: [] as Array<{ config: { scene: { selectTown: (townId: string) => void } } }>,
+  games: [] as Array<{ config: { scene: { selectTown: (townId: string) => void; onTownSelected?: (townId: string) => void } } }>,
 }));
 
 vi.mock("phaser", () => {
@@ -173,8 +173,8 @@ function primeMocks() {
   ]);
   mockedGetStartingTownMap.mockResolvedValue({
     towns: [
-      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500, selectable: true },
-      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400, selectable: true },
+      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
     ],
     trails: [
       { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
@@ -219,7 +219,10 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getAllByRole("button", { name: /start in /i })[0]);
+    // Select a town through the Phaser map
+    const game = phaserMockState.games[0];
+    const scene = (game.config as any).scene;
+    scene.onTownSelected("t-town");
 
     await waitFor(() => {
       expect(mockedCreateGame).toHaveBeenCalledTimes(1);
@@ -296,7 +299,10 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getAllByRole("button", { name: /start in /i })[0]);
+    // Select a town through the Phaser map
+    const game = phaserMockState.games[0];
+    const scene = (game.config as any).scene;
+    scene.onTownSelected("t-town");
 
     await waitFor(() => {
       expect(mockedCreateGame).toHaveBeenCalledTimes(1);
@@ -329,7 +335,10 @@ describe("StartFlow", () => {
       expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getAllByRole("button", { name: /start in /i })[0]);
+    // Select a town through the Phaser map
+    const game = phaserMockState.games[0];
+    const scene = (game.config as any).scene;
+    scene.onTownSelected("t-town");
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /starting your hunt/i })).toBeInTheDocument();

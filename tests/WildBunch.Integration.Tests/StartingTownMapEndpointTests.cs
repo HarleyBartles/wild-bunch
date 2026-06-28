@@ -19,14 +19,6 @@ public sealed class StartingTownMapEndpointTests
         "openpass"
     ];
 
-    private static readonly string[] SelectableTownIds =
-    [
-        "emberfall",
-        "pinecross",
-        "redmesa",
-        "sagewell"
-    ];
-
     [Fact]
     public async Task GetStartingTownMapReturnsOkWithTownsAndTrails()
     {
@@ -63,7 +55,7 @@ public sealed class StartingTownMapEndpointTests
     }
 
     [Fact]
-    public async Task GetStartingTownMapMarksExactlyTheFourCandidatesAsSelectable()
+    public async Task GetStartingTownMapReturnsAllTownsAsSelectable()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
@@ -72,13 +64,7 @@ public sealed class StartingTownMapEndpointTests
         var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
 
         Assert.NotNull(map);
-        var selectableIds = map!.Towns
-            .Where(town => town.Selectable)
-            .Select(town => town.Id)
-            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        Assert.Equal(SelectableTownIds, selectableIds);
+        Assert.Equal(8, map!.Towns.Count);
     }
 
     [Fact]

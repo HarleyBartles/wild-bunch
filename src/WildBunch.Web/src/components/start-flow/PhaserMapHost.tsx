@@ -27,7 +27,7 @@ export class StartingTownMapScene extends Phaser.Scene {
 
   selectTown(townId: string): void {
     const town = this.mapData.towns.find((t) => t.id === townId);
-    if (town?.selectable) {
+    if (town) {
       this.onTownSelected(townId);
     }
   }
@@ -56,13 +56,14 @@ export class StartingTownMapScene extends Phaser.Scene {
 
     const townById = new Map(this.mapData.towns.map((t) => [t.id, t]));
 
+    // Black trail lines on green map background
     const trailGraphics = this.add.graphics();
     for (const trail of this.mapData.trails) {
       const from = townById.get(trail.fromTownId);
       const to = townById.get(trail.toTownId);
       if (!from || !to) continue;
 
-      trailGraphics.lineStyle(2, 0x8b7355, 0.8);
+      trailGraphics.lineStyle(2, 0x000000, 0.85);
       trailGraphics.beginPath();
       trailGraphics.moveTo(toScreenX(from.x), toScreenY(from.y));
       trailGraphics.lineTo(toScreenX(to.x), toScreenY(to.y));
@@ -73,41 +74,39 @@ export class StartingTownMapScene extends Phaser.Scene {
       this.add
         .text(midX, midY, `${trail.rideDayDistance} days`, {
           fontSize: "11px",
-          color: "#a89070",
+          color: "#1a1a1a",
+          backgroundColor: "#a8c890",
+          padding: { x: 3, y: 1 },
         })
         .setOrigin(0.5);
     }
 
+    // All listed towns are selectable starting-town candidates
     for (const town of this.mapData.towns) {
       const x = toScreenX(town.x);
       const y = toScreenY(town.y);
       const isSelected = this.selectedTownId === town.id;
-      const radius = town.selectable ? 14 : 9;
+      const radius = 14;
 
-      const circle = this.add.circle(
-        x,
-        y,
-        radius,
-        town.selectable ? 0xc9a84c : 0x5a4d3f,
-      );
+      const circle = this.add.circle(x, y, radius, 0xc9a84c);
 
       if (isSelected) {
         circle.setStrokeStyle(4, 0xf0e6d2);
-      } else if (town.selectable) {
-        circle.setStrokeStyle(2, 0x8b7355);
+      } else {
+        circle.setStrokeStyle(2, 0x000000);
       }
 
-      if (town.selectable) {
-        circle.setInteractive({ useHandCursor: true });
-        circle.on("pointerover", () => circle.setScale(1.25));
-        circle.on("pointerout", () => circle.setScale(1));
-        circle.on("pointerdown", () => this.selectTown(town.id));
-      }
+      circle.setInteractive({ useHandCursor: true });
+      circle.on("pointerover", () => circle.setScale(1.25));
+      circle.on("pointerout", () => circle.setScale(1));
+      circle.on("pointerdown", () => this.selectTown(town.id));
 
       this.add
         .text(x, y + radius + 16, town.name, {
           fontSize: "13px",
-          color: town.selectable ? "#e8d8b8" : "#7a6a5a",
+          color: "#1a1a1a",
+          backgroundColor: "rgba(168, 200, 144, 0.85)",
+          padding: { x: 2, y: 1 },
         })
         .setOrigin(0.5);
     }
@@ -130,7 +129,7 @@ export function PhaserMapHost({ mapData, selectedTownId, onTownSelected }: Phase
       parent: containerRef.current,
       width: 800,
       height: 500,
-      backgroundColor: "#1a1410",
+      backgroundColor: "#a8c890",
       scene: scene,
       scale: {
         mode: Phaser.Scale.FIT,
@@ -158,6 +157,6 @@ const MapCanvas = styled.div`
   aspect-ratio: 8 / 5;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: rgba(26, 20, 16, 0.6);
+  background: #a8c890;
   overflow: hidden;
 `;

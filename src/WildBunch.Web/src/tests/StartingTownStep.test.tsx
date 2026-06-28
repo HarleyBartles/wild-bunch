@@ -38,8 +38,8 @@ afterEach(() => {
 function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTownMapDto {
   return {
     towns: [
-      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500, selectable: true },
-      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400, selectable: true },
+      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
     ],
     trails: [
       { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
@@ -79,14 +79,7 @@ describe("StartingTownStep", () => {
 
     renderStep();
 
-    expect(await screen.findByText("Tumbleweed")).toBeInTheDocument();
-    expect(screen.getByText("Dust Fork")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /start in tumbleweed/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /start in dust fork/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: /trail map of starting towns/i })).toBeInTheDocument();
   });
 
   it("renders the Phaser map host", async () => {
@@ -95,22 +88,6 @@ describe("StartingTownStep", () => {
     renderStep();
 
     expect(await screen.findByRole("img", { name: /trail map of starting towns/i })).toBeInTheDocument();
-  });
-
-  it("calls onSelectTown with the town id when a town button is selected", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
-
-    const onSelectTown = vi.fn();
-    const user = userEvent.setup();
-
-    renderStep({ onSelectTown });
-
-    const button = await screen.findByRole("button", { name: /start in dust fork/i });
-    await user.click(button);
-
-    await waitFor(() => {
-      expect(onSelectTown).toHaveBeenCalledWith("dust-fork");
-    });
   });
 
   it("shows the loading state copy while the map is fetching", () => {
@@ -163,16 +140,8 @@ describe("StartingTownStep", () => {
 
     renderStep();
 
-    await screen.findByText("Tumbleweed");
+    await screen.findByRole("img", { name: /trail map of starting towns/i });
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
-  });
-
-  it("does not render town buttons while loading", () => {
-    mockedGetStartingTownMap.mockReturnValue(new Promise(() => {}));
-
-    renderStep();
-
-    expect(screen.queryByRole("button", { name: /start in /i })).not.toBeInTheDocument();
   });
 
   it("renders the map legend copy below the map", async () => {

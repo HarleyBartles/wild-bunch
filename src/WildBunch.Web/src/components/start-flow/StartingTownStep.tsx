@@ -43,22 +43,6 @@ export function StartingTownStep({ selectedTownId, onSelectTown }: StartingTownS
             onTownSelected={onSelectTown}
           />
           <MapLegend>Click a town on the map to ride out from there.</MapLegend>
-          <TownList>
-            {mapData.towns
-              .filter((town) => town.selectable)
-              .map((town) => (
-                <TownCard key={town.id}>
-                  <TownName>{town.name}</TownName>
-                  <Button
-                    type="button"
-                    $variant={selectedTownId === town.id ? "primary" : "ghost"}
-                    onClick={() => onSelectTown(town.id)}
-                  >
-                    Start in {town.name}
-                  </Button>
-                </TownCard>
-              ))}
-          </TownList>
         </>
       )}
     </StepCard>
@@ -105,27 +89,4 @@ const MapLegend = styled.p`
   margin: 0;
   color: var(--muted);
   font-size: 0.88rem;
-`;
-
-const TownList = styled.ul`
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-
-const TownCard = styled.li`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-`;
-
-const TownName = styled.span`
-  font-weight: 600;
 `;

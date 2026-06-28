@@ -9,18 +9,17 @@ public sealed class GetStartingTownMapHandler
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var candidateIds = StartingTownCatalog.GetStartingTownCandidates()
-            .Select(town => town.Id.Value)
-            .ToHashSet();
-
+        // For this POC, every listed town on the starting map is a valid starting-town selection.
+        // The "town you can never travel to" (where the player was falsely accused) is not part of
+        // this listed map — it is offscreen/unlisted conceptually. So we do not filter or mark towns
+        // as non-selectable. All towns returned by SeedWorldMapLayout are startable.
         var towns = SeedWorldMapLayout.GetMapTowns()
             .Select(town => new StartingTownMapTownDto(
                 town.Id,
                 town.Name,
                 town.Services,
                 town.X,
-                town.Y,
-                candidateIds.Contains(town.Id)))
+                town.Y))
             .ToArray();
 
         var trails = SeedWorldMapLayout.GetMapTrails()

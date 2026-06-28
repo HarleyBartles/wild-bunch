@@ -11,8 +11,7 @@ public sealed record StartingTownMapTownDto(
     string Name,
     TownServices Services,
     int X,
-    int Y,
-    bool Selectable);
+    int Y);
 
 public sealed record StartingTownMapTrailDto(
     string Id,

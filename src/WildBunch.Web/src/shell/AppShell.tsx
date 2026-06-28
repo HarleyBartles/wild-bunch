@@ -45,7 +45,7 @@ function ShellChrome() {
             </DevNav>
           </OverlayBar>
         </ChromeBar>
-        <RouteOutlet aria-live="polite">
+        <RouteOutlet aria-live="polite" $chromeBarHeight={chromeBarHeight}>
           <Route>
             <Outlet />
           </Route>
@@ -136,9 +136,10 @@ const DevToggleButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const RouteOutlet = styled.main`
+const RouteOutlet = styled.main<{ $chromeBarHeight: number }>`
   flex: 1;
   padding: 24px;
+  margin-top: ${(props) => props.$chromeBarHeight}px;
 
   @media (max-width: 640px) {
     padding: 14px;

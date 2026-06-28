@@ -643,7 +643,6 @@ export interface StartingTownMapTownDto {
   services: number;
   x: number;
   y: number;
-  selectable: boolean;
 }
 
 export interface StartingTownMapTrailDto {
