@@ -44,18 +44,20 @@ export function StartingTownStep({ selectedTownId, onSelectTown }: StartingTownS
           />
           <MapLegend>Click a town on the map to ride out from there.</MapLegend>
           <TownList>
-            {mapData.towns.map((town) => (
-              <TownCard key={town.id}>
-                <TownName>{town.name}</TownName>
-                <Button
-                  type="button"
-                  $variant={selectedTownId === town.id ? "primary" : "ghost"}
-                  onClick={() => onSelectTown(town.id)}
-                >
-                  Start in {town.name}
-                </Button>
-              </TownCard>
-            ))}
+            {mapData.towns
+              .filter((town) => town.selectable)
+              .map((town) => (
+                <TownCard key={town.id}>
+                  <TownName>{town.name}</TownName>
+                  <Button
+                    type="button"
+                    $variant={selectedTownId === town.id ? "primary" : "ghost"}
+                    onClick={() => onSelectTown(town.id)}
+                  >
+                    Start in {town.name}
+                  </Button>
+                </TownCard>
+              ))}
           </TownList>
         </>
       )}

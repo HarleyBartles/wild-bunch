@@ -119,6 +119,7 @@ describe("PhaserMapHost", () => {
 
     const scene = mockState.games[0].config.scene;
     expect(scene).toBeInstanceOf(StartingTownMapScene);
+    expect(scene.selectedTownId).toBe("dust-fork");
   });
 
   it("creates exactly one game per mount", () => {

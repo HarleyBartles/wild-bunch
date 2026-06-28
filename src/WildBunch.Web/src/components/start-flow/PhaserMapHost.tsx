@@ -11,7 +11,7 @@ interface PhaserMapHostProps {
 
 export class StartingTownMapScene extends Phaser.Scene {
   private readonly mapData: StartingTownMapDto;
-  private readonly selectedTownId: string | null;
+  public readonly selectedTownId: string | null;
   private readonly onTownSelected: (townId: string) => void;
 
   constructor(
