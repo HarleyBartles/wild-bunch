@@ -130,23 +130,45 @@ public sealed class SaloonPoiSelectionTests
     }
 
     [Fact]
-    public void NormalRollIncludesSuspectsCitizensAndNobodyInPool()
+    public void NormalRollCanProduceSuspectCitizenAndNobodyOutcomes()
     {
-        // Verify that the normal roll (no dev override) can produce different outcomes
-        // across different sessions with different salt sources. We don't assert a specific
-        // outcome (that would be brittle), but we verify the pool is non-trivial by checking
-        // that the result is valid (suspect, citizen, or nobody).
-        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-        session.MarkEventsCommitted();
+        // The normal roll (no dev override) draws from a pool of
+        // [eligible suspects + citizen roles + nobody]. With CreateWithConfrontableSaloonSuspect
+        // there is 1 eligible suspect (suspect-1), 19 citizen roles, and 1 nobody slot
+        // = pool size 21. The roll hash is deterministic from salt + town + day + turn + visit.
+        //
+        // We brute-force a small set of salt strings to prove all three outcome types
+        // are reachable from the normal roll path — not just the dev override path.
+        var salts = Enumerable.Range(0, 100).Select(i => $"salt-{i}").ToList();
+        var sawSuspect = false;
+        var sawCitizen = false;
+        var sawNobody = false;
 
-        var result = session.LookAroundSaloon();
+        foreach (var salt in salts)
+        {
+            var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+            session.ForceDevSaltSource(SaltSource.CreateFixed(salt));
+            session.MarkEventsCommitted();
 
-        Assert.True(result.Success);
-        // The outcome is one of: suspect, citizen, or nobody.
-        var kind = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind;
-        var hasSuspect = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId is not null;
-        var hasDescriptor = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor is not null;
-        // At least one of these must be true: it's a suspect, a citizen, or nobody.
-        Assert.True(hasSuspect || hasDescriptor || (!hasSuspect && !hasDescriptor));
+            var result = session.LookAroundSaloon();
+            Assert.True(result.Success);
+
+            var kind = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind;
+            var hasSuspectId = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId is not null;
+
+            if (hasSuspectId)
+                sawSuspect = true;
+            else if (kind == SaloonPersonOfInterestKind.Citizen)
+                sawCitizen = true;
+            else
+                sawNobody = true;
+
+            if (sawSuspect && sawCitizen && sawNobody)
+                break;
+        }
+
+        Assert.True(sawSuspect, "Normal roll never produced a suspect outcome across 100 salts.");
+        Assert.True(sawCitizen, "Normal roll never produced a citizen outcome across 100 salts.");
+        Assert.True(sawNobody, "Normal roll never produced a nobody outcome across 100 salts.");
     }
 }
