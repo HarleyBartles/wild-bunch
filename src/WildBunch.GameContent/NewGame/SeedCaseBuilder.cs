@@ -64,7 +64,6 @@ internal static class SeedCaseBuilder
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(roster);
         ArgumentNullException.ThrowIfNull(features);
-        ArgumentNullException.ThrowIfNull(startingTownId);
         if (roster.Count != 7)
         {
             throw new InvalidOperationException("Seed case rosters must contain exactly seven gang suspects.");
@@ -332,7 +331,6 @@ internal static class SeedCaseBuilder
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(suspects);
         ArgumentNullException.ThrowIfNull(features);
-        ArgumentNullException.ThrowIfNull(startingTownId);
 
         var extraTownClues = new List<Clue>();
         var extraTownIndex = 0;
@@ -399,7 +397,6 @@ internal static class SeedCaseBuilder
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(world);
-        ArgumentNullException.ThrowIfNull(startingTownId);
 
         var extraTownWarrants = new List<Warrant>();
         var extraTownIndex = 0;

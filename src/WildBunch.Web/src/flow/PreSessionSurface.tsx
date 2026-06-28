@@ -1,7 +1,11 @@
 import styled from "styled-components";
 import { useGameSession } from "../state/useGameSession";
-import { StartGamePanel } from "../components/StartGamePanel";
+import { useStartFlow } from "../hooks/useStartFlow";
 import { FlowSurface, FlowNotice, FlowError } from "../components/ui/sharedStyled";
+import { SetupHuntStep } from "../components/start-flow/SetupHuntStep";
+import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
+import { StartingTownStep } from "../components/start-flow/StartingTownStep";
+import { CreatingStep } from "../components/start-flow/CreatingStep";
 
 const FlowHero = styled.div`
   display: grid;
@@ -21,13 +25,19 @@ export function PreSessionSurface() {
   const {
     session,
     loading,
-    gameId,
     resetToken,
     notice,
     error,
     startNewGame,
-    reloadCurrentGame,
   } = useGameSession();
+  const flow = useStartFlow({ session, resetToken });
+
+  async function handleStartWithTown(townId: string) {
+    flow.setSelectedTownId(townId);
+    flow.goToStep("creating");
+    const request = await flow.buildStartGameRequest(townId);
+    await startNewGame(request);
+  }
 
   return (
     <FlowSurface $variant="pre-session">
@@ -38,14 +48,43 @@ export function PreSessionSurface() {
           in.
         </FlowHeroLead>
       </FlowHero>
-      <StartGamePanel
-        session={session}
-        busy={loading}
-        gameId={gameId}
-        resetToken={resetToken}
-        onStartGame={startNewGame}
-        onRefresh={reloadCurrentGame}
-      />
+
+      {flow.step === "name" && (
+        <SetupHuntStep
+          playerName={flow.playerName}
+          travelDifficulty={flow.travelDifficulty}
+          entropy={flow.entropy}
+          seedDraft={flow.seedDraft}
+          seedDirty={flow.seedDirty}
+          decodeError={flow.decodeError}
+          onPlayerNameChange={flow.setPlayerName}
+          onTravelDifficultyChange={flow.setTravelDifficulty}
+          onEntropyChange={flow.setEntropy}
+          onSeedDraftChange={flow.setSeedDraft}
+          onApplySeed={flow.applySeed}
+          onRandomizeSeed={flow.randomizeSeed}
+          onContinue={flow.advance}
+        />
+      )}
+
+      {flow.step === "story" && (
+        <StorySoFarStep
+          onContinue={flow.advance}
+          seedCode={flow.seedState.seedCode}
+          travelDifficulty={flow.travelDifficulty}
+          entropy={flow.entropy}
+        />
+      )}
+
+      {flow.step === "town" && (
+        <StartingTownStep
+          selectedTownId={flow.selectedTownId}
+          onSelectTown={handleStartWithTown}
+        />
+      )}
+
+      {flow.step === "creating" && <CreatingStep busy={loading} />}
+
       {notice ? <FlowNotice>{notice}</FlowNotice> : null}
       {error ? <FlowError>{error}</FlowError> : null}
     </FlowSurface>

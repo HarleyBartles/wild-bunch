@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -22,16 +23,16 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.StartJourney(preview);
 
-        var travelLogs = session.LogEntries
+        var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
-        Assert.Equal(1, travelLogs.Count);
+        Assert.Single(travelLogs);
         Assert.Equal(1, travelLogs[0].Day);
         Assert.Equal(0, travelLogs[0].Turn);
         Assert.Equal(
             "You set out from Current Town toward Connected Town by mounted travel. The route is 1 ride-day unit(s) and should take 1 day(s). Route water is secure, so no canteen reserve is required.",
             travelLogs[0].Message);
-        Assert.Equal(0, session.TravelDiaryDays.Count);
+        Assert.Empty(session.TravelDiaryDays);
     }
 
     // Heat no longer affects trail events or encounters, so the deterministic
@@ -46,7 +47,7 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.AdvanceJourneyDay();
 
-        var travelLogs = session.LogEntries
+        var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
         Assert.Equal(2, travelLogs.Count);
@@ -68,7 +69,7 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.AdvanceJourneyDay();
 
-        Assert.Equal(1, session.TravelDiaryDays.Count);
+        Assert.Single(session.TravelDiaryDays);
         var day = session.TravelDiaryDays[0];
         Assert.Equal(1, day.DayNumber);
         Assert.Equal("Current Town", day.OriginTownName);
@@ -124,16 +125,16 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.StartJourney(preview);
 
-        var travelLogs = session.LogEntries
+        var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
-        Assert.Equal(1, travelLogs.Count);
+        Assert.Single(travelLogs);
         Assert.Equal(1, travelLogs[0].Day);
         Assert.Equal(0, travelLogs[0].Turn);
         Assert.Equal(
             "You set out from Pinecross toward Six Mile on foot. The route is 3 ride-day unit(s) and should take 4 day(s). The canteen has 2 spare charge(s) and can absorb 2 delay day(s).",
             travelLogs[0].Message);
-        Assert.Equal(0, session.TravelDiaryDays.Count);
+        Assert.Empty(session.TravelDiaryDays);
     }
 
     [Fact]
@@ -144,7 +145,7 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.AdvanceJourneyDay();
 
-        var travelLogs = session.LogEntries
+        var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
         Assert.Equal(3, travelLogs.Count);
@@ -169,7 +170,7 @@ public sealed class TravelDiaryCharacterizationTests
 
         session.AdvanceJourneyDay();
 
-        Assert.Equal(1, session.TravelDiaryDays.Count);
+        Assert.Single(session.TravelDiaryDays);
         var day = session.TravelDiaryDays[0];
         Assert.Equal(1, day.DayNumber);
         Assert.Equal("Pinecross", day.OriginTownName);
@@ -230,7 +231,7 @@ public sealed class TravelDiaryCharacterizationTests
         } while (result.Status == JourneyStatus.Active && result.Success);
 
         Assert.Equal(JourneyStatus.Completed, result.Status);
-        var travelLogs = session.LogEntries
+        var travelLogs = GameSessionLogProjection.Project(session)
             .Where(e => e.Kind == GameLogEntryKind.Travel)
             .ToList();
         Assert.Equal(9, travelLogs.Count);
@@ -400,7 +401,7 @@ public sealed class TravelDiaryCharacterizationTests
         } while (result.Status == JourneyStatus.Active && result.Success);
 
         Assert.Equal(JourneyStatus.Completed, result.Status);
-        var travelLogCountBeforeAck = session.LogEntries.Count(e => e.Kind == GameLogEntryKind.Travel);
+        var travelLogCountBeforeAck = GameSessionLogProjection.Project(session).Count(e => e.Kind == GameLogEntryKind.Travel);
         var diaryCountBeforeAck = session.TravelDiaryDays.Count;
 
         var ackResult = session.AcknowledgeJourneyArrival();
@@ -408,9 +409,9 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.True(ackResult.Success);
         Assert.Null(session.Journey);
         Assert.Equal(travelLogCountBeforeAck,
-            session.LogEntries.Count(e => e.Kind == GameLogEntryKind.Travel));
+            GameSessionLogProjection.Project(session).Count(e => e.Kind == GameLogEntryKind.Travel));
         Assert.Equal(diaryCountBeforeAck, session.TravelDiaryDays.Count);
-        Assert.Equal(9, session.LogEntries.Count(e => e.Kind == GameLogEntryKind.Travel));
+        Assert.Equal(9, GameSessionLogProjection.Project(session).Count(e => e.Kind == GameLogEntryKind.Travel));
         Assert.Equal(4, session.TravelDiaryDays.Count);
     }
 

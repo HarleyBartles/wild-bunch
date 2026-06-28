@@ -199,7 +199,7 @@ public sealed class TravelEventApplyTests
         });
 
         Assert.Null(session.Journey);
-        Assert.Equal(1, session.CompletedJourneyHistory.Count);
+        Assert.Single(session.CompletedJourneyHistory);
         Assert.Equal(sequence, session.CompletedJourneyHistory[0].JourneySequence);
     }
 }

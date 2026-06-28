@@ -1,13 +1,17 @@
 import type {
+  AdventureRandomnessPolicy,
   AvailableActionDto,
   BuyStoreItemRequest,
   InvestigationActionResultDto,
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
+  PrologueDto,
   ResolveJourneyEncounterRequest,
   StartGameRequest,
+  StartingTownDto,
   TownStoreOffersDto,
+  TravelDifficulty,
   TravelRequest,
   TravelPreviewResultDto,
   SaloonPersonOfInterestConfrontationResultDto,
@@ -25,6 +29,10 @@ export function createGame(request: StartGameRequest) {
 
 export function getGame(gameId: string) {
   return requestJson<GameSessionDto>(`/api/games/${gameId}`);
+}
+
+export function archiveGame(gameId: string) {
+  return requestJson<void>(`/api/games/${gameId}/archive`, { method: "POST" });
 }
 
 export function getAvailableActions(gameId: string) {
@@ -134,4 +142,27 @@ export function confrontSaloonPersonOfInterest(gameId: string, declaredWantedIde
 
 export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdentityHandle: string) {
   return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle) as Promise<WantedSuspectConfrontationResultDto>;
+}
+
+export function getPrologue(
+  seedCode?: string | null,
+  travelDifficulty?: TravelDifficulty,
+  entropy?: AdventureRandomnessPolicy,
+) {
+  const params = new URLSearchParams();
+  if (seedCode) {
+    params.set("seedCode", seedCode);
+  }
+  if (travelDifficulty != null) {
+    params.set("travelDifficulty", String(travelDifficulty));
+  }
+  if (entropy != null) {
+    params.set("entropy", String(entropy));
+  }
+  const query = params.toString();
+  return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);
+}
+
+export function getStartingTowns() {
+  return requestJson<StartingTownDto[]>("/api/games/starting-towns");
 }

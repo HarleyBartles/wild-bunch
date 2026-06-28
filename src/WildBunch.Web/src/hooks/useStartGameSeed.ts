@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { GameSessionDto, TravelDifficulty } from "../api/types";
+import type { AdventureRandomnessPolicy, GameSessionDto, TravelDifficulty } from "../api/types";
 import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
@@ -16,6 +16,7 @@ interface UseStartGameSeedArgs {
 export interface UseStartGameSeedResult {
   playerName: string;
   travelDifficulty: TravelDifficulty;
+  entropy: AdventureRandomnessPolicy;
   seedState: GameSetupSeedState;
   seedDraft: string;
   seedDirty: boolean;
@@ -23,6 +24,7 @@ export interface UseStartGameSeedResult {
   setPlayerName: (value: string) => void;
   setSeedDraft: (value: string) => void;
   setTravelDifficulty: (difficulty: TravelDifficulty) => void;
+  setEntropy: (entropy: AdventureRandomnessPolicy) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
@@ -42,6 +44,7 @@ function getErrorMessage(error: unknown) {
 export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs): UseStartGameSeedResult {
   const [playerName, setPlayerName] = useState("");
   const [travelDifficulty, setTravelDifficulty] = useState<TravelDifficulty>(0);
+  const [entropy, setEntropy] = useState<AdventureRandomnessPolicy>(1);
   const [seedState, setSeedState] = useState(createCanonicalSeedState());
   const [seedDraft, setSeedDraft] = useState(createCanonicalSeedState().seedCode);
   const [seedDirty, setSeedDirty] = useState(false);
@@ -58,6 +61,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
 
     const resetSeed = createCanonicalSeedState();
     setTravelDifficulty(0);
+    setEntropy(1);
     setSeedState(resetSeed);
     setSeedDraft(resetSeed.seedCode);
     setSeedDirty(false);
@@ -94,6 +98,10 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setTravelDifficulty(difficulty);
   }
 
+  function handleEntropyChange(value: AdventureRandomnessPolicy) {
+    setEntropy(value);
+  }
+
   function randomizeSeed() {
     setDecodeError(null);
     setSeedDirty(false);
@@ -103,6 +111,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
   return {
     playerName,
     travelDifficulty,
+    entropy,
     seedState,
     seedDraft,
     seedDirty,
@@ -110,6 +119,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setPlayerName,
     setSeedDraft: handleSeedDraftChange,
     setTravelDifficulty: handleTravelDifficultyChange,
+    setEntropy: handleEntropyChange,
     applySeed,
     randomizeSeed,
   };

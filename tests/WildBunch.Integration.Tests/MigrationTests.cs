@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -44,7 +45,7 @@ public sealed class MigrationTests
         Assert.NotNull(reloaded);
         Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
         Assert.Equal(session.Player.Name, reloaded.Player.Name);
-        Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
+        Assert.Equal(GameSessionLogProjection.Project(session).Count, GameSessionLogProjection.Project(reloaded).Count);
 
         using (var verificationContext = new WildBunchDbContext(options))
         {

@@ -71,6 +71,32 @@ public sealed class StartNewGameHandlerTests
     }
 
     [Fact]
+    public async Task StartNewGameForwardsStartingTownId()
+    {
+        var factory = new StubNewGameFactory();
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
+
+        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale", StartingTownId: "redmesa"));
+
+        Assert.Equal("redmesa", factory.RequestedStartingTownIds.Single());
+    }
+
+    [Fact]
+    public async Task StartNewGameForwardsNullStartingTownIdByDefault()
+    {
+        var factory = new StubNewGameFactory();
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new StartNewGameHandler(factory, repository, repository,
+            new HudProjector(), new DiaryProjector());
+
+        await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
+
+        Assert.Null(factory.RequestedStartingTownIds.Single());
+    }
+
+    [Fact]
     public async Task StartNewGameReturnsDtoWithHudAndDiaryProjections()
     {
         var factory = new StubNewGameFactory();

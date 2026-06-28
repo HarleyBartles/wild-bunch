@@ -49,6 +49,8 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - Profile filenames are short lowercase kebab-case scope names. Do not include `unslop`, `profile`, or `unslop-profile` in the filename; the folder already says what it is.
 - Human docs may point to these profiles, but profiles themselves are agent-facing review/filter material.
 - Dev-overlay work should apply `.agents/unslop/dev-overlay.md` together with the backend and web unslop profiles where relevant.
+- Unslop profiles are living documents. When a worker applies an unslop profile and slop still lands, the worker must postmortem whether the profile was effective. If the profile should have caught the drift but did not, the worker must strengthen the profile in the same PR when in scope, or return a precise deferred patch. "I read the unslop profile" is not enough; closeout must state what checks the profile forced and whether any gaps were found.
+- When strengthening an unslop profile, the edit must name a reusable class of drift, not the one incident. Sharpen or replace existing guidance where possible instead of appending duplicates. Keep additions short enough to remain readable. Create a clear review failure condition (a test, a check, or a concrete reviewable assertion that would fail if the drift recurs). Do not turn profiles into a dumping ground for transient failures. Include a brief closeout note in the PR or return explaining why the profile change is durable — i.e. what class of future drift it now catches that it did not before.
 
 ## Branch + PR Workflow
 - Workers branch from current `main`.
@@ -173,6 +175,7 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - The worker environment uses PowerShell, so do not use `&&` for command chaining.
 - Run commands separately or use PowerShell-safe sequencing when multiple commands are needed.
 - The local PostgreSQL dev service (`localhost:5434`) is a shared, long-lived developer service owned by the persistent main checkout. Do not stop it during normal worker cleanup. `.\scripts\postgres-dev.ps1 stop` and `reset` are manual/destructive and only for explicit service lifecycle ownership or when Harley asks. Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests; it reuses a healthy service and only starts one when down.
+- Browser proof must use the canonical dev topology: API on `localhost:5275` (from `launchSettings.json`), Vite on `localhost:5173`, PostgreSQL on `5434`. Fallback ports are not allowed for browser proof. See `.agents/ui-browser-check-playbook.md` for the binding topology, port-conflict resolution, and evidence-invalidity rules.
 - When you start worker-owned API servers, Vite dev servers, test servers, browsers, watch processes, or other long-running helpers, record what you started and clean them up before returning `GREEN` unless you explicitly return `AMBER` or `BLOCKED` with exact process/port evidence.
 - When validation touches `C:/WORK/**`, verify cleanup from the workspace perspective before returning `GREEN`: account for likely worker-owned server, browser, watcher, and test-helper processes; include process id, process name, and command line for anything stopped or left running; check every port used during validation, including alternate Vite preview/dev ports; and state repo/file-lock posture. If handle tooling is unavailable, say so and provide the process/command-line fallback proof.
 - A later user finding a worker-owned helper from the validation run after `GREEN` falsifies the cleanup lane, even if the product slice itself was correct.
@@ -188,5 +191,6 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - Clean worktree status
 - Cleanup proof when validation touched `C:/WORK/**` or started worker-owned helpers: started helpers, stopped helpers, post-cleanup process scan, post-cleanup port scan, repo/file-lock posture, remaining known worker-owned processes
 - Issue-goal conformance notes
+- Unslop profile evidence: which profiles were applied, what checks they forced, and whether any gaps were found (strengthen the profile in-PR or return a precise deferred patch when slop landed despite the profile)
 - Known caveats or next recommended slice
 - Landing verification if and when the PR is merged to `main`

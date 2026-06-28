@@ -1,5 +1,6 @@
-export type GameStatus = 0 | 1 | 2;
+export type GameStatus = 0 | 1 | 2 | 3;
 export type TravelDifficulty = 0 | 1 | 2;
+export type AdventureRandomnessPolicy = 0 | 1 | 2 | 3;
 export type JourneyStatus = 0 | 1 | 2 | 3;
 export const JourneyStatus = {
   Active: 0,
@@ -49,6 +50,8 @@ export interface StartGameRequest {
   playerName: string;
   travelDifficulty: TravelDifficulty;
   seedCode?: string | null;
+  entropy?: AdventureRandomnessPolicy;
+  startingTownId?: string | null;
 }
 
 export interface TravelRequest {
@@ -619,3 +622,16 @@ export interface SaloonPersonOfInterestConfrontationResultDto {
 }
 
 export interface WantedSuspectConfrontationResultDto extends SaloonPersonOfInterestConfrontationResultDto {}
+
+export interface PrologueDto {
+  heading: string;
+  body: string;
+  primaryAction: string;
+  variantId: string;
+}
+
+export interface StartingTownDto {
+  id: string;
+  name: string;
+  services: number;
+}

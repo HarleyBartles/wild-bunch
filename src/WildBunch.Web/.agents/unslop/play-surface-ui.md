@@ -256,6 +256,34 @@ A UI change must name:
 
 Visual style supports those constraints. It does not replace them.
 
+### 13. Wizard/form drift in setup and start flows
+
+A game start or setup flow should feel like entering an adventure, not editing a web form or walking a signup wizard.
+
+Avoid:
+
+- dead or decorative navigation controls (e.g. a disabled Back button on the first step that goes nowhere)
+- wizard-style Back controls unless they represent a meaningful player choice (not just "go back to the previous form field")
+- step-progress eyebrows such as "Step 1 of 3" — these are form chrome, not game copy
+- player-facing recovery/debug controls such as "Refresh session" unless they have a real player-facing purpose and behavior
+- checkbox acknowledgement gates or "I understand" confirmation language that treats the player as a form user, not a player character
+- inert buttons that appear player-facing but do nothing useful
+- splitting setup fields across multiple wizard steps when they belong on a single setup surface (name, difficulty, entropy, seed code are one setup moment, not four form pages)
+
+The start flow is a forward-moving experience: the player sets up their hunt, reads the prologue, picks a starting town, and rides out. Each step should proceed forward into the next. The setup step should gather all game-start choices in one surface, not fragment them across wizard pages. Back navigation is only appropriate when it represents a real designed player choice (e.g. choosing between two meaningful paths), not when it recreates a signup-wizard Back button.
+
+If a recovery or debug affordance is needed for stale session state, move it to the dev overlay or implement it with game-appropriate copy and real behavior. Do not leave inert player-facing buttons.
+
+### 14. Frontend-invented player-facing taxonomy for domain-backed settings
+
+Player-facing labels for domain-backed game settings (difficulty levels, entropy/randomness policies, loadout profiles, world variants, etc.) must come from existing domain, content, or API sources — not from a frontend-only themed mapping.
+
+If the domain defines an enum or canonical name (e.g. `Normal`, `Easy`, `Hard`, `Boring`, `Classic`, `Adventurous`, `Wild`), the UI must use that name verbatim unless a backend/content display-name seam explicitly provides alternative labels. Do not invent Western-flavoured or "more thematic" labels for settings that already have canonical names.
+
+If a display-name seam is missing and the canonical names are ugly or badly named, the worker should stop and shape that seam (a content source, an API DTO field, or a domain rename) rather than papering over it in React. A frontend-only mapping that creates a divergent player-facing taxonomy from the backend/domain taxonomy is a form of frontend-invented truth (see §9).
+
+Review failure condition: a setup or settings surface renders option labels that do not match any domain enum name, content source, or API-provided display name, and no display-name seam exists to justify the divergence.
+
 ## Prefer Patterns
 
 ### 1. Play-surface-first design

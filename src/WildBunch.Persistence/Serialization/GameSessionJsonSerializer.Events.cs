@@ -34,6 +34,7 @@ public sealed partial class GameSessionJsonSerializer
     private static Type ResolveEventType(string eventType) => eventType switch
     {
         nameof(GameStarted) => typeof(GameStarted),
+        nameof(PlaythroughArchived) => typeof(PlaythroughArchived),
         nameof(StoreItemPurchased) => typeof(StoreItemPurchased),
         nameof(InvestigationPerformed) => typeof(InvestigationPerformed),
         nameof(TownActionContextEntered) => typeof(TownActionContextEntered),

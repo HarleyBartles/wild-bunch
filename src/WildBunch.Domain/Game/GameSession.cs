@@ -30,6 +30,7 @@ namespace WildBunch.Domain.Game;
 public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
+    private const string ArchivedBlockMessage = "This playthrough is archived.";
     private const decimal CitizenDeclarationFine = 10m;
 
     private readonly List<GameLogEntry> _logEntries = [];
@@ -321,6 +322,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             case GameStarted gs:
                 Apply(gs);
+                break;
+            case PlaythroughArchived pa:
+                Apply(pa);
                 break;
             case StoreItemPurchased p:
                 Apply(p);
@@ -818,6 +822,39 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return session;
     }
 
+    /// <summary>
+    /// Archives this playthrough: marks the session <see cref="GameStatus.Archived"/>
+    /// and emits a <see cref="PlaythroughArchived"/> event carrying a snapshot of the
+    /// player's last position (town, day, turn) and the status before archive. Archive
+    /// is a lifecycle mutation, not a deletion — the session remains queryable. See BUNCH-102.
+    /// </summary>
+    /// <param name="archiveReason">Caller-supplied reason recorded on the event (e.g. "start-over").</param>
+    /// <param name="archivedAtUtc">Optional archive timestamp; defaults to <see cref="DateTime.UtcNow"/>.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the session is already archived.</exception>
+    public void ArchivePlaythrough(string archiveReason, DateTime? archivedAtUtc = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(archiveReason);
+
+        if (Status == GameStatus.Archived)
+        {
+            throw new InvalidOperationException("This playthrough is already archived.");
+        }
+
+        var e = new PlaythroughArchived
+        {
+            ArchivedAtUtc = archivedAtUtc ?? DateTime.UtcNow,
+            ArchiveReason = archiveReason,
+            PlayerName = Player.Name,
+            LastTownId = CurrentTown.TownId,
+            LastTownName = CurrentTown.TownName,
+            Day = Clock.Day,
+            Turn = Clock.Turn.ToString(),
+            StatusBeforeArchive = Status
+        };
+
+        ProduceEvent(e);
+    }
+
     private static int StartingHealthFor(TravelDifficulty travelDifficulty)
         => travelDifficulty switch
         {
@@ -844,6 +881,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         TravelRandomness = e.TravelRandomness;
         Entropy = e.Entropy;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="PlaythroughArchived"/> event to mutate session state.
+    /// This is the event-sourced mutation path for the archive flow: it sets
+    /// <see cref="Status"/> to <see cref="GameStatus.Archived"/>. The event carries
+    /// the pre-archive status and last-position snapshot as decision data; the
+    /// snapshot is not re-applied to live state (archive is terminal for play).
+    /// See ADR-0028 and BUNCH-102.
+    /// </summary>
+    private void Apply(PlaythroughArchived e)
+    {
+        Status = GameStatus.Archived;
         _version++;
     }
 
@@ -904,6 +955,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
+        if (IsArchived)
+        {
+            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+        }
+
         ArgumentNullException.ThrowIfNull(preview);
 
         if (Journey is not null)
@@ -932,7 +988,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public TravelJourneyStepResult AdvanceJourneyDay()
-        => AdvanceJourneyDayDeterministic();
+    {
+        if (IsArchived)
+        {
+            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+        }
+
+        return AdvanceJourneyDayDeterministic();
+    }
 
     /// <summary>
     /// Dev command: forces the next travel-day generation to use the given override.
@@ -1628,6 +1691,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
     {
+        if (IsArchived)
+        {
+            return JourneyArrivalAcknowledgementResult.Failed(ArchivedBlockMessage);
+        }
+
         if (Journey is null)
         {
             return JourneyArrivalAcknowledgementResult.Failed("No completed journey is waiting to be acknowledged.");
@@ -2448,7 +2516,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         int? bulletSpend,
         decimal? bribeAmount,
         ulong? forcedRoll)
-        => ResolveJourneyEncounterDeterministic(choiceId, bulletSpend, bribeAmount, forcedRoll);
+    {
+        if (IsArchived)
+        {
+            return JourneyEncounterResolutionResult.Failed(ArchivedBlockMessage, JourneyStatus.Failed);
+        }
+
+        return ResolveJourneyEncounterDeterministic(choiceId, bulletSpend, bribeAmount, forcedRoll);
+    }
 
     private static string DescribeTravelMode(TravelMode travelMode)
         => travelMode == TravelMode.Mounted ? "by mounted travel" : "on foot";
@@ -2507,6 +2582,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
     {
+        if (IsArchived)
+        {
+            return StorePurchaseResult.Failed(ArchivedBlockMessage);
+        }
+
         ArgumentNullException.ThrowIfNull(offer);
 
         if (IsJourneyModal())
@@ -2560,6 +2640,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public ReadWantedPostersResult ReadWantedPosters()
     {
+        if (IsArchived)
+        {
+            return ReadWantedPostersResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return ReadWantedPostersResult.Failed(JourneyModalBlockMessage);
@@ -2646,6 +2731,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult LookAroundSaloon()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2768,16 +2858,37 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
-        => _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+    {
+        if (IsArchived)
+        {
+            return SaloonPersonOfInterestConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+        }
+
+        return _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+    }
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
-        => _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
+    {
+        if (IsArchived)
+        {
+            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+        }
+
+        return _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
+    }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
         SuspectId targetSuspectId,
         WantedSuspectConfrontationChoice choice,
         string? declaredWantedIdentityHandle = null)
-        => _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
+    {
+        if (IsArchived)
+        {
+            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+        }
+
+        return _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
+    }
 
     private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
     {
@@ -2796,13 +2907,32 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
-        => _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
+    {
+        if (IsArchived)
+        {
+            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+        }
+
+        return _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
+    }
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
-        => _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+    {
+        if (IsArchived)
+        {
+            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+        }
+
+        return _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+    }
 
     public CaseInvestigationResult FollowTelegraphLeads()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2860,6 +2990,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult GatherLocalGossip()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2912,6 +3047,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult InspectNoticeBoard()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -2964,6 +3104,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult CheckSheriffRecords()
     {
+        if (IsArchived)
+        {
+            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+        }
+
         if (IsJourneyModal())
         {
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
@@ -3250,6 +3395,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private bool IsJourneyModal()
         => Journey is not null;
+
+    private bool IsArchived => Status == GameStatus.Archived;
 
     private bool CanPurchaseInventoryItem(StoreOffer offer, int quantity, out string failureMessage)
     {

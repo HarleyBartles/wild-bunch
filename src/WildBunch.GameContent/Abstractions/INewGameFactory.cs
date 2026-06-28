@@ -9,5 +9,6 @@ public interface INewGameFactory
         string playerName,
         TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard);
+        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        string? startingTownId = null);
 }

@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
@@ -22,10 +23,10 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         var lookAround = session.LookAroundSaloon();
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        var logCountBeforeConfront = session.LogEntries.Count;
+        var logCountBeforeConfront = GameSessionLogProjection.Project(session).Count;
 
         var confrontation = session.ConfrontSaloonPersonOfInterest();
-        var logCountAfterConfront = session.LogEntries.Count;
+        var logCountAfterConfront = GameSessionLogProjection.Project(session).Count;
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
@@ -125,7 +126,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(lookAround.Success);
         Assert.Equal(activePersonOfInterest, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        var logCountBeforeConfront = session.LogEntries.Count;
+        var logCountBeforeConfront = GameSessionLogProjection.Project(session).Count;
 
         var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
 
@@ -137,7 +138,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
-        Assert.Equal(logCountBeforeConfront, session.LogEntries.Count);
+        Assert.Equal(logCountBeforeConfront, GameSessionLogProjection.Project(session).Count);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(activePersonOfInterest, out _));
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-2"), out _));
     }
@@ -238,14 +239,14 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     public void LookAroundSaloonCanSurfaceATownCitizenAndWrongDeclarationCapsTheFineAtTheAvailableWallet()
     {
         var session = CreateCitizenSession(wallet: Wallet.Starting(4m));
-        var initialLogCount = session.LogEntries.Count;
+        var initialLogCount = GameSessionLogProjection.Project(session).Count;
 
         var lookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
         Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", lookAround.Message);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
-        Assert.Equal(initialLogCount, session.LogEntries.Count);
+        Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
         var result = session.ConfrontSaloonPersonOfInterest("warrant-1");
@@ -261,8 +262,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(result.IsAlive);
         Assert.Null(result.IsSecured);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, result.PersonOfInterestKind);
-        Assert.Equal(initialLogCount, session.LogEntries.Count);
-        Assert.DoesNotContain(session.LogEntries, entry => entry.Message.Contains("town clerk", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
+        Assert.DoesNotContain(GameSessionLogProjection.Project(session), entry => entry.Message.Contains("town clerk", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(0m, session.Player.Wallet.Cash);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
@@ -278,7 +279,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(repeatLookAround.Success);
         Assert.Equal("You look around the saloon and spot a town clerk from Current Town.", repeatLookAround.Message);
-        Assert.Equal(initialLogCount, session.LogEntries.Count);
+        Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
     }
 
     [Fact]

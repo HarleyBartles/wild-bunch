@@ -34,6 +34,26 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         return store is null ? null : ToAggregate(store);
     }
 
+    public async Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
+    {
+        var sessionIds = await _dbContext.GameSessions.AsNoTracking()
+            .Where(entity => entity.Status == status.ToString())
+            .Select(entity => entity.Id)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var sessions = new List<GameSession>(sessionIds.Length);
+        foreach (var id in sessionIds)
+        {
+            var store = await LoadStoreAsync(new GameSessionId(id), cancellationToken).ConfigureAwait(false);
+            if (store is not null)
+            {
+                sessions.Add(ToAggregate(store));
+            }
+        }
+        return sessions;
+    }
+
     public async Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -215,7 +235,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // full stream here, post-snapshot entries would be duplicated after
         // replay. See BUNCH-86.
         var snapshotEvents = allEvents
-            .Take((int)envelope.SnapshotVersion)
+            .Take((int)envelope.SnapshotVersion.GetValueOrDefault())
             .ToArray();
         var logEntries = _journalLogProjector.Project(snapshotEvents);
 
@@ -300,7 +320,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
         var hasPostSnapshotEvents = store.PostSnapshotEvents.Count > 0;
         var initialVersion = hasPostSnapshotEvents
-            ? (int)store.Envelope.SnapshotVersion
+            ? (int)store.Envelope.SnapshotVersion.GetValueOrDefault()
             : (int)store.Envelope.StreamVersion;
         GameSessionRehydrator.SetVersion(session, initialVersion);
 

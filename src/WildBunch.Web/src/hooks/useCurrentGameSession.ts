@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acknowledgeTravelArrival,
+  archiveGame,
   createGame,
   checkLocalRecords,
   followTelegraphLeads,
@@ -140,6 +141,27 @@ export function useCurrentGameSession() {
     },
     onError: (exception: unknown) => {
       setError(exception instanceof Error ? exception.message : "Unable to start a new game.");
+    },
+  });
+
+  const archivePlaythroughMutation = useMutation({
+    mutationFn: () => archiveGame(gameId as string),
+    onSuccess: async () => {
+      const archivedGameId = gameId;
+      window.localStorage.removeItem(storageKey);
+      setStoredGameId(null);
+      setWantedPosters([]);
+      setDeclaredWantedIdentityHandle("");
+      setError("");
+      if (archivedGameId) {
+        queryClient.removeQueries({ queryKey: ["session", archivedGameId] });
+        queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
+        queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
+      }
+      setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to archive the playthrough.");
     },
   });
 
@@ -403,6 +425,15 @@ export function useCurrentGameSession() {
     }
   }, [gameId, queryClient]);
 
+  const archivePlaythrough = useCallback(async () => {
+    if (!gameId) {
+      return;
+    }
+    await archivePlaythroughMutation.mutateAsync();
+  }, [gameId, archivePlaythroughMutation]);
+
+  const archiving = archivePlaythroughMutation.isPending;
+
   const setSession = useCallback(
     (next: GameSessionDto | null) => {
       if (gameId) {
@@ -455,5 +486,7 @@ export function useCurrentGameSession() {
     setSession,
     setNotice,
     setError,
+    archivePlaythrough,
+    archiving,
   };
 }

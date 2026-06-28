@@ -26,7 +26,8 @@ public sealed class SeededNewGameFactory : INewGameFactory
         string playerName,
         TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
+        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        string? startingTownId = null)
     {
         var descriptor = ResolveDescriptor(travelDifficulty, setupSeedCode, entropy);
         var setupPackage = _setupPackageBuilder.Build(descriptor);
@@ -34,11 +35,16 @@ public sealed class SeededNewGameFactory : INewGameFactory
             ? TravelRandomnessState.CreateDeterministic(descriptor.SeedCodeText)
             : _travelRandomnessSource.Create(descriptor.SeedCodeText, setupPackage.TravelDifficulty);
 
+        // Player-chosen town overrides the seed-derived default; null falls back to the seed default.
+        var resolvedStartingTownId = startingTownId is null
+            ? setupPackage.StartingTownId
+            : new TownId(startingTownId);
+
         return GameSession.StartNew(
             playerName,
             setupPackage.World,
             setupPackage.CaseFile,
-            setupPackage.StartingTownId,
+            resolvedStartingTownId,
             setupPackage.StartingWallet,
             setupPackage.StartingInventory,
             setupPackage.TravelDifficulty,

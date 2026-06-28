@@ -183,6 +183,9 @@ public sealed class GameSessionCommandHandlerTests
             return Task.FromResult(s);
         }
 
+        public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<GameSession>>(_sessions.Values.Where(s => s.Status == status).ToArray());
+
         public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken ct = default)
         {
             Attempts++;
@@ -220,6 +223,9 @@ public sealed class GameSessionCommandHandlerTests
             _sessions.TryGetValue(id, out var s);
             return Task.FromResult(s);
         }
+
+        public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<GameSession>>(_sessions.Values.Where(s => s.Status == status).ToArray());
 
         public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken ct = default)
             => throw new ConcurrencyException(session.Id, 0, 1);

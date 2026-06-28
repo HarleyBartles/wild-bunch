@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
@@ -28,8 +29,8 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal("Purchased 3 Food for $6.00.", result.Message);
         Assert.Equal(19m, session.Player.Wallet.Cash);
         Assert.Equal(4, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Equal(2, session.LogEntries.Count);
-        Assert.Equal(GameLogEntryKind.Purchase, session.LogEntries.Last().Kind);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
+        Assert.Equal(GameLogEntryKind.Purchase, GameSessionLogProjection.Project(session).Last().Kind);
     }
 
     [Fact]
@@ -47,8 +48,8 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal(40m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
         Assert.Equal(DomainHorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
-        Assert.Equal(2, session.LogEntries.Count);
-        Assert.Equal(GameLogEntryKind.Purchase, session.LogEntries.Last().Kind);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
+        Assert.Equal(GameLogEntryKind.Purchase, GameSessionLogProjection.Project(session).Last().Kind);
     }
 
     [Fact]
@@ -65,7 +66,7 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal("Not enough cash.", result.Message);
         Assert.Equal(4m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Canteen));
-        Assert.Single(session.LogEntries);
+        Assert.Single(GameSessionLogProjection.Project(session));
     }
 
     [Fact]
@@ -85,7 +86,7 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal("Canteen already exists in inventory.", result.Message);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Canteen));
-        Assert.Single(session.LogEntries);
+        Assert.Single(GameSessionLogProjection.Project(session));
     }
 
     [Fact]
@@ -102,7 +103,7 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal("Quantity must be at least 1.", result.Message);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.Single(session.LogEntries);
+        Assert.Single(GameSessionLogProjection.Project(session));
     }
 
     [Fact]
@@ -121,7 +122,7 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Canteen));
-        Assert.Equal(2, session.LogEntries.Count);
+        Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
     }
 
@@ -139,7 +140,7 @@ public sealed class GameSessionPurchaseTests
         Assert.Equal("Horse items must have a quantity of 1.", result.Message);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
-        Assert.Single(session.LogEntries);
+        Assert.Single(GameSessionLogProjection.Project(session));
     }
 
     private static GameSession CreateSession(

@@ -31,13 +31,17 @@ public sealed class JournalLogProjectorEquivalenceTests
 
         var projected = new JournalLogProjector().Project(events);
 
-        Assert.Equal(session.LogEntries.Count, projected.Count);
-        for (var i = 0; i < session.LogEntries.Count; i++)
+#pragma warning disable CS0618 // LogEntries — this test proves equivalence with the projection
+        var commandPathLog = session.LogEntries;
+#pragma warning restore CS0618
+
+        Assert.Equal(commandPathLog.Count, projected.Count);
+        for (var i = 0; i < commandPathLog.Count; i++)
         {
-            Assert.Equal(session.LogEntries[i].Kind, projected[i].Kind);
-            Assert.Equal(session.LogEntries[i].Message, projected[i].Message);
-            Assert.Equal(session.LogEntries[i].Day, projected[i].Day);
-            Assert.Equal(session.LogEntries[i].Turn, projected[i].Turn);
+            Assert.Equal(commandPathLog[i].Kind, projected[i].Kind);
+            Assert.Equal(commandPathLog[i].Message, projected[i].Message);
+            Assert.Equal(commandPathLog[i].Day, projected[i].Day);
+            Assert.Equal(commandPathLog[i].Turn, projected[i].Turn);
         }
     }
 
@@ -63,13 +67,17 @@ public sealed class JournalLogProjectorEquivalenceTests
 
         var projected = new JournalLogProjector().Project(events);
 
-        Assert.Equal(session.LogEntries.Count, projected.Count);
-        for (var i = 0; i < session.LogEntries.Count; i++)
+#pragma warning disable CS0618 // LogEntries — this test proves equivalence with the projection
+        var commandPathLog = session.LogEntries;
+#pragma warning restore CS0618
+
+        Assert.Equal(commandPathLog.Count, projected.Count);
+        for (var i = 0; i < commandPathLog.Count; i++)
         {
-            Assert.Equal(session.LogEntries[i].Kind, projected[i].Kind);
-            Assert.Equal(session.LogEntries[i].Message, projected[i].Message);
-            Assert.Equal(session.LogEntries[i].Day, projected[i].Day);
-            Assert.Equal(session.LogEntries[i].Turn, projected[i].Turn);
+            Assert.Equal(commandPathLog[i].Kind, projected[i].Kind);
+            Assert.Equal(commandPathLog[i].Message, projected[i].Message);
+            Assert.Equal(commandPathLog[i].Day, projected[i].Day);
+            Assert.Equal(commandPathLog[i].Turn, projected[i].Turn);
         }
     }
 
@@ -88,13 +96,17 @@ public sealed class JournalLogProjectorEquivalenceTests
         var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
         var projected = new JournalLogProjector().Project(events);
 
-        Assert.Equal(session.LogEntries.Count, projected.Count);
-        for (var i = 0; i < session.LogEntries.Count; i++)
+#pragma warning disable CS0618 // LogEntries — this test proves equivalence with the projection
+        var commandPathLog = session.LogEntries;
+#pragma warning restore CS0618
+
+        Assert.Equal(commandPathLog.Count, projected.Count);
+        for (var i = 0; i < commandPathLog.Count; i++)
         {
-            Assert.Equal(session.LogEntries[i].Kind, projected[i].Kind);
-            Assert.Equal(session.LogEntries[i].Message, projected[i].Message);
-            Assert.Equal(session.LogEntries[i].Day, projected[i].Day);
-            Assert.Equal(session.LogEntries[i].Turn, projected[i].Turn);
+            Assert.Equal(commandPathLog[i].Kind, projected[i].Kind);
+            Assert.Equal(commandPathLog[i].Message, projected[i].Message);
+            Assert.Equal(commandPathLog[i].Day, projected[i].Day);
+            Assert.Equal(commandPathLog[i].Turn, projected[i].Turn);
         }
     }
 }

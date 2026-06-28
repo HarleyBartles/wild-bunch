@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
@@ -34,7 +35,7 @@ public sealed class QueryHandlersAreReadOnlyTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(0, session.Clock.Turn);
-        Assert.Single(session.LogEntries);
+        Assert.Single(GameSessionLogProjection.Project(session));
     }
 
     private static GameSession CreateSession()

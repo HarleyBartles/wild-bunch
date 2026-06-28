@@ -492,3 +492,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+.superpowers/
+.agents/superpowers/sdd/
+.agents/superpowers/output/

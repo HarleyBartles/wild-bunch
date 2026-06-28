@@ -36,6 +36,8 @@ public static class DependencyInjection
         services.AddSingleton<TownStoreCatalogResolver>();
         services.AddScoped<StartNewGameHandler>();
         services.AddScoped<GetGameSessionHandler>();
+        services.AddScoped<GetStartingTownsHandler>();
+        services.AddScoped<GetPrologueHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<GetJournalHandler>();
         services.AddScoped<GetTownStoreOffersHandler>();
@@ -54,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<AcknowledgeJourneyArrivalHandler>();
         services.AddScoped<ResolveJourneyEncounterHandler>();
         services.AddScoped<TurnInToSheriffHandler>();
+        services.AddScoped<ArchivePlaythroughHandler>();
 
         // Projection projectors (safe read-model derivations from event stream)
         // Only HUD and diary are exposed through the player-facing API.

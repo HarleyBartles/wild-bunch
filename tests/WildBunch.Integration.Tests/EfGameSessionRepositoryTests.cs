@@ -44,7 +44,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.Player.Inventory.GetCanteenState(), reloaded.Player.Inventory.GetCanteenState());
         Assert.Equal(session.World.Trails.First().RideDayDistance, reloaded.World.Trails.First().RideDayDistance);
         Assert.Equal(session.Status, reloaded.Status);
-        Assert.Equal(session.LogEntries.Count, reloaded.LogEntries.Count);
+        Assert.Equal(GameSessionLogProjection.Project(session).Count, GameSessionLogProjection.Project(reloaded).Count);
         Assert.Equal(session.CaseFile.OpeningLead.Description, reloaded.CaseFile.OpeningLead.Description);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, reloaded.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, reloaded.CaseFile.KillerReleaseState.Progress);
@@ -106,7 +106,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(2, reloaded.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(new DomainHorseTravelState(0, 0, 1), reloaded.Player.Inventory.GetHorseState());
         Assert.Equal(2, reloaded.Player.Inventory.GetCanteenState()!.Charges);
-        Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
+        Assert.Contains(GameSessionLogProjection.Project(reloaded), entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal(TrailTerrain.Hills, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).Terrain);
         Assert.Equal(WaterFeature.River, reloaded.World.Trails.Single(trail => trail.Id == new TrailId("trail-2")).WaterFeature);
     }
@@ -325,7 +325,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, reloaded.Journey!.TravelMode);
         Assert.Equal(1, reloaded.Journey.RemainingDays);
         Assert.Equal(new DomainHorseTravelState(0, 0, 2), reloaded.Player.Inventory.GetHorseState());
-        Assert.Contains(reloaded.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("went lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(GameSessionLogProjection.Project(reloaded), entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("went lame", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -412,14 +412,14 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(sessionRead.Journey);
         Assert.Equal(loaded.Journey!.Status, sessionRead.Journey!.Status);
         Assert.Equal(loaded.TravelDiaryDays.Count, sessionRead.TravelDiaryDays.Count);
-        Assert.Equal(loaded.LogEntries.Count, sessionRead.LogEntries.Count);
+        Assert.Equal(GameSessionLogProjection.Project(loaded).Count, sessionRead.LogEntries.Count);
 
         Assert.NotNull(journalRead);
         Assert.Equal(loaded.Id.Value, journalRead!.SessionId);
         Assert.Equal(loaded.Clock.Day, journalRead.Day);
         Assert.Equal(loaded.Clock.Turn, journalRead.Turn);
         Assert.Equal(2, journalRead.LogEntries.Count);
-        Assert.Equal(loaded.LogEntries.Take(2).Select(entry => entry.Message), journalRead.LogEntries.Select(entry => entry.Message));
+        Assert.Equal(GameSessionLogProjection.Project(loaded).Take(2).Select(entry => entry.Message), journalRead.LogEntries.Select(entry => entry.Message));
         Assert.DoesNotContain("true culprit", System.Text.Json.JsonSerializer.Serialize(journalRead), StringComparison.OrdinalIgnoreCase);
 
         await using var verificationContext = fixture.CreateContext();

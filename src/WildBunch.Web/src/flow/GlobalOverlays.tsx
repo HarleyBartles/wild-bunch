@@ -1,11 +1,14 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { CockpitOverlayFrame } from "../components/CockpitOverlayFrame";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { CaseFileSurface } from "../components/CaseFileSurface";
 import { JournalSurface } from "../components/JournalSurface";
 import { WantedPosterSurface } from "../components/WantedPosterSurface";
+import { Button } from "../components/ui/sharedStyled";
 import { useGameSession } from "../state/useGameSession";
 
-export type OverlayKind = "case-file" | "wanted" | "journal" | null;
+export type OverlayKind = "case-file" | "wanted" | "journal" | "game-settings" | null;
 
 interface GlobalOverlaysProps {
   openOverlay: OverlayKind;
@@ -13,7 +16,8 @@ interface GlobalOverlaysProps {
 }
 
 export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
-  const { journal, wantedPosters, loading, error } = useGameSession();
+  const { journal, wantedPosters, loading, error, archivePlaythrough, archiving } = useGameSession();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <>
@@ -62,6 +66,42 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
       >
         <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={journal?.logEntries ?? []} />
       </CockpitOverlayFrame>
+
+      <CockpitOverlayFrame
+        open={openOverlay === "game-settings"}
+        eyebrow="Settings"
+        title="Game Settings"
+        description="Manage your playthrough."
+        onClose={() => onOpenOverlay(null)}
+      >
+        <SettingsSection>
+          <SettingsHead>
+            <h3>Playthrough</h3>
+          </SettingsHead>
+          <SettingsRow>
+            <SettingsCopy>
+              <strong>Start Over</strong>
+              <p>Archive this playthrough and begin again from the start.</p>
+            </SettingsCopy>
+            <Button type="button" $variant="secondary" onClick={() => setConfirmOpen(true)}>
+              Start Over
+            </Button>
+          </SettingsRow>
+        </SettingsSection>
+      </CockpitOverlayFrame>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Start over?"
+        body="This will archive your current playthrough. You will not be able to return to it. A new hunt will begin from the start."
+        confirmLabel="Archive and start over"
+        cancelLabel="Keep riding"
+        busy={archiving}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          void archivePlaythrough().then(() => setConfirmOpen(false)).catch(() => { /* onError already handled in mutation */ });
+        }}
+      />
     </>
   );
 }
@@ -99,5 +139,48 @@ const OverlayButton = styled.button`
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+`;
+
+const SettingsSection = styled.section`
+  display: grid;
+  gap: 14px;
+  padding: 4px 0 8px;
+`;
+
+const SettingsHead = styled.header`
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+  }
+`;
+
+const SettingsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+`;
+
+const SettingsCopy = styled.div`
+  display: grid;
+  gap: 4px;
+  max-width: 460px;
+
+  strong {
+    font-size: 0.94rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.45;
   }
 `;
