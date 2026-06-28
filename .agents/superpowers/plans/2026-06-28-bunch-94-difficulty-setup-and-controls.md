@@ -10,11 +10,12 @@
 
 ## Plan Status
 
-- Plan status: preflight complete, ready for approval
-- Current route state: `preflight_complete_pending_approval`
+- Plan status: preflight repaired, ready for approval
+- Current route state: `preflight_repaired_pending_approval`
 - Base commit: `6b9fcbf` (BUNCH-106: Add flavourful citizen cast for POI encounters, #118)
 - Branch: `harleydbartles/bunch-94-difficulty-setup-and-controls`
 - Worktree: `.worktrees/bunch-94`
+- Repairs applied: (1) fixed Task 1 test to use a single seed with different difficulty parameters, since the seed does not encode difficulty; (2) added event store type mapping for `DevDifficultyForced` in `ResolveEventType` plus explicit event round-trip and rehydration tests; (3) extended Task 5 to require derived travel-rule facts in the Session dev panel after forcing difficulty, and strengthened Task 7 browser proof to require observable envelope change, not just a label swap.
 
 ## Preflight Findings
 
@@ -24,7 +25,7 @@ Inspected at commit `6b9fcbf` on `main`:
 
 - **Domain enum** (`src/WildBunch.Domain/Travel/GameDifficulty.cs`): `Standard=0, Easy=1, Challenging=2, Brutal=3` — all 4 values.
 - **Entropy enum** (`src/WildBunch.Domain/Travel/GameEntropy.cs`): `Boring=0, Classic=1, Adventurous=2, Wild=3` — all 4 values.
-- **Seed codec** (`src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs`): difficulty drives `GetBaseStartingCash` (Easy=28, Standard=23, Challenging=18, Brutal=13), canonical descriptor shape, and validation. Entropy drives cash bonus envelope and salt posture (Boring=Fixed, others=Runtime).
+- **Seed codec** (`src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs`): the seed UUID encodes world variant, loadout profile, start-with-horse, cash bonus, and accusation index. **Difficulty and entropy are NOT encoded in the seed** — they are caller-supplied parameters to `Resolve(Guid, GameDifficulty, GameEntropy)`. `CreateDescriptorSignature` (in `StartingWorldDescriptorSeedMixer.cs`) does not include difficulty or entropy. Difficulty drives `GetBaseStartingCash` (Easy=28, Standard=23, Challenging=18, Brutal=13) and canonical descriptor shape. Entropy drives cash bonus envelope and salt posture (Boring=Fixed, others=Runtime).
 - **Generation plan** (`src/WildBunch.GameContent/NewGame/GameSetupGenerationPlan.cs`): `TravelRulesProfile.For(descriptor.GameDifficulty)`.
 - **Travel rules profile** (`src/WildBunch.Domain/Travel/TravelRulesProfile.cs`): distinct profiles per difficulty — canteen capacity, horse death/lame thresholds, ride day progress, lucky/bad-luck rewards/penalties, encounter health/heat/bribe costs.
 - **GameSession** (`src/WildBunch.Domain/Game/GameSession.cs`): `GameDifficulty` property, `TravelRules` derived via `TravelRulesProfile.For(GameDifficulty)`, `StartingHealthFor` (Easy=1250, Standard=1000, Challenging=800, Brutal=600).
@@ -43,10 +44,11 @@ Harley confirmed: **Easy** (difficulty) and **Boring** (entropy) are both player
 
 ### Gaps this plan fills
 
-1. **Difficulty-distinction test proof**: No dedicated test proves that same seed + same entropy + different difficulty produces different difficulty-shaped outputs (not random variance). `TravelRulesProfileTests` covers per-profile tuning values but not the end-to-end "same seed, different difficulty → different difficulty-shaped facts" proof the preflight requires.
-2. **Dev overlay difficulty control**: The Session dev panel only inspects difficulty. The doctrine says Session dev owns difficulty setup/control. A dev-only `ForceDevDifficulty` command — following the `ForceDevSaltSource` pattern — lets Harley playtest different difficulty travel-rule envelopes without restarting. This changes `GameDifficulty` on the live session, which changes the derived `TravelRules` going forward. It does not retroactively change starting health/cash (those were set at game start).
-3. **Frontend difficulty copy**: The difficulty options in `SetupHuntStep` are bare labels ("Easy", "Standard", "Challenging", "Brutal") with no description. Adding short flavor text makes difficulty understandable as game pressure, not randomness.
-4. **Browser/playtest proof**: The issue requires at least one browser proof that Harley can observe difficulty differences.
+1. **Difficulty-distinction test proof**: No dedicated test proves that same seed + same entropy + different difficulty parameter produces different difficulty-shaped outputs (not random variance). The seed does not encode difficulty — it is a caller-supplied parameter to `Resolve`. `TravelRulesProfileTests` covers per-profile tuning values but not the end-to-end "same seed, different difficulty parameter → different difficulty-shaped facts" proof the preflight requires.
+2. **Dev overlay difficulty control with observable envelope**: The Session dev panel only inspects difficulty. The doctrine says Session dev owns difficulty setup/control. A dev-only `ForceDevDifficulty` command — following the `ForceDevSaltSource` pattern — lets Harley playtest different difficulty travel-rule envelopes without restarting. This changes `GameDifficulty` on the live session, which changes the derived `TravelRules` going forward. It does not retroactively change starting health/cash (those were set at game start). **The dev panel must show derived travel-rule facts (canteen capacity, mounted ride day progress, encounter fight ammo health loss) after forcing difficulty, so the change is observable as a difficulty envelope, not just a label swap.**
+3. **Event store type mapping for `DevDifficultyForced`**: The event store deserializer (`GameSessionJsonSerializer.Events.cs` `ResolveEventType`) has an explicit switch mapping event type names to .NET types. A new `DevDifficultyForced` event type must be added to this switch, or loading events from the store will throw `InvalidOperationException("Unknown domain event type: DevDifficultyForced")`. Snapshot persistence carrying `GameDifficulty` is not by itself proof that the new event type round-trips safely — an explicit event store round-trip test is required.
+4. **Frontend difficulty copy**: The difficulty options in `SetupHuntStep` are bare labels ("Easy", "Standard", "Challenging", "Brutal") with no description. Adding short flavor text makes difficulty understandable as game pressure, not randomness.
+5. **Browser/playtest proof**: The issue requires at least one browser proof that Harley can observe materially different difficulty envelopes — not just that the Session dev panel label changes. The proof must show either derived travel-rule facts changing in the dev panel after forcing difficulty, or a travel preview whose difficulty-derived values (e.g., expected days, canteen capacity) differ between difficulties.
 
 ### What is explicitly out of scope
 
@@ -93,6 +95,12 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 | `Game/GameSessionEventReplay.cs` (modify) | Add `DevDifficultyForced` case to `ApplyEvent` switch. |
 | `Game/GameSession.cs` `ApplyProducedEvent` (modify) | Add `DevDifficultyForced` case to the produce-time dispatch switch (around line 390). |
 
+### Persistence layer (src/WildBunch.Persistence/)
+
+| File | Responsibility |
+|------|----------------|
+| `Serialization/GameSessionJsonSerializer.Events.cs` (modify) | Add `nameof(DevDifficultyForced) => typeof(DevDifficultyForced)` to `ResolveEventType` switch. Without this, loading a session with a `DevDifficultyForced` event throws. |
+
 ### Application layer (src/WildBunch.Application/)
 
 | File | Responsibility |
@@ -100,7 +108,8 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 | `Dev/Commands/ForceDevDifficultyCommand.cs` | **Create.** Command record carrying `GameSessionId` and `GameDifficulty`. |
 | `Dev/Commands/ForceDevDifficultyHandler.cs` | **Create.** Handler that loads session, calls `ForceDevDifficulty`, stores/commits via `ExecuteWithRetryAsync`. |
 | `Dev/Models/ForceDevDifficultyRequestDto.cs` | **Create.** Dev-only request DTO carrying the new difficulty string value. |
-| `Dev/Models/SessionDevContextDto.cs` (no change needed) | Already exposes `GameDifficulty` as a string. |
+| `Dev/Models/SessionDevContextDto.cs` (modify) | Add `TravelRulesDevDto` nested record and `TravelRules` property carrying derived travel-rule facts (canteen capacity, ride day progress, encounter health losses). |
+| `Dev/Mapping/SessionDevContextMapper.cs` (modify) | Map `session.TravelRules` facts into the new `TravelRules` DTO field. |
 
 ### API layer (src/WildBunch.Api/)
 
@@ -112,20 +121,21 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 
 | File | Responsibility |
 |------|----------------|
-| `dev/types.ts` (modify) | Add `ForceDevDifficultyRequestDto` interface. |
+| `dev/types.ts` (modify) | Add `ForceDevDifficultyRequestDto` and `TravelRulesDevDto` interfaces; add `travelRules` to `SessionDevContextDto`. |
 | `dev/devApi.ts` (modify) | Add `forceDevDifficulty(gameId, request)` function. |
-| `dev/panels/SessionDevPanel.tsx` (modify) | Add a difficulty control (segmented toggle) in the "Setup posture" section that calls `forceDevDifficulty`. |
+| `dev/panels/SessionDevPanel.tsx` (modify) | Add difficulty control (segmented toggle) and derived travel-rule facts grid in the "Setup posture" section. |
 | `components/start-flow/SetupHuntStep.tsx` (modify) | Add short descriptive text under each difficulty option label. |
 
 ### Tests
 
 | File | Responsibility |
 |------|----------------|
-| `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` (modify) | Add `DifficultyChangesDifficultyShapedFactsNotEntropy` test: same seed + same entropy + different difficulty → different starting cash, health, and travel rules. |
-| `tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs` | **Create.** Domain-level tests for `ForceDevDifficulty`: produces correct event, changes `GameDifficulty` and derived `TravelRules`, falsification proof. |
+| `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` (modify) | Add `DifficultyChangesDifficultyShapedFactsNotEntropy` test: same seed + same entropy + different difficulty parameter → different starting cash, health, and travel rules. |
+| `tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs` | **Create.** Domain-level tests for `ForceDevDifficulty`: produces correct event, changes `GameDifficulty` and derived `TravelRules`, falsification proof, event serializer round-trip, `RehydrateFromEvents` proof. |
 | `tests/WildBunch.Application.Tests/Dev/ForceDevDifficultyHandlerTests.cs` | **Create.** Application-level handler tests. |
+| `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs` (modify) | Assert `TravelRules` DTO field is populated and changes with difficulty. |
 | `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` (modify) | Add `ForceDifficulty_Returns204_AndReflectedInContext` integration test. |
-| `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx` (modify) | Add test for difficulty control rendering and mutation call. |
+| `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx` (modify) | Add tests for difficulty control rendering, mutation call, and derived travel-rule facts visibility. |
 | `src/WildBunch.Web/src/tests/StartFlow.test.tsx` (modify) | Add test asserting difficulty descriptions are visible. |
 
 ---
@@ -139,6 +149,8 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 - Consumes: `SeededNewGameFactory.Create`, `StartingWorldDescriptorResolver`, `TravelRulesProfile.For`
 - Produces: `DifficultyChangesDifficultyShapedFactsNotEntropy` test proving difficulty ≠ entropy
 
+**Key insight:** The seed UUID does NOT encode difficulty or entropy. `Resolve(Guid, GameDifficulty, GameEntropy)` takes difficulty and entropy as caller-supplied parameters. The seed fixes the world variant, loadout profile, start-with-horse, cash bonus, and accusation index. Difficulty is a setup parameter that drives base starting cash, starting health, and the travel rules profile. The test uses a single seed code (fixing the world/loadout/cash-bonus) and passes different difficulty parameters to prove difficulty changes difficulty-shaped facts while the seed-derived world stays the same.
+
 - [ ] **Step 1: Write the failing test**
 
 Add to `SeededNewGameFactoryTests.cs`:
@@ -148,12 +160,13 @@ Add to `SeededNewGameFactoryTests.cs`:
 public void DifficultyChangesDifficultyShapedFactsNotEntropy()
 {
     var factory = new SeededNewGameFactory();
-    var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-        GameDifficulty.Standard, GameEntropy.Classic);
-    var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(
-        StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
 
-    // Same seed, same entropy, different difficulty
+    // The seed UUID encodes world/loadout/cash-bonus, NOT difficulty or entropy.
+    // Difficulty and entropy are caller-supplied parameters to Resolve.
+    // Use one seed code to fix the world, then vary only the difficulty parameter.
+    var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(Guid.NewGuid());
+
+    // Same seed, same entropy, different difficulty parameter
     var easy = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Classic);
     var standard = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
     var challenging = factory.Create("Ranger Vale", GameDifficulty.Challenging, seedCode, GameEntropy.Classic);
@@ -172,6 +185,14 @@ public void DifficultyChangesDifficultyShapedFactsNotEntropy()
     Assert.NotEqual(easy.TravelRules.CanteenCapacity, brutal.TravelRules.CanteenCapacity);
     Assert.NotEqual(easy.TravelRules.MountedRideDayProgress, brutal.TravelRules.MountedRideDayProgress);
     Assert.NotEqual(easy.TravelRules.EncounterFightAmmoHealthLoss, brutal.TravelRules.EncounterFightAmmoHealthLoss);
+
+    // Seed-derived world is the same across all four (difficulty does not change the world)
+    Assert.Equal(standard.World.Towns.Count, easy.World.Towns.Count);
+    Assert.Equal(standard.World.Towns.Count, challenging.World.Towns.Count);
+    Assert.Equal(standard.World.Towns.Count, brutal.World.Towns.Count);
+    Assert.Equal(standard.Player.CurrentTownId, easy.Player.CurrentTownId);
+    Assert.Equal(standard.Player.CurrentTownId, challenging.Player.CurrentTownId);
+    Assert.Equal(standard.Player.CurrentTownId, brutal.Player.CurrentTownId);
 
     // Entropy is the same across all four (difficulty does not change entropy)
     Assert.Equal(GameEntropy.Classic, easy.GameEntropy);
@@ -200,16 +221,19 @@ git commit -m "BUNCH-94: add difficulty-distinction test proving difficulty != e
 
 ---
 
-## Task 2: Dev difficulty control — domain event and aggregate method
+## Task 2: Dev difficulty control — domain event, aggregate method, and event store mapping
 
 **Files:**
 - Create: `src/WildBunch.Domain/Events/DevDifficultyForced.cs`
 - Modify: `src/WildBunch.Domain/Game/GameSession.cs`
 - Modify: `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`
+- Modify: `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs`
 
 **Interfaces:**
-- Consumes: `GameDifficulty` enum, `IDomainEvent`, `ProduceEvent` pattern
-- Produces: `DevDifficultyForced` event, `GameSession.ForceDevDifficulty(GameDifficulty)` method, `Apply(DevDifficultyForced)` method
+- Consumes: `GameDifficulty` enum, `IDomainEvent`, `ProduceEvent` pattern, `ResolveEventType` switch
+- Produces: `DevDifficultyForced` event, `GameSession.ForceDevDifficulty(GameDifficulty)` method, `Apply(DevDifficultyForced)` method, `ResolveEventType` mapping for `DevDifficultyForced`
+
+**Event store mapping requirement:** The event store deserializer in `GameSessionJsonSerializer.Events.cs` has an explicit `ResolveEventType` switch that maps event type name strings to .NET types. Without adding `nameof(DevDifficultyForced) => typeof(DevDifficultyForced)`, any session that has a `DevDifficultyForced` event in its stream will throw `InvalidOperationException("Unknown domain event type: DevDifficultyForced")` when loaded from the store. Snapshot persistence carrying `GameDifficulty` is not by itself proof that the new event type round-trips safely.
 
 - [ ] **Step 1: Write the failing domain test**
 
@@ -409,21 +433,70 @@ case DevDifficultyForced ddf:
     break;
 ```
 
-- [ ] **Step 7: Run domain tests to verify they pass**
+- [ ] **Step 7: Add DevDifficultyForced to event store type mapping**
+
+In `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs`, add to the `ResolveEventType` switch (after the `DevSaltSourceCleared` case, before the default throw):
+
+```csharp
+nameof(DevDifficultyForced) => typeof(DevDifficultyForced),
+```
+
+Without this, loading a session that has a `DevDifficultyForced` event in its stream will throw `InvalidOperationException("Unknown domain event type: DevDifficultyForced")`. Snapshot persistence carrying `GameDifficulty` is not by itself proof that the new event type round-trips safely.
+
+- [ ] **Step 8: Write the event store round-trip test**
+
+Add to `tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs`:
+
+```csharp
+[Fact]
+public void DevDifficultyForced_RoundTripsThroughEventSerializer()
+{
+    var serializer = new WildBunch.Persistence.Serialization.GameSessionJsonSerializer();
+    var forced = new DevDifficultyForced
+    {
+        ForcedDifficulty = GameDifficulty.Brutal
+    };
+
+    var json = serializer.SerializeEvent(forced);
+    var reloaded = serializer.DeserializeEvent(nameof(DevDifficultyForced), json);
+
+    var roundTripped = Assert.IsType<DevDifficultyForced>(reloaded);
+    Assert.Equal(GameDifficulty.Brutal, roundTripped.ForcedDifficulty);
+}
+
+[Fact]
+public void DevDifficultyForced_RehydratesFromEventStream()
+{
+    var session = CreateSeededSession(GameDifficulty.Standard);
+    session.ForceDevDifficulty(GameDifficulty.Challenging);
+    var events = session.UncommittedEvents.ToList();
+    session.MarkEventsCommitted();
+
+    var rehydrated = GameSession.RehydrateFromEvents(
+        session.Id, session.World, session.CaseFile, events);
+
+    Assert.Equal(GameDifficulty.Challenging, rehydrated.GameDifficulty);
+    Assert.Equal(GameDifficulty.Challenging, rehydrated.TravelRules.Difficulty);
+}
+```
+
+Note: The first test requires a reference to `WildBunch.Persistence` from the domain test project. If that reference does not already exist, add it to `tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`. Alternatively, place this test in `tests/WildBunch.Integration.Tests` where the persistence reference already exists.
+
+- [ ] **Step 9: Run domain tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "GameSessionDevDifficultyTests"`
 Expected: PASS
 
-- [ ] **Step 8: Run full domain test suite to verify no regressions**
+- [ ] **Step 10: Run full domain test suite to verify no regressions**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests`
 Expected: PASS (all existing tests still pass)
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add src/WildBunch.Domain/Events/DevDifficultyForced.cs src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Domain/Game/GameSessionEventReplay.cs tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs
-git commit -m "BUNCH-94: add ForceDevDifficulty domain event and aggregate method"
+git add src/WildBunch.Domain/Events/DevDifficultyForced.cs src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Domain/Game/GameSessionEventReplay.cs src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs
+git commit -m "BUNCH-94: add ForceDevDifficulty domain event, aggregate method, and event store mapping"
 ```
 
 ---
@@ -742,19 +815,99 @@ git commit -m "BUNCH-94: add force-difficulty dev endpoint"
 
 ---
 
-## Task 5: Dev difficulty control — frontend Session dev panel
+## Task 5: Dev difficulty control — backend DTO extension and frontend Session dev panel
+
+**Goal:** The dev panel must show derived travel-rule facts after forcing difficulty, so the change is observable as a difficulty envelope, not just a label swap. This requires extending `SessionDevContextDto` to carry a few derived travel-rule facts from the session's `TravelRules` profile.
 
 **Files:**
+- Modify: `src/WildBunch.Application/Dev/Models/SessionDevContextDto.cs`
+- Modify: `src/WildBunch.Application/Dev/Mapping/SessionDevContextMapper.cs`
 - Modify: `src/WildBunch.Web/src/dev/types.ts`
 - Modify: `src/WildBunch.Web/src/dev/devApi.ts`
 - Modify: `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`
 - Modify: `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx`
+- Modify: `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs`
 
 **Interfaces:**
-- Consumes: `SessionDevContextDto`, `forceDevDifficulty` API, `SegmentedToggle` component
-- Produces: difficulty control in the "Setup posture" section of `SessionDevPanel`
+- Consumes: `SessionDevContextDto`, `forceDevDifficulty` API, `SegmentedToggle` component, `TravelRulesProfile`
+- Produces: difficulty control + derived travel-rule facts in the "Setup posture" section of `SessionDevPanel`
 
-- [ ] **Step 1: Add the request DTO type**
+- [ ] **Step 1: Extend SessionDevContextDto with derived travel-rule facts**
+
+In `src/WildBunch.Application/Dev/Models/SessionDevContextDto.cs`, add a nested DTO for derived travel-rule facts:
+
+```csharp
+public sealed record TravelRulesDevDto(
+    int CanteenCapacity,
+    decimal MountedRideDayProgress,
+    decimal FootRideDayProgress,
+    int EncounterFightAmmoHealthLoss,
+    int EncounterFightUnarmedHealthLoss,
+    int EncounterRunFootHealthLoss);
+```
+
+Add a `TravelRules` property to `SessionDevContextDto`:
+
+```csharp
+public TravelRulesDevDto? TravelRules { get; init; }
+```
+
+- [ ] **Step 2: Map derived travel-rule facts in SessionDevContextMapper**
+
+In `src/WildBunch.Application/Dev/Mapping/SessionDevContextMapper.cs`, add the travel-rule facts to the DTO mapping:
+
+```csharp
+TravelRules = new TravelRulesDevDto(
+    session.TravelRules.CanteenCapacity,
+    session.TravelRules.MountedRideDayProgress,
+    session.TravelRules.FootRideDayProgress,
+    session.TravelRules.EncounterFightAmmoHealthLoss,
+    session.TravelRules.EncounterFightUnarmedHealthLoss,
+    session.TravelRules.EncounterRunFootHealthLoss),
+```
+
+- [ ] **Step 3: Update GetSessionDevContextHandlerTests to assert travel-rule facts**
+
+In `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs`, add assertions to the existing `HandleAsync_ReturnsSessionContext_WithSetupPosture` test:
+
+```csharp
+Assert.NotNull(result.TravelRules);
+Assert.Equal(session.TravelRules.CanteenCapacity, result.TravelRules!.CanteenCapacity);
+Assert.Equal(session.TravelRules.MountedRideDayProgress, result.TravelRules.MountedRideDayProgress);
+Assert.Equal(session.TravelRules.EncounterFightAmmoHealthLoss, result.TravelRules.EncounterFightAmmoHealthLoss);
+```
+
+Add a new test proving travel-rule facts change with difficulty:
+
+```csharp
+[Fact]
+public async Task HandleAsync_ReflectsTravelRulesForCurrentDifficulty()
+{
+    var repository = new InMemoryGameSessionRepository();
+    var session = CreateSeededSession(); // Standard difficulty
+    repository.Seed(session);
+
+    var handler = new GetSessionDevContextHandler(repository);
+
+    var standardResult = await handler.HandleAsync(new GetSessionDevContextQuery(session.Id.Value));
+    Assert.Equal(10, standardResult.TravelRules!.CanteenCapacity); // Standard canteen
+
+    session.ForceDevDifficulty(GameDifficulty.Brutal);
+    session.MarkEventsCommitted();
+    repository.Seed(session);
+
+    var brutalResult = await handler.HandleAsync(new GetSessionDevContextQuery(session.Id.Value));
+    Assert.Equal(1, brutalResult.TravelRules!.CanteenCapacity); // Brutal canteen
+    Assert.NotEqual(standardResult.TravelRules.CanteenCapacity, brutalResult.TravelRules.CanteenCapacity);
+}
+```
+
+- [ ] **Step 4: Run backend tests to verify the DTO extension**
+
+Run: `dotnet test tests/WildBunch.Application.Tests --filter "GetSessionDevContextHandlerTests"`
+Expected: PASS
+
+- [ ] **Step 5: Add the request DTO type to frontend**
 
 In `src/WildBunch.Web/src/dev/types.ts`, add after `LockRngRequestDto`:
 
@@ -762,9 +915,38 @@ In `src/WildBunch.Web/src/dev/types.ts`, add after `LockRngRequestDto`:
 export interface ForceDevDifficultyRequestDto {
   difficulty: string;
 }
+
+export interface TravelRulesDevDto {
+  canteenCapacity: number;
+  mountedRideDayProgress: number;
+  footRideDayProgress: number;
+  encounterFightAmmoHealthLoss: number;
+  encounterFightUnarmedHealthLoss: number;
+  encounterRunFootHealthLoss: number;
+}
 ```
 
-- [ ] **Step 2: Add the API function**
+Add `travelRules` to `SessionDevContextDto`:
+
+```typescript
+export interface SessionDevContextDto {
+  sessionId: string;
+  status: string;
+  gameDifficulty: string;
+  gameEntropy: string;
+  saltPosture: SaltPostureDevDto;
+  clock: ClockDevDto;
+  currentTownId: string | null;
+  currentTownName: string | null;
+  currentActionContext: string;
+  hasActiveJourney: boolean;
+  seedCodeRetained: boolean;
+  seedCodeText: string | null;
+  travelRules: TravelRulesDevDto | null;
+}
+```
+
+- [ ] **Step 6: Add the API function**
 
 In `src/WildBunch.Web/src/dev/devApi.ts`, add after `clearRng`:
 
@@ -779,7 +961,7 @@ export function forceDevDifficulty(gameId: string, request: ForceDevDifficultyRe
 
 Add `ForceDevDifficultyRequestDto` to the import from `./types`.
 
-- [ ] **Step 3: Add the difficulty control to SessionDevPanel**
+- [ ] **Step 7: Add the difficulty control and derived travel-rule facts to SessionDevPanel**
 
 In `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`:
 
@@ -813,7 +995,7 @@ const handleForceDifficulty = async (value: string) => {
 };
 ```
 
-5. Replace the "Difficulty (inspect):" row in the "Setup posture" section with a control:
+5. Replace the "Difficulty (inspect):" row in the "Setup posture" section with a control plus derived travel-rule facts:
 
 Replace:
 ```tsx
@@ -833,47 +1015,89 @@ With:
     onSelect={handleForceDifficulty}
   />
 </Field>
-```
-
-6. Add a muted text note under the difficulty control:
-
-```tsx
 <MutedText>
   Forcing difficulty changes travel rules going forward. It does not change starting health or cash.
 </MutedText>
+<TravelRulesGrid>
+  <Row>
+    <Label>Canteen capacity:</Label>
+    <Value>{data?.travelRules?.canteenCapacity ?? "—"}</Value>
+  </Row>
+  <Row>
+    <Label>Mounted ride/day:</Label>
+    <Value>{data?.travelRules?.mountedRideDayProgress ?? "—"}</Value>
+  </Row>
+  <Row>
+    <Label>Foot ride/day:</Label>
+    <Value>{data?.travelRules?.footRideDayProgress ?? "—"}</Value>
+  </Row>
+  <Row>
+    <Label>Encounter fight (ammo) health loss:</Label>
+    <Value>{data?.travelRules?.encounterFightAmmoHealthLoss ?? "—"}</Value>
+  </Row>
+  <Row>
+    <Label>Encounter fight (unarmed) health loss:</Label>
+    <Value>{data?.travelRules?.encounterFightUnarmedHealthLoss ?? "—"}</Value>
+  </Row>
+  <Row>
+    <Label>Encounter run (foot) health loss:</Label>
+    <Value>{data?.travelRules?.encounterRunFootHealthLoss ?? "—"}</Value>
+  </Row>
+</TravelRulesGrid>
 ```
 
-- [ ] **Step 4: Write the frontend test**
+6. Add the styled component:
 
-In `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx`, add a test for the difficulty control:
+```typescript
+const TravelRulesGrid = styled.div`
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+`;
+```
+
+- [ ] **Step 8: Write the frontend tests**
+
+In `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx`, add tests:
 
 ```typescript
 it("renders difficulty control and calls forceDevDifficulty on select", async () => {
-  // Mock the session dev context with Standard difficulty
+  // Mock the session dev context with Standard difficulty and travel rules
   // Render the panel
   // Assert the difficulty SegmentedToggle is visible
+  // Assert travel-rule facts (canteen capacity, etc.) are visible
   // Click "Brutal"
   // Assert forceDevDifficulty was called with { difficulty: "Brutal" }
+});
+
+it("shows derived travel-rule facts that change with difficulty", async () => {
+  // Mock session dev context with Standard difficulty (canteen capacity 10)
+  // Render the panel
+  // Assert "10" is visible for canteen capacity
+  // Re-mock with Brutal difficulty (canteen capacity 1) after refresh
+  // Assert "1" is visible for canteen capacity
 });
 ```
 
 Follow the existing test patterns in `SessionDevPanel.test.tsx` for mocking `useGameSession`, `useQuery`, and the dev API.
 
-- [ ] **Step 5: Run frontend tests**
+- [ ] **Step 9: Run frontend tests**
 
 Run: `cd src/WildBunch.Web && npm test -- --run SessionDevPanel`
 Expected: PASS
 
-- [ ] **Step 6: Run typecheck and build**
+- [ ] **Step 10: Run typecheck and build**
 
 Run: `cd src/WildBunch.Web && npm run typecheck && npm run build`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add src/WildBunch.Web/src/dev/types.ts src/WildBunch.Web/src/dev/devApi.ts src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx
-git commit -m "BUNCH-94: add difficulty control to Session dev panel"
+git add src/WildBunch.Application/Dev/Models/SessionDevContextDto.cs src/WildBunch.Application/Dev/Mapping/SessionDevContextMapper.cs src/WildBunch.Web/src/dev/types.ts src/WildBunch.Web/src/dev/devApi.ts src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs
+git commit -m "BUNCH-94: add difficulty control and derived travel-rule facts to Session dev panel"
 ```
 
 ---
@@ -1010,13 +1234,20 @@ Expected: PASS
 Run: `python scripts/generate_index_mesh.py`
 Expected: no changes or only expected INDEX.md updates
 
-- [ ] **Step 7: Browser/playtest proof**
+- [ ] **Step 7: Browser/playtest proof — observable difficulty envelope**
 
-Start the API and frontend dev servers. Open the browser to the start flow. Take screenshots showing:
-1. The difficulty descriptions in the start flow (Standard and Brutal visible)
-2. The Session dev panel difficulty control (force to Brutal, observe it reflected)
+Start the API and frontend dev servers. Open the browser. Take screenshots showing:
+
+1. **Start flow difficulty copy**: The difficulty descriptions in the start flow (Standard and Brutal visible with their flavor text)
+2. **Dev panel difficulty control with observable envelope**: Open the Session dev panel. Note the current difficulty (Standard) and the derived travel-rule facts (canteen capacity = 10, mounted ride/day = 1.0, encounter fight ammo health loss = 5). Force difficulty to Brutal. After refresh, observe:
+   - The difficulty label changed to "Brutal"
+   - The derived travel-rule facts changed (canteen capacity = 1, mounted ride/day = 0.5, encounter fight ammo health loss = higher)
+   This proves forcing difficulty changes a materially different difficulty envelope, not just a label.
+3. **Optional — travel preview proof**: If feasible without a long playtest, start a journey and observe that the travel preview reflects the new difficulty's ride-day progress (Brutal's slower mounted progress → more expected days than Standard for the same trail).
 
 Save screenshots to `.agents/superpowers/output/screenshots/` (git-ignored).
+
+The proof must show that derived travel-rule facts change when difficulty is forced — a label-only change is not sufficient evidence for BUNCH-94's goal.
 
 - [ ] **Step 8: Grep proof — no stale travel-only names**
 
@@ -1037,12 +1268,13 @@ git commit -m "BUNCH-94: validation and index mesh"
 | Issue requirement | Plan task | Evidence |
 |---|---|---|
 | Difficulty is a first-class setup/control axis | Already on main + Tasks 1-6 | Existing code + new tests |
-| Harley can start, observe, and playtest materially different difficulty envelopes | Tasks 1, 5, 6 | Distinction test, dev panel control, start-flow copy |
+| Harley can start, observe, and playtest materially different difficulty envelopes | Tasks 1, 5, 6, 7 | Distinction test, dev panel control + derived travel-rule facts, start-flow copy, browser proof showing envelope change |
 | Backend unit/integration coverage for difficulty effects | Tasks 1, 2, 3, 4 | Domain, application, integration tests |
-| Persistence/rehydration where touched | No new persistence shape needed | `GameDifficulty` already in snapshot + event stream |
-| API/DTO checks | Task 4 | Integration endpoint tests |
+| Event store round-trip for new `DevDifficultyForced` event | Task 2 (Steps 7-8) | `ResolveEventType` mapping + event serializer round-trip test + `RehydrateFromEvents` test |
+| Persistence/rehydration where touched | No new persistence shape needed | `GameDifficulty` already in snapshot; event store mapping added in Task 2 |
+| API/DTO checks | Tasks 4, 5 | Integration endpoint tests + DTO extension tests |
 | Frontend tests/typecheck/build | Tasks 5, 6 | Vitest tests, typecheck, build |
-| Browser/playtest proof | Task 7 | Screenshots in git-ignored output |
+| Browser/playtest proof — observable envelope | Task 7 | Screenshots showing derived travel-rule facts change when difficulty is forced |
 | Difficulty stayed distinct from entropy | Task 1 | `DifficultyChangesDifficultyShapedFactsNotEntropy` test |
 | DOD mapping | This section | This table |
 
