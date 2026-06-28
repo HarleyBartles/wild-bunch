@@ -374,12 +374,14 @@ const LeftColumn = styled.div`
   display: grid;
   gap: 16px;
   grid-column: 1;
+  min-width: 0;
 `;
 
 const RightColumn = styled.div`
   display: grid;
   gap: 16px;
   grid-column: 2;
+  min-width: 0;
 
   @media (max-width: 700px) {
     grid-column: 1;
