@@ -10,11 +10,12 @@
 
 ## Plan Status
 
-- Plan status: preflight complete, pending approval
+- Plan status: preflight complete, pending approval (revised — added Staleness Gate / BUNCH-102 interaction section)
 - Current route state: `preflight_complete_pending_approval`
 - This PR is plan-only and contains no implementation.
 - After this plan PR is merged, a later implementation worker should execute the checked-in plan from current `main`.
 - Implementation must still follow the plan's validation and falsification steps; approval of the plan is not approval to skip verification.
+- The preflight surface inventory is base-state evidence at `73fd9fa`; the implementation worker must refresh from `main` and re-run the surface search per the Staleness Gate section before editing.
 
 ## Global Constraints
 
@@ -29,6 +30,49 @@
 - Do not rename the deterministic label string values in `GameSetupDeterministicLabels` — they are codec hash keys (see Critical Scope Decisions below).
 - Do not rewrite historical plan files under `.agents/superpowers/plans/` that reference old names — they are audit trails.
 - Do not rewrite old EF migration designer files — they are historical schema snapshots. Only the current model snapshot and a new migration change.
+
+---
+
+## Staleness Gate / BUNCH-102 Interaction
+
+This plan was written against `origin/main` at commit `73fd9fa` (2026-06-28). BUNCH-102 is actively changing the start-flow / frontend / API surfaces that BUNCH-104 touches. The preflight surface inventory below is **base-state evidence at the preflight baseline only**, not guaranteed-complete future truth. The implementation worker MUST treat the surface list as a starting point, not a closed set.
+
+### G1: Refresh from current `main` before implementation
+
+Before any implementation edit, the implementation worker MUST:
+
+1. Refresh the worktree from current `main` (rebase or branch fresh from latest `origin/main`).
+2. Check whether BUNCH-102 has landed on `main` (search git log / PR list for BUNCH-102 merge).
+3. Re-run the naming surface search (`TravelDifficulty`, `AdventureRandomnessPolicy`, `travelDifficulty`, `entropy`, `Entropy`, and the new `GameDifficulty` / `GameEntropy` targets) against the refreshed tree.
+4. Diff the refreshed surface set against the preflight inventory below. Any new surface is in scope for this rename and must be added to the task list.
+
+### G2: If BUNCH-102 has landed, include the new start-flow / prologue surfaces
+
+If BUNCH-102 has landed, the worker MUST re-run the naming surface search and include the new start-flow / prologue surfaces, likely including (non-exhaustive — verify against actual BUNCH-102 changes):
+
+- `SetupHuntStep` (and any other setup-step components BUNCH-102 introduces)
+- `useStartFlow` (and any other start-flow hooks)
+- `useStartGameSeed` (may have been refactored by BUNCH-102)
+- `getPrologue` (prologue query / request parameter naming)
+- prologue query / request parameter naming surfaces
+- updated `StartGameRequest` (BUNCH-102 may have reshaped it)
+- updated `api/types.ts` (BUNCH-102 may have added/renamed types)
+- new start-flow / setup tests introduced by BUNCH-102
+- any new browser proof or setup-flow tests from BUNCH-102
+
+The frontend task (Task 7) and API task (Task 5) must be re-derived from the refreshed tree, not executed verbatim from the preflight inventory.
+
+### G3: Frontend section is base-state evidence, not future truth
+
+The "Frontend (`src/WildBunch.Web/src/`)" surface list under Preflight Answer 2 below documents **surfaces found on the preflight base** (`73fd9fa`). It is not guaranteed complete against a `main` that has absorbed BUNCH-102. The implementation task requires a fresh grep/search before editing any frontend file. If a file listed below no longer exists or has been renamed/restructured by BUNCH-102, follow the new location/name.
+
+### G4: Frontend entropy statement is base-state evidence only
+
+Critical Scope Decision D6 ("Frontend `Entropy` is not consumed today") is **base-state evidence at `73fd9fa` only**. If BUNCH-102 lands first and introduces a frontend entropy setup surface (e.g. an entropy selector in the new start-flow, an `entropy` field on a new start request shape, or prologue entropy parameter naming), that statement is stale and the frontend entropy setup surface MUST be included in the rename. The worker must verify the refreshed frontend tree for any `entropy` / `Entropy` / `adventureRandomnessPolicy` / `AdventureRandomnessPolicy` surface and include it.
+
+### G5: Stop AMBER if refreshed main changes the work beyond a surface update
+
+If the refreshed `main` changes the work beyond a straightforward surface update (e.g. BUNCH-102 restructured the start-flow in a way that makes the rename task list materially wrong, introduced new concepts that overlap with difficulty/entropy naming, or changed aggregate/persistence boundaries in the rename path), the implementation worker MUST **stop AMBER** and report the changed seams rather than improvising. Report the exact files/seams that diverge from this plan and request a plan refresh. Do not silently expand scope.
 
 ---
 
@@ -94,8 +138,8 @@
 - `Migrations/20260531081955_ComposedSessionPersistence.cs` — column creation `name: "TravelDifficulty"` (historical migration — do not rewrite)
 - Multiple historical `.Designer.cs` files reference `TravelDifficulty` — these are historical schema snapshots and stay unchanged.
 
-**Frontend (`src/WildBunch.Web/src/`)**:
-- `api/types.ts` — `TravelDifficulty` type alias (line 2), `travelDifficulty` in `StartGameRequest` (line 50), `travelDifficulty` in `GameSessionDto` (line 471). Note: `GameSessionDto` does NOT have an `entropy` property in the frontend type — entropy is not consumed by the frontend today.
+**Frontend (`src/WildBunch.Web/src/`)** — *surfaces found on the preflight base (`73fd9fa`); see Staleness Gate G3 — re-derive from refreshed `main` before editing*:
+- `api/types.ts` — `TravelDifficulty` type alias (line 2), `travelDifficulty` in `StartGameRequest` (line 50), `travelDifficulty` in `GameSessionDto` (line 471). Note: `GameSessionDto` does NOT have an `entropy` property in the frontend type at the preflight base — see D6 / G4 for the staleness caveat on this statement.
 - `hooks/useStartGameSeed.ts` — `TravelDifficulty` type, `travelDifficulty` state, `setTravelDifficulty` setter, `handleTravelDifficultyChange` handler
 - `components/StartGameOptionsForm.tsx` — `TravelDifficulty` type, `travelDifficulty` prop, `onTravelDifficultyChange` callback, "Travel difficulty" label
 - `components/StartGamePanel.tsx` — `travelDifficulty` destructuring, `setTravelDifficulty`, request field
@@ -173,13 +217,17 @@ The `GameSessions.TravelDifficulty` column is a real DB column. Renaming the EF 
 
 `TravelRandomnessState` is journey-level runtime randomness, not game-start entropy. It is a separate concept from `AdventureRandomnessPolicy`/`GameEntropy` and stays unchanged.
 
-### D6: Frontend `Entropy` is not consumed today
+### D6: Frontend `Entropy` is not consumed today (base-state evidence only)
 
-The frontend `GameSessionDto` interface does not have an `entropy` property. The `AdventureRandomnessPolicy`/`GameEntropy` type only appears in the C# API contract. The frontend rename is limited to `TravelDifficulty` → `GameDifficulty` (type, properties, state, label, formatter, tests).
+At the preflight base (`73fd9fa`), the frontend `GameSessionDto` interface does not have an `entropy` property. The `AdventureRandomnessPolicy`/`GameEntropy` type only appears in the C# API contract. The frontend rename is limited to `TravelDifficulty` → `GameDifficulty` (type, properties, state, label, formatter, tests).
+
+**This is base-state evidence only.** If BUNCH-102 lands first and introduces a frontend entropy setup surface (entropy selector in the new start-flow, `entropy` field on a new start request shape, prologue entropy parameter naming, etc.), this statement is stale and the frontend entropy setup surface MUST be included in the rename. See Staleness Gate G4 — the implementation worker must verify the refreshed frontend tree for any `entropy` / `Entropy` / `adventureRandomnessPolicy` / `AdventureRandomnessPolicy` surface before relying on this decision.
 
 ---
 
 ## Implementation Tasks
+
+> **Prerequisite — Staleness Gate (see Staleness Gate / BUNCH-102 Interaction section above):** Before starting Task 1, the implementation worker MUST refresh from current `main`, check whether BUNCH-102 has landed, re-run the naming surface search, and diff against the preflight inventory. If BUNCH-102 has landed, Task 5 (API) and Task 7 (frontend) must be re-derived from the refreshed tree. If the refreshed `main` changes the work beyond a straightforward surface update, stop AMBER per G5 and report the changed seams.
 
 ### Task 1: Rename domain enum types and files
 
@@ -304,7 +352,9 @@ The projector uses `gs.Difficulty` (the event's `Difficulty` property). The prop
 
 ### Task 5: Update API layer
 
-**Files:**
+> **Re-derive from refreshed `main` first (Staleness Gate G2).** BUNCH-102 may have reshaped `StartGameRequest` or added prologue query/request parameter naming. Verify the API surface list against the refreshed tree and add any new difficulty/entropy-bearing request/response surfaces BUNCH-102 introduced.
+
+**Files (preflight base — verify and extend against refreshed `main`):**
 - Modify: `src/WildBunch.Api/Games/Requests/StartGameRequest.cs`
 - Modify: `src/WildBunch.Api/Games/GameSessionEndpoints.cs`
 
@@ -352,7 +402,9 @@ Confirm that `20260531081955_ComposedSessionPersistence.*`, `20260531154230_Post
 
 ### Task 7: Update frontend
 
-**Files:**
+> **Re-derive from refreshed `main` first (Staleness Gate G2/G3/G4).** The file list below is the preflight-base (`73fd9fa`) surface set. If BUNCH-102 has landed, the actual frontend task list must be re-derived from the refreshed tree — add any new start-flow / prologue / setup surfaces BUNCH-102 introduced (e.g. `SetupHuntStep`, `useStartFlow`, `getPrologue`, prologue query/request parameter naming, new start-flow/setup tests, any new browser proof or setup-flow tests). Also re-check whether a frontend entropy setup surface now exists (G4) and include it if so.
+
+**Files (preflight base — verify and extend against refreshed `main`):**
 - Modify: `src/WildBunch.Web/src/api/types.ts`
 - Modify: `src/WildBunch.Web/src/hooks/useStartGameSeed.ts`
 - Modify: `src/WildBunch.Web/src/components/StartGameOptionsForm.tsx`
