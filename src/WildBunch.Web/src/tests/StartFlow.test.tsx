@@ -5,7 +5,25 @@ import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { PreSessionSurface } from "../flow/PreSessionSurface";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
-import { createGame, getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns } from "../api/wildBunchApi";
+import { createGame, getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns, getStartingTownMap } from "../api/wildBunchApi";
+
+vi.mock("phaser", () => {
+  class Game {
+    public config: unknown;
+    public destroyed = false;
+    constructor(config: unknown) {
+      this.config = config;
+    }
+    destroy() {
+      this.destroyed = true;
+    }
+  }
+  class Scene {
+    constructor(_key?: string) {}
+  }
+  const Scale = { FIT: 0, CENTER_BOTH: 0 };
+  return { default: { Game, Scene, Scale }, Game, Scene, Scale };
+});
 
 vi.mock("../api/wildBunchApi", () => ({
   createGame: vi.fn(),
@@ -26,6 +44,7 @@ vi.mock("../api/wildBunchApi", () => ({
   advanceTravelDay: vi.fn(),
   getPrologue: vi.fn(),
   getStartingTowns: vi.fn(),
+  getStartingTownMap: vi.fn(),
 }));
 
 const mockedCreateGame = vi.mocked(createGame);
@@ -34,6 +53,7 @@ const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetPrologue = vi.mocked(getPrologue);
 const mockedGetStartingTowns = vi.mocked(getStartingTowns);
+const mockedGetStartingTownMap = vi.mocked(getStartingTownMap);
 
 afterEach(() => {
   cleanup();
@@ -145,6 +165,15 @@ function primeMocks() {
     { id: "t-town", name: "Tumbleweed", services: 0 },
     { id: "dust-fork", name: "Dust Fork", services: 0 },
   ]);
+  mockedGetStartingTownMap.mockResolvedValue({
+    towns: [
+      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500, selectable: true },
+      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400, selectable: true },
+    ],
+    trails: [
+      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
+    ],
+  });
 }
 
 describe("StartFlow", () => {

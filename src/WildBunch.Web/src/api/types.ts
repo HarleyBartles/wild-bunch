@@ -636,3 +636,24 @@ export interface StartingTownDto {
   name: string;
   services: number;
 }
+
+export interface StartingTownMapTownDto {
+  id: string;
+  name: string;
+  services: number;
+  x: number;
+  y: number;
+  selectable: boolean;
+}
+
+export interface StartingTownMapTrailDto {
+  id: string;
+  fromTownId: string;
+  toTownId: string;
+  rideDayDistance: number;
+}
+
+export interface StartingTownMapDto {
+  towns: StartingTownMapTownDto[];
+  trails: StartingTownMapTrailDto[];
+}

@@ -494,5 +494,7 @@ $RECYCLE.BIN/
 *.swp
 
 .superpowers/
-.agents/superpowers/sdd/
 .agents/superpowers/output/
+# .agents/superpowers/sdd/ is intentionally NOT ignored so SDD progress
+# ledgers, task briefs, and reports can be published with the PR.
+# (User-directed un-ignore for BUNCH-75.)
