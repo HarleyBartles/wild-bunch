@@ -15,31 +15,31 @@ public static class StartingWorldDescriptorResolver
         [StartingLoadoutProfile.Stocked] = (6, 4, 8)
     };
 
-    private static readonly Lazy<Guid> CanonicalEasySeedCode = new(() => CreateCanonicalSeedCodeCore(TravelDifficulty.Easy), true);
-    private static readonly Lazy<Guid> CanonicalNormalSeedCode = new(() => CreateCanonicalSeedCodeCore(TravelDifficulty.Normal), true);
-    private static readonly Lazy<Guid> CanonicalHardSeedCode = new(() => CreateCanonicalSeedCodeCore(TravelDifficulty.Hard), true);
+    private static readonly Lazy<Guid> CanonicalEasySeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Easy), true);
+    private static readonly Lazy<Guid> CanonicalNormalSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Normal), true);
+    private static readonly Lazy<Guid> CanonicalHardSeedCode = new(() => CreateCanonicalSeedCodeCore(GameDifficulty.Hard), true);
 
-    public static Guid CreateCanonicalSeedCode(TravelDifficulty difficulty = TravelDifficulty.Normal)
+    public static Guid CreateCanonicalSeedCode(GameDifficulty difficulty = GameDifficulty.Normal)
         => GetCanonicalSeedCode(difficulty);
 
     public static Guid GenerateRandomSeedCode()
         => Guid.NewGuid();
 
     public static StartingWorldDescriptor CreateCanonicalDescriptor(
-        TravelDifficulty difficulty = TravelDifficulty.Normal,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
+        GameDifficulty difficulty = GameDifficulty.Normal,
+        GameEntropy entropy = GameEntropy.Standard)
     {
         var descriptor = CreateCanonicalDescriptorShape(difficulty, entropy);
 
-        return entropy == AdventureRandomnessPolicy.Standard
+        return entropy == GameEntropy.Standard
             ? descriptor with { SeedCode = GetCanonicalSeedCode(difficulty) }
             : descriptor with { SeedCode = CreateRepresentativeSeedCode(descriptor) };
     }
 
     internal static StartingWorldDescriptor Resolve(
         string? seedCode,
-        TravelDifficulty requestedDifficulty = TravelDifficulty.Normal,
-        AdventureRandomnessPolicy requestedEntropy = AdventureRandomnessPolicy.Standard)
+        GameDifficulty requestedDifficulty = GameDifficulty.Normal,
+        GameEntropy requestedEntropy = GameEntropy.Standard)
     {
         if (string.IsNullOrWhiteSpace(seedCode))
         {
@@ -57,11 +57,11 @@ public static class StartingWorldDescriptorResolver
     internal static StartingWorldDescriptor Resolve(Guid seedCode)
     {
         var seedRoot = StartingWorldDescriptorSeedMixer.CreateSeedRoot(seedCode);
-        var policy = ResolveAdventureRandomnessPolicy(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.AdventureRandomnessPolicy));
+        var policy = ResolveGameEntropy(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.GameEntropy));
         var worldVariant = ResolveWorldVariant(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.WorldVariant));
         var loadoutProfile = ResolveLoadoutProfile(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.PlayerLoadoutProfile));
         var startWithHorse = ResolveStartWithHorse(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.PlayerHorsePosture));
-        var difficulty = ResolveDifficulty(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.TravelDifficulty));
+        var difficulty = ResolveDifficulty(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.GameDifficulty));
         var startingTownSelectionKey = startWithHorse
             ? GameSetupDeterministicLabels.WorldStartingTownHorse
             : GameSetupDeterministicLabels.WorldStartingTownFoot;
@@ -96,12 +96,12 @@ public static class StartingWorldDescriptorResolver
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 
-        if (!Enum.IsDefined(typeof(TravelDifficulty), descriptor.Difficulty))
+        if (!Enum.IsDefined(typeof(GameDifficulty), descriptor.Difficulty))
         {
             return StartingWorldDescriptorValidationResult.Failed("Travel difficulty is invalid.");
         }
 
-        if (!Enum.IsDefined(typeof(AdventureRandomnessPolicy), descriptor.AdventureRandomnessPolicy))
+        if (!Enum.IsDefined(typeof(GameEntropy), descriptor.Entropy))
         {
             return StartingWorldDescriptorValidationResult.Failed("Adventure randomness policy is invalid.");
         }
@@ -149,12 +149,12 @@ public static class StartingWorldDescriptorResolver
         var profileBonus = GetLoadoutProfileBonus(descriptor.Player.LoadoutProfile);
         var horseBonus = descriptor.Player.StartWithHorse ? 2m : 0m;
         var bonus = descriptor.Player.StartingCash - baseCash - profileBonus - horseBonus;
-        var maxBonus = descriptor.AdventureRandomnessPolicy switch
+        var maxBonus = descriptor.Entropy switch
         {
-            AdventureRandomnessPolicy.Boring => 0m,
-            AdventureRandomnessPolicy.Standard => 2m,
-            AdventureRandomnessPolicy.Adventurous => 5m,
-            AdventureRandomnessPolicy.Wild => 8m,
+            GameEntropy.Boring => 0m,
+            GameEntropy.Standard => 2m,
+            GameEntropy.Adventurous => 5m,
+            GameEntropy.Wild => 8m,
             _ => 0m
         };
 
@@ -210,13 +210,13 @@ public static class StartingWorldDescriptorResolver
     }
 
     private static StartingWorldDescriptor CreateCanonicalDescriptorShape(
-        TravelDifficulty difficulty,
-        AdventureRandomnessPolicy entropy)
+        GameDifficulty difficulty,
+        GameEntropy entropy)
     {
         var startingCash = difficulty switch
         {
-            TravelDifficulty.Easy => 30m,
-            TravelDifficulty.Hard => 20m,
+            GameDifficulty.Easy => 30m,
+            GameDifficulty.Hard => 20m,
             _ => 25m
         };
 
@@ -238,31 +238,31 @@ public static class StartingWorldDescriptorResolver
             new StartingWorldDescriptorCase(1));
     }
 
-    private static Guid GetCanonicalSeedCode(TravelDifficulty difficulty)
+    private static Guid GetCanonicalSeedCode(GameDifficulty difficulty)
         => difficulty switch
         {
-            TravelDifficulty.Easy => CanonicalEasySeedCode.Value,
-            TravelDifficulty.Hard => CanonicalHardSeedCode.Value,
+            GameDifficulty.Easy => CanonicalEasySeedCode.Value,
+            GameDifficulty.Hard => CanonicalHardSeedCode.Value,
             _ => CanonicalNormalSeedCode.Value
         };
 
-    private static Guid CreateCanonicalSeedCodeCore(TravelDifficulty difficulty)
-        => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty, AdventureRandomnessPolicy.Standard));
+    private static Guid CreateCanonicalSeedCodeCore(GameDifficulty difficulty)
+        => CreateRepresentativeSeedCode(CreateCanonicalDescriptorShape(difficulty, GameEntropy.Standard));
 
     private static bool HasSameSemantics(StartingWorldDescriptor left, StartingWorldDescriptor right)
         => left.Difficulty == right.Difficulty
-            && left.AdventureRandomnessPolicy == right.AdventureRandomnessPolicy
+            && left.Entropy == right.Entropy
             && left.World == right.World
             && left.Player == right.Player
             && left.Case == right.Case;
 
-    private static AdventureRandomnessPolicy ResolveAdventureRandomnessPolicy(ulong seedValue)
+    private static GameEntropy ResolveGameEntropy(ulong seedValue)
         => (seedValue % 4UL) switch
         {
-            0 => AdventureRandomnessPolicy.Boring,
-            1 => AdventureRandomnessPolicy.Standard,
-            2 => AdventureRandomnessPolicy.Adventurous,
-            _ => AdventureRandomnessPolicy.Wild
+            0 => GameEntropy.Boring,
+            1 => GameEntropy.Standard,
+            2 => GameEntropy.Adventurous,
+            _ => GameEntropy.Wild
         };
 
     private static SeedWorldVariant ResolveWorldVariant(ulong seedValue)
@@ -287,12 +287,12 @@ public static class StartingWorldDescriptorResolver
     private static int ResolveAccusationIndex(ulong seedValue)
         => (int)(seedValue % 7UL);
 
-    private static TravelDifficulty ResolveDifficulty(ulong seedValue)
+    private static GameDifficulty ResolveDifficulty(ulong seedValue)
         => (seedValue % 3UL) switch
         {
-            0 => TravelDifficulty.Easy,
-            1 => TravelDifficulty.Normal,
-            _ => TravelDifficulty.Hard
+            0 => GameDifficulty.Easy,
+            1 => GameDifficulty.Normal,
+            _ => GameDifficulty.Hard
         };
 
     private static (int Food, int HorseFeed, int RevolverAmmo) ResolveLoadoutCounts(StartingLoadoutProfile profile)
@@ -304,10 +304,10 @@ public static class StartingWorldDescriptorResolver
         };
 
     private static decimal ResolveStartingCash(
-        TravelDifficulty difficulty,
+        GameDifficulty difficulty,
         StartingLoadoutProfile loadoutProfile,
         bool startWithHorse,
-        AdventureRandomnessPolicy policy,
+        GameEntropy policy,
         ulong cashSeed)
     {
         var baseCash = GetBaseStartingCash(difficulty);
@@ -315,10 +315,10 @@ public static class StartingWorldDescriptorResolver
         var horseBonus = startWithHorse ? 2m : 0m;
         var maxPolicyBonus = policy switch
         {
-            AdventureRandomnessPolicy.Boring => 0UL,
-            AdventureRandomnessPolicy.Standard => 2UL,
-            AdventureRandomnessPolicy.Adventurous => 5UL,
-            AdventureRandomnessPolicy.Wild => 8UL,
+            GameEntropy.Boring => 0UL,
+            GameEntropy.Standard => 2UL,
+            GameEntropy.Adventurous => 5UL,
+            GameEntropy.Wild => 8UL,
             _ => 0UL
         };
 
@@ -326,11 +326,11 @@ public static class StartingWorldDescriptorResolver
         return baseCash + profileBonus + horseBonus + policyBonus;
     }
 
-    private static decimal GetBaseStartingCash(TravelDifficulty difficulty)
+    private static decimal GetBaseStartingCash(GameDifficulty difficulty)
         => difficulty switch
         {
-            TravelDifficulty.Easy => 28m,
-            TravelDifficulty.Hard => 18m,
+            GameDifficulty.Easy => 28m,
+            GameDifficulty.Hard => 18m,
             _ => 23m
         };
 

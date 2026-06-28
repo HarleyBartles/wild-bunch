@@ -7,8 +7,8 @@ public interface INewGameFactory
 {
     GameSession Create(
         string playerName,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Normal,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        GameEntropy entropy = GameEntropy.Standard,
         string? startingTownId = null);
 }

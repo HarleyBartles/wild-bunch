@@ -83,7 +83,7 @@ public sealed class MigrationTests
 
         Assert.DoesNotContain("StateJson", columns);
         Assert.Contains("SchemaVersion", columns);
-        Assert.Contains("TravelDifficulty", columns);
+        Assert.Contains("GameDifficulty", columns);
     }
 
     private static async Task AssertJsonbColumnTypesAsync(NpgsqlConnection connection)

@@ -246,7 +246,7 @@ public sealed class PostgreSqlPersistenceTests
             dustvale.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy,
+            GameDifficulty.Easy,
             travelRandomness: DeterministicTravelRandomness);
 
         var preview = CreatePostgreSqlLanePreview(session.Player.CurrentTownId, holloway.Id, "Dustvale", "Holloway");

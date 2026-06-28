@@ -1,27 +1,27 @@
 import styled from "styled-components";
-import type { TravelDifficulty } from "../api/types";
+import type { GameDifficulty } from "../api/types";
 import { SeedCodeEditor } from "./SeedCodeEditor";
 
 interface StartGameOptionsFormProps {
   playerName: string;
-  travelDifficulty: TravelDifficulty;
+  gameDifficulty: GameDifficulty;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   onPlayerNameChange: (value: string) => void;
   onSeedDraftChange: (value: string) => void;
-  onTravelDifficultyChange: (difficulty: TravelDifficulty) => void;
+  onGameDifficultyChange: (difficulty: GameDifficulty) => void;
 }
 
 export function StartGameOptionsForm({
   playerName,
-  travelDifficulty,
+  gameDifficulty,
   seedDraft,
   seedDirty,
   decodeError,
   onPlayerNameChange,
   onSeedDraftChange,
-  onTravelDifficultyChange,
+  onGameDifficultyChange,
 }: StartGameOptionsFormProps) {
   return (
     <DraftGrid>
@@ -38,8 +38,8 @@ export function StartGameOptionsForm({
       </Field>
 
       <Field>
-        <Label htmlFor="difficulty">Travel difficulty</Label>
-        <Select id="difficulty" value={travelDifficulty} onChange={(event) => onTravelDifficultyChange(Number(event.target.value) as TravelDifficulty)}>
+        <Label htmlFor="difficulty">Game difficulty</Label>
+        <Select id="difficulty" value={gameDifficulty} onChange={(event) => onGameDifficultyChange(Number(event.target.value) as GameDifficulty)}>
           <option value={0}>Normal</option>
           <option value={1}>Easy</option>
           <option value={2}>Hard</option>

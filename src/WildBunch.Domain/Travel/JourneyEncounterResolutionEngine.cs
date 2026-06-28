@@ -54,8 +54,8 @@ internal static class JourneyEncounterResolutionEngine
             + (context.TravelMode == TravelMode.Mounted ? 0 : 1)
             + (context.Difficulty switch
             {
-                TravelDifficulty.Hard => 1,
-                TravelDifficulty.Easy => -1,
+                GameDifficulty.Hard => 1,
+                GameDifficulty.Easy => -1,
                 _ => 0
             });
 
@@ -76,8 +76,8 @@ internal static class JourneyEncounterResolutionEngine
             })
             + (context.Difficulty switch
             {
-                TravelDifficulty.Hard => 1,
-                TravelDifficulty.Easy => -1,
+                GameDifficulty.Hard => 1,
+                GameDifficulty.Easy => -1,
                 _ => 0
             });
 

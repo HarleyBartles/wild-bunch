@@ -56,9 +56,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameClock clock,
         GameStatus status,
         TravelJourney? journey,
-        TravelDifficulty travelDifficulty,
+        GameDifficulty gameDifficulty,
         TravelRandomnessState travelRandomness,
-        AdventureRandomnessPolicy entropy,
+        GameEntropy entropy,
         TownVisitState? currentTownVisit,
         IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
@@ -71,7 +71,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Clock = clock;
         Status = status;
         Journey = journey;
-        TravelDifficulty = travelDifficulty;
+        GameDifficulty = gameDifficulty;
         Entropy = entropy;
         TravelRandomness = travelRandomness;
         _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
@@ -109,9 +109,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourney? Journey { get; private set; }
 
-    public TravelDifficulty TravelDifficulty { get; private set; }
+    public GameDifficulty GameDifficulty { get; private set; }
 
-    public AdventureRandomnessPolicy Entropy { get; private set; }
+    public GameEntropy Entropy { get; private set; }
 
     public TravelRandomnessState TravelRandomness { get; private set; }
 
@@ -119,7 +119,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TownVisitState CurrentTownVisit => _currentTown.VisitState;
 
-    public TravelRulesProfile TravelRules => TravelRulesProfile.For(TravelDifficulty);
+    public TravelRulesProfile TravelRules => TravelRulesProfile.For(GameDifficulty);
 
     /// <summary>
     /// Pending dev override for the next travel-day generation. Dev-only state.
@@ -749,7 +749,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, travelDifficulty: TravelDifficulty.Normal);
+        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Normal);
 
     public static GameSession StartNew(
         string playerName,
@@ -758,9 +758,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         TownId? startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet,
         DomainInventory? inventory,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Normal,
         TravelRandomnessState? travelRandomness = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard)
+        GameEntropy entropy = GameEntropy.Standard)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
@@ -771,7 +771,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var resolvedTravelRandomness = travelRandomness ?? TravelRandomnessState.CreateRuntimeSalted();
         var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
         var resolvedInventory = inventory ?? DomainInventory.Empty();
-        var startingHealth = StartingHealthFor(travelDifficulty);
+        var startingHealth = StartingHealthFor(gameDifficulty);
 
         // Build the typed domain event from the resolved starting values.
         var e = new GameStarted
@@ -782,14 +782,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             StartingHealth = startingHealth,
             StartingWallet = resolvedWallet.Cash,
             StartingInventoryItems = resolvedInventory.Items.ToArray(),
-            Difficulty = travelDifficulty,
+            Difficulty = gameDifficulty,
             TravelRandomness = resolvedTravelRandomness,
             Entropy = entropy
         };
 
         // Construct a placeholder session (like RehydrateFromEvents).
         // Apply(GameStarted) is the single mutation path — it sets Player,
-        // Status, TravelDifficulty, TravelRandomness, and Entropy from the event.
+        // Status, GameDifficulty, TravelRandomness, and Entropy from the event.
         // The constructor only sets world/caseFile/clock/pursuit references that
         // are external inputs, not event-derived state.
         var placeholderPlayer = new Player(
@@ -808,7 +808,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             new GameClock(),
             GameStatus.Active,
             journey: null,
-            travelDifficulty,
+            gameDifficulty,
             resolvedTravelRandomness,
             entropy,
             currentTownVisit: null,
@@ -855,11 +855,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         ProduceEvent(e);
     }
 
-    private static int StartingHealthFor(TravelDifficulty travelDifficulty)
-        => travelDifficulty switch
+    private static int StartingHealthFor(GameDifficulty gameDifficulty)
+        => gameDifficulty switch
         {
-            TravelDifficulty.Easy => 1250,
-            TravelDifficulty.Hard => 800,
+            GameDifficulty.Easy => 1250,
+            GameDifficulty.Hard => 800,
             _ => 1000
         };
 
@@ -877,7 +877,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             WildBunch.Domain.Economy.Wallet.Starting(e.StartingWallet),
             inventory);
         Status = GameStatus.Active;
-        TravelDifficulty = e.Difficulty;
+        GameDifficulty = e.Difficulty;
         TravelRandomness = e.TravelRandomness;
         Entropy = e.Entropy;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");

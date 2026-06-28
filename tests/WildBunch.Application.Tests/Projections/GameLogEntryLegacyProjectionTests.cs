@@ -36,9 +36,9 @@ public sealed class GameLogEntryLegacyProjectionTests
                 {
                     new InventoryItem(ItemKind.Food, 1)
                 },
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new StoreItemPurchased
             {
@@ -80,9 +80,9 @@ public sealed class GameLogEntryLegacyProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<InventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new StoreItemPurchased
             {
@@ -126,9 +126,9 @@ public sealed class GameLogEntryLegacyProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<InventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new TownActionContextEntered { Day = 1, Turn = 1, Context = TownActionContext.SheriffOffice, TownId = new TownId("pinecross"), TimeOfDay = TimeOfDay.Afternoon, PursuitHeat = 0 },
             new InvestigationPerformed { SourceKind = InvestigationSourceKind.LocalRecords, TownId = new TownId("pinecross"), Message = "A public lead is noted." },

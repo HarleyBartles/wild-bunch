@@ -56,7 +56,7 @@ public sealed class StartNewGameHandler : GameSessionCommandHandler
 
         // 2. Create the new session and stage it on the same DbContext.
         var newSession = _newGameFactory.Create(
-            command.PlayerName, command.TravelDifficulty, command.SetupSeedCode, command.Entropy, command.StartingTownId);
+            command.PlayerName, command.GameDifficulty, command.SetupSeedCode, command.Entropy, command.StartingTownId);
         await GameSessionRepository.StoreAsync(
             newSession, correlationId, cancellationToken).ConfigureAwait(false);
 

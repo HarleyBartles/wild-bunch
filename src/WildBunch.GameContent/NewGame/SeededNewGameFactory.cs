@@ -24,16 +24,16 @@ public sealed class SeededNewGameFactory : INewGameFactory
 
     public GameSession Create(
         string playerName,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty gameDifficulty = GameDifficulty.Normal,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        GameEntropy entropy = GameEntropy.Standard,
         string? startingTownId = null)
     {
-        var descriptor = ResolveDescriptor(travelDifficulty, setupSeedCode, entropy);
+        var descriptor = ResolveDescriptor(gameDifficulty, setupSeedCode, entropy);
         var setupPackage = _setupPackageBuilder.Build(descriptor);
-        var travelRandomnessState = descriptor.AdventureRandomnessPolicy == AdventureRandomnessPolicy.Boring
+        var travelRandomnessState = descriptor.Entropy == GameEntropy.Boring
             ? TravelRandomnessState.CreateDeterministic(descriptor.SeedCodeText)
-            : _travelRandomnessSource.Create(descriptor.SeedCodeText, setupPackage.TravelDifficulty);
+            : _travelRandomnessSource.Create(descriptor.SeedCodeText, setupPackage.GameDifficulty);
 
         // Player-chosen town overrides the seed-derived default; null falls back to the seed default.
         var resolvedStartingTownId = startingTownId is null
@@ -47,13 +47,13 @@ public sealed class SeededNewGameFactory : INewGameFactory
             resolvedStartingTownId,
             setupPackage.StartingWallet,
             setupPackage.StartingInventory,
-            setupPackage.TravelDifficulty,
+            setupPackage.GameDifficulty,
             travelRandomnessState,
-            descriptor.AdventureRandomnessPolicy);
+            descriptor.Entropy);
     }
 
-    private static StartingWorldDescriptor ResolveDescriptor(TravelDifficulty travelDifficulty, string? setupSeedCode, AdventureRandomnessPolicy entropy)
+    private static StartingWorldDescriptor ResolveDescriptor(GameDifficulty gameDifficulty, string? setupSeedCode, GameEntropy entropy)
     {
-        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, travelDifficulty, entropy);
+        return StartingWorldDescriptorResolver.Resolve(setupSeedCode, gameDifficulty, entropy);
     }
 }

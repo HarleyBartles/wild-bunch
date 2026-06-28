@@ -91,7 +91,7 @@ public sealed class GameSessionJourneyHistoryTests
             pinecross.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy,
+            GameDifficulty.Easy,
             travelRandomness: DeterministicTravelRandomness);
     }
 

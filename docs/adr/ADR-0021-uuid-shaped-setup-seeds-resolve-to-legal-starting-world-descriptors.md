@@ -30,7 +30,7 @@ Setup seeds are now UUID-shaped seed codes. The player-facing code is just a leg
 The code resolves into a hierarchical `StartingWorldDescriptor` that owns:
 
 - travel difficulty
-- `AdventureRandomnessPolicy`
+- `GameEntropy`
 - world variant and starting-town selection key
 - starting player loadout posture
 - starting wallet and inventory counts
@@ -54,7 +54,7 @@ The new setup seed architecture is UUID-shaped, descriptor-driven, and validated
 
 The resolver canonicalizes the UUID-shaped seed code and feeds it through a stable labeled mixer keyed by resolver namespace, resolver version, and field labels. The mixer derives bounded descriptor choices without treating adjacent UUID bytes as semantic bitfields. Multiple UUIDs may resolve to the same descriptor, and the descriptor can later be turned into a representative seed code for tests or fixture setup.
 
-`AdventureRandomnessPolicy` is a first-class descriptor concept with named bands, including `Boring`, `Standard`, `Adventurous`, and `Wild`. Wild mode is legal and high-variance, but it still stays inside domain invariants.
+`GameEntropy` is a first-class descriptor concept with named bands, including `Boring`, `Standard`, `Adventurous`, and `Wild`. Wild mode is legal and high-variance, but it still stays inside domain invariants.
 
 The descriptor does not expose hidden culprit identity, hidden culprit markers, or internal solution truth. Those remain internal to the case-building path and the game/session surfaces that already own them.
 
@@ -88,7 +88,7 @@ The old WB1 codec would only have been preferable if the repo needed live compat
 
 ## Consequences for Future Work
 
-Future deterministic scenario builders can consume the descriptor directly instead of reverse-engineering a codec. Future gameplay work can branch on `AdventureRandomnessPolicy` without pretending it is only about journeys.
+Future deterministic scenario builders can consume the descriptor directly instead of reverse-engineering a codec. Future gameplay work can branch on `GameEntropy` without pretending it is only about journeys.
 
 ## Implementation Status or Plan
 
@@ -107,7 +107,7 @@ Live.
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, and the web start-game surface now emits and validates UUID-shaped replay keys instead of the retired WB1 seed codec. `AdventureRandomnessPolicy` remains a descriptor-level concept, setup choices are derived through labeled hashing rather than raw UUID byte slicing, and the product no longer relies on the retired WB1 format.
+The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, and the web start-game surface now emits and validates UUID-shaped replay keys instead of the retired WB1 seed codec. `GameEntropy` remains a descriptor-level concept, setup choices are derived through labeled hashing rather than raw UUID byte slicing, and the product no longer relies on the retired WB1 format.
 
 ## Review Triggers
 

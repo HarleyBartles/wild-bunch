@@ -38,7 +38,7 @@ public static class GameSessionMapper
         return ToDto(
             session.Id.Value,
             session.Status,
-            session.TravelDifficulty,
+            session.GameDifficulty,
             session.Entropy,
             session.Player,
             session.World,
@@ -62,14 +62,14 @@ public static class GameSessionMapper
         return ToDto(
             session.Id,
             session.Status,
-            session.TravelDifficulty,
+            session.GameDifficulty,
             session.Entropy,
             session.Player,
             session.World,
             session.CaseFile,
             session.Clock,
             session.PursuitState,
-            session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.TravelDifficulty)),
+            session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.GameDifficulty)),
             session.TravelDiaryDays,
             session.LogEntries,
             ToActiveSaloonPersonOfInterestDto(
@@ -82,8 +82,8 @@ public static class GameSessionMapper
     private static GameSessionDto ToDto(
         Guid id,
         GameStatus status,
-        TravelDifficulty travelDifficulty,
-        AdventureRandomnessPolicy entropy,
+        GameDifficulty gameDifficulty,
+        GameEntropy entropy,
         DomainPlayer player,
         DomainWorld world,
         DomainCaseFile caseFile,
@@ -96,16 +96,16 @@ public static class GameSessionMapper
         => new(
             id,
             status,
-            travelDifficulty,
+            gameDifficulty,
             entropy,
             ToDto(player),
             ToDto(world),
             ToDto(caseFile),
-            InventoryMapper.ToDto(player, TravelRulesProfile.For(travelDifficulty)),
+            InventoryMapper.ToDto(player, TravelRulesProfile.For(gameDifficulty)),
             new GameClockDto(clock.Day, clock.Turn, clock.TimeOfDay.ToString()),
             new PursuitStateDto(pursuitState.Heat),
             journey,
-            TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(travelDifficulty)),
+            TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(gameDifficulty)),
             logEntries.Select(ToDto).ToArray(),
             activeSaloonPersonOfInterest);
 

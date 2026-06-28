@@ -650,7 +650,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             });
 
         return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 }

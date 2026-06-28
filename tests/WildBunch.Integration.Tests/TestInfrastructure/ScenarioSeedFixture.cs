@@ -11,8 +11,8 @@ namespace WildBunch.Integration.Tests.TestInfrastructure;
 internal sealed record ScenarioSeedFixture(
     string Name,
     string SeedCode,
-    TravelDifficulty TravelDifficulty,
-    AdventureRandomnessPolicy Entropy,
+    GameDifficulty GameDifficulty,
+    GameEntropy Entropy,
     string ResolverContractVersion,
     string RequiredShapeSignature,
     Func<GameSessionDto, TravelPreviewResultDto?, string> DescribeShapeSignature,
@@ -75,7 +75,7 @@ internal sealed record ScenarioSeedFixture(
     private GameSession CreateSession()
     {
         return new SeededNewGameFactory(new DeterministicTravelRandomnessSource())
-            .Create("Fixture Validator", TravelDifficulty, setupSeedCode: SeedCode, entropy: Entropy);
+            .Create("Fixture Validator", GameDifficulty, setupSeedCode: SeedCode, entropy: Entropy);
     }
 
     private static TravelPreviewResultDto CreatePreview(GameSession session, string destinationTownId)

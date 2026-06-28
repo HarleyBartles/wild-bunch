@@ -25,8 +25,8 @@ public class GameSessionEventSourcingTests
         Assert.Equal("Pinecross", gameStarted.StartingTownName);
         Assert.Equal(1000, gameStarted.StartingHealth);
         Assert.Equal(25m, gameStarted.StartingWallet);
-        Assert.Equal(TravelDifficulty.Normal, gameStarted.Difficulty);
-        Assert.Equal(AdventureRandomnessPolicy.Standard, gameStarted.Entropy);
+        Assert.Equal(GameDifficulty.Normal, gameStarted.Difficulty);
+        Assert.Equal(GameEntropy.Standard, gameStarted.Entropy);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class GameSessionEventSourcingTests
         Assert.Equal(session.Player.CurrentTownId, rehydrated.Player.CurrentTownId);
         Assert.Equal(session.Player.Health, rehydrated.Player.Health);
         Assert.Equal(session.Player.Wallet.Cash, rehydrated.Player.Wallet.Cash);
-        Assert.Equal(session.TravelDifficulty, rehydrated.TravelDifficulty);
+        Assert.Equal(session.GameDifficulty, rehydrated.GameDifficulty);
         Assert.Equal(session.Entropy, rehydrated.Entropy);
         Assert.Equal(session.Version, rehydrated.Version);
         Assert.Empty(rehydrated.UncommittedEvents);
@@ -218,9 +218,9 @@ public class GameSessionEventSourcingTests
                 StartingHealth = 1000,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<InventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic("test"),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new UnknownTestEvent()
         };
@@ -257,7 +257,7 @@ public class GameSessionEventSourcingTests
             StartingHealth = session.Player.Health,
             StartingWallet = 25m,
             StartingInventoryItems = Array.Empty<InventoryItem>(),
-            Difficulty = session.TravelDifficulty,
+            Difficulty = session.GameDifficulty,
             TravelRandomness = session.TravelRandomness,
             Entropy = session.Entropy
         };

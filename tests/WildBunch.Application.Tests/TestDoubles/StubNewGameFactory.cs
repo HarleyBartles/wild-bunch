@@ -19,23 +19,23 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<string> RequestedPlayerNames { get; } = [];
 
-    public List<TravelDifficulty> RequestedTravelDifficulties { get; } = [];
+    public List<GameDifficulty> RequestedTravelDifficulties { get; } = [];
 
     public List<string?> RequestedSetupSeedCodes { get; } = [];
 
-    public List<AdventureRandomnessPolicy> RequestedEntropies { get; } = [];
+    public List<GameEntropy> RequestedEntropies { get; } = [];
 
     public List<string?> RequestedStartingTownIds { get; } = [];
 
     public GameSession Create(
         string playerName,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal,
+        GameDifficulty GameDifficulty = GameDifficulty.Normal,
         string? setupSeedCode = null,
-        AdventureRandomnessPolicy entropy = AdventureRandomnessPolicy.Standard,
+        GameEntropy entropy = GameEntropy.Standard,
         string? startingTownId = null)
     {
         RequestedPlayerNames.Add(playerName);
-        RequestedTravelDifficulties.Add(travelDifficulty);
+        RequestedTravelDifficulties.Add(GameDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
         RequestedEntropies.Add(entropy);
         RequestedStartingTownIds.Add(startingTownId);

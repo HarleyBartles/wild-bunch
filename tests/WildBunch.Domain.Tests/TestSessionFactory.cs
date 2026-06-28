@@ -59,7 +59,7 @@ public static class TestSessionFactory
         });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -100,7 +100,7 @@ public static class TestSessionFactory
             knownWarrants: Array.Empty<Warrant>());
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -144,7 +144,7 @@ public static class TestSessionFactory
             knownWarrants: Array.Empty<Warrant>());
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -172,7 +172,7 @@ public static class TestSessionFactory
             knownWarrants: Array.Empty<Warrant>());
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -218,7 +218,7 @@ public static class TestSessionFactory
             knownWarrants: Array.Empty<Warrant>());
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -267,7 +267,7 @@ public static class TestSessionFactory
             });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -318,7 +318,7 @@ public static class TestSessionFactory
             });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.SetWantedSuspectPresenceState(
             new SuspectId("suspect-1"), WantedSuspectPresenceState.SecuredAlive);
@@ -416,7 +416,7 @@ public static class TestSessionFactory
             });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: inventory, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory: inventory, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
         session.LookAroundSaloon();
@@ -473,7 +473,7 @@ public static class TestSessionFactory
         });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;
@@ -567,7 +567,7 @@ public static class TestSessionFactory
         });
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory, TravelDifficulty.Easy,
+            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;

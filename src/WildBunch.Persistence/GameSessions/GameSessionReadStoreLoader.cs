@@ -30,7 +30,7 @@ internal static class GameSessionReadStoreLoader
         var player = serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player));
         var world = serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
-        var entropy = entropyJson is null ? AdventureRandomnessPolicy.Standard : serializer.DeserializeSetup(entropyJson);
+        var entropy = entropyJson is null ? GameEntropy.Standard : serializer.DeserializeSetup(entropyJson);
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
         var townVisitState = townVisitStateJson is null
             ? new TownVisitState(player.CurrentTownId)
@@ -39,7 +39,7 @@ internal static class GameSessionReadStoreLoader
         return new GameSessionReadModel(
             store.Envelope.Id,
             Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
-            (TravelDifficulty)store.Envelope.TravelDifficulty,
+            (GameDifficulty)store.Envelope.GameDifficulty,
             entropy,
             player,
             world,
@@ -71,7 +71,7 @@ internal static class GameSessionReadStoreLoader
         var player = serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player));
         var world = serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
-        var entropy = entropyJson is null ? AdventureRandomnessPolicy.Standard : serializer.DeserializeSetup(entropyJson);
+        var entropy = entropyJson is null ? GameEntropy.Standard : serializer.DeserializeSetup(entropyJson);
         var caseFile = serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile));
         var currentTown = world.GetTown(player.CurrentTownId);
         var clock = serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));

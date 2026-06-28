@@ -51,7 +51,7 @@ public static class GameSessionEndpoints
 
         var validatedRequest = request!;
         var session = await handler.HandleAsync(
-            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.TravelDifficulty, validatedRequest.SeedCode, validatedRequest.Entropy, validatedRequest.StartingTownId),
+            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.GameDifficulty, validatedRequest.SeedCode, validatedRequest.Entropy, validatedRequest.StartingTownId),
             cancellationToken);
         return Results.Created($"/api/games/{session.Id}", session);
     }
@@ -66,16 +66,16 @@ public static class GameSessionEndpoints
 
     private static async Task<IResult> GetPrologueAsync(
         GetPrologueHandler handler,
-        TravelDifficulty? travelDifficulty = null,
+        GameDifficulty? gameDifficulty = null,
         string? seedCode = null,
-        AdventureRandomnessPolicy? entropy = null,
+        GameEntropy? entropy = null,
         string? variantId = null,
         CancellationToken cancellationToken = default)
     {
         var query = new GetPrologueQuery(
-            travelDifficulty ?? TravelDifficulty.Normal,
+            gameDifficulty ?? GameDifficulty.Normal,
             seedCode,
-            entropy ?? AdventureRandomnessPolicy.Standard,
+            entropy ?? GameEntropy.Standard,
             variantId);
         var dto = await handler.HandleAsync(query, cancellationToken);
         return Results.Ok(dto);

@@ -19,7 +19,7 @@ describe("wildBunchApi", () => {
 
     await createGame({
       playerName: "Ranger Vale",
-      travelDifficulty: 2,
+      gameDifficulty: 2,
       seedCode: "7d455293-f269-a642-72af-0193fdbdfb51",
     });
 
@@ -29,7 +29,7 @@ describe("wildBunchApi", () => {
         method: "POST",
         body: JSON.stringify({
           playerName: "Ranger Vale",
-          travelDifficulty: 2,
+          gameDifficulty: 2,
           seedCode: "7d455293-f269-a642-72af-0193fdbdfb51",
         }),
       }),

@@ -33,9 +33,9 @@ public sealed class ProjectionTests
                     new DomainInventoryItem(DomainItemKind.Food, 3),
                     new DomainInventoryItem(DomainItemKind.Canteen, 1)
                 },
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             }
         };
 
@@ -69,9 +69,9 @@ public sealed class ProjectionTests
                 {
                     new DomainInventoryItem(DomainItemKind.Food, 1)
                 },
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new StoreItemPurchased
             {
@@ -105,9 +105,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             }
         };
 
@@ -132,9 +132,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new StoreItemPurchased
             {
@@ -168,9 +168,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new StoreItemPurchased
             {
@@ -241,9 +241,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             }
         };
 
@@ -272,9 +272,9 @@ public sealed class ProjectionTests
                 {
                     new DomainInventoryItem(DomainItemKind.Food, 1)
                 },
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             }
         };
 
@@ -314,9 +314,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new TownActionContextEntered
             {
@@ -358,9 +358,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("pinecross"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning, PursuitHeat = 0 },
             new SaloonPersonOfInterestSpotted
@@ -391,9 +391,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new TownActionContextEntered { Context = TownActionContext.Saloon, TownId = new TownId("pinecross"), Day = 1, Turn = 1, TimeOfDay = TimeOfDay.Morning, PursuitHeat = 0 },
             new SaloonPersonOfInterestSpotted
@@ -424,9 +424,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new WantedSuspectConfronted
             {
@@ -460,9 +460,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new SheriffTurnInSettled
             {
@@ -496,9 +496,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 25m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new SaloonPersonOfInterestConfronted
             {
@@ -533,9 +533,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 10m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new SheriffTurnInSettled
             {
@@ -569,9 +569,9 @@ public sealed class ProjectionTests
                 StartingHealth = 100,
                 StartingWallet = 100m,
                 StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                Difficulty = TravelDifficulty.Normal,
+                Difficulty = GameDifficulty.Normal,
                 TravelRandomness = TravelRandomnessState.CreateDeterministic(string.Empty),
-                Entropy = AdventureRandomnessPolicy.Standard
+                Entropy = GameEntropy.Standard
             },
             new SaloonPersonOfInterestConfronted
             {

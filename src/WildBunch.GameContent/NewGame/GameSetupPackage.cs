@@ -8,7 +8,7 @@ namespace WildBunch.GameContent.NewGame;
 
 internal sealed record GameSetupPackage(
     StartingWorldDescriptor Descriptor,
-    TravelDifficulty TravelDifficulty,
+    GameDifficulty GameDifficulty,
     TravelRulesProfile TravelRulesProfile,
     World World,
     TownId StartingTownId,

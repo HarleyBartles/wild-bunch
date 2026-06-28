@@ -13,7 +13,7 @@ This project contains the UUID seed codec — the single encoding of all startin
 - **New town or trail**: add to `SeedWorldCatalog.cs`, update `SeedWorldBuilderTests` snapshot assertions, update `SeededNewGameFactoryTests` count assertions.
 - **New world variant**: add to `SeedWorldVariant` enum, add variant-specific terrain/water/services to existing town/trail definitions, update `ResolveWorldVariant` in `GameSetupSeedCodec.cs`, update snapshot tests.
 - **New loadout profile**: add to `StartingLoadoutProfile` enum, add counts to `ResolveLoadoutCounts`, update `CreateDescriptorSignature` if the profile name changes semantics.
-- **New difficulty or entropy level**: update enums, update `ResolveDifficulty`/`ResolveAdventureRandomnessPolicy`, update `CreateCanonicalDescriptorShape`, update descriptor signature.
+- **New difficulty or entropy level**: update enums, update `ResolveDifficulty`/`ResolveGameEntropy`, update `CreateCanonicalDescriptorShape`, update descriptor signature.
 - **Any new starting-world field**: add to `StartingWorldDescriptor`, add to `GameSetupSeedCodec.Resolve`, add to `StartingWorldDescriptorSeedMixer.CreateDescriptorSignature`, add a round-trip guardrail test.
 
 ## Do NOT

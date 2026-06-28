@@ -20,7 +20,7 @@ internal static class TrailEventCatalog
                 walletDelta: travelRulesProfile.LuckyTrailCoinReward);
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
+        if (travelRulesProfile.Difficulty == GameDifficulty.Easy && routeProfile.Risk == TrailRisk.Low && routeProfile.Terrain == TrailTerrain.OpenRange && routeProfile.WaterFeature == WaterFeature.None)
         {
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyFoodCache,
@@ -29,7 +29,7 @@ internal static class TrailEventCatalog
                 foodDelta: travelRulesProfile.LuckyTrailFoodReward);
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Easy && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
+        if (travelRulesProfile.Difficulty == GameDifficulty.Easy && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Terrain is TrailTerrain.Hills or TrailTerrain.Badlands)
         {
             return JourneyTrailEventState.CreateLucky(
                 JourneyTrailEventId.LuckyWaterSeep,
@@ -47,7 +47,7 @@ internal static class TrailEventCatalog
                 delayDays: travelRulesProfile.BadLuckTrailDelayDays);
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
+        if (travelRulesProfile.Difficulty == GameDifficulty.Hard && routeProfile.Terrain == TrailTerrain.Badlands && routeProfile.WaterFeature == WaterFeature.None && routeProfile.Risk != TrailRisk.High && journey.FoodRemaining > 0 && journey.AvailableCanteenCharges > 0)
         {
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckFoodLoss,
@@ -59,7 +59,7 @@ internal static class TrailEventCatalog
                 delayDays: travelRulesProfile.BadLuckTrailDelayDays);
         }
 
-        if (travelRulesProfile.Difficulty == TravelDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && journey.HorseState is not null && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
+        if (travelRulesProfile.Difficulty == GameDifficulty.Hard && journey.TravelMode == TravelMode.Mounted && journey.HorseState is not null && routeProfile.Terrain == TrailTerrain.Hills && routeProfile.WaterFeature == WaterFeature.River)
         {
             return JourneyTrailEventState.CreateBadLuck(
                 JourneyTrailEventId.BadLuckSpookedHorse,

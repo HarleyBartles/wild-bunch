@@ -5,6 +5,6 @@ namespace WildBunch.Integration.Tests.TestInfrastructure;
 
 internal sealed class DeterministicTravelRandomnessSource : ITravelRandomnessSource
 {
-    public TravelRandomnessState Create(string? setupSeedCode, TravelDifficulty travelDifficulty)
+    public TravelRandomnessState Create(string? setupSeedCode, GameDifficulty GameDifficulty)
         => TravelRandomnessState.CreateDeterministic(string.Empty);
 }

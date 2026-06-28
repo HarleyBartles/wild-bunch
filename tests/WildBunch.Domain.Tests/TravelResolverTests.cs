@@ -131,7 +131,7 @@ public sealed class TravelResolverTests
             TrailTerrain.Mountains,
             WaterFeature.None,
             trailRisk: TrailRisk.Moderate,
-            travelDifficulty: TravelDifficulty.Hard);
+            GameDifficulty: GameDifficulty.Hard);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
@@ -567,7 +567,7 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Mounted, session.Journey.TravelMode);
         Assert.Equal(0, session.Journey.DelayDays);
         Assert.Equal(new HorseTravelState(1, 0, 2), session.Player.Inventory.GetHorseState());
-        Assert.Equal(StartingHealthFor(session.TravelDifficulty), session.Player.Health);
+        Assert.Equal(StartingHealthFor(session.GameDifficulty), session.Player.Health);
         Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
@@ -593,7 +593,7 @@ public sealed class TravelResolverTests
         Assert.True(session.Journey!.DelayDays >= 0);
         Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
-        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
+        Assert.True(session.Player.Health < StartingHealthFor(session.GameDifficulty));
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
     }
@@ -601,7 +601,7 @@ public sealed class TravelResolverTests
     [Fact]
     public void ResolveJourneyEncounterRunCanLameMountedHorseAndFallBackToFoot()
     {
-        var session = CreateHighRiskSession(travelDifficulty: TravelDifficulty.Hard);
+        var session = CreateHighRiskSession(GameDifficulty: GameDifficulty.Hard);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -632,7 +632,7 @@ public sealed class TravelResolverTests
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
-        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
+        Assert.True(session.Player.Health < StartingHealthFor(session.GameDifficulty));
         Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
@@ -656,7 +656,7 @@ public sealed class TravelResolverTests
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
+        Assert.True(session.Player.Health < StartingHealthFor(session.GameDifficulty));
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Null(session.Journey.PendingEncounter);
@@ -866,7 +866,7 @@ public sealed class TravelResolverTests
         Assert.False(result.Success);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.True(session.Player.Health < StartingHealthFor(session.TravelDifficulty));
+        Assert.True(session.Player.Health < StartingHealthFor(session.GameDifficulty));
         Assert.True(session.Player.Wallet.Cash < startingCash || session.Player.Inventory.GetQuantity(DomainItemKind.Food) < startingFood);
         Assert.Null(session.Journey!.PendingEncounter);
         Assert.Equal(JourneyStatus.Active, session.Journey.Status);
@@ -1031,7 +1031,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.HorseFeed, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static DomainWorld CreateParityWorld(TrailRisk trailRisk = TrailRisk.Low)
@@ -1065,7 +1065,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness, entropy: AdventureRandomnessPolicy.Boring);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, travelRandomness: DeterministicTravelRandomness, entropy: GameEntropy.Boring);
     }
 
     private static GameSession CreateLuckyFootSession()
@@ -1160,7 +1160,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateEasyLuckyWaterSession()
@@ -1184,7 +1184,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateHardBadLuckSession()
@@ -1208,7 +1208,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateHardMountedHorseSession()
@@ -1232,14 +1232,14 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateHighRiskSession(
         Wallet? wallet = null,
         int withRevolverAmmo = 2,
         bool withHorse = true,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal)
+        GameDifficulty GameDifficulty = GameDifficulty.Normal)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
@@ -1268,7 +1268,7 @@ public sealed class TravelResolverTests
 
         var inventory = new DomainInventory(items);
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, travelDifficulty, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, GameDifficulty, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static GameSession CreateProgressionSession(
@@ -1278,7 +1278,7 @@ public sealed class TravelResolverTests
         bool withSaddle = true,
         int canteenCharges = 2,
         TrailRisk trailRisk = TrailRisk.Low,
-        TravelDifficulty travelDifficulty = TravelDifficulty.Normal)
+        GameDifficulty GameDifficulty = GameDifficulty.Normal)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
         var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
@@ -1303,7 +1303,7 @@ public sealed class TravelResolverTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), travelDifficulty, travelRandomness: DeterministicTravelRandomness);
+        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty, travelRandomness: DeterministicTravelRandomness);
     }
 
     private static DomainWorld CreateWorld()
@@ -1330,11 +1330,11 @@ public sealed class TravelResolverTests
         return new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
     }
 
-    private static int StartingHealthFor(TravelDifficulty travelDifficulty)
-        => travelDifficulty switch
+    private static int StartingHealthFor(GameDifficulty GameDifficulty)
+        => GameDifficulty switch
         {
-            TravelDifficulty.Easy => 1250,
-            TravelDifficulty.Hard => 800,
+            GameDifficulty.Easy => 1250,
+            GameDifficulty.Hard => 800,
             _ => 1000
         };
 

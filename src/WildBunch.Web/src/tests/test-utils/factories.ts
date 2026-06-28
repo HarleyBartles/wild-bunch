@@ -11,7 +11,7 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
   return {
     id: "game-1",
     status: 0,
-    travelDifficulty: 0,
+    gameDifficulty: 0,
     player: {
       name: "Ruth",
       currentTownId: "t-town",

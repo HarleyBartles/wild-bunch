@@ -5,6 +5,6 @@ namespace WildBunch.GameContent.NewGame;
 
 public sealed class RuntimeTravelRandomnessSource : ITravelRandomnessSource
 {
-    public TravelRandomnessState Create(string? setupSeedCode, TravelDifficulty travelDifficulty)
+    public TravelRandomnessState Create(string? setupSeedCode, GameDifficulty gameDifficulty)
         => TravelRandomnessState.CreateRuntimeSalted();
 }

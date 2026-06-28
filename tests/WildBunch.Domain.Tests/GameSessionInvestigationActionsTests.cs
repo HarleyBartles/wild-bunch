@@ -343,7 +343,7 @@ public sealed class GameSessionInvestigationActionsTests
             currentTown.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy,
+            GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 
@@ -566,7 +566,7 @@ public sealed class GameSessionInvestigationActionsTests
             currentTown.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy,
+            GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 
@@ -640,7 +640,7 @@ public sealed class GameSessionInvestigationActionsTests
             currentTown.Id,
             Wallet.Starting(25m),
             inventory,
-            TravelDifficulty.Easy,
+            GameDifficulty.Easy,
             TravelRandomnessState.CreateDeterministic(string.Empty));
     }
 

@@ -41,7 +41,7 @@ internal sealed record BoringScenario(
 {
     public string SeedCode => Fixture.SeedCode;
 
-    public TravelDifficulty TravelDifficulty => Fixture.TravelDifficulty;
+    public GameDifficulty GameDifficulty => Fixture.GameDifficulty;
 
     public void AssertReady()
         => Fixture.AssertCachedFixtureContract();
@@ -54,7 +54,7 @@ internal sealed record BoringScenario(
         Fixture.AssertCachedFixtureContract();
 
         return new SeededNewGameFactory(new DeterministicTravelRandomnessSource())
-            .Create(playerName, TravelDifficulty, SeedCode);
+            .Create(playerName, GameDifficulty, SeedCode);
     }
 
     public GameSessionDto CreateSessionDto(string playerName = "Fixture Validator")

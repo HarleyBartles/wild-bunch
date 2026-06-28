@@ -1,6 +1,6 @@
 namespace WildBunch.Domain.Travel;
 
-public enum TravelDifficulty
+public enum GameDifficulty
 {
     Normal = 0,
     Easy = 1,

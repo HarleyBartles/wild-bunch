@@ -24,8 +24,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedNormal =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Normal,
-            AdventureRandomnessPolicy.Standard);
+            GameDifficulty.Normal,
+            GameEntropy.Standard);
 
     /// <summary>
     /// Canonical world, Normal difficulty, Boring entropy, mounted.
@@ -35,8 +35,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedBoring =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Normal,
-            AdventureRandomnessPolicy.Boring);
+            GameDifficulty.Normal,
+            GameEntropy.Boring);
 
     /// <summary>
     /// Canonical world, Normal difficulty, Boring entropy, no horse, light loadout.
@@ -45,8 +45,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static StartingWorldDescriptor CanonicalFootBoringLight = new(
         Guid.Empty,
-        TravelDifficulty.Normal,
-        AdventureRandomnessPolicy.Boring,
+        GameDifficulty.Normal,
+        GameEntropy.Boring,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Canonical, GameSetupDeterministicLabels.WorldStartingTownFoot),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: false,
@@ -67,8 +67,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedEasyStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Easy,
-            AdventureRandomnessPolicy.Standard);
+            GameDifficulty.Easy,
+            GameEntropy.Standard);
 
     /// <summary>
     /// Canonical world, Hard difficulty, Standard entropy, mounted.
@@ -77,8 +77,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor CanonicalMountedHardStandard =
         StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
-            TravelDifficulty.Hard,
-            AdventureRandomnessPolicy.Standard);
+            GameDifficulty.Hard,
+            GameEntropy.Standard);
 
     /// <summary>
     /// Frontier world, Normal difficulty, Standard entropy, no horse, light loadout.
@@ -89,8 +89,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierFootNormalFoe = new(
         Guid.Empty,
-        TravelDifficulty.Normal,
-        AdventureRandomnessPolicy.Standard,
+        GameDifficulty.Normal,
+        GameEntropy.Standard,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownFoot),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: false,
@@ -111,8 +111,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierMountedHardNpc = new(
         Guid.Empty,
-        TravelDifficulty.Hard,
-        AdventureRandomnessPolicy.Standard,
+        GameDifficulty.Hard,
+        GameEntropy.Standard,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: true,
@@ -133,8 +133,8 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static readonly StartingWorldDescriptor FrontierMountedNormalHighRisk = new(
         Guid.Empty,
-        TravelDifficulty.Normal,
-        AdventureRandomnessPolicy.Standard,
+        GameDifficulty.Normal,
+        GameEntropy.Standard,
         new StartingWorldDescriptorWorld(SeedWorldVariant.Frontier, GameSetupDeterministicLabels.WorldStartingTownHorse),
         new StartingWorldDescriptorPlayer(
             StartWithHorse: true,
@@ -170,7 +170,7 @@ internal static class TravelTestSeedCatalog
             playerName,
             descriptor.Difficulty,
             seedCode,
-            descriptor.AdventureRandomnessPolicy);
+            descriptor.Entropy);
     }
 
     /// <summary>

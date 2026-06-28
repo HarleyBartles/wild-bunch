@@ -141,7 +141,7 @@ public sealed class ForceSaloonOverrideHandlerTests
 
         var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
             WildBunch.Domain.Economy.Wallet.Starting(25m), inventory: null,
-            WildBunch.Domain.Travel.TravelDifficulty.Easy,
+            WildBunch.Domain.Travel.GameDifficulty.Easy,
             WildBunch.Domain.Travel.TravelRandomnessState.CreateDeterministic(string.Empty));
         session.MarkEventsCommitted();
         return session;

@@ -10,7 +10,7 @@ public sealed class GameSessionEntity
 
     public string Status { get; set; } = string.Empty;
 
-    public int TravelDifficulty { get; set; }
+    public int GameDifficulty { get; set; }
 
     public int SchemaVersion { get; set; }
 

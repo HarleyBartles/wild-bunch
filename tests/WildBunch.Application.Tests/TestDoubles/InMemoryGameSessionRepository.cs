@@ -53,7 +53,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult(session is null ? null : new GameSessionReadModel(
             session.Id.Value,
             session.Status,
-            session.TravelDifficulty,
+            session.GameDifficulty,
             session.Entropy,
             session.Player,
             session.World,

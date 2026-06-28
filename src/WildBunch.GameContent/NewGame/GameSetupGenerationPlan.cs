@@ -13,9 +13,9 @@ internal sealed record StartingWorldGenerationPlan(
     TravelRulesProfile TravelRulesProfile,
     SeedWorldVariant WorldVariant)
 {
-    public bool IsCanonical => Descriptor == StartingWorldDescriptorResolver.CreateCanonicalDescriptor(Descriptor.Difficulty, Descriptor.AdventureRandomnessPolicy);
+    public bool IsCanonical => Descriptor == StartingWorldDescriptorResolver.CreateCanonicalDescriptor(Descriptor.Difficulty, Descriptor.Entropy);
 
-    public TravelDifficulty TravelDifficulty => Descriptor.Difficulty;
+    public GameDifficulty GameDifficulty => Descriptor.Difficulty;
 
     public static StartingWorldGenerationPlan Create(StartingWorldDescriptor descriptor)
     {

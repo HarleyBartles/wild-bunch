@@ -12,8 +12,8 @@ public sealed partial class GameSessionJsonSerializer
     private sealed record GameSessionSnapshot(
         Guid Id,
         GameStatus Status,
-        TravelDifficulty TravelDifficulty,
-        AdventureRandomnessPolicy? Entropy,
+        GameDifficulty GameDifficulty,
+        GameEntropy? Entropy,
         TravelRandomnessSnapshot? TravelRandomness,
         TownVisitStateSnapshot? CurrentTownVisit,
         PlayerSnapshot Player,
@@ -35,7 +35,7 @@ public sealed partial class GameSessionJsonSerializer
             => new(
                 session.Id.Value,
                 session.Status,
-                session.TravelDifficulty,
+                session.GameDifficulty,
                 session.Entropy,
                 TravelRandomnessSnapshot.FromDomain(session.TravelRandomness),
                 TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
@@ -72,9 +72,9 @@ public sealed partial class GameSessionJsonSerializer
                 clock,
                 Status,
                 journey,
-                TravelDifficulty,
+                GameDifficulty,
                 TravelRandomness?.ToDomain() ?? TravelRandomnessState.CreateRuntimeSalted(),
-                Entropy ?? AdventureRandomnessPolicy.Standard,
+                Entropy ?? GameEntropy.Standard,
                 townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());

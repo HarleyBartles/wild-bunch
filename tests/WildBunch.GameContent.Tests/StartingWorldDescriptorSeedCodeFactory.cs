@@ -39,12 +39,12 @@ internal static class StartingWorldDescriptorSeedCodeFactory
 
     private static StartingWorldDescriptor CreateDescriptor(byte policy, byte worldVariant, byte loadoutProfile, byte startWithHorse, byte accusationIndex, byte startingCashBonus, byte difficulty)
     {
-        var travelDifficulty = (TravelDifficulty)difficulty;
-        var adventurePolicy = (AdventureRandomnessPolicy)policy;
+        var GameDifficulty = (GameDifficulty)difficulty;
+        var adventurePolicy = (GameEntropy)policy;
         var world = (SeedWorldVariant)worldVariant;
         var loadout = (StartingLoadoutProfile)loadoutProfile;
         var mounted = startWithHorse == 0;
-        var startingCash = ResolveStartingCash(travelDifficulty, loadout, mounted, adventurePolicy, startingCashBonus);
+        var startingCash = ResolveStartingCash(GameDifficulty, loadout, mounted, adventurePolicy, startingCashBonus);
         var loadoutCounts = ResolveLoadoutCounts(loadout);
         var startingTownSelectionKey = mounted
             ? GameSetupDeterministicLabels.WorldStartingTownHorse
@@ -52,7 +52,7 @@ internal static class StartingWorldDescriptorSeedCodeFactory
 
         return new StartingWorldDescriptor(
             Guid.Empty,
-            travelDifficulty,
+            GameDifficulty,
             adventurePolicy,
             new StartingWorldDescriptorWorld(world, startingTownSelectionKey),
             new StartingWorldDescriptorPlayer(
@@ -69,16 +69,16 @@ internal static class StartingWorldDescriptorSeedCodeFactory
     }
 
     private static decimal ResolveStartingCash(
-        TravelDifficulty difficulty,
+        GameDifficulty difficulty,
         StartingLoadoutProfile loadoutProfile,
         bool startWithHorse,
-        AdventureRandomnessPolicy policy,
+        GameEntropy policy,
         byte cashBonus)
     {
         var baseCash = difficulty switch
         {
-            TravelDifficulty.Easy => 28m,
-            TravelDifficulty.Hard => 18m,
+            GameDifficulty.Easy => 28m,
+            GameDifficulty.Hard => 18m,
             _ => 23m
         };
 
@@ -92,10 +92,10 @@ internal static class StartingWorldDescriptorSeedCodeFactory
         var horseBonus = startWithHorse ? 2m : 0m;
         var maxPolicyBonus = policy switch
         {
-            AdventureRandomnessPolicy.Boring => 0,
-            AdventureRandomnessPolicy.Standard => 2,
-            AdventureRandomnessPolicy.Adventurous => 5,
-            AdventureRandomnessPolicy.Wild => 8,
+            GameEntropy.Boring => 0,
+            GameEntropy.Standard => 2,
+            GameEntropy.Adventurous => 5,
+            GameEntropy.Wild => 8,
             _ => 0
         };
 

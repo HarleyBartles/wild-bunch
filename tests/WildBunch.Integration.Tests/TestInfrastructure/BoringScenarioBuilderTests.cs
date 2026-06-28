@@ -23,7 +23,7 @@ public sealed class BoringScenarioBuilderTests
 
         Assert.Equal("MountedTravelReady", scenario.ScenarioName);
         Assert.Equal(scenario.Fixture.SeedCode, scenario.SeedCode);
-        Assert.Equal(TravelDifficulty.Normal, scenario.TravelDifficulty);
+        Assert.Equal(GameDifficulty.Normal, scenario.GameDifficulty);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
@@ -49,7 +49,7 @@ public sealed class BoringScenarioBuilderTests
         scenario.Fixture.AssertCreatedSession(sessionDto);
 
         Assert.Equal("NoHorseFootTravelReady", scenario.ScenarioName);
-        Assert.Equal(TravelDifficulty.Easy, scenario.TravelDifficulty);
+        Assert.Equal(GameDifficulty.Easy, scenario.GameDifficulty);
         Assert.Equal(1250, session.Player.Health);
         Assert.Null(session.Player.Inventory.GetHorseState());
         Assert.DoesNotContain(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
@@ -73,7 +73,7 @@ public sealed class BoringScenarioBuilderTests
         scenario.Fixture.AssertCreatedSession(sessionDto);
 
         Assert.Equal("HighRiskFoeInterruptRoute", scenario.ScenarioName);
-        Assert.Equal(TravelDifficulty.Normal, scenario.TravelDifficulty);
+        Assert.Equal(GameDifficulty.Normal, scenario.GameDifficulty);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);

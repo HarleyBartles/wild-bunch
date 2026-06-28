@@ -23,7 +23,7 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
             .IsRequired()
             .HasMaxLength(32);
 
-        builder.Property(e => e.TravelDifficulty)
+        builder.Property(e => e.GameDifficulty)
             .IsRequired();
 
         builder.Property(e => e.SchemaVersion)

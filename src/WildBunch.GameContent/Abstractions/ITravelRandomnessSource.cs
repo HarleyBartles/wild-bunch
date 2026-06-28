@@ -4,5 +4,5 @@ namespace WildBunch.GameContent.Abstractions;
 
 public interface ITravelRandomnessSource
 {
-    TravelRandomnessState Create(string? setupSeedCode, TravelDifficulty travelDifficulty);
+    TravelRandomnessState Create(string? setupSeedCode, GameDifficulty gameDifficulty);
 }

@@ -381,7 +381,7 @@ public sealed class TravelDayPlanGeneratorTests
             TrailRisk.Low,
             TrailTerrain.Hills,
             WaterFeature.River,
-            TravelDifficulty.Hard,
+            GameDifficulty.Hard,
             3,
             3m,
             TravelPressureBand.None,
@@ -545,7 +545,7 @@ public sealed class TravelDayPlanGeneratorTests
             new(DomainItemKind.Knife, 1)
         };
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, creekside.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -573,7 +573,7 @@ public sealed class TravelDayPlanGeneratorTests
             new(DomainItemKind.Knife, 1)
         };
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), TravelDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Hard, travelRandomness: DeterministicTravelRandomness);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -601,7 +601,7 @@ public sealed class TravelDayPlanGeneratorTests
             new(DomainItemKind.Knife, 1)
         };
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), TravelDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Easy, travelRandomness: DeterministicTravelRandomness);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, creekside.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);

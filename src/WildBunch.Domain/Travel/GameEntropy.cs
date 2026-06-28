@@ -1,6 +1,6 @@
 namespace WildBunch.Domain.Travel;
 
-public enum AdventureRandomnessPolicy
+public enum GameEntropy
 {
     Boring = 0,
     Standard = 1,

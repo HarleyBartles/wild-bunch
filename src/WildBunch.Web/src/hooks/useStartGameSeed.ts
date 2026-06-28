@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AdventureRandomnessPolicy, GameSessionDto, TravelDifficulty } from "../api/types";
+import type { GameDifficulty, GameEntropy, GameSessionDto } from "../api/types";
 import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
@@ -15,16 +15,16 @@ interface UseStartGameSeedArgs {
 
 export interface UseStartGameSeedResult {
   playerName: string;
-  travelDifficulty: TravelDifficulty;
-  entropy: AdventureRandomnessPolicy;
+  gameDifficulty: GameDifficulty;
+  entropy: GameEntropy;
   seedState: GameSetupSeedState;
   seedDraft: string;
   seedDirty: boolean;
   decodeError: string | null;
   setPlayerName: (value: string) => void;
   setSeedDraft: (value: string) => void;
-  setTravelDifficulty: (difficulty: TravelDifficulty) => void;
-  setEntropy: (entropy: AdventureRandomnessPolicy) => void;
+  setGameDifficulty: (difficulty: GameDifficulty) => void;
+  setEntropy: (entropy: GameEntropy) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
 }
@@ -43,8 +43,8 @@ function getErrorMessage(error: unknown) {
 
 export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs): UseStartGameSeedResult {
   const [playerName, setPlayerName] = useState("");
-  const [travelDifficulty, setTravelDifficulty] = useState<TravelDifficulty>(0);
-  const [entropy, setEntropy] = useState<AdventureRandomnessPolicy>(1);
+  const [gameDifficulty, setGameDifficulty] = useState<GameDifficulty>(0);
+  const [entropy, setEntropy] = useState<GameEntropy>(1);
   const [seedState, setSeedState] = useState(createCanonicalSeedState());
   const [seedDraft, setSeedDraft] = useState(createCanonicalSeedState().seedCode);
   const [seedDirty, setSeedDirty] = useState(false);
@@ -60,7 +60,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     }
 
     const resetSeed = createCanonicalSeedState();
-    setTravelDifficulty(0);
+    setGameDifficulty(0);
     setEntropy(1);
     setSeedState(resetSeed);
     setSeedDraft(resetSeed.seedCode);
@@ -93,12 +93,12 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDirty(true);
   }
 
-  function handleTravelDifficultyChange(difficulty: TravelDifficulty) {
+  function handleGameDifficultyChange(difficulty: GameDifficulty) {
     setDecodeError(null);
-    setTravelDifficulty(difficulty);
+    setGameDifficulty(difficulty);
   }
 
-  function handleEntropyChange(value: AdventureRandomnessPolicy) {
+  function handleEntropyChange(value: GameEntropy) {
     setEntropy(value);
   }
 
@@ -110,7 +110,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
 
   return {
     playerName,
-    travelDifficulty,
+    gameDifficulty,
     entropy,
     seedState,
     seedDraft,
@@ -118,7 +118,7 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     decodeError,
     setPlayerName,
     setSeedDraft: handleSeedDraftChange,
-    setTravelDifficulty: handleTravelDifficultyChange,
+    setGameDifficulty: handleGameDifficultyChange,
     setEntropy: handleEntropyChange,
     applySeed,
     randomizeSeed,

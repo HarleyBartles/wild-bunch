@@ -16,7 +16,7 @@ namespace WildBunch.Domain.Travel;
 /// today and should not be interpreted as active trail-heat mechanics.
 /// </summary>
 public sealed record TravelRulesProfile(
-    TravelDifficulty Difficulty,
+    GameDifficulty Difficulty,
     int CanteenCapacity,
     int HorseHungerDeathThreshold,
     int HorseThirstDeathThreshold,
@@ -43,7 +43,7 @@ public sealed record TravelRulesProfile(
     int EncounterFightHeatIncrease)
 {
     public static TravelRulesProfile Default { get; } = new(
-        TravelDifficulty.Normal,
+        GameDifficulty.Normal,
         CanteenCapacity: 10,
         HorseHungerDeathThreshold: 3,
         HorseThirstDeathThreshold: 2,
@@ -69,12 +69,12 @@ public sealed record TravelRulesProfile(
         EncounterFightUnarmedHealthLoss: 10,
         EncounterFightHeatIncrease: 1);
 
-    public static TravelRulesProfile For(TravelDifficulty difficulty)
+    public static TravelRulesProfile For(GameDifficulty difficulty)
         => difficulty switch
         {
-            TravelDifficulty.Normal => Default,
-            TravelDifficulty.Easy => new TravelRulesProfile(
-                TravelDifficulty.Easy,
+            GameDifficulty.Normal => Default,
+            GameDifficulty.Easy => new TravelRulesProfile(
+                GameDifficulty.Easy,
                 CanteenCapacity: 10,
                 HorseHungerDeathThreshold: 4,
                 HorseThirstDeathThreshold: 3,
@@ -99,8 +99,8 @@ public sealed record TravelRulesProfile(
                 EncounterFightAmmoHealthLoss: 3,
                 EncounterFightUnarmedHealthLoss: 6,
                 EncounterFightHeatIncrease: 1),
-            TravelDifficulty.Hard => new TravelRulesProfile(
-                TravelDifficulty.Hard,
+            GameDifficulty.Hard => new TravelRulesProfile(
+                GameDifficulty.Hard,
                 CanteenCapacity: 1,
                 HorseHungerDeathThreshold: 2,
                 HorseThirstDeathThreshold: 2,
