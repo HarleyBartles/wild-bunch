@@ -1,14 +1,34 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { StartGamePanel } from "../components/StartGamePanel";
 import type { GameSessionDto, StartGameRequest } from "../api/types";
 import { decodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
+import { getRepresentativeSeed, decodeSeed } from "../api/wildBunchApi";
+
+vi.mock("../api/wildBunchApi", () => ({
+  getRepresentativeSeed: vi.fn(),
+  decodeSeed: vi.fn(),
+  getPrologue: vi.fn(),
+  getStartingTowns: vi.fn(),
+  getStartingTownMap: vi.fn(),
+}));
+
+const mockedGetRepresentativeSeed = vi.mocked(getRepresentativeSeed);
+const mockedDecodeSeed = vi.mocked(decodeSeed);
+
+beforeEach(() => {
+  // Provide default mock values for all tests
+  mockedGetRepresentativeSeed.mockResolvedValue("00000000-0000-0000-0000-000000000000");
+  mockedDecodeSeed.mockResolvedValue({ gameDifficulty: 0, gameEntropy: 1 });
+});
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  mockedGetRepresentativeSeed.mockReset();
+  mockedDecodeSeed.mockReset();
 });
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
@@ -160,9 +180,9 @@ describe("StartGamePanel", () => {
     expect(request.gameDifficulty).toBe(0);
   });
 
-  it("randomizes the seed to a fresh UUID and sends it to the backend", async () => {
+  it("randomizes the seed to a fresh UUID that encodes the selected difficulty and entropy", async () => {
     const user = userEvent.setup();
-    const randomUUID = vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-2222-3333-4444-555555555555");
+    mockedGetRepresentativeSeed.mockResolvedValue("11111111-2222-3333-4444-555555555555");
     const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
@@ -172,7 +192,7 @@ describe("StartGamePanel", () => {
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
 
     await waitFor(() => {
-      expect(randomUUID).toHaveBeenCalledTimes(1);
+      expect(mockedGetRepresentativeSeed).toHaveBeenCalledWith(2, 1);
       expect((seedInput as HTMLInputElement).value).toBe("11111111-2222-3333-4444-555555555555");
       expect((seedInput as HTMLInputElement).value).not.toBe(beforeRandomize);
     });
@@ -187,5 +207,22 @@ describe("StartGamePanel", () => {
     const [request] = onStartGame.mock.calls[0];
     expect(request.gameDifficulty).toBe(2);
     expect(request.seedCode).toBe("11111111-2222-3333-4444-555555555555");
+  });
+
+  it("updates the seed when difficulty changes", async () => {
+    const user = userEvent.setup();
+    mockedGetRepresentativeSeed.mockResolvedValue("aaaa1111-2222-3333-4444-555555555555");
+    const { onStartGame } = renderPanel();
+
+    const seedInput = await screen.findByLabelText(/setup seed/i);
+    const beforeChange = (seedInput as HTMLInputElement).value;
+
+    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "2");
+
+    await waitFor(() => {
+      expect(mockedGetRepresentativeSeed).toHaveBeenCalledWith(2, 1);
+      expect((seedInput as HTMLInputElement).value).toBe("aaaa1111-2222-3333-4444-555555555555");
+      expect((seedInput as HTMLInputElement).value).not.toBe(beforeChange);
+    });
   });
 });

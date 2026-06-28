@@ -4,9 +4,9 @@ import {
   createCanonicalSeedState,
   decodeGameSetupSeed,
   encodeGameSetupSeed,
-  withRandomSeed,
   type GameSetupSeedState,
 } from "../ui/gameSetupSeedCodec";
+import { getRepresentativeSeed, decodeSeed } from "../api/wildBunchApi";
 
 interface UseStartGameSeedArgs {
   session: GameSessionDto | null;
@@ -82,6 +82,11 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
       setDecodeError(null);
       setSeedDirty(false);
       setSeedState(decoded);
+
+      // Decode the seed to get the encoded difficulty and entropy
+      const seedDecoded = await decodeSeed(decoded.seedCode);
+      setGameDifficulty(seedDecoded.gameDifficulty);
+      setGameEntropy(seedDecoded.gameEntropy);
     } catch (error) {
       setDecodeError(getErrorMessage(error));
     }
@@ -93,19 +98,38 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setSeedDirty(true);
   }
 
-  function handleGameDifficultyChange(difficulty: GameDifficulty) {
+  async function handleGameDifficultyChange(difficulty: GameDifficulty) {
     setDecodeError(null);
     setGameDifficulty(difficulty);
+    try {
+      const seed = await getRepresentativeSeed(difficulty, gameEntropy);
+      setSeedState({ seedCode: seed });
+      setSeedDirty(false);
+    } catch (error) {
+      setDecodeError(getErrorMessage(error));
+    }
   }
 
-  function handleGameEntropyChange(value: GameEntropy) {
+  async function handleGameEntropyChange(value: GameEntropy) {
     setGameEntropy(value);
+    try {
+      const seed = await getRepresentativeSeed(gameDifficulty, value);
+      setSeedState({ seedCode: seed });
+      setSeedDirty(false);
+    } catch (error) {
+      setDecodeError(getErrorMessage(error));
+    }
   }
 
-  function randomizeSeed() {
+  async function randomizeSeed() {
     setDecodeError(null);
     setSeedDirty(false);
-    setSeedState((current) => withRandomSeed(current));
+    try {
+      const seed = await getRepresentativeSeed(gameDifficulty, gameEntropy);
+      setSeedState({ seedCode: seed });
+    } catch (error) {
+      setDecodeError(getErrorMessage(error));
+    }
   }
 
   return {

@@ -39,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<GetStartingTownsHandler>();
         services.AddScoped<GetStartingTownMapHandler>();
         services.AddScoped<GetPrologueHandler>();
+        services.AddScoped<GenerateRepresentativeSeedHandler>();
+        services.AddScoped<DecodeSeedHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<GetJournalHandler>();
         services.AddScoped<GetTownStoreOffersHandler>();

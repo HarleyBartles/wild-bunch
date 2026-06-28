@@ -144,7 +144,7 @@ const ClickAway = styled.div<{ $top?: number }>`
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 999;
+  z-index: 1199;
   background: transparent;
 `;
 
@@ -155,7 +155,7 @@ const Drawer = styled.div<{ $expanded: boolean; $top?: number }>`
   right: 0;
   height: ${(props) => (props.$expanded ? `calc(80dvh - ${props.$top ?? 0}px)` : `calc(40dvh - ${props.$top ?? 0}px)`)};
   max-height: calc(100dvh - ${(props) => props.$top ?? 0}px);
-  z-index: 1000;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
   background: var(--bg-elevated);

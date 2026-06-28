@@ -55,7 +55,7 @@ public static class StartingWorldDescriptorResolver
         return Resolve(seed);
     }
 
-    internal static StartingWorldDescriptor Resolve(Guid seedCode)
+    public static StartingWorldDescriptor Resolve(Guid seedCode)
     {
         var seedRoot = StartingWorldDescriptorSeedMixer.CreateSeedRoot(seedCode);
         var policy = ResolveGameEntropy(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.GameEntropy));

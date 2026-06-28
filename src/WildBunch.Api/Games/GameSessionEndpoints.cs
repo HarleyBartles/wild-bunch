@@ -30,6 +30,14 @@ public static class GameSessionEndpoints
             .WithName("GetPrologue")
             .Produces<PrologueDto>(StatusCodes.Status200OK);
 
+        games.MapGet("representative-seed", GetRepresentativeSeedAsync)
+            .WithName("GetRepresentativeSeed")
+            .Produces<string>(StatusCodes.Status200OK);
+
+        games.MapGet("decode-seed", DecodeSeedAsync)
+            .WithName("DecodeSeed")
+            .Produces<DecodedSeedDto>(StatusCodes.Status200OK);
+
         games.MapGet("{id:guid}", GetGameAsync)
             .WithName("GetGame")
             .Produces<GameSessionDto>(StatusCodes.Status200OK)
@@ -91,6 +99,29 @@ public static class GameSessionEndpoints
             variantId);
         var dto = await handler.HandleAsync(query, cancellationToken);
         return Results.Ok(dto);
+    }
+
+    private static async Task<IResult> GetRepresentativeSeedAsync(
+        GenerateRepresentativeSeedHandler handler,
+        GameDifficulty? gameDifficulty = null,
+        GameEntropy? gameEntropy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GenerateRepresentativeSeedQuery(
+            gameDifficulty ?? GameDifficulty.Standard,
+            gameEntropy ?? GameEntropy.Classic);
+        var seed = await handler.HandleAsync(query, cancellationToken);
+        return Results.Ok(seed);
+    }
+
+    private static async Task<IResult> DecodeSeedAsync(
+        DecodeSeedHandler handler,
+        string seedCode,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new DecodeSeedQuery(seedCode);
+        var decoded = await handler.HandleAsync(query, cancellationToken);
+        return Results.Ok(decoded);
     }
 
     private static async Task<IResult> GetGameAsync(
