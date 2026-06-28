@@ -139,10 +139,11 @@ const DevToggleButton = styled.button<{ $active: boolean }>`
 const RouteOutlet = styled.main<{ $chromeBarHeight: number }>`
   flex: 1;
   padding: 24px;
-  margin-top: ${(props) => props.$chromeBarHeight}px;
+  padding-top: ${(props) => props.$chromeBarHeight + 24}px;
 
   @media (max-width: 640px) {
     padding: 14px;
+    padding-top: ${(props) => props.$chromeBarHeight + 14}px;
   }
 `;
 
