@@ -1,0 +1,1051 @@
+# BUNCH-94: Difficulty Setup and Controls — Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Finish difficulty as a first-class game setup/control axis by filling the remaining gaps: a deterministic difficulty-distinction test proof, a dev-overlay difficulty control on the Session dev panel, and short player-facing difficulty copy in the start flow — without touching entropy semantics or reimplementing already-landed setup plumbing.
+
+**Architecture:** Difficulty is already wired end-to-end on current main (domain enum → seed codec → generation plan → travel rules profile → session creation → API/DTO → frontend start flow → persistence/rehydration). The remaining work is (1) a domain-level test proving same-seed/same-entropy/different-difficulty produces different difficulty-shaped facts, (2) a dev-only `ForceDevDifficulty` command following the established `ForceDevSaltSource` pattern (dev event → aggregate method → command handler → dev endpoint → frontend panel control), and (3) short descriptive labels for each difficulty option in `SetupHuntStep`. No new persistence shape is needed — `GameDifficulty` is already in the session snapshot and event stream.
+
+**Tech Stack:** C#/.NET 10, ASP.NET Core Minimal APIs, EF Core, xUnit, React 18, TanStack Query, styled-components, Vitest.
+
+## Plan Status
+
+- Plan status: preflight complete, ready for approval
+- Current route state: `preflight_complete_pending_approval`
+- Base commit: `6b9fcbf` (BUNCH-106: Add flavourful citizen cast for POI encounters, #118)
+- Branch: `harleydbartles/bunch-94-difficulty-setup-and-controls`
+- Worktree: `.worktrees/bunch-94`
+
+## Preflight Findings
+
+### What already exists on current main
+
+Inspected at commit `6b9fcbf` on `main`:
+
+- **Domain enum** (`src/WildBunch.Domain/Travel/GameDifficulty.cs`): `Standard=0, Easy=1, Challenging=2, Brutal=3` — all 4 values.
+- **Entropy enum** (`src/WildBunch.Domain/Travel/GameEntropy.cs`): `Boring=0, Classic=1, Adventurous=2, Wild=3` — all 4 values.
+- **Seed codec** (`src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs`): difficulty drives `GetBaseStartingCash` (Easy=28, Standard=23, Challenging=18, Brutal=13), canonical descriptor shape, and validation. Entropy drives cash bonus envelope and salt posture (Boring=Fixed, others=Runtime).
+- **Generation plan** (`src/WildBunch.GameContent/NewGame/GameSetupGenerationPlan.cs`): `TravelRulesProfile.For(descriptor.GameDifficulty)`.
+- **Travel rules profile** (`src/WildBunch.Domain/Travel/TravelRulesProfile.cs`): distinct profiles per difficulty — canteen capacity, horse death/lame thresholds, ride day progress, lucky/bad-luck rewards/penalties, encounter health/heat/bribe costs.
+- **GameSession** (`src/WildBunch.Domain/Game/GameSession.cs`): `GameDifficulty` property, `TravelRules` derived via `TravelRulesProfile.For(GameDifficulty)`, `StartingHealthFor` (Easy=1250, Standard=1000, Challenging=800, Brutal=600).
+- **StartNewGameCommand/Handler**: passes `GameDifficulty` through session creation.
+- **StartGameRequest (API)**: passes `GameDifficulty` through.
+- **GameSessionDto**: exposes `GameDifficulty` and `GameEntropy`.
+- **GameStarted event**: carries `GameDifficulty` and `GameEntropy`.
+- **Persistence**: `GameDifficulty` and `GameEntropy` round-trip through JSON snapshot (`GameSessionJsonSerializer.SessionSnapshot.cs`) and event stream. Tested in `GameSessionDifficultyPersistenceTests.cs`.
+- **Frontend SetupHuntStep** (`src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx`): exposes all 4 difficulty options (Easy, Standard, Challenging, Brutal) and all 4 entropy options (Boring, Classic, Adventurous, Wild) to players.
+- **Session dev panel** (`src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`, BUNCH-101): shows `GameDifficulty` and `GameEntropy` as **inspect-only** values. No dev control to change difficulty mid-session.
+- **Dev overlay doctrine** (`.agents/dev-overlay/DOCTRINE.md` §2): "Session dev owns game/session-level setup: difficulty, randomness, entropy/seed posture, current phase, high-level scenario setup."
+
+### Product decision update (this turn)
+
+Harley confirmed: **Easy** (difficulty) and **Boring** (entropy) are both player-facing options now. The code already reflects this — `SetupHuntStep.tsx` exposes all 4 options for both axes. No live doctrine or code needs changing for this; the only stale wording is in the historical BUNCH-104 plan file, which is left as-is per Harley's instruction.
+
+### Gaps this plan fills
+
+1. **Difficulty-distinction test proof**: No dedicated test proves that same seed + same entropy + different difficulty produces different difficulty-shaped outputs (not random variance). `TravelRulesProfileTests` covers per-profile tuning values but not the end-to-end "same seed, different difficulty → different difficulty-shaped facts" proof the preflight requires.
+2. **Dev overlay difficulty control**: The Session dev panel only inspects difficulty. The doctrine says Session dev owns difficulty setup/control. A dev-only `ForceDevDifficulty` command — following the `ForceDevSaltSource` pattern — lets Harley playtest different difficulty travel-rule envelopes without restarting. This changes `GameDifficulty` on the live session, which changes the derived `TravelRules` going forward. It does not retroactively change starting health/cash (those were set at game start).
+3. **Frontend difficulty copy**: The difficulty options in `SetupHuntStep` are bare labels ("Easy", "Standard", "Challenging", "Brutal") with no description. Adding short flavor text makes difficulty understandable as game pressure, not randomness.
+4. **Browser/playtest proof**: The issue requires at least one browser proof that Harley can observe difficulty differences.
+
+### What is explicitly out of scope
+
+- Do not implement BUNCH-93 entropy variance behavior.
+- Do not add new hidden-truth exposure to normal DTOs.
+- Do not invent generic supplies or collapse wallet/inventory.
+- Do not normalize runtime session state into new database tables.
+- Do not change the UUID seed codec, descriptor shape, or round-trip behavior.
+- Do not retroactively change starting health/cash when dev-forcing difficulty mid-session.
+- Do not add a "clear difficulty" operation — the dev can force back to the original difficulty. Unlike salt (which has a "runtime" default), difficulty always has a specific value.
+
+## Global Constraints
+
+- `GameSession` is the live-play aggregate root; all gameplay mutation flows through it.
+- Typed domain events are plain sealed records implementing `IDomainEvent`; `Apply` is the single mutation path.
+- Dev endpoints live under `/api/dev/` and are gated by `DevRoleGuard.EnsureDevAccess()`.
+- Dev DTOs are separate types from player DTOs (per ADR-0030 §7).
+- Normal player APIs must remain clean of dev-only state and must not gain dev mutation powers.
+- Do not force normal gameplay actions or final gameplay outcomes (dev-overlay doctrine §1 state/action boundary).
+- Changing difficulty mid-session is a state mutation — it changes the travel rules profile going forward. It does not force any gameplay action or result.
+- `GameDifficulty` is already persisted in the session snapshot and event stream, so rehydration after a difficulty change requires no new persistence shape.
+- Worker environment uses PowerShell; do not use `&&` for command chaining.
+- Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
+- styled-components for component styling; reference design tokens via `var(--token-name)`. No plain CSS classes.
+- Expanded mode must use width (cards/columns), not a tall single column (dev-overlay doctrine §4).
+
+### Difficulty mutation falsification
+
+Tests at both domain aggregate and integration levels must prove that `force-difficulty`:
+1. Only changes `GameDifficulty` on the session (which changes the derived `TravelRules`).
+2. Only produces the `DevDifficultyForced` dev event — no journey, player, saloon, or gameplay events.
+3. Does NOT mutate: journey state, current action context, player state (wallet, inventory, health), journal entries, player-facing DTOs, saloon state, entropy, salt source, or any forced encounter/travel/saloon/gameplay outcome.
+
+---
+
+## File Structure
+
+### Domain layer (src/WildBunch.Domain/)
+
+| File | Responsibility |
+|------|----------------|
+| `Events/DevDifficultyForced.cs` | **Create.** New typed domain event: dev forced the session difficulty to a new value. Dev-only event. |
+| `Game/GameSession.cs` (modify) | Add `ForceDevDifficulty(GameDifficulty)` command method and `Apply(DevDifficultyForced)` method. |
+| `Game/GameSessionEventReplay.cs` (modify) | Add `DevDifficultyForced` case to `ApplyEvent` switch. |
+| `Game/GameSession.cs` `ApplyProducedEvent` (modify) | Add `DevDifficultyForced` case to the produce-time dispatch switch (around line 390). |
+
+### Application layer (src/WildBunch.Application/)
+
+| File | Responsibility |
+|------|----------------|
+| `Dev/Commands/ForceDevDifficultyCommand.cs` | **Create.** Command record carrying `GameSessionId` and `GameDifficulty`. |
+| `Dev/Commands/ForceDevDifficultyHandler.cs` | **Create.** Handler that loads session, calls `ForceDevDifficulty`, stores/commits via `ExecuteWithRetryAsync`. |
+| `Dev/Models/ForceDevDifficultyRequestDto.cs` | **Create.** Dev-only request DTO carrying the new difficulty string value. |
+| `Dev/Models/SessionDevContextDto.cs` (no change needed) | Already exposes `GameDifficulty` as a string. |
+
+### API layer (src/WildBunch.Api/)
+
+| File | Responsibility |
+|------|----------------|
+| `Dev/DevEndpoints.cs` (modify) | Add `POST /api/dev/sessions/{id}/session/force-difficulty` endpoint. |
+
+### Frontend (src/WildBunch.Web/src/)
+
+| File | Responsibility |
+|------|----------------|
+| `dev/types.ts` (modify) | Add `ForceDevDifficultyRequestDto` interface. |
+| `dev/devApi.ts` (modify) | Add `forceDevDifficulty(gameId, request)` function. |
+| `dev/panels/SessionDevPanel.tsx` (modify) | Add a difficulty control (segmented toggle) in the "Setup posture" section that calls `forceDevDifficulty`. |
+| `components/start-flow/SetupHuntStep.tsx` (modify) | Add short descriptive text under each difficulty option label. |
+
+### Tests
+
+| File | Responsibility |
+|------|----------------|
+| `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` (modify) | Add `DifficultyChangesDifficultyShapedFactsNotEntropy` test: same seed + same entropy + different difficulty → different starting cash, health, and travel rules. |
+| `tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs` | **Create.** Domain-level tests for `ForceDevDifficulty`: produces correct event, changes `GameDifficulty` and derived `TravelRules`, falsification proof. |
+| `tests/WildBunch.Application.Tests/Dev/ForceDevDifficultyHandlerTests.cs` | **Create.** Application-level handler tests. |
+| `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` (modify) | Add `ForceDifficulty_Returns204_AndReflectedInContext` integration test. |
+| `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx` (modify) | Add test for difficulty control rendering and mutation call. |
+| `src/WildBunch.Web/src/tests/StartFlow.test.tsx` (modify) | Add test asserting difficulty descriptions are visible. |
+
+---
+
+## Task 1: Difficulty-distinction test proof
+
+**Files:**
+- Modify: `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`
+
+**Interfaces:**
+- Consumes: `SeededNewGameFactory.Create`, `StartingWorldDescriptorResolver`, `TravelRulesProfile.For`
+- Produces: `DifficultyChangesDifficultyShapedFactsNotEntropy` test proving difficulty ≠ entropy
+
+- [ ] **Step 1: Write the failing test**
+
+Add to `SeededNewGameFactoryTests.cs`:
+
+```csharp
+[Fact]
+public void DifficultyChangesDifficultyShapedFactsNotEntropy()
+{
+    var factory = new SeededNewGameFactory();
+    var descriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor(
+        GameDifficulty.Standard, GameEntropy.Classic);
+    var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(
+        StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(descriptor));
+
+    // Same seed, same entropy, different difficulty
+    var easy = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Classic);
+    var standard = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
+    var challenging = factory.Create("Ranger Vale", GameDifficulty.Challenging, seedCode, GameEntropy.Classic);
+    var brutal = factory.Create("Ranger Vale", GameDifficulty.Brutal, seedCode, GameEntropy.Classic);
+
+    // Difficulty-shaped facts differ across difficulties (starting cash, starting health, travel rules)
+    Assert.NotEqual(easy.Player.Wallet.Cash, standard.Player.Wallet.Cash);
+    Assert.NotEqual(standard.Player.Wallet.Cash, challenging.Player.Wallet.Cash);
+    Assert.NotEqual(challenging.Player.Wallet.Cash, brutal.Player.Wallet.Cash);
+
+    Assert.NotEqual(easy.Player.Health, standard.Player.Health);
+    Assert.NotEqual(standard.Player.Health, challenging.Player.Health);
+    Assert.NotEqual(challenging.Player.Health, brutal.Player.Health);
+
+    // Travel rules profiles differ
+    Assert.NotEqual(easy.TravelRules.CanteenCapacity, brutal.TravelRules.CanteenCapacity);
+    Assert.NotEqual(easy.TravelRules.MountedRideDayProgress, brutal.TravelRules.MountedRideDayProgress);
+    Assert.NotEqual(easy.TravelRules.EncounterFightAmmoHealthLoss, brutal.TravelRules.EncounterFightAmmoHealthLoss);
+
+    // Entropy is the same across all four (difficulty does not change entropy)
+    Assert.Equal(GameEntropy.Classic, easy.GameEntropy);
+    Assert.Equal(GameEntropy.Classic, standard.GameEntropy);
+    Assert.Equal(GameEntropy.Classic, challenging.GameEntropy);
+    Assert.Equal(GameEntropy.Classic, brutal.GameEntropy);
+
+    // Salt posture is the same across all four (difficulty does not change salt posture)
+    Assert.Equal(easy.SaltSource.Mode, standard.SaltSource.Mode);
+    Assert.Equal(standard.SaltSource.Mode, challenging.SaltSource.Mode);
+    Assert.Equal(challenging.SaltSource.Mode, brutal.SaltSource.Mode);
+}
+```
+
+- [ ] **Step 2: Run test to verify it passes**
+
+Run: `dotnet test tests/WildBunch.GameContent.Tests --filter "DifficultyChangesDifficultyShapedFactsNotEntropy"`
+Expected: PASS (the behavior already exists; this is a characterization/proof test)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
+git commit -m "BUNCH-94: add difficulty-distinction test proving difficulty != entropy"
+```
+
+---
+
+## Task 2: Dev difficulty control — domain event and aggregate method
+
+**Files:**
+- Create: `src/WildBunch.Domain/Events/DevDifficultyForced.cs`
+- Modify: `src/WildBunch.Domain/Game/GameSession.cs`
+- Modify: `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`
+
+**Interfaces:**
+- Consumes: `GameDifficulty` enum, `IDomainEvent`, `ProduceEvent` pattern
+- Produces: `DevDifficultyForced` event, `GameSession.ForceDevDifficulty(GameDifficulty)` method, `Apply(DevDifficultyForced)` method
+
+- [ ] **Step 1: Write the failing domain test**
+
+Create `tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs`:
+
+```csharp
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
+using Town = WildBunch.Domain.World.Town;
+using TownId = WildBunch.Domain.World.TownId;
+using TownServices = WildBunch.Domain.World.TownServices;
+using Trail = WildBunch.Domain.World.Trail;
+using TrailId = WildBunch.Domain.World.TrailId;
+using World = WildBunch.Domain.World.World;
+
+namespace WildBunch.Domain.Tests;
+
+public sealed class GameSessionDevDifficultyTests
+{
+    [Fact]
+    public void ForceDevDifficulty_ChangesGameDifficultyAndTravelRules()
+    {
+        var session = CreateSeededSession(GameDifficulty.Standard);
+
+        session.ForceDevDifficulty(GameDifficulty.Brutal);
+
+        Assert.Equal(GameDifficulty.Brutal, session.GameDifficulty);
+        Assert.Equal(GameDifficulty.Brutal, session.TravelRules.Difficulty);
+        // Brutal canteen capacity is 1, Standard is 10
+        Assert.Equal(1, session.TravelRules.CanteenCapacity);
+    }
+
+    [Fact]
+    public void ForceDevDifficulty_ProducesDevDifficultyForcedEvent()
+    {
+        var session = CreateSeededSession(GameDifficulty.Standard);
+
+        session.ForceDevDifficulty(GameDifficulty.Challenging);
+
+        var evt = Assert.Single(session.UncommittedEvents.OfType<DevDifficultyForced>());
+        Assert.Equal(GameDifficulty.Challenging, evt.ForcedDifficulty);
+    }
+
+    [Fact]
+    public void ForceDevDifficulty_DoesNotMutateOtherState()
+    {
+        var session = CreateSeededSession(GameDifficulty.Standard);
+        var healthBefore = session.Player.Health;
+        var cashBefore = session.Player.Wallet.Cash;
+        var entropyBefore = session.GameEntropy;
+        var saltBefore = session.SaltSource;
+        var statusBefore = session.Status;
+        var townBefore = session.CurrentTown.TownId;
+
+        session.ForceDevDifficulty(GameDifficulty.Brutal);
+
+        // Falsification: only GameDifficulty and derived TravelRules change
+        Assert.Equal(healthBefore, session.Player.Health);
+        Assert.Equal(cashBefore, session.Player.Wallet.Cash);
+        Assert.Equal(entropyBefore, session.GameEntropy);
+        Assert.Equal(saltBefore, session.SaltSource);
+        Assert.Equal(statusBefore, session.Status);
+        Assert.Equal(townBefore, session.CurrentTown.TownId);
+        // Only one event, and it is the dev difficulty event
+        Assert.Single(session.UncommittedEvents);
+        Assert.IsType<DevDifficultyForced>(session.UncommittedEvents[0]);
+    }
+
+    [Fact]
+    public void ForceDevDifficulty_WithInvalidDifficulty_Throws()
+    {
+        var session = CreateSeededSession(GameDifficulty.Standard);
+
+        Assert.Throws<ArgumentException>(() => session.ForceDevDifficulty((GameDifficulty)999));
+    }
+
+    private static GameSession CreateSeededSession(GameDifficulty difficulty)
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new World(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null, suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, difficulty,
+            SaltSource.CreateFixed(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter "GameSessionDevDifficultyTests"`
+Expected: FAIL — `DevDifficultyForced` event and `ForceDevDifficulty` method do not exist yet.
+
+- [ ] **Step 3: Create the DevDifficultyForced event**
+
+Create `src/WildBunch.Domain/Events/DevDifficultyForced.cs`:
+
+```csharp
+using WildBunch.Domain.Travel;
+
+namespace WildBunch.Domain.Events;
+
+/// <summary>
+/// Fact: a dev command forced the session difficulty to a new value.
+/// This is a dev-only event — it records dev intent to change the difficulty
+/// envelope (travel rules profile) for playtesting, not a gameplay outcome.
+/// The difficulty is persisted in the session snapshot, so rehydration after
+/// a difficulty change requires no new persistence shape.
+/// See BUNCH-94 and ADR-0030.
+/// </summary>
+public sealed record DevDifficultyForced : IDomainEvent
+{
+    public required GameDifficulty ForcedDifficulty { get; init; }
+}
+```
+
+- [ ] **Step 4: Add ForceDevDifficulty method and Apply to GameSession**
+
+In `src/WildBunch.Domain/Game/GameSession.cs`, add the command method near `ForceDevSaltSource` (after line ~1170):
+
+```csharp
+/// <summary>
+/// Dev command: forces the session difficulty to a new value for playtesting.
+/// Changes the travel rules profile going forward. Does not retroactively
+/// change starting health/cash (those were set at game start).
+/// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-94.
+/// </summary>
+public void ForceDevDifficulty(GameDifficulty difficulty)
+{
+    if (!Enum.IsDefined(typeof(GameDifficulty), difficulty))
+    {
+        throw new ArgumentException("Invalid game difficulty value.", nameof(difficulty));
+    }
+
+    ProduceEvent(new DevDifficultyForced
+    {
+        ForcedDifficulty = difficulty
+    });
+}
+```
+
+Add the Apply method near `Apply(DevSaltSourceForced)` (after line ~759):
+
+```csharp
+/// <summary>
+/// Applies a DevDifficultyForced event. Changes the session difficulty,
+/// which changes the derived TravelRules profile. Dev-only event — does
+/// not affect starting health/cash or any other gameplay state directly.
+/// See BUNCH-94.
+/// </summary>
+internal void Apply(DevDifficultyForced e)
+{
+    GameDifficulty = e.ForcedDifficulty;
+    _version++;
+}
+```
+
+- [ ] **Step 5: Add DevDifficultyForced to event replay switch**
+
+In `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`, add to the `ApplyEvent` switch (near the `DevSaltSourceForced` case):
+
+```csharp
+case DevDifficultyForced ddf:
+    session.Apply(ddf);
+    break;
+```
+
+- [ ] **Step 6: Add DevDifficultyForced to produce-time dispatch switch**
+
+In `src/WildBunch.Domain/Game/GameSession.cs`, add to the `ApplyProducedEvent` switch (near line 390, after `DevSaltSourceCleared`):
+
+```csharp
+case DevDifficultyForced ddf:
+    Apply(ddf);
+    break;
+```
+
+- [ ] **Step 7: Run domain tests to verify they pass**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter "GameSessionDevDifficultyTests"`
+Expected: PASS
+
+- [ ] **Step 8: Run full domain test suite to verify no regressions**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests`
+Expected: PASS (all existing tests still pass)
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/WildBunch.Domain/Events/DevDifficultyForced.cs src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Domain/Game/GameSessionEventReplay.cs tests/WildBunch.Domain.Tests/GameSessionDevDifficultyTests.cs
+git commit -m "BUNCH-94: add ForceDevDifficulty domain event and aggregate method"
+```
+
+---
+
+## Task 3: Dev difficulty control — application command and handler
+
+**Files:**
+- Create: `src/WildBunch.Application/Dev/Commands/ForceDevDifficultyCommand.cs`
+- Create: `src/WildBunch.Application/Dev/Commands/ForceDevDifficultyHandler.cs`
+- Create: `src/WildBunch.Application/Dev/Models/ForceDevDifficultyRequestDto.cs`
+
+**Interfaces:**
+- Consumes: `GameSessionCommandHandler.ExecuteWithRetryAsync`, `GameSession.ForceDevDifficulty`, `GameDifficulty`
+- Produces: `ForceDevDifficultyCommand`, `ForceDevDifficultyHandler`, `ForceDevDifficultyRequestDto`
+
+- [ ] **Step 1: Write the failing handler test**
+
+Create `tests/WildBunch.Application.Tests/Dev/ForceDevDifficultyHandlerTests.cs`:
+
+```csharp
+using WildBunch.Application.Dev.Commands;
+using WildBunch.Application.Tests.TestDoubles;
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
+using Town = WildBunch.Domain.World.Town;
+using TownId = WildBunch.Domain.World.TownId;
+using TownServices = WildBunch.Domain.World.TownServices;
+using Trail = WildBunch.Domain.World.Trail;
+using TrailId = WildBunch.Domain.World.TrailId;
+using World = WildBunch.Domain.World.World;
+
+namespace WildBunch.Application.Tests.Dev;
+
+public sealed class ForceDevDifficultyHandlerTests
+{
+    [Fact]
+    public async Task HandleAsync_ForcesDifficultyAndPersists()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSeededSession(GameDifficulty.Standard);
+        repository.Seed(session);
+
+        var handler = new ForceDevDifficultyHandler(repository, new InMemoryGameSessionUnitOfWork());
+
+        await handler.HandleAsync(new ForceDevDifficultyCommand(session.Id.Value, GameDifficulty.Brutal));
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(GameDifficulty.Brutal, reloaded!.GameDifficulty);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DoesNotChangeEntropyOrSalt()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSeededSession(GameDifficulty.Standard);
+        var entropyBefore = session.GameEntropy;
+        var saltBefore = session.SaltSource;
+        repository.Seed(session);
+
+        var handler = new ForceDevDifficultyHandler(repository, new InMemoryGameSessionUnitOfWork());
+
+        await handler.HandleAsync(new ForceDevDifficultyCommand(session.Id.Value, GameDifficulty.Challenging));
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+        Assert.Equal(entropyBefore, reloaded!.GameEntropy);
+        Assert.Equal(saltBefore.Mode, reloaded.SaltSource.Mode);
+    }
+
+    private static GameSession CreateSeededSession(GameDifficulty difficulty)
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new World(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var caseFile = new CaseFile(
+            accusation: null, suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: Array.Empty<Warrant>());
+
+        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory: null, difficulty,
+            SaltSource.CreateFixed(string.Empty));
+        session.MarkEventsCommitted();
+        return session;
+    }
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `dotnet test tests/WildBunch.Application.Tests --filter "ForceDevDifficultyHandlerTests"`
+Expected: FAIL — types do not exist yet.
+
+- [ ] **Step 3: Create the command record**
+
+Create `src/WildBunch.Application/Dev/Commands/ForceDevDifficultyCommand.cs`:
+
+```csharp
+using WildBunch.Domain.Travel;
+
+namespace WildBunch.Application.Dev.Commands;
+
+public sealed record ForceDevDifficultyCommand(
+    Guid GameSessionId,
+    GameDifficulty Difficulty);
+```
+
+- [ ] **Step 4: Create the request DTO**
+
+Create `src/WildBunch.Application/Dev/Models/ForceDevDifficultyRequestDto.cs`:
+
+```csharp
+namespace WildBunch.Application.Dev.Models;
+
+public sealed record ForceDevDifficultyRequestDto(string Difficulty);
+```
+
+- [ ] **Step 5: Create the handler**
+
+Create `src/WildBunch.Application/Dev/Commands/ForceDevDifficultyHandler.cs`:
+
+```csharp
+using WildBunch.Application.Games.Execution;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
+
+namespace WildBunch.Application.Dev.Commands;
+
+public sealed class ForceDevDifficultyHandler : GameSessionCommandHandler
+{
+    public ForceDevDifficultyHandler(
+        IGameSessionRepository gameSessionRepository,
+        IGameSessionUnitOfWork gameSessionUnitOfWork)
+        : base(gameSessionRepository, gameSessionUnitOfWork)
+    {
+    }
+
+    public async Task HandleAsync(ForceDevDifficultyCommand command, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var sessionId = new GameSessionId(command.GameSessionId);
+
+        await ExecuteWithRetryAsync(sessionId, (session, ct) =>
+        {
+            session.ForceDevDifficulty(command.Difficulty);
+            return Task.FromResult(true);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+}
+```
+
+- [ ] **Step 6: Run handler tests to verify they pass**
+
+Run: `dotnet test tests/WildBunch.Application.Tests --filter "ForceDevDifficultyHandlerTests"`
+Expected: PASS
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/WildBunch.Application/Dev/Commands/ForceDevDifficultyCommand.cs src/WildBunch.Application/Dev/Commands/ForceDevDifficultyHandler.cs src/WildBunch.Application/Dev/Models/ForceDevDifficultyRequestDto.cs tests/WildBunch.Application.Tests/Dev/ForceDevDifficultyHandlerTests.cs
+git commit -m "BUNCH-94: add ForceDevDifficulty application command and handler"
+```
+
+---
+
+## Task 4: Dev difficulty control — API endpoint
+
+**Files:**
+- Modify: `src/WildBunch.Api/Dev/DevEndpoints.cs`
+
+**Interfaces:**
+- Consumes: `ForceDevDifficultyHandler`, `ForceDevDifficultyRequestDto`, `DevRoleGuard`, `GameDifficulty`
+- Produces: `POST /api/dev/sessions/{id}/session/force-difficulty` endpoint
+
+- [ ] **Step 1: Write the failing integration test**
+
+Add to `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs`:
+
+```csharp
+[Fact]
+public async Task ForceDifficulty_Returns204_AndReflectedInContext()
+{
+    using var factory = new PostgreSqlApiFactory();
+    using var client = factory.CreateClient();
+    var gameId = await CreateSessionAsync(client);
+
+    var forceResponse = await client.PostAsJsonAsync(
+        $"/api/dev/sessions/{gameId}/session/force-difficulty",
+        new ForceDevDifficultyRequestDto(Difficulty: "Brutal"));
+    Assert.Equal(HttpStatusCode.NoContent, forceResponse.StatusCode);
+
+    var context = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+        .Content.ReadFromJsonAsync<SessionDevContextDto>();
+    Assert.Equal("Brutal", context!.GameDifficulty);
+}
+
+[Fact]
+public async Task ForceDifficulty_Returns400_ForInvalidDifficulty()
+{
+    using var factory = new PostgreSqlApiFactory();
+    using var client = factory.CreateClient();
+    var gameId = await CreateSessionAsync(client);
+
+    var forceResponse = await client.PostAsJsonAsync(
+        $"/api/dev/sessions/{gameId}/session/force-difficulty",
+        new ForceDevDifficultyRequestDto(Difficulty: "Nightmare"));
+    Assert.Equal(HttpStatusCode.BadRequest, forceResponse.StatusCode);
+}
+
+[Fact]
+public async Task ForceDifficulty_Returns403_InNonDevEnvironment()
+{
+    using var factory = new NonDevApiFactory();
+    using var client = factory.CreateClient();
+    var response = await client.PostAsJsonAsync(
+        $"/api/dev/sessions/{Guid.NewGuid()}/session/force-difficulty",
+        new ForceDevDifficultyRequestDto(Difficulty: "Brutal"));
+    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `dotnet test tests/WildBunch.Integration.Tests --filter "ForceDifficulty"`
+Expected: FAIL — endpoint does not exist yet.
+
+- [ ] **Step 3: Add the endpoint to DevEndpoints.cs**
+
+In `src/WildBunch.Api/Dev/DevEndpoints.cs`, add the route registration after the `clear-rng` route (after line 74):
+
+```csharp
+dev.MapPost("/sessions/{id:guid}/session/force-difficulty", ForceDevDifficultyAsync)
+    .WithName("ForceDevDifficulty")
+    .Produces(StatusCodes.Status204NoContent)
+    .Produces(StatusCodes.Status403Forbidden)
+    .Produces(StatusCodes.Status404NotFound)
+    .Produces(StatusCodes.Status400BadRequest);
+```
+
+Add the handler method near `ClearRngAsync` (after line ~336):
+
+```csharp
+private static async Task<IResult> ForceDevDifficultyAsync(
+    Guid id,
+    DevRoleGuard guard,
+    ForceDevDifficultyHandler handler,
+    ForceDevDifficultyRequestDto? request,
+    CancellationToken cancellationToken)
+{
+    try
+    {
+        guard.EnsureDevAccess();
+        if (request is null || string.IsNullOrWhiteSpace(request.Difficulty))
+        {
+            return Results.BadRequest("Difficulty is required.");
+        }
+
+        if (!Enum.TryParse<GameDifficulty>(request.Difficulty, ignoreCase: true, out var difficulty)
+            || !Enum.IsDefined(typeof(GameDifficulty), difficulty))
+        {
+            return Results.BadRequest($"Invalid difficulty value: {request.Difficulty}");
+        }
+
+        await handler.HandleAsync(new ForceDevDifficultyCommand(id, difficulty), cancellationToken);
+        return Results.NoContent();
+    }
+    catch (DevAccessDeniedException)
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+    catch (GameSessionNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+}
+```
+
+Add the necessary `using` directives at the top of the file if not already present:
+
+```csharp
+using WildBunch.Application.Dev.Commands;
+using WildBunch.Application.Dev.Models;
+using WildBunch.Domain.Travel;
+```
+
+- [ ] **Step 4: Run integration tests to verify they pass**
+
+Run: `dotnet test tests/WildBunch.Integration.Tests --filter "ForceDifficulty"`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/WildBunch.Api/Dev/DevEndpoints.cs tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs
+git commit -m "BUNCH-94: add force-difficulty dev endpoint"
+```
+
+---
+
+## Task 5: Dev difficulty control — frontend Session dev panel
+
+**Files:**
+- Modify: `src/WildBunch.Web/src/dev/types.ts`
+- Modify: `src/WildBunch.Web/src/dev/devApi.ts`
+- Modify: `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`
+- Modify: `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx`
+
+**Interfaces:**
+- Consumes: `SessionDevContextDto`, `forceDevDifficulty` API, `SegmentedToggle` component
+- Produces: difficulty control in the "Setup posture" section of `SessionDevPanel`
+
+- [ ] **Step 1: Add the request DTO type**
+
+In `src/WildBunch.Web/src/dev/types.ts`, add after `LockRngRequestDto`:
+
+```typescript
+export interface ForceDevDifficultyRequestDto {
+  difficulty: string;
+}
+```
+
+- [ ] **Step 2: Add the API function**
+
+In `src/WildBunch.Web/src/dev/devApi.ts`, add after `clearRng`:
+
+```typescript
+export function forceDevDifficulty(gameId: string, request: ForceDevDifficultyRequestDto) {
+  return requestJson<void>(`/api/dev/sessions/${gameId}/session/force-difficulty`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+```
+
+Add `ForceDevDifficultyRequestDto` to the import from `./types`.
+
+- [ ] **Step 3: Add the difficulty control to SessionDevPanel**
+
+In `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`:
+
+1. Import `forceDevDifficulty` from `../devApi` (add to existing import on line 5).
+2. Import `SegmentedToggle` from `../../components/start-flow/SegmentedToggle`.
+3. Add a `difficultyOptions` constant (same values as `SetupHuntStep`):
+
+```typescript
+const difficultyOptions: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "Easy", label: "Easy" },
+  { value: "Standard", label: "Standard" },
+  { value: "Challenging", label: "Challenging" },
+  { value: "Brutal", label: "Brutal" },
+];
+```
+
+4. Add a `handleForceDifficulty` function:
+
+```typescript
+const handleForceDifficulty = async (value: string) => {
+  setError(null);
+  setActionPending(true);
+  try {
+    await forceDevDifficulty(gameId, { difficulty: value });
+    refresh();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Failed to force difficulty.");
+  } finally {
+    setActionPending(false);
+  }
+};
+```
+
+5. Replace the "Difficulty (inspect):" row in the "Setup posture" section with a control:
+
+Replace:
+```tsx
+<Row>
+  <Label>Difficulty (inspect):</Label>
+  <Value>{data?.gameDifficulty}</Value>
+</Row>
+```
+
+With:
+```tsx
+<Field>
+  <Label>Difficulty:</Label>
+  <SegmentedToggle
+    options={difficultyOptions}
+    value={data?.gameDifficulty ?? "Standard"}
+    onSelect={handleForceDifficulty}
+  />
+</Field>
+```
+
+6. Add a muted text note under the difficulty control:
+
+```tsx
+<MutedText>
+  Forcing difficulty changes travel rules going forward. It does not change starting health or cash.
+</MutedText>
+```
+
+- [ ] **Step 4: Write the frontend test**
+
+In `src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx`, add a test for the difficulty control:
+
+```typescript
+it("renders difficulty control and calls forceDevDifficulty on select", async () => {
+  // Mock the session dev context with Standard difficulty
+  // Render the panel
+  // Assert the difficulty SegmentedToggle is visible
+  // Click "Brutal"
+  // Assert forceDevDifficulty was called with { difficulty: "Brutal" }
+});
+```
+
+Follow the existing test patterns in `SessionDevPanel.test.tsx` for mocking `useGameSession`, `useQuery`, and the dev API.
+
+- [ ] **Step 5: Run frontend tests**
+
+Run: `cd src/WildBunch.Web && npm test -- --run SessionDevPanel`
+Expected: PASS
+
+- [ ] **Step 6: Run typecheck and build**
+
+Run: `cd src/WildBunch.Web && npm run typecheck && npm run build`
+Expected: PASS
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/WildBunch.Web/src/dev/types.ts src/WildBunch.Web/src/dev/devApi.ts src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx src/WildBunch.Web/src/tests/SessionDevPanel.test.tsx
+git commit -m "BUNCH-94: add difficulty control to Session dev panel"
+```
+
+---
+
+## Task 6: Frontend difficulty copy in start flow
+
+**Files:**
+- Modify: `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx`
+- Modify: `src/WildBunch.Web/src/tests/StartFlow.test.tsx`
+
+**Interfaces:**
+- Consumes: existing `difficultyOptions` array, `SegmentedToggle` component
+- Produces: short descriptive text under each difficulty option
+
+- [ ] **Step 1: Add difficulty descriptions**
+
+In `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx`, update the `difficultyOptions` to include descriptions:
+
+```typescript
+const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
+  { value: 1, label: "Easy" },
+  { value: 0, label: "Standard" },
+  { value: 2, label: "Challenging" },
+  { value: 3, label: "Brutal" },
+];
+
+const difficultyDescriptions: Record<GameDifficulty, string> = {
+  1: "Forgiving trails, generous supplies, softer consequences.",
+  0: "A fair chase. The trail bites back but gives ground.",
+  2: "Hard riding, thin margins, and costly mistakes.",
+  3: "The desert wants you dead. Every ride is a gamble.",
+};
+```
+
+Add a description line below the difficulty `SegmentedToggle`:
+
+```tsx
+<FieldGroup>
+  <GroupLabel>Difficulty</GroupLabel>
+  <SegmentedToggle
+    options={difficultyOptions}
+    value={gameDifficulty}
+    onSelect={onGameDifficultyChange}
+  />
+  <DifficultyDescription>
+    {difficultyDescriptions[gameDifficulty]}
+  </DifficultyDescription>
+</FieldGroup>
+```
+
+Add the styled component:
+
+```typescript
+const DifficultyDescription = styled.p`
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-size: 0.85rem;
+  font-style: italic;
+`;
+```
+
+- [ ] **Step 2: Write the frontend test**
+
+In `src/WildBunch.Web/src/tests/StartFlow.test.tsx`, add a test:
+
+```typescript
+it("shows a description for the selected difficulty", async () => {
+  primeMocks();
+  const user = userEvent.setup();
+  renderSurface();
+
+  await screen.findByRole("heading", { name: /set up your hunt/i });
+
+  // Default difficulty is Standard (0) — check its description is visible
+  expect(screen.getByText(/a fair chase/i)).toBeInTheDocument();
+
+  // Click "Brutal" and check its description appears
+  await user.click(screen.getByRole("button", { name: /brutal/i }));
+  expect(screen.getByText(/the desert wants you dead/i)).toBeInTheDocument();
+});
+```
+
+- [ ] **Step 3: Run frontend tests**
+
+Run: `cd src/WildBunch.Web && npm test -- --run StartFlow`
+Expected: PASS
+
+- [ ] **Step 4: Run typecheck and build**
+
+Run: `cd src/WildBunch.Web && npm run typecheck && npm run build`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx src/WildBunch.Web/src/tests/StartFlow.test.tsx
+git commit -m "BUNCH-94: add difficulty descriptions to start flow"
+```
+
+---
+
+## Task 7: Full validation and browser proof
+
+**Files:**
+- No new files — validation and evidence only
+
+- [ ] **Step 1: Run backend build**
+
+Run: `dotnet build`
+Expected: PASS with no errors
+
+- [ ] **Step 2: Run PostgreSQL ensure**
+
+Run: `.\scripts\postgres-dev.ps1 ensure`
+Expected: service healthy or no-op
+
+- [ ] **Step 3: Run full backend test suite**
+
+Run: `.\scripts\postgres-dev.ps1 test -- dotnet test`
+Expected: PASS (all tests pass including new difficulty tests)
+
+- [ ] **Step 4: Run EF migrations list**
+
+Run: `dotnet tool restore; dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`
+Expected: no new migrations needed (no schema change)
+
+- [ ] **Step 5: Run frontend typecheck, test, and build**
+
+Run: `cd src/WildBunch.Web && npm run typecheck && npm test -- --run && npm run build`
+Expected: PASS
+
+- [ ] **Step 6: Generate index mesh**
+
+Run: `python scripts/generate_index_mesh.py`
+Expected: no changes or only expected INDEX.md updates
+
+- [ ] **Step 7: Browser/playtest proof**
+
+Start the API and frontend dev servers. Open the browser to the start flow. Take screenshots showing:
+1. The difficulty descriptions in the start flow (Standard and Brutal visible)
+2. The Session dev panel difficulty control (force to Brutal, observe it reflected)
+
+Save screenshots to `.agents/superpowers/output/screenshots/` (git-ignored).
+
+- [ ] **Step 8: Grep proof — no stale travel-only names**
+
+Run: `rg -i "TravelDifficulty" src/ tests/`
+Expected: no matches (difficulty is `GameDifficulty`, not `TravelDifficulty`)
+
+- [ ] **Step 9: Commit any remaining changes**
+
+```bash
+git add -A
+git commit -m "BUNCH-94: validation and index mesh"
+```
+
+---
+
+## DOD Mapping
+
+| Issue requirement | Plan task | Evidence |
+|---|---|---|
+| Difficulty is a first-class setup/control axis | Already on main + Tasks 1-6 | Existing code + new tests |
+| Harley can start, observe, and playtest materially different difficulty envelopes | Tasks 1, 5, 6 | Distinction test, dev panel control, start-flow copy |
+| Backend unit/integration coverage for difficulty effects | Tasks 1, 2, 3, 4 | Domain, application, integration tests |
+| Persistence/rehydration where touched | No new persistence shape needed | `GameDifficulty` already in snapshot + event stream |
+| API/DTO checks | Task 4 | Integration endpoint tests |
+| Frontend tests/typecheck/build | Tasks 5, 6 | Vitest tests, typecheck, build |
+| Browser/playtest proof | Task 7 | Screenshots in git-ignored output |
+| Difficulty stayed distinct from entropy | Task 1 | `DifficultyChangesDifficultyShapedFactsNotEntropy` test |
+| DOD mapping | This section | This table |
+
+## Coordination with BUNCH-93
+
+BUNCH-93 (entropy) may run in parallel. This plan does not depend on unmerged BUNCH-93 work. If BUNCH-93 lands first, rebase onto current main and repair mechanical conflicts. If both touch the same start-flow/dev-overlay files, keep changes minimal and do not overwrite the other axis. The difficulty control in `SessionDevPanel` is in the "Setup posture" section alongside the existing entropy inspect line — they are adjacent but separate controls.
