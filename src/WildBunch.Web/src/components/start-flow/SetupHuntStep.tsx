@@ -22,8 +22,8 @@ interface SetupHuntStepProps {
 }
 
 const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
-  { value: 0, label: "Standard" },
   { value: 1, label: "Easy" },
+  { value: 0, label: "Standard" },
   { value: 2, label: "Challenging" },
   { value: 3, label: "Brutal" },
 ];

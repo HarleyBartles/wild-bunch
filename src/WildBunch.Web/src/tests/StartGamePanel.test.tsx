@@ -136,35 +136,23 @@ describe("StartGamePanel", () => {
     expect(request.seedCode).toBe((seedInput as HTMLInputElement).value);
   });
 
-  it("validates a pasted UUID until Apply is clicked", async () => {
+  it("validates a pasted UUID", async () => {
     const user = userEvent.setup();
     renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
-    const applyButton = screen.getByRole("button", { name: /apply seed/i });
 
     await user.clear(seedInput);
     await user.type(seedInput, "7D455293-F269-A642-72AF-0193FDBDFB51");
 
     expect(seedInput).toHaveValue("7D455293-F269-A642-72AF-0193FDBDFB51");
-    expect(screen.getByText(/seed changes are staged until you apply them/i)).toBeInTheDocument();
-
-    await user.click(applyButton);
-
-    await waitFor(() => {
-      expect(seedInput).toHaveValue("7d455293-f269-a642-72af-0193fdbdfb51");
-    });
-
-    const decoded = await decodeGameSetupSeed((seedInput as HTMLInputElement).value);
-    expect(decoded.seedCode).toBe("7d455293-f269-a642-72af-0193fdbdfb51");
   });
 
-  it("starts with the applied seed even if a dirty draft is still staged", async () => {
+  it("starts with the typed seed", async () => {
     const user = userEvent.setup();
     const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
-    const canonicalSeedCode = (seedInput as HTMLInputElement).value;
 
     await user.clear(seedInput);
     await user.type(seedInput, "7d455293-f269-a642-72af-0193fdbdfb51");
@@ -176,25 +164,23 @@ describe("StartGamePanel", () => {
     });
 
     const [request] = onStartGame.mock.calls[0];
-    expect(request.seedCode).toBe(canonicalSeedCode);
-    expect(request.gameDifficulty).toBe(0);
+    expect(request.seedCode).toBe("7d455293-f269-a642-72af-0193fdbdfb51");
   });
 
-  it("randomizes the seed to a fresh UUID that encodes the selected difficulty and entropy", async () => {
+  it("randomizes the seed to a fresh UUID and updates difficulty/entropy to match", async () => {
     const user = userEvent.setup();
-    mockedGetRepresentativeSeed.mockResolvedValue("11111111-2222-3333-4444-555555555555");
+    mockedDecodeSeed.mockResolvedValue({ gameDifficulty: 2, gameEntropy: 3 });
     const { onStartGame } = renderPanel();
 
     const seedInput = await screen.findByLabelText(/setup seed/i);
     const beforeRandomize = (seedInput as HTMLInputElement).value;
 
-    await user.selectOptions(screen.getByLabelText(/Game difficulty/i), "2");
     await user.click(screen.getByRole("button", { name: /randomize seed/i }));
 
     await waitFor(() => {
-      expect(mockedGetRepresentativeSeed).toHaveBeenCalledWith(2, 1);
-      expect((seedInput as HTMLInputElement).value).toBe("11111111-2222-3333-4444-555555555555");
+      expect(mockedDecodeSeed).toHaveBeenCalled();
       expect((seedInput as HTMLInputElement).value).not.toBe(beforeRandomize);
+      expect(screen.getByLabelText(/Game difficulty/i)).toHaveValue("2");
     });
 
     await user.type(screen.getByLabelText(/player name/i), "Ranger Vale");
@@ -206,7 +192,6 @@ describe("StartGamePanel", () => {
 
     const [request] = onStartGame.mock.calls[0];
     expect(request.gameDifficulty).toBe(2);
-    expect(request.seedCode).toBe("11111111-2222-3333-4444-555555555555");
   });
 
   it("updates the seed when difficulty changes", async () => {
@@ -226,29 +211,6 @@ describe("StartGamePanel", () => {
     });
   });
 
-  it("updates difficulty when a seed is applied", async () => {
-    const user = userEvent.setup();
-    mockedDecodeSeed.mockResolvedValue({ gameDifficulty: 2, gameEntropy: 3 });
-    const { onStartGame } = renderPanel();
-
-    const seedInput = await screen.findByLabelText(/setup seed/i);
-    const applyButton = screen.getByRole("button", { name: /apply seed/i });
-
-    await user.clear(seedInput);
-    await user.type(seedInput, "cccc1111-2222-3333-4444-555555555555");
-    await user.click(applyButton);
-
-    await waitFor(() => {
-      expect(mockedDecodeSeed).toHaveBeenCalledWith("cccc1111-2222-3333-4444-555555555555");
-      expect(screen.getByLabelText(/Game difficulty/i)).toHaveValue("2");
-    });
-
-    // Note: StartGamePanel doesn't have an entropy selector in the current UI.
-    // The entropy selector is in SetupHuntStep (pre-session surface).
-    // The decodeSeed API is called but the UI doesn't expose entropy selection here.
-    // Entropy selection behavior is tested in SetupHuntStep.test.tsx.
-  });
-
   it("renders Easy as a selectable difficulty option", async () => {
     renderPanel();
 
@@ -256,7 +218,7 @@ describe("StartGamePanel", () => {
     const options = Array.from(difficultySelect.querySelectorAll("option"));
     const labels = options.map((o) => o.textContent?.trim() ?? "");
 
-    expect(labels).toContain("Easy");
+    expect(labels).toEqual(["Easy", "Standard", "Challenging", "Brutal"]);
   });
 
   it("updates representative seed when difficulty changes to Easy", async () => {

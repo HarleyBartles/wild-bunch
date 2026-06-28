@@ -233,7 +233,7 @@ describe("SetupHuntStep", () => {
     expect(onGameEntropyChange).toHaveBeenCalledWith(3);
   });
 
-  it("renders difficulty options as Standard, Easy, Challenging, Brutal in that order", () => {
+  it("renders difficulty options as Easy, Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
     const groups = screen.getAllByRole("group");
@@ -241,7 +241,7 @@ describe("SetupHuntStep", () => {
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
-    expect(labels).toEqual(["Standard", "Easy", "Challenging", "Brutal"]);
+    expect(labels).toEqual(["Easy", "Standard", "Challenging", "Brutal"]);
     expect(labels).not.toContain("Normal");
     expect(labels).not.toContain("Hard");
   });

@@ -125,8 +125,14 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setDecodeError(null);
     setSeedDirty(false);
     try {
-      const seed = await getRepresentativeSeed(gameDifficulty, gameEntropy);
-      setSeedState({ seedCode: seed });
+      // Generate a truly random UUID
+      const randomSeed = crypto.randomUUID();
+      setSeedState({ seedCode: randomSeed });
+
+      // Decode the random seed to get its difficulty and entropy
+      const seedDecoded = await decodeSeed(randomSeed);
+      setGameDifficulty(seedDecoded.gameDifficulty);
+      setGameEntropy(seedDecoded.gameEntropy);
     } catch (error) {
       setDecodeError(getErrorMessage(error));
     }
