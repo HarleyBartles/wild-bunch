@@ -10,12 +10,13 @@
 
 ## Plan Status
 
-- Plan status: implementation complete (taxonomy addendum + BUNCH-87 folded in, all tests passing, ready for commit)
+- Plan status: implementation complete (split-brain naming pass + taxonomy addendum + BUNCH-87 folded in, all tests passing, PR #114 ready for merge)
 - Current route state: `implementation_complete`
 - Base commit: `a4db54f` (BUNCH-102: Player start-over settings and prologue start loop, #113)
-- Branch head: pending commit (taxonomy addendum + BUNCH-87 test fixes)
+- Branch head: `4746802` (split-brain naming pass — SaltSource, GameEntropy, GameDifficulty, label strings)
 - The staleness gate was executed after BUNCH-102 merged to `main`. See "Staleness Gate Execution Record" below.
 - The taxonomy addendum (Section T) was folded in after the staleness gate. See "Taxonomy Addendum" below.
+- The split-brain naming pass (Section S) was folded in after the taxonomy addendum. See "Split-Brain Naming Pass" below.
 - Implementation must still follow the plan's validation and falsification steps; approval of the plan is not approval to skip verification.
 
 ## Global Constraints
@@ -27,8 +28,8 @@
 - Do not invent frontend-only difficulty or entropy state.
 - Keep `GameSession` and existing aggregate/application boundaries intact.
 - Do not rename `TravelRulesProfile` — it is a travel-rules concept, not game-start difficulty. Only its `Difficulty` property type changes.
-- Do not rename `TravelRandomnessState` — it is journey randomness, not game-start entropy.
-- Do not rename the deterministic label string values in `GameSetupDeterministicLabels` — they are codec hash keys (see Critical Scope Decisions below).
+- ~~Do not rename `TravelRandomnessState` — it is journey randomness, not game-start entropy.~~ **OVERRIDDEN by Section S (split-brain naming pass):** `TravelRandomnessState` was renamed to `SaltSource` to eliminate the split-brain naming between `GameDifficulty` and `GameEntropy` on paired surfaces. See "Split-Brain Naming Pass" below.
+- ~~Do not rename the deterministic label string values in `GameSetupDeterministicLabels` — they are codec hash keys (see Critical Scope Decisions below).~~ **OVERRIDDEN by Section S:** Label strings `travel.difficulty` → `game.difficulty` and `adventure-randomness-policy` → `game.entropy` were renamed for consistency. This shifts seed-derived values; tests were updated accordingly. See "Split-Brain Naming Pass" below.
 - Do not rewrite historical plan files under `.agents/superpowers/plans/` that reference old names — they are audit trails.
 - Do not rewrite old EF migration designer files — they are historical schema snapshots. Only the current model snapshot and a new migration change.
 
@@ -151,6 +152,71 @@ The player-facing setup UI (SetupHuntStep, StartGameOptionsForm) must show only 
 ### T4: Scope guard
 
 If the codec change (difficulty modulo 3→4) reveals a round-trip incompatibility that cannot be fixed by updating the guardrail tests and codec mapping, stop AMBER and report the exact seam. Per AGENTS.md, no compatibility shims for old UUIDs in this greenfield repo.
+
+---
+
+## Split-Brain Naming Pass (Section S)
+
+**Authorized after the taxonomy addendum was implemented.** The initial rename left a split-brain naming pattern: `GameDifficulty` was used consistently, but `Entropy` (without the `Game` prefix) persisted on many surfaces, and `TravelRandomnessState` / `ITravelRandomnessSource` carried the old `Travel` prefix despite representing game-start entropy salt, not travel-specific randomness. This section documents the final naming pass that eliminated those inconsistencies.
+
+### S1: `Entropy` → `GameEntropy` on all active surfaces
+
+The plain `Entropy` property name was renamed to `GameEntropy` everywhere it appeared as a public property, parameter, DTO field, or frontend surface:
+
+- **Domain:** `GameSession.Entropy` → `GameSession.GameEntropy`, `GameStarted.Entropy` → `GameStarted.GameEntropy`, `TravelDayGenerationContext.Entropy` → `.GameEntropy`
+- **GameContent:** `StartingWorldDescriptor.Entropy` → `.GameEntropy`, `SeededNewGameFactory` param `entropy` → `gameEntropy`, `GameSetupSeedCodec` params and `CreateCanonicalDescriptor` param `entropy` → `gameEntropy`, `StartingWorldDescriptorSeedMixer.CreateDescriptorSignature` uses `descriptor.GameEntropy`
+- **Application:** `StartNewGameCommand.Entropy` → `.GameEntropy`, `StartNewGameHandler`, `GetPrologueQuery.Entropy` → `.GameEntropy`, `GetPrologueHandler`, `GameSessionReadModel.Entropy` → `.GameEntropy`, `GameSessionDto.Entropy` → `.GameEntropy`, `GameSessionMapper` param `entropy` → `gameEntropy`
+- **API:** `StartGameRequest.Entropy` → `.GameEntropy`, `GameSessionEndpoints` param `gameEntropy`
+- **Persistence:** `GameSessionJsonSerializer.Setup` / `.SessionSnapshot` / `.Rehydration` use `GameEntropy` consistently; `EfGameSessionRepository` and `GameSessionReadStoreLoader` use `session.GameEntropy`
+- **Frontend:** `GameSessionDto.gameEntropy` added to `api/types.ts`; `useStartGameSeed`, `useStartFlow`, `PreSessionSurface`, `SetupHuntStep`, `StorySoFarStep` all use `gameEntropy`
+
+### S2: `TravelRandomnessState` → `SaltSource` and related renames
+
+The `TravelRandomnessState` / `ITravelRandomnessSource` family was renamed to `SaltSource` / `ISaltSourceFactory` to eliminate the `Travel`-prefixed naming on what is fundamentally a game-start entropy salt source:
+
+- `TravelRandomnessState` → `SaltSource` (`src/WildBunch.Domain/Travel/SaltSource.cs`)
+- `ITravelRandomnessSource` → `ISaltSourceFactory` (`src/WildBunch.GameContent/Abstractions/ISaltSourceFactory.cs`)
+- `RuntimeTravelRandomnessSource` → `RuntimeSaltSourceFactory` (`src/WildBunch.GameContent/NewGame/RuntimeSaltSourceFactory.cs`)
+- `DeterministicTravelRandomnessSource` → `DeterministicSaltSourceFactory` (`tests/WildBunch.Integration.Tests/TestInfrastructure/DeterministicSaltSourceFactory.cs`)
+- `TravelRandomnessSnapshot` → `SaltSourceSnapshot` (persistence serialization)
+- Component names and JSON keys in `GameSessionComponentNames` and `GameSessionJsonSerializer.Components` updated
+- `GameSession.SaltSource` property (was `TravelRandomnessState`)
+
+### S3: Deterministic label string renames
+
+The `GameSetupDeterministicLabels` constant values were renamed for consistency with the new enum names:
+
+- `TravelDifficulty` label: `"travel.difficulty"` → `"game.difficulty"`
+- `AdventureRandomnessPolicy` label: `"adventure-randomness-policy"` → `"game.entropy"`
+
+**Impact:** These label strings are hash keys for the seed codec. Changing them shifts which UUIDs resolve to which descriptor shapes. Per AGENTS.md "current codec correctness wins" in greenfield, no compat shim. `CreateRepresentativeSeedCode` search mechanism is preserved. Tests that depended on specific seed-derived starting towns were updated (e.g. `NoHorseLightEasy` now starts at `emberfall` with connected towns `[sagewell, redmesa]` instead of `pinecross` with `[redmesa, holloway]`).
+
+### S4: `CanonicalMountedNormal` → `CanonicalMountedStandard`
+
+The test vocabulary fixture `CanonicalMountedNormal` was renamed to `CanonicalMountedStandard` to match the `Normal` → `Standard` enum rename from Section T1. All references in `ScenarioSeedCatalog`, `BoringScenarioBuilder`, shape signatures, and assertion labels were updated.
+
+### S5: `Difficulty` → `GameDifficulty` on paired surfaces
+
+Where `Difficulty` appeared without the `Game` prefix on surfaces paired with `GameEntropy`, it was renamed to `GameDifficulty`:
+
+- `StartingWorldDescriptor.Difficulty` → `.GameDifficulty`
+- `GameStarted.Difficulty` → `.GameDifficulty`
+- `TravelDayGenerationContext.Difficulty` → `.GameDifficulty`
+
+### S6: Frontend `GameSessionDto.gameEntropy`
+
+The frontend `GameSessionDto` type in `src/WildBunch.Web/src/api/types.ts` was updated to include `gameEntropy: GameEntropy` alongside `gameDifficulty: GameDifficulty`, matching the backend DTO contract. All test fixture factories (`createSession` helpers) were updated to populate the field.
+
+### S7: Validation after split-brain pass
+
+- `dotnet build`: 0 errors, 0 warnings
+- Backend tests: 716 passed (358 Domain + 162 Application + 59 GameContent + 137 Integration), 0 failed
+- Frontend tests: 157 passed (20 test files), 0 failed
+- Frontend typecheck (`tsc --noEmit`): clean
+- Frontend build (`vite build`): clean
+- EF migration list: unchanged (6 migrations, `RenameTravelDifficultyToGameDifficulty` pending)
+- Index mesh: regenerated cleanly (96 files)
+- Grep proof: no stale `TravelRandomnessState`, `ITravelRandomnessSource`, `DeterministicTravelRandomnessSource`, `RuntimeTravelRandomnessSource`, `TravelRandomnessSnapshot`, `CanonicalMountedNormal`, `"adventure-randomness-policy"`, or `"travel.difficulty"` references in the worktree
 
 ---
 

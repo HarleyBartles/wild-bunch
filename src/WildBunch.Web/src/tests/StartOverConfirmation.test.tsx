@@ -94,6 +94,7 @@ function createSession(): GameSessionDto {
     id: "game-1",
     status: 0,
     gameDifficulty: 0,
+    gameEntropy: 1,
     player: {
       name: "Ruth",
       currentTownId: "t-town",

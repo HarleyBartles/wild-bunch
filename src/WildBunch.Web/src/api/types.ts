@@ -472,6 +472,7 @@ export interface GameSessionDto {
   id: string;
   status: GameStatus;
   gameDifficulty: GameDifficulty;
+  gameEntropy: GameEntropy;
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;
