@@ -52,7 +52,9 @@ public static class GameSessionMapper
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
                 session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
-                session.CaseFile));
+                session.CaseFile),
+            null,
+            null);
     }
 
     public static GameSessionDto ToDto(DomainGameSessionReadModel session)
@@ -76,7 +78,9 @@ public static class GameSessionMapper
                 session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
                 session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
                 session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
-                session.CaseFile));
+                session.CaseFile),
+            null,
+            null);
     }
 
     private static GameSessionDto ToDto(
@@ -92,7 +96,9 @@ public static class GameSessionMapper
         TravelJourneyDto? journey,
         IReadOnlyList<DomainTravelDiaryDayState> travelDiaryDays,
         IReadOnlyList<DomainGameLogEntry> logEntries,
-        ActiveSaloonPersonOfInterestDto? activeSaloonPersonOfInterest)
+        ActiveSaloonPersonOfInterestDto? activeSaloonPersonOfInterest,
+        WildBunch.Application.Projections.HudProjection? hudProjection = null,
+        WildBunch.Application.Projections.DiaryProjection? diaryProjection = null)
         => new(
             id,
             status,
@@ -107,7 +113,10 @@ public static class GameSessionMapper
             journey,
             TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(gameDifficulty)),
             logEntries.Select(ToDto).ToArray(),
-            activeSaloonPersonOfInterest);
+            activeSaloonPersonOfInterest,
+            caseFile.KnownWarrants.Count > 0 ? WantedPosterMapper.ToDto(caseFile.KnownWarrants) : Array.Empty<WantedPosterDto>(),
+            hudProjection,
+            diaryProjection);
 
     private static PlayerDto ToDto(DomainPlayer player)
         => new(

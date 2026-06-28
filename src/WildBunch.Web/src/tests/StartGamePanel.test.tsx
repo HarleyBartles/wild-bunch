@@ -58,6 +58,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     travelDiary: null,
     logEntries: [],
     activeSaloonPersonOfInterest: null,
+    wantedPosters: [],
     ...overrides,
   };
 }

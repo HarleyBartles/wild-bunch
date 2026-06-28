@@ -135,6 +135,7 @@ function createSession(): GameSessionDto {
     travelDiary: null,
     logEntries: [],
     activeSaloonPersonOfInterest: null,
+    wantedPosters: [],
   };
 }
 
