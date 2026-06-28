@@ -3450,8 +3450,34 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             .SelectMany(s => s.Profile.IdentifyingFacts)
             .Select(f => f.Description)
             .Where(d => !string.IsNullOrWhiteSpace(d))
+            .Where(IsPrimaryPhysicalMarker)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+    /// <summary>
+    /// Filters for primary physical markers (limps, scars, missing parts, eyepatch)
+    /// and excludes secondary identifiers (things people wear like ribbons, gloves, spurs).
+    /// This ensures citizen POIs have strong permanent identifiers, not removable accessories.
+    /// </summary>
+    private static bool IsPrimaryPhysicalMarker(string description)
+    {
+        var d = description.ToLowerInvariant();
+
+        // Primary physical markers (permanent)
+        if (d.Contains("limp") || d.Contains("scar") || d.Contains("missing") || d.Contains("no ") || d.Contains("eyepatch"))
+        {
+            return true;
+        }
+
+        // Secondary identifiers (things people wear - exclude)
+        if (d.Contains("wears") || d.Contains("wearing") || d.Contains("ribbon") || d.Contains("glove") || d.Contains("spur") || d.Contains("hat") || d.Contains("duster") || d.Contains("cuff") || d.Contains("gauntlet"))
+        {
+            return false;
+        }
+
+        // Default to false for unknown patterns to be conservative
+        return false;
+    }
 
     private static bool IsPlayerKnownClue(Clue clue)
     {
