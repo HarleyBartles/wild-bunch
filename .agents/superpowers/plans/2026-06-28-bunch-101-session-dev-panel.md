@@ -20,12 +20,30 @@
 - Do not turn Session dev into a universal editor for player, travel, saloon, casefile, suspect, inventory, or final gameplay outcomes.
 - Do not force normal gameplay actions or final gameplay outcomes (dev-overlay doctrine §1 state/action boundary).
 - The RNG salt lock sets up reproducibility state; it does not force any encounter result. Normal gameplay still resolves encounters through existing rules.
+- **RNG mutation falsification:** Tests must prove that `lock-rng` / `clear-rng` only change the session's `SaltSource` and produce the expected dev event. They must NOT mutate journey state, current action context, player state (wallet, inventory, health), journal entries, player-facing DTOs, saloon state, or any forced encounter/travel/saloon outcome.
 - The original game-start UUID seed code is not retained on the live `GameSession` (it is consumed at `StartNew` to derive world/difficulty/entropy/salt). Session dev must say this honestly rather than fabricate a seed code.
 - The `SeedWorldVariant` is not retained on the `World` domain model after construction. Session dev shows what the session actually retains (current town, difficulty, entropy, salt posture) and does not invent a variant field.
 - Worker environment uses PowerShell; do not use `&&` for command chaining.
 - Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent validation.
 - styled-components for component styling; reference design tokens via `var(--token-name)`. No plain CSS classes.
 - Expanded mode must use width (cards/columns), not a tall single column (dev-overlay doctrine §4).
+
+### Salt contract (explicit/generated)
+
+- **Empty or omitted salt** (`null`, `""`, whitespace-only) means "generate a fixed salt" — the handler produces a 32-char hex token via `RandomNumberGenerator.GetBytes(16)` and passes it to `SaltSource.CreateFixed`.
+- **Supplied non-empty text** means "use this exact reproducibility token" — the handler passes the trimmed value verbatim to `SaltSource.CreateFixed`.
+- `SaltSource.CreateFixed` currently validates non-null only. If future domain validation is added, the handler must propagate the error as a 400/ArgumentException rather than silently generating.
+- Handler/API tests must cover: null path, empty-string path, whitespace-only path, and explicit-salt path.
+- Frontend sends `{ salt: null }` when the input is blank (not an empty string — normalize blank→null client-side).
+
+### RNG mutation falsification proof
+
+Tests at both domain aggregate and integration levels must prove that `lock-rng` / `clear-rng`:
+1. Only change `SaltSource` posture on the session.
+2. Only produce the corresponding dev event (`DevSaltSourceForced` / `DevSaltSourceCleared`) — no journey, player, saloon, or gameplay events.
+3. Do NOT mutate: journey state, current action context, player state (wallet, inventory, health), journal entries, player-facing DTOs (no `saltPosture` field), saloon state, difficulty, entropy, or any forced encounter/travel/saloon/gameplay outcome.
+
+This is the falsification counterpart to the positive tests: the RNG lock sets reproducibility posture only.
 
 ---
 
@@ -46,7 +64,7 @@
 | File | Responsibility |
 |------|----------------|
 | `Dev/Models/SessionDevContextDto.cs` | New dev DTO: session identity, status, phase/clock, current town, difficulty, entropy, salt posture |
-| `Dev/Models/LockRngRequestDto.cs` | New dev DTO: request shape for locking RNG (optional explicit salt; if absent, generate a fresh fixed salt) |
+| `Dev/Models/LockRngRequestDto.cs` | New dev DTO: request shape for locking RNG. Contract: null/empty/whitespace salt → handler generates a fresh fixed salt; non-empty string → use as exact reproducibility token. `SaltSource.CreateFixed` validates non-null only; handler must normalize blank → generated before calling it. |
 | `Dev/Queries/GetSessionDevContextQuery.cs` | New query record |
 | `Dev/Queries/GetSessionDevContextHandler.cs` | New query handler: loads session, maps dev context |
 | `Dev/Commands/ForceDevSaltSourceCommand.cs` | New command record |
@@ -77,10 +95,10 @@
 | File | Responsibility |
 |------|----------------|
 | `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs` | New handler unit tests: inspection DTO shape, salt posture, difficulty/entropy read |
-| `tests/WildBunch.Application.Tests/Dev/ForceDevSaltSourceHandlerTests.cs` | New handler unit tests: lock RNG produces event + persists salt |
+| `tests/WildBunch.Application.Tests/Dev/ForceDevSaltSourceHandlerTests.cs` | New handler unit tests: explicit salt path, null/empty/whitespace → generated salt, exact salt preserved |
 | `tests/WildBunch.Application.Tests/Dev/ClearDevSaltSourceHandlerTests.cs` | New handler unit tests: clear RNG restores runtime mode |
-| `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs` | New aggregate unit tests: Force/ClearDevSaltSource + Apply round-trip |
-| `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` | New integration tests: 200/403/404, lock/clear round-trip, normal API boundary unchanged |
+| `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs` | New aggregate unit tests: Force/ClearDevSaltSource + Apply round-trip + RNG mutation falsification proof (journey, action context, player state, difficulty/entropy unchanged; single-event isolation) |
+| `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` | New integration tests: 200/403/404, lock/clear round-trip, normal API boundary unchanged, player DTO unchanged after lock, null/empty salt generates, context fields unchanged except salt posture |
 
 ### Plans / mesh
 
@@ -154,10 +172,88 @@ public sealed class DevSaltSourceTests
         Assert.Equal(SaltSourceMode.Fixed, session.SaltSource.Mode);
         Assert.Equal("cafe", session.SaltSource.Salt);
     }
+
+    // --- RNG mutation falsification proof ---
+
+    [Fact]
+    public void ForceDevSaltSource_DoesNotMutateJourneyState()
+    {
+        var session = SeededSessionFactory.Build();
+        var journeyBefore = session.Journey;
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        Assert.Equal(journeyBefore, session.Journey);
+    }
+
+    [Fact]
+    public void ForceDevSaltSource_DoesNotMutateCurrentActionContext()
+    {
+        var session = SeededSessionFactory.Build();
+        var actionContextBefore = session.CurrentActionContext;
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        Assert.Equal(actionContextBefore, session.CurrentActionContext);
+    }
+
+    [Fact]
+    public void ForceDevSaltSource_DoesNotMutatePlayerState()
+    {
+        var session = SeededSessionFactory.Build();
+        var walletBefore = session.Player.Wallet;
+        var inventoryCountBefore = session.Player.Inventory.Count;
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        Assert.Equal(walletBefore, session.Player.Wallet);
+        Assert.Equal(inventoryCountBefore, session.Player.Inventory.Count);
+    }
+
+    [Fact]
+    public void ForceDevSaltSource_DoesNotMutateGameDifficultyOrEntropy()
+    {
+        var session = SeededSessionFactory.Build();
+        var difficultyBefore = session.GameDifficulty;
+        var entropyBefore = session.GameEntropy;
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        Assert.Equal(difficultyBefore, session.GameDifficulty);
+        Assert.Equal(entropyBefore, session.GameEntropy);
+    }
+
+    [Fact]
+    public void ClearDevSaltSource_DoesNotMutateJourneyOrPlayerState()
+    {
+        var session = SeededSessionFactory.Build();
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        var journeyBefore = session.Journey;
+        var walletBefore = session.Player.Wallet;
+        session.ClearDevSaltSource();
+        Assert.Equal(journeyBefore, session.Journey);
+        Assert.Equal(walletBefore, session.Player.Wallet);
+    }
+
+    [Fact]
+    public void ForceDevSaltSource_ProducesOnlyDevSaltSourceForcedEvent()
+    {
+        var session = SeededSessionFactory.Build();
+        session.MarkEventsCommitted();
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        // Only one event produced: DevSaltSourceForced. No journey/player/saloon events.
+        Assert.Single(session.UncommittedEvents);
+        Assert.IsType<DevSaltSourceForced>(session.UncommittedEvents.Single());
+    }
+
+    [Fact]
+    public void ClearDevSaltSource_ProducesOnlyDevSaltSourceClearedEvent()
+    {
+        var session = SeededSessionFactory.Build();
+        session.ForceDevSaltSource(SaltSource.CreateFixed("abc123"));
+        session.MarkEventsCommitted();
+        session.ClearDevSaltSource();
+        Assert.Single(session.UncommittedEvents);
+        Assert.IsType<DevSaltSourceCleared>(session.UncommittedEvents.Single());
+    }
 }
 ```
 
 Note: `UncommittedEvents` / `MarkEventsCommitted` are the existing aggregate event hooks used by `DevSaloonOverrideTests.cs` — match the exact names exposed there. If `UncommittedEvents` is not public, use the same reflection/inspection pattern `DevSaloonOverrideTests` uses.
+
+> **Falsification principle:** These tests prove that RNG lock/clear only changes `SaltSource` posture and emits the corresponding dev event. Journey state, current action context, player state (wallet, inventory), difficulty, entropy, and event stream isolation are all explicitly asserted as unchanged.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -275,7 +371,7 @@ case DevSaltSourceCleared dsc:
 - [ ] **Step 9: Run the aggregate tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests --filter "FullyQualifiedName~DevSaltSourceTests"`
-Expected: PASS (3 tests).
+Expected: PASS (10 tests — 3 core + 7 falsification proof).
 
 - [ ] **Step 10: Run full domain test suite to verify no regressions**
 
@@ -555,6 +651,55 @@ public sealed class ForceDevSaltSourceHandlerTests
         Assert.Equal(SaltSourceMode.Fixed, reloaded!.SaltSource.Mode);
         Assert.False(string.IsNullOrEmpty(reloaded.SaltSource.Salt));
     }
+
+    [Fact]
+    public async Task HandleAsync_LocksRngWithGeneratedSalt_WhenSaltIsEmptyString()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var uow = new InMemoryGameSessionUnitOfWork();
+        var session = CreateSeededSession();
+        repository.Seed(session);
+
+        var handler = new ForceDevSaltSourceHandler(repository, uow);
+        await handler.HandleAsync(new ForceDevSaltSourceCommand(session.Id.Value, Salt: ""));
+
+        var reloaded = await repository.GetByIdAsync(new(session.Id.Value));
+        Assert.Equal(SaltSourceMode.Fixed, reloaded!.SaltSource.Mode);
+        Assert.False(string.IsNullOrEmpty(reloaded.SaltSource.Salt));
+    }
+
+    [Fact]
+    public async Task HandleAsync_LocksRngWithGeneratedSalt_WhenSaltIsWhitespace()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var uow = new InMemoryGameSessionUnitOfWork();
+        var session = CreateSeededSession();
+        repository.Seed(session);
+
+        var handler = new ForceDevSaltSourceHandler(repository, uow);
+        await handler.HandleAsync(new ForceDevSaltSourceCommand(session.Id.Value, Salt: "   "));
+
+        var reloaded = await repository.GetByIdAsync(new(session.Id.Value));
+        Assert.Equal(SaltSourceMode.Fixed, reloaded!.SaltSource.Mode);
+        Assert.False(string.IsNullOrEmpty(reloaded.SaltSource.Salt));
+        Assert.DoesNotContain(" ", reloaded.SaltSource.Salt); // generated salt is hex, never whitespace
+    }
+
+    [Fact]
+    public async Task HandleAsync_UsesExactSalt_WhenNonEmptyProvided()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var uow = new InMemoryGameSessionUnitOfWork();
+        var session = CreateSeededSession();
+        repository.Seed(session);
+
+        var handler = new ForceDevSaltSourceHandler(repository, uow);
+        await handler.HandleAsync(new ForceDevSaltSourceCommand(session.Id.Value, Salt: "my-custom-salt"));
+
+        var reloaded = await repository.GetByIdAsync(new(session.Id.Value));
+        Assert.Equal(SaltSourceMode.Fixed, reloaded!.SaltSource.Mode);
+        Assert.Equal("my-custom-salt", reloaded.SaltSource.Salt);
+    }
 }
 ```
 
@@ -572,10 +717,22 @@ Create `src/WildBunch.Application/Dev/Models/LockRngRequestDto.cs`:
 ```csharp
 namespace WildBunch.Application.Dev.Models;
 
+/// <summary>
+/// Request DTO for the lock-rng dev endpoint.
+/// Salt contract:
+///   - null / empty / whitespace → handler generates a fresh 32-char hex fixed salt.
+///   - Non-empty trimmed string  → handler uses this exact value as the reproducibility token.
+/// SaltSource.CreateFixed validates non-null only (no length/format constraint today).
+/// If format validation is added to SaltSource later, the handler and tests must surface
+/// that error to the caller rather than silently generating.
+/// </summary>
 public sealed record LockRngRequestDto(string? Salt);
 ```
 
-If `Salt` is null/empty, the handler generates a fresh fixed salt via `SaltSource.CreateFixed(Convert.ToHexString(RandomNumberGenerator.GetBytes(16)))`.
+**Explicit salt contract:**
+- `null`, `""`, or whitespace-only → handler generates a fresh fixed salt via `SaltSource.CreateFixed(Convert.ToHexString(RandomNumberGenerator.GetBytes(16)))`.
+- Non-empty string after trimming → handler uses it verbatim as the salt token via `SaltSource.CreateFixed(command.Salt)`.
+- `SaltSource.CreateFixed` currently validates only non-null. If future validation is added (length, charset), `ForceDevSaltSourceHandler` must propagate the domain error as a 400 Bad Request rather than swallowing it.
 
 - [ ] **Step 4: Create the command records**
 
@@ -793,6 +950,97 @@ public sealed class DevSessionEndpointTests
         Assert.DoesNotContain("saltPosture", json, StringComparison.OrdinalIgnoreCase);
     }
 
+    // --- RNG mutation falsification proof (integration level) ---
+
+    [Fact]
+    public async Task LockRng_DoesNotMutatePlayerDto()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        // Capture player DTO before RNG lock
+        var gameBefore = await (await client.GetAsync($"/api/games/{gameId}")).Content.ReadAsStringAsync();
+
+        // Lock RNG
+        await client.PostAsJsonAsync($"/api/dev/sessions/{gameId}/session/lock-rng", new LockRngRequestDto("lock-test"));
+
+        // Capture player DTO after RNG lock
+        var gameAfter = await (await client.GetAsync($"/api/games/{gameId}")).Content.ReadAsStringAsync();
+
+        // Player-facing DTO must be unchanged by dev salt commands
+        Assert.Equal(gameBefore, gameAfter);
+    }
+
+    [Fact]
+    public async Task LockRng_WithNullSalt_GeneratesFixedSalt()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        // Post with null salt (omitted)
+        var lockResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/session/lock-rng",
+            new LockRngRequestDto(Salt: null));
+        Assert.Equal(HttpStatusCode.NoContent, lockResponse.StatusCode);
+
+        var context = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+            .Content.ReadFromJsonAsync<SessionDevContextDto>();
+        Assert.Equal("Fixed", context!.SaltPosture.Mode);
+        Assert.False(string.IsNullOrEmpty(context.SaltPosture.Salt));
+    }
+
+    [Fact]
+    public async Task LockRng_WithEmptySalt_GeneratesFixedSalt()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        var lockResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/session/lock-rng",
+            new LockRngRequestDto(Salt: ""));
+        Assert.Equal(HttpStatusCode.NoContent, lockResponse.StatusCode);
+
+        var context = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+            .Content.ReadFromJsonAsync<SessionDevContextDto>();
+        Assert.Equal("Fixed", context!.SaltPosture.Mode);
+        Assert.False(string.IsNullOrEmpty(context.SaltPosture.Salt));
+    }
+
+    [Fact]
+    public async Task LockRng_DoesNotMutateSessionDevContext_ExceptSaltPosture()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        // Capture session dev context before RNG lock
+        var contextBefore = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+            .Content.ReadFromJsonAsync<SessionDevContextDto>();
+
+        // Lock RNG
+        await client.PostAsJsonAsync($"/api/dev/sessions/{gameId}/session/lock-rng", new LockRngRequestDto("test-salt"));
+
+        // Capture session dev context after RNG lock
+        var contextAfter = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+            .Content.ReadFromJsonAsync<SessionDevContextDto>();
+
+        // Everything except SaltPosture must be unchanged
+        Assert.Equal(contextBefore!.SessionId, contextAfter!.SessionId);
+        Assert.Equal(contextBefore.Status, contextAfter.Status);
+        Assert.Equal(contextBefore.GameDifficulty, contextAfter.GameDifficulty);
+        Assert.Equal(contextBefore.GameEntropy, contextAfter.GameEntropy);
+        Assert.Equal(contextBefore.CurrentTownId, contextAfter.CurrentTownId);
+        Assert.Equal(contextBefore.CurrentTownName, contextAfter.CurrentTownName);
+        Assert.Equal(contextBefore.CurrentActionContext, contextAfter.CurrentActionContext);
+        Assert.Equal(contextBefore.HasActiveJourney, contextAfter.HasActiveJourney);
+        // Salt posture DID change — that's the point
+        Assert.Equal("Fixed", contextAfter.SaltPosture.Mode);
+        Assert.Equal("test-salt", contextAfter.SaltPosture.Salt);
+    }
+
     // Reuse the CreateSessionAsync helper from DevSaloonEndpointTests.cs.
     private static async Task<Guid> CreateSessionAsync(HttpClient client) { /* ... */ }
 }
@@ -842,7 +1090,7 @@ Add the three private handler methods, mirroring the exact try/catch shape of `G
 - [ ] **Step 5: Run the integration tests to verify they pass**
 
 Run: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests --filter "FullyQualifiedName~DevSessionEndpointTests"`
-Expected: PASS (6 tests).
+Expected: PASS (10 tests — 6 core + 4 RNG mutation falsification/salt contract).
 
 - [ ] **Step 6: Commit**
 
