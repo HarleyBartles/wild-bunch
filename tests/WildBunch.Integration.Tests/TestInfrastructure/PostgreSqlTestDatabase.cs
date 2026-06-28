@@ -37,7 +37,11 @@ public sealed class PostgreSqlTestDatabase : IDisposable
 
     private void CreateDatabase()
     {
-        using var adminConnection = new NpgsqlConnection(_adminConnectionString);
+        var builder = new NpgsqlConnectionStringBuilder(_adminConnectionString);
+        builder.Database = "postgres";
+        var adminConnectionString = builder.ConnectionString;
+
+        using var adminConnection = new NpgsqlConnection(adminConnectionString);
         adminConnection.Open();
 
         using var command = adminConnection.CreateCommand();
@@ -54,7 +58,11 @@ public sealed class PostgreSqlTestDatabase : IDisposable
 
         _disposed = true;
 
-        using var adminConnection = new NpgsqlConnection(_adminConnectionString);
+        var builder = new NpgsqlConnectionStringBuilder(_adminConnectionString);
+        builder.Database = "postgres";
+        var adminConnectionString = builder.ConnectionString;
+
+        using var adminConnection = new NpgsqlConnection(adminConnectionString);
         adminConnection.Open();
 
         using (var terminateCommand = adminConnection.CreateCommand())
