@@ -29,7 +29,6 @@ function createTown(overrides: Partial<StartingTownDto> = {}): StartingTownDto {
 function renderStep(overrides: {
   selectedTownId?: string | null;
   onSelectTown?: (townId: string) => void;
-  onBack?: () => void;
 } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -39,19 +38,17 @@ function renderStep(overrides: {
   });
 
   const onSelectTown = overrides.onSelectTown ?? vi.fn();
-  const onBack = overrides.onBack ?? vi.fn();
 
   render(
     <QueryClientProvider client={queryClient}>
       <StartingTownStep
         selectedTownId={overrides.selectedTownId ?? null}
         onSelectTown={onSelectTown}
-        onBack={onBack}
       />
     </QueryClientProvider>,
   );
 
-  return { onSelectTown, onBack, queryClient };
+  return { onSelectTown, queryClient };
 }
 
 describe("StartingTownStep", () => {
@@ -137,13 +134,13 @@ describe("StartingTownStep", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Back button", async () => {
+  it("does not render a Back button", async () => {
     mockedGetStartingTowns.mockResolvedValue([createTown()]);
 
     renderStep();
 
     await screen.findByText("Tumbleweed");
-    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
 
   it("does not render town buttons while loading", () => {

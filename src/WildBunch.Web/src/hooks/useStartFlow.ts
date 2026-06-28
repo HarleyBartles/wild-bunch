@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { GameSessionDto, StartGameRequest, TravelDifficulty } from "../api/types";
+import type { AdventureRandomnessPolicy, GameSessionDto, StartGameRequest, TravelDifficulty } from "../api/types";
 import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { useStartGameSeed } from "./useStartGameSeed";
 
@@ -15,6 +15,7 @@ export interface UseStartFlowArgs {
 export interface StartFlowRequest {
   playerName: string;
   travelDifficulty: TravelDifficulty;
+  entropy: AdventureRandomnessPolicy;
   seedCode: string;
   startingTownId: string;
 }
@@ -24,6 +25,7 @@ export interface UseStartFlowResult {
   playerName: string;
   selectedTownId: string | null;
   travelDifficulty: TravelDifficulty;
+  entropy: AdventureRandomnessPolicy;
   seedState: ReturnType<typeof useStartGameSeed>["seedState"];
   seedDraft: string;
   seedDirty: boolean;
@@ -31,6 +33,7 @@ export interface UseStartFlowResult {
   setPlayerName: (value: string) => void;
   setSelectedTownId: (value: string | null) => void;
   setTravelDifficulty: (difficulty: TravelDifficulty) => void;
+  setEntropy: (entropy: AdventureRandomnessPolicy) => void;
   setSeedDraft: (value: string) => void;
   applySeed: () => Promise<void>;
   randomizeSeed: () => void;
@@ -76,11 +79,12 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
       return {
         playerName: trimmedName,
         travelDifficulty: seed.travelDifficulty,
+        entropy: seed.entropy,
         seedCode,
         startingTownId: townId,
       };
     },
-    [seed.playerName, seed.seedState, seed.travelDifficulty],
+    [seed.playerName, seed.seedState, seed.travelDifficulty, seed.entropy],
   );
 
   return {
@@ -88,6 +92,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     playerName: seed.playerName,
     selectedTownId,
     travelDifficulty: seed.travelDifficulty,
+    entropy: seed.entropy,
     seedState: seed.seedState,
     seedDraft: seed.seedDraft,
     seedDirty: seed.seedDirty,
@@ -95,6 +100,7 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     setPlayerName: seed.setPlayerName,
     setSelectedTownId,
     setTravelDifficulty: seed.setTravelDifficulty,
+    setEntropy: seed.setEntropy,
     setSeedDraft: seed.setSeedDraft,
     applySeed: seed.applySeed,
     randomizeSeed: seed.randomizeSeed,

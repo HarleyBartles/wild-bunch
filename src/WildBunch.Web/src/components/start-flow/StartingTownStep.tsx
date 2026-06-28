@@ -1,15 +1,14 @@
 import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
-import { Eyebrow, BackButton, Button } from "../ui/sharedStyled";
+import { Button } from "../ui/sharedStyled";
 import { getStartingTowns } from "../../api/wildBunchApi";
 
 interface StartingTownStepProps {
   selectedTownId: string | null;
   onSelectTown: (townId: string) => void;
-  onBack: () => void;
 }
 
-export function StartingTownStep({ selectedTownId, onSelectTown, onBack }: StartingTownStepProps) {
+export function StartingTownStep({ selectedTownId, onSelectTown }: StartingTownStepProps) {
   const townsQuery = useQuery({
     queryKey: ["starting-towns"],
     queryFn: () => getStartingTowns(),
@@ -22,7 +21,6 @@ export function StartingTownStep({ selectedTownId, onSelectTown, onBack }: Start
 
   return (
     <StepCard>
-      <Eyebrow>Step 3 of 3</Eyebrow>
       <StepHeading>Pick a starting town</StepHeading>
       <StepLead>
         You cannot go back to the town where the dying man fell. The sheriff will have that place
@@ -52,12 +50,6 @@ export function StartingTownStep({ selectedTownId, onSelectTown, onBack }: Start
           ))}
         </TownList>
       )}
-
-      <StepActions>
-        <BackButton type="button" onClick={onBack}>
-          Back
-        </BackButton>
-      </StepActions>
     </StepCard>
   );
 }
@@ -119,11 +111,4 @@ const TownCard = styled.li`
 
 const TownName = styled.span`
   font-weight: 600;
-`;
-
-const StepActions = styled.div`
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
 `;

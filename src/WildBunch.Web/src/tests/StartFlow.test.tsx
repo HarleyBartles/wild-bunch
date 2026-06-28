@@ -147,17 +147,17 @@ function primeMocks() {
 }
 
 describe("StartFlow", () => {
-  it("starts on the name step and advances to the story step", async () => {
+  it("starts on the setup step and advances to the story step", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
 
-    expect(await screen.findByRole("heading", { name: /howdy, pard'ner/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
 
-    const nameInput = screen.getByLabelText(/player name/i);
+    const nameInput = screen.getByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
 
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -169,9 +169,9 @@ describe("StartFlow", () => {
     const user = userEvent.setup();
     renderSurface();
 
-    const nameInput = await screen.findByLabelText(/player name/i);
+    const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -198,9 +198,9 @@ describe("StartFlow", () => {
     const user = userEvent.setup();
     renderSurface();
 
-    const nameInput = await screen.findByLabelText(/player name/i);
+    const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -213,39 +213,14 @@ describe("StartFlow", () => {
     });
   });
 
-  it("navigates back from town to story", async () => {
+  it("does not call createGame during the setup or story steps", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
 
-    const nameInput = await screen.findByLabelText(/player name/i);
+    const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
     await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /back/i }));
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-  });
-
-  it("does not call createGame during the name or story steps", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/player name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -261,14 +236,19 @@ describe("StartFlow", () => {
     expect(mockedCreateGame).not.toHaveBeenCalled();
   });
 
-  it("calls createGame with playerName and startingTownId only at the final step", async () => {
+  it("calls createGame with playerName, difficulty, entropy, and startingTownId at the final step", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
 
-    const nameInput = await screen.findByLabelText(/player name/i);
+    const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+
+    // Select Hard (difficulty 2) and Wild (entropy 3)
+    await user.click(screen.getByRole("button", { name: /^hard$/i }));
+    await user.click(screen.getByRole("button", { name: /^wild$/i }));
+
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -290,6 +270,8 @@ describe("StartFlow", () => {
     expect(request.playerName).toBe("Ranger Vale");
     expect(request.startingTownId).toBe("t-town");
     expect(request.seedCode).toBeTruthy();
+    expect(request.travelDifficulty).toBe(2);
+    expect(request.entropy).toBe(3);
   });
 
   it("shows the creating step after selecting a town", async () => {
@@ -297,9 +279,9 @@ describe("StartFlow", () => {
     const user = userEvent.setup();
     renderSurface();
 
-    const nameInput = await screen.findByLabelText(/player name/i);
+    const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -316,5 +298,27 @@ describe("StartFlow", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /starting your hunt/i })).toBeInTheDocument();
     });
+  });
+
+  it("does not render a Back button on the town step", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    const nameInput = await screen.findByLabelText(/your name/i);
+    await user.type(nameInput, "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
 });

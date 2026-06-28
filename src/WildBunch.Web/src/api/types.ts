@@ -1,5 +1,6 @@
 export type GameStatus = 0 | 1 | 2;
 export type TravelDifficulty = 0 | 1 | 2;
+export type AdventureRandomnessPolicy = 0 | 1 | 2 | 3;
 export type JourneyStatus = 0 | 1 | 2 | 3;
 export const JourneyStatus = {
   Active: 0,
@@ -49,6 +50,7 @@ export interface StartGameRequest {
   playerName: string;
   travelDifficulty: TravelDifficulty;
   seedCode?: string | null;
+  entropy?: AdventureRandomnessPolicy;
   startingTownId?: string | null;
 }
 

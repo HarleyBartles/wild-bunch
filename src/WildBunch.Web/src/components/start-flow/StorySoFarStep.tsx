@@ -1,19 +1,21 @@
 import styled from "styled-components";
 import type { FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, BackButton } from "../ui/sharedStyled";
+import type { AdventureRandomnessPolicy, TravelDifficulty } from "../../api/types";
+import { Button } from "../ui/sharedStyled";
 import { getPrologue } from "../../api/wildBunchApi";
 
 interface StorySoFarStepProps {
   onContinue: () => void;
-  onBack: () => void;
   seedCode?: string | null;
+  travelDifficulty?: TravelDifficulty;
+  entropy?: AdventureRandomnessPolicy;
 }
 
-export function StorySoFarStep({ onContinue, onBack, seedCode }: StorySoFarStepProps) {
+export function StorySoFarStep({ onContinue, seedCode, travelDifficulty, entropy }: StorySoFarStepProps) {
   const prologueQuery = useQuery({
-    queryKey: ["prologue", seedCode ?? null],
-    queryFn: () => getPrologue(seedCode),
+    queryKey: ["prologue", seedCode ?? null, travelDifficulty ?? null, entropy ?? null],
+    queryFn: () => getPrologue(seedCode, travelDifficulty, entropy),
     staleTime: Infinity,
     retry: false,
   });
@@ -53,9 +55,6 @@ export function StorySoFarStep({ onContinue, onBack, seedCode }: StorySoFarStepP
         <Button type="submit" $variant="primary" disabled={!canAdvance}>
           {primaryAction}
         </Button>
-        <BackButton type="button" onClick={onBack}>
-          Back
-        </BackButton>
       </StepForm>
     </StepCard>
   );

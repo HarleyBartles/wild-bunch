@@ -50,6 +50,7 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - Human docs may point to these profiles, but profiles themselves are agent-facing review/filter material.
 - Dev-overlay work should apply `.agents/unslop/dev-overlay.md` together with the backend and web unslop profiles where relevant.
 - Unslop profiles are living documents. When a worker applies an unslop profile and slop still lands, the worker must postmortem whether the profile was effective. If the profile should have caught the drift but did not, the worker must strengthen the profile in the same PR when in scope, or return a precise deferred patch. "I read the unslop profile" is not enough; closeout must state what checks the profile forced and whether any gaps were found.
+- When strengthening an unslop profile, the edit must name a reusable class of drift, not the one incident. Sharpen or replace existing guidance where possible instead of appending duplicates. Keep additions short enough to remain readable. Create a clear review failure condition (a test, a check, or a concrete reviewable assertion that would fail if the drift recurs). Do not turn profiles into a dumping ground for transient failures. Include a brief closeout note in the PR or return explaining why the profile change is durable — i.e. what class of future drift it now catches that it did not before.
 
 ## Branch + PR Workflow
 - Workers branch from current `main`.

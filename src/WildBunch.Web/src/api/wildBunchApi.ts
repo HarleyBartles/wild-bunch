@@ -1,4 +1,5 @@
 import type {
+  AdventureRandomnessPolicy,
   AvailableActionDto,
   BuyStoreItemRequest,
   InvestigationActionResultDto,
@@ -10,6 +11,7 @@ import type {
   StartGameRequest,
   StartingTownDto,
   TownStoreOffersDto,
+  TravelDifficulty,
   TravelRequest,
   TravelPreviewResultDto,
   SaloonPersonOfInterestConfrontationResultDto,
@@ -142,10 +144,20 @@ export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdenti
   return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle) as Promise<WantedSuspectConfrontationResultDto>;
 }
 
-export function getPrologue(seedCode?: string | null) {
+export function getPrologue(
+  seedCode?: string | null,
+  travelDifficulty?: TravelDifficulty,
+  entropy?: AdventureRandomnessPolicy,
+) {
   const params = new URLSearchParams();
   if (seedCode) {
     params.set("seedCode", seedCode);
+  }
+  if (travelDifficulty != null) {
+    params.set("travelDifficulty", String(travelDifficulty));
+  }
+  if (entropy != null) {
+    params.set("entropy", String(entropy));
   }
   const query = params.toString();
   return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);

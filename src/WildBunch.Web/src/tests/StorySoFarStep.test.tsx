@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
 import { getPrologue } from "../api/wildBunchApi";
-import type { PrologueDto } from "../api/types";
+import type { AdventureRandomnessPolicy, PrologueDto, TravelDifficulty } from "../api/types";
 
 vi.mock("../api/wildBunchApi", () => ({
   getPrologue: vi.fn(),
@@ -27,7 +27,7 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
   };
 }
 
-function renderStep(overrides: { seedCode?: string | null; onContinue?: () => void; onBack?: () => void } = {}) {
+function renderStep(overrides: { seedCode?: string | null; travelDifficulty?: TravelDifficulty; entropy?: AdventureRandomnessPolicy; onContinue?: () => void } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -36,19 +36,19 @@ function renderStep(overrides: { seedCode?: string | null; onContinue?: () => vo
   });
 
   const onContinue = overrides.onContinue ?? vi.fn();
-  const onBack = overrides.onBack ?? vi.fn();
 
   render(
     <QueryClientProvider client={queryClient}>
       <StorySoFarStep
         onContinue={onContinue}
-        onBack={onBack}
         seedCode={overrides.seedCode ?? "SEED-CODE-1"}
+        travelDifficulty={overrides.travelDifficulty}
+        entropy={overrides.entropy}
       />
     </QueryClientProvider>,
   );
 
-  return { onContinue, onBack, queryClient };
+  return { onContinue, queryClient };
 }
 
 describe("StorySoFarStep", () => {
@@ -166,14 +166,14 @@ describe("StorySoFarStep", () => {
     expect(onContinue).not.toHaveBeenCalled();
   });
 
-  it("passes the seedCode to getPrologue", async () => {
+  it("passes the seedCode, travelDifficulty, and entropy to getPrologue", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
-    renderStep({ seedCode: "MY-SEED-42" });
+    renderStep({ seedCode: "MY-SEED-42", travelDifficulty: 2 as TravelDifficulty, entropy: 3 as AdventureRandomnessPolicy });
 
     await screen.findByText(/black bart/i);
 
-    expect(mockedGetPrologue).toHaveBeenCalledWith("MY-SEED-42");
+    expect(mockedGetPrologue).toHaveBeenCalledWith("MY-SEED-42", 2, 3);
   });
 
   it("shows an in-world error state with a retry button when the prologue fetch fails", async () => {
@@ -217,20 +217,12 @@ describe("StorySoFarStep", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
-  it("renders a quiet Back affordance that calls onBack", async () => {
+  it("does not render a Back button", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
-    const onBack = vi.fn();
-    const user = userEvent.setup();
-
-    renderStep({ onBack });
+    renderStep();
 
     await screen.findByText(/black bart/i);
-
-    const backButton = screen.getByRole("button", { name: /back/i });
-    expect(backButton).toBeInTheDocument();
-    await user.click(backButton);
-
-    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
 });
