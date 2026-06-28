@@ -1,4 +1,4 @@
-export type GameStatus = 0 | 1 | 2;
+export type GameStatus = 0 | 1 | 2 | 3;
 export type TravelDifficulty = 0 | 1 | 2;
 export type AdventureRandomnessPolicy = 0 | 1 | 2 | 3;
 export type JourneyStatus = 0 | 1 | 2 | 3;
