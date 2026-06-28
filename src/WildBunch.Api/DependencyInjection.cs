@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<StartNewGameHandler>();
         services.AddScoped<GetGameSessionHandler>();
         services.AddScoped<GetStartingTownsHandler>();
+        services.AddScoped<GetStartingTownMapHandler>();
         services.AddScoped<GetPrologueHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<GetJournalHandler>();
