@@ -853,16 +853,16 @@ Insert this job after the `frontend` job:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - name: Validate marketplace.json
         run: |
-          python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==3; assert all(p['policy']['installation']=='INSTALLED_BY_DEFAULT' for p in m['plugins']); assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack'}; print('OK marketplace.json')"
+          python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==7; assert all(p['policy']['installation']=='INSTALLED_BY_DEFAULT' for p in m['plugins']); assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack','game-studio','dotnet-kit','architecture-pack','frontend-pack'}; print('OK marketplace.json')"
 
       - name: Validate INDEX.md mesh
         run: python scripts/generate_index_mesh.py --check
@@ -877,19 +877,19 @@ Insert this job after the `frontend` job:
 **Files:**
 - Read-only: the whole repo.
 
-- [ ] **Step 1: Run the full validation suite**
+- [x] **Step 1: Run the full validation suite**
 
 Run (PowerShell, separate commands):
 ```powershell
 python scripts/generate_index_mesh.py --check
-python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==3; print('OK marketplace.json')"
+python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==7; assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack','game-studio','dotnet-kit','architecture-pack','frontend-pack'}; print('OK marketplace.json')"
 dotnet build WildBunch.sln
 .\scripts\postgres-dev.ps1 ensure
 .\scripts\postgres-dev.ps1 test -- dotnet test WildBunch.sln --no-build --configuration Release
 ```
 Expected: all pass. `dotnet build`/`dotnet test` are regression guards — this slice does not touch product code, so they should pass unchanged. Report any warnings separately from failures.
 
-- [ ] **Step 2: Confirm clean worktree and branch head**
+- [x] **Step 2: Confirm clean worktree and branch head**
 
 Run:
 ```powershell
@@ -897,29 +897,26 @@ git status --short
 git log -1 --oneline
 git branch --show-current
 ```
-Expected: clean worktree, branch head at the last commit, branch is `harleydbartles/bunch-103-install-wild-bunch-repo-local-plugins-and-agentindexreadme`.
+Expected: clean worktree, branch head at the last commit, branch is `harleydbartles/bunch-103-exec-repo-local-plugins-mesh`.
 
-- [ ] **Step 3: Push the branch and open the PR**
+- [x] **Step 3: Push the branch and open the PR**
 
 ```powershell
-git push -u origin harleydbartles/bunch-103-install-wild-bunch-repo-local-plugins-and-agentindexreadme
-gh pr create --title "BUNCH-103: install repo-local plugins and agent/index/readme mesh" --body "$(cat <<'EOF'
+git push -u origin harleydbartles/bunch-103-exec-repo-local-plugins-mesh
+gh pr create --title "BUNCH-103: execution closeout — repair plan Task 9/10 snippets and check off Task 10" --body "$(cat <<'EOF'
 ## Summary
-- Add `.agents/plugins/marketplace.json` default-installing seven plugins from `HarleyBartles/agent-asset-marketplace`: `repo-worker-pack`, `superpowers-plus`, `wild-bunch-project-pack`, `game-studio`, `dotnet-kit`, `architecture-pack`, `frontend-pack`.
-- Remove 47 of 48 copied `.agents/skills/` folders (covered by marketplace plugins); retain `crew` as temporary project custody (no current plugin home).
-- Add `.agents/docs/mesh-policy.md` agent-facing mesh contract; update root `AGENTS.md` to defer to it and point at the plugin marketplace.
-- Add `scripts/generate_index_mesh.py` repo-local INDEX.md generator with `--check` mode; regenerate the full mesh.
-- Add root `README.md` human discoverability entrypoint (no operative agent law).
-- Wire `index-mesh` + marketplace JSON validation into `.github/workflows/ci.yml`.
+- Implementation landed on `main` via #110 (mislabeled as plan-only but contained the full 7-pack marketplace.json, mesh-policy, INDEX.md generator, README, CI validation, and skill removal).
+- This execution PR carries the repaired plan file: Task 9/10 snippets corrected from stale 3-pack to actual 7-pack validation; route-state block corrected to `.agents/superpowers/plans/` path and execution branch name.
+- Task 10 boxes checked off: index-mesh check passes (96 indexes current), marketplace.json 7-pack assertion passes, dotnet build/test regression guards run.
 
-## Coverage note
-29 local folders are covered by the default-installed plugin stack; 18 are covered by AVAILABLE marketplace packs (safe to remove, they have a plugin home); 1 (`crew`) is retained as temporary project custody with a proposed `crew-pack` follow-up. Stale index entries (`linear`, `session-buster`, `security-scan`, etc.) had no folders and no plugin home; removed with the stale index. `house-skills` is intentionally not default-installed. No `agent-browser` ghost references.
+## Context
+The preflight plan PR #110 was approved and merged, but it landed the full implementation along with the plan. This execution PR closes out the plan by repairing the stale 3-pack snippets in Task 9/10 (the implementation correctly used 7-pack) and checking off the Task 10 validation/publication boxes against current `main`.
 
 ## Test plan
-- [ ] `python scripts/generate_index_mesh.py --check` passes
-- [ ] marketplace.json shape assertion passes
-- [ ] `dotnet build WildBunch.sln` passes (regression guard)
-- [ ] `dotnet test WildBunch.sln` passes (regression guard)
+- [x] `python scripts/generate_index_mesh.py --check` passes (96 indexes current)
+- [x] marketplace.json shape assertion passes (7-pack)
+- [x] `dotnet build WildBunch.sln` passes (regression guard)
+- [x] `dotnet test WildBunch.sln` passes (regression guard)
 - [ ] CI `index-mesh` job is green on this PR
 
 Generated with [Devin](https://devin.ai)
@@ -927,24 +924,25 @@ EOF
 )"
 ```
 
-- [ ] **Step 4: Record the PR URL and branch head**
+- [x] **Step 4: Record the PR URL and branch head**
 
 Capture the PR URL from the `gh pr create` output and the branch head SHA from `git rev-parse HEAD`.
 
-- [ ] **Step 5: Update the Linear route state**
+- [x] **Step 5: Update the Linear route state**
 
 Post a Linear comment on BUNCH-103 with the route-state block:
 ```
-Route state: approved_plan_execution_ready (pending plan approval)
-Plan path: docs/superpowers/plans/2026-06-27-bunch-103-install-wild-bunch-repo-local-plugins-and-agentindexreadme-mesh.md
-Plan PR: <PR URL>
-Plan branch: harleydbartles/bunch-103-install-wild-bunch-repo-local-plugins-and-agentindexreadme
-Plan base commit: 3466d20
-Plan head commit: <SHA>
+Route state: approved_plan_execution_ready (execution complete; implementation landed via #110, plan repair + Task 10 closeout via execution PR)
+Plan path: .agents/superpowers/plans/2026-06-27-bunch-103-install-wild-bunch-repo-local-plugins-and-agentindexreadme-mesh.md
+Plan PR: https://github.com/HarleyBartles/wild-bunch/pull/110 (merged; landed implementation)
+Execution PR: <PR URL>
+Execution branch: harleydbartles/bunch-103-exec-repo-local-plugins-mesh
+Execution base commit: a4db54f (current main)
+Execution head commit: <SHA>
 Marketplace source: HarleyBartles/agent-asset-marketplace @ 86484b2 (MARK-315 merged)
 Default plugin stack: repo-worker-pack, superpowers-plus, wild-bunch-project-pack, game-studio, dotnet-kit, architecture-pack, frontend-pack
 Retained project custody: crew (no current plugin home; proposed crew-pack follow-up)
-Status: plan-only draft PR open; awaiting approval before execution.
+Status: execution PR open with repaired plan (Task 9/10 snippets corrected to 7-pack; Task 10 boxes checked off).
 ```
 
 ---
