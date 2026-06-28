@@ -225,4 +225,27 @@ describe("StartGamePanel", () => {
       expect((seedInput as HTMLInputElement).value).not.toBe(beforeChange);
     });
   });
+
+  it("updates difficulty when a seed is applied", async () => {
+    const user = userEvent.setup();
+    mockedDecodeSeed.mockResolvedValue({ gameDifficulty: 2, gameEntropy: 3 });
+    const { onStartGame } = renderPanel();
+
+    const seedInput = await screen.findByLabelText(/setup seed/i);
+    const applyButton = screen.getByRole("button", { name: /apply seed/i });
+
+    await user.clear(seedInput);
+    await user.type(seedInput, "cccc1111-2222-3333-4444-555555555555");
+    await user.click(applyButton);
+
+    await waitFor(() => {
+      expect(mockedDecodeSeed).toHaveBeenCalledWith("cccc1111-2222-3333-4444-555555555555");
+      expect(screen.getByLabelText(/Game difficulty/i)).toHaveValue("2");
+    });
+
+    // Note: StartGamePanel doesn't have an entropy selector in the current UI.
+    // The entropy selector is in SetupHuntStep (pre-session surface).
+    // The decodeSeed API is called but the UI doesn't expose entropy selection here.
+    // Entropy selection behavior is tested in SetupHuntStep.test.tsx.
+  });
 });
