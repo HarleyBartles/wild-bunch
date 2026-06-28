@@ -55,6 +55,24 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound);
 
+        dev.MapGet("/sessions/{id:guid}/session-context", GetSessionDevContextAsync)
+            .WithName("GetSessionDevContext")
+            .Produces<SessionDevContextDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
+        dev.MapPost("/sessions/{id:guid}/session/lock-rng", LockRngAsync)
+            .WithName("LockRng")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
+        dev.MapPost("/sessions/{id:guid}/session/clear-rng", ClearRngAsync)
+            .WithName("ClearRng")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
         return app;
     }
 
@@ -231,6 +249,80 @@ public static class DevEndpoints
         {
             guard.EnsureDevAccess();
             await handler.HandleAsync(new ClearSaloonOverrideCommand(id), cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> GetSessionDevContextAsync(
+        Guid id,
+        DevRoleGuard guard,
+        GetSessionDevContextHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            var result = await handler.HandleAsync(new GetSessionDevContextQuery(id), cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> LockRngAsync(
+        Guid id,
+        DevRoleGuard guard,
+        ForceDevSaltSourceHandler handler,
+        LockRngRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            // Salt contract: null/empty/whitespace → handler generates a fresh fixed salt.
+            // Non-empty string → handler trims and uses verbatim.
+            var salt = request?.Salt;
+            await handler.HandleAsync(new ForceDevSaltSourceCommand(id, salt), cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    private static async Task<IResult> ClearRngAsync(
+        Guid id,
+        DevRoleGuard guard,
+        ClearDevSaltSourceHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            await handler.HandleAsync(new ClearDevSaltSourceCommand(id), cancellationToken);
             return Results.NoContent();
         }
         catch (DevAccessDeniedException)
