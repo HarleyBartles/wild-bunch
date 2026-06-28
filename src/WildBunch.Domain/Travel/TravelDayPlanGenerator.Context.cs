@@ -3,6 +3,7 @@ using System.Text;
 using TrailRisk = WildBunch.Domain.World.TrailRisk;
 using TrailTerrain = WildBunch.Domain.World.TrailTerrain;
 using WaterFeature = WildBunch.Domain.World.WaterFeature;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Domain.Travel;
 

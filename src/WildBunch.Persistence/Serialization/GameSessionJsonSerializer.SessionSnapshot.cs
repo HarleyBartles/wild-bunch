@@ -75,7 +75,7 @@ public sealed partial class GameSessionJsonSerializer
                 Status,
                 journey,
                 GameDifficulty,
-                SaltSource?.ToDomain() ?? WildBunch.Domain.Travel.SaltSource.CreateRuntime(),
+                SaltSource?.ToDomain() ?? WildBunch.Domain.Game.SaltSource.CreateRuntime(),
                 GameEntropy ?? WildBunch.Domain.Travel.GameEntropy.Classic,
                 townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),

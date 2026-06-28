@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Domain.Game;
-using WildBunch.Domain.Travel;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Application.Dev.Commands;
 

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace WildBunch.Domain.Travel;
+namespace WildBunch.Domain.Game;
 
 public enum SaltSourceMode
 {

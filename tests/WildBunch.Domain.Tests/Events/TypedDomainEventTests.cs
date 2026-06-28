@@ -1,5 +1,6 @@
 using System.Reflection;
 using WildBunch.Domain.Events;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;

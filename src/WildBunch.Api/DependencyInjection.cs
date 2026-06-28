@@ -9,8 +9,9 @@ using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Economy;
-using WildBunch.Domain.Journal;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
+using WildBunch.Domain.Journal;
 using WildBunch.Persistence;
 using WildBunch.GameContent;
 

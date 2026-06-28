@@ -1,4 +1,5 @@
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 

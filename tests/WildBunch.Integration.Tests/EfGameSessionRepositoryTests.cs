@@ -86,7 +86,7 @@ public sealed class EfGameSessionRepositoryTests
         // Seed code and salt may have the same value (for Boring entropy)
         // but they are separate concepts and reported separately
         Assert.Equal(seedCode, reloaded!.SeedCode);
-        Assert.Equal(WildBunch.Domain.Travel.SaltSourceMode.Fixed, reloaded.SaltSource.Mode);
+        Assert.Equal(WildBunch.Domain.Game.SaltSourceMode.Fixed, reloaded.SaltSource.Mode);
         Assert.Equal(seedCode, reloaded.SaltSource.Salt); // Boring uses seed as salt
     }
 
@@ -105,7 +105,7 @@ public sealed class EfGameSessionRepositoryTests
         // Seed code is retained for debugging
         Assert.Equal(seedCode, reloaded!.SeedCode);
         // Salt is runtime (not seed-derived) for Classic entropy
-        Assert.Equal(WildBunch.Domain.Travel.SaltSourceMode.Runtime, reloaded.SaltSource.Mode);
+        Assert.Equal(WildBunch.Domain.Game.SaltSourceMode.Runtime, reloaded.SaltSource.Mode);
         Assert.NotEqual(seedCode, reloaded.SaltSource.Salt);
     }
 

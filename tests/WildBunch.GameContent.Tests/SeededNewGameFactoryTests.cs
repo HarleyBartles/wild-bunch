@@ -39,7 +39,7 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(7, session.CaseFile.Suspects.Count);
         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Id.Equals(session.CaseFile.TrueCulpritId));
         Assert.Equal(5, session.CaseFile.KillerReleaseThreshold);
-        Assert.Equal("The culprit has a scar on his left cheek.", session.CaseFile.OpeningLead.Description);
+        Assert.Equal("The culprit has a scar on the left cheek.", session.CaseFile.OpeningLead.Description);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(5, session.CaseFile.KillerReleaseState.RequiredPublicClues);
