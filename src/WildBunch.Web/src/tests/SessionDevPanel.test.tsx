@@ -4,12 +4,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SessionDevPanel } from "../dev/panels/SessionDevPanel";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { clearRng, getSessionDevContext, lockRng } from "../dev/devApi";
+import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng } from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionDevContext: vi.fn(),
   lockRng: vi.fn(),
   clearRng: vi.fn(),
+  forceDevDifficulty: vi.fn(),
   getSessionAudit: vi.fn(),
   getTravelDevContext: vi.fn(),
   forceTravelOverride: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock("../api/wildBunchApi", () => ({
 const mockedGetContext = vi.mocked(getSessionDevContext);
 const mockedLock = vi.mocked(lockRng);
 const mockedClear = vi.mocked(clearRng);
+const mockedForceDifficulty = vi.mocked(forceDevDifficulty);
 
 afterEach(() => {
   cleanup();
@@ -80,6 +82,14 @@ const mockContext = {
   hasActiveJourney: false,
   seedCodeRetained: false,
   seedCodeText: null,
+  travelRules: {
+    canteenCapacity: 10,
+    mountedRideDayProgress: 1,
+    footRideDayProgress: 0.5,
+    encounterFightAmmoHealthLoss: 5,
+    encounterFightUnarmedHealthLoss: 10,
+    encounterRunFootHealthLoss: 5,
+  },
 };
 
 describe("SessionDevPanel", () => {
@@ -132,6 +142,43 @@ describe("SessionDevPanel", () => {
 
     await waitFor(() => {
       expect(mockedClear).toHaveBeenCalledWith("test-game-3");
+    });
+  });
+
+  it("renders difficulty control and travel-rule facts", async () => {
+    seedGameId("test-game-4");
+    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-4" });
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Active")).toBeInTheDocument();
+    });
+    // Difficulty SegmentedToggle labels are visible
+    expect(screen.getByRole("button", { name: "Easy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Standard" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Brutal" })).toBeInTheDocument();
+    // Travel-rule facts are visible
+    expect(screen.getByText("Canteen capacity:")).toBeInTheDocument();
+    // The canteen capacity value (10) appears next to the label
+    const canteenRow = screen.getByText("Canteen capacity:").closest("div");
+    expect(canteenRow).toBeInTheDocument();
+    expect(canteenRow?.textContent).toContain("10");
+  });
+
+  it("calls forceDevDifficulty when difficulty option is clicked", async () => {
+    seedGameId("test-game-5");
+    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-5" });
+    mockedForceDifficulty.mockResolvedValue(undefined);
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Brutal" })).toBeInTheDocument();
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Brutal" }));
+
+    await waitFor(() => {
+      expect(mockedForceDifficulty).toHaveBeenCalledWith("test-game-5", { difficulty: "Brutal" });
     });
   });
 });

@@ -2,6 +2,7 @@ using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Dev.Queries;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Domain.Travel;
 
 namespace WildBunch.Api.Dev;
 
@@ -72,6 +73,13 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound);
+
+        dev.MapPost("/sessions/{id:guid}/session/force-difficulty", ForceDevDifficultyAsync)
+            .WithName("ForceDevDifficulty")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
 
         return app;
     }
@@ -332,6 +340,44 @@ public static class DevEndpoints
         catch (GameSessionNotFoundException)
         {
             return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> ForceDevDifficultyAsync(
+        Guid id,
+        DevRoleGuard guard,
+        ForceDevDifficultyHandler handler,
+        ForceDevDifficultyRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            if (request is null || string.IsNullOrWhiteSpace(request.Difficulty))
+            {
+                return Results.BadRequest("Difficulty is required.");
+            }
+
+            if (!Enum.TryParse<GameDifficulty>(request.Difficulty, ignoreCase: true, out var difficulty)
+                || !Enum.IsDefined(typeof(GameDifficulty), difficulty))
+            {
+                return Results.BadRequest($"Invalid difficulty value: {request.Difficulty}");
+            }
+
+            await handler.HandleAsync(new ForceDevDifficultyCommand(id, difficulty), cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
         }
     }
 }

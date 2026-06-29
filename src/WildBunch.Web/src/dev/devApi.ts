@@ -1,5 +1,5 @@
 import { requestJson } from "../api/httpClient";
-import type { ForceSaloonOverrideRequestDto, ForceTravelOverrideRequestDto, LockRngRequestDto, SaloonDevContextDto, SessionAuditDto, SessionDevContextDto, TravelDevContextDto } from "./types";
+import type { ForceDevDifficultyRequestDto, ForceSaloonOverrideRequestDto, ForceTravelOverrideRequestDto, LockRngRequestDto, SaloonDevContextDto, SessionAuditDto, SessionDevContextDto, TravelDevContextDto } from "./types";
 
 export function getSessionAudit(gameId: string) {
   return requestJson<SessionAuditDto>(`/api/dev/sessions/${gameId}/audit`);
@@ -53,5 +53,12 @@ export function lockRng(gameId: string, request: LockRngRequestDto) {
 export function clearRng(gameId: string) {
   return requestJson<void>(`/api/dev/sessions/${gameId}/session/clear-rng`, {
     method: "POST",
+  });
+}
+
+export function forceDevDifficulty(gameId: string, request: ForceDevDifficultyRequestDto) {
+  return requestJson<void>(`/api/dev/sessions/${gameId}/session/force-difficulty`, {
+    method: "POST",
+    body: JSON.stringify(request),
   });
 }

@@ -2,11 +2,19 @@ import { useState } from "react";
 import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
-import { clearRng, getSessionDevContext, lockRng } from "../devApi";
+import { SegmentedToggle } from "../../components/start-flow/SegmentedToggle";
+import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng } from "../devApi";
 
 interface SessionDevPanelProps {
   expanded?: boolean;
 }
+
+const difficultyOptions: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "Easy", label: "Easy" },
+  { value: "Standard", label: "Standard" },
+  { value: "Challenging", label: "Challenging" },
+  { value: "Brutal", label: "Brutal" },
+];
 
 export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
   const { gameId } = useGameSession();
@@ -55,6 +63,19 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
       refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear RNG.");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const handleForceDifficulty = async (value: string) => {
+    setError(null);
+    setActionPending(true);
+    try {
+      await forceDevDifficulty(gameId, { difficulty: value });
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to force difficulty.");
     } finally {
       setActionPending(false);
     }
@@ -117,10 +138,43 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
       <RightColumn>
         <Section>
           <SectionTitle>Setup posture</SectionTitle>
-          <Row>
-            <Label>Difficulty (inspect):</Label>
-            <Value>{data?.gameDifficulty}</Value>
-          </Row>
+          <Field>
+            <Label>Difficulty:</Label>
+            <SegmentedToggle
+              options={difficultyOptions}
+              value={data?.gameDifficulty ?? "Standard"}
+              onSelect={handleForceDifficulty}
+            />
+          </Field>
+          <MutedText>
+            Forcing difficulty changes travel rules going forward. It does not change starting health or cash.
+          </MutedText>
+          <TravelRulesGrid>
+            <Row>
+              <Label>Canteen capacity:</Label>
+              <Value>{data?.travelRules?.canteenCapacity ?? "—"}</Value>
+            </Row>
+            <Row>
+              <Label>Mounted ride/day:</Label>
+              <Value>{data?.travelRules?.mountedRideDayProgress ?? "—"}</Value>
+            </Row>
+            <Row>
+              <Label>Foot ride/day:</Label>
+              <Value>{data?.travelRules?.footRideDayProgress ?? "—"}</Value>
+            </Row>
+            <Row>
+              <Label>Encounter fight (ammo) health loss:</Label>
+              <Value>{data?.travelRules?.encounterFightAmmoHealthLoss ?? "—"}</Value>
+            </Row>
+            <Row>
+              <Label>Encounter fight (unarmed) health loss:</Label>
+              <Value>{data?.travelRules?.encounterFightUnarmedHealthLoss ?? "—"}</Value>
+            </Row>
+            <Row>
+              <Label>Encounter run (foot) health loss:</Label>
+              <Value>{data?.travelRules?.encounterRunFootHealthLoss ?? "—"}</Value>
+            </Row>
+          </TravelRulesGrid>
           <Row>
             <Label>Entropy (inspect):</Label>
             <Value>{data?.gameEntropy}</Value>
@@ -272,4 +326,12 @@ const ErrorText = styled.p`
   color: var(--danger);
   font-size: 0.8rem;
   margin: 4px 0 0;
+`;
+
+const TravelRulesGrid = styled.div`
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 `;

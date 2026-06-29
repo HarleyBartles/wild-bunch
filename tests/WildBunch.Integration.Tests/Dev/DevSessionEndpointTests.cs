@@ -180,6 +180,47 @@ public sealed class DevSessionEndpointTests
         Assert.Equal("test-salt", contextAfter.SaltPosture.Salt);
     }
 
+    [Fact]
+    public async Task ForceDifficulty_Returns204_AndReflectedInContext()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        var forceResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/session/force-difficulty",
+            new ForceDevDifficultyRequestDto(Difficulty: "Brutal"));
+        Assert.Equal(HttpStatusCode.NoContent, forceResponse.StatusCode);
+
+        var context = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+            .Content.ReadFromJsonAsync<SessionDevContextDto>();
+        Assert.Equal("Brutal", context!.GameDifficulty);
+    }
+
+    [Fact]
+    public async Task ForceDifficulty_Returns400_ForInvalidDifficulty()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        var forceResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/session/force-difficulty",
+            new ForceDevDifficultyRequestDto(Difficulty: "Nightmare"));
+        Assert.Equal(HttpStatusCode.BadRequest, forceResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ForceDifficulty_Returns403_InNonDevEnvironment()
+    {
+        using var factory = new NonDevApiFactory();
+        using var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{Guid.NewGuid()}/session/force-difficulty",
+            new ForceDevDifficultyRequestDto(Difficulty: "Brutal"));
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();

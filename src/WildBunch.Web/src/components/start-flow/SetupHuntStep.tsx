@@ -27,6 +27,13 @@ const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }>
   { value: 3, label: "Brutal" },
 ];
 
+const difficultyDescriptions: Record<GameDifficulty, string> = {
+  1: "Forgiving trails, generous supplies, softer consequences.",
+  0: "A fair chase. The trail bites back but gives ground.",
+  2: "Hard riding, thin margins, and costly mistakes.",
+  3: "The desert wants you dead. Every ride is a gamble.",
+};
+
 const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
   { value: 0, label: "Boring" },
   { value: 1, label: "Classic" },
@@ -100,6 +107,9 @@ export function SetupHuntStep({
             value={gameDifficulty}
             onSelect={onGameDifficultyChange}
           />
+          <DifficultyDescription>
+            {difficultyDescriptions[gameDifficulty]}
+          </DifficultyDescription>
         </FieldGroup>
 
         <FieldGroup>
@@ -226,4 +236,11 @@ const StepActions = styled.div`
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+`;
+
+const DifficultyDescription = styled.p`
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-size: 0.85rem;
+  font-style: italic;
 `;

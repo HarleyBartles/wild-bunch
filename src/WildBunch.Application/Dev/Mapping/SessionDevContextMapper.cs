@@ -26,6 +26,13 @@ public static class SessionDevContextMapper
             CurrentActionContext: session.CurrentActionContext.ToString(),
             HasActiveJourney: session.Journey is not null,
             SeedCodeRetained: session.SeedCode is not null,
-            SeedCodeText: session.SeedCode);
+            SeedCodeText: session.SeedCode,
+            TravelRules: new TravelRulesDevDto(
+                session.TravelRules.CanteenCapacity,
+                session.TravelRules.MountedRideDayProgress,
+                session.TravelRules.FootRideDayProgress,
+                session.TravelRules.EncounterFightAmmoHealthLoss,
+                session.TravelRules.EncounterFightUnarmedHealthLoss,
+                session.TravelRules.EncounterRunFootHealthLoss));
     }
 }

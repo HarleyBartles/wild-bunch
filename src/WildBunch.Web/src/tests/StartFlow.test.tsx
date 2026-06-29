@@ -461,4 +461,19 @@ describe("StartFlow", () => {
 
     expect(mockedCreateGame).not.toHaveBeenCalled();
   });
+
+  it("shows a description for the selected difficulty", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    await screen.findByRole("heading", { name: /set up your hunt/i });
+
+    // Default difficulty is Standard (0) — check its description is visible
+    expect(screen.getByText(/a fair chase/i)).toBeInTheDocument();
+
+    // Click "Brutal" and check its description appears
+    await user.click(screen.getByRole("button", { name: /brutal/i }));
+    expect(screen.getByText(/the desert wants you dead/i)).toBeInTheDocument();
+  });
 });

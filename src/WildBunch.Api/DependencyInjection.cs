@@ -85,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<GetSessionDevContextHandler>();
         services.AddScoped<ForceDevSaltSourceHandler>();
         services.AddScoped<ClearDevSaltSourceHandler>();
+        services.AddScoped<ForceDevDifficultyHandler>();
 
         return services;
     }
