@@ -299,6 +299,56 @@ public sealed class SeededNewGameFactoryTests
         Assert.NotEqual(firstWarrant!.Id, secondWarrant!.Id);
     }
 
+    [Fact]
+    public void DifficultyChangesDifficultyShapedFactsNotEntropy()
+    {
+        var factory = new SeededNewGameFactory();
+
+        // The seed UUID encodes the seed-owned world/map layer only, NOT difficulty or entropy.
+        // Difficulty and entropy are caller-supplied parameters to SeededNewGameFactory.Create.
+        // Use one canonical seed code to fix the world, then vary only the difficulty parameter.
+        var seedCode = SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode());
+
+        // Same seed, same entropy, different difficulty parameter
+        var easy = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Classic);
+        var standard = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
+        var challenging = factory.Create("Ranger Vale", GameDifficulty.Challenging, seedCode, GameEntropy.Classic);
+        var brutal = factory.Create("Ranger Vale", GameDifficulty.Brutal, seedCode, GameEntropy.Classic);
+
+        // Difficulty-shaped facts differ across difficulties (starting cash, starting health, travel rules)
+        Assert.NotEqual(easy.Player.Wallet.Cash, standard.Player.Wallet.Cash);
+        Assert.NotEqual(standard.Player.Wallet.Cash, challenging.Player.Wallet.Cash);
+        Assert.NotEqual(challenging.Player.Wallet.Cash, brutal.Player.Wallet.Cash);
+
+        Assert.NotEqual(easy.Player.Health, standard.Player.Health);
+        Assert.NotEqual(standard.Player.Health, challenging.Player.Health);
+        Assert.NotEqual(challenging.Player.Health, brutal.Player.Health);
+
+        // Travel rules profiles differ
+        Assert.NotEqual(easy.TravelRules.CanteenCapacity, brutal.TravelRules.CanteenCapacity);
+        Assert.NotEqual(easy.TravelRules.MountedRideDayProgress, brutal.TravelRules.MountedRideDayProgress);
+        Assert.NotEqual(easy.TravelRules.EncounterFightAmmoHealthLoss, brutal.TravelRules.EncounterFightAmmoHealthLoss);
+
+        // Seed-derived world is the same across all four (difficulty does not change the world)
+        Assert.Equal(standard.World.Towns.Count, easy.World.Towns.Count);
+        Assert.Equal(standard.World.Towns.Count, challenging.World.Towns.Count);
+        Assert.Equal(standard.World.Towns.Count, brutal.World.Towns.Count);
+        Assert.Equal(standard.Player.CurrentTownId, easy.Player.CurrentTownId);
+        Assert.Equal(standard.Player.CurrentTownId, challenging.Player.CurrentTownId);
+        Assert.Equal(standard.Player.CurrentTownId, brutal.Player.CurrentTownId);
+
+        // Entropy is the same across all four (difficulty does not change entropy)
+        Assert.Equal(GameEntropy.Classic, easy.GameEntropy);
+        Assert.Equal(GameEntropy.Classic, standard.GameEntropy);
+        Assert.Equal(GameEntropy.Classic, challenging.GameEntropy);
+        Assert.Equal(GameEntropy.Classic, brutal.GameEntropy);
+
+        // Salt posture is the same across all four (difficulty does not change salt posture)
+        Assert.Equal(easy.SaltSource.Mode, standard.SaltSource.Mode);
+        Assert.Equal(standard.SaltSource.Mode, challenging.SaltSource.Mode);
+        Assert.Equal(challenging.SaltSource.Mode, brutal.SaltSource.Mode);
+    }
+
     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}"));
 
