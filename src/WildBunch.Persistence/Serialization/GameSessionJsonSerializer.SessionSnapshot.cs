@@ -1,3 +1,4 @@
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -30,7 +31,8 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         IReadOnlyList<GameLogEntrySnapshot> LogEntries,
         DevTravelOverride? PendingDevTravelOverride,
-        DevSaloonOverride? PendingDevSaloonOverride)
+        DevSaloonOverride? PendingDevSaloonOverride,
+        UnrelatedCriminalLedgerSnapshot? UnrelatedCriminalLedger)
     {
         public static GameSessionSnapshot FromDomain(GameSession session)
             => new(
@@ -54,7 +56,8 @@ public sealed partial class GameSessionJsonSerializer
                 session.TravelDiaryDays.ToArray(),
                 session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray(),
                 session.PendingDevTravelOverride,
-                session.PendingDevSaloonOverride);
+                session.PendingDevSaloonOverride,
+                session.UnrelatedCriminalLedger.ToSnapshot());
 
         public GameSession ToDomain()
         {
@@ -100,6 +103,15 @@ public sealed partial class GameSessionJsonSerializer
             {
                 GameSessionRehydrator.SetBackingField(session, "_pendingDevSaloonOverride", PendingDevSaloonOverride);
             }
+
+            // Restore the UnrelatedCriminalLedger from the persisted snapshot.
+            // The constructor builds a fresh ledger from the case file; this overwrites
+            // it with the persisted state. See BUNCH-107.
+            if (UnrelatedCriminalLedger is not null)
+            {
+                GameSessionRehydrator.SetUnrelatedCriminalLedger(session, WildBunch.Domain.Cases.UnrelatedCriminalLedger.FromSnapshot(UnrelatedCriminalLedger));
+            }
+
             return session;
         }
     }

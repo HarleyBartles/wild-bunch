@@ -16,6 +16,7 @@ internal static class GameSessionComponentNames
     internal const string CurrentActionContext = "currentActionContext";
     internal const string PendingDevTravelOverride = "pendingDevTravelOverride";
     internal const string PendingDevSaloonOverride = "pendingDevSaloonOverride";
+    internal const string UnrelatedCriminalLedger = "unrelatedCriminalLedger";
 }
 
 internal static class GameSessionComponentPayloads
