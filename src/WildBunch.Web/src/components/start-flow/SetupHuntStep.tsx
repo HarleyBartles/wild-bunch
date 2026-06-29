@@ -27,11 +27,11 @@ const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }>
   { value: 3, label: "Brutal" },
 ];
 
-const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> = [
-  { value: 0, label: "Boring" },
-  { value: 1, label: "Classic" },
-  { value: 2, label: "Adventurous" },
-  { value: 3, label: "Wild" },
+const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string; description: string }> = [
+  { value: 0, label: "Boring", description: "Calm trails. Fewer surprises, more quiet days." },
+  { value: 1, label: "Classic", description: "Balanced variance. The standard trail rhythm." },
+  { value: 2, label: "Adventurous", description: "More lucky breaks and bad luck. Livelier trails." },
+  { value: 3, label: "Wild", description: "Big swings. Frequent windfalls and mishaps." },
 ];
 
 export function SetupHuntStep({
@@ -109,6 +109,9 @@ export function SetupHuntStep({
             value={gameEntropy}
             onSelect={onGameEntropyChange}
           />
+          <OptionDescription>
+            {gameEntropyOptions.find((o) => o.value === gameEntropy)?.description}
+          </OptionDescription>
         </FieldGroup>
 
         <Field>
@@ -188,6 +191,13 @@ const FieldGroup = styled.div`
 const GroupLabel = styled.span`
   color: color-mix(in srgb, var(--text) 62%, transparent);
   font-size: 0.92rem;
+`;
+
+const OptionDescription = styled.p`
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 48%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.4;
 `;
 
 const Label = styled.label`
