@@ -2,7 +2,7 @@
 
 **Issue:** [BUNCH-93 — Entropy setup and controls](https://linear.app/harleys-workspace/issue/BUNCH-93/entropy-setup-and-controls)
 **Branch:** `harleydbartles/bunch-93-entropy-setup-and-controls`
-**Base commit:** `6b9fcbfbfb2d33a81dca3ef9a73ecbb1a6537efe` (== `origin/main` at preflight time)
+**Base commit:** `a2a88e9` (== `origin/main` after BUNCH-107 seed codec refactor; rebased from original preflight base `6b9fcbf`)
 **Plan type:** Preflight → execution plan (plan-only draft PR first; execution after approval)
 **Parallel issue:** BUNCH-94 (difficulty) — may run in parallel; not blocked on it landing. Rebase onto current main if BUNCH-94 lands while this executes; repair mechanical overlap only.
 
@@ -11,7 +11,7 @@
 - `.agents/skills/wild-bunch-project-doctrine/references/difficulty-entropy-seeded-world-setup.md` — canonical entropy envelope definitions (Boring/Classic/Adventurous/Wild). Task 1 design aligns with this.
 - `.agents/skills/wild-bunch-domain-modeling/SKILL.md` — GameSession aggregate root, travel/journey state, trail-day progression.
 - `.agents/skills/wild-bunch-dotnet-architecture/SKILL.md` — domain owns rules, application orchestrates, persistence is JSON snapshot, no early table normalization.
-- `.agents/skills/wild-bunch-worker-verification/SKILL.md` — return evidence + issue-goal conformance + falsification.
+- `.agents/skills/verification-before-completion/SKILL.md` — return evidence + issue-goal conformance + falsification (the plan originally cited a non-existent `wild-bunch-worker-verification` skill; the correct verification skill is `verification-before-completion`).
 - `.agents/skills/game-playtest/SKILL.md` — browser playtest + screenshot evidence for the player/dev-facing control proof.
 - `.agents/skills/repo-worker-base/SKILL.md` — fresh-main invariant, worktree isolation gate, GREEN gate, required return evidence.
 
@@ -19,23 +19,26 @@
 
 ### What is already complete on main (preserve, do not redo)
 
+> **Rebase note (BUNCH-107):** The original preflight was written against `6b9fcbf`, before BUNCH-107 refactored the seed codec into the `SeedWorld` setup pipeline. The references below are verified against the rebased base `a2a88e9`. BUNCH-107 deleted `GameSetupSeedCodec.cs` and `StartingWorldDescriptorSeedMixer.cs` and introduced `SeedWorldResolver`, `SeedWorld`, `EntropyPolicy`, `DifficultyEnvelope`, `MysteryTruthResolver`, `StartingTownPolicy`, `GameSetupResolver`, and `ResolvedGameSetup`. Entropy is no longer seed-owned; it is entropy-owned (`EntropyPolicy` + `MysteryTruthResolver`). The seed codec does NOT encode entropy.
+
 - `GameEntropy` enum (`Boring`, `Classic`, `Adventurous`, `Wild`) — `src/WildBunch.Domain/Travel/GameEntropy.cs`.
 - `GameDifficulty` enum — `src/WildBunch.Domain/Travel/GameDifficulty.cs`.
-- `StartingWorldDescriptor` carries `GameEntropy` — `src/WildBunch.GameContent/NewGame/GameSetupSeed.cs:15`.
-- Seed codec resolves/validates entropy, uses it in starting-cash bonus envelope — `src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs:55,100,148-155`.
-- `SeededNewGameFactory` selects salt source by entropy (Boring=Fixed, others=Runtime) — `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs:36-38`.
-- `GameSession.StartNew` accepts + stores `GameEntropy` — `src/WildBunch.Domain/Game/GameSession.cs:797,849,919`.
+- `EntropyPolicy.For(GameEntropy)` carries the entropy policy (salt mode + cash bonus cap) — `src/WildBunch.GameContent/NewGame/EntropyPolicy.cs`. Boring=Fixed/0, Classic=Runtime/2, Adventurous=Runtime/5, Wild=Runtime/8. The seed does NOT encode entropy; `EntropyPolicy` is applied downstream of `SeedWorld` by `MysteryTruthResolver`.
+- `SeedWorld` does NOT carry `GameEntropy` (seed-owned world/map layer only) — `src/WildBunch.GameContent/NewGame/SeedWorld.cs`. This is correct per the post-BUNCH-107 doctrine.
+- `MysteryTruthResolver.Resolve` is the entropy-applied mystery-truth seam: salt source selection (Boring=Fixed(seedCodeText), others=factory-produced) + cash bonus cap — `src/WildBunch.GameContent/NewGame/MysteryTruthResolver.cs:51-55`. BUNCH-107 left an explicit BUNCH-93 expansion comment here for setup-time variance (culprit reroll, feature reallocation). **This is a setup-time seam, distinct from the runtime travel variance seam targeted by Task 1.** Task 1 does not duplicate this seam.
+- `SeededNewGameFactory.Create` passes entropy through `EntropyPolicy.For` → `GameSetupResolver.Resolve` → `GameSession.StartNew` — `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs:28-51`. Salt selection no longer lives here (moved to `MysteryTruthResolver`).
+- `GameSession.StartNew` accepts + stores `GameEntropy` — `src/WildBunch.Domain/Game/GameSession.cs:836,845,870` (constructor stores at line 82; property at line 131).
 - `GameStarted` event carries entropy — `src/WildBunch.Domain/Events/GameStarted.cs:21`.
-- Event replay restores entropy — `src/WildBunch.Domain/Game/GameSessionEventReplay.cs:68`.
-- Persistence round-trips entropy (snapshot + setup component) — `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs:16,40,79` + `GameSessionJsonSerializer.Setup.cs` + `EfGameSessionRepository.cs:119,269`. Legacy snapshots default to `Classic`.
-- API/DTO/mapper pass entropy through — `StartGameRequest.cs:9`, `StartNewGameCommand.cs:9`, `StartNewGameHandler.cs:59`, `GameDtos.cs:15`, `GameSessionMapper.cs:42,68,90`.
-- Frontend start-flow entropy selection — `SetupHuntStep.tsx:30-35`, `useStartGameSeed.ts`, `useStartFlow.ts`, `wildBunchApi.ts:151`.
-- Dev overlay exposes entropy as **inspect-only** — `SessionDevContextDto.cs:13`, `SessionDevContextMapper.cs:16`, `SessionDevPanel.tsx:124-127` ("Entropy (inspect):").
+- Event replay restores entropy — `src/WildBunch.Domain/Game/GameSessionEventReplay.cs:68` (passes `gameStarted.GameEntropy` into `GameSession` ctor); `Apply(GameStarted)` sets it at `GameSession.cs:967`.
+- Persistence round-trips entropy (snapshot + setup component) — `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs:17,42,82` + `GameSessionJsonSerializer.Setup.cs` (serialize/deserialize `GameEntropy`) + `EfGameSessionRepository.cs:119,276`. Legacy snapshots default to `Classic`.
+- API/DTO/mapper pass entropy through — `StartGameRequest.cs:9` (`src/WildBunch.Api/Games/Requests/`), `StartNewGameCommand.cs:9` (`src/WildBunch.Application/Games/Commands/`), `StartNewGameHandler.cs:59` (`src/WildBunch.Application/Games/Commands/`), `GameDtos.cs:15`, `GameSessionMapper.cs:42,68,90` (now at `src/WildBunch.Application/Games/Mapping/` — moved from `Execution/` by BUNCH-107).
+- Frontend start-flow entropy selection — `SetupHuntStep.tsx:30-35` (`gameEntropyOptions` includes Boring at line 31), `useStartGameSeed.ts`, `useStartFlow.ts`, `wildBunchApi.ts:151,160-161`.
+- Dev overlay exposes entropy as **inspect-only** — `SessionDevContextDto.cs:13` (`GameEntropy` as string), `SessionDevContextMapper.cs`, `SessionDevPanel.tsx:125-126` ("Entropy (inspect):").
 - Existing tests cover setup/persistence/round-trip/salt — see Test inventory below.
 
 ### The central gap
 
-**`GameEntropy` does NOT yet affect runtime variance behavior.** It is plumbed end-to-end and stored, but no runtime code branches on it to change variance/surprise. `TravelDayGenerationContext` carries `GameEntropy` (line 76) but `TravelDayPlanGenerator.Context.cs` (`BuildCategoryWeights`, `BuildEncounterCountWeights`) and `JourneyEncounterResolutionEngine.cs` never read it. The only entropy branches today are setup-time: starting-cash bonus envelope and salt-source selection (Boring=Fixed).
+**`GameEntropy` does NOT yet affect runtime variance behavior.** It is plumbed end-to-end and stored, but no runtime code branches on it to change variance/surprise. `TravelDayGenerationContext` carries `GameEntropy` (line 76) but `TravelDayPlanGenerator.Context.cs` (`BuildCategoryWeights` at line 170, `BuildEncounterCountWeights` at line 103) and `JourneyEncounterResolutionEngine.cs` never read it. The only entropy branches today are setup-time: `EntropyPolicy.For` (cash bonus cap + salt mode) and `MysteryTruthResolver.Resolve` (salt source selection — Boring=Fixed, others=Runtime). BUNCH-107 left an explicit expansion seam in `MysteryTruthResolver` for setup-time variance (culprit reroll, feature reallocation), but that is a **setup-time** seam — it does not make entropy affect the per-travel-day variance that the player experiences during play. Task 1 targets the **runtime travel variance** seam, which is complementary and not duplicated by the `MysteryTruthResolver` seam.
 
 ### Secondary gaps
 
@@ -46,11 +49,15 @@
 
 ### Test inventory (existing, preserve)
 
+> **Rebase note (BUNCH-107):** Two GameContent test files were renamed by BUNCH-107: `StartingWorldDescriptorResolverTests.cs` → `SeedWorldResolverTests.cs`, and `StartingWorldDescriptorSeedCodeFactory.cs` → `SeedWorldSeedCodeFactory.cs`. The entropy coverage they provided moved with them.
+
 - `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs` — round-trip + legacy default.
 - `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs` — Boring/Classic salt behavior.
-- `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` — default Classic, Boring fixed salt.
-- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorResolverTests.cs` — entropy resolution + Wild legality.
-- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorSeedCodeFactory.cs` — entropy in signature.
+- `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` — default Classic, Boring fixed salt (updated by BUNCH-107 for the new pipeline).
+- `tests/WildBunch.GameContent.Tests/SeedWorldResolverTests.cs` — seed world resolution (renamed from `StartingWorldDescriptorResolverTests.cs` by BUNCH-107).
+- `tests/WildBunch.GameContent.Tests/SeedWorldSeedCodeFactory.cs` — seed code factory helper (renamed from `StartingWorldDescriptorSeedCodeFactory.cs` by BUNCH-107).
+- `tests/WildBunch.GameContent.Tests/SeedWorldBuilderTests.cs` — seed world builder snapshots (heavily updated by BUNCH-107).
+- `tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs` — full setup pipeline resolution (new in BUNCH-107).
 - `tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs` — event captures + rehydrate restores.
 - `tests/WildBunch.Domain.Tests/DevSaltSourceTests.cs` — dev salt does not mutate entropy.
 - `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs` — dev context includes entropy.
@@ -115,7 +122,7 @@ After execution, Harley can:
 **What:** Deterministic tests that prove entropy changes the travel-day category distribution while difficulty stays constant, and that difficulty changes it while entropy stays constant. This is the falsification guardrail that proves entropy ≠ difficulty.
 
 **Approach:**
-- Use the seed system (`SeededNewGameFactory` / `StartingWorldDescriptorResolver.CreateRepresentativeSeedCode`) to build sessions — do NOT bypass the seed system (per AGENTS.md UUID Seed Codec rules). Use descriptors, not stored UUIDs.
+- Use the seed system (`SeededNewGameFactory` / `SeedWorldResolver.CreateRepresentativeSeedCode`) to build sessions — do NOT bypass the seed system (per AGENTS.md UUID Seed Codec rules). Use `SeedWorld` records, not stored UUIDs. (BUNCH-107 renamed `StartingWorldDescriptorResolver` → `SeedWorldResolver` and `StartingWorldDescriptor` → `SeedWorld`.)
 - Use `GameEntropy.Boring` + fixed salt for deterministic category sampling across many rolls, OR construct `TravelDayGenerationContext` directly with controlled fields and call the weight builders + a fixed roll sequence to assert category/count differences.
 - Assert: holding difficulty constant at `Standard`, the category weight distributions for `Classic` vs `Adventurous` vs `Wild` vs `Boring` are materially different (e.g., Wild has higher Lucky+Unlucky combined weight than Classic, Boring has lower).
 - Assert: holding entropy constant at `Classic`, the category weight distributions for `Easy` vs `Brutal` are materially different (existing behavior, proves difficulty still owns pressure).
@@ -126,7 +133,7 @@ After execution, Harley can:
 - [ ] Assert entropy changes category/count distribution with difficulty held constant.
 - [ ] Assert difficulty changes category/count distribution with entropy held constant.
 - [ ] Assert Wild ≠ Brutal pattern (variance vs pressure independence).
-- [ ] Do not store UUIDs in fixtures; derive via `CreateRepresentativeSeedCode` where seed-derived sessions are needed.
+- [ ] Do not store UUIDs in fixtures; derive via `SeedWorldResolver.CreateRepresentativeSeedCode` where seed-derived sessions are needed.
 
 ### Task 3: Remove Boring from player-facing setup options
 
@@ -164,7 +171,7 @@ After execution, Harley can:
 
 **What:** Follow the existing `ForceDevSaltSource`/`ClearDevSaltSource` pattern (BUNCH-101) to add a dev-only command that sets `GameSession.GameEntropy` via a dev event. This lets Harley change entropy on a live test session and observe the variance difference immediately without restarting.
 
-**Pattern (from `ForceDevSaltSourceHandler.cs` + `DevSaltSourceForced.cs` + `GameSession.ForceDevSaltSource` at line 1150):**
+**Pattern (from `ForceDevSaltSourceHandler.cs` at `src/WildBunch.Application/Dev/Commands/` + `DevSaltSourceForced.cs` + `GameSession.ForceDevSaltSource` at line 1198):**
 1. `DevEntropyChanged` event record carrying `GameEntropy NewEntropy`.
 2. `GameSession.SetDevEntropy(GameEntropy entropy)` — validates `Enum.IsDefined`, calls `ProduceEvent(new DevEntropyChanged { NewEntropy = entropy })`.
 3. `Apply(DevEntropyChanged e)` — sets `GameEntropy = e.NewEntropy; _version++`.
@@ -256,7 +263,9 @@ After execution, Harley can:
 
 ## BUNCH-94 coordination
 
-Shared files both issues may touch: `SetupHuntStep.tsx`, `useStartGameSeed.ts`, `SessionDevPanel.tsx`, `GameSetupSeedCodec.cs`, `SeededNewGameFactory.cs`, `StartGameRequest.cs`, `GameDtos.cs`, `GameSessionMapper.cs`, snapshot/setup serializers, `EfGameSessionRepository.cs`.
+Shared files both issues may touch: `SetupHuntStep.tsx`, `useStartGameSeed.ts`, `SessionDevPanel.tsx`, `EntropyPolicy.cs`, `DifficultyEnvelope.cs`, `MysteryTruthResolver.cs`, `GameSetupResolver.cs`, `SeededNewGameFactory.cs`, `StartGameRequest.cs`, `GameDtos.cs`, `GameSessionMapper.cs` (now at `Games/Mapping/`), snapshot/setup serializers, `EfGameSessionRepository.cs`.
+
+> **Rebase note (BUNCH-107):** `GameSetupSeedCodec.cs` and `StartingWorldDescriptorSeedMixer.cs` no longer exist. The shared setup-pipeline files are now `EntropyPolicy.cs`, `DifficultyEnvelope.cs`, `MysteryTruthResolver.cs`, and `GameSetupResolver.cs`. BUNCH-93 expands `MysteryTruthResolver` (entropy-owned); BUNCH-94 expands `DifficultyEnvelope` (pressure-owned). Keep the two expansions in their respective files.
 
 - This plan touches `SetupHuntStep.tsx` (remove Boring), `SessionDevPanel.tsx` (entropy control), `TravelDayPlanGenerator.Context.cs` (variance seam — BUNCH-94 unlikely to touch), and the dev command/event pattern.
 - If BUNCH-94 lands first and conflicts on `SetupHuntStep.tsx` or `SessionDevPanel.tsx`, rebase onto current main and repair mechanical overlap. Keep entropy and difficulty changes in separate regions of the same files where possible.
