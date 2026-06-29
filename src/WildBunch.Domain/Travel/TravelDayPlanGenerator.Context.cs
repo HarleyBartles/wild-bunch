@@ -164,6 +164,29 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, 2, 0);
         }
 
+        // Entropy adjusts encounter-count spread (variance axis), not difficulty pressure.
+        // Applied after all difficulty/risk/pressure adjustments.
+        switch (context.GameEntropy)
+        {
+            case GameEntropy.Boring:
+                AddWeight(weights, 0, 2);
+                AddWeight(weights, 1, 1);
+                AddWeight(weights, 2, -1);
+                AddWeight(weights, 3, -1);
+                break;
+            case GameEntropy.Adventurous:
+                AddWeight(weights, 0, -1);
+                AddWeight(weights, 2, 1);
+                AddWeight(weights, 3, 1);
+                break;
+            case GameEntropy.Wild:
+                AddWeight(weights, 0, -1);
+                AddWeight(weights, 1, -1);
+                AddWeight(weights, 2, 2);
+                AddWeight(weights, 3, 2);
+                break;
+        }
+
         return weights;
     }
 
@@ -435,6 +458,37 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, TravelDayEncounterCategory.Environmental, 2);
             AddWeight(weights, TravelDayEncounterCategory.Foe, -2);
             AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, -2);
+        }
+
+        // Entropy adjusts category variance (volatility/surprise axis), not difficulty pressure.
+        // Applied after all difficulty/risk/terrain/pressure adjustments.
+        // Does not increase Foe weight — that is difficulty's job.
+        switch (context.GameEntropy)
+        {
+            case GameEntropy.Boring:
+                AddWeight(weights, TravelDayEncounterCategory.Quiet, 3);
+                AddWeight(weights, TravelDayEncounterCategory.Resource, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, -1);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, -1);
+                AddWeight(weights, TravelDayEncounterCategory.Environmental, -1);
+                AddWeight(weights, TravelDayEncounterCategory.Npc, -1);
+                AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, -1);
+                break;
+            case GameEntropy.Adventurous:
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 2);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Environmental, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
+                AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? 1 : 0);
+                break;
+            case GameEntropy.Wild:
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 4);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, 4);
+                AddWeight(weights, TravelDayEncounterCategory.Environmental, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Npc, 2);
+                AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? 2 : 0);
+                AddWeight(weights, TravelDayEncounterCategory.Quiet, -2);
+                break;
         }
 
         return weights;
