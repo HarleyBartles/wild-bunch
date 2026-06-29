@@ -38,6 +38,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
     private readonly WantedSuspectPresenceLedger _wantedSuspectPresenceLedger;
+    private readonly UnrelatedCriminalLedger _unrelatedCriminalLedger;
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
@@ -97,6 +98,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         _wantedSuspectPresenceLedger = new WantedSuspectPresenceLedger(wantedSuspectPresenceEntries);
 
+        // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
+        // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
+        // The active pool starts at gang parity; gang take-ins (replayed via
+        // SheriffTurnInSettled) drop the parity target and despawn excess. The
+        // unrelated-criminal turn-in / warrant-collection side is wired as those
+        // flows land; the ledger itself is the parity source of truth.
+        _unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
 
@@ -150,6 +159,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
 
     public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _wantedSuspectPresenceLedger.Entries;
+
+    /// <summary>
+    /// Unrelated criminal parity ledger (BUNCH-107). Tracks the active pool of
+    /// unrelated wanted criminals and keeps it at parity with the number of gang
+    /// members still available to surface. Read-only view; mutations flow through
+    /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and, once wired,
+    /// the unrelated-criminal turn-in flow.
+    /// </summary>
+    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
 
     /// <summary>
     /// Events produced by command methods but not yet committed to the event stream.
@@ -491,6 +509,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             e.TargetSuspectId, e.TargetName, e.Disposition,
             e.IsAlive, e.BountyAmount, e.Day, e.Turn);
         CaseFile.RecordSheriffTurnInSettlementState(settlementState);
+
+        // BUNCH-107: a gang member taken in reduces the unrelated-criminal parity
+        // target. The ledger despawns excess unrelated criminals (preferring ones
+        // the player has not collected a warrant for) to maintain parity. The
+        // despawned warrants are retired from the surfacing pool.
+        _unrelatedCriminalLedger.RecordGangMemberTakenIn();
 
         _version++;
     }
@@ -2653,6 +2677,48 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         return Math.Max(1, maxSequence + 1);
+    }
+
+    /// <summary>
+    /// Builds the <see cref="UnrelatedCriminalLedger"/> from the case file's
+    /// unrelated-criminal warrants and gang roster size, then replays gang take-ins
+    /// already recorded on the case file (as <see cref="CaseFile.SheriffTurnInSettlements"/>)
+    /// so the ledger's gang-side parity matches the persisted state on snapshot load.
+    /// Returns a degenerate empty ledger (gang count 0) when the case file has no
+    /// unrelated warrants or when the roster does not satisfy the 3x redundancy
+    /// invariant, so the parity system is a safe no-op for test/seed case files
+    /// that omit the full unrelated pool. See BUNCH-107.
+    /// </summary>
+    private static UnrelatedCriminalLedger BuildUnrelatedCriminalLedger(CaseFile caseFile)
+    {
+        ArgumentNullException.ThrowIfNull(caseFile);
+
+        var unrelatedWarrantIds = caseFile.PublicWarrants
+            .Where(warrant => warrant.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal)
+            .Select(warrant => warrant.Id)
+            .ToArray();
+
+        var gangMemberCount = caseFile.Suspects.Count;
+
+        // The parity system only activates when the full unrelated roster is present
+        // (at least 3x gang size). Partial test fixtures fall back to a no-op ledger.
+        if (gangMemberCount == 0 || unrelatedWarrantIds.Length < gangMemberCount * 3)
+        {
+            return new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
+        }
+
+        var ledger = new UnrelatedCriminalLedger(gangMemberCount, unrelatedWarrantIds);
+
+        // Replay gang take-ins already persisted on the case file so the ledger's
+        // gang-side parity matches the snapshot. Post-snapshot SheriffTurnInSettled
+        // events are replayed separately via Apply(SheriffTurnInSettled).
+        var persistedGangTakeIns = Math.Min(caseFile.SheriffTurnInSettlements.Count, gangMemberCount);
+        for (var i = 0; i < persistedGangTakeIns; i++)
+        {
+            ledger.RecordGangMemberTakenIn();
+        }
+
+        return ledger;
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
