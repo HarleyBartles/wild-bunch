@@ -156,6 +156,22 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 
 ---
 
+## Task 0: Worktree isolation gate (pre-mutation)
+
+**Required by:** BUNCH-94 Linear issue worktree isolation gate.
+
+Before any mutation, the worker must:
+
+- [ ] Work in a fresh dedicated worktree based on current `main` (or confirm the existing `.worktrees/bunch-94` worktree is on the correct branch and base commit).
+- [ ] Report worktree path, branch name, base commit, `git status --short` before mutation, and whether any pre-existing dirty state was present.
+- [ ] Do not overwrite pre-existing dirty state. If dirty state exists, stop and report it before proceeding.
+
+**Required Linear docs:** Read the following Linear documents before planning/execution (per BUNCH-94 issue):
+- "Preflight — difficulty setup and controls"
+- "Execution notes — difficulty setup and controls"
+
+---
+
 ## Task 1: Difficulty-distinction test proof
 
 **Files:**
@@ -1266,7 +1282,8 @@ Start the API and frontend dev servers. Open the browser. Take screenshots showi
    - The derived travel-rule facts changed (canteen capacity = 1, mounted ride/day = 0.5, encounter fight ammo health loss = higher)
    This proves forcing difficulty changes a materially different difficulty envelope, not just a label.
 3. **Dev panel compact AND expanded mode** (dev-overlay doctrine §9 closeout proof): Screenshot the Session dev panel in compact mode (default, with `Expand` button visible) and in expanded mode (after clicking Expand, with `Shrink` button visible). Both must show the difficulty control and derived travel-rule facts. Expanded mode must use width (two columns), not a tall single column (dev-overlay doctrine §4).
-4. **Optional — travel preview proof**: If feasible without a long playtest, start a journey and observe that the travel preview reflects the new difficulty's ride-day progress (Brutal's slower mounted progress → more expected days than Standard for the same trail).
+4. **Normal start-flow proof** (BUNCH-94 issue goal: "start, observe, and playtest materially different difficulty envelopes from the normal setup flow"): Start two new games from the normal setup flow with the same seed but different difficulties (Standard and Brutal). Screenshot the start-flow difficulty descriptions (Task 6 copy). After each game starts, open the Session dev panel and screenshot the derived travel-rule facts for each. The facts must differ between Standard and Brutal (canteen capacity, ride/day, encounter health losses). This proves the normal setup flow produces materially different difficulty envelopes, not just the dev overlay force path.
+5. **Optional — travel preview proof**: If feasible without a long playtest, start a journey and observe that the travel preview reflects the new difficulty's ride-day progress (Brutal's slower mounted progress → more expected days than Standard for the same trail).
 
 Save screenshots to `.agents/superpowers/output/screenshots/` (git-ignored).
 
@@ -1297,9 +1314,24 @@ git commit -m "BUNCH-94: validation and index mesh"
 | Persistence/rehydration where touched | No new persistence shape needed | `GameDifficulty` already in snapshot; event store mapping added in Task 2 |
 | API/DTO checks | Tasks 4, 5 | Integration endpoint tests + DTO extension tests |
 | Frontend tests/typecheck/build | Tasks 5, 6 | Vitest tests, typecheck, build |
-| Browser/playtest proof — observable envelope | Task 7 | Screenshots showing derived travel-rule facts change when difficulty is forced |
+| Browser/playtest proof — observable envelope | Task 7 | Screenshots showing derived travel-rule facts change when difficulty is forced (dev overlay) AND when starting with different difficulties (normal start flow) |
 | Difficulty stayed distinct from entropy | Task 1 | `DifficultyChangesDifficultyShapedFactsNotEntropy` test |
 | DOD mapping | This section | This table |
+
+## Return evidence checklist
+
+**Required by:** BUNCH-94 Linear issue return-evidence section. The worker return must include all of the following:
+
+- [ ] Branch name
+- [ ] PR URL (if created)
+- [ ] Base commit SHA
+- [ ] Final head SHA
+- [ ] Changed files list
+- [ ] Validation commands and results (`dotnet build`, `dotnet test`, `postgres-dev.ps1 validate`, `npm run typecheck`, `npm run build`, `npm test`)
+- [ ] Screenshots or browser evidence for the player/dev-facing control (dev overlay force-difficulty + normal start-flow Standard vs Brutal)
+- [ ] DOD mapping that proves difficulty stayed distinct from entropy
+- [ ] Worktree isolation gate report (Task 0: worktree path, branch, base commit, pre-mutation `git status --short`, dirty state confirmation)
+- [ ] GREEN cleanup proof if validation touched local workspace resources (per AGENTS.md GREEN Standard)
 
 ## Coordination with BUNCH-93
 
