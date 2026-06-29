@@ -44,6 +44,8 @@ Inspected at commit `a2a88e9` on `main` (post-BUNCH-107 seed codec refactor):
 
 Harley confirmed: **Easy** (difficulty) and **Boring** (entropy) are both player-facing options now. The code already reflects this — `SetupHuntStep.tsx` exposes all 4 options for both axes. No live doctrine or code needs changing for this; the only stale wording is in the historical BUNCH-104 plan file, which is left as-is per Harley's instruction.
 
+> **Authoritative for BUNCH-93 coordination:** This is the current product direction. BUNCH-93's plan Task 3 ("Remove Boring from player-facing setup options") contradicts this decision. Boring stays player-facing today; it may become dev/test-only in a later product decision, but not now. BUNCH-93 must drop or defer Task 3. Do not remove Boring from `SetupHuntStep.tsx` in either worker packet.
+
 ### Gaps this plan fills
 
 1. **Difficulty-distinction test proof**: No dedicated test proves that same seed + same entropy + different difficulty parameter produces different difficulty-shaped outputs (not random variance). The seed does not encode difficulty — it is a caller-supplied parameter to `Resolve`. `TravelRulesProfileTests` covers per-profile tuning values but not the end-to-end "same seed, different difficulty parameter → different difficulty-shaped facts" proof the preflight requires.
@@ -1302,3 +1304,28 @@ git commit -m "BUNCH-94: validation and index mesh"
 ## Coordination with BUNCH-93
 
 BUNCH-93 (entropy) may run in parallel. This plan does not depend on unmerged BUNCH-93 work. If BUNCH-93 lands first, rebase onto current main and repair mechanical conflicts. If both touch the same start-flow/dev-overlay files, keep changes minimal and do not overwrite the other axis. The difficulty control in `SessionDevPanel` is in the "Setup posture" section alongside the existing entropy inspect line — they are adjacent but separate controls.
+
+### Resolved: Boring player-facing status
+
+Harley confirmed this turn: **Boring (entropy) and Easy (difficulty) are both player-facing options today.** They may become dev/test-only in a later product decision, but not now. BUNCH-93's plan Task 3 ("Remove Boring from player-facing setup options") contradicts this and must be dropped or deferred. Neither worker packet removes Boring from `SetupHuntStep.tsx`. This resolves the only blocking contradiction between the two plans.
+
+### Mechanical clash map (all resolvable by rebase)
+
+Both plans modify the same files. All clashes are additive (new switch cases, new routes, new functions) and resolvable by rebase when one lands first:
+
+| File | BUNCH-94 | BUNCH-93 | Clash type |
+|------|----------|----------|------------|
+| `GameSession.cs` | `ForceDevDifficulty` + `Apply(DevDifficultyForced)` + `ApplyProducedEvent` case | `SetDevEntropy` + `Apply(DevEntropyChanged)` + same switch | Additive cases in same switch |
+| `GameSessionEventReplay.cs` | `DevDifficultyForced` case | `DevEntropyChanged` case | Additive cases in same switch |
+| `GameSessionJsonSerializer.Events.cs` | `DevDifficultyForced` in `ResolveEventType` | `DevEntropyChanged` in same switch | Additive cases in same switch |
+| `DevEndpoints.cs` | `POST .../force-difficulty` | `POST .../set-entropy` | Different routes |
+| `SessionDevPanel.tsx` | Replaces "Difficulty (inspect)" row (line 121) with control + travel-rules grid | Replaces "Entropy (inspect)" row (line 125) with control | Same "Setup posture" section, adjacent rows — mechanical conflict on rebase, resolvable by keeping both controls |
+| `SetupHuntStep.tsx` | Adds `difficultyDescriptions` in difficulty `FieldGroup` | ~~Removes Boring from `gameEntropyOptions`~~ (dropped per product decision) | No clash after BUNCH-93 Task 3 dropped |
+| `devApi.ts` | Adds `forceDevDifficulty` | Adds `setDevEntropy` | Different functions |
+| `dev/types.ts` | Adds `ForceDevDifficultyRequestDto`/`TravelRulesDevDto` | Adds `SetDevEntropyRequestDto` | Different types |
+| `SessionDevContextDto.cs` | Adds `TravelRules` record parameter | Unchanged | No clash |
+| `SessionDevContextMapper.cs` | Adds travel-rule mapping | Unchanged | No clash |
+
+### Doctrine self-healing ownership
+
+Both plans independently identified the same stale doctrine in `wild-bunch-project-doctrine` (lines 46-47). BUNCH-94 owns the execution-time MARK issue creation (see "Doctrine self-healing" section above). BUNCH-93 defers it. The MARK issue is created once, not twice.
