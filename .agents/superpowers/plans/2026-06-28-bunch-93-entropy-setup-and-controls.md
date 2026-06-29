@@ -140,9 +140,9 @@ After execution, Harley can:
 
 **Files:**
 - `src/WildBunch.Domain/Events/DevEntropyChanged.cs` (new)
-- `src/WildBunch.Domain/Game/GameSession.cs` — add `SetDevEntropy` method + `Apply(DevEntropyChanged)`
-- `src/WildBunch.Domain/Game/GameSessionEventReplay.cs` — wire Apply
-- `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs` — serialize/deserialize event
+- `src/WildBunch.Domain/Game/GameSession.cs` — add `SetDevEntropy` method + `Apply(DevEntropyChanged)` + add `DevEntropyChanged` case to `ApplyProducedEvent` switch (after the `DevSaltSourceCleared` case, around line 422)
+- `src/WildBunch.Domain/Game/GameSessionEventReplay.cs` — add `DevEntropyChanged` case to `ApplyEvent` switch (after the `DevSaltSourceCleared` case, around line 161)
+- `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs` — add `nameof(DevEntropyChanged) => typeof(DevEntropyChanged)` to `ResolveEventType` switch (after the `DevSaltSourceCleared` case, around line 59)
 - `src/WildBunch.Application/Dev/Commands/SetDevEntropyCommand.cs` (new)
 - `src/WildBunch.Application/Dev/Commands/SetDevEntropyHandler.cs` (new)
 - `src/WildBunch.Application/Dev/Models/SetDevEntropyRequestDto.cs` (new)
@@ -151,6 +151,7 @@ After execution, Harley can:
 - `src/WildBunch.Web/src/dev/devApi.ts` — add `setDevEntropy` call
 - `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx` — change "Entropy (inspect)" to an editable control
 - `src/WildBunch.Web/src/dev/types.ts` — add request type if needed
+- `tests/WildBunch.Domain.Tests/GameSessionDevEntropyTests.cs` (new) — domain-level tests including event-store round-trip, rehydration, and falsification proof
 
 **What:** Follow the existing `ForceDevSaltSource`/`ClearDevSaltSource` pattern (BUNCH-101) to add a dev-only command that sets `GameSession.GameEntropy` via a dev event. This lets Harley change entropy on a live test session and observe the variance difference immediately without restarting.
 
@@ -158,36 +159,53 @@ After execution, Harley can:
 1. `DevEntropyChanged` event record carrying `GameEntropy NewEntropy`.
 2. `GameSession.SetDevEntropy(GameEntropy entropy)` — validates `Enum.IsDefined`, calls `ProduceEvent(new DevEntropyChanged { NewEntropy = entropy })`.
 3. `Apply(DevEntropyChanged e)` — sets `GameEntropy = e.NewEntropy; _version++`.
-4. Wire into `GameSessionEventReplay.cs`.
-5. Serialize/deserialize in `GameSessionJsonSerializer.Events.cs` (follow the `DevSaltSourceForced` serialization shape).
-6. `SetDevEntropyCommand` + `SetDevEntropyHandler` extending `GameSessionCommandHandler`.
-7. `SetDevEntropyRequestDto` with `GameEntropy` string field.
-8. Dev endpoint POST `/sessions/{id:guid}/session/set-entropy` — guarded by `DevRoleGuard.EnsureDevAccess()`.
-9. Frontend `devApi.ts` + `SessionDevPanel.tsx` — replace inspect-only row with a control (select or segmented toggle) that calls the new endpoint and refreshes the dev context.
+4. Add `DevEntropyChanged` case to the `ApplyProducedEvent` switch in `GameSession.cs` (around line 422, after the `DevSaltSourceCleared` case).
+5. Add `DevEntropyChanged` case to the `ApplyEvent` switch in `GameSessionEventReplay.cs` (around line 161, after the `DevSaltSourceCleared` case).
+6. Add `nameof(DevEntropyChanged) => typeof(DevEntropyChanged)` to the `ResolveEventType` switch in `GameSessionJsonSerializer.Events.cs` (around line 59, after the `DevSaltSourceCleared` case).
+7. `SetDevEntropyCommand` + `SetDevEntropyHandler` extending `GameSessionCommandHandler`.
+8. `SetDevEntropyRequestDto` with `GameEntropy` string field.
+9. Dev endpoint POST `/sessions/{id:guid}/session/set-entropy` — guarded by `DevRoleGuard.EnsureDevAccess()`.
+10. Frontend `devApi.ts` + `SessionDevPanel.tsx` — replace inspect-only row with a control (select or segmented toggle) that calls the new endpoint and refreshes the dev context.
+
+**Event store mapping requirement (matches BUNCH-94 `DevDifficultyForced` standard):** The event store deserializer in `GameSessionJsonSerializer.Events.cs` has an explicit `ResolveEventType` switch (line 34) that maps event type name strings to .NET types. Without adding `nameof(DevEntropyChanged) => typeof(DevEntropyChanged)`, any session that has a `DevEntropyChanged` event in its stream will throw `InvalidOperationException("Unknown domain event type: DevEntropyChanged")` when loaded from the store. Snapshot persistence carrying `GameEntropy` is not by itself proof that the new event type round-trips safely — an explicit event store round-trip test is required. The `ApplyProducedEvent` switch in `GameSession.cs` (line 347) and the `ApplyEvent` switch in `GameSessionEventReplay.cs` (line 88) must also carry the new case, or producing/replaying the event throws.
+
+**Required event-store and falsification proof (matches BUNCH-94 `DevDifficultyForced` standard):**
+
+The following tests must exist in `tests/WildBunch.Domain.Tests/GameSessionDevEntropyTests.cs` (or `tests/WildBunch.Integration.Tests` if the persistence reference is needed there). Handler/endpoint tests (Task 3 checkboxes below) are NOT a substitute for the event-store mapping and rehydration proof.
+
+1. **`ResolveEventType` mapping test:** `DevEntropyChanged` is included in the event serializer `ResolveEventType` mapping. Prove by serializing a `DevEntropyChanged` event and deserializing it by event type name; the round-tripped event must be `DevEntropyChanged` with the correct `NewEntropy` value. Without the mapping, `DeserializeEvent(nameof(DevEntropyChanged), json)` throws `InvalidOperationException`.
+2. **Serializer round-trip test:** `DevEntropyChanged_RoundTripsThroughEventSerializer` — serialize a `DevEntropyChanged` event to JSON, deserialize it via `DeserializeEvent(nameof(DevEntropyChanged), json)`, assert the result is `DevEntropyChanged` with the same `NewEntropy`.
+3. **Rehydrate-from-events test:** `DevEntropyChanged_RehydratesFromEventStream` — create a session, call `SetDevEntropy`, collect uncommitted events, `MarkEventsCommitted`, then `GameSession.RehydrateFromEvents(...)` with those events. Assert `rehydrated.GameEntropy` equals the forced entropy value. This proves the event stream (not just the snapshot) restores the forced entropy.
+4. **Falsification — does not mutate other state:** `SetDevEntropy_DoesNotMutateOtherState` — capture `GameDifficulty`, `SaltSource`, `Player.Health`, `Player.Wallet.Cash`, `Journey`, `CurrentActionContext`, `Status`, `CurrentTown.TownId`, `CaseFile` (including hidden culprit truth), and any saloon state before the call. After `SetDevEntropy`, assert all of those are unchanged. Assert only one event is produced and it is `DevEntropyChanged`. This proves the dev entropy mutation changes only `GameEntropy` and does not leak into difficulty, salt, journey/player state, hidden culprit truth, saloon state, or gameplay outcomes.
+5. **Handler/endpoint tests remain, but are not a substitute:** The `SetDevEntropyHandler` test (entropy changes + event emitted + dev guard) and the dev endpoint integration test are still required, but they do not replace the event-store mapping test, the serializer round-trip test, or the rehydrate-from-events test. A handler test that calls the handler and checks the aggregate state does not prove the event type round-trips through the event store.
 
 **Doctrine compliance (`.agents/dev-overlay/DOCTRINE.md`):**
 - §1 State/action boundary: setting entropy is setting state (variance posture), not forcing a gameplay outcome. Valid.
 - §2 Panel ownership: Session dev owns entropy/seed posture. Valid.
 - §7 Backend authority: mutation goes through backend command + dev event, not frontend fabrication. Valid.
-- §9 Closeout proof: event-stream proof for dev entropy change.
+- §9 Closeout proof: event-stream proof for dev entropy change — the rehydrate-from-events test (requirement 3 above) is the event-stream proof.
 
 **Constraints:**
 - Do not expose this through normal player APIs. Dev-only, `DevRoleGuard`-guarded.
-- The dev event is persisted in the event stream and rehydrated.
+- The dev event is persisted in the event stream and rehydrated — proven by the serializer round-trip test (requirement 2) and the rehydrate-from-events test (requirement 3).
 - Changing entropy mid-session affects future travel-day generation, not already-generated days.
 
 **Checkboxes:**
 - [ ] Create `DevEntropyChanged` event.
 - [ ] Add `GameSession.SetDevEntropy` + `Apply(DevEntropyChanged)`.
-- [ ] Wire event replay.
-- [ ] Add event serialization/deserialization.
+- [ ] Add `DevEntropyChanged` case to `ApplyProducedEvent` switch in `GameSession.cs` (line ~422).
+- [ ] Add `DevEntropyChanged` case to `ApplyEvent` switch in `GameSessionEventReplay.cs` (line ~161).
+- [ ] Add `nameof(DevEntropyChanged) => typeof(DevEntropyChanged)` to `ResolveEventType` switch in `GameSessionJsonSerializer.Events.cs` (line ~59).
 - [ ] Create `SetDevEntropyCommand` + `SetDevEntropyHandler` + `SetDevEntropyRequestDto`.
 - [ ] Map dev endpoint in `DevEndpoints.cs`.
 - [ ] Register handler in `DependencyInjection.cs` if needed.
 - [ ] Add `setDevEntropy` to `devApi.ts`.
 - [ ] Replace inspect-only entropy row in `SessionDevPanel.tsx` with an editable control.
-- [ ] Add backend test for `SetDevEntropyHandler` (entropy changes + event emitted + dev guard).
-- [ ] Add dev endpoint integration test.
+- [ ] **Event-store proof:** serializer round-trip test for `DevEntropyChanged` (requirement 2).
+- [ ] **Event-store proof:** rehydrate-from-events test for `DevEntropyChanged` (requirement 3).
+- [ ] **Falsification proof:** `SetDevEntropy_DoesNotMutateOtherState` — changes only `GameEntropy`, does not mutate difficulty, salt source, journey/player state, hidden culprit truth, saloon state, or gameplay outcomes (requirement 4).
+- [ ] Add backend test for `SetDevEntropyHandler` (entropy changes + event emitted + dev guard) — not a substitute for event-store proof (requirement 5).
+- [ ] Add dev endpoint integration test — not a substitute for event-store proof (requirement 5).
 
 ### Task 4: Frontend setup copy — frame entropy as volatility/surprise
 
@@ -260,5 +278,7 @@ Shared files both issues may touch: `SetupHuntStep.tsx`, `useStartGameSeed.ts`, 
 - Difficulty changes pressure (foe/unlucky pressure) — existing behavior, unchanged.
 - Wild ≠ Brutal — proven by Task 2 independence assertion.
 - Entropy control is dev-only (Session dev panel) — not a normal player API.
+- `DevEntropyChanged` event round-trips through the event store — proven by serializer round-trip test + rehydrate-from-events test (Task 3, matches BUNCH-94 `DevDifficultyForced` standard).
+- `SetDevEntropy` changes only `GameEntropy` — falsification proof confirms no mutation of difficulty, salt source, journey/player state, hidden culprit truth, saloon state, or gameplay outcomes (Task 3).
 - Boring and Easy stay player-facing — not removed from setup (direction change from original issue text).
 - No old journey-only/randomness-policy names reintroduced — grep proof.
