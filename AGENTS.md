@@ -160,22 +160,22 @@ The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_me
 
 ## UUID Seed Codec
 - The game-start UUID encodes the seed-owned world/map layer: world variant, selected town IDs, trail graph (with baseline terrain/water/distance), accusation/default culprit candidates, and seed-derived cash bonus.
-- `SeedWorldResolver.Resolve(Guid)` decodes UUID → `SeedWorld`. `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` encodes `SeedWorld` → UUID via round-trip search.
+- `SeedWorldResolver.Resolve(Guid)` decodes UUID → `SeedWorld`. `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` encodes `SeedWorld` → UUID via direct bit-packing (O(1) both directions; 22 bits used, 106 reserved).
 - The seed does NOT encode difficulty, entropy, loadout, horse/saddle, final starting town, or final cash — those are pressure-owned (`DifficultyEnvelope`), entropy-owned (`EntropyPolicy` + `MysteryTruthResolver`), or player/setup-owned (`StartingTownPolicy`).
-- The starting town is NOT a seed-owned fact. The player can start in any town that exists in the generated world. `StartingTownPolicy` validates the choice and provides a safe default (pinecross). Future seam: difficulty may constrain eligibility.
-- The seed deterministically derives the world map from the full town catalog: town count (6-8), which towns are selected (anchor towns pinecross/redmesa/holloway always included, rest seed-selected), and the trail graph (catalog trails where both endpoints are selected, with terrain/water/distance from the catalog indexed by world variant). This is NOT a pair of canned named sets — it is true seed-derived town selection.
+- The starting town is NOT a seed-owned fact. The player can start in any town that exists in the generated world. `StartingTownPolicy` validates the choice and provides a safe default (slot-0 town of the derived world). Future seam: difficulty may constrain eligibility.
+- The seed deterministically derives the world map from the 40-entry town-name pool: town count (5-20), which towns are selected (slot-based derivation via xorshift shuffle — no anchor towns), and the trail graph (slot-based topology guarantees connectivity for any town count in range, with terrain/water/distance from the catalog indexed by world variant). This is NOT a pair of canned named sets — it is true seed-derived town selection.
 - `SeedWorld` holds `SelectedTownIds` and `Trails` (list of `SeedWorldTrail` with terrain/water/distance). The seed owns the default terrain and trail distances. Later difficulty can modify those values downstream of the seed codec.
 - Design boundary: SeedWorld owns the candidate/generated map. Same seed + same difficulty should produce the same resolved map. Difficulty may later influence map pressure/layout realization (distance bands, terrain harshness, connectivity constraints) downstream of the seed codec, not by hiding difficulty inside the seed. Longer term, `SeedWorld + DifficultyEnvelope` may produce the final resolved world/map, while `StartingTownPolicy` validates the player's start choice against that world.
 - Both directions must stay in sync. When you add a new seed-owned field:
   1. Add the field to `SeedWorld` and the codec in `SeedWorldResolver.Resolve`.
-  2. Add the field to the seed world signature in `StartingWorldDescriptorSeedMixer.CreateSeedWorldSignature` so `CreateRepresentativeSeedCode` can round-trip it.
-  3. Update `SeedWorldCatalog` if the field is a new town or trail.
+  2. Update the bit-packing layout in `SeedWorldResolver.CreateRepresentativeSeedCode` to encode/decode the new field within the 128-bit UUID budget.
+  3. Update `SeedWorldCatalog` if the field is a new town, trail, or palette pattern.
   4. Update `SeedWorldBuilderTests` snapshot assertions to include the new town/trail/field.
   5. Update `SeededNewGameFactoryTests` count assertions if town/trail counts changed.
   6. Run the round-trip guardrail test to verify the codec still resolves both ways.
 - Do NOT store UUIDs in test fixtures or libraries. Store `SeedWorld` records and derive UUIDs on the fly via `CreateRepresentativeSeedCode`. Stored UUIDs go stale when the codec evolves; `SeedWorld` records are compile-time checked.
 - Do NOT create test sessions by bypassing the seed system with hand-built worlds unless the test is specifically about resource mechanics (canteen math, horse exhaustion). For encounter, trail-event, and journey tests, go through the seed system. Deterministic foe-encounter seed profiles for travel tests are tracked in BUNCH-87.
-- The UUID has 128 bits of bandwidth. As fields are added, fewer UUIDs map to each seed world shape — this is expected and fine. `CreateRepresentativeSeedCode` searches until it finds a match.
+- The UUID has 128 bits of bandwidth. As fields are added, fewer UUIDs map to each seed world shape — this is expected and fine. `CreateRepresentativeSeedCode` packs the encoded fields directly into the UUID bits; no search is performed.
 
 ## Modular Excitement Doctrine
 - Modular player excitement is achieved through boring implementation.

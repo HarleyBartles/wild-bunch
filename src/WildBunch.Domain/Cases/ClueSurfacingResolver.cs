@@ -40,12 +40,14 @@ public sealed class ClueSurfacingResolver
             return null;
         }
 
-        // Boring mode: simple deterministic slot/visit rotation.
+        // Boring mode: simple deterministic slot/visit rotation. The safe-wrap
+        // ((... % len + len) % len) keeps the index in [0, eligible.Length) even when
+        // an input is negative, matching WantedPosterResolver's boring-mode guard.
         // Salt mode: deterministic hash of (salt, townSlotIndex, visitCount). The uint
         // cast of the hash avoids the Math.Abs(int.MinValue) pitfall and keeps the
         // modulo result in [0, eligible.Length) regardless of the hash's sign.
         var index = salt is null
-            ? (townSlotIndex + visitCount) % eligible.Length
+            ? (((townSlotIndex + visitCount) % eligible.Length + eligible.Length) % eligible.Length)
             : (int)((uint)CombineSalt(salt.Salt, townSlotIndex, visitCount) % (uint)eligible.Length);
 
         return eligible[index];
