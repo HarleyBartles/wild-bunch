@@ -229,6 +229,12 @@ public sealed class CaseCharacterRosterTests
     private static string FeatureSignature(IReadOnlyList<CaseSuspectFeatureAssignment> features)
         => string.Join("|", features.Select(feature => $"{feature.PrimaryFeature.Key}:{string.Join(",", feature.AdditionalFeatures.Select(additional => additional.Key))}"));
 
+    [Fact]
+    public void UnrelatedWantedCriminalPool_HasAtLeast21Entries()
+    {
+        Assert.True(CaseCharacterRoster.UnrelatedWantedCriminalPool.Count >= 21);
+    }
+
     private static string WarrantSignature(OutlawWarrantProfile warrant)
         => string.Join(
             ":",
