@@ -8,30 +8,30 @@ public sealed record SeedMapTrailEdge(string Id, string FromTownId, string ToTow
 
 public static class SeedWorldMapLayout
 {
-    private static readonly IReadOnlyDictionary<string, (int X, int Y)> TownCoordinates =
-        new Dictionary<string, (int X, int Y)>
-        {
-            ["pinecross"] = (150, 500),
-            ["redmesa"] = (450, 400),
-            ["holloway"] = (300, 650),
-            ["sagewell"] = (600, 550),
-            ["dryfork"] = (700, 300),
-            ["emberfall"] = (800, 500),
-            ["hardpan"] = (100, 300),
-            ["openpass"] = (80, 700),
-            ["coppercreek"] = (120, 720)
-        };
+    private const int CenterX = 400;
+    private const int CenterY = 450;
+    private const int RingRadius = 250;
 
     public static IReadOnlyList<SeedMapTown> GetMapTowns()
     {
         var world = SeedWorldCatalog.CreateCanonicalWorld();
-        return world.Towns
-            .Select(town =>
+        var towns = world.Towns.ToArray();
+        return towns
+            .Select((town, index) =>
             {
-                var (x, y) = TownCoordinates[town.Id.Value];
+                var (x, y) = GetCoordinatesForSlot(index, towns.Length);
                 return new SeedMapTown(town.Id.Value, town.Name, town.Services, x, y);
             })
             .ToArray();
+    }
+
+    private static (int X, int Y) GetCoordinatesForSlot(int slotIndex, int totalTowns)
+    {
+        if (slotIndex == 0) return (CenterX, CenterY);
+        var angle = (slotIndex - 1) * (2.0 * Math.PI / Math.Max(1, totalTowns - 1));
+        var x = (int)(CenterX + RingRadius * Math.Cos(angle));
+        var y = (int)(CenterY + RingRadius * Math.Sin(angle));
+        return (x, y);
     }
 
     public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails()

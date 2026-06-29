@@ -12,16 +12,16 @@ public sealed class GetStartingTownMapHandlerTests
     {
         var handler = new GetStartingTownMapHandler();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery());
-        var ids = result.Towns.Select(t => t.Id).ToArray();
-        Assert.Contains("pinecross", ids);
-        Assert.Contains("redmesa", ids);
-        Assert.Contains("holloway", ids);
-        Assert.Contains("sagewell", ids);
-        Assert.Contains("dryfork", ids);
-        Assert.Contains("emberfall", ids);
-        Assert.Contains("hardpan", ids);
-        Assert.Contains("openpass", ids);
         Assert.Equal(8, result.Towns.Count);
+        // Town IDs are seed-derived from the 40-entry name pool, so we verify
+        // structural validity rather than hardcoded names.
+        Assert.All(result.Towns, town =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(town.Id));
+            Assert.False(string.IsNullOrWhiteSpace(town.Name));
+        });
+        var ids = result.Towns.Select(t => t.Id).ToArray();
+        Assert.Equal(ids.Length, ids.Distinct().Count());
     }
 
     [Fact]
@@ -47,15 +47,20 @@ public sealed class GetStartingTownMapHandlerTests
         var handler = new GetStartingTownMapHandler();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery());
         var byId = result.Trails.ToDictionary(t => t.Id);
-        Assert.Equal(4m, byId["trail-pine-red"].RideDayDistance);
-        Assert.Equal(2m, byId["trail-pine-hollow"].RideDayDistance);
-        Assert.Equal(3m, byId["trail-red-sage"].RideDayDistance);
-        Assert.Equal(5m, byId["trail-red-dry"].RideDayDistance);
-        Assert.Equal(3m, byId["trail-hollow-sage"].RideDayDistance);
-        Assert.Equal(5m, byId["trail-sage-ember"].RideDayDistance);
-        Assert.Equal(5m, byId["trail-red-ember"].RideDayDistance);
-        Assert.Equal(3m, byId["trail-pine-hardpan"].RideDayDistance);
-        Assert.Equal(3m, byId["trail-pine-openpass"].RideDayDistance);
+        // Trail IDs are slot-based (trail-{fromSlot}-{toSlot}) in the canonical
+        // 8-town world. Distances come from the catalog's Canonical variant.
+        Assert.Equal(4m, byId["trail-0-1"].RideDayDistance);
+        Assert.Equal(2m, byId["trail-0-2"].RideDayDistance);
+        Assert.Equal(3m, byId["trail-1-3"].RideDayDistance);
+        Assert.Equal(3m, byId["trail-2-4"].RideDayDistance);
+        Assert.Equal(5m, byId["trail-1-4"].RideDayDistance);
+        Assert.Equal(5m, byId["trail-0-3"].RideDayDistance);
+        Assert.Equal(4m, byId["trail-3-5"].RideDayDistance);
+        Assert.Equal(5m, byId["trail-4-5"].RideDayDistance);
+        Assert.Equal(3m, byId["trail-5-6"].RideDayDistance);
+        Assert.Equal(3m, byId["trail-0-6"].RideDayDistance);
+        Assert.Equal(3m, byId["trail-6-7"].RideDayDistance);
+        Assert.Equal(4m, byId["trail-3-7"].RideDayDistance);
     }
 
     [Fact]
@@ -72,10 +77,20 @@ public sealed class GetStartingTownMapHandlerTests
     }
 
     [Fact]
-    public async Task TrailEdgesCoverAllNineSeededTrails()
+    public async Task TrailEdgesCoverAllSeededTrails()
     {
         var handler = new GetStartingTownMapHandler();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery());
-        Assert.Equal(9, result.Trails.Count);
+        // The canonical 8-town world has 12 slot-based trails (6 base + 2 per
+        // additional slot for slots 5, 6, 7).
+        Assert.Equal(12, result.Trails.Count);
+    }
+
+    [Fact]
+    public void GetMapTowns_DoesNotCrashWithDerivedTownNames()
+    {
+        var towns = SeedWorldMapLayout.GetMapTowns();
+        Assert.NotEmpty(towns);
+        Assert.All(towns, town => Assert.True(town.X >= 0 && town.Y >= 0));
     }
 }
