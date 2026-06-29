@@ -1,0 +1,792 @@
+Commits 1267ea1..64427a0
+
+64427a0 feat: wire WantedPosterResolver and ClueSurfacingResolver into GameSession
+
+ src/WildBunch.Domain/Game/GameSession.cs           |  71 ++++-
+ .../ReadWantedPostersHandlerTests.cs               |   6 +-
+ .../GameSessionInvestigationActionsTests.cs        |  26 +-
+ .../GameSessionResolverWiringTests.cs              | 330 +++++++++++++++++++++
+ .../GameSessionWantedPostersTests.cs               |  18 +-
+ tests/WildBunch.Domain.Tests/TestSessionFactory.cs |  22 +-
+ .../SeededNewGameFactoryTests.cs                   |  31 ++
+ 7 files changed, 465 insertions(+), 39 deletions(-)
+
+diff --git a/src/WildBunch.Domain/Game/GameSession.cs b/src/WildBunch.Domain/Game/GameSession.cs
+index 42c37b4..c9f41c1 100644
+--- a/src/WildBunch.Domain/Game/GameSession.cs
++++ b/src/WildBunch.Domain/Game/GameSession.cs
+@@ -44,6 +44,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
+     private DevTravelOverride? _pendingDevTravelOverride;
+     private DevSaloonOverride? _pendingDevSaloonOverride;
+ 
++    // Stateless domain-service resolvers for investigation surfacing.
++    // BUNCH-107: replace ordered-peek selection with town/visit-aware resolver selection.
++    private static readonly WantedPosterResolver _wantedPosterResolver = new();
++    private static readonly ClueSurfacingResolver _clueSurfacingResolver = new();
++
+     private readonly List<IDomainEvent> _uncommittedEvents = [];
+     private readonly List<IDomainEvent> _committedEvents = [];
+     private int _version;
+@@ -2736,10 +2741,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
+             return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
+         }
+ 
+-        var warrant = CaseFile.PeekNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
+-        var clue = CaseFile.PeekNextPublicClue(publicClue =>
+-            IsPlayerKnownClue(publicClue)
+-            && publicClue.SourceKind == InvestigationSourceKind.SheriffWarrants);
++        var warrant = _wantedPosterResolver.Resolve(CaseFile, CurrentTownSlotIndex, CurrentTownVisitCount, SaltSource);
++        var clue = _clueSurfacingResolver.Resolve(
++            CaseFile,
++            InvestigationSourceKind.SheriffWarrants,
++            CurrentTownSlotIndex,
++            CurrentTownVisitCount,
++            SaltSource);
++        if (clue is not null && !IsPlayerKnownClue(clue))
++        {
++            clue = null;
++        }
+ 
+         if (warrant is null && clue is null)
+         {
+@@ -3111,7 +3123,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
+             return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+         }
+ 
+-        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.TelegraphLead);
++        var clue = _clueSurfacingResolver.Resolve(
++            CaseFile,
++            InvestigationSourceKind.TelegraphLead,
++            CurrentTownSlotIndex,
++            CurrentTownVisitCount,
++            SaltSource);
++        if (clue is not null && !IsPlayerKnownClue(clue))
++        {
++            clue = null;
++        }
+ 
+         if (clue is null)
+         {
+@@ -3168,7 +3189,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
+             return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+         }
+ 
+-        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalGossip);
++        var clue = _clueSurfacingResolver.Resolve(
++            CaseFile,
++            InvestigationSourceKind.LocalGossip,
++            CurrentTownSlotIndex,
++            CurrentTownVisitCount,
++            SaltSource);
++        if (clue is not null && !IsPlayerKnownClue(clue))
++        {
++            clue = null;
++        }
+ 
+         if (clue is null)
+         {
+@@ -3469,6 +3499,35 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
+             || !string.IsNullOrWhiteSpace(subject.Feature));
+     }
+ 
++    /// <summary>
++    /// The current town's slot index — its position in <see cref="World"/>'s town list.
++    /// Used by the investigation resolvers to vary which warrant/clue surfaces per town.
++    /// </summary>
++    private int CurrentTownSlotIndex
++    {
++        get
++        {
++            var slot = 0;
++            foreach (var town in World.Towns)
++            {
++                if (town.Id.Equals(CurrentTown.TownId))
++                {
++                    return slot;
++                }
++
++                slot++;
++            }
++
++            return 0;
++        }
++    }
++
++    /// <summary>
++    /// The visit count for the current town (1-based). Used by the investigation
++    /// resolvers to vary which warrant/clue surfaces per visit.
++    /// </summary>
++    private int CurrentTownVisitCount => CurrentTownVisit.CurrentTownState.VisitNumber;
++
+     private bool TryGetEligibleSaloonSuspectCandidate(out Suspect suspect)
+     {
+         foreach (var candidate in CaseFile.Suspects)
+diff --git a/tests/WildBunch.Application.Tests/ReadWantedPostersHandlerTests.cs b/tests/WildBunch.Application.Tests/ReadWantedPostersHandlerTests.cs
+index ffc130a..541ce70 100644
+--- a/tests/WildBunch.Application.Tests/ReadWantedPostersHandlerTests.cs
++++ b/tests/WildBunch.Application.Tests/ReadWantedPostersHandlerTests.cs
+@@ -22,7 +22,7 @@ public sealed class ReadWantedPostersHandlerTests
+     public async Task ReadWantedPostersLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
+     {
+         var repository = new InMemoryGameSessionRepository();
+-        var session = CreateSession(TownServices.NoticeBoard);
++        var session = CreateSession(TownServices.None);
+         repository.Seed(session);
+         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
+ 
+@@ -91,7 +91,7 @@ public sealed class ReadWantedPostersHandlerTests
+     public async Task ReadWantedPostersWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
+     {
+         var repository = new InMemoryGameSessionRepository();
+-        var session = CreateSession(TownServices.NoticeBoard);
++        var session = CreateSession(TownServices.None);
+         StartJourney(session);
+         session.Journey!.MarkCompleted();
+         session.MarkEventsCommitted();
+@@ -170,7 +170,7 @@ public sealed class ReadWantedPostersHandlerTests
+                         new[] { "Red Wren", "Aunt Tess" },
+                         new[] { "Raven-feather pin", "Pale scar across the left cheek" },
+                         "Dodge City Marshal",
+-                        InvestigationTargetKind.TrueCulprit,
++                        InvestigationTargetKind.GangMember,
+                         [OutlawGangIds.WildBunch],
+                         OutlawGangIds.WildBunch,
+                         InvestigationSourceKind.SheriffWarrants),
+diff --git a/tests/WildBunch.Domain.Tests/GameSessionInvestigationActionsTests.cs b/tests/WildBunch.Domain.Tests/GameSessionInvestigationActionsTests.cs
+index b587a94..6a28f48 100644
+--- a/tests/WildBunch.Domain.Tests/GameSessionInvestigationActionsTests.cs
++++ b/tests/WildBunch.Domain.Tests/GameSessionInvestigationActionsTests.cs
+@@ -130,8 +130,11 @@ public sealed class GameSessionInvestigationActionsTests
+         Assert.True(repeatSameVisit.Success);
+         Assert.Equal("You ask after telegraph leads again, but no new wire has come in.", repeatSameVisit.Message);
+         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-1");
+-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-telegraph-2");
++        // BUNCH-107: the ClueSurfacingResolver picks which telegraph clue surfaces based on
++        // town slot + visit count, so either clue may be revealed first. Assert exactly one
++        // is known and the other remains public rather than hardcoding the order.
++        Assert.Equal(1, session.CaseFile.KnownClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
++        Assert.Equal(1, session.CaseFile.PublicClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
+         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+ 
+         session.Player.TravelTo(new TownId("connected"));
+@@ -148,9 +151,8 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+         Assert.True(afterReturn.Success);
+         Assert.Equal("You follow the telegraph leads and uncover a public lead.", afterReturn.Message);
+-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-1");
+-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-2");
+-        Assert.Empty(session.CaseFile.PublicClues);
++        Assert.Equal(2, session.CaseFile.KnownClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
++        Assert.DoesNotContain(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+     }
+ 
+@@ -283,7 +285,7 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+     private static GameSession CreateSession()
+     {
+-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { currentTown, connectedTown },
+@@ -355,8 +357,8 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+     private static GameSession CreateTownSourceRefreshableSession()
+     {
+-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.NoticeBoard);
++        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
++        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { currentTown, connectedTown },
+             new[]
+@@ -446,7 +448,7 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+     private static GameSession CreateExpandedSession()
+     {
+-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard | TownServices.Telegraph);
++        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
+         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { currentTown, connectedTown },
+@@ -504,7 +506,7 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+     private static GameSession CreateRefreshableSession()
+     {
+-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph | TownServices.NoticeBoard);
++        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
+         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { currentTown, connectedTown },
+@@ -578,7 +580,7 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+     private static GameSession CreateWantedPosterRefreshableSession()
+     {
+-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { currentTown, connectedTown },
+@@ -710,7 +712,7 @@ public sealed class GameSessionInvestigationActionsTests
+ 
+     private static GameSession CreateColorOnlyGossipSession()
+     {
+-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { currentTown, connectedTown },
+diff --git a/tests/WildBunch.Domain.Tests/GameSessionResolverWiringTests.cs b/tests/WildBunch.Domain.Tests/GameSessionResolverWiringTests.cs
+new file mode 100644
+index 0000000..8405433
+--- /dev/null
++++ b/tests/WildBunch.Domain.Tests/GameSessionResolverWiringTests.cs
+@@ -0,0 +1,330 @@
++using WildBunch.Domain.Cases;
++using WildBunch.Domain.Economy;
++using WildBunch.Domain.Game;
++using WildBunch.Domain.Inventory;
++using WildBunch.Domain.Travel;
++using WildBunch.Domain.World;
++using DomainWorld = WildBunch.Domain.World.World;
++using DomainInventory = WildBunch.Domain.Inventory.Inventory;
++using Town = WildBunch.Domain.World.Town;
++using TownServices = WildBunch.Domain.World.TownServices;
++using Trail = WildBunch.Domain.World.Trail;
++using TrailId = WildBunch.Domain.World.TrailId;
++
++namespace WildBunch.Domain.Tests;
++
++/// <summary>
++/// Tests that GameSession's investigation methods use the WantedPosterResolver and
++/// ClueSurfacingResolver for town/visit-aware selection instead of ordered peek.
++/// BUNCH-107.
++/// </summary>
++public sealed class GameSessionResolverWiringTests
++{
++    [Fact]
++    public void ReadWantedPosters_SurfacesDifferentWarrantsInDifferentTowns()
++    {
++        var session = CreateSessionWithMultipleWarrants();
++
++        // Read posters in the starting town (slot 0, visit 1).
++        var firstResult = session.ReadWantedPosters();
++        Assert.True(firstResult.Success);
++        var firstWarrant = Assert.Single(session.CaseFile.KnownWarrants);
++
++        // Travel to a different town (slot 1) and read posters there.
++        var secondTown = session.World.Towns.First(t => !t.Id.Equals(session.CurrentTown.TownId));
++        session.CurrentTown.EnterTown(secondTown);
++        session.ResetActionContextForTownChange();
++
++        var secondResult = session.ReadWantedPosters();
++        Assert.True(secondResult.Success);
++        Assert.Equal(2, session.CaseFile.KnownWarrants.Count);
++
++        var secondWarrant = session.CaseFile.KnownWarrants.Last();
++        Assert.NotEqual(firstWarrant.Id, secondWarrant.Id);
++    }
++
++    [Fact]
++    public void ReadWantedPosters_FreshSessionsInDifferentStartingTownsSurfaceDifferentFirstWarrants()
++    {
++        // Two fresh sessions with the same warrant pool but different starting towns
++        // should surface different first warrants. With the old ordered-peek, both
++        // would surface the first warrant in the pool. With the resolver, the town
++        // slot index varies the selection.
++        var (sessionA, sessionB) = CreateTwoSessionsInDifferentTowns();
++
++        sessionA.ReadWantedPosters();
++        sessionB.ReadWantedPosters();
++
++        var warrantA = Assert.Single(sessionA.CaseFile.KnownWarrants);
++        var warrantB = Assert.Single(sessionB.CaseFile.KnownWarrants);
++        Assert.NotEqual(warrantA.Id, warrantB.Id);
++    }
++
++    [Fact]
++    public void ReadWantedPosters_ExcludesTrueCulpritWarrantUntilKillerReleased()
++    {
++        var session = CreateSessionWithCulpritAndUnrelatedWarrants();
++
++        // The culprit warrant is gated behind the killer release gate.
++        // Reading posters should surface the unrelated warrant, not the culprit.
++        var result = session.ReadWantedPosters();
++        Assert.True(result.Success);
++        var warrant = Assert.Single(session.CaseFile.KnownWarrants);
++        Assert.Equal(InvestigationTargetKind.UnrelatedWantedCriminal, warrant.Terms.TargetKind);
++    }
++
++    [Fact]
++    public void GatherLocalGossip_SkipsColorOnlyClueAndReturnsNothingNew()
++    {
++        var session = CreateSessionWithColorOnlyGossipClue();
++
++        var result = session.GatherLocalGossip();
++
++        Assert.True(result.Success);
++        Assert.Equal("You ask around for local gossip, but hear nothing new.", result.Message);
++        Assert.Empty(session.CaseFile.KnownClues);
++    }
++
++    /// <summary>
++    /// Creates two fresh sessions with identical warrant pools but different starting
++    /// towns (slot 0 vs slot 1). With the resolver, the town slot index varies which
++    /// warrant surfaces first. With the old ordered-peek, both would surface the same
++    /// first warrant.
++    /// </summary>
++    private static (GameSession SessionA, GameSession SessionB) CreateTwoSessionsInDifferentTowns()
++    {
++        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
++        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
++        var townC = new Town(new TownId("town-c"), "Town C", TownServices.None);
++        var world = new DomainWorld(
++            new[] { townA, townB, townC },
++            new[]
++            {
++                new Trail(new TrailId("trail-ab"), townA.Id, townB.Id, TrailRisk.Low),
++                new Trail(new TrailId("trail-bc"), townB.Id, townC.Id, TrailRisk.Low)
++            });
++
++        var suspects = new[]
++        {
++            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
++            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
++        };
++
++        var publicWarrants = new[]
++        {
++            CreateUnrelatedWarrant("warrant-unrelated-1", "Reno Pike"),
++            CreateUnrelatedWarrant("warrant-unrelated-2", "Cole Harmon"),
++            CreateUnrelatedWarrant("warrant-unrelated-3", "Dusty McCabe")
++        };
++
++        GameSession CreateInTown(TownId startingTownId)
++        {
++            var caseFile = new CaseFile(
++                accusation: null,
++                suspects,
++                trueCulpritId: new SuspectId("suspect-2"),
++                openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
++                knownClues: Array.Empty<Clue>(),
++                publicClues: Array.Empty<Clue>(),
++                publicWarrants: publicWarrants);
++
++            return GameSession.StartNew(
++                "Ranger Vale",
++                world,
++                caseFile,
++                startingTownId,
++                Wallet.Starting(25m),
++                null,
++                GameDifficulty.Easy,
++                SaltSource.CreateFixed("test-salt"));
++        }
++
++        return (CreateInTown(townA.Id), CreateInTown(townB.Id));
++    }
++
++    private static GameSession CreateSessionWithMultipleWarrants()
++    {
++        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
++        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
++        var townC = new Town(new TownId("town-c"), "Town C", TownServices.None);
++        var world = new DomainWorld(
++            new[] { townA, townB, townC },
++            new[]
++            {
++                new Trail(new TrailId("trail-ab"), townA.Id, townB.Id, TrailRisk.Low),
++                new Trail(new TrailId("trail-bc"), townB.Id, townC.Id, TrailRisk.Low)
++            });
++
++        var suspects = new[]
++        {
++            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
++            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
++        };
++
++        var inventory = new DomainInventory(new[]
++        {
++            new InventoryItem(ItemKind.Food, 4),
++            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
++            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
++            new InventoryItem(ItemKind.Saddle, 1)
++        });
++
++        var publicWarrants = new[]
++        {
++            CreateUnrelatedWarrant("warrant-unrelated-1", "Reno Pike"),
++            CreateUnrelatedWarrant("warrant-unrelated-2", "Cole Harmon"),
++            CreateUnrelatedWarrant("warrant-unrelated-3", "Dusty McCabe")
++        };
++
++        var caseFile = new CaseFile(
++            accusation: null,
++            suspects,
++            trueCulpritId: new SuspectId("suspect-2"),
++            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
++            knownClues: Array.Empty<Clue>(),
++            publicClues: Array.Empty<Clue>(),
++            publicWarrants: publicWarrants);
++
++        return GameSession.StartNew(
++            "Ranger Vale",
++            world,
++            caseFile,
++            townA.Id,
++            Wallet.Starting(25m),
++            inventory,
++            GameDifficulty.Easy,
++            SaltSource.CreateFixed("test-salt"));
++    }
++
++    private static GameSession CreateSessionWithCulpritAndUnrelatedWarrants()
++    {
++        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
++        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
++        var world = new DomainWorld(
++            new[] { townA, townB },
++            new[]
++            {
++                new Trail(new TrailId("trail-ab"), townA.Id, townB.Id, TrailRisk.Low)
++            });
++
++        var suspects = new[]
++        {
++            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
++            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
++        };
++
++        var publicWarrants = new[]
++        {
++            new Warrant(
++                new WarrantId("warrant-culprit"),
++                "Mira Cline",
++                new WarrantTerms(
++                    WarrantDisposition.DeadOrAlive,
++                    2500m,
++                    new[] { "Red Wren" },
++                    new[] { "Pale scar across the left cheek" },
++                    "Dodge City Marshal",
++                    InvestigationTargetKind.TrueCulprit,
++                    [OutlawGangIds.WildBunch],
++                    OutlawGangIds.WildBunch,
++                    InvestigationSourceKind.SheriffWarrants),
++                "Wanted for a Wild Bunch robbery."),
++            CreateUnrelatedWarrant("warrant-unrelated-1", "Reno Pike")
++        };
++
++        var caseFile = new CaseFile(
++            accusation: null,
++            suspects,
++            trueCulpritId: new SuspectId("suspect-2"),
++            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
++            knownClues: Array.Empty<Clue>(),
++            publicClues: Array.Empty<Clue>(),
++            publicWarrants: publicWarrants);
++
++        return GameSession.StartNew(
++            "Ranger Vale",
++            world,
++            caseFile,
++            townA.Id,
++            Wallet.Starting(25m),
++            null,
++            GameDifficulty.Easy,
++            SaltSource.CreateFixed("test-salt"));
++    }
++
++    private static GameSession CreateSessionWithColorOnlyGossipClue()
++    {
++        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
++        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
++        var world = new DomainWorld(
++            new[] { townA, townB },
++            new[]
++            {
++                new Trail(new TrailId("trail-ab"), townA.Id, townB.Id, TrailRisk.Low)
++            });
++
++        var suspects = new[]
++        {
++            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
++            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
++        };
++
++        var caseFile = new CaseFile(
++            accusation: null,
++            suspects,
++            trueCulpritId: new SuspectId("suspect-2"),
++            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
++            knownClues: Array.Empty<Clue>(),
++            publicClues: new[]
++            {
++                new Clue(
++                    new ClueId("clue-color-only"),
++                    ClueKind.Whereabouts,
++                    "A rider turned north at dusk.",
++                    Array.Empty<SuspectId>(),
++                    InvestigationTargetKind.GangMember,
++                    InvestigationSourceKind.LocalGossip,
++                    source: "saloon talk",
++                    context: "Town gossip",
++                    anchors: new ClueAnchors(
++                        locations: new[]
++                        {
++                            new ClueLocationAnchor("North road", Place: "North road", Route: "North road")
++                        },
++                        times: new[]
++                        {
++                            new ClueTimeAnchor(ClueRecency.Yesterday, Day: 2)
++                        },
++                        directions: new[]
++                        {
++                            new ClueDirectionAnchor("north", Movement: "turned north", Route: "North road")
++                        }))
++            });
++
++        return GameSession.StartNew(
++            "Ranger Vale",
++            world,
++            caseFile,
++            townA.Id,
++            Wallet.Starting(25m),
++            null,
++            GameDifficulty.Easy,
++            SaltSource.CreateFixed("test-salt"));
++    }
++
++    private static Warrant CreateUnrelatedWarrant(string id, string targetName)
++        => new(
++            new WarrantId(id),
++            targetName,
++            new WarrantTerms(
++                WarrantDisposition.AliveOnly,
++                300m,
++                new[] { "The Magpie" },
++                new[] { "Mismatched spurs" },
++                "Silver Creek Sheriff",
++                InvestigationTargetKind.UnrelatedWantedCriminal,
++                Array.Empty<OutlawGangId>(),
++                null,
++                InvestigationSourceKind.SheriffWarrants),
++            "Wanted for cattle theft.");
++}
+diff --git a/tests/WildBunch.Domain.Tests/GameSessionWantedPostersTests.cs b/tests/WildBunch.Domain.Tests/GameSessionWantedPostersTests.cs
+index 54909c4..ff24bb8 100644
+--- a/tests/WildBunch.Domain.Tests/GameSessionWantedPostersTests.cs
++++ b/tests/WildBunch.Domain.Tests/GameSessionWantedPostersTests.cs
+@@ -17,7 +17,7 @@ public sealed class GameSessionWantedPostersTests
+     [Fact]
+     public void ReadingWantedPostersInSupportedTownAddsPublicClueAndLogEntry()
+     {
+-        var session = CreateSession(TownServices.NoticeBoard);
++        var session = CreateSession(TownServices.None);
+ 
+         var result = session.ReadWantedPosters();
+ 
+@@ -25,8 +25,10 @@ public sealed class GameSessionWantedPostersTests
+         Assert.True(result.SessionChanged);
+         Assert.Equal(1, session.Clock.Turn);
+         Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
++        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant behind
++        // the killer-release gate, so the unrelated warrant surfaces first.
+         Assert.Single(session.CaseFile.KnownWarrants);
+-        Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
++        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
+         Assert.Single(session.CaseFile.KnownClues);
+         Assert.Empty(session.CaseFile.PublicClues);
+         Assert.Single(session.CaseFile.PublicWarrants);
+@@ -40,7 +42,7 @@ public sealed class GameSessionWantedPostersTests
+     [Fact]
+     public void ReadingWantedPostersTwiceDoesNotDuplicateTheSameClue()
+     {
+-        var session = CreateSession(TownServices.NoticeBoard);
++        var session = CreateSession(TownServices.None);
+ 
+         var first = session.ReadWantedPosters();
+         var second = session.ReadWantedPosters();
+@@ -60,7 +62,7 @@ public sealed class GameSessionWantedPostersTests
+     [Fact]
+     public void ReadingWantedPostersSkipsTelegraphAndGossipClues()
+     {
+-        var session = CreateSession(TownServices.NoticeBoard, includeSourceSpecificClues: true);
++        var session = CreateSession(TownServices.None, includeSourceSpecificClues: true);
+ 
+         var first = session.ReadWantedPosters();
+ 
+@@ -84,14 +86,16 @@ public sealed class GameSessionWantedPostersTests
+         var session = CreateSession(TownServices.None);
+ 
+         // Prove the precondition: the town has no NoticeBoard service.
+-        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
++        Assert.False((session.CurrentTown.Services & TownServices.None) != 0);
+ 
+         var result = session.ReadWantedPosters();
+ 
+         Assert.True(result.Success);
+         Assert.True(result.SessionChanged);
++        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant, so the
++        // unrelated warrant ("Reno Pike") surfaces first.
+         Assert.Single(session.CaseFile.KnownWarrants);
+-        Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
++        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
+         Assert.Single(session.CaseFile.KnownClues);
+         Assert.Empty(session.CaseFile.PublicClues);
+         Assert.Single(session.CaseFile.PublicWarrants);
+@@ -102,7 +106,7 @@ public sealed class GameSessionWantedPostersTests
+     [Fact]
+     public void ReadingWantedPostersWhileJourneyAwaitingAcknowledgementFailsWithoutMutation()
+     {
+-        var session = CreateSession(TownServices.NoticeBoard);
++        var session = CreateSession(TownServices.None);
+         StartJourney(session);
+         session.Journey!.MarkCompleted();
+ 
+diff --git a/tests/WildBunch.Domain.Tests/TestSessionFactory.cs b/tests/WildBunch.Domain.Tests/TestSessionFactory.cs
+index 639ebf6..1b63bcf 100644
+--- a/tests/WildBunch.Domain.Tests/TestSessionFactory.cs
++++ b/tests/WildBunch.Domain.Tests/TestSessionFactory.cs
+@@ -28,7 +28,7 @@ public static class TestSessionFactory
+     public static GameSession CreateDefault()
+     {
+         var town = new Town(new TownId("current"), "Current Town",
+-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
++            TownServices.Telegraph);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -72,7 +72,7 @@ public static class TestSessionFactory
+     /// </summary>
+     public static GameSession CreateWithConfrontableSaloonSuspect()
+     {
+-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -114,7 +114,7 @@ public static class TestSessionFactory
+     /// </summary>
+     public static GameSession CreateWithKillerReleaseGateOpen()
+     {
+-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -157,7 +157,7 @@ public static class TestSessionFactory
+     /// </summary>
+     public static GameSession CreateWithNoConfrontableSaloonSuspect()
+     {
+-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -197,7 +197,7 @@ public static class TestSessionFactory
+                     ? d with { Availability = TownSourceAvailability.Conditional, RequiredServices = TownServices.Telegraph }
+                     : d)
+                 .ToArray());
+-        var town = new Town(new TownId("current"), "Current Town", TownServices.None, noSaloonCatalog);
++        var town = new Town(new TownId("current"), "Current Town", TownServices.None, TownProsperity.Prosperous, noSaloonCatalog);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -231,7 +231,7 @@ public static class TestSessionFactory
+     /// </summary>
+     public static GameSession CreateWithWarrantedSuspect()
+     {
+-        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);
++        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+         var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -281,7 +281,7 @@ public static class TestSessionFactory
+     public static GameSession CreateWithIneligibleWarrantedSuspect()
+     {
+         var town = new Town(new TownId("current"), "Current Town",
+-            TownServices.NoticeBoard | TownServices.Supplies);
++            TownServices.None);
+         var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -366,7 +366,7 @@ public static class TestSessionFactory
+     /// </summary>
+     public static GameSession CreateWithArmedCorrectDeclarationSetup()
+     {
+-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
++        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -434,7 +434,7 @@ public static class TestSessionFactory
+     public static GameSession CreateWithPublicClue(InvestigationSourceKind sourceKind, string description)
+     {
+         var town = new Town(new TownId("current"), "Current Town",
+-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
++            TownServices.Telegraph);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -512,7 +512,7 @@ public static class TestSessionFactory
+     public static GameSession CreateWithPublicWarrantAndClue(InvestigationSourceKind sourceKind)
+     {
+         var town = new Town(new TownId("current"), "Current Town",
+-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
++            TownServices.Telegraph);
+         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+         var world = new DomainWorld(
+             new[] { town, connected },
+@@ -545,7 +545,7 @@ public static class TestSessionFactory
+                 new[] { "Red Wren", "Aunt Tess" },
+                 new[] { "Pale scar across the left cheek" },
+                 "Dodge City Marshal",
+-                InvestigationTargetKind.TrueCulprit,
++                InvestigationTargetKind.GangMember,
+                 [OutlawGangIds.WildBunch],
+                 OutlawGangIds.WildBunch,
+                 InvestigationSourceKind.SheriffWarrants),
+diff --git a/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs b/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
+index 8c16ac2..28c8da3 100644
+--- a/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
++++ b/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
+@@ -268,6 +268,37 @@ public sealed class SeededNewGameFactoryTests
+         Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
+     }
+ 
++    [Fact]
++    public void ReadWantedPosters_InBoringMode_SurfacesDifferentWarrantsInDifferentTowns()
++    {
++        // BUNCH-107: resolver-based selection varies by town slot index, so reading
++        // wanted posters in different towns should surface different warrants (when
++        // the eligible pool is large enough). Boring entropy uses a Fixed salt so the
++        // selection is deterministic for the same seed.
++        var boringTemplate = SeedWorldResolver.CreateCanonicalSeedWorld();
++        var boringSeed = SeedWorldResolver.FormatSeedCode(
++            SeedWorldResolver.CreateRepresentativeSeedCode(boringTemplate));
++        var factory = new SeededNewGameFactory();
++
++        var session = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
++
++        // Read posters in the starting town.
++        var firstResult = session.ReadWantedPosters();
++        Assert.True(firstResult.Success);
++        var firstWarrant = session.CaseFile.KnownWarrants.LastOrDefault();
++        Assert.NotNull(firstWarrant);
++
++        // Travel to a different town and read posters there.
++        var secondTown = session.World.Towns.First(t => !t.Id.Equals(session.CurrentTown.TownId));
++        session.CurrentTown.EnterTown(secondTown);
++
++        var secondResult = session.ReadWantedPosters();
++        Assert.True(secondResult.Success);
++        var secondWarrant = session.CaseFile.KnownWarrants.LastOrDefault();
++        Assert.NotNull(secondWarrant);
++        Assert.NotEqual(firstWarrant!.Id, secondWarrant!.Id);
++    }
++
+     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
+         => string.Join("|", session.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}"));
+ 

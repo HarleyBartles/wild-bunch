@@ -14,7 +14,7 @@ internal static class BoringScenarioBuilder
         => new(
             ScenarioName: "MountedTravelReady",
             Fixture: ScenarioSeedCatalog.CanonicalMountedStandard,
-            PreviewDestinationTownId: "holloway");
+            PreviewDestinationTownId: "redmesa");
 
     public static BoringScenario NoHorseFootTravelReady()
         => new(
@@ -31,7 +31,7 @@ internal static class BoringScenarioBuilder
         => new(
             ScenarioName: "PinecrossServicesOrWantedPosterReady",
             Fixture: ScenarioSeedCatalog.CanonicalPinecrossServices,
-            PreviewDestinationTownId: "holloway");
+            PreviewDestinationTownId: "redmesa");
 }
 
 internal sealed record BoringScenario(

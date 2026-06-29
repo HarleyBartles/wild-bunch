@@ -90,7 +90,7 @@ internal static class TravelTestFactory
         // Mirror the CreateHighRiskSession pattern from AdvanceTravelDayHandlerTests
         // but in the Domain test project (no handler, just session + preview).
         var pinecross = new Town(new TownId("pinecross"), "Pinecross",
-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
+            TownServices.Telegraph);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
@@ -139,7 +139,7 @@ internal static class TravelTestFactory
         // deterministic TravelDayPlanGenerator produces no Foe/Npc encounters across
         // the whole journey. Changing any of these values may reintroduce interruptions.
         var origin = new Town(new TownId("o2"), "Pinecross",
-            TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+            TownServices.None);
         var destination = new Town(new TownId("d2"), "Six Mile", TownServices.None);
         var world = new DomainWorld(
             new[] { origin, destination },

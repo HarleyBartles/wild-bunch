@@ -18,20 +18,9 @@ public sealed class ActionAvailabilityResolver
             new(AvailableActionKind.ReadWantedPosters, "Read wanted posters")
         };
 
-        if ((currentTown.Services & TownServices.Supplies) != 0)
-        {
-            availableActions.Add(new AvailableAction(AvailableActionKind.BuySupplies, "Buy supplies"));
-        }
-
-        if ((currentTown.Services & TownServices.Lodging) != 0)
-        {
-            availableActions.Add(new AvailableAction(AvailableActionKind.StayAtLodging, "Stay at lodging"));
-        }
-
-        if ((currentTown.Services & TownServices.Doctor) != 0)
-        {
-            availableActions.Add(new AvailableAction(AvailableActionKind.VisitDoctor, "Visit doctor"));
-        }
+        // Every town has a shop with prosperity-driven stock, so BuySupplies
+        // is always available when not traveling.
+        availableActions.Add(new AvailableAction(AvailableActionKind.BuySupplies, "Buy supplies"));
 
         if ((currentTown.Services & TownServices.Telegraph) != 0)
         {
@@ -44,8 +33,6 @@ public sealed class ActionAvailabilityResolver
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.BuySupplies);
-            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.StayAtLodging);
-            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.VisitDoctor);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.SendTelegram);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
             foreach (var source in currentTown.Sources.Definitions)

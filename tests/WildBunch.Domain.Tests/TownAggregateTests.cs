@@ -10,7 +10,7 @@ public sealed class TownAggregateTests
     [Fact]
     public void TownAggregateOwnsTownSourceAffordancesRepeatRulesAndWantedPosterBookkeeping()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph | TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var aggregate = new TownAggregate(currentTown, new TownVisitState(currentTown.Id));
 

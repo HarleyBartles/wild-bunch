@@ -22,7 +22,7 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
@@ -91,7 +91,7 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         StartJourney(session);
         session.Journey!.MarkCompleted();
         session.MarkEventsCommitted();
@@ -170,7 +170,7 @@ public sealed class ReadWantedPostersHandlerTests
                         new[] { "Red Wren", "Aunt Tess" },
                         new[] { "Raven-feather pin", "Pale scar across the left cheek" },
                         "Dodge City Marshal",
-                        InvestigationTargetKind.TrueCulprit,
+                        InvestigationTargetKind.GangMember,
                         [OutlawGangIds.WildBunch],
                         OutlawGangIds.WildBunch,
                         InvestigationSourceKind.SheriffWarrants),

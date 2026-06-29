@@ -4,7 +4,7 @@ public static class StartingWorldDescriptorCodeValidator
 {
     public static bool TryValidate(string? seedCode, out string? errorMessage)
     {
-        if (!StartingWorldDescriptorResolver.TryParseSeedCode(seedCode, out _))
+        if (!SeedWorldResolver.TryParseSeedCode(seedCode, out _))
         {
             errorMessage = "Seed code must be a UUID-shaped string.";
             return false;

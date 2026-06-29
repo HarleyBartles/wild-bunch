@@ -62,7 +62,7 @@ public sealed class GameSessionJourneyHistoryTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new DomainTown(new DomainTownId("pinecross"), "Pinecross", DomainTownServices.Supplies | DomainTownServices.Lodging | DomainTownServices.NoticeBoard);
+        var pinecross = new DomainTown(new DomainTownId("pinecross"), "Pinecross", DomainTownServices.None);
         var openpass = new DomainTown(new DomainTownId("openpass"), "Open Pass", DomainTownServices.None);
         var dryfork = new DomainTown(new DomainTownId("dryfork"), "Dry Fork", DomainTownServices.None);
 

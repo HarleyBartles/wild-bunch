@@ -1,5 +1,11 @@
 namespace WildBunch.Persistence.GameSessions;
 
+/// <summary>
+/// Component names for game session persistence components stored in the
+/// GameSessionComponents table. Each component is a JSONB payload keyed by
+/// session ID and component name. The table is generic and can accommodate
+/// new components without schema migration (just add a new constant here).
+/// </summary>
 internal static class GameSessionComponentNames
 {
     internal const string Player = "player";
@@ -16,6 +22,13 @@ internal static class GameSessionComponentNames
     internal const string CurrentActionContext = "currentActionContext";
     internal const string PendingDevTravelOverride = "pendingDevTravelOverride";
     internal const string PendingDevSaloonOverride = "pendingDevSaloonOverride";
+    /// <summary>
+    /// UnrelatedCriminalLedger component (BUNCH-107). Uses the existing
+    /// GameSessionComponents table without schema migration — the table
+    /// is generic and can accommodate new components. The ledger's ToSnapshot()
+    /// and FromSnapshot() methods handle serialization via JSONB.
+    /// </summary>
+    internal const string UnrelatedCriminalLedger = "unrelatedCriminalLedger";
 }
 
 internal static class GameSessionComponentPayloads

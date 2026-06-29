@@ -37,7 +37,7 @@ public sealed class GameApiTests
             .ToArray();
 
         Assert.Contains(connectedTownIds, townId => townId == "redmesa");
-        Assert.Contains(connectedTownIds, townId => townId == "holloway");
+        Assert.Contains(connectedTownIds, townId => townId == "goldgulch");
 
         var payload = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -126,7 +126,7 @@ public sealed class GameApiTests
         var startingFood = createdSession!.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity;
         var startingHorseFeed = createdSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity;
 
-        var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/holloway");
+        var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/redmesa");
 
         Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
 
@@ -153,7 +153,7 @@ public sealed class GameApiTests
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
-            new TravelRequest("holloway"));
+            new TravelRequest("redmesa"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
@@ -167,7 +167,7 @@ public sealed class GameApiTests
         Assert.Equal(2m, turnResult.Journey.RideDayDistance);
         Assert.Equal(2, turnResult.Journey.ExpectedDays);
         Assert.Equal(0, turnResult.Journey.DelayDays);
-        Assert.Equal("pinecross", turnResult.CurrentSession.Player.CurrentTownId);
+        Assert.Equal("lostcanyon", turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Day);
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.NotNull(turnResult.CurrentSession.Journey);
@@ -191,7 +191,7 @@ public sealed class GameApiTests
         Assert.NotNull(firstAdvance);
         Assert.True(firstAdvance!.Success);
         Assert.Equal(JourneyStatus.Active, firstAdvance.JourneyStatus);
-        Assert.Equal("pinecross", firstAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.Equal("lostcanyon", firstAdvance.CurrentSession.Player.CurrentTownId);
         Assert.Equal(2, firstAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, firstAdvance.CurrentSession.Clock.Turn);
         Assert.NotNull(firstAdvance.CurrentSession.Journey);
@@ -204,7 +204,7 @@ public sealed class GameApiTests
         Assert.NotNull(firstAdvance.TravelDiary);
         var openingDay = Assert.Single(firstAdvance.TravelDiary!.Days);
         Assert.NotNull(openingDay.OpeningNarration);
-        Assert.Contains("I set out for Holloway", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("I set out for Red Mesa", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.Contains($"{preview.Preview.BaselineRideDays}-day", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("by mounted travel", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("without a horse", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
@@ -222,7 +222,7 @@ public sealed class GameApiTests
         Assert.NotNull(secondAdvance);
         Assert.True(secondAdvance!.Success);
         Assert.Equal(JourneyStatus.Completed, secondAdvance.JourneyStatus);
-        Assert.Equal("holloway", secondAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.Equal("redmesa", secondAdvance.CurrentSession.Player.CurrentTownId);
         Assert.Equal(3, secondAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, secondAdvance.CurrentSession.Clock.Turn);
         Assert.NotNull(secondAdvance.CurrentSession.Journey);
@@ -243,7 +243,7 @@ public sealed class GameApiTests
     }
 
     [Fact]
-    public async Task PostGamesWithSubmittedSeedCodeKeepsTheNoHorseOptionsAndExposesASixDayRoute()
+    public async Task PostGamesWithSubmittedSeedCodeExposesTheRedMesaToDryForkRoute()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
@@ -267,7 +267,7 @@ public sealed class GameApiTests
             .ToArray();
 
         Assert.Contains(connectedTownIds, townId => townId == "redmesa");
-        Assert.Contains(connectedTownIds, townId => townId == "sagewell");
+        Assert.Contains(connectedTownIds, townId => townId == "goldgulch");
 
         var redMesaPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/redmesa");
         Assert.Equal(HttpStatusCode.OK, redMesaPreviewResponse.StatusCode);
@@ -295,14 +295,14 @@ public sealed class GameApiTests
 
         Assert.Equal(HttpStatusCode.OK, acknowledgeRedMesaResponse.StatusCode);
 
-        var dryForkPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/dryfork");
+        var dryForkPreviewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/quartzsite");
         Assert.Equal(HttpStatusCode.OK, dryForkPreviewResponse.StatusCode);
 
         var dryForkPreviewResult = await dryForkPreviewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
         Assert.NotNull(dryForkPreviewResult);
-        scenario.Fixture.AssertDryFootRoute(createdSession!, "dryfork", dryForkPreviewResult!);
+        scenario.Fixture.AssertDryFootRoute(createdSession!, "quartzsite", dryForkPreviewResult!);
 
-        var destinationTownId = "dryfork";
+        var destinationTownId = "quartzsite";
         var onFootTravelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
             new TravelRequest(destinationTownId));
@@ -376,7 +376,7 @@ public sealed class GameApiTests
 
         var travelToDryForkResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
-            new TravelRequest("dryfork"));
+            new TravelRequest("quartzsite"));
 
         Assert.Equal(HttpStatusCode.OK, travelToDryForkResponse.StatusCode);
 
@@ -477,7 +477,7 @@ public sealed class GameApiTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{Guid.NewGuid()}/travel",
-            new TravelRequest("dryfork"));
+            new TravelRequest("quartzsite"));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

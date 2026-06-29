@@ -1,0 +1,453 @@
+Commits f5fad5d..a1c5ea4
+
+a1c5ea4 refactor: strip town-specific warrants/clues, restructure case file pools
+
+ .../NewGame/GameSetupResolver.cs                   |   3 +-
+ .../NewGame/SeedCaseBuilder.cs                     | 172 ++++-----------------
+ .../GameSetupResolverTests.cs                      |  20 ++-
+ .../SeededNewGameFactoryTests.cs                   |  71 ++++++---
+ 4 files changed, 103 insertions(+), 163 deletions(-)
+
+diff --git a/src/WildBunch.GameContent/NewGame/GameSetupResolver.cs b/src/WildBunch.GameContent/NewGame/GameSetupResolver.cs
+index f392c6e..04b075e 100644
+--- a/src/WildBunch.GameContent/NewGame/GameSetupResolver.cs
++++ b/src/WildBunch.GameContent/NewGame/GameSetupResolver.cs
+@@ -55,8 +55,7 @@ internal sealed class GameSetupResolver
+                 source,
+                 world,
+                 mysteryTruth.ResolvedCulpritIndex,
+-                mysteryTruth.ResolvedAccusationIndex,
+-                startingTownId);
++                mysteryTruth.ResolvedAccusationIndex);
+ 
+         // 6. Compute final cash: difficulty-owned base + entropy-capped seed bonus.
+         var finalCash = difficulty.StartingCash + mysteryTruth.AppliedCashBonus;
+diff --git a/src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs b/src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs
+index 3c02efb..3b4ecc8 100644
+--- a/src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs
++++ b/src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs
+@@ -22,18 +22,14 @@ internal static class SeedCaseBuilder
+             CaseCharacterRoster.SelectCanonicalGangRoster(),
+             CaseSuspectFeaturePool.SelectCanonicalAssignedFeatures(source),
+             accusationIndex: resolvedAccusationIndex,
+-            trueCulpritIndex: resolvedCulpritIndex,
+-            publicWarrant1: CaseCharacterRoster.CreateGangMemberWarrant(CaseCharacterRoster.SelectCanonicalGangRoster()[0]),
+-            publicWarrant2: CaseCharacterRoster.CreateCanonicalUnrelatedWarrant(),
+-            startingTownId: SeedWorldCatalog.PinecrossId);
++            trueCulpritIndex: resolvedCulpritIndex);
+     }
+ 
+     public static CaseFile CreateCaseFile(
+         GameSetupDeterministicSource source,
+         World world,
+         int resolvedCulpritIndex,
+-        int resolvedAccusationIndex,
+-        TownId? startingTownId = null)
++        int resolvedAccusationIndex)
+     {
+         ArgumentNullException.ThrowIfNull(source);
+         ArgumentNullException.ThrowIfNull(world);
+@@ -46,10 +42,7 @@ internal static class SeedCaseBuilder
+             roster,
+             features,
+             resolvedAccusationIndex,
+-            resolvedCulpritIndex,
+-            CaseCharacterRoster.CreateGangMemberWarrant(roster[0]),
+-            CaseCharacterRoster.SelectUnrelatedWarrant(source),
+-            startingTownId ?? world.Towns.First().Id);
++            resolvedCulpritIndex);
+     }
+ 
+     private static CaseFile BuildCase(
+@@ -58,10 +51,7 @@ internal static class SeedCaseBuilder
+         IReadOnlyList<CaseCharacterProfile> roster,
+         IReadOnlyList<CaseSuspectFeatureAssignment> features,
+         int accusationIndex,
+-        int trueCulpritIndex,
+-        OutlawWarrantProfile publicWarrant1,
+-        OutlawWarrantProfile publicWarrant2,
+-        TownId startingTownId)
++        int trueCulpritIndex)
+     {
+         ArgumentNullException.ThrowIfNull(source);
+         ArgumentNullException.ThrowIfNull(roster);
+@@ -97,14 +87,11 @@ internal static class SeedCaseBuilder
+             features,
+             suspectTurfAssignments,
+             features[trueCulpritIndex].PrimaryFeature,
+-            culprit.Id,
+-            startingTownId);
++            culprit.Id);
+         var publicWarrants = CreatePublicWarrants(
+             source,
+-            world,
+-            publicWarrant1,
+-            publicWarrant2,
+-            startingTownId);
++            roster,
++            trueCulpritIndex);
+         var accusationId = suspects[accusationIndex].Id;
+ 
+         return new CaseFile(
+@@ -159,8 +146,7 @@ internal static class SeedCaseBuilder
+         IReadOnlyList<CaseSuspectFeatureAssignment> features,
+         IReadOnlyList<SuspectTurfAssignment> suspectTurfAssignments,
+         CaseSuspectFeatureProfile culpritFeature,
+-        SuspectId trueCulpritId,
+-        TownId startingTownId)
++        SuspectId trueCulpritId)
+     {
+         var publicClues = new List<Clue>
+         {
+@@ -290,143 +276,51 @@ internal static class SeedCaseBuilder
+                     }))
+         };
+ 
+-        publicClues.AddRange(CreateTownSpecificPublicClues(
+-            source,
+-            world,
+-            suspects,
+-            features,
+-            startingTownId,
+-            firstExtraClueIndex: publicClues.Count + 1));
+-
+         return publicClues;
+     }
+ 
+     private static IReadOnlyList<Warrant> CreatePublicWarrants(
+         GameSetupDeterministicSource source,
+-        World world,
+-        OutlawWarrantProfile publicWarrant1,
+-        OutlawWarrantProfile publicWarrant2,
+-        TownId startingTownId)
+-    {
+-        var publicWarrants = new List<Warrant>
+-        {
+-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 1, publicWarrant1, source, "Wanted for a Wild Bunch robbery and related killings.", InvestigationSourceKind.SheriffWarrants),
+-            CreateWarrant(GameSetupDeterministicLabels.CasePublicWarrants, 2, publicWarrant2, source, "Wanted for cattle theft and forging livery tags.", InvestigationSourceKind.SheriffWarrants)
+-        };
+-
+-        publicWarrants.AddRange(CreateTownSpecificPublicWarrants(
+-            source,
+-            world,
+-            startingTownId,
+-            firstExtraWarrantIndex: publicWarrants.Count + 1));
+-
+-        return publicWarrants;
+-    }
+-
+-    private static IReadOnlyList<Clue> CreateTownSpecificPublicClues(
+-        GameSetupDeterministicSource source,
+-        World world,
+-        IReadOnlyList<Suspect> suspects,
+-        IReadOnlyList<CaseSuspectFeatureAssignment> features,
+-        TownId startingTownId,
+-        int firstExtraClueIndex)
++        IReadOnlyList<CaseCharacterProfile> roster,
++        int trueCulpritIndex)
+     {
+         ArgumentNullException.ThrowIfNull(source);
+-        ArgumentNullException.ThrowIfNull(world);
+-        ArgumentNullException.ThrowIfNull(suspects);
+-        ArgumentNullException.ThrowIfNull(features);
++        ArgumentNullException.ThrowIfNull(roster);
+ 
+-        var extraTownClues = new List<Clue>();
+-        var extraTownIndex = 0;
+-        var candidateSuspectIndices = Enumerable.Range(0, suspects.Count)
+-            .Where(index => index != 3)
+-            .ToArray();
++        var publicWarrants = new List<Warrant>();
++        var warrantIndex = 1;
+ 
+-        foreach (var town in world.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase))
++        // 7 gang member warrants: one per suspect. The true culprit's warrant
++        // carries InvestigationTargetKind.TrueCulprit; the rest are GangMember.
++        // The culprit warrant is gated behind the killer release gate at runtime
++        // (WantedPosterResolver), not at setup time, so it stays in the pool.
++        for (var i = 0; i < roster.Count; i++)
+         {
+-            if (town.Id.Equals(startingTownId) || (town.Services & TownServices.NoticeBoard) == 0)
+-            {
+-                continue;
+-            }
+-
+-            var clueBaseIndex = firstExtraClueIndex + extraTownIndex * 2;
+-            var noticeSuspectIndex = candidateSuspectIndices[(extraTownIndex * 2) % candidateSuspectIndices.Length];
+-            var sheriffSuspectIndex = candidateSuspectIndices[(extraTownIndex * 2 + 1) % candidateSuspectIndices.Length];
+-
+-            extraTownClues.Add(CreateClue(
+-                source,
+-                GameSetupDeterministicLabels.CasePublicClues,
+-                clueBaseIndex,
+-                ClueKind.Alias,
+-                $"A posted circular in {town.Name} links {DescribePrimaryAlias(suspects[noticeSuspectIndex])} to {DescribePersonWithFeature(features[noticeSuspectIndex].PrimaryFeature, "a rider")}.",
+-                suspects[noticeSuspectIndex].Id,
+-                InvestigationTargetKind.GangMember,
+-                "notice board",
+-                "Public wanted poster",
+-                InvestigationSourceKind.SheriffWarrants,
+-                anchors: new ClueAnchors(
+-                    subjects: new[]
+-                    {
+-                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[noticeSuspectIndex]), Alias: DescribePrimaryAlias(suspects[noticeSuspectIndex]), Feature: features[noticeSuspectIndex].PrimaryFeature.Description)
+-                    })));
+-
+-            extraTownClues.Add(CreateClue(
++            var profile = i == trueCulpritIndex
++                ? CaseCharacterRoster.CreateTrueCulpritWarrant(roster[i])
++                : CaseCharacterRoster.CreateGangMemberWarrant(roster[i]);
++            publicWarrants.Add(CreateWarrant(
++                GameSetupDeterministicLabels.CasePublicWarrants,
++                warrantIndex++,
++                profile,
+                 source,
+-                GameSetupDeterministicLabels.CasePublicClues,
+-                clueBaseIndex + 1,
+-                ClueKind.Record,
+-                $"A sheriff ledger in {town.Name} notes {DescribePersonWithFeature(features[sheriffSuspectIndex].PrimaryFeature, "a rider")} paying cash under a clean alias.",
+-                suspects[sheriffSuspectIndex].Id,
+-                InvestigationTargetKind.Suspected,
+-                "sheriff record",
+-                "Public notice",
+-                InvestigationSourceKind.LocalRecords,
+-                anchors: new ClueAnchors(
+-                    subjects: new[]
+-                    {
+-                        new ClueSubjectAnchor(features[sheriffSuspectIndex].PrimaryFeature.Description, Feature: features[sheriffSuspectIndex].PrimaryFeature.Description)
+-                    })));
+-
+-            extraTownIndex++;
++                "Wanted for Wild Bunch gang crimes.",
++                InvestigationSourceKind.SheriffWarrants));
+         }
+ 
+-        return extraTownClues;
+-    }
+-
+-    private static IReadOnlyList<Warrant> CreateTownSpecificPublicWarrants(
+-        GameSetupDeterministicSource source,
+-        World world,
+-        TownId startingTownId,
+-        int firstExtraWarrantIndex)
+-    {
+-        ArgumentNullException.ThrowIfNull(source);
+-        ArgumentNullException.ThrowIfNull(world);
+-
+-        var extraTownWarrants = new List<Warrant>();
+-        var extraTownIndex = 0;
+-        var candidateWarrants = CaseCharacterRoster.UnrelatedWantedCriminalPool;
+-
+-        foreach (var town in world.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase))
++        // 21 unrelated criminal warrants from the shared pool.
++        foreach (var profile in CaseCharacterRoster.UnrelatedWantedCriminalPool)
+         {
+-            if (town.Id.Equals(startingTownId) || (town.Services & TownServices.NoticeBoard) == 0)
+-            {
+-                continue;
+-            }
+-
+-            var warrantIndex = firstExtraWarrantIndex + extraTownIndex;
+-            var profile = candidateWarrants[extraTownIndex % candidateWarrants.Count];
+-            extraTownWarrants.Add(CreateWarrant(
++            publicWarrants.Add(CreateWarrant(
+                 GameSetupDeterministicLabels.CasePublicWarrants,
+-                warrantIndex,
++                warrantIndex++,
+                 profile,
+                 source,
+-                $"Wanted for offenses reported out of {town.Name}.",
++                "Wanted for unrelated territorial offenses.",
+                 InvestigationSourceKind.SheriffWarrants));
+-
+-            extraTownIndex++;
+         }
+ 
+-        return extraTownWarrants;
++        return publicWarrants;
+     }
+ 
+     private static string DescribePrimaryAlias(Suspect suspect)
+diff --git a/tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs b/tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs
+index b2e6b24..228c1c1 100644
+--- a/tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs
++++ b/tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs
+@@ -66,15 +66,24 @@ public sealed class GameSetupResolverTests
+ 
+         var setup = BuildSetup(seedWorld, difficulty, entropy);
+ 
+-        Assert.Equal(new TownId("pinecross"), setup.StartingTownId);
++        // Starting town is the first town in the generated world (slot 0).
++        var expectedStartingTown = SeedWorldBuilder.CreateWorld(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText)).Towns.First().Id;
++        Assert.Equal(expectedStartingTown, setup.StartingTownId);
+         Assert.Equal(25m, setup.StartingWallet.Cash);
+         Assert.Equal(7, setup.CaseFile.Suspects.Count);
+         Assert.Single(setup.CaseFile.Suspects, suspect => suspect.Id.Equals(setup.CaseFile.TrueCulpritId));
+         Assert.Equal(5, setup.CaseFile.KillerReleaseThreshold);
+         Assert.Equal("The culprit has a scar on the left cheek.", setup.CaseFile.OpeningLead.Description);
++        // 6 base surface-tagged clues; 7 gang + 21 unrelated = 28 warrants.
++        Assert.Equal(6, setup.CaseFile.PublicClues.Count);
++        Assert.Equal(28, setup.CaseFile.PublicWarrants.Count);
++        Assert.Equal(7, setup.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
++        Assert.Equal(21, setup.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
+         Assert.Equal("Butch Cassidy", setup.CaseFile.PublicWarrants[0].TargetName);
+         Assert.Equal(InvestigationTargetKind.GangMember, setup.CaseFile.PublicWarrants[0].Terms.TargetKind);
+-        Assert.DoesNotContain(setup.CaseFile.PublicWarrants, warrant => warrant.TargetName == setup.CaseFile.Suspects[3].Name);
++        // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).
++        Assert.Contains(setup.CaseFile.PublicWarrants, warrant => warrant.TargetName == setup.CaseFile.Suspects[3].Name
++            && warrant.Terms.TargetKind == InvestigationTargetKind.TrueCulprit);
+         Assert.DoesNotContain(setup.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));
+         Assert.Contains(setup.CaseFile.KnownClues, clue =>
+             clue.Kind == ClueKind.CulpritTrail
+@@ -92,8 +101,11 @@ public sealed class GameSetupResolverTests
+     [Fact]
+     public void DifferentSeedCodesCanChangeSuspectTurfAssignments()
+     {
+-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 31));
+-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 63));
++        // With direct bit encoding, different case fields produce different UUIDs,
++        // which changes the GameSetupDeterministicSource hash that drives turf
++        // assignment.
++        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 0));
++        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 2, 4, 5, tail: 0));
+         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
+         var entropy = EntropyPolicy.For(GameEntropy.Classic);
+ 
+diff --git a/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs b/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
+index be801c1..8c16ac2 100644
+--- a/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
++++ b/tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs
+@@ -16,7 +16,7 @@ public sealed class SeededNewGameFactoryTests
+         var session = factory.Create("Ranger Vale");
+ 
+         Assert.Equal("Ranger Vale", session.Player.Name);
+-        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
++        Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
+         Assert.Equal(GameDifficulty.Standard, session.GameDifficulty);
+         Assert.Equal(GameEntropy.Classic, session.GameEntropy);
+         Assert.Equal(25m, session.Player.Wallet.Cash);
+@@ -33,9 +33,10 @@ public sealed class SeededNewGameFactoryTests
+         Assert.True(capabilities.RevolverUsable);
+         Assert.False(capabilities.RifleUsable);
+         Assert.Equal(8, session.World.Towns.Count);
+-        Assert.Equal(9, session.World.Trails.Count);
+-        Assert.Contains(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("redmesa")));
+-        Assert.DoesNotContain(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("dryfork")));
++        Assert.Equal(12, session.World.Trails.Count);
++        // Slot 0 and slot 1 are always connected (base topology).
++        var towns = session.World.Towns.ToArray();
++        Assert.Contains(session.World.Trails, trail => trail.Connects(towns[0].Id, towns[1].Id));
+         Assert.Equal(7, session.CaseFile.Suspects.Count);
+         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Id.Equals(session.CaseFile.TrueCulpritId));
+         Assert.Equal(5, session.CaseFile.KillerReleaseThreshold);
+@@ -65,6 +66,7 @@ public sealed class SeededNewGameFactoryTests
+             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
+             && clue.Description == session.CaseFile.OpeningLead.Description);
+         Assert.Single(session.CaseFile.KnownClues);
++        // 6 base surface-tagged clues only; town-specific clues are a runtime/salt concern.
+         Assert.Equal(6, session.CaseFile.PublicClues.Count);
+         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A witness tied the rider to ", StringComparison.Ordinal));
+         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
+@@ -103,7 +105,10 @@ public sealed class SeededNewGameFactoryTests
+         Assert.Equal(ClueRecency.Recent, sightingClue.Anchors.Times[0].Recency);
+         Assert.NotEmpty(sightingClue.Anchors.Directions);
+         Assert.Contains("rail spur", sightingClue.Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
+-        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
++        // 7 gang member warrants (one per suspect, including the true culprit) + 21 unrelated = 28.
++        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
++        Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
++        Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
+         Assert.Equal("Butch Cassidy", session.CaseFile.PublicWarrants[0].TargetName);
+         Assert.Equal(InvestigationTargetKind.GangMember, session.CaseFile.PublicWarrants[0].Terms.TargetKind);
+         Assert.Equal(WarrantDisposition.DeadOrAlive, session.CaseFile.PublicWarrants[0].Terms.Disposition);
+@@ -113,11 +118,9 @@ public sealed class SeededNewGameFactoryTests
+         Assert.Equal(new[] { "Raven-feather pin", "Black felt hat" }, session.CaseFile.PublicWarrants[0].Terms.KnownFeatures);
+         Assert.Equal(new[] { OutlawGangIds.WildBunch }, session.CaseFile.PublicWarrants[0].Terms.GangAffiliations);
+         Assert.Equal(OutlawGangIds.WildBunch, session.CaseFile.PublicWarrants[0].Terms.AdvancesGangPressureFor);
+-        Assert.Equal("Reno Pike", session.CaseFile.PublicWarrants[1].TargetName);
+-        Assert.Equal(WarrantDisposition.AliveOnly, session.CaseFile.PublicWarrants[1].Terms.Disposition);
+-        Assert.Empty(session.CaseFile.PublicWarrants[1].Terms.GangAffiliations);
+-        Assert.Null(session.CaseFile.PublicWarrants[1].Terms.AdvancesGangPressureFor);
+-        Assert.DoesNotContain(session.CaseFile.PublicWarrants, warrant => warrant.TargetName == session.CaseFile.Suspects[3].Name);
++        // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).
++        Assert.Contains(session.CaseFile.PublicWarrants, warrant => warrant.TargetName == session.CaseFile.Suspects[3].Name
++            && warrant.Terms.TargetKind == InvestigationTargetKind.TrueCulprit);
+         Assert.DoesNotContain(session.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));
+         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
+         Assert.Equal(7, session.CaseFile.SuspectTurfAssignments.Count);
+@@ -125,6 +128,36 @@ public sealed class SeededNewGameFactoryTests
+         Assert.All(session.CaseFile.SuspectTurfAssignments, assignment => Assert.Contains(session.CaseFile.Suspects, suspect => suspect.Id.Equals(assignment.SuspectId)));
+     }
+ 
++    [Fact]
++    public void CaseFile_StartsWithOneKnownClueAndZeroKnownWarrants()
++    {
++        var factory = new SeededNewGameFactory();
++        var session = factory.Create("Ranger Vale");
++
++        Assert.Single(session.CaseFile.KnownClues);
++        Assert.Empty(session.CaseFile.KnownWarrants);
++    }
++
++    [Fact]
++    public void CaseFile_PublicWarrants_HasSevenGangPlusTwentyOneUnrelated()
++    {
++        var factory = new SeededNewGameFactory();
++        var session = factory.Create("Ranger Vale");
++
++        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
++        Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
++        Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
++    }
++
++    [Fact]
++    public void CaseFile_PublicClues_HasSixBaseCluesNoTownSpecificOnes()
++    {
++        var factory = new SeededNewGameFactory();
++        var session = factory.Create("Ranger Vale");
++
++        Assert.Equal(6, session.CaseFile.PublicClues.Count);
++    }
++
+     [Fact]
+     public void FrontierDescriptorAddsTownSpecificCivicCluesForTheNextVisitedTown()
+     {
+@@ -133,9 +166,11 @@ public sealed class SeededNewGameFactoryTests
+ 
+         var session = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode);
+ 
+-        Assert.Contains(session.Player.CurrentTownId.Value, new[] { "pinecross", "holloway", "redmesa", "sagewell", "emberfall" });
+-        Assert.True(session.CaseFile.PublicClues.Count > 6);
+-        Assert.True(session.CaseFile.PublicWarrants.Count > 2);
++        Assert.Contains(session.Player.CurrentTownId.Value, SeedWorldCatalog.NamePool.Select(n => n.Id));
++        // Town-specific civic clues/warrants are a runtime/salt concern (Task 4),
++        // not setup-time. The seed case file surfaces only the base pools.
++        Assert.Equal(6, session.CaseFile.PublicClues.Count);
++        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
+     }
+ 
+     [Fact]
+@@ -143,9 +178,9 @@ public sealed class SeededNewGameFactoryTests
+     {
+         var factory = new SeededNewGameFactory();
+ 
+-        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 11));
+-        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 11));
+-        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 12));
++        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 0));
++        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 0));
++        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 2, 3, 0, tail: 0));
+ 
+         var first = factory.Create("Ranger Vale", GameDifficulty.Standard, seedA);
+         var firstAgain = factory.Create("Ranger Vale", GameDifficulty.Easy, seedASame);
+@@ -229,8 +264,8 @@ public sealed class SeededNewGameFactoryTests
+ 
+         var session = factory.Create("Ranger Vale", startingTownId: null);
+ 
+-        // The safe default from StartingTownPolicy is pinecross — not seed-authored.
+-        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
++        // The safe default from StartingTownPolicy is the first town in the world (slot 0).
++        Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
+     }
+ 
+     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)

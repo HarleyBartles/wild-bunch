@@ -1,0 +1,202 @@
+﻿Build started 29/06/2026 13:36:48.
+     1>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" on node 1 (Restore target(s)).
+     1>_GetAllRestoreProjectPathItems:
+         Determining projects to restore...
+     1>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\WildBunch.Api.csproj" (2:4) on node 1 (_GenerateProjectRestoreGraph target(s)).
+     2>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.8
+         C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9
+     1>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\WildBunch.Persistence.csproj" (6:4) on node 3 (_GenerateProjectRestoreGraph target(s)).
+     6>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+     1>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\WildBunch.GameContent.csproj" (5:5) on node 2 (_GenerateProjectRestoreGraph target(s)).
+     5>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+     6>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+     2>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9\data\PackageOverrides.txt
+     6>AddPrunePackageReferences:
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.8
+         C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9
+     5>AddPrunePackageReferences:
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.8
+         C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9
+     2>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.8
+         C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.9
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\10.0.9\data\PackageOverrides.txt
+     6>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9\data\PackageOverrides.txt
+     5>AddPrunePackageReferences:
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9\data\PackageOverrides.txt
+     2>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\WildBunch.Api.csproj" (_GenerateProjectRestoreGraph target(s)).
+     6>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\WildBunch.Persistence.csproj" (_GenerateProjectRestoreGraph target(s)).
+     5>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\WildBunch.GameContent.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\WildBunch.Application.csproj" (3:5) on node 1 (_GenerateProjectRestoreGraph target(s)).
+     3>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.8
+         C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.9\data\PackageOverrides.txt
+     3>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\WildBunch.Application.csproj" (_GenerateProjectRestoreGraph target(s)).
+     1>Restore:
+         X.509 certificate chain validation will use the default trust store selected by .NET for code signing.
+         X.509 certificate chain validation will use the default trust store selected by .NET for timestamping.
+         Assets file has not changed. Skipping assets file writing. Path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\obj\project.assets.json
+         Assets file has not changed. Skipping assets file writing. Path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\obj\project.assets.json
+         Restored C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\WildBunch.Domain.csproj (in 44 ms).
+         Restored C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\WildBunch.Api.csproj (in 44 ms).
+         Restored C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\WildBunch.Persistence.csproj (in 44 ms).
+         Restored C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\WildBunch.Application.csproj (in 44 ms).
+         Restored C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\WildBunch.GameContent.csproj (in 44 ms).
+         Restored C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj (in 44 ms).
+         
+         NuGet Config files used:
+             C:\Users\hbart\AppData\Roaming\NuGet\NuGet.Config
+             C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.FallbackLocation.config
+             C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.Offline.config
+         
+         Feeds used:
+             https://api.nuget.org/v3/index.json
+             C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+         All projects are up-to-date for restore.
+     1>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (Restore target(s)).
+   1:7>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" on node 3 (VSTest target(s)).
+     1>BuildProject:
+         Build started, please wait...
+   1:7>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:7) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:8) on node 3 (default targets).
+   1:8>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:8) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\WildBunch.Domain.csproj" (4:8) on node 1 (default targets).
+     4>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\WildBunch.Domain.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         WildBunch.Domain -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\bin\Debug\net10.0\WildBunch.Domain.dll
+     4>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\WildBunch.Domain.csproj" (default targets).
+   1:8>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:8) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\WildBunch.GameContent.csproj" (5:7) on node 5 (default targets).
+     5>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\WildBunch.GameContent.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         WildBunch.GameContent -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\bin\Debug\net10.0\WildBunch.GameContent.dll
+     5>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\WildBunch.GameContent.csproj" (default targets).
+   1:8>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:8) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\WildBunch.Application.csproj" (3:7) on node 3 (default targets).
+     3>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\WildBunch.Application.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         WildBunch.Application -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\bin\Debug\net10.0\WildBunch.Application.dll
+     3>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\WildBunch.Application.csproj" (default targets).
+   1:8>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:8) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\WildBunch.Persistence.csproj" (6:6) on node 4 (default targets).
+     6>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\WildBunch.Persistence.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         WildBunch.Persistence -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\bin\Debug\net10.0\WildBunch.Persistence.dll
+     6>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\WildBunch.Persistence.csproj" (default targets).
+   1:8>Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (1:8) is building "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\WildBunch.Api.csproj" (2:6) on node 2 (default targets).
+     2>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _DiscoverMvcApplicationParts:
+       Skipping target "_DiscoverMvcApplicationParts" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\WildBunch.Api.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       _CreateAppHost:
+       Skipping target "_CreateAppHost" because all output files are up-to-date with respect to the input files.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _ProcessScopedCssFiles:
+       Skipping target "_ProcessScopedCssFiles" because it has no outputs.
+       _BuildCopyStaticWebAssetsPreserveNewest:
+       Skipping target "_BuildCopyStaticWebAssetsPreserveNewest" because it has no outputs.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Skipping target "_CopyOutOfDateSourceItemsToOutputDirectory" because all output files are up-to-date with respect to the input files.
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         WildBunch.Api -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\bin\Debug\net10.0\WildBunch.Api.dll
+     2>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\WildBunch.Api.csproj" (default targets).
+     1>GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       CoreGenerateAssemblyInfo:
+       Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+       _GenerateSourceLinkFile:
+         Source Link file 'obj\Debug\net10.0\WildBunch.Integration.Tests.sourcelink.json' is up-to-date.
+       CoreCompile:
+       Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       Building target "_CopyOutOfDateSourceItemsToOutputDirectory" partially, because some output files are out of date with respect to their input files.
+         Copying file from "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\obj\Debug\net10.0\MvcTestingAppManifest.json" to "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\MvcTestingAppManifest.json".
+       GenerateBuildDependencyFile:
+       Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+       GenerateBuildRuntimeConfigurationFiles:
+       Skipping target "GenerateBuildRuntimeConfigurationFiles" because all output files are up-to-date with respect to the input files.
+       CopyFilesToOutputDirectory:
+         WildBunch.Integration.Tests -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Integration.Tests.dll
+       _MvcCopyDependencyFiles:
+         Copying file from "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\bin\Debug\net10.0\WildBunch.Api.deps.json" to "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Api.deps.json".
+         Copying file from "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\bin\Debug\net10.0\WildBunch.Application.deps.json" to "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Application.deps.json".
+         Copying file from "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\bin\Debug\net10.0\WildBunch.Domain.deps.json" to "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Domain.deps.json".
+         Copying file from "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\bin\Debug\net10.0\WildBunch.GameContent.deps.json" to "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.GameContent.deps.json".
+         Copying file from "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\bin\Debug\net10.0\WildBunch.Persistence.deps.json" to "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Persistence.deps.json".
+     1>Done Building Project "C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\WildBunch.Integration.Tests.csproj" (default targets).
+     1>BuildProject:
+         Build completed.
+         
+Test run for C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Integration.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.9)
+[xUnit.net 00:00:00.08]   Discovering: WildBunch.Integration.Tests
+[xUnit.net 00:00:00.13]   Discovered:  WildBunch.Integration.Tests
+[xUnit.net 00:00:00.16]   Starting:    WildBunch.Integration.Tests

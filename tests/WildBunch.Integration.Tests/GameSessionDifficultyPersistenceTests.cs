@@ -410,8 +410,8 @@ public sealed class GameSessionDifficultyPersistenceTests
 
     private static GameSession CreateSession(GameDifficulty GameDifficulty, GameEntropy entropy)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
 
         var world = new World(
             new[] { pinecross, holloway },
@@ -443,7 +443,7 @@ public sealed class GameSessionDifficultyPersistenceTests
 
     private static GameSession CreateTownVisitSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph | TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
 
         var world = new World(
@@ -670,7 +670,7 @@ public sealed class GameSessionDifficultyPersistenceTests
 
     private static GameSession CreateJourneyHistorySession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
 

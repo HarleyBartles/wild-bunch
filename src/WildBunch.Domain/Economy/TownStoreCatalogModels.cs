@@ -33,31 +33,21 @@ public sealed record TownStoreCatalog(
 
 public sealed class TownStoreCatalogResolver
 {
-    private static readonly HashSet<string> GunsmithTownIds = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "redmesa",
-        "emberfall"
-    };
-
     public TownStoreCatalog Resolve(Town town)
     {
         ArgumentNullException.ThrowIfNull(town);
 
         var offers = new List<StoreOffer>();
 
-        if ((town.Services & TownServices.Supplies) != 0)
-        {
-            offers.AddRange(CreateGeneralStoreOffers());
-        }
+        // Every town has a general store and stable. Stock and prices vary
+        // by prosperity tier. Gunsmith is only available in Boomtown and
+        // Prosperous towns.
+        offers.AddRange(CreateGeneralStoreOffers(town.Prosperity));
+        offers.AddRange(CreateStableOffers(town.Prosperity));
 
-        if ((town.Services & TownServices.Lodging) != 0)
+        if (town.Prosperity is TownProsperity.Boomtown or TownProsperity.Prosperous)
         {
-            offers.AddRange(CreateStableOffers());
-        }
-
-        if (GunsmithTownIds.Contains(town.Id.Value))
-        {
-            offers.AddRange(CreateGunsmithOffers());
+            offers.AddRange(CreateGunsmithOffers(town.Prosperity));
         }
 
         offers = offers
@@ -78,29 +68,77 @@ public sealed class TownStoreCatalogResolver
             offers);
     }
 
-    private static IReadOnlyList<StoreOffer> CreateGeneralStoreOffers()
-        => new[]
+    private static IReadOnlyList<StoreOffer> CreateGeneralStoreOffers(TownProsperity prosperity)
+        => prosperity switch
         {
-            new StoreOffer(ItemKind.Food, "Food", 2m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-            new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-            new StoreOffer(ItemKind.Canteen, "Canteen", 5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-            new StoreOffer(ItemKind.Knife, "Knife", 8m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
+            TownProsperity.Boomtown => new[]
+            {
+                new StoreOffer(ItemKind.Food, "Food", 2m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.Canteen, "Canteen", 5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.Knife, "Knife", 8m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
+            },
+            TownProsperity.Prosperous => new[]
+            {
+                new StoreOffer(ItemKind.Food, "Food", 2m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.Canteen, "Canteen", 5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.Knife, "Knife", 8m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
+            },
+            TownProsperity.Poor => new[]
+            {
+                new StoreOffer(ItemKind.Food, "Food", 2.5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.Canteen, "Canteen", 6m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
+            },
+            TownProsperity.Destitute => new[]
+            {
+                new StoreOffer(ItemKind.Food, "Food", 3m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(prosperity), prosperity, "Unsupported prosperity tier.")
         };
 
-    private static IReadOnlyList<StoreOffer> CreateStableOffers()
-        => new[]
+    private static IReadOnlyList<StoreOffer> CreateStableOffers(TownProsperity prosperity)
+        => prosperity switch
         {
-            new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
-            new StoreOffer(ItemKind.Saddle, "Saddle", 20m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
-            new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+            TownProsperity.Boomtown => new[]
+            {
+                new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
+                new StoreOffer(ItemKind.Saddle, "Saddle", 20m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+            },
+            TownProsperity.Prosperous => new[]
+            {
+                new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
+                new StoreOffer(ItemKind.Saddle, "Saddle", 20m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+            },
+            TownProsperity.Poor => new[]
+            {
+                new StoreOffer(ItemKind.Horse, "Horse", 75m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
+                new StoreOffer(ItemKind.Saddle, "Saddle", 25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+            },
+            TownProsperity.Destitute => Array.Empty<StoreOffer>(),
+            _ => throw new ArgumentOutOfRangeException(nameof(prosperity), prosperity, "Unsupported prosperity tier.")
         };
 
-    private static IReadOnlyList<StoreOffer> CreateGunsmithOffers()
-        => new[]
+    private static IReadOnlyList<StoreOffer> CreateGunsmithOffers(TownProsperity prosperity)
+        => prosperity switch
         {
-            new StoreOffer(ItemKind.Revolver, "Revolver", 32m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter"),
-            new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter"),
-            new StoreOffer(ItemKind.RifleAmmo, "Rifle ammo", 6m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter")
+            TownProsperity.Boomtown => new[]
+            {
+                new StoreOffer(ItemKind.Revolver, "Revolver", 32m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter"),
+                new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter"),
+                new StoreOffer(ItemKind.RifleAmmo, "Rifle ammo", 6m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter")
+            },
+            TownProsperity.Prosperous => new[]
+            {
+                new StoreOffer(ItemKind.Revolver, "Revolver", 35m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter"),
+                new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter"),
+                new StoreOffer(ItemKind.RifleAmmo, "Rifle ammo", 6m, StoreVendorType.Gunsmith, StoreOfferAvailability.Available, "Gunsmith counter")
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(prosperity), prosperity, "Gunsmith only available in Boomtown and Prosperous towns.")
         };
 
     private static string FormatTownSource(Town town, IReadOnlyList<StoreOffer> offers)

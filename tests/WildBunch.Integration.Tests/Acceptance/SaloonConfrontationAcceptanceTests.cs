@@ -188,7 +188,7 @@ public sealed class SaloonConfrontationAcceptanceTests
 
     private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new World(
             new[] { currentTown, connectedTown },
@@ -228,7 +228,7 @@ public sealed class SaloonConfrontationAcceptanceTests
 
     private static GameSession CreateCitizenSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new World(
             new[] { currentTown, connectedTown },

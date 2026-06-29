@@ -1,80 +1,60 @@
-# Task 4 Report: Prove React owns the final confirmation and game creation
+# Task 4 Report: Build WantedPosterResolver (boring + salt mode)
 
 ## What I implemented
 
-This was a test-coverage task. The architecture was already in place from Tasks 1-3. I added falsifiable boundary tests proving React owns game creation and Phaser does not own game truth.
+Created `WantedPosterResolver` — a stateless domain service in `WildBunch.Domain.Cases` that selects which warrant from `CaseFile.PublicWarrants` surfaces on a wanted poster in a given town on a given visit.
 
-### PhaserMapHost.test.tsx — new `PhaserMapHost truth boundary` describe block (4 tests)
+**File:** `src/WildBunch.Domain/Cases/WantedPosterResolver.cs`
 
-1. **`does not give the scene access to createGame or any API function`** — asserts the scene instance has no `createGame`, `api`, `requestJson`, `fetch`, or `getStartingTownMap` property. Proves the Phaser scene constructor only receives `mapData`/`selectedTownId`/`onTownSelected` and has no API client.
-2. **`selectTown only calls onTownSelected and does not call fetch or any API`** — spies on `globalThis.fetch`, calls `scene.selectTown("t-town")`, asserts `onTownSelected` called once with `"t-town"` and `fetch` never called. Proves `selectTown` emits intent only, no network side effects.
-3. **`does not mutate selectedTownId when selectTown is called`** — calls `selectTown` on a scene with `selectedTownId: null`, asserts the field stays `null`. Proves Phaser does not store selected-town truth mutably.
-4. **`receives selectedTownId as a readonly prop, not as stored truth`** — renders with `selectedTownId: "dust-fork"`, calls `selectTown("t-town")`, asserts `selectedTownId` remains `"dust-fork"`. Proves the field is a readonly prop, not Phaser-owned mutable truth.
+Selection rules implemented:
+- **Boring mode** (salt is null): `warrants[(townSlotIndex + visitCount) % eligibleCount]` with a safe negative-modulo guard.
+- **Salt mode** (salt is non-null): a stable manual hash of `salt + townSlotIndex + visitCount` reduced modulo the eligible count. The hash does NOT use `string.GetHashCode()` (not stable across process restarts); it uses the prime-multiplier char-code pattern established by `CitizenCast.StableHash` and `GameSession.StableSaloonRollHash` in this domain.
 
-### StartFlow.test.tsx — extended with 3 new tests + phaser mock state
+Eligible warrants = all `PublicWarrants` not already in `KnownWarrants`, with the culprit warrant (`TargetKind == TrueCulprit`) excluded unless `CaseFile.KillerReleaseState.IsReleased` is true. Returns null when the eligible pool is exhausted. Throws `ArgumentNullException` on null caseFile.
 
-Added `phaserMockState` (hoisted) to capture the Phaser `Game` constructor's config so tests can drive the mounted scene's `selectTown` directly. Added `phaserMockState.games.length = 0` reset in `afterEach`.
+**Deviation from the brief (justified):** The brief's salt-mode used `salt.GetHashCode()`, which is not stable across process restarts. The codebase explicitly warns against `string.GetHashCode()` (see `CitizenCast.cs:70`, `GameSession.cs:2990`). I used the established `StableHash` char-code pattern instead. This is a correctness improvement required by codebase conventions; behavior is still deterministic per the tests.
 
-1. **`calls createGame with the correct startingTownId when a town is selected via the map host`** — drives the full React-owned chain: navigate to town step → wait for Phaser map to mount → call `scene.selectTown("dust-fork")` (the map host's `onTownSelected`) → assert `createGame` called once with `startingTownId: "dust-fork"` and `playerName: "Ranger Vale"`. Proves the end-to-end React-owned confirmation path: map intent → `onTownSelected` → `handleStartWithTown` → `createGame`.
-2. **`mounts the Phaser map but does not call createGame until a town is selected`** — navigates to town step, waits for Phaser `Game` constructor to fire (map mounts), asserts `createGame` NOT called, then calls `scene.selectTown("t-town")` and asserts `createGame` called once. Proves the Phaser mock's `Game` constructor is called (map mounts) but `createGame` is not called until a town is selected.
-3. **`does not call createGame when the map mounts and no town is selected`** — navigates to town step, waits for Phaser mount, asserts `createGame` NOT called. Proves no premature game creation from map mount alone.
+## What I tested and test results
 
-## Inspection results (no drift found)
+**File:** `tests/WildBunch.Domain.Tests/WantedPosterResolverTests.cs` (10 tests)
 
-### `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx`
-- Imports: `useEffect`, `useRef` (react), `styled` (styled-components), `Phaser` (phaser), `StartingTownMapDto` (api/types — type-only).
-- NO API imports. NO `createGame` reference. NO `fetch` calls. NO `requestJson`. NO `wildBunchApi` import.
-- `StartingTownMapScene` constructor receives only `mapData`, `selectedTownId`, `onTownSelected`.
-- `selectedTownId` is `public readonly`.
-- `selectTown` validates `town?.selectable` (backend-provided flag) and calls `onTownSelected` — no eligibility calculation, no truth storage.
-- **Verdict: clean. No drift.**
+Tests cover:
+1. `BoringMode_SameTownSameVisit_ReturnsSameWarrant` — determinism
+2. `BoringMode_DifferentTowns_ReturnDifferentWarrants` — town differentiation
+3. `BoringMode_CulpritWarrantNotSurfacesUntilReleased` — culprit exclusion across all town/visit combos
+4. `BoringMode_AfterKillerReleased_CulpritWarrantCanSurface` — culprit becomes eligible after release
+5. `BoringMode_AlreadyKnownWarrantsAreSkipped` — known-warrant skipping via `RevealWarrant`
+6. `BoringMode_ReturnsNullWhenPoolExhausted` — null on exhausted pool
+7. `SaltMode_SameInputsSameSalt_ReturnsSameWarrant` — salt determinism
+8. `SaltMode_DifferentSalt_ReturnsDifferentWarrant` — salt differentiation
+9. `SaltMode_CulpritWarrantNotSurfacesUntilReleased` — culprit exclusion in salt mode
+10. `Resolve_NullCaseFile_Throws` — null-arg guard
 
-### `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts`
-- `startGameMutation` (line 131-145) uses `mutationFn: (request: StartGameRequest) => createGame(request)`. This is the React-owned mutation that calls `createGame` (`POST /api/games`).
-- **Verdict: clean. No drift.**
+The test fixture `BuildTestCaseFile` builds a `CaseFile` with 8 public warrants: one `TrueCulprit` warrant + seven `UnrelatedWantedCriminal` warrants, with `killerReleaseThreshold: 2` and `killerReleaseProgress` set to 0 or 2 to control the released state. Uses `SaltSource.CreateFixed(string)` for salt-mode tests (no custom test double needed).
 
-### `src/WildBunch.Web/src/api/wildBunchApi.ts`
-- `createGame` (line 24-29) is the only function that POSTs to `/api/games` (the game-creation root). All other POSTs target sub-routes (`/api/games/{id}/travel`, `/api/games/{id}/archive`, etc.).
-- **Verdict: clean. No drift.**
+**Results:** `Passed: 10, Failed: 0, Skipped: 0` — focused filter.
 
-## What I tested + actual command output
+## TDD Evidence (RED + GREEN)
 
-Run from `src/WildBunch.Web/`:
-
-### `npm run typecheck`
-```
-> wildbunch-web@0.0.0 typecheck
-> tsc --noEmit
-```
-Exit code 0. Pass.
-
-### `npm test`
-```
-Test Files  21 passed (21)
-     Tests  173 passed (173)
-  Duration  8.22s
-```
-Relevant files:
-- `src/tests/PhaserMapHost.test.tsx` — 11 tests passed (7 existing + 4 new boundary tests)
-- `src/tests/StartFlow.test.tsx` — 10 tests passed (7 existing + 3 new React-owned confirmation proofs)
-
-Exit code 0. All tests pass.
+- **RED:** Wrote the test file first. Ran `dotnet test --filter "FullyQualifiedName~WantedPosterResolverTests"` and got `error CS0246: The type or namespace name 'WantedPosterResolver' could not be found` — tests failed to compile because the type did not exist.
+- **GREEN:** Implemented `WantedPosterResolver.cs`, rebuilt, and re-ran the same filter: `Passed! - Failed: 0, Passed: 10, Skipped: 0, Total: 10`.
 
 ## Files changed
 
-- `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx` — added `PhaserMapHost truth boundary` describe block (4 tests)
-- `src/WildBunch.Web/src/tests/StartFlow.test.tsx` — added `phaserMockState` hoisted state, `afterEach` reset, 3 new React-owned confirmation tests
-- `.agents/superpowers/sdd/progress.md` — marked Task 4 complete, added completion log entry
-- `.agents/superpowers/sdd/task-4-report.md` — this report
+- `src/WildBunch.Domain/Cases/WantedPosterResolver.cs` (new, 70 lines)
+- `tests/WildBunch.Domain.Tests/WantedPosterResolverTests.cs` (new, 10 tests)
+- `src/WildBunch.Domain/Cases/INDEX.md` (regenerated — adds `WantedPosterResolver.cs` and sibling task's `ClueSurfacingResolver.cs`)
+- `tests/WildBunch.Domain.Tests/INDEX.md` (regenerated — adds `WantedPosterResolverTests.cs` and sibling task's `ClueSurfacingResolverTests.cs`)
 
 ## Self-review findings
 
-- The tests prove behavior and safety, not implementation trivia: they assert the absence of API surface on the scene, the absence of fetch on intent emission, the immutability of `selectedTownId`, and the end-to-end React-owned confirmation chain.
-- The `selectTown` non-selectable guard is already covered by existing tests in `PhaserMapHost.test.tsx` (the "does not emit onTownSelected for a non-selectable town" test), proving Phaser does not decide eligibility — it only reads the backend-provided `selectable` flag.
-- No comments added to test files (per binding rule). Tests follow existing code style (vitest, `vi.fn()`, `waitFor`, `userEvent`).
-- No implementation files were modified — this is purely a test-coverage task, as scoped.
-- The Phaser mock captures `config.scene` so tests can drive `selectTown` directly, mirroring how the real map host wires the scene.
+- **Completeness:** Both modes, culprit exclusion, known-warrant skipping, pool-exhaustion null, null-arg guard all implemented and tested.
+- **Quality:** Stable hash (not `GetHashCode`), safe negative-modulo handling for both modes, XML docs, follows existing `StableHash` pattern. Cleaned up a redundant modulo in `StableSaltIndex` before final commit.
+- **Discipline (YAGNI):** No extra features, no optional parameters, no speculative extension points. Stateless as specified.
+- **Testing:** Real behavior against a real `CaseFile` fixture — no mocks. Tests assert observable warrant identity and target-kind behavior, including exhaustive town/visit sweeps for culprit exclusion.
+- **Index mesh:** Regenerated `INDEX.md` for the two folders I touched (self-healing — also picked up a sibling task's unindexed files).
 
-## Concerns
+## Issues or concerns
 
-None. The architecture was already clean from Tasks 1-3; these tests lock in the boundary as falsifiable proof. All validation passes.
+- **Pre-existing failure (NOT mine):** The full `WildBunch.Domain.Tests` suite has 2 failing tests in `ClueSurfacingResolverTests` (`SaltMode_IsDeterministicForSameInputs`, `SaltMode_DifferentSaltCanSelectDifferentClue`) with `System.IndexOutOfRangeException` in `ClueSurfacingResolver.Resolve`. That resolver is in `src/WildBunch.Domain/Cases/ClueSurfacingResolver.cs`, a sibling task's in-progress modified file (`M` in git status, not touched by me). My `WantedPosterResolver` is a new untracked file and does not affect that code. The failure is a bug in the sibling task's salt-mode modulo handling (it does not guard against negative/out-of-range indices the way mine does).
+- **Worktree note:** While working, the worktree filesystem produced `.other` merge-artifact copies of my new files (a background sync moved my files to `*.other`). I recovered them and cleaned up the `.other` artifacts before committing. Final committed tree contains exactly the 4 intended files.

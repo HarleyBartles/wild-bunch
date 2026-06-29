@@ -134,7 +134,7 @@ public sealed class ForceSaloonOverrideHandlerTests
         // The Application tests project references WildBunch.Domain.Tests? No - we need to create
         // the session inline here.
         var town = new WildBunch.Domain.World.Town(
-            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.NoticeBoard);
+            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.None);
         var connected = new WildBunch.Domain.World.Town(
             new TownId("connected"), "Connected Town", WildBunch.Domain.World.TownServices.None);
         var world = new WildBunch.Domain.World.World(

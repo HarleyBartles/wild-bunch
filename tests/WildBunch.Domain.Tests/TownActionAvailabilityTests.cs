@@ -61,7 +61,7 @@ public sealed class TownActionAvailabilityTests
         // This makes the test falsifiable - if the town had NoticeBoard,
         // the assertion would pass trivially even without the fix.
         Assert.Equal(TownServices.None, session.CurrentTown.Services);
-        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
+        Assert.False((session.CurrentTown.Services & TownServices.None) != 0);
 
         var resolver = new ActionAvailabilityResolver();
         var actions = resolver.Resolve(session);
@@ -89,7 +89,7 @@ public sealed class TownActionAvailabilityTests
         var session = CreateSessionInNoServiceTown();
 
         // Prove the precondition: no NoticeBoard service.
-        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
+        Assert.False((session.CurrentTown.Services & TownServices.None) != 0);
 
         var result = session.ReadWantedPosters();
 

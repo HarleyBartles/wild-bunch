@@ -117,7 +117,7 @@ public sealed class ForceDevSaltSourceHandlerTests
 
     private static GameSession CreateSeededSession()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new World(
             new[] { town, connected },

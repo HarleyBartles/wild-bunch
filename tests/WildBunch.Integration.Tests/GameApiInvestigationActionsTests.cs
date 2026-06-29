@@ -60,7 +60,13 @@ public sealed class GameApiInvestigationActionsTests
         Assert.True(gossipResult!.Success);
         Assert.Equal(3, gossipResult.CurrentJournal.Clock.Turn);
         Assert.Equal(3, gossipResult.CurrentJournal.CaseFile.KnownClues.Count);
-        Assert.Contains(gossipResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("local gossip", StringComparison.OrdinalIgnoreCase));
+        // BUNCH-107: With DeterministicSaltSourceFactory producing a Fixed salt,
+        // the GameSession passes null to the ClueSurfacingResolver (boring-mode path).
+        // Boring-mode index = (townSlotIndex + visitCount) % eligibleCount = (0 + 1) % 2 = 1,
+        // which surfaces the second LocalGossip-tagged clue ("Boot prints and a waystation
+        // note..."). Both LocalGossip clues have Kind = Whereabouts, and no other known
+        // clue at this point has that kind (opening lead = CulpritTrail, records = Record).
+        Assert.Contains(gossipResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Whereabouts);
 
         var telegraphResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/telegraph-leads/follow", content: null);
 
@@ -69,8 +75,11 @@ public sealed class GameApiInvestigationActionsTests
         var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
 
         Assert.NotNull(telegraphResult);
-        Assert.False(telegraphResult!.Success);
-        Assert.Equal("There is no telegraph office here.", telegraphResult.Message);
+        // BUNCH-107: Lost Canyon (the starting town) has Telegraph service
+        // (HubTelegraph palette, slot 0). Following telegraph leads should
+        // succeed and surface a new clue.
+        Assert.True(telegraphResult!.Success);
+        Assert.NotEqual("There is no telegraph office here.", telegraphResult.Message);
 
         var payload = await localRecordsResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

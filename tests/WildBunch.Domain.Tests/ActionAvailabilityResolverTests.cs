@@ -16,9 +16,9 @@ public sealed class ActionAvailabilityResolverTests
     private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
 
     [Fact]
-    public void TownWithSuppliesAndLodgingExposesSupplyAndLodgingActions()
+    public void TownWithSuppliesExposesBuySuppliesAction()
     {
-        var session = CreateSession(TownServices.Supplies | TownServices.Lodging);
+        var session = CreateSession(TownServices.None);
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -27,7 +27,6 @@ public sealed class ActionAvailabilityResolverTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewMap);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewJournal);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.BuySupplies);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.StayAtLodging);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
     }
 
@@ -46,7 +45,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void TownWithNoticeBoardExposesReadWantedPosters()
     {
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -60,7 +59,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void TownWithoutNoticeBoardStillExposesBaselineInvestigationActions()
     {
-        var session = CreateSession(TownServices.Supplies);
+        var session = CreateSession(TownServices.None);
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -75,20 +74,9 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
-    public void TownWithoutDoctorDoesNotExposeVisitDoctor()
-    {
-        var session = CreateSession(TownServices.Supplies);
-        var resolver = new ActionAvailabilityResolver();
-
-        var result = resolver.Resolve(session);
-
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.VisitDoctor);
-    }
-
-    [Fact]
     public void TownWithoutOutgoingTrailsDoesNotExposeTravel()
     {
-        var session = CreateSession(TownServices.Supplies, addTrail: false);
+        var session = CreateSession(TownServices.None, addTrail: false);
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -101,7 +89,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void ActiveJourneyReplacesTravelWithAdvanceTravelDay()
     {
-        var session = CreateSession(TownServices.Supplies);
+        var session = CreateSession(TownServices.None);
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("connected"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
@@ -171,7 +159,7 @@ public sealed class ActionAvailabilityResolverTests
 
     private static GameSession CreateHighRiskSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
         var world = new DomainWorld(
             new[] { pinecross, dryfork },

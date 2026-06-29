@@ -46,8 +46,8 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     private static GameSession CreateSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
         var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
 
         var world = new World(

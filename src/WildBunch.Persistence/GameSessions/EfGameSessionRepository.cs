@@ -168,6 +168,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.WantedSuspectPresenceLedger, _serializer.SerializeWantedSuspectPresenceLedger(session.WantedSuspectPresenceEntries), now);
         }
 
+        // Persist the UnrelatedCriminalLedger so active/taken-in/collected/retired
+        // sets, gang parity, and next spawn index survive reload. Without this,
+        // the ledger is reconstructed from a shrinking PublicWarrants pool (warrants
+        // are removed by RevealWarrant on collection), which degrades the roster
+        // below the 3x invariant. See BUNCH-107.
+        UpsertComponent(entity.Id, GameSessionComponentNames.UnrelatedCriminalLedger, _serializer.SerializeUnrelatedCriminalLedger(session.UnrelatedCriminalLedger), now);
+
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
 
         // NO SaveChangesAsync here — the UoW commits.
@@ -352,6 +359,17 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (pendingDevSaloonOverride is not null)
         {
             GameSessionRehydrator.SetBackingField(session, "_pendingDevSaloonOverride", pendingDevSaloonOverride);
+        }
+
+        // Restore the UnrelatedCriminalLedger from the persisted snapshot.
+        // The constructor builds a fresh ledger from the case file; this overwrites
+        // it with the persisted state so active/taken-in/collected/retired sets,
+        // gang parity, and next spawn index survive reload. See BUNCH-107.
+        var unrelatedCriminalLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.UnrelatedCriminalLedger);
+        if (unrelatedCriminalLedgerJson is not null)
+        {
+            var ledger = _serializer.DeserializeUnrelatedCriminalLedger(unrelatedCriminalLedgerJson);
+            GameSessionRehydrator.SetUnrelatedCriminalLedger(session, ledger);
         }
 
         if (hasPostSnapshotEvents)

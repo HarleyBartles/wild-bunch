@@ -128,7 +128,7 @@ public sealed class ClockTurnCorrectionTests
     private static GameSession CreateDefaultSessionWithUncommittedGameStarted(out GameStarted gameStarted)
     {
         var town = new Town(new TownId("current"), "Current Town",
-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
+            TownServices.Telegraph);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },

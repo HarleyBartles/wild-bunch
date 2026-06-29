@@ -19,7 +19,7 @@ public sealed class GetAvailableActionsHandlerTests
     public async Task GetAvailableActionsLoadsSessionAndReturnsExpectedActions()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.Supplies | TownServices.Lodging);
+        var session = CreateSession(TownServices.None);
         repository.Seed(session);
         var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
 
@@ -29,7 +29,6 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewMap);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewJournal);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.BuySupplies);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.StayAtLodging);
     }
 
     [Fact]

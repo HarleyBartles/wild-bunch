@@ -1,0 +1,18 @@
+test: fix integration tests for derived town model and restructured case pools
+
+Update integration tests for seed-derived town selection (lostcanyon replaces
+pinecross as starting town), prosperity-based stores, removed TownServices flags,
+resolver-based wanted-poster/clue surfacing, and restructured case file pools.
+
+Also lands pre-existing worktree changes from the seed codec rebuild:
+- SeedWorldCatalog expanded to 40-entry name pool
+- SeedWorldResolver uses direct bit-packing UUID codec
+- Prosperity and services palette encoding
+- TownStoreCatalogResolver derives offers from Town.Prosperity
+- StartingTownCatalog returns all towns (no service flag filtering)
+
+All 836 tests pass (83 GameContent + 417 Domain + 181 Application + 155 Integration).
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

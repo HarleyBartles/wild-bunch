@@ -17,7 +17,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersInSupportedTownAddsPublicClueAndLogEntry()
     {
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
 
         var result = session.ReadWantedPosters();
 
@@ -25,8 +25,10 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
+        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant behind
+        // the killer-release gate, so the unrelated warrant surfaces first.
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -40,7 +42,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersTwiceDoesNotDuplicateTheSameClue()
     {
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
 
         var first = session.ReadWantedPosters();
         var second = session.ReadWantedPosters();
@@ -60,7 +62,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersSkipsTelegraphAndGossipClues()
     {
-        var session = CreateSession(TownServices.NoticeBoard, includeSourceSpecificClues: true);
+        var session = CreateSession(TownServices.None, includeSourceSpecificClues: true);
 
         var first = session.ReadWantedPosters();
 
@@ -83,15 +85,17 @@ public sealed class GameSessionWantedPostersTests
         // reveal the same warrants/clues as in a town with NoticeBoard.
         var session = CreateSession(TownServices.None);
 
-        // Prove the precondition: the town has no NoticeBoard service.
-        Assert.False((session.CurrentTown.Services & TownServices.NoticeBoard) != 0);
+        // Prove the precondition: the town carries no services (TownServices.None).
+        Assert.Equal(TownServices.None, session.CurrentTown.Services);
 
         var result = session.ReadWantedPosters();
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
+        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant, so the
+        // unrelated warrant ("Reno Pike") surfaces first.
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal("Mira Cline", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -102,7 +106,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersWhileJourneyAwaitingAcknowledgementFailsWithoutMutation()
     {
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         StartJourney(session);
         session.Journey!.MarkCompleted();
 

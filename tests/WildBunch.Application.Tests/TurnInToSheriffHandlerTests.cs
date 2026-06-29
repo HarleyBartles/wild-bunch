@@ -51,7 +51,7 @@ public sealed class TurnInToSheriffHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var world = new DomainWorld(
             new[] { pinecross },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, pinecross.Id, TrailRisk.Low) });

@@ -37,7 +37,7 @@ public sealed class GetTownStoreOffersHandlerTests
     }
 
     [Fact]
-    public async Task GetTownStoreOffersReturnsEmptyCatalogWhenTownHasNoStoreServices()
+    public async Task GetTownStoreOffersReturnsProsperityBasedCatalogForDestituteTown()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
@@ -46,8 +46,12 @@ public sealed class GetTownStoreOffersHandlerTests
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "dryfork"));
 
-        Assert.False(result.Available);
-        Assert.Empty(result.Offers);
+        // Every town has a store (prosperity-driven). A Destitute town has only
+        // general store offers — no stable or gunsmith.
+        Assert.True(result.Available);
+        Assert.Contains(result.Offers, offer => offer.VendorType == StoreVendorType.GeneralStore);
+        Assert.DoesNotContain(result.Offers, offer => offer.VendorType == StoreVendorType.Stable);
+        Assert.DoesNotContain(result.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith);
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
     }
@@ -79,9 +83,9 @@ public sealed class GetTownStoreOffersHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Supplies | TownServices.Telegraph);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None, TownProsperity.Destitute);
         var world = new DomainWorld(
             new[] { pinecross, redmesa, dryfork },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });

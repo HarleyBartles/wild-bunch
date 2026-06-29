@@ -136,12 +136,7 @@ export function formatWaterFeature(feature: number) {
 
 export function formatServices(services: number) {
   const labels: string[] = [];
-  if (services & 1) labels.push("Supplies");
-  if (services & 2) labels.push("Lodging");
-  if (services & 4) labels.push("Doctor");
-  if (services & 8) labels.push("Telegraph");
-  if (services & 16) labels.push("Notice board");
-  if (services & 32) labels.push("Saloon");
+  if (services & 1) labels.push("Telegraph");
   return labels.length > 0 ? labels.join(", ") : "None";
 }
 

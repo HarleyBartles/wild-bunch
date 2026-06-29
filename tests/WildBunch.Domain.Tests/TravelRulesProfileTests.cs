@@ -64,8 +64,8 @@ public sealed class TravelRulesProfileTests
         var world = new DomainWorld(
             new[]
             {
-                new DomainTown(new DomainTownId("pinecross"), "Pinecross", DomainTownServices.Supplies),
-                new DomainTown(new DomainTownId("holloway"), "Holloway", DomainTownServices.Supplies)
+                new DomainTown(new DomainTownId("pinecross"), "Pinecross", DomainTownServices.None),
+                new DomainTown(new DomainTownId("holloway"), "Holloway", DomainTownServices.None)
             },
             new[]
             {

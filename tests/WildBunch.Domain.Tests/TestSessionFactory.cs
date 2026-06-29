@@ -28,7 +28,7 @@ public static class TestSessionFactory
     public static GameSession CreateDefault()
     {
         var town = new Town(new TownId("current"), "Current Town",
-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
+            TownServices.Telegraph);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -72,7 +72,7 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithConfrontableSaloonSuspect()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -114,7 +114,7 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithKillerReleaseGateOpen()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -157,7 +157,7 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithNoConfrontableSaloonSuspect()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -197,7 +197,7 @@ public static class TestSessionFactory
                     ? d with { Availability = TownSourceAvailability.Conditional, RequiredServices = TownServices.Telegraph }
                     : d)
                 .ToArray());
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None, noSaloonCatalog);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None, TownProsperity.Prosperous, noSaloonCatalog);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -231,7 +231,7 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithWarrantedSuspect()
     {
-        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);
+        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -281,7 +281,7 @@ public static class TestSessionFactory
     public static GameSession CreateWithIneligibleWarrantedSuspect()
     {
         var town = new Town(new TownId("current"), "Current Town",
-            TownServices.NoticeBoard | TownServices.Supplies);
+            TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -366,7 +366,7 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithArmedCorrectDeclarationSetup()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -434,7 +434,7 @@ public static class TestSessionFactory
     public static GameSession CreateWithPublicClue(InvestigationSourceKind sourceKind, string description)
     {
         var town = new Town(new TownId("current"), "Current Town",
-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
+            TownServices.Telegraph);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -512,7 +512,7 @@ public static class TestSessionFactory
     public static GameSession CreateWithPublicWarrantAndClue(InvestigationSourceKind sourceKind)
     {
         var town = new Town(new TownId("current"), "Current Town",
-            TownServices.NoticeBoard | TownServices.Telegraph | TownServices.Lodging);
+            TownServices.Telegraph);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },
@@ -545,7 +545,7 @@ public static class TestSessionFactory
                 new[] { "Red Wren", "Aunt Tess" },
                 new[] { "Pale scar across the left cheek" },
                 "Dodge City Marshal",
-                InvestigationTargetKind.TrueCulprit,
+                InvestigationTargetKind.GangMember,
                 [OutlawGangIds.WildBunch],
                 OutlawGangIds.WildBunch,
                 InvestigationSourceKind.SheriffWarrants),

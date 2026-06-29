@@ -1,0 +1,231 @@
+Commits 4b2bd75..f5fad5d
+
+f5fad5d feat: expand unrelated criminal pool from 6 to 21 for parity/respawn coverage
+
+ .../NewGame/CaseCharacterRoster.cs                 | 195 +++++++++++++++++++++
+ .../CaseCharacterRosterTests.cs                    |   6 +
+ 2 files changed, 201 insertions(+)
+
+diff --git a/src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs b/src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs
+index c90b54b..5af3bec 100644
+--- a/src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs
++++ b/src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs
+@@ -366,6 +366,201 @@ internal static class CaseCharacterRoster
+             340m,
+             InvestigationTargetKind.UnrelatedWantedCriminal,
+             [],
++            null),
++        Wanted(
++            "cole-rance",
++            "Cole Rance",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["The Drifter", "C. Rance"],
++            ["Tobacco-stained vest", "Notched left ear"],
++            "Dustwell Sheriff",
++            WarrantDisposition.DeadOrAlive,
++            280m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "mira-ash",
++            "Mira Ash",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["Ash Mira", "M. Ash"],
++            ["Burn scar on left wrist", "Green bandana"],
++            "Cottonwood Marshal",
++            WarrantDisposition.AliveOnly,
++            210m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "tobias-rudd",
++            "Tobias Rudd",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["T. Rudd", "Ruddy Tob"],
++            ["Missing left thumb", "Canvas duster"],
++            "Iron Springs Deputy",
++            WarrantDisposition.DeadOrAlive,
++            245m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "cora-dell",
++            "Cora Dell",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["Dell Cora", "C. Dell"],
++            ["Silver locket", "Frayged left cuff"],
++            "Pinecross Sheriff",
++            WarrantDisposition.AliveOnly,
++            195m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "silas-marsh",
++            "Silas Marsh",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["S. Marsh", "The Reed"],
++            ["Limp on right leg", "Oil-stained gloves"],
++            "Red Mesa Sheriff",
++            WarrantDisposition.DeadOrAlive,
++            320m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "delia-wren",
++            "Delia Wren",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["Wren Delia", "D. Wren"],
++            ["Feather earring on right ear", "Calico blouse"],
++            "Sagewell Marshal",
++            WarrantDisposition.AliveOnly,
++            205m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "ezra-quill",
++            "Ezra Quill",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["E. Quill", "Quill Ez"],
++            ["Ink stain on right hand", "Wire-rim spectacles"],
++            "Holloway Deputy",
++            WarrantDisposition.DeadOrAlive,
++            270m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "rosa-vane",
++            "Rosa Vane",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["Vane Rosa", "R. Vane"],
++            ["Red hair ribbon", "Scar across right brow"],
++            "Silver Creek Marshal",
++            WarrantDisposition.AliveOnly,
++            230m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "gideon-fay",
++            "Gideon Fay",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["G. Fay", "Fay Gid"],
++            ["Broken nose", "Brass belt buckle"],
++            "Emberfall Sheriff",
++            WarrantDisposition.DeadOrAlive,
++            255m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "lila-brent",
++            "Lila Brent",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["Brent Lila", "L. Brent"],
++            ["Moth-eaten shawl", "Chipped front tooth"],
++            "Dustwell Deputy",
++            WarrantDisposition.AliveOnly,
++            185m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "amos-tye",
++            "Amos Tye",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["A. Tye", "Tye Am"],
++            ["Patch over left eye", "Carved wooden pipe"],
++            "Cottonwood Sheriff",
++            WarrantDisposition.DeadOrAlive,
++            295m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "pearl-hask",
++            "Pearl Hask",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["Hask Pearl", "P. Hask"],
++            ["Pearl-handled revolver", "Dusty blue bonnet"],
++            "Iron Springs Marshal",
++            WarrantDisposition.AliveOnly,
++            215m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "virgil-cole",
++            "Virgil Cole",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["V. Cole", "Cole Virg"],
++            ["Long gray beard", "Buckskin vest"],
++            "Pinecross Marshal",
++            WarrantDisposition.DeadOrAlive,
++            310m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "etta-quin",
++            "Etta Quin",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["E. Quin", "Quin Ett"],
++            ["Tattoo of a star on left hand", "Frayged hatband"],
++            "Sagewell Sheriff",
++            WarrantDisposition.AliveOnly,
++            200m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
++            null),
++        Wanted(
++            "bart-low",
++            "Bart Low",
++            CaseRosterSourceCategory.FictionalEconomyWarrant,
++            "Fictional economy warrant pool entry; source notes are not historical claims.",
++            ["B. Low", "Low Bart"],
++            ["Stutter-step gait", "Tin star pinned to coat"],
++            "Holloway Marshal",
++            WarrantDisposition.DeadOrAlive,
++            250m,
++            InvestigationTargetKind.UnrelatedWantedCriminal,
++            [],
+             null)
+     ];
+ 
+diff --git a/tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs b/tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs
+index f52057e..225a7f0 100644
+--- a/tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs
++++ b/tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs
+@@ -229,6 +229,12 @@ public sealed class CaseCharacterRosterTests
+     private static string FeatureSignature(IReadOnlyList<CaseSuspectFeatureAssignment> features)
+         => string.Join("|", features.Select(feature => $"{feature.PrimaryFeature.Key}:{string.Join(",", feature.AdditionalFeatures.Select(additional => additional.Key))}"));
+ 
++    [Fact]
++    public void UnrelatedWantedCriminalPool_HasAtLeast21Entries()
++    {
++        Assert.True(CaseCharacterRoster.UnrelatedWantedCriminalPool.Count >= 21);
++    }
++
+     private static string WarrantSignature(OutlawWarrantProfile warrant)
+         => string.Join(
+             ":",

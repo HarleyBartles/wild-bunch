@@ -16,7 +16,7 @@ public sealed class SeededNewGameFactoryTests
         var session = factory.Create("Ranger Vale");
 
         Assert.Equal("Ranger Vale", session.Player.Name);
-        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+        Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
         Assert.Equal(GameDifficulty.Standard, session.GameDifficulty);
         Assert.Equal(GameEntropy.Classic, session.GameEntropy);
         Assert.Equal(25m, session.Player.Wallet.Cash);
@@ -33,9 +33,10 @@ public sealed class SeededNewGameFactoryTests
         Assert.True(capabilities.RevolverUsable);
         Assert.False(capabilities.RifleUsable);
         Assert.Equal(8, session.World.Towns.Count);
-        Assert.Equal(9, session.World.Trails.Count);
-        Assert.Contains(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("redmesa")));
-        Assert.DoesNotContain(session.World.Trails, trail => trail.Connects(new WildBunch.Domain.World.TownId("pinecross"), new WildBunch.Domain.World.TownId("dryfork")));
+        Assert.Equal(12, session.World.Trails.Count);
+        // Slot 0 and slot 1 are always connected (base topology).
+        var towns = session.World.Towns.ToArray();
+        Assert.Contains(session.World.Trails, trail => trail.Connects(towns[0].Id, towns[1].Id));
         Assert.Equal(7, session.CaseFile.Suspects.Count);
         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Id.Equals(session.CaseFile.TrueCulpritId));
         Assert.Equal(5, session.CaseFile.KillerReleaseThreshold);
@@ -65,6 +66,7 @@ public sealed class SeededNewGameFactoryTests
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
         Assert.Single(session.CaseFile.KnownClues);
+        // 6 base surface-tagged clues only; town-specific clues are a runtime/salt concern.
         Assert.Equal(6, session.CaseFile.PublicClues.Count);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A witness tied the rider to ", StringComparison.Ordinal));
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
@@ -103,7 +105,10 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(ClueRecency.Recent, sightingClue.Anchors.Times[0].Recency);
         Assert.NotEmpty(sightingClue.Anchors.Directions);
         Assert.Contains("rail spur", sightingClue.Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(2, session.CaseFile.PublicWarrants.Count);
+        // 7 gang member warrants (one per suspect, including the true culprit) + 21 unrelated = 28.
+        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
+        Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
+        Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
         Assert.Equal("Butch Cassidy", session.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(InvestigationTargetKind.GangMember, session.CaseFile.PublicWarrants[0].Terms.TargetKind);
         Assert.Equal(WarrantDisposition.DeadOrAlive, session.CaseFile.PublicWarrants[0].Terms.Disposition);
@@ -113,11 +118,9 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(new[] { "Raven-feather pin", "Black felt hat" }, session.CaseFile.PublicWarrants[0].Terms.KnownFeatures);
         Assert.Equal(new[] { OutlawGangIds.WildBunch }, session.CaseFile.PublicWarrants[0].Terms.GangAffiliations);
         Assert.Equal(OutlawGangIds.WildBunch, session.CaseFile.PublicWarrants[0].Terms.AdvancesGangPressureFor);
-        Assert.Equal("Reno Pike", session.CaseFile.PublicWarrants[1].TargetName);
-        Assert.Equal(WarrantDisposition.AliveOnly, session.CaseFile.PublicWarrants[1].Terms.Disposition);
-        Assert.Empty(session.CaseFile.PublicWarrants[1].Terms.GangAffiliations);
-        Assert.Null(session.CaseFile.PublicWarrants[1].Terms.AdvancesGangPressureFor);
-        Assert.DoesNotContain(session.CaseFile.PublicWarrants, warrant => warrant.TargetName == session.CaseFile.Suspects[3].Name);
+        // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).
+        Assert.Contains(session.CaseFile.PublicWarrants, warrant => warrant.TargetName == session.CaseFile.Suspects[3].Name
+            && warrant.Terms.TargetKind == InvestigationTargetKind.TrueCulprit);
         Assert.DoesNotContain(session.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));
         Assert.Equal(new SuspectId("suspect-2"), session.CaseFile.Accusation);
         Assert.Equal(7, session.CaseFile.SuspectTurfAssignments.Count);
@@ -126,16 +129,48 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
+    public void CaseFile_StartsWithOneKnownClueAndZeroKnownWarrants()
+    {
+        var factory = new SeededNewGameFactory();
+        var session = factory.Create("Ranger Vale");
+
+        Assert.Single(session.CaseFile.KnownClues);
+        Assert.Empty(session.CaseFile.KnownWarrants);
+    }
+
+    [Fact]
+    public void CaseFile_PublicWarrants_HasSevenGangPlusTwentyOneUnrelated()
+    {
+        var factory = new SeededNewGameFactory();
+        var session = factory.Create("Ranger Vale");
+
+        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
+        Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
+        Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
+    }
+
+    [Fact]
+    public void CaseFile_PublicClues_HasSixBaseCluesNoTownSpecificOnes()
+    {
+        var factory = new SeededNewGameFactory();
+        var session = factory.Create("Ranger Vale");
+
+        Assert.Equal(6, session.CaseFile.PublicClues.Count);
+    }
+
+    [Fact]
     public void FrontierDescriptorAddsTownSpecificCivicCluesForTheNextVisitedTown()
     {
-        var descriptor = StartingWorldDescriptorResolver.Resolve(CreateSeedCode(1, 1, 0, 0, 1, 0, 1, tail: 13), GameDifficulty.Standard, GameEntropy.Classic);
+        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 1, 3, 0, tail: 13));
         var factory = new SeededNewGameFactory();
 
-        var session = factory.Create("Ranger Vale", GameDifficulty.Standard, StartingWorldDescriptorResolver.FormatSeedCode(descriptor.SeedCode));
+        var session = factory.Create("Ranger Vale", GameDifficulty.Standard, seedCode);
 
-        Assert.Contains(session.Player.CurrentTownId.Value, new[] { "pinecross", "holloway", "redmesa", "sagewell", "emberfall" });
-        Assert.True(session.CaseFile.PublicClues.Count > 6);
-        Assert.True(session.CaseFile.PublicWarrants.Count > 2);
+        Assert.Contains(session.Player.CurrentTownId.Value, SeedWorldCatalog.NamePool.Select(n => n.Id));
+        // Town-specific civic clues/warrants are a runtime/salt concern (Task 4),
+        // not setup-time. The seed case file surfaces only the base pools.
+        Assert.Equal(6, session.CaseFile.PublicClues.Count);
+        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
     }
 
     [Fact]
@@ -143,9 +178,9 @@ public sealed class SeededNewGameFactoryTests
     {
         var factory = new SeededNewGameFactory();
 
-        var seedA = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
-        var seedASame = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 11));
-        var seedB = StartingWorldDescriptorResolver.FormatSeedCode(CreateSeedCode(1, 0, 0, 0, 1, 0, 1, tail: 12));
+        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 0));
+        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 0));
+        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 2, 3, 0, tail: 0));
 
         var first = factory.Create("Ranger Vale", GameDifficulty.Standard, seedA);
         var firstAgain = factory.Create("Ranger Vale", GameDifficulty.Easy, seedASame);
@@ -161,18 +196,20 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void RandomizedNoHorseLightLoadoutSeedCreatesNoHorseOrSaddle()
+    public void AllDifficultiesGetTransitionalHorseAndSaddleDefaults()
     {
-        var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(Guid.NewGuid());
+        // BUNCH-107 transitional: all difficulties get horse+saddle+Standard loadout.
+        // BUNCH-94 will expand DifficultyEnvelope to add difficulty-owned variety.
         var factory = new SeededNewGameFactory();
+        var seedCode = SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode());
 
-        var session = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Boring);
+        var easySession = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Boring);
+        var brutalSession = factory.Create("Ranger Vale", GameDifficulty.Brutal, seedCode, GameEntropy.Boring);
 
-        Assert.Equal(GameDifficulty.Easy, session.GameDifficulty);
-        Assert.Equal(GameEntropy.Boring, session.GameEntropy);
-        // Loadout profile is now seed-derived, not parameter-derived
-        // Just verify that the session was created successfully
-        Assert.NotNull(session);
+        Assert.True(easySession.Player.Inventory.HasItem(ItemKind.Horse));
+        Assert.True(easySession.Player.Inventory.HasItem(ItemKind.Saddle));
+        Assert.True(brutalSession.Player.Inventory.HasItem(ItemKind.Horse));
+        Assert.True(brutalSession.Player.Inventory.HasItem(ItemKind.Saddle));
     }
 
     [Fact]
@@ -189,11 +226,10 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(GameEntropy.Classic, runtimeSecond.GameEntropy);
         Assert.NotEqual(runtimeFirst.SaltSource.Salt, runtimeSecond.SaltSource.Salt);
 
-        var boringDescriptor = StartingWorldDescriptorResolver.CreateCanonicalDescriptor() with
-        {
-            GameEntropy = GameEntropy.Boring
-        };
-        var boringSeed = StartingWorldDescriptorResolver.FormatSeedCode(StartingWorldDescriptorResolver.CreateRepresentativeSeedCode(boringDescriptor));
+        // Boring entropy uses Fixed salt derived from the seed code.
+        var boringTemplate = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var boringSeed = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(boringTemplate));
 
         var deterministicFirst = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
         var deterministicSecond = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
@@ -222,14 +258,45 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void CreateWithNullStartingTownIdUsesSeedDefault()
+    public void CreateWithNullStartingTownIdUsesSafeDefault()
     {
         var factory = new SeededNewGameFactory();
 
         var session = factory.Create("Ranger Vale", startingTownId: null);
 
-        // The seed-derived default for the canonical descriptor is "pinecross".
-        Assert.Equal(new WildBunch.Domain.World.TownId("pinecross"), session.Player.CurrentTownId);
+        // The safe default from StartingTownPolicy is the first town in the world (slot 0).
+        Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
+    }
+
+    [Fact]
+    public void ReadWantedPosters_InBoringMode_SurfacesDifferentWarrantsInDifferentTowns()
+    {
+        // BUNCH-107: resolver-based selection varies by town slot index, so reading
+        // wanted posters in different towns should surface different warrants (when
+        // the eligible pool is large enough). Boring entropy uses a Fixed salt so the
+        // selection is deterministic for the same seed.
+        var boringTemplate = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var boringSeed = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(boringTemplate));
+        var factory = new SeededNewGameFactory();
+
+        var session = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
+
+        // Read posters in the starting town.
+        var firstResult = session.ReadWantedPosters();
+        Assert.True(firstResult.Success);
+        var firstWarrant = session.CaseFile.KnownWarrants.LastOrDefault();
+        Assert.NotNull(firstWarrant);
+
+        // Travel to a different town and read posters there.
+        var secondTown = session.World.Towns.First(t => !t.Id.Equals(session.CurrentTown.TownId));
+        session.CurrentTown.EnterTown(secondTown);
+
+        var secondResult = session.ReadWantedPosters();
+        Assert.True(secondResult.Success);
+        var secondWarrant = session.CaseFile.KnownWarrants.LastOrDefault();
+        Assert.NotNull(secondWarrant);
+        Assert.NotEqual(firstWarrant!.Id, secondWarrant!.Id);
     }
 
     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
@@ -241,6 +308,6 @@ public sealed class SeededNewGameFactoryTests
     private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
 
-    private static Guid CreateSeedCode(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5, byte byte6, ulong tail)
-        => StartingWorldDescriptorSeedCodeFactory.CreateSeedCode(byte0, byte1, byte2, byte3, byte4, byte5, byte6, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 }

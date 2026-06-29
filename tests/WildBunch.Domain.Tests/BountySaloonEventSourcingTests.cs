@@ -111,7 +111,7 @@ public sealed class BountySaloonEventSourcingTests
 
     private static GameSession CreateConfrontableSaloonSessionWithUncommittedGameStarted(out GameStarted gameStarted)
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { town, connected },

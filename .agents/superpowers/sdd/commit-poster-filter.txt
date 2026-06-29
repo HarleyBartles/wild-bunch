@@ -1,0 +1,21 @@
+feat: filter retired warrants from WantedPosterResolver via UnrelatedCriminalLedger active set
+
+The WantedPosterResolver did not filter by the UnrelatedCriminalLedger's
+active set. Retired/despawned unrelated criminals could still surface on
+wanted posters after a gang take-in reduced the parity target and despawned
+them. This was flagged in the BUNCH-107 code review as an approved scope
+expansion item.
+
+Fix: add an optional IReadOnlySet<WarrantId>? retiredWarrantIds parameter
+to WantedPosterResolver.Resolve. Warrants whose IDs appear in the set are
+excluded from the eligible pool. GameSession.ReadWantedPosters now passes
+the ledger's RetiredWarrantIds and TakenInCriminalIds as a combined set.
+
+Adds unit tests verifying that retired warrants don't surface and that
+all-non-culprit retired returns null. Adds a wiring test verifying that
+GameSession.ReadWantedPosters does not surface retired warrants after a
+gang take-in despawn.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

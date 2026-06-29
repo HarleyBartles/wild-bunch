@@ -30,7 +30,7 @@ public sealed class GameSessionBountyLoopCoordinatorTests
 
     private static GameSession CreateArmedWantedSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },

@@ -507,9 +507,9 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateSessionWithSeedCode(string seedCode, GameEntropy gameEntropy = GameEntropy.Classic, SaltSource? saltSource = null)
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
         var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
 
         var world = new WildBunch.Domain.World.World(
@@ -565,9 +565,9 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
         var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
 
         var world = new WildBunch.Domain.World.World(
@@ -615,8 +615,8 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateLuckySession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
         var world = new WildBunch.Domain.World.World(
             new[] { dustvale, silvercreek },
             new[]
@@ -655,8 +655,8 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateEasySession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
 
         var world = new WildBunch.Domain.World.World(
             new[] { dustvale, holloway },
@@ -692,7 +692,7 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateDryTravelSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
         var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
         var world = new WildBunch.Domain.World.World(
             new[] { dustvale, dryridge },
@@ -723,7 +723,7 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateHorseLossFallbackSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
         var world = new WildBunch.Domain.World.World(
             new[] { pinecross, midway },
@@ -747,7 +747,7 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateJourneyHistorySession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
         var world = new WildBunch.Domain.World.World(
@@ -801,7 +801,7 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateDiarySession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
         var world = new WildBunch.Domain.World.World(
             new[] { pinecross, openpass },
@@ -835,7 +835,7 @@ public sealed class EfGameSessionRepositoryTests
 
     private static GameSession CreateHighRiskSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
         var world = new WildBunch.Domain.World.World(
             new[] { pinecross, dryfork },

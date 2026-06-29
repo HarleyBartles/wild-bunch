@@ -376,7 +376,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateArmedWantedSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -430,7 +430,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateUnarmedWantedSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -477,7 +477,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -524,7 +524,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateCitizenSession(Wallet? wallet = null)
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -543,7 +543,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateSessionWithoutKnownWarrants()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -575,7 +575,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateSessionWithPublicDescriptor()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },

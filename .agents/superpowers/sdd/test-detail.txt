@@ -1,0 +1,662 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+  WildBunch.Domain -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Domain\bin\Debug\net10.0\WildBunch.Domain.dll
+  WildBunch.GameContent -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.GameContent\bin\Debug\net10.0\WildBunch.GameContent.dll
+  WildBunch.Application -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Application\bin\Debug\net10.0\WildBunch.Application.dll
+  WildBunch.Persistence -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Persistence\bin\Debug\net10.0\WildBunch.Persistence.dll
+  WildBunch.Api -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api\bin\Debug\net10.0\WildBunch.Api.dll
+  WildBunch.Integration.Tests -> C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Integration.Tests.dll
+Test run for C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Integration.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\tests\WildBunch.Integration.Tests\bin\Debug\net10.0\WildBunch.Integration.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.9)
+[xUnit.net 00:00:00.09]   Discovering: WildBunch.Integration.Tests
+[xUnit.net 00:00:00.15]   Discovered:  WildBunch.Integration.Tests
+[xUnit.net 00:00:00.17]   Starting:    WildBunch.Integration.Tests
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "MigrationId", "ProductVersion"
+      FROM "__EFMigrationsHistory"
+      ORDER BY "MigrationId";
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+          "MigrationId" character varying(150) NOT NULL,
+          "ProductVersion" character varying(32) NOT NULL,
+          CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+      );
+info: Microsoft.EntityFrameworkCore.Migrations[20411]
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "MigrationId", "ProductVersion"
+      FROM "__EFMigrationsHistory"
+      ORDER BY "MigrationId";
+info: Microsoft.EntityFrameworkCore.Migrations[20405]
+      No migrations were applied. The database is already up to date.
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-107\src\WildBunch.Api
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (13ms) [Parameters=[@ToString='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id"
+      FROM "GameSessions" AS g
+      WHERE g."Status" = @ToString
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@session_Id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @session_Id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."Sequence", g."PayloadJson", g."RecordedAtUtc"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @sessionId
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (13ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?', @p5='?' (DbType = Int64), @p6='?', @p7='?' (DbType = Int64), @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = Guid), @p11='?' (DbType = Int32), @p12='?' (DbType = Object), @p13='?' (DbType = DateTime), @p14='?', @p15='?' (DbType = Guid), @p16='?' (DbType = Int32), @p17='?' (DbType = Object), @p18='?' (DbType = DateTime), @p19='?', @p20='?' (DbType = Guid), @p21='?' (DbType = Int32), @p22='?' (DbType = Object), @p23='?' (DbType = DateTime), @p24='?', @p25='?' (DbType = Guid), @p26='?' (DbType = Int32), @p27='?' (DbType = Object), @p28='?' (DbType = DateTime), @p29='?', @p30='?' (DbType = Guid), @p31='?' (DbType = Int32), @p32='?' (DbType = Object), @p33='?' (DbType = DateTime), @p34='?', @p35='?' (DbType = Guid), @p36='?' (DbType = Int32), @p37='?' (DbType = Object), @p38='?' (DbType = DateTime), @p39='?', @p40='?' (DbType = Guid), @p41='?' (DbType = Int32), @p42='?' (DbType = Object), @p43='?' (DbType = DateTime), @p44='?', @p45='?' (DbType = Guid), @p46='?' (DbType = Int32), @p47='?' (DbType = Object), @p48='?' (DbType = DateTime), @p49='?', @p50='?' (DbType = Guid), @p51='?' (DbType = Int32), @p52='?' (DbType = Object), @p53='?' (DbType = DateTime), @p54='?' (DbType = Int64), @p55='?' (DbType = Guid), @p56='?' (DbType = Guid), @p57='?' (DbType = Guid), @p58='?' (DbType = Guid), @p59='?', @p60='?' (DbType = DateTime), @p61='?' (DbType = Object), @p62='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "GameSessions" ("Id", "CreatedAtUtc", "GameDifficulty", "SchemaVersion", "SeedCode", "SnapshotVersion", "Status", "StreamVersion", "UpdatedAtUtc")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p9, @p10, @p11, @p12, @p13);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p14, @p15, @p16, @p17, @p18);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p19, @p20, @p21, @p22, @p23);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p24, @p25, @p26, @p27, @p28);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p29, @p30, @p31, @p32, @p33);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p34, @p35, @p36, @p37, @p38);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p39, @p40, @p41, @p42, @p43);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p44, @p45, @p46, @p47, @p48);
+      INSERT INTO "GameSessionComponents" ("ComponentName", "SessionId", "ComponentVersion", "PayloadJson", "UpdatedAtUtc")
+      VALUES (@p49, @p50, @p51, @p52, @p53);
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p54, @p55, @p56, @p57, @p58, @p59, @p60, @p61, @p62);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid), @fromVersion='?' (DbType = Int64)], CommandType='Text', CommandTimeout='30']
+      SELECT g."StreamId", g."Sequence", g."CausationId", g."CorrelationId", g."EventId", g."EventType", g."OccurredAtUtc", g."PayloadJson", g."SchemaVersion"
+      FROM "GameSessionStoredEvents" AS g
+      WHERE g."StreamId" = @id_Value AND g."Sequence" > @fromVersion
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @id_Value
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."PayloadJson"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."StreamId", g."Sequence", g."CausationId", g."CorrelationId", g."EventId", g."EventType", g."OccurredAtUtc", g."PayloadJson", g."SchemaVersion"
+      FROM "GameSessionStoredEvents" AS g
+      WHERE g."StreamId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @id_Value
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."PayloadJson"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."StreamId", g."Sequence", g."CausationId", g."CorrelationId", g."EventId", g."EventType", g."OccurredAtUtc", g."PayloadJson", g."SchemaVersion"
+      FROM "GameSessionStoredEvents" AS g
+      WHERE g."StreamId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @id_Value
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."PayloadJson"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."StreamId", g."Sequence", g."CausationId", g."CorrelationId", g."EventId", g."EventType", g."OccurredAtUtc", g."PayloadJson", g."SchemaVersion"
+      FROM "GameSessionStoredEvents" AS g
+      WHERE g."StreamId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@session_Id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @session_Id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."Sequence", g."PayloadJson", g."RecordedAtUtc"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @sessionId
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p2='?', @p3='?' (DbType = Guid), @p0='?' (DbType = Object), @p1='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Guid), @p4='?' (DbType = Object), @p5='?' (DbType = DateTime), @p10='?', @p11='?' (DbType = Guid), @p8='?' (DbType = Object), @p9='?' (DbType = DateTime), @p14='?', @p15='?' (DbType = Guid), @p12='?' (DbType = Object), @p13='?' (DbType = DateTime), @p18='?', @p19='?' (DbType = Guid), @p16='?' (DbType = Object), @p17='?' (DbType = DateTime), @p22='?', @p23='?' (DbType = Guid), @p20='?' (DbType = Object), @p21='?' (DbType = DateTime), @p26='?', @p27='?' (DbType = Guid), @p24='?' (DbType = Object), @p25='?' (DbType = DateTime), @p30='?', @p31='?' (DbType = Guid), @p28='?' (DbType = Object), @p29='?' (DbType = DateTime), @p34='?', @p35='?' (DbType = Guid), @p32='?' (DbType = Object), @p33='?' (DbType = DateTime), @p36='?' (DbType = Int64), @p37='?' (DbType = Guid), @p38='?' (DbType = Guid), @p39='?' (DbType = Guid), @p40='?' (DbType = Guid), @p41='?', @p42='?' (DbType = DateTime), @p43='?' (DbType = Object), @p44='?' (DbType = Int32), @p45='?' (DbType = Int64), @p46='?' (DbType = Guid), @p47='?' (DbType = Guid), @p48='?' (DbType = Guid), @p49='?' (DbType = Guid), @p50='?', @p51='?' (DbType = DateTime), @p52='?' (DbType = Object), @p53='?' (DbType = Int32), @p57='?' (DbType = Guid), @p54='?' (DbType = Int64), @p55='?' (DbType = Int64), @p56='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p0, "UpdatedAtUtc" = @p1
+      WHERE "ComponentName" = @p2 AND "SessionId" = @p3;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p4, "UpdatedAtUtc" = @p5
+      WHERE "ComponentName" = @p6 AND "SessionId" = @p7;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p8, "UpdatedAtUtc" = @p9
+      WHERE "ComponentName" = @p10 AND "SessionId" = @p11;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p12, "UpdatedAtUtc" = @p13
+      WHERE "ComponentName" = @p14 AND "SessionId" = @p15;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p16, "UpdatedAtUtc" = @p17
+      WHERE "ComponentName" = @p18 AND "SessionId" = @p19;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p20, "UpdatedAtUtc" = @p21
+      WHERE "ComponentName" = @p22 AND "SessionId" = @p23;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p24, "UpdatedAtUtc" = @p25
+      WHERE "ComponentName" = @p26 AND "SessionId" = @p27;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p28, "UpdatedAtUtc" = @p29
+      WHERE "ComponentName" = @p30 AND "SessionId" = @p31;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p32, "UpdatedAtUtc" = @p33
+      WHERE "ComponentName" = @p34 AND "SessionId" = @p35;
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44);
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53);
+      UPDATE "GameSessions" SET "SnapshotVersion" = @p54, "StreamVersion" = @p55, "UpdatedAtUtc" = @p56
+      WHERE "Id" = @p57;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @id_Value
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."PayloadJson"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."StreamId", g."Sequence", g."CausationId", g."CorrelationId", g."EventId", g."EventType", g."OccurredAtUtc", g."PayloadJson", g."SchemaVersion"
+      FROM "GameSessionStoredEvents" AS g
+      WHERE g."StreamId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@session_Id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @session_Id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."Sequence", g."PayloadJson", g."RecordedAtUtc"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @sessionId
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p2='?', @p3='?' (DbType = Guid), @p0='?' (DbType = Object), @p1='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Guid), @p4='?' (DbType = Object), @p5='?' (DbType = DateTime), @p10='?', @p11='?' (DbType = Guid), @p8='?' (DbType = Object), @p9='?' (DbType = DateTime), @p14='?', @p15='?' (DbType = Guid), @p12='?' (DbType = Object), @p13='?' (DbType = DateTime), @p18='?', @p19='?' (DbType = Guid), @p16='?' (DbType = Object), @p17='?' (DbType = DateTime), @p22='?', @p23='?' (DbType = Guid), @p20='?' (DbType = Object), @p21='?' (DbType = DateTime), @p26='?', @p27='?' (DbType = Guid), @p24='?' (DbType = Object), @p25='?' (DbType = DateTime), @p30='?', @p31='?' (DbType = Guid), @p28='?' (DbType = Object), @p29='?' (DbType = DateTime), @p34='?', @p35='?' (DbType = Guid), @p32='?' (DbType = Object), @p33='?' (DbType = DateTime), @p36='?' (DbType = Int64), @p37='?' (DbType = Guid), @p38='?' (DbType = Guid), @p39='?' (DbType = Guid), @p40='?' (DbType = Guid), @p41='?', @p42='?' (DbType = DateTime), @p43='?' (DbType = Object), @p44='?' (DbType = Int32), @p45='?' (DbType = Int64), @p46='?' (DbType = Guid), @p47='?' (DbType = Guid), @p48='?' (DbType = Guid), @p49='?' (DbType = Guid), @p50='?', @p51='?' (DbType = DateTime), @p52='?' (DbType = Object), @p53='?' (DbType = Int32), @p57='?' (DbType = Guid), @p54='?' (DbType = Int64), @p55='?' (DbType = Int64), @p56='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p0, "UpdatedAtUtc" = @p1
+      WHERE "ComponentName" = @p2 AND "SessionId" = @p3;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p4, "UpdatedAtUtc" = @p5
+      WHERE "ComponentName" = @p6 AND "SessionId" = @p7;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p8, "UpdatedAtUtc" = @p9
+      WHERE "ComponentName" = @p10 AND "SessionId" = @p11;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p12, "UpdatedAtUtc" = @p13
+      WHERE "ComponentName" = @p14 AND "SessionId" = @p15;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p16, "UpdatedAtUtc" = @p17
+      WHERE "ComponentName" = @p18 AND "SessionId" = @p19;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p20, "UpdatedAtUtc" = @p21
+      WHERE "ComponentName" = @p22 AND "SessionId" = @p23;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p24, "UpdatedAtUtc" = @p25
+      WHERE "ComponentName" = @p26 AND "SessionId" = @p27;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p28, "UpdatedAtUtc" = @p29
+      WHERE "ComponentName" = @p30 AND "SessionId" = @p31;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p32, "UpdatedAtUtc" = @p33
+      WHERE "ComponentName" = @p34 AND "SessionId" = @p35;
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44);
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53);
+      UPDATE "GameSessions" SET "SnapshotVersion" = @p54, "StreamVersion" = @p55, "UpdatedAtUtc" = @p56
+      WHERE "Id" = @p57;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @id_Value
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."PayloadJson"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."StreamId", g."Sequence", g."CausationId", g."CorrelationId", g."EventId", g."EventType", g."OccurredAtUtc", g."PayloadJson", g."SchemaVersion"
+      FROM "GameSessionStoredEvents" AS g
+      WHERE g."StreamId" = @id_Value
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@session_Id_Value='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."Id", g."CreatedAtUtc", g."GameDifficulty", g."SchemaVersion", g."SeedCode", g."SnapshotVersion", g."Status", g."StreamVersion", g."UpdatedAtUtc"
+      FROM "GameSessions" AS g
+      WHERE g."Id" = @session_Id_Value
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid), @componentName='?'], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."ComponentName", g."ComponentVersion", g."PayloadJson", g."UpdatedAtUtc"
+      FROM "GameSessionComponents" AS g
+      WHERE g."SessionId" = @sessionId AND g."ComponentName" = @componentName
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@sessionId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT g."SessionId", g."Sequence", g."PayloadJson", g."RecordedAtUtc"
+      FROM "GameSessionTravelDiaryDays" AS g
+      WHERE g."SessionId" = @sessionId
+      ORDER BY g."Sequence"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p2='?', @p3='?' (DbType = Guid), @p0='?' (DbType = Object), @p1='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Guid), @p4='?' (DbType = Object), @p5='?' (DbType = DateTime), @p10='?', @p11='?' (DbType = Guid), @p8='?' (DbType = Object), @p9='?' (DbType = DateTime), @p14='?', @p15='?' (DbType = Guid), @p12='?' (DbType = Object), @p13='?' (DbType = DateTime), @p18='?', @p19='?' (DbType = Guid), @p16='?' (DbType = Object), @p17='?' (DbType = DateTime), @p22='?', @p23='?' (DbType = Guid), @p20='?' (DbType = Object), @p21='?' (DbType = DateTime), @p26='?', @p27='?' (DbType = Guid), @p24='?' (DbType = Object), @p25='?' (DbType = DateTime), @p30='?', @p31='?' (DbType = Guid), @p28='?' (DbType = Object), @p29='?' (DbType = DateTime), @p34='?', @p35='?' (DbType = Guid), @p32='?' (DbType = Object), @p33='?' (DbType = DateTime), @p36='?' (DbType = Int64), @p37='?' (DbType = Guid), @p38='?' (DbType = Guid), @p39='?' (DbType = Guid), @p40='?' (DbType = Guid), @p41='?', @p42='?' (DbType = DateTime), @p43='?' (DbType = Object), @p44='?' (DbType = Int32), @p45='?' (DbType = Int64), @p46='?' (DbType = Guid), @p47='?' (DbType = Guid), @p48='?' (DbType = Guid), @p49='?' (DbType = Guid), @p50='?', @p51='?' (DbType = DateTime), @p52='?' (DbType = Object), @p53='?' (DbType = Int32), @p57='?' (DbType = Guid), @p54='?' (DbType = Int64), @p55='?' (DbType = Int64), @p56='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p0, "UpdatedAtUtc" = @p1
+      WHERE "ComponentName" = @p2 AND "SessionId" = @p3;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p4, "UpdatedAtUtc" = @p5
+      WHERE "ComponentName" = @p6 AND "SessionId" = @p7;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p8, "UpdatedAtUtc" = @p9
+      WHERE "ComponentName" = @p10 AND "SessionId" = @p11;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p12, "UpdatedAtUtc" = @p13
+      WHERE "ComponentName" = @p14 AND "SessionId" = @p15;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p16, "UpdatedAtUtc" = @p17
+      WHERE "ComponentName" = @p18 AND "SessionId" = @p19;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p20, "UpdatedAtUtc" = @p21
+      WHERE "ComponentName" = @p22 AND "SessionId" = @p23;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p24, "UpdatedAtUtc" = @p25
+      WHERE "ComponentName" = @p26 AND "SessionId" = @p27;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p28, "UpdatedAtUtc" = @p29
+      WHERE "ComponentName" = @p30 AND "SessionId" = @p31;
+      UPDATE "GameSessionComponents" SET "PayloadJson" = @p32, "UpdatedAtUtc" = @p33
+      WHERE "ComponentName" = @p34 AND "SessionId" = @p35;
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44);
+      INSERT INTO "GameSessionStoredEvents" ("Sequence", "StreamId", "CausationId", "CorrelationId", "EventId", "EventType", "OccurredAtUtc", "PayloadJson", "SchemaVersion")
+      VALUES (@p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53);
+      UPDATE "GameSessions" SET "SnapshotVersion" = @p54, "StreamVersion" = @p55, "UpdatedAtUtc" = @p56
+      WHERE "Id" = @p57;
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
