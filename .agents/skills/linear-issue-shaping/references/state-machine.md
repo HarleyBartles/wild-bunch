@@ -42,9 +42,9 @@ Never infer active/running state from send-ready wording alone. Check Linear sta
 
 A parent or tracker issue should be `Todo` when the track is shaped/planned and no child work is active. It should be `In Progress` when at least one child issue is active/running or the parent itself is actively being worked. Do not mark a parent active solely because children are worker-ready.
 
-## Devin campaign state
+## Campaign issue state
 
-A Devin campaign issue is a chunky repo campaign shaped as one durable Linear parent issue. It may use Linear documents as lane/subtask packets instead of child issues by default. The campaign is `worker-ready` when the issue body includes the campaign shape, lane-document option, one-PR preference, split conditions, and the worktree isolation gate. It is `active/running` when Devin reports worktree setup and work evidence. It is `returned` when Devin reports a PR or completion note. Read `devin-campaign-shape.md` for the full profile.
+A campaign issue is a chunky repo campaign shaped as one durable Linear parent issue. It may use Linear documents as lane/subtask packets instead of child issues by default. The campaign is `worker-ready` when the issue body includes the campaign shape, lane-document option, one-PR preference, split conditions, and the worktree isolation gate. It is `active/running` when the worker reports worktree setup and work evidence. It is `returned` when the worker reports a PR or completion note. Read `campaign-shape.md` for the full profile.
 
 ## Evidence order
 

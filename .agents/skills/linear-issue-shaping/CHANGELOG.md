@@ -14,12 +14,12 @@
 
 ## 2026-06-20
 
-- Landed the MARK-278 Devin campaign issue profile and mandatory worktree isolation gate: added `references/devin-campaign-shape.md` with issue-type classification, Devin campaign issue profile, split conditions, worktree isolation gate language, launch/resume templates, and self-checks.
-- Updated `SKILL.md` with issue-type classification, Devin campaign routing, and the worktree isolation gate.
-- Updated `references/issue-readiness.md` with issue-type classification, Devin campaign issue shape, and the worktree isolation gate for Devin-ready issue bodies.
-- Updated `references/external-worker-handoff.md` with Devin launch handoff, resume nudge, and strengthened return contract including worktree state reporting.
-- Updated `references/golden-gate.md` to recognize Devin campaign capability and require the worktree isolation gate for Devin delegation.
-- Updated `references/state-machine.md` with Devin campaign state notes.
+- Landed the MARK-278 campaign issue profile and mandatory worktree isolation gate: added the campaign-shape reference with issue-type classification, campaign issue profile, split conditions, worktree isolation gate language, launch/resume templates, and self-checks.
+- Updated `SKILL.md` with issue-type classification, campaign routing, and the worktree isolation gate.
+- Updated `references/issue-readiness.md` with issue-type classification, campaign issue shape, and the worktree isolation gate for worker-ready issue bodies.
+- Updated `references/external-worker-handoff.md` with campaign launch handoff, resume nudge, and strengthened return contract including worktree state reporting.
+- Updated `references/golden-gate.md` to recognize campaign capability and require the worktree isolation gate for repo delegation.
+- Updated `references/state-machine.md` with campaign issue state notes.
 - Preserved the small worker-ready issue path; small issues keep the compact DOD and standard return contract.
 
 ## 2026-06-14

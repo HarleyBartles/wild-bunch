@@ -17,15 +17,15 @@ Do not require YAML unless the target worker or user explicitly asks for it. Bor
 
 ## Issue-type classification
 
-Classify before shaping so the issue gets the right size and return contract. Read `devin-campaign-shape.md` for the full profile.
+Classify before shaping so the issue gets the right size and return contract. Read `campaign-shape.md` for the full profile.
 
 - `small worker-ready issue`: one bounded Linear issue with a compact DOD and standard worker return.
-- `devin campaign issue`: one durable Linear parent issue, Linear documents as lane/subtask packets where a chunky campaign needs multiple seams, one PR unless a split condition triggers, and stronger return evidence.
+- `campaign issue`: one durable Linear parent issue, Linear documents as lane/subtask packets where a chunky campaign needs multiple seams, one PR unless a split condition triggers, and stronger return evidence.
 - `planning/tracker issue`: parent/tracker or planning-only issue, no execution yet.
-- `gpt-native skillwork`: GPT-native skill author/edit/package work. Route to Devin only when the editable source is repo-backed and the issue explicitly targets that repo.
+- `gpt-native skillwork`: GPT-native skill author/edit/package work. Route to a worker execution lane only when the editable source is repo-backed and the issue explicitly targets that repo.
 - `non-repo/manual work`: UI, connector, account, research, or manual action with no PR.
 
-Do not overgrow a small worker issue into campaign shape. Do not route GPT-native skillwork to Devin merely because it touches skill text.
+Do not overgrow a small worker issue into campaign shape. Do not route GPT-native skillwork to a worker merely because it touches skill text.
 
 ## Durable MARK worker issue convention
 
@@ -71,9 +71,9 @@ When PR publication is expected, include:
 
 `When implementation is complete, return evidence in Linear, including validation output and any PR/branch/commit link if one is created. Do not require hidden credentials or unmentioned publication routes.`
 
-## Devin campaign issue shape
+## Campaign issue shape
 
-When the issue is a Devin campaign issue (chunky repo campaign), read `devin-campaign-shape.md` and add to the issue body:
+When the issue is a campaign issue (chunky repo campaign), read `campaign-shape.md` and add to the issue body:
 
 - campaign shape note: one PR preference and lane-document option;
 - at least one split condition;
@@ -82,9 +82,9 @@ When the issue is a Devin campaign issue (chunky repo campaign), read `devin-cam
 
 Prefer one durable Linear parent issue with Linear documents as lane/subtask packets over spawning many child issues by default.
 
-## Devin worktree isolation gate
+## Worktree isolation gate
 
-For any Devin-backed repo task, the issue body must include the worktree isolation gate. Before mutation, Devin must work in a fresh dedicated worktree based on current `main` or the issue-specified base, and report:
+For any repo-backed task, the issue body must include the worktree isolation gate. Before mutation, the worker must work in a fresh dedicated worktree based on current `main` or the issue-specified base, and report:
 
 - worktree path;
 - branch name;

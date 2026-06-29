@@ -19,9 +19,9 @@ Create the smallest durable handoff that names:
 
 Avoid large YAML packets unless the target worker requires that exact format. Ordinary markdown is preferred.
 
-## Devin launch handoff
+## Campaign launch handoff
 
-For a Devin-backed repo campaign, read `devin-campaign-shape.md` for the full template. The launch handoff must include the worktree isolation gate before mutation:
+For a repo campaign, read `campaign-shape.md` for the full template. The launch handoff must include the worktree isolation gate before mutation:
 
 ```text
 Worktree isolation gate (before mutation):
@@ -35,11 +35,11 @@ Worktree isolation gate (before mutation):
 3. Do not overwrite pre-existing dirty state. Report it.
 ```
 
-For a Devin campaign, also include the campaign shape note (one PR preference, lane-document option) and at least one split condition.
+For a campaign issue, also include the campaign shape note (one PR preference, lane-document option) and at least one split condition.
 
-## Devin resume nudge
+## Campaign resume nudge
 
-When resuming a paused Devin repo campaign, the resume nudge must repeat the worktree isolation gate before any new mutation. Read `devin-campaign-shape.md` for the full template. If the existing worktree is dirty or on the wrong base, the nudge must tell Devin to report it before continuing and not overwrite dirty state.
+When resuming a paused repo campaign, the resume nudge must repeat the worktree isolation gate before any new mutation. Read `campaign-shape.md` for the full template. If the existing worktree is dirty or on the wrong base, the nudge must tell the worker to report it before continuing and not overwrite dirty state.
 
 ## Return evidence wording
 
@@ -52,7 +52,7 @@ Require the worker to return:
 - skipped validation with reason;
 - known blockers or ambiguity.
 
-For a Devin repo task, also require:
+For a repo task, also require:
 
 - worktree path, branch name, base commit, and `git status --short` before mutation;
 - whether any pre-existing dirty state was present;
