@@ -117,16 +117,31 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     private static SeedWorld CreateFullTownSeedWorld(SeedWorldVariant variant, int accusationIndex, int defaultCulpritIndex, int cashBonus)
     {
-        var allTownIds = SeedWorldCatalog.AllTowns.Select(t => t.Id).ToArray();
-        var trails = SeedWorldResolver.BuildTrails(variant, allTownIds);
+        var townCount = 8;
+        var prosperityPalette = ProsperityPalette.UniformProsperous;
+        var servicesPalette = ServicesPalette.HubTelegraph;
+
+        var townNames = SeedWorldCatalog.DeriveTownNames(
+            variant, townCount, accusationIndex, defaultCulpritIndex,
+            cashBonus, prosperityPalette, servicesPalette);
+        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
+        var townServices = townNames
+            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
+            .ToDictionary(x => x.Id, x => x.Services);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+
         return new SeedWorld(
             Guid.Empty,
             variant,
-            allTownIds,
-            trails,
+            townCount,
+            servicesPalette,
+            prosperityPalette,
             accusationIndex,
             defaultCulpritIndex,
-            cashBonus);
+            cashBonus,
+            selectedTownIds,
+            townServices,
+            trails);
     }
 
     /// <summary>
@@ -152,6 +167,22 @@ internal static class TravelTestSeedCatalog
             entry.GameDifficulty,
             seedCode,
             entry.GameEntropy);
+    }
+
+    /// <summary>
+    /// Creates a game session with an explicit starting town. The starting town
+    /// is player-selected — it must exist in the generated world.
+    /// </summary>
+    internal static GameSession CreateSession(SeedWorldEntry entry, string startingTownId, string playerName = "Ranger Vale")
+    {
+        var seedCode = ResolveSeedCode(entry);
+        var factory = new SeededNewGameFactory();
+        return factory.Create(
+            playerName,
+            entry.GameDifficulty,
+            seedCode,
+            entry.GameEntropy,
+            startingTownId);
     }
 
     /// <summary>
@@ -182,6 +213,19 @@ internal static class TravelTestSeedCatalog
     /// </summary>
     internal static TownId ResolveDestination(GameSession session, Trail trail)
         => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId;
+
+    /// <summary>
+    /// Finds a town in the world that has a trail matching the specified risk,
+    /// terrain, and water profile. Returns the town ID of one endpoint, or null
+    /// if no such trail exists. Used to pick a starting town for tests that need
+    /// a specific route profile.
+    /// </summary>
+    internal static TownId? FindTownWithRoute(World world, TrailRisk risk, TrailTerrain terrain, WaterFeature water)
+    {
+        var trail = world.Trails.FirstOrDefault(t =>
+            t.Risk == risk && t.Terrain == terrain && t.WaterFeature == water);
+        return trail?.FromTownId;
+    }
 }
 
 /// <summary>

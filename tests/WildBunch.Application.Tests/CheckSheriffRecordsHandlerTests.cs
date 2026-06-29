@@ -20,7 +20,7 @@ public sealed class CheckSheriffRecordsHandlerTests
     public async Task CheckSheriffRecordsLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         repository.Seed(session);
         var handler = new CheckSheriffRecordsHandler(repository, repository, new JournalResolver());
 
@@ -64,7 +64,7 @@ public sealed class CheckSheriffRecordsHandlerTests
     public async Task CheckSheriffRecordsWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         StartJourney(session);
         session.Journey!.MarkCompleted();
         session.MarkEventsCommitted();

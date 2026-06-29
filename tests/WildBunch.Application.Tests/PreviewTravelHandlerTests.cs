@@ -50,7 +50,7 @@ public sealed class PreviewTravelHandlerTests
 
     private static GameSession CreateMountedSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging | TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
         var world = new DomainWorld(
             new[] { pinecross, dryfork },

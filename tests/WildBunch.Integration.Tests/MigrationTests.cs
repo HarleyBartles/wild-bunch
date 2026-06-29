@@ -116,8 +116,8 @@ public sealed class MigrationTests
 
     private static GameSession CreateSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.Supplies);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
 
         var world = new WildBunch.Domain.World.World(
             new[] { dustvale, silvercreek },

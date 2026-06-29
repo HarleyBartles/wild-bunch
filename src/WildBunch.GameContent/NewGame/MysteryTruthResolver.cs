@@ -12,7 +12,6 @@ namespace WildBunch.GameContent.NewGame;
 /// add salted culprit reroll, feature reallocation, and Adventurous/Wild
 /// variance — without touching <see cref="SeedWorld"/>,
 /// <see cref="SeedWorldResolver"/>,
-/// <see cref="StartingWorldDescriptorSeedMixer"/>,
 /// <see cref="GameSetupDeterministicLabels"/>, or the seed codec.
 /// </summary>
 internal static class MysteryTruthResolver
@@ -38,8 +37,7 @@ internal static class MysteryTruthResolver
         //
         // BUNCH-93 changes ONLY this method and MysteryTruthResolution.
         // It does NOT change SeedWorld, SeedWorldResolver,
-        // StartingWorldDescriptorSeedMixer, GameSetupDeterministicLabels,
-        // or the seed codec.
+        // GameSetupDeterministicLabels, or the seed codec.
 
         var appliedCashBonus = Math.Min(seedWorld.CashBonus, entropy.CashBonusCap);
 

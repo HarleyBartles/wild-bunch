@@ -20,7 +20,7 @@ public sealed class InvestigationSourceHandlerTests
     public async Task FollowTelegraphLeadsLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.Telegraph | TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.Telegraph);
         repository.Seed(session);
         var handler = new FollowTelegraphLeadsHandler(repository, repository, new JournalResolver());
 
@@ -45,7 +45,7 @@ public sealed class InvestigationSourceHandlerTests
     public async Task FollowTelegraphLeadsReturnsFailureWithoutSavingWhenActionUnavailable()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new FollowTelegraphLeadsHandler(repository, repository, new JournalResolver());
@@ -64,7 +64,7 @@ public sealed class InvestigationSourceHandlerTests
     public async Task GatherLocalGossipLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         repository.Seed(session);
         var handler = new GatherLocalGossipHandler(repository, repository, new JournalResolver());
 

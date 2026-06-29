@@ -213,8 +213,8 @@ public sealed class GameSessionArchiveTests
 
     private static DomainWorld CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Supplies | TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
         return new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

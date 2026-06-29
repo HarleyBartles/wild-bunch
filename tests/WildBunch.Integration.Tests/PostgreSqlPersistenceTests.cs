@@ -221,8 +221,8 @@ public sealed class PostgreSqlPersistenceTests
 
     private static GameSession CreateCompletedTravelSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.Supplies | TownServices.Lodging);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
         var world = new World(
             new[] { dustvale, holloway },
             new[]

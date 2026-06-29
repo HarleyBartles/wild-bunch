@@ -8,8 +8,8 @@ namespace WildBunch.GameContent.NewGame;
 /// generation and the final starting town stored in <see cref="ResolvedGameSetup"/>.
 /// Today the policy is permissive: the player can start in any town that
 /// exists in the generated world. If no starting town is supplied, a safe
-/// non-seed-authored default is used (pinecross — always present, always
-/// has supplies, well-connected).
+/// default is used (the first town in the world — slot 0, which is always
+/// present and well-connected).
 /// Future seam: difficulty may constrain eligible starting towns (easy allows
 /// any except accusation town, standard prefers inner/well-connected towns,
 /// harder constrains to outposts). An accusation/black-spot town may become
@@ -38,10 +38,10 @@ internal static class StartingTownPolicy
             return playerChosenTownId.Value;
         }
 
-        // Safe default: pinecross is always present and well-connected across
-        // all world variants. This default is NOT seed-authored — it is a fixed
-        // property of the world catalog, not a hash of the seed code.
+        // Safe default: the first town in the world (slot 0). This is always
+        // present and well-connected. The default is NOT seed-authored — it
+        // is a fixed property of the world topology, not a hash of the seed code.
         // Future seam: difficulty-aware eligibility may change this default.
-        return SeedWorldCatalog.PinecrossId;
+        return world.Towns.First().Id;
     }
 }

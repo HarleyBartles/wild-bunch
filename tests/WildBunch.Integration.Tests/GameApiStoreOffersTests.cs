@@ -23,7 +23,7 @@ public sealed class GameApiStoreOffersTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
-        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/pinecross/store-offers");
+        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/lostcanyon/store-offers");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -31,8 +31,8 @@ public sealed class GameApiStoreOffersTests
 
         Assert.NotNull(catalog);
         Assert.True(catalog!.Available);
-        Assert.Equal("pinecross", catalog.TownId);
-        Assert.Equal("Pinecross", catalog.TownName);
+        Assert.Equal("lostcanyon", catalog.TownId);
+        Assert.Equal("Lost Canyon", catalog.TownName);
         Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.GeneralStore);
         Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.Stable);
 
@@ -61,7 +61,7 @@ public sealed class GameApiStoreOffersTests
     }
 
     [Fact]
-    public async Task GetTownStoreOffersReturnsUnavailableCatalogForTownWithoutStoreServices()
+    public async Task GetTownStoreOffersReturnsAvailableCatalogForNonCurrentTown()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
@@ -75,14 +75,17 @@ public sealed class GameApiStoreOffersTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
-        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/dryfork/store-offers");
+        // Every town now has a prosperity-based store. Gold Gulch is in the
+        // canonical world but is not the current town — the catalog should
+        // still be available with general store offers.
+        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/goldgulch/store-offers");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var catalog = await response.Content.ReadFromJsonAsync<TownStoreOffersDto>();
 
         Assert.NotNull(catalog);
-        Assert.False(catalog!.Available);
-        Assert.Empty(catalog.Offers);
+        Assert.True(catalog!.Available);
+        Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.GeneralStore);
     }
 }

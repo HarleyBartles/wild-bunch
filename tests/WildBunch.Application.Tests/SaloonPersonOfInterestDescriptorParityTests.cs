@@ -132,7 +132,7 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
         SuspectTraits suspectTraits,
         IEnumerable<Warrant>? knownWarrants = null)
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -157,7 +157,7 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
 
     private static GameSession CreateCitizenSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },

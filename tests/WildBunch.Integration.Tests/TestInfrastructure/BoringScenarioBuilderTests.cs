@@ -31,7 +31,7 @@ public sealed class BoringScenarioBuilderTests
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
         Assert.Equal(TravelMode.Mounted, previewValue.TravelMode);
         Assert.True(previewValue.MountedTravelAvailable);
-        Assert.Equal("holloway", previewValue.DestinationTownId);
+        Assert.Equal("redmesa", previewValue.DestinationTownId);
     }
 
     [Fact]
@@ -82,8 +82,8 @@ public sealed class BoringScenarioBuilderTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
-        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "pinecross" && trail.ToTownId.Value == "redmesa");
-        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "pinecross" && trail.ToTownId.Value == "holloway");
+        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "lostcanyon" && trail.ToTownId.Value == "redmesa");
+        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "lostcanyon" && trail.ToTownId.Value == "goldgulch");
     }
 
     [Fact]

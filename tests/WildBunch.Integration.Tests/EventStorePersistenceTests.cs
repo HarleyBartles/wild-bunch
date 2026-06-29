@@ -590,8 +590,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Supplies | TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
         var world = new DomainWorld(
             new[] { pinecross, redmesa },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });
@@ -612,7 +612,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
     private static GameSession CreateSessionWithWarrantedSaloonSuspect()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.NoticeBoard);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
         var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.None);
         var world = new DomainWorld(
             new[] { pinecross, redmesa },

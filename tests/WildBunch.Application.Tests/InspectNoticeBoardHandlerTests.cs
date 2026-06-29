@@ -20,7 +20,7 @@ public sealed class InspectNoticeBoardHandlerTests
     public async Task InspectNoticeBoardLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         repository.Seed(session);
         var handler = new InspectNoticeBoardHandler(repository, repository, new JournalResolver());
 
@@ -64,7 +64,7 @@ public sealed class InspectNoticeBoardHandlerTests
     public async Task InspectNoticeBoardWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.NoticeBoard);
+        var session = CreateSession(TownServices.None);
         StartJourney(session);
         session.Journey!.MarkCompleted();
         session.MarkEventsCommitted();

@@ -1,29 +1,52 @@
-using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
 
 /// <summary>
 /// Resolves the seed-owned <see cref="SeedWorld"/> from a UUID seed code,
-/// and encodes a SeedWorld back to a representative UUID via round-trip search.
+/// and encodes a SeedWorld back to a UUID by direct bit packing.
+///
 /// The codec does NOT reference GameDifficulty or GameEntropy — those are
 /// pressure-owned and applied downstream by DifficultyEnvelope and EntropyPolicy.
 /// The codec does NOT select the starting town — that is a player/setup choice
 /// validated by <see cref="StartingTownPolicy"/>.
 ///
-/// The seed deterministically derives:
-/// - WorldVariant (Canonical/Frontier/Rail)
-/// - TownCount (6-8, safe range for playability)
-/// - SelectedTownIds (anchor towns always included, rest seed-selected from catalog)
-/// - Trails (catalog trails where both endpoints are selected, with terrain/water/distance from catalog)
-/// - AccusationIndex, DefaultCulpritIndex, CashBonus
+/// UUID bit layout (128 bits = 16 bytes, packed as two ulongs):
+/// <code>
+/// Bytes 0-7 (low):
+///   bits  0-1:   variant (2)
+///   bits  2-4:   accusationIndex (3)
+///   bits  5-7:   defaultCulpritIndex (3)
+///   bits  8-11:  cashBonus (4)
+///   bits 12-15:  townCount (4, offset-encoded: 0-15 → 5-20 towns)
+///   bits 16-18:  prosperityPaletteIndex (3, indexes 8 palettes)
+///   bits 19-21:  servicesPaletteIndex (3, indexes 8 palettes)
+///   bits 22-63:  reserved (42)
+///
+/// Bytes 8-15 (high): reserved (64)
+/// </code>
+///
+/// Total used: 22 bits. Reserved: 106 bits for future seed-owned fields
+/// (gang members, warrants, etc.). Bandwidth scales with max selection (20),
+/// not catalog size — the name pool can grow to any size with zero bit cost.
+///
+/// Town names are derived from the encoded fields via a deterministic
+/// shuffle of the name pool. They are not encoded in the UUID. Both
+/// directions (UUID → SeedWorld and SeedWorld → UUID) are O(1) — no
+/// search or hashing required.
 /// </summary>
 public static class SeedWorldResolver
 {
-    public const string ResolverContractVersion = "resolver-v4";
+    public const string ResolverContractVersion = "resolver-v6";
     private const string SeedCodeFormat = "D";
-    private const int RepresentativeSeedSearchLimit = 131072;
-    private const int MinTownCount = 6;
-    private const int MaxTownCount = 8;
+
+    /// <summary>Minimum number of towns in a valid world.</summary>
+    public const int MinTownCount = 5;
+
+    /// <summary>Maximum number of towns in a valid world. Offset-encoded in 4 bits (0-15 → 5-20).</summary>
+    public const int MaxTownCount = 20;
+
+    private const int TownCountOffset = 5;
 
     private static readonly Lazy<Guid> CanonicalSeedCode = new(() => CreateCanonicalSeedCodeCore(), true);
 
@@ -54,27 +77,49 @@ public static class SeedWorldResolver
         return Resolve(seed);
     }
 
+    /// <summary>
+    /// Decodes a UUID into a SeedWorld by extracting fields from specific
+    /// bit positions, then deriving town names, services, and trails.
+    /// This is the inverse of <see cref="CreateRepresentativeSeedCode"/>.
+    /// </summary>
     public static SeedWorld Resolve(Guid seedCode)
     {
-        var seedRoot = StartingWorldDescriptorSeedMixer.CreateSeedRoot(seedCode);
-        var worldVariant = ResolveWorldVariant(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.WorldVariant));
-        var townCount = ResolveTownCount(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.WorldTownCount));
-        var selectedTownIds = SelectTowns(
-            townCount,
-            StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.WorldTownSelection));
-        var trails = BuildTrails(worldVariant, selectedTownIds);
-        var accusationIndex = ResolveAccusationIndex(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.CaseAccusationIndex));
-        var defaultCulpritIndex = ResolveDefaultCulpritIndex(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.CaseDefaultCulprit));
-        var cashBonus = ResolveCashBonus(StartingWorldDescriptorSeedMixer.GetFieldSeed(seedRoot, GameSetupDeterministicLabels.PlayerCashBonus));
+        var bytes = seedCode.ToByteArray();
+        var low = BitConverter.ToUInt64(bytes, 0);
+
+        var variant = (SeedWorldVariant)(low & 0x3UL);
+        var accusationIndex = (int)((low >> 2) & 0x7UL);
+        var defaultCulpritIndex = (int)((low >> 5) & 0x7UL);
+        var cashBonus = (int)((low >> 8) & 0xFUL);
+        var townCountEncoded = (int)((low >> 12) & 0xFUL);
+        var prosperityPalette = (ProsperityPalette)((low >> 16) & 0x7UL);
+        var servicesPalette = (ServicesPalette)((low >> 19) & 0x7UL);
+
+        // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
+        var townCount = townCountEncoded + TownCountOffset;
+
+        var townNames = SeedWorldCatalog.DeriveTownNames(
+            variant, townCount, accusationIndex, defaultCulpritIndex,
+            cashBonus, prosperityPalette, servicesPalette);
+
+        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
+        var townServices = townNames
+            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
+            .ToDictionary(x => x.Id, x => x.Services);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
 
         return new SeedWorld(
             seedCode,
-            worldVariant,
-            selectedTownIds,
-            trails,
+            variant,
+            townCount,
+            servicesPalette,
+            prosperityPalette,
             accusationIndex,
             defaultCulpritIndex,
-            cashBonus);
+            cashBonus,
+            selectedTownIds,
+            townServices,
+            trails);
     }
 
     internal static SeedWorldValidationResult Validate(SeedWorld seedWorld)
@@ -86,22 +131,20 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("World variant is invalid.");
         }
 
-        if (seedWorld.SelectedTownIds is null || seedWorld.SelectedTownIds.Count < MinTownCount)
+        if (seedWorld.TownCount < MinTownCount || seedWorld.TownCount > MaxTownCount)
         {
-            return SeedWorldValidationResult.Failed($"Selected town count must be at least {MinTownCount}.");
+            return SeedWorldValidationResult.Failed(
+                $"Town count must be between {MinTownCount} and {MaxTownCount}.");
         }
 
-        if (seedWorld.SelectedTownIds.Count > MaxTownCount)
+        if (!Enum.IsDefined(typeof(ProsperityPalette), seedWorld.ProsperityPalette))
         {
-            return SeedWorldValidationResult.Failed($"Selected town count must be at most {MaxTownCount}.");
+            return SeedWorldValidationResult.Failed("Prosperity palette is invalid.");
         }
 
-        foreach (var anchorId in SeedWorldCatalog.AnchorTownIds)
+        if (!Enum.IsDefined(typeof(ServicesPalette), seedWorld.ServicesPalette))
         {
-            if (!seedWorld.SelectedTownIds.Contains(anchorId))
-            {
-                return SeedWorldValidationResult.Failed($"Anchor town '{anchorId}' must be in the selected town set.");
-            }
+            return SeedWorldValidationResult.Failed("Services palette is invalid.");
         }
 
         if (seedWorld.AccusationIndex is < 0 or > 6)
@@ -136,6 +179,12 @@ public static class SeedWorldResolver
     public static string FormatSeedCode(Guid seedCode)
         => seedCode.ToString(SeedCodeFormat);
 
+    /// <summary>
+    /// Encodes a SeedWorld into a UUID by packing the encoded fields into
+    /// specific bit positions. Derived fields (town names, services dict,
+    /// trails) are ignored — they are re-derived on decode. This is the
+    /// inverse of <see cref="Resolve(Guid)"/> and is O(1).
+    /// </summary>
     public static Guid CreateRepresentativeSeedCode(SeedWorld seedWorld)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
@@ -146,130 +195,57 @@ public static class SeedWorldResolver
             throw new ArgumentException(validation.ErrorMessage ?? "Seed world is invalid.", nameof(seedWorld));
         }
 
-        var seedWorldSignature = StartingWorldDescriptorSeedMixer.CreateSeedWorldSignature(seedWorld);
-        for (var attempt = 0; attempt < RepresentativeSeedSearchLimit; attempt++)
-        {
-            var candidateSeed = StartingWorldDescriptorSeedMixer.CreateCandidateSeed(seedWorldSignature, salt: 0, attempt);
-            var resolvedSeedWorld = Resolve(candidateSeed);
-            if (HasSameSemantics(seedWorld, resolvedSeedWorld))
-            {
-                return candidateSeed;
-            }
-        }
+        ulong low = 0;
+        low |= (ulong)((int)seedWorld.WorldVariant & 0x3);
+        low |= (ulong)(seedWorld.AccusationIndex & 0x7) << 2;
+        low |= (ulong)(seedWorld.DefaultCulpritIndex & 0x7) << 5;
+        low |= (ulong)(seedWorld.CashBonus & 0xF) << 8;
+        low |= (ulong)((seedWorld.TownCount - TownCountOffset) & 0xF) << 12;
+        low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 16;
+        low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 19;
 
-        throw new InvalidOperationException("Could not derive a representative UUID-shaped seed for the requested seed world.");
-    }
+        ulong high = 0UL;
 
-    /// <summary>
-    /// Selects towns deterministically from the catalog. Anchor towns are
-    /// always included. The remaining slots are filled from the selectable
-    /// pool using a seed-derived permutation.
-    /// </summary>
-    internal static IReadOnlyList<string> SelectTowns(int townCount, ulong selectionSeed)
-    {
-        var anchors = SeedWorldCatalog.AnchorTownIds;
-        var selectable = SeedWorldCatalog.SelectableTownIds;
-        var remainingSlots = townCount - anchors.Count;
-
-        if (remainingSlots <= 0)
-            return anchors.ToArray();
-
-        if (remainingSlots >= selectable.Count)
-            return anchors.Concat(selectable).ToArray();
-
-        // Deterministic Fisher-Yates-like shuffle of the selectable pool
-        var pool = selectable.ToArray();
-        for (var i = pool.Length - 1; i > 0; i--)
-        {
-            var j = (int)(DeriveValue(selectionSeed, i) % (ulong)(i + 1));
-            (pool[i], pool[j]) = (pool[j], pool[i]);
-        }
-
-        var selected = pool.Take(remainingSlots).ToArray();
-        return anchors.Concat(selected).OrderBy(id => id, StringComparer.OrdinalIgnoreCase).ToArray();
-    }
-
-    /// <summary>
-    /// Builds the trail graph for the selected towns. Includes catalog trails
-    /// where both endpoints are in the selected set. Terrain/water/distance
-    /// come from the catalog indexed by world variant.
-    /// </summary>
-    internal static IReadOnlyList<SeedWorldTrail> BuildTrails(SeedWorldVariant variant, IReadOnlyList<string> selectedTownIds)
-    {
-        var selectedSet = selectedTownIds.ToHashSet();
-        var trails = new List<SeedWorldTrail>();
-
-        foreach (var def in SeedWorldCatalog.AllTrails)
-        {
-            if (selectedSet.Contains(def.FromTownId) && selectedSet.Contains(def.ToTownId))
-            {
-                var tv = def.ForVariant(variant);
-                trails.Add(new SeedWorldTrail(
-                    def.Id,
-                    def.FromTownId,
-                    def.ToTownId,
-                    def.Risk,
-                    tv.Terrain,
-                    tv.WaterFeature,
-                    tv.RideDayDistance));
-            }
-        }
-
-        return trails;
+        var bytes = new byte[16];
+        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
+        BitConverter.TryWriteBytes(bytes.AsSpan(8), high);
+        return new Guid(bytes);
     }
 
     private static SeedWorld CreateCanonicalSeedWorldShape()
     {
-        var allTownIds = SeedWorldCatalog.AllTowns.Select(t => t.Id).ToArray();
-        var trails = BuildTrails(SeedWorldVariant.Canonical, allTownIds);
+        var variant = SeedWorldVariant.Canonical;
+        var townCount = 8;
+        var accusationIndex = 1;
+        var defaultCulpritIndex = 3;
+        var cashBonus = 0;
+        var prosperityPalette = ProsperityPalette.UniformProsperous;
+        var servicesPalette = ServicesPalette.HubTelegraph;
+
+        var townNames = SeedWorldCatalog.DeriveTownNames(
+            variant, townCount, accusationIndex, defaultCulpritIndex,
+            cashBonus, prosperityPalette, servicesPalette);
+
+        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
+        var townServices = townNames
+            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
+            .ToDictionary(x => x.Id, x => x.Services);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+
         return new SeedWorld(
             Guid.Empty,
-            SeedWorldVariant.Canonical,
-            allTownIds,
-            trails,
-            AccusationIndex: 1,
-            DefaultCulpritIndex: 3,
-            CashBonus: 0);
+            variant,
+            townCount,
+            servicesPalette,
+            prosperityPalette,
+            accusationIndex,
+            defaultCulpritIndex,
+            cashBonus,
+            selectedTownIds,
+            townServices,
+            trails);
     }
 
     private static Guid CreateCanonicalSeedCodeCore()
         => CreateRepresentativeSeedCode(CreateCanonicalSeedWorldShape());
-
-    private static bool HasSameSemantics(SeedWorld left, SeedWorld right)
-        => left.WorldVariant == right.WorldVariant
-            && left.SelectedTownIds.SequenceEqual(right.SelectedTownIds)
-            && left.AccusationIndex == right.AccusationIndex
-            && left.DefaultCulpritIndex == right.DefaultCulpritIndex
-            && left.CashBonus == right.CashBonus;
-
-    private static SeedWorldVariant ResolveWorldVariant(ulong seedValue)
-        => (seedValue % 3UL) switch
-        {
-            0 => SeedWorldVariant.Canonical,
-            1 => SeedWorldVariant.Frontier,
-            _ => SeedWorldVariant.Rail
-        };
-
-    private static int ResolveTownCount(ulong seedValue)
-        => MinTownCount + (int)(seedValue % (ulong)(MaxTownCount - MinTownCount + 1));
-
-    private static int ResolveAccusationIndex(ulong seedValue)
-        => (int)(seedValue % 7UL);
-
-    private static int ResolveDefaultCulpritIndex(ulong seedValue)
-        => (int)(seedValue % 7UL);
-
-    private static int ResolveCashBonus(ulong seedValue)
-        => (int)(seedValue % 9UL);
-
-    private static ulong DeriveValue(ulong baseSeed, int index)
-    {
-        var mixed = baseSeed ^ ((ulong)index * 0x9E3779B97F4A7C15UL);
-        mixed ^= mixed >> 30;
-        mixed *= 0xBF58476D1CE4E5B9UL;
-        mixed ^= mixed >> 27;
-        mixed *= 0x94D049BB133111EBUL;
-        mixed ^= mixed >> 31;
-        return mixed;
-    }
 }

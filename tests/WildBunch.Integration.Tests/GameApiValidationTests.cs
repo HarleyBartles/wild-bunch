@@ -180,7 +180,7 @@ public sealed class GameApiValidationTests
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("dryfork"));
+            new TravelRequest("emberfall"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
@@ -189,7 +189,7 @@ public sealed class GameApiValidationTests
         Assert.NotNull(turnResult);
         Assert.False(turnResult!.Success);
         Assert.Equal("No trail connects those towns.", turnResult.Message);
-        Assert.Equal("pinecross", turnResult.CurrentSession.Player.CurrentTownId);
+        Assert.Equal("lostcanyon", turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(0, turnResult.CurrentSession.PursuitState.Heat);
     }

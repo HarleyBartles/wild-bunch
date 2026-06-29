@@ -20,6 +20,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
+        Assert.Equal(8, resolved.TownCount);
         Assert.Equal(8, resolved.SelectedTownIds.Count);
     }
 
@@ -30,7 +31,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
@@ -40,7 +41,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
@@ -50,7 +51,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
@@ -70,7 +71,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
@@ -80,7 +81,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
@@ -90,58 +91,69 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
         Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]
-    public void CanonicalWorld_AlwaysStartsInPinecross()
+    public void CanonicalWorld_StartsInFirstTown()
     {
         // Starting town is NOT seed-owned. The safe default from StartingTownPolicy
-        // is pinecross for all world variants.
+        // is the first town in the world (slot 0).
         var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedStandard);
-        Assert.Equal(new TownId("pinecross"), session.Player.CurrentTownId);
+        var firstTown = session.World.Towns.First().Id;
+        Assert.Equal(firstTown, session.Player.CurrentTownId);
     }
 
     [Fact]
-    public void CanonicalWorld_HasLowBadlandsNoneRoute_FromPinecross()
+    public void CanonicalWorld_HasModerateBadlandsNoneRoute()
     {
-        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedBoring);
+        // Slot 0→6 is Moderate/Badlands/None (count >= 7). Start in slot 0's town.
+        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var startTown = TravelTestSeedCatalog.FindTownWithRoute(
+            world, TrailRisk.Moderate, TrailTerrain.Badlands, WaterFeature.None);
+        Assert.NotNull(startTown);
+
+        var session = TravelTestSeedCatalog.CreateSession(
+            TravelTestSeedCatalog.CanonicalMountedBoring, startTown!.Value.Value);
         var trail = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None);
+            session, TrailRisk.Moderate, TrailTerrain.Badlands, WaterFeature.None);
         Assert.NotNull(trail);
-        Assert.Equal("trail-pine-hardpan", trail.Id.Value);
     }
 
     [Fact]
-    public void CanonicalWorld_HasLowOpenRangeNoneRoute_FromPinecross()
+    public void CanonicalWorld_HasLowOpenRangeCreekRoute()
     {
-        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedEasyStandard);
+        // Slot 0→1 is Low/OpenRange/Creek in Canonical variant. Start in slot 0's town.
+        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var startTown = TravelTestSeedCatalog.FindTownWithRoute(
+            world, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
+        Assert.NotNull(startTown);
+
+        var session = TravelTestSeedCatalog.CreateSession(
+            TravelTestSeedCatalog.CanonicalMountedEasyStandard, startTown!.Value.Value);
         var trail = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None);
+            session, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
         Assert.NotNull(trail);
-        Assert.Equal("trail-pine-openpass", trail.Id.Value);
     }
 
     [Fact]
     public void FrontierWorld_HasModerateHillsSpringRoute()
     {
         var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.FrontierFootNormalFoe);
-        // Frontier variant: pinecross->holloway is Moderate/Hills/Spring
+        // Frontier variant: slot 0->2 trail is Moderate/Hills/Spring
         var trail = session.World.Trails.FirstOrDefault(t =>
             t.Risk == TrailRisk.Moderate && t.Terrain == TrailTerrain.Hills && t.WaterFeature == WaterFeature.Spring);
         Assert.NotNull(trail);
-        Assert.Equal("trail-pine-hollow", trail!.Id.Value);
     }
 
     [Fact]
     public void FrontierWorld_HasHighBadlandsNoneRoute()
     {
         var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.FrontierMountedNormalHighRisk);
-        // Frontier variant: redmesa->dryfork is High/Badlands/None
+        // Frontier variant: slot 0->3 trail is High/Badlands/None
         var trail = session.World.Trails.FirstOrDefault(t =>
             t.Risk == TrailRisk.High && t.Terrain == TrailTerrain.Badlands && t.WaterFeature == WaterFeature.None);
         Assert.NotNull(trail);
-        Assert.Equal("trail-red-dry", trail!.Id.Value);
     }
 
     [Fact]

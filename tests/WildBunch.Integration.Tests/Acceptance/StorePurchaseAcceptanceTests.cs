@@ -20,7 +20,7 @@ public sealed class StorePurchaseAcceptanceTests
         var createdSession = await factory.SeedCanonicalSessionAsync();
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession.Id}/towns/pinecross/store/buy",
+            $"/api/games/{createdSession.Id}/towns/lostcanyon/store/buy",
             new BuyStoreItemRequest(StoreVendorType.GeneralStore, ItemKind.Food, 2));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

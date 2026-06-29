@@ -69,8 +69,11 @@ public sealed class GameApiInvestigationActionsTests
         var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
 
         Assert.NotNull(telegraphResult);
-        Assert.False(telegraphResult!.Success);
-        Assert.Equal("There is no telegraph office here.", telegraphResult.Message);
+        // BUNCH-107: Lost Canyon (the starting town) has Telegraph service
+        // (HubTelegraph palette, slot 0). Following telegraph leads should
+        // succeed and surface a new clue.
+        Assert.True(telegraphResult!.Success);
+        Assert.NotEqual("There is no telegraph office here.", telegraphResult.Message);
 
         var payload = await localRecordsResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

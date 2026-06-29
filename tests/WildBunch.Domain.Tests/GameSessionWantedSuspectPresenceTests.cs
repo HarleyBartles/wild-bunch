@@ -57,8 +57,8 @@ public sealed class GameSessionWantedSuspectPresenceTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.Supplies | TownServices.Lodging);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.Doctor);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
         var world = new WildBunch.Domain.World.World(
             new[] { pinecross, holloway },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, holloway.Id, TrailRisk.Low) });

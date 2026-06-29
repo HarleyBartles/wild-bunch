@@ -9,14 +9,14 @@ public sealed class StartingTownMapEndpointTests
 {
     private static readonly string[] SeededTownIds =
     [
-        "pinecross",
+        "lostcanyon",
+        "goldgulch",
         "redmesa",
-        "holloway",
-        "sagewell",
-        "dryfork",
+        "tumbleweed",
+        "quartzsite",
         "emberfall",
-        "hardpan",
-        "openpass"
+        "rattlesnake",
+        "boulderwash"
     ];
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class StartingTownMapEndpointTests
         var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
 
         Assert.NotNull(map);
-        Assert.Equal(9, map.Trails.Count);
+        Assert.Equal(12, map.Trails.Count);
         Assert.All(map!.Trails, trail =>
         {
             Assert.False(string.IsNullOrWhiteSpace(trail.Id));

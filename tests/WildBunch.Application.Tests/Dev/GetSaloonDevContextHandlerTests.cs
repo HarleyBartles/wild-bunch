@@ -174,7 +174,7 @@ public sealed class GetSaloonDevContextHandlerTests
     private static GameSession CreateSessionWithSaloonSuspect()
     {
         var town = new WildBunch.Domain.World.Town(
-            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.NoticeBoard);
+            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.None);
         var connected = new WildBunch.Domain.World.Town(
             new TownId("connected"), "Connected Town", WildBunch.Domain.World.TownServices.None);
         var world = new WildBunch.Domain.World.World(
