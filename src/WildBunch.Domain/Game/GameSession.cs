@@ -420,6 +420,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case DevSaltSourceCleared dsc:
                 Apply(dsc);
                 break;
+            case DevDifficultyForced ddf:
+                Apply(ddf);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -803,6 +806,18 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(DevSaltSourceCleared e)
     {
         SaltSource = SaltSource.CreateRuntime();
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevDifficultyForced event. Changes the session difficulty,
+    /// which changes the derived TravelRules profile. Dev-only event — does
+    /// not affect starting health/cash or any other gameplay state directly.
+    /// See BUNCH-94.
+    /// </summary>
+    internal void Apply(DevDifficultyForced e)
+    {
+        GameDifficulty = e.ForcedDifficulty;
         _version++;
     }
 
@@ -1215,6 +1230,25 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public void ClearDevSaltSource()
     {
         ProduceEvent(new DevSaltSourceCleared());
+    }
+
+    /// <summary>
+    /// Dev command: forces the session difficulty to a new value for playtesting.
+    /// Changes the travel rules profile going forward. Does not retroactively
+    /// change starting health/cash (those were set at game start).
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-94.
+    /// </summary>
+    public void ForceDevDifficulty(GameDifficulty difficulty)
+    {
+        if (!Enum.IsDefined(typeof(GameDifficulty), difficulty))
+        {
+            throw new ArgumentException("Invalid game difficulty value.", nameof(difficulty));
+        }
+
+        ProduceEvent(new DevDifficultyForced
+        {
+            ForcedDifficulty = difficulty
+        });
     }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
