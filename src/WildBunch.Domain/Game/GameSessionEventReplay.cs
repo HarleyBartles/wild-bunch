@@ -161,6 +161,9 @@ public sealed partial class GameSession
             case DevSaltSourceCleared dsc:
                 session.Apply(dsc);
                 break;
+            case DevEntropyChanged dec:
+                session.Apply(dec);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }

@@ -73,6 +73,13 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound);
 
+        dev.MapPost("/sessions/{id:guid}/session/set-entropy", SetDevEntropyAsync)
+            .WithName("SetDevEntropy")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
+
         return app;
     }
 
@@ -332,6 +339,43 @@ public static class DevEndpoints
         catch (GameSessionNotFoundException)
         {
             return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> SetDevEntropyAsync(
+        Guid id,
+        DevRoleGuard guard,
+        SetDevEntropyHandler handler,
+        SetDevEntropyRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            if (request is null || string.IsNullOrWhiteSpace(request.Entropy))
+            {
+                return Results.BadRequest("Entropy is required.");
+            }
+
+            if (!Enum.TryParse<WildBunch.Domain.Travel.GameEntropy>(request.Entropy, ignoreCase: true, out var entropy))
+            {
+                return Results.BadRequest($"Unknown entropy value: {request.Entropy}. Valid values: Boring, Classic, Adventurous, Wild.");
+            }
+
+            await handler.HandleAsync(new SetDevEntropyCommand(id, entropy), cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
         }
     }
 }

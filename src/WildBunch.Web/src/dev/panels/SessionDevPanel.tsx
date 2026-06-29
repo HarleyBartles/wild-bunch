@@ -2,7 +2,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
-import { clearRng, getSessionDevContext, lockRng } from "../devApi";
+import { clearRng, getSessionDevContext, lockRng, setDevEntropy } from "../devApi";
 
 interface SessionDevPanelProps {
   expanded?: boolean;
@@ -55,6 +55,19 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
       refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear RNG.");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const handleSetEntropy = async (entropy: string) => {
+    setError(null);
+    setActionPending(true);
+    try {
+      await setDevEntropy(gameId, { entropy });
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set entropy.");
     } finally {
       setActionPending(false);
     }
@@ -122,8 +135,17 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
             <Value>{data?.gameDifficulty}</Value>
           </Row>
           <Row>
-            <Label>Entropy (inspect):</Label>
-            <Value>{data?.gameEntropy}</Value>
+            <Label>Entropy:</Label>
+            <EntropySelect
+              value={data?.gameEntropy ?? "Classic"}
+              onChange={(e) => handleSetEntropy(e.target.value)}
+              disabled={actionPending}
+            >
+              <option value="Boring">Boring</option>
+              <option value="Classic">Classic</option>
+              <option value="Adventurous">Adventurous</option>
+              <option value="Wild">Wild</option>
+            </EntropySelect>
           </Row>
           <Row>
             <Label>Salt mode:</Label>
@@ -230,6 +252,21 @@ const Input = styled.input`
   background: var(--bg);
   color: var(--text);
   font-size: 0.82rem;
+`;
+
+const EntropySelect = styled.select`
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const ButtonRow = styled.div`

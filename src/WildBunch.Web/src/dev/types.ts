@@ -144,3 +144,7 @@ export interface SessionDevContextDto {
 export interface LockRngRequestDto {
   salt?: string | null;
 }
+
+export interface SetDevEntropyRequestDto {
+  entropy: string;
+}

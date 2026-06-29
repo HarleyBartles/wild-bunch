@@ -420,6 +420,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case DevSaltSourceCleared dsc:
                 Apply(dsc);
                 break;
+            case DevEntropyChanged dec:
+                Apply(dec);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -803,6 +806,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(DevSaltSourceCleared e)
     {
         SaltSource = SaltSource.CreateRuntime();
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevEntropyChanged event. Replaces the entropy posture with the
+    /// forced entropy value. Dev-only event — does not affect gameplay state
+    /// directly (only future travel-day variance). The entropy is persisted in
+    /// the session snapshot, so rehydration after an entropy change requires no
+    /// new persistence shape. See BUNCH-93.
+    /// </summary>
+    internal void Apply(DevEntropyChanged e)
+    {
+        GameEntropy = e.NewEntropy;
         _version++;
     }
 
@@ -1215,6 +1231,24 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public void ClearDevSaltSource()
     {
         ProduceEvent(new DevSaltSourceCleared());
+    }
+
+    /// <summary>
+    /// Dev command: sets the session entropy posture (variance/volatility axis).
+    /// Sets up variance state; does not force any encounter outcome or difficulty pressure.
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-93.
+    /// </summary>
+    public void SetDevEntropy(GameEntropy entropy)
+    {
+        if (!Enum.IsDefined(entropy))
+        {
+            throw new ArgumentException($"Unknown entropy value: {entropy}", nameof(entropy));
+        }
+
+        ProduceEvent(new DevEntropyChanged
+        {
+            NewEntropy = entropy
+        });
     }
 
     private static string DescribeHorseLoss(HorseTravelState? horseState, TravelRulesProfile travelRulesProfile)
