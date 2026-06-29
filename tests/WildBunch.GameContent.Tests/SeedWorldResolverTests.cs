@@ -43,7 +43,7 @@ public sealed class SeedWorldResolverTests
         // The seed codec does NOT reference GameDifficulty or GameEntropy.
         // The same seed resolves to the same seed world regardless of what
         // difficulty/entropy would be selected downstream.
-        var seedCode = SeedWorldResolver.FormatSeedCode(Guid.NewGuid());
+        var seedCode = SeedWorldResolver.FormatSeedCode(SeedSevenTowns);
 
         var seedWorld = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
 
@@ -112,19 +112,46 @@ public sealed class SeedWorldResolverTests
         Assert.False(SeedWorldResolver.TryParseSeedCode("WB1-N-03-000000000000-0000", out _));
     }
 
+    // Deterministic fixed seed GUIDs (new Guid(i, 0, 0, ...)) proven to produce
+    // different town counts, selections, and trail graphs. See the seed survey
+    // in the BUNCH-107 plan for the full mapping.
+    private static readonly Guid SeedSixTowns = new(0x00000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);   // Rail, 6 towns, 5 trails
+    private static readonly Guid SeedEightTowns = new(0x00000002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);  // Rail, 8 towns, 9 trails
+    private static readonly Guid SeedSevenTowns = new(0x00000003, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);  // Rail, 7 towns, 7 trails
+    private static readonly Guid SeedCanonicalSeven = new(0x00000005, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // Canonical, 7 towns, 6 trails
+    private static readonly Guid SeedCanonicalSix = new(0x00000014, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);  // Canonical, 6 towns, 5 trails
+    private static readonly Guid SeedCanonicalEight = new(0x00000011, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // Canonical, 8 towns, 9 trails
+
+    private static readonly Guid[] DeterministicSeeds =
+    [
+        SeedSixTowns, SeedEightTowns, SeedSevenTowns, SeedCanonicalSeven, SeedCanonicalSix, SeedCanonicalEight,
+        new(0x00000004, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000006, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000007, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000008, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000009, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000b, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    ];
+
     [Fact]
     public void ResolverDerivesTownCountFromSeed()
     {
-        var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+        var seedWorld = SeedWorldResolver.Resolve(SeedSixTowns);
         Assert.InRange(seedWorld.SelectedTownIds.Count, 6, 8);
     }
 
     [Fact]
     public void ResolverAlwaysIncludesAnchorTowns()
     {
-        for (var i = 0; i < 32; i++)
+        foreach (var seed in DeterministicSeeds)
         {
-            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            var seedWorld = SeedWorldResolver.Resolve(seed);
             Assert.Contains("pinecross", seedWorld.SelectedTownIds);
             Assert.Contains("redmesa", seedWorld.SelectedTownIds);
             Assert.Contains("holloway", seedWorld.SelectedTownIds);
@@ -135,21 +162,21 @@ public sealed class SeedWorldResolverTests
     public void DifferentSeedsCanProduceDifferentTownCounts()
     {
         var counts = new HashSet<int>();
-        for (var i = 0; i < 128; i++)
+        foreach (var seed in DeterministicSeeds)
         {
-            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            var seedWorld = SeedWorldResolver.Resolve(seed);
             counts.Add(seedWorld.SelectedTownIds.Count);
         }
-        Assert.True(counts.Count >= 2, $"Expected at least 2 different town counts, got {counts.Count}");
+        Assert.True(counts.Count >= 2, $"Expected at least 2 different town counts, got {counts.Count}: [{string.Join(", ", counts)}]");
     }
 
     [Fact]
     public void DifferentSeedsCanProduceDifferentTownSelections()
     {
         var selections = new HashSet<string>();
-        for (var i = 0; i < 128; i++)
+        foreach (var seed in DeterministicSeeds)
         {
-            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            var seedWorld = SeedWorldResolver.Resolve(seed);
             selections.Add(string.Join(",", seedWorld.SelectedTownIds.OrderBy(id => id)));
         }
         Assert.True(selections.Count >= 2, $"Expected at least 2 different town selections, got {selections.Count}");
@@ -158,9 +185,8 @@ public sealed class SeedWorldResolverTests
     [Fact]
     public void SameSeedProducesSameSeedWorld()
     {
-        var seed = Guid.NewGuid();
-        var seedWorldA = SeedWorldResolver.Resolve(seed);
-        var seedWorldB = SeedWorldResolver.Resolve(seed);
+        var seedWorldA = SeedWorldResolver.Resolve(SeedSevenTowns);
+        var seedWorldB = SeedWorldResolver.Resolve(SeedSevenTowns);
         Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
         Assert.Equal(seedWorldA.Trails.Count, seedWorldB.Trails.Count);
     }

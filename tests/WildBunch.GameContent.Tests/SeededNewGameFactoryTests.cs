@@ -166,7 +166,7 @@ public sealed class SeededNewGameFactoryTests
         // BUNCH-107 transitional: all difficulties get horse+saddle+Standard loadout.
         // BUNCH-94 will expand DifficultyEnvelope to add difficulty-owned variety.
         var factory = new SeededNewGameFactory();
-        var seedCode = SeedWorldResolver.FormatSeedCode(Guid.NewGuid());
+        var seedCode = SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode());
 
         var easySession = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Boring);
         var brutalSession = factory.Create("Ranger Vale", GameDifficulty.Brutal, seedCode, GameEntropy.Boring);

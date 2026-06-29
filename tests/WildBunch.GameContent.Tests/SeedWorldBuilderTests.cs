@@ -108,16 +108,42 @@ public sealed class SeedWorldBuilderTests
             SnapshotTrails(world));
     }
 
+    // Deterministic fixed seed GUIDs proven to produce different town counts,
+    // selections, and trail graphs. See SeedWorldResolverTests for the full set.
+    private static readonly Guid SeedSixTowns = new(0x00000001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);   // Rail, 6 towns, 5 trails
+    private static readonly Guid SeedEightTowns = new(0x00000002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);  // Rail, 8 towns, 9 trails
+    private static readonly Guid SeedSevenTowns = new(0x00000003, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);  // Rail, 7 towns, 7 trails
+    private static readonly Guid SeedCanonicalSeven = new(0x00000005, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); // Canonical, 7 towns, 6 trails
+
+    private static readonly Guid[] DeterministicSeeds =
+    [
+        SeedSixTowns, SeedEightTowns, SeedSevenTowns, SeedCanonicalSeven,
+        new(0x00000004, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000006, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000007, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000008, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000009, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000b, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x0000000f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000011, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new(0x00000014, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    ];
+
     [Fact]
     public void DifferentSeedsCanProduceDifferentTownSelections()
     {
         // The seed deterministically derives which towns are selected from the catalog.
-        // Different seeds can produce different town selections (not just different
+        // Different fixed seeds produce different town selections (not just different
         // case/turf/cash outcomes).
         var selections = new HashSet<string>();
-        for (var i = 0; i < 128; i++)
+        foreach (var seed in DeterministicSeeds)
         {
-            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            var seedWorld = SeedWorldResolver.Resolve(seed);
             selections.Add(string.Join(",", seedWorld.SelectedTownIds.OrderBy(id => id)));
         }
         Assert.True(selections.Count >= 2, $"Expected at least 2 different town selections, got {selections.Count}");
@@ -128,9 +154,9 @@ public sealed class SeedWorldBuilderTests
     {
         // Different town selections produce different trail graphs.
         var signatures = new HashSet<string>();
-        for (var i = 0; i < 128; i++)
+        foreach (var seed in DeterministicSeeds)
         {
-            var seedWorld = SeedWorldResolver.Resolve(Guid.NewGuid());
+            var seedWorld = SeedWorldResolver.Resolve(seed);
             var sig = string.Join(",", seedWorld.Trails.Select(t => t.Id).OrderBy(id => id));
             signatures.Add(sig);
         }
@@ -141,7 +167,7 @@ public sealed class SeedWorldBuilderTests
     public void SameSeedProducesSameWorld()
     {
         // Same seed + same difficulty should produce the same resolved map.
-        var seed = Guid.NewGuid();
+        var seed = SeedSevenTowns;
         var seedWorld = SeedWorldResolver.Resolve(seed);
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seed));
         var world1 = SeedWorldBuilder.CreateWorld(seedWorld, source);
@@ -155,23 +181,13 @@ public sealed class SeedWorldBuilderTests
     {
         // Starting town is NOT seed-owned but must be in the generated world.
         // StartingTownPolicy rejects a town that is not in the world.
-        // Find a seed that produces fewer than 8 towns so we can test with
-        // a catalog town that was not selected.
-        SeedWorld? seedWorld = null;
-        for (var i = 0; i < 256; i++)
-        {
-            var candidate = SeedWorldResolver.Resolve(Guid.NewGuid());
-            if (candidate.SelectedTownIds.Count < SeedWorldCatalog.AllTowns.Count)
-            {
-                seedWorld = candidate;
-                break;
-            }
-        }
-        Assert.NotNull(seedWorld);
+        // SeedSixTowns produces 6 towns (not all 8), so we can test with a
+        // catalog town that was not selected.
+        var seedWorld = SeedWorldResolver.Resolve(SeedSixTowns);
         Assert.True(seedWorld.SelectedTownIds.Count < SeedWorldCatalog.AllTowns.Count,
-            "Could not find a seed producing fewer than 8 towns within 256 attempts.");
+            "SeedSixTowns should produce fewer than 8 towns.");
 
-        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld!.SeedCode));
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
         var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
         var nonSelectedTown = SeedWorldCatalog.AllTowns.First(t => !seedWorld.SelectedTownIds.Contains(t.Id));
 
