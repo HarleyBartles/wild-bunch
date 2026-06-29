@@ -130,8 +130,11 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.True(repeatSameVisit.Success);
         Assert.Equal("You ask after telegraph leads again, but no new wire has come in.", repeatSameVisit.Message);
         Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-1");
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Id.Value == "clue-public-telegraph-2");
+        // BUNCH-107: the ClueSurfacingResolver picks which telegraph clue surfaces based on
+        // town slot + visit count, so either clue may be revealed first. Assert exactly one
+        // is known and the other remains public rather than hardcoding the order.
+        Assert.Equal(1, session.CaseFile.KnownClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
+        Assert.Equal(1, session.CaseFile.PublicClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
 
         session.Player.TravelTo(new TownId("connected"));
@@ -148,9 +151,8 @@ public sealed class GameSessionInvestigationActionsTests
 
         Assert.True(afterReturn.Success);
         Assert.Equal("You follow the telegraph leads and uncover a public lead.", afterReturn.Message);
-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-1");
-        Assert.Single(session.CaseFile.KnownClues, clue => clue.Id.Value == "clue-public-telegraph-2");
-        Assert.Empty(session.CaseFile.PublicClues);
+        Assert.Equal(2, session.CaseFile.KnownClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
+        Assert.DoesNotContain(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
@@ -283,7 +285,7 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -355,8 +357,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateTownSourceRefreshableSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
+        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -446,7 +448,7 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateExpandedSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard | TownServices.Telegraph);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -504,7 +506,7 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateRefreshableSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph | TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -578,7 +580,7 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateWantedPosterRefreshableSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
@@ -710,7 +712,7 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateColorOnlyGossipSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.NoticeBoard);
+        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },

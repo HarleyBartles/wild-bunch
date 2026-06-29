@@ -268,6 +268,37 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
     }
 
+    [Fact]
+    public void ReadWantedPosters_InBoringMode_SurfacesDifferentWarrantsInDifferentTowns()
+    {
+        // BUNCH-107: resolver-based selection varies by town slot index, so reading
+        // wanted posters in different towns should surface different warrants (when
+        // the eligible pool is large enough). Boring entropy uses a Fixed salt so the
+        // selection is deterministic for the same seed.
+        var boringTemplate = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var boringSeed = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(boringTemplate));
+        var factory = new SeededNewGameFactory();
+
+        var session = factory.Create("Ranger Vale", setupSeedCode: boringSeed, gameEntropy: GameEntropy.Boring);
+
+        // Read posters in the starting town.
+        var firstResult = session.ReadWantedPosters();
+        Assert.True(firstResult.Success);
+        var firstWarrant = session.CaseFile.KnownWarrants.LastOrDefault();
+        Assert.NotNull(firstWarrant);
+
+        // Travel to a different town and read posters there.
+        var secondTown = session.World.Towns.First(t => !t.Id.Equals(session.CurrentTown.TownId));
+        session.CurrentTown.EnterTown(secondTown);
+
+        var secondResult = session.ReadWantedPosters();
+        Assert.True(secondResult.Success);
+        var secondWarrant = session.CaseFile.KnownWarrants.LastOrDefault();
+        Assert.NotNull(secondWarrant);
+        Assert.NotEqual(firstWarrant!.Id, secondWarrant!.Id);
+    }
+
     private static string RosterSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}"));
 

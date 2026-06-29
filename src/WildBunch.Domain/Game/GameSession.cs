@@ -44,6 +44,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private DevTravelOverride? _pendingDevTravelOverride;
     private DevSaloonOverride? _pendingDevSaloonOverride;
 
+    // Stateless domain-service resolvers for investigation surfacing.
+    // BUNCH-107: replace ordered-peek selection with town/visit-aware resolver selection.
+    private static readonly WantedPosterResolver _wantedPosterResolver = new();
+    private static readonly ClueSurfacingResolver _clueSurfacingResolver = new();
+
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
     private int _version;
@@ -2736,10 +2741,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var warrant = CaseFile.PeekNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
-        var clue = CaseFile.PeekNextPublicClue(publicClue =>
-            IsPlayerKnownClue(publicClue)
-            && publicClue.SourceKind == InvestigationSourceKind.SheriffWarrants);
+        var warrant = _wantedPosterResolver.Resolve(CaseFile, CurrentTownSlotIndex, CurrentTownVisitCount, SaltSource);
+        var clue = _clueSurfacingResolver.Resolve(
+            CaseFile,
+            InvestigationSourceKind.SheriffWarrants,
+            CurrentTownSlotIndex,
+            CurrentTownVisitCount,
+            SaltSource);
+        if (clue is not null && !IsPlayerKnownClue(clue))
+        {
+            clue = null;
+        }
 
         if (warrant is null && clue is null)
         {
@@ -3111,7 +3123,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.TelegraphLead);
+        var clue = _clueSurfacingResolver.Resolve(
+            CaseFile,
+            InvestigationSourceKind.TelegraphLead,
+            CurrentTownSlotIndex,
+            CurrentTownVisitCount,
+            SaltSource);
+        if (clue is not null && !IsPlayerKnownClue(clue))
+        {
+            clue = null;
+        }
 
         if (clue is null)
         {
@@ -3168,7 +3189,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalGossip);
+        var clue = _clueSurfacingResolver.Resolve(
+            CaseFile,
+            InvestigationSourceKind.LocalGossip,
+            CurrentTownSlotIndex,
+            CurrentTownVisitCount,
+            SaltSource);
+        if (clue is not null && !IsPlayerKnownClue(clue))
+        {
+            clue = null;
+        }
 
         if (clue is null)
         {
@@ -3468,6 +3498,35 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             !string.IsNullOrWhiteSpace(subject.Alias)
             || !string.IsNullOrWhiteSpace(subject.Feature));
     }
+
+    /// <summary>
+    /// The current town's slot index — its position in <see cref="World"/>'s town list.
+    /// Used by the investigation resolvers to vary which warrant/clue surfaces per town.
+    /// </summary>
+    private int CurrentTownSlotIndex
+    {
+        get
+        {
+            var slot = 0;
+            foreach (var town in World.Towns)
+            {
+                if (town.Id.Equals(CurrentTown.TownId))
+                {
+                    return slot;
+                }
+
+                slot++;
+            }
+
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// The visit count for the current town (1-based). Used by the investigation
+    /// resolvers to vary which warrant/clue surfaces per visit.
+    /// </summary>
+    private int CurrentTownVisitCount => CurrentTownVisit.CurrentTownState.VisitNumber;
 
     private bool TryGetEligibleSaloonSuspectCandidate(out Suspect suspect)
     {
