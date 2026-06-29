@@ -119,6 +119,31 @@ public sealed class SeedWorldBuilderTests
     }
 
     [Fact]
+    public void DeriveTownNamesWithAllZeroFields_ProducesNonTrivialShuffle()
+    {
+        // Boundary: when all encoded fields are 0, the xorshift seed would be 0.
+        // xorshift32 has 0 as a fixed point (produces all zeros), so the shuffle
+        // would be a no-op. The guard (seed=0 → seed=1) ensures a non-trivial
+        // shuffle. Verify the first town is NOT just the first pool entry.
+        var townNames = SeedWorldCatalog.DeriveTownNames(
+            SeedWorldVariant.Canonical,
+            townCount: 5,
+            accusationIndex: 0,
+            defaultCulpritIndex: 0,
+            cashBonus: 0,
+            ProsperityPalette.UniformProsperous,
+            ServicesPalette.HubTelegraph);
+
+        Assert.Equal(5, townNames.Count);
+        // The shuffle must not be a no-op — at least one town must differ from
+        // the natural pool order.
+        var poolIds = SeedWorldCatalog.NamePool.Select(n => n.Id).ToArray();
+        var anyDiffer = townNames.Any(t => t.Id != poolIds[Array.IndexOf(townNames.ToArray(), t)]);
+        Assert.True(anyDiffer || townNames[0].Id != poolIds[0],
+            "DeriveTownNames must produce a non-trivial shuffle even when all encoded fields are 0.");
+    }
+
+    [Fact]
     public void StartingTownPolicyDefaultsToFirstTown()
     {
         // Starting town is NOT seed-owned. The safe default from StartingTownPolicy

@@ -102,8 +102,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
         // The active pool starts at gang parity; gang take-ins (replayed via
         // SheriffTurnInSettled) drop the parity target and despawn excess. The
-        // unrelated-criminal turn-in / warrant-collection side is wired as those
-        // flows land; the ledger itself is the parity source of truth.
+        // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
+        // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
+        // the ledger itself is the parity source of truth.
         _unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
 
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
@@ -164,8 +165,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Unrelated criminal parity ledger (BUNCH-107). Tracks the active pool of
     /// unrelated wanted criminals and keeps it at parity with the number of gang
     /// members still available to surface. Read-only view; mutations flow through
-    /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and, once wired,
-    /// the unrelated-criminal turn-in flow.
+    /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and
+    /// <see cref="Apply(UnrelatedCriminalTurnInSettled)"/> (unrelated-criminal take-ins).
     /// </summary>
     public UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
 

@@ -277,6 +277,14 @@ internal static class SeedWorldCatalog
             ((int)servicesPalette & 0x7) << 19);
 
         // xorshift32 PRNG — deterministic, stable across runs.
+        // Guard against seed=0: xorshift32 has 0 as a fixed point (produces all
+        // zeros), which would make the shuffle a no-op. OR with 1 ensures the
+        // seed is always non-zero while preserving all other bit patterns.
+        if (seed == 0)
+        {
+            seed = 1;
+        }
+
         var indices = new int[NamePool.Count];
         for (var i = 0; i < indices.Length; i++) indices[i] = i;
 
