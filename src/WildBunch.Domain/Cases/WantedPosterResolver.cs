@@ -19,11 +19,18 @@ namespace WildBunch.Domain.Cases;
 /// <see cref="CaseFile.KnownWarrants"/>, with the culprit warrant
 /// (<see cref="InvestigationTargetKind.TrueCulprit"/>) excluded unless
 /// <see cref="CaseFile.KillerReleaseState"/>.<see cref="KillerReleaseState.IsReleased"/>
-/// is true. Returns null when the eligible pool is exhausted.
+/// is true. Warrants whose IDs appear in <paramref name="retiredWarrantIds"/>
+/// (despawned unrelated criminals) are also excluded. Returns null when the
+/// eligible pool is exhausted.
 /// </remarks>
 public sealed class WantedPosterResolver
 {
-    public Warrant? Resolve(CaseFile caseFile, int townSlotIndex, int visitCount, SaltSource? salt)
+    public Warrant? Resolve(
+        CaseFile caseFile,
+        int townSlotIndex,
+        int visitCount,
+        SaltSource? salt,
+        IReadOnlySet<WarrantId>? retiredWarrantIds = null)
     {
         ArgumentNullException.ThrowIfNull(caseFile);
 
@@ -31,6 +38,7 @@ public sealed class WantedPosterResolver
             .Where(w => !caseFile.KnownWarrants.Any(k => k.Id.Equals(w.Id)))
             .Where(w => w.Terms.TargetKind != InvestigationTargetKind.TrueCulprit
                 || caseFile.KillerReleaseState.IsReleased)
+            .Where(w => retiredWarrantIds is null || !retiredWarrantIds.Contains(w.Id))
             .ToArray();
 
         if (eligible.Length == 0)

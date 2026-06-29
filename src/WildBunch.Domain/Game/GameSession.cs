@@ -2811,7 +2811,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // entropy, so pass null to exercise the resolvers' boring-mode branch
         // (simple slot/visit rotation) rather than their salt-hash branch.
         var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
-        var warrant = _wantedPosterResolver.Resolve(CaseFile, CurrentTownSlotIndex, CurrentTownVisitCount, boringSalt);
+        var retiredWarrantIds = _unrelatedCriminalLedger.RetiredWarrantIds
+            .Concat(_unrelatedCriminalLedger.TakenInCriminalIds)
+            .ToHashSet();
+        var warrant = _wantedPosterResolver.Resolve(
+            CaseFile,
+            CurrentTownSlotIndex,
+            CurrentTownVisitCount,
+            boringSalt,
+            retiredWarrantIds.Count > 0 ? retiredWarrantIds : null);
         var clue = _clueSurfacingResolver.Resolve(
             CaseFile,
             InvestigationSourceKind.SheriffWarrants,

@@ -167,6 +167,40 @@ public sealed class WantedPosterResolverTests
         Assert.Throws<ArgumentNullException>(act);
     }
 
+    [Fact]
+    public void BoringMode_RetiredWarrantsDoNotSurface()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
+
+        // Find the warrant that would surface at slot 0, visit 0.
+        var first = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null, retiredWarrantIds: null);
+        Assert.NotNull(first);
+
+        // Retire that warrant — it must not surface again.
+        var retired = new HashSet<WarrantId> { first!.Id };
+        var second = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null, retiredWarrantIds: retired);
+
+        Assert.NotNull(second);
+        Assert.NotEqual(first.Id, second!.Id);
+    }
+
+    [Fact]
+    public void BoringMode_AllNonCulpritRetired_ReturnsNull()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
+
+        // Retire all 7 unrelated warrants (the only eligible ones while killer is locked).
+        var allUnrelated = caseFile.PublicWarrants
+            .Where(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal)
+            .Select(w => w.Id)
+            .ToHashSet();
+
+        var result = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null, retiredWarrantIds: allUnrelated);
+        Assert.Null(result);
+    }
+
     /// <summary>
     /// Builds a CaseFile with a pool of 8 public warrants: one TrueCulprit warrant
     /// plus seven UnrelatedWantedCriminal warrants. The culprit warrant is only

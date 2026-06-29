@@ -57,6 +57,33 @@ public sealed class GameSessionUnrelatedCriminalLedgerWiringTests
     }
 
     [Fact]
+    public void ReadWantedPosters_DoesNotSurfaceRetiredUnrelatedCriminalWarrants()
+    {
+        // With 1 gang member and 3 unrelated criminals, the ledger activates 1 unrelated.
+        var session = CreateSession(gangSuspectCount: 1, unrelatedWarrantCount: 3);
+
+        // Drive a gang take-in to despawn the active unrelated criminal.
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+        session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        // The despawned warrant is now retired.
+        var retiredIds = session.UnrelatedCriminalLedger.RetiredWarrantIds;
+        Assert.NotEmpty(retiredIds);
+
+        // Reading wanted posters should not surface any retired warrant.
+        // The known warrants after reading must not include any retired ID.
+        var knownBefore = session.CaseFile.KnownWarrants.Select(w => w.Id).ToHashSet();
+        session.ReadWantedPosters();
+        var knownAfter = session.CaseFile.KnownWarrants.Select(w => w.Id).ToHashSet();
+
+        // Any newly surfaced warrant must not be a retired one.
+        var newlySurfaced = knownAfter.Except(knownBefore);
+        Assert.All(newlySurfaced, id => Assert.DoesNotContain(id, retiredIds));
+    }
+
+    [Fact]
     public void LedgerReconstructedFromCaseFile_MatchesPersistedGangTakeIns()
     {
         // Simulate a snapshot load: build a case file that already records a gang
