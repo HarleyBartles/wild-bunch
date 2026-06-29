@@ -42,10 +42,11 @@
 
 ### Secondary gaps
 
-1. **Boring is player-facing** in `SetupHuntStep.tsx:31` (value 0, label "Boring"). The issue says Boring should NOT be a normal player-facing option; it is reserved for test/dev determinism.
-2. **Dev overlay has no entropy control** — only inspect. The dev-overlay doctrine (`.agents/dev-overlay/DOCTRINE.md` §2) says "Session dev owns game/session-level setup: difficulty, randomness, entropy/seed posture," so a dev entropy control belongs here, following the existing `ForceDevSaltSource`/`ClearDevSaltSource` pattern.
-3. **No test proves entropy affects a variance seam** while difficulty stays separately controlled. All existing entropy tests verify setup/persistence/round-trip, not runtime variance branching.
-4. **Frontend entropy labels** say "Boring/Classic/Adventurous/Wild" without framing entropy as volatility/surprise vs. difficulty pressure.
+> **Direction change (Harley, this session):** Boring (entropy) and Easy (difficulty) are explicitly player-facing modes today. The original issue text said "Do not make Boring a normal player-facing option unless Harley explicitly changes the issue." Harley has now explicitly changed this direction: Boring stays player-facing for now. Making Boring/Easy dev-only is possible future work, not BUNCH-93 scope. The plan originally included a Task to remove Boring from player-facing setup; that Task has been removed.
+
+1. **Dev overlay has no entropy control** — only inspect. The dev-overlay doctrine (`.agents/dev-overlay/DOCTRINE.md` §2) says "Session dev owns game/session-level setup: difficulty, randomness, entropy/seed posture," so a dev entropy control belongs here, following the existing `ForceDevSaltSource`/`ClearDevSaltSource` pattern.
+2. **No test proves entropy affects a variance seam** while difficulty stays separately controlled. All existing entropy tests verify setup/persistence/round-trip, not runtime variance branching.
+3. **Frontend entropy labels** say "Boring/Classic/Adventurous/Wild" without framing entropy as volatility/surprise vs. difficulty pressure. All four labels (including Boring) stay player-facing; they need framing as a volatility axis, not removal.
 
 ### Test inventory (existing, preserve)
 
@@ -63,17 +64,16 @@
 - `tests/WildBunch.Application.Tests/Dev/GetSessionDevContextHandlerTests.cs` — dev context includes entropy.
 - `tests/WildBunch.Application.Tests/StartNewGameHandlerTests.cs` — handler passes entropy.
 - `tests/WildBunch.Integration.Tests/Dev/DevSessionEndpointTests.cs` — dev endpoint entropy exposure.
-- `tests/WildBunch.Web/src/tests/SetupHuntStep.test.tsx` — frontend entropy selection (will need update when Boring is removed from player options).
+- `tests/WildBunch.Web/src/tests/SetupHuntStep.test.tsx` — frontend entropy selection (all four options including Boring stay player-facing; test only needs update if labels change in Task 4).
 
 ## Goal (observable repo state)
 
 After execution, Harley can:
 
-1. Start a game with Classic/Adventurous/Wild entropy and observe **materially different travel variance** (lucky/unlucky/rare/encounter-surprise frequency) — not just different cash or salt.
+1. Start a game with Boring/Classic/Adventurous/Wild entropy and observe **materially different travel variance** (lucky/unlucky/rare/encounter-surprise frequency) — not just different cash or salt. Boring is the dampened/deterministic-feeling baseline; Wild is the high-volatility end.
 2. Use the dev overlay Session dev panel to set entropy on a live test session and observe the variance difference immediately.
-3. See entropy framed as volatility/surprise in the setup UI, distinct from difficulty pressure.
-4. NOT see Boring as a normal player-facing setup option (it remains reachable via seed/dev).
-5. Read tests proving entropy changes variance while difficulty stays constant, and vice versa.
+3. See entropy framed as volatility/surprise in the setup UI (all four options including Boring stay player-facing), distinct from difficulty pressure.
+4. Read tests proving entropy changes variance while difficulty stays constant, and vice versa.
 
 ## Guardrails (binding)
 
@@ -86,6 +86,7 @@ After execution, Harley can:
 - Do not broaden into BUNCH-94 difficulty behavior except for coordination and compile conflicts.
 - Keep temporary cockpit/debug-shell UI light; do not polish it for its own sake.
 - Entropy weight changes must be additive adjustments on top of the existing difficulty/risk/terrain/pressure weights, not a replacement of them. Difficulty stays the pressure axis; entropy stays the variance axis.
+- Boring (entropy) and Easy (difficulty) are explicitly player-facing modes today. Do not remove them from player-facing setup. Making them dev-only is possible future work, not BUNCH-93 scope.
 
 ## Implementation plan
 
@@ -135,25 +136,7 @@ After execution, Harley can:
 - [ ] Assert Wild ≠ Brutal pattern (variance vs pressure independence).
 - [ ] Do not store UUIDs in fixtures; derive via `SeedWorldResolver.CreateRepresentativeSeedCode` where seed-derived sessions are needed.
 
-### Task 3: Remove Boring from player-facing setup options
-
-**Files:**
-- `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx:30-35`
-- `src/WildBunch.Web/src/tests/SetupHuntStep.test.tsx` (update assertions)
-
-**What:** Remove the `Boring` option from `gameEntropyOptions` so the player-facing segmented toggle shows only Classic/Adventurous/Wild. Boring remains reachable via seed code and dev overlay for test/dev determinism.
-
-**Constraints:**
-- Do not remove `Boring` from the `GameEntropy` enum or the seed codec — it stays a legal entropy level for dev/test.
-- Do not change the default (Classic, value 1).
-- Update `SetupHuntStep.test.tsx` to no longer assert Boring is present in the player options, and add an assertion that Boring is NOT shown.
-
-**Checkboxes:**
-- [ ] Remove `{ value: 0, label: "Boring" }` from `gameEntropyOptions` in `SetupHuntStep.tsx`.
-- [ ] Update `SetupHuntStep.test.tsx` to assert Boring is absent from player-facing options.
-- [ ] Verify the enum and codec still accept Boring (no enum/codec change).
-
-### Task 4: Dev overlay entropy control (Session dev panel)
+### Task 3: Dev overlay entropy control (Session dev panel)
 
 **Files:**
 - `src/WildBunch.Domain/Events/DevEntropyChanged.cs` (new)
@@ -206,16 +189,16 @@ After execution, Harley can:
 - [ ] Add backend test for `SetDevEntropyHandler` (entropy changes + event emitted + dev guard).
 - [ ] Add dev endpoint integration test.
 
-### Task 5: Frontend setup copy — frame entropy as volatility/surprise
+### Task 4: Frontend setup copy — frame entropy as volatility/surprise
 
 **Files:**
 - `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx` — labels/group label
 
-**What:** Update entropy labels and group label so the player understands entropy as variance/surprise/volatility, not pressure. Keep it short and in-world; do not over-explain.
+**What:** Update entropy labels and group label so the player understands entropy as variance/surprise/volatility, not pressure. All four options (Boring/Classic/Adventurous/Wild) stay player-facing. Keep it short and in-world; do not over-explain.
 
 **Draft labels:**
 - Group label: "Entropy" → keep, or "Story Volatility" if clearer. Prefer keeping "Entropy" with a one-line subtitle if the existing pattern supports it; otherwise keep the single label.
-- Option labels: "Classic" / "Adventurous" / "Wild" (already good). Do not add long descriptions to the segmented toggle.
+- Option labels: "Boring" / "Classic" / "Adventurous" / "Wild" (already present). Do not add long descriptions to the segmented toggle. If "Boring" reads as a negative judgment rather than a volatility level, consider a clearer in-world label (e.g. "Steady"), but only if it helps the player choose; otherwise keep "Boring".
 
 **Constraints:**
 - Follow `src/WildBunch.Web/AGENTS.md` + `.agents/unslop/play-surface-ui.md` — keep player-facing surfaces in-world, not cockpit chrome. Cut labels that don't help the player.
@@ -225,7 +208,7 @@ After execution, Harley can:
 - [ ] Review and adjust entropy group label / option labels for volatility framing (only if current labels are misleading; keep minimal).
 - [ ] Update `SetupHuntStep.test.tsx` if label assertions change.
 
-### Task 6: Validation
+### Task 5: Validation
 
 **Commands:**
 - `dotnet build`
@@ -250,7 +233,7 @@ After execution, Harley can:
 - [ ] Browser/playtest screenshot: dev overlay entropy control changes variance on a live session.
 - [ ] Short written explanation of Classic vs Adventurous vs Wild observed difference.
 
-### Task 7: Index mesh + cleanup
+### Task 6: Index mesh + cleanup
 
 **Files:**
 - `scripts/generate_index_mesh.py` output (run if files were added/removed)
@@ -267,7 +250,7 @@ Shared files both issues may touch: `SetupHuntStep.tsx`, `useStartGameSeed.ts`, 
 
 > **Rebase note (BUNCH-107):** `GameSetupSeedCodec.cs` and `StartingWorldDescriptorSeedMixer.cs` no longer exist. The shared setup-pipeline files are now `EntropyPolicy.cs`, `DifficultyEnvelope.cs`, `MysteryTruthResolver.cs`, and `GameSetupResolver.cs`. BUNCH-93 expands `MysteryTruthResolver` (entropy-owned); BUNCH-94 expands `DifficultyEnvelope` (pressure-owned). Keep the two expansions in their respective files.
 
-- This plan touches `SetupHuntStep.tsx` (remove Boring), `SessionDevPanel.tsx` (entropy control), `TravelDayPlanGenerator.Context.cs` (variance seam — BUNCH-94 unlikely to touch), and the dev command/event pattern.
+- This plan touches `SetupHuntStep.tsx` (entropy label framing only — Boring stays player-facing), `SessionDevPanel.tsx` (entropy control), `TravelDayPlanGenerator.Context.cs` (variance seam — BUNCH-94 unlikely to touch), and the dev command/event pattern.
 - If BUNCH-94 lands first and conflicts on `SetupHuntStep.tsx` or `SessionDevPanel.tsx`, rebase onto current main and repair mechanical overlap. Keep entropy and difficulty changes in separate regions of the same files where possible.
 - Do not overwrite difficulty-axis changes from BUNCH-94.
 
@@ -277,5 +260,5 @@ Shared files both issues may touch: `SetupHuntStep.tsx`, `useStartGameSeed.ts`, 
 - Difficulty changes pressure (foe/unlucky pressure) — existing behavior, unchanged.
 - Wild ≠ Brutal — proven by Task 2 independence assertion.
 - Entropy control is dev-only (Session dev panel) — not a normal player API.
-- Boring is not player-facing — removed from `SetupHuntStep.tsx`.
+- Boring and Easy stay player-facing — not removed from setup (direction change from original issue text).
 - No old journey-only/randomness-policy names reintroduced — grep proof.
