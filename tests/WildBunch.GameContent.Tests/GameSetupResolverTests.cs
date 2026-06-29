@@ -4,6 +4,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.Abstractions;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent.Tests;
@@ -142,6 +143,30 @@ public sealed class GameSetupResolverTests
 
         var classicSetup = BuildSetup(seedWorld, DifficultyEnvelope.For(GameDifficulty.Standard), EntropyPolicy.For(GameEntropy.Classic));
         Assert.Equal(SaltSourceMode.Runtime, classicSetup.SaltSource.Mode);
+    }
+
+    [Fact]
+    public void NonBoringEntropyUsesInjectedSaltSourceFactoryInsteadOfRuntime()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
+        var classicEntropy = EntropyPolicy.For(GameEntropy.Classic);
+        var resolver = new GameSetupResolver(new FixedSaltSourceFactory());
+
+        var setup = resolver.Resolve(seedWorld, difficulty, classicEntropy);
+
+        // The injected factory produces Fixed salt, not Runtime — even for Classic entropy.
+        Assert.Equal(SaltSourceMode.Fixed, setup.SaltSource.Mode);
+    }
+
+    /// <summary>
+    /// A test-only factory that always produces a Fixed salt, simulating
+    /// the DeterministicSaltSourceFactory used in integration tests.
+    /// </summary>
+    private sealed class FixedSaltSourceFactory : ISaltSourceFactory
+    {
+        public SaltSource Create(string? setupSeedCode, GameDifficulty gameDifficulty)
+            => SaltSource.CreateFixed("test-fixed-salt");
     }
 
     [Fact]

@@ -7,7 +7,7 @@ namespace WildBunch.GameContent.NewGame;
 
 public sealed class SeededNewGameFactory : INewGameFactory
 {
-    private readonly GameSetupResolver _setupResolver = new();
+    private readonly GameSetupResolver _setupResolver;
     private readonly ISaltSourceFactory _saltSourceFactory;
 
     public SeededNewGameFactory()
@@ -18,6 +18,7 @@ public sealed class SeededNewGameFactory : INewGameFactory
     public SeededNewGameFactory(ISaltSourceFactory saltSourceFactory)
     {
         _saltSourceFactory = saltSourceFactory;
+        _setupResolver = new GameSetupResolver(saltSourceFactory);
     }
 
     public GameSession Create(

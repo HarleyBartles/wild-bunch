@@ -1,4 +1,6 @@
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
+using WildBunch.GameContent.Abstractions;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -18,16 +20,23 @@ internal static class MysteryTruthResolver
 {
     public static MysteryTruthResolution Resolve(
         SeedWorld seedWorld,
-        EntropyPolicy entropy)
+        EntropyPolicy entropy,
+        ISaltSourceFactory saltSourceFactory,
+        GameDifficulty gameDifficulty)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(entropy);
+        ArgumentNullException.ThrowIfNull(saltSourceFactory);
 
         // Transitional pass-through:
         // - ResolvedCulpritIndex = seedWorld.DefaultCulpritIndex (all entropy modes)
         // - ResolvedAccusationIndex = seedWorld.AccusationIndex (all entropy modes)
         // - AppliedCashBonus = min(seedWorld.CashBonus, entropy.CashBonusCap)
-        // - SaltSource = Fixed(seedCodeText) for Boring, Runtime for others
+        // - SaltSource = Fixed(seedCodeText) for Boring, factory-produced for others
+        //
+        // The factory is the single source of truth for non-Boring salt creation.
+        // In production, RuntimeSaltSourceFactory produces SaltSource.CreateRuntime().
+        // In tests, DeterministicSaltSourceFactory produces a fixed salt for reproducibility.
         //
         // BUNCH-93 will expand this method to:
         // - Boring: preserve seed world defaults deterministically (current behavior)
@@ -43,7 +52,7 @@ internal static class MysteryTruthResolver
 
         var saltSource = entropy.SaltSourceMode == SaltSourceMode.Fixed
             ? SaltSource.CreateFixed(seedWorld.SeedCodeText)
-            : SaltSource.CreateRuntime();
+            : saltSourceFactory.Create(seedWorld.SeedCodeText, gameDifficulty);
 
         return new MysteryTruthResolution(
             ResolvedCulpritIndex: seedWorld.DefaultCulpritIndex,

@@ -1,6 +1,7 @@
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.Abstractions;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -14,6 +15,19 @@ namespace WildBunch.GameContent.NewGame;
 /// </summary>
 internal sealed class GameSetupResolver
 {
+    private readonly ISaltSourceFactory _saltSourceFactory;
+
+    public GameSetupResolver()
+        : this(new RuntimeSaltSourceFactory())
+    {
+    }
+
+    public GameSetupResolver(ISaltSourceFactory saltSourceFactory)
+    {
+        ArgumentNullException.ThrowIfNull(saltSourceFactory);
+        _saltSourceFactory = saltSourceFactory;
+    }
+
     public ResolvedGameSetup Resolve(
         SeedWorld seedWorld,
         DifficultyEnvelope difficulty,
@@ -26,7 +40,11 @@ internal sealed class GameSetupResolver
 
         // 1. Resolve mystery truth — the single entropy-applied seam between
         //    seed world and resolved setup. BUNCH-93 expands this method.
-        var mysteryTruth = MysteryTruthResolver.Resolve(seedWorld, entropy);
+        var mysteryTruth = MysteryTruthResolver.Resolve(
+            seedWorld,
+            entropy,
+            _saltSourceFactory,
+            difficulty.Difficulty);
 
         // 2. Build the deterministic source from the seed code.
         var seedCodeText = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode);
