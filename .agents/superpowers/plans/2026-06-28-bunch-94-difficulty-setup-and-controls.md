@@ -44,7 +44,7 @@ Inspected at commit `a2a88e9` on `main` (post-BUNCH-107 seed codec refactor):
 
 Harley confirmed: **Easy** (difficulty) and **Boring** (entropy) are both player-facing options now. The code already reflects this — `SetupHuntStep.tsx` exposes all 4 options for both axes. No live doctrine or code needs changing for this; the only stale wording is in the historical BUNCH-104 plan file, which is left as-is per Harley's instruction.
 
-> **Authoritative for BUNCH-93 coordination:** This is the current product direction. BUNCH-93's plan Task 3 ("Remove Boring from player-facing setup options") contradicts this decision. Boring stays player-facing today; it may become dev/test-only in a later product decision, but not now. BUNCH-93 must drop or defer Task 3. Do not remove Boring from `SetupHuntStep.tsx` in either worker packet.
+> **BUNCH-93 coordination note:** An earlier BUNCH-93 draft/comment once proposed removing Boring from player-facing setup. Harley has superseded that direction: Boring and Easy are both player-facing today. The current BUNCH-93 plan already reflects this and does not remove Boring. BUNCH-94 must preserve Boring in `SetupHuntStep.tsx`. The remaining BUNCH-93/BUNCH-94 coordination is only mechanical overlap (see the clash map below).
 
 ### Gaps this plan fills
 
@@ -1337,9 +1337,9 @@ git commit -m "BUNCH-94: validation and index mesh"
 
 BUNCH-93 (entropy) may run in parallel. This plan does not depend on unmerged BUNCH-93 work. If BUNCH-93 lands first, rebase onto current main and repair mechanical conflicts. If both touch the same start-flow/dev-overlay files, keep changes minimal and do not overwrite the other axis. The difficulty control in `SessionDevPanel` is in the "Setup posture" section alongside the existing entropy inspect line — they are adjacent but separate controls.
 
-### Resolved: Boring player-facing status
+### Boring player-facing status (historical note)
 
-Harley confirmed this turn: **Boring (entropy) and Easy (difficulty) are both player-facing options today.** They may become dev/test-only in a later product decision, but not now. BUNCH-93's plan Task 3 ("Remove Boring from player-facing setup options") contradicts this and must be dropped or deferred. Neither worker packet removes Boring from `SetupHuntStep.tsx`. This resolves the only blocking contradiction between the two plans.
+An earlier BUNCH-93 draft/comment once proposed removing Boring from player-facing setup. Harley has superseded that direction: **Boring (entropy) and Easy (difficulty) are both player-facing options today.** They may become dev/test-only in a later product decision, but not now. The current BUNCH-93 plan already reflects this and does not remove Boring. BUNCH-94 must preserve Boring in `SetupHuntStep.tsx`. There is no active contradiction between the two plans.
 
 ### Mechanical clash map (all resolvable by rebase)
 
@@ -1352,7 +1352,7 @@ Both plans modify the same files. All clashes are additive (new switch cases, ne
 | `GameSessionJsonSerializer.Events.cs` | `DevDifficultyForced` in `ResolveEventType` | `DevEntropyChanged` in same switch | Additive cases in same switch |
 | `DevEndpoints.cs` | `POST .../force-difficulty` | `POST .../set-entropy` | Different routes |
 | `SessionDevPanel.tsx` | Replaces "Difficulty (inspect)" row (line 121) with control + travel-rules grid | Replaces "Entropy (inspect)" row (line 125) with control | Same "Setup posture" section, adjacent rows — mechanical conflict on rebase, resolvable by keeping both controls |
-| `SetupHuntStep.tsx` | Adds `difficultyDescriptions` in difficulty `FieldGroup` | ~~Removes Boring from `gameEntropyOptions`~~ (dropped per product decision) | No clash after BUNCH-93 Task 3 dropped |
+| `SetupHuntStep.tsx` | Adds `difficultyDescriptions` in difficulty `FieldGroup` | Updates entropy labels/group label for volatility framing (Boring stays player-facing) | Same file, different sections — low conflict risk |
 | `devApi.ts` | Adds `forceDevDifficulty` | Adds `setDevEntropy` | Different functions |
 | `dev/types.ts` | Adds `ForceDevDifficultyRequestDto`/`TravelRulesDevDto` | Adds `SetDevEntropyRequestDto` | Different types |
 | `SessionDevContextDto.cs` | Adds `TravelRules` record parameter | Unchanged | No clash |
