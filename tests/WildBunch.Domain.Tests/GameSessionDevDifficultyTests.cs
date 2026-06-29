@@ -66,15 +66,26 @@ public sealed class GameSessionDevDifficultyTests
     [Fact]
     public void ForceDevDifficulty_CanBeReplayedFromEvents()
     {
+        // CreateDefault() starts at Easy. Capture the original GameStarted
+        // BEFORE forcing difficulty, so the replay stream has a GameStarted
+        // with the original difficulty (Easy) followed by DevDifficultyForced.
+        // This genuinely proves the ApplyEvent case for DevDifficultyForced
+        // changes the rehydrated difficulty — if the case were missing, the
+        // rehydrated session would stay at Easy.
         var session = TestSessionFactory.CreateDefault();
+        var originalGameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
+
         session.ForceDevDifficulty(GameDifficulty.Challenging);
         session.MarkEventsCommitted();
 
-        var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
-        var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = new[] { originalGameStarted }
+            .Concat(session.CommittedEvents.OfType<IDomainEvent>())
+            .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, session.CaseFile, events);
 
+        // The GameStarted event carries Easy, but the DevDifficultyForced
+        // event must override it to Challenging during replay.
         Assert.Equal(GameDifficulty.Challenging, rehydrated.GameDifficulty);
         Assert.Equal(GameDifficulty.Challenging, rehydrated.TravelRules.Difficulty);
     }
