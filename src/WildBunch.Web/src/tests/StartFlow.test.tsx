@@ -253,6 +253,27 @@ describe("StartFlow", () => {
     });
   });
 
+  it("shows entropy description for selected entropy", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+    });
+
+    // Default entropy is Classic (value 1)
+    expect(screen.getByText(/balanced variance/i)).toBeInTheDocument();
+
+    // Click on Wild entropy
+    await user.click(screen.getByRole("button", { name: "Wild" }));
+
+    // Description should update to Wild description
+    await waitFor(() => {
+      expect(screen.getByText(/big swings/i)).toBeInTheDocument();
+    });
+  });
+
   it("does not call createGame during the setup or story steps", async () => {
     primeMocks();
     const user = userEvent.setup();

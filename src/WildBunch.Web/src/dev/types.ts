@@ -158,3 +158,7 @@ export interface LockRngRequestDto {
 export interface ForceDevDifficultyRequestDto {
   difficulty: string;
 }
+
+export interface SetDevEntropyRequestDto {
+  entropy: string;
+}

@@ -23,6 +23,9 @@
     <!-- Test-only reference: JournalLogProjectorEquivalenceTests need JournalLogProjector
          from Application. This is a test-boundary exception, not a production dependency. -->
     <ProjectReference Include="..\..\src\WildBunch.Application\WildBunch.Application.csproj" />
+    <!-- Test-only reference: GameSessionDevEntropyTests need GameSessionJsonSerializer
+         from Persistence. This is a test-boundary exception, not a production dependency. -->
+    <ProjectReference Include="..\..\src\WildBunch.Persistence\WildBunch.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

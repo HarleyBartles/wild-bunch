@@ -164,6 +164,32 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, 2, 0);
         }
 
+        // Entropy adjusts encounter count: Boring = fewer encounters, Wild = more encounters
+        switch (context.GameEntropy)
+        {
+            case GameEntropy.Boring:
+                AddWeight(weights, 0, 2);
+                AddWeight(weights, 1, -1);
+                AddWeight(weights, 2, -1);
+                AddWeight(weights, 3, -1);
+                break;
+            case GameEntropy.Classic:
+                // No adjustment (baseline)
+                break;
+            case GameEntropy.Adventurous:
+                AddWeight(weights, 0, -1);
+                AddWeight(weights, 1, 1);
+                AddWeight(weights, 2, 1);
+                AddWeight(weights, 3, 0);
+                break;
+            case GameEntropy.Wild:
+                AddWeight(weights, 0, -2);
+                AddWeight(weights, 1, 2);
+                AddWeight(weights, 2, 2);
+                AddWeight(weights, 3, 1);
+                break;
+        }
+
         return weights;
     }
 
@@ -243,6 +269,32 @@ internal static partial class TravelDayPlanGenerator
                 AddWeight(weights, TravelDayEncounterCategory.Foe, 2);
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 2);
                 AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? 2 : 0);
+                break;
+        }
+
+        // Entropy adjusts category weights: Boring = more quiet days, Wild = more rare events
+        switch (context.GameEntropy)
+        {
+            case GameEntropy.Boring:
+                AddWeight(weights, TravelDayEncounterCategory.Quiet, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, -1);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, -1);
+                AddWeight(weights, TravelDayEncounterCategory.Foe, -1);
+                break;
+            case GameEntropy.Classic:
+                // No adjustment (baseline)
+                break;
+            case GameEntropy.Adventurous:
+                AddWeight(weights, TravelDayEncounterCategory.Quiet, -1);
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Foe, 0);
+                break;
+            case GameEntropy.Wild:
+                AddWeight(weights, TravelDayEncounterCategory.Quiet, -2);
+                AddWeight(weights, TravelDayEncounterCategory.Lucky, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Unlucky, 2);
+                AddWeight(weights, TravelDayEncounterCategory.Foe, 1);
                 break;
         }
 

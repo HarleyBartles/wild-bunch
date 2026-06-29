@@ -221,6 +221,47 @@ public sealed class DevSessionEndpointTests
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SetEntropy_Returns204_AndReflectedInContext()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        var setResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/session/set-entropy",
+            new SetDevEntropyRequestDto { Entropy = "Wild" });
+        Assert.Equal(HttpStatusCode.NoContent, setResponse.StatusCode);
+
+        var context = await (await client.GetAsync($"/api/dev/sessions/{gameId}/session-context"))
+            .Content.ReadFromJsonAsync<SessionDevContextDto>();
+        Assert.Equal("Wild", context!.GameEntropy);
+    }
+
+    [Fact]
+    public async Task SetEntropy_Returns400_ForInvalidEntropy()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var gameId = await CreateSessionAsync(client);
+
+        var setResponse = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/session/set-entropy",
+            new SetDevEntropyRequestDto { Entropy = "Chaotic" });
+        Assert.Equal(HttpStatusCode.BadRequest, setResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task SetEntropy_Returns403_InNonDevEnvironment()
+    {
+        using var factory = new NonDevApiFactory();
+        using var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{Guid.NewGuid()}/session/set-entropy",
+            new SetDevEntropyRequestDto { Entropy = "Wild" });
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
