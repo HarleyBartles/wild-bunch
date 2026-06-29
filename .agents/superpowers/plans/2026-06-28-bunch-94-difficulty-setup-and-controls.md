@@ -10,23 +10,25 @@
 
 ## Plan Status
 
-- Plan status: preflight repaired, ready for approval
+- Plan status: preflight repaired and rebased onto BUNCH-107, ready for approval
 - Current route state: `preflight_repaired_pending_approval`
-- Base commit: `6b9fcbf` (BUNCH-106: Add flavourful citizen cast for POI encounters, #118)
+- Base commit: `a2a88e9` (BUNCH-107: refactor seed codec into SeedWorld setup pipeline, #121)
 - Branch: `harleydbartles/bunch-94-difficulty-setup-and-controls`
 - Worktree: `.worktrees/bunch-94`
 - Repairs applied: (1) fixed Task 1 test to use a single seed with different difficulty parameters, since the seed does not encode difficulty; (2) added event store type mapping for `DevDifficultyForced` in `ResolveEventType` plus explicit event round-trip and rehydration tests; (3) extended Task 5 to require derived travel-rule facts in the Session dev panel after forcing difficulty, and strengthened Task 7 browser proof to require observable envelope change, not just a label swap.
+- Rebase onto BUNCH-107 applied: updated all seed-codec references from the pre-BUNCH-107 API (`StartingWorldDescriptorResolver`, `StartingWorldDescriptor`, `GameSetupSeedCodec`, `StartingWorldDescriptorSeedMixer`, `GetBaseStartingCash`) to the post-BUNCH-107 API (`SeedWorldResolver`, `SeedWorld`, `DifficultyEnvelope.For`). The seed codec no longer encodes loadout/horse/saddle — those are now pressure-owned via `DifficultyEnvelope`. Starting cash is now `baseCash + 2m` (horse) across all difficulties, so actual starting cash is Easy=30, Standard=25, Challenging=20, Brutal=15. Task 1's `NotEqual` assertions still hold. No other plan tasks were affected by BUNCH-107.
 
 ## Preflight Findings
 
 ### What already exists on current main
 
-Inspected at commit `6b9fcbf` on `main`:
+Inspected at commit `a2a88e9` on `main` (post-BUNCH-107 seed codec refactor):
 
 - **Domain enum** (`src/WildBunch.Domain/Travel/GameDifficulty.cs`): `Standard=0, Easy=1, Challenging=2, Brutal=3` — all 4 values.
 - **Entropy enum** (`src/WildBunch.Domain/Travel/GameEntropy.cs`): `Boring=0, Classic=1, Adventurous=2, Wild=3` — all 4 values.
-- **Seed codec** (`src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs`): the seed UUID encodes world variant, loadout profile, start-with-horse, cash bonus, and accusation index. **Difficulty and entropy are NOT encoded in the seed** — they are caller-supplied parameters to `Resolve(Guid, GameDifficulty, GameEntropy)`. `CreateDescriptorSignature` (in `StartingWorldDescriptorSeedMixer.cs`) does not include difficulty or entropy. Difficulty drives `GetBaseStartingCash` (Easy=28, Standard=23, Challenging=18, Brutal=13) and canonical descriptor shape. Entropy drives cash bonus envelope and salt posture (Boring=Fixed, others=Runtime).
-- **Generation plan** (`src/WildBunch.GameContent/NewGame/GameSetupGenerationPlan.cs`): `TravelRulesProfile.For(descriptor.GameDifficulty)`.
+- **Seed codec** (`src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs`): the seed UUID encodes the seed-owned world/map layer only — world variant, accusation index, default culprit index, cash bonus, town count, prosperity/services palettes (22 bits used, 106 reserved, direct bit-packing O(1) both directions). **Difficulty, entropy, loadout, horse/saddle, and starting town are NOT encoded in the seed** — difficulty and entropy are caller-supplied parameters to `SeededNewGameFactory.Create`; loadout/horse/saddle are pressure-owned via `DifficultyEnvelope.For(GameDifficulty)`; starting town is player/setup-owned via `StartingTownPolicy`. `SeedWorldResolver.Resolve(Guid)` returns a `SeedWorld`; `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` encodes it back.
+- **Difficulty envelope** (`src/WildBunch.GameContent/NewGame/DifficultyEnvelope.cs`): pressure-owned. `DifficultyEnvelope.For(GameDifficulty)` returns starting cash (baseCash + 2m horse: Easy=30, Standard=25, Challenging=20, Brutal=15), `StartingLoadoutProfile.Standard` (transitional — all difficulties get Standard loadout), `StartWithHorse: true`, `IncludeSaddle: true`, and `TravelRules: TravelRulesProfile.For(difficulty)`. BUNCH-94 is expected to expand this mapping per the file's own TODO comment.
+- **Game setup pipeline** (`src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`): orchestrates `SeedWorld → DifficultyEnvelope → EntropyPolicy → MysteryTruthResolver → ResolvedGameSetup → GameSession.StartNew`.
 - **Travel rules profile** (`src/WildBunch.Domain/Travel/TravelRulesProfile.cs`): distinct profiles per difficulty — canteen capacity, horse death/lame thresholds, ride day progress, lucky/bad-luck rewards/penalties, encounter health/heat/bribe costs.
 - **GameSession** (`src/WildBunch.Domain/Game/GameSession.cs`): `GameDifficulty` property, `TravelRules` derived via `TravelRulesProfile.For(GameDifficulty)`, `StartingHealthFor` (Easy=1250, Standard=1000, Challenging=800, Brutal=600).
 - **StartNewGameCommand/Handler**: passes `GameDifficulty` through session creation.
@@ -146,10 +148,10 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 - Modify: `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`
 
 **Interfaces:**
-- Consumes: `SeededNewGameFactory.Create`, `StartingWorldDescriptorResolver`, `TravelRulesProfile.For`
+- Consumes: `SeededNewGameFactory.Create`, `SeedWorldResolver.FormatSeedCode`, `TravelRulesProfile.For`
 - Produces: `DifficultyChangesDifficultyShapedFactsNotEntropy` test proving difficulty ≠ entropy
 
-**Key insight:** The seed UUID does NOT encode difficulty or entropy. `Resolve(Guid, GameDifficulty, GameEntropy)` takes difficulty and entropy as caller-supplied parameters. The seed fixes the world variant, loadout profile, start-with-horse, cash bonus, and accusation index. Difficulty is a setup parameter that drives base starting cash, starting health, and the travel rules profile. The test uses a single seed code (fixing the world/loadout/cash-bonus) and passes different difficulty parameters to prove difficulty changes difficulty-shaped facts while the seed-derived world stays the same.
+**Key insight:** The seed UUID does NOT encode difficulty or entropy (post-BUNCH-107). `SeedWorldResolver.Resolve(Guid)` returns a `SeedWorld` carrying only the seed-owned world/map layer (variant, towns, trails, accusation/default culprit candidates, cash bonus). `SeededNewGameFactory.Create(playerName, gameDifficulty, setupSeedCode, gameEntropy, startingTownId?)` takes difficulty and entropy as caller-supplied parameters; difficulty is applied downstream via `DifficultyEnvelope.For(GameDifficulty)`, which owns starting cash, loadout, horse/saddle, and travel rules. The test uses a single seed code (fixing the world) and passes different difficulty parameters to prove difficulty changes difficulty-shaped facts (cash, health, travel rules) while the seed-derived world stays the same.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -161,10 +163,10 @@ public void DifficultyChangesDifficultyShapedFactsNotEntropy()
 {
     var factory = new SeededNewGameFactory();
 
-    // The seed UUID encodes world/loadout/cash-bonus, NOT difficulty or entropy.
-    // Difficulty and entropy are caller-supplied parameters to Resolve.
+    // The seed UUID encodes the seed-owned world/map layer only, NOT difficulty or entropy.
+    // Difficulty and entropy are caller-supplied parameters to SeededNewGameFactory.Create.
     // Use one seed code to fix the world, then vary only the difficulty parameter.
-    var seedCode = StartingWorldDescriptorResolver.FormatSeedCode(Guid.NewGuid());
+    var seedCode = SeedWorldResolver.FormatSeedCode(Guid.NewGuid());
 
     // Same seed, same entropy, different difficulty parameter
     var easy = factory.Create("Ranger Vale", GameDifficulty.Easy, seedCode, GameEntropy.Classic);
