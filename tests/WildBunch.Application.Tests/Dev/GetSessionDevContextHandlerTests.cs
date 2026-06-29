@@ -43,6 +43,36 @@ public sealed class GetSessionDevContextHandlerTests
         // Seed code is honestly reported as not retained
         Assert.False(result.SeedCodeRetained);
         Assert.Null(result.SeedCodeText);
+        // Travel rules facts are derived from the session's TravelRulesProfile
+        Assert.NotNull(result.TravelRules);
+        Assert.Equal(session.TravelRules.CanteenCapacity, result.TravelRules!.CanteenCapacity);
+        Assert.Equal(session.TravelRules.MountedRideDayProgress, result.TravelRules.MountedRideDayProgress);
+        Assert.Equal(session.TravelRules.EncounterFightAmmoHealthLoss, result.TravelRules.EncounterFightAmmoHealthLoss);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReflectsTravelRulesForCurrentDifficulty()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSeededSession(); // Easy difficulty
+        repository.Seed(session);
+
+        var handler = new GetSessionDevContextHandler(repository);
+
+        var easyResult = await handler.HandleAsync(new GetSessionDevContextQuery(session.Id.Value));
+        Assert.NotNull(easyResult.TravelRules);
+        // Easy canteen capacity is 10
+        Assert.Equal(10, easyResult.TravelRules!.CanteenCapacity);
+
+        session.ForceDevDifficulty(GameDifficulty.Brutal);
+        session.MarkEventsCommitted();
+        repository.Seed(session);
+
+        var brutalResult = await handler.HandleAsync(new GetSessionDevContextQuery(session.Id.Value));
+        Assert.NotNull(brutalResult.TravelRules);
+        // Brutal canteen capacity is 1
+        Assert.Equal(1, brutalResult.TravelRules!.CanteenCapacity);
+        Assert.NotEqual(easyResult.TravelRules.CanteenCapacity, brutalResult.TravelRules.CanteenCapacity);
     }
 
     [Fact]

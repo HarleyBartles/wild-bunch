@@ -139,8 +139,22 @@ export interface SessionDevContextDto {
   hasActiveJourney: boolean;
   seedCodeRetained: boolean;
   seedCodeText: string | null;
+  travelRules: TravelRulesDevDto | null;
+}
+
+export interface TravelRulesDevDto {
+  canteenCapacity: number;
+  mountedRideDayProgress: number;
+  footRideDayProgress: number;
+  encounterFightAmmoHealthLoss: number;
+  encounterFightUnarmedHealthLoss: number;
+  encounterRunFootHealthLoss: number;
 }
 
 export interface LockRngRequestDto {
   salt?: string | null;
+}
+
+export interface ForceDevDifficultyRequestDto {
+  difficulty: string;
 }
