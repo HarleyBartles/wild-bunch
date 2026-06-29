@@ -113,6 +113,9 @@ public sealed partial class GameSession
             case SheriffTurnInSettled ts:
                 session.Apply(ts);
                 break;
+            case UnrelatedCriminalTurnInSettled ucts:
+                session.Apply(ucts);
+                break;
             case SaloonPersonOfInterestConfronted sc:
                 session.Apply(sc);
                 break;

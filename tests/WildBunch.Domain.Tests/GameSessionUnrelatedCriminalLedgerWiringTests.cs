@@ -84,6 +84,64 @@ public sealed class GameSessionUnrelatedCriminalLedgerWiringTests
     }
 
     [Fact]
+    public void SettleUnrelatedCriminalTurnIn_PaysBountyAndRecordsTakeIn()
+    {
+        var session = CreateSession(gangSuspectCount: 2, unrelatedWarrantCount: 6);
+        var activeIds = session.UnrelatedCriminalLedger.ActiveCriminalIds;
+        Assert.Equal(2, activeIds.Count);
+
+        // The player has collected a warrant for the first active unrelated criminal.
+        var warrantId = activeIds[0];
+        var warrant = session.CaseFile.PublicWarrants.First(w => w.Id.Equals(warrantId));
+        session.CaseFile.RevealWarrant(warrant);
+        Assert.Contains(warrant, session.CaseFile.KnownWarrants);
+
+        var cashBefore = session.Player.Wallet.Cash;
+
+        // Settle the turn-in — the sheriff pays the bounty.
+        var result = session.SettleUnrelatedCriminalTurnIn(warrantId, isAlive: true);
+
+        Assert.True(result.Success);
+        Assert.Equal(warrant.Terms.BountyAmount, result.BountyAmount);
+        Assert.Equal(warrant.Terms.BountyAmount, session.Player.Wallet.Cash - cashBefore);
+
+        // The ledger has recorded the take-in and spawned a replacement (parity 2, active was 2, now 1 → spawn 1).
+        Assert.Contains(warrantId, session.UnrelatedCriminalLedger.TakenInCriminalIds);
+        Assert.Equal(2, session.UnrelatedCriminalLedger.ActiveCriminalCount);
+    }
+
+    [Fact]
+    public void SettleUnrelatedCriminalTurnIn_RejectsUnknownWarrant()
+    {
+        var session = CreateSession(gangSuspectCount: 1, unrelatedWarrantCount: 3);
+
+        var result = session.SettleUnrelatedCriminalTurnIn(new WarrantId("nonexistent"), isAlive: true);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public void SettleUnrelatedCriminalTurnIn_RejectsRetiredCriminal()
+    {
+        var session = CreateSession(gangSuspectCount: 1, unrelatedWarrantCount: 3);
+        var activeIds = session.UnrelatedCriminalLedger.ActiveCriminalIds;
+        var warrantId = activeIds[0];
+        var warrant = session.CaseFile.PublicWarrants.First(w => w.Id.Equals(warrantId));
+        session.CaseFile.RevealWarrant(warrant);
+
+        // Despawn the active criminal via gang take-in.
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
+        session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);
+        session.SettleSheriffTurnIn(new SuspectId("suspect-1"), isAlive: true);
+
+        // The warrant is now retired — turn-in must be rejected.
+        Assert.False(session.UnrelatedCriminalLedger.IsSurfacingEligible(warrantId));
+        var result = session.SettleUnrelatedCriminalTurnIn(warrantId, isAlive: true);
+        Assert.False(result.Success);
+    }
+
+    [Fact]
     public void LedgerReconstructedFromCaseFile_MatchesPersistedGangTakeIns()
     {
         // Simulate a snapshot load: build a case file that already records a gang

@@ -371,6 +371,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case SheriffTurnInSettled ts:
                 Apply(ts);
                 break;
+            case UnrelatedCriminalTurnInSettled ucts:
+                Apply(ucts);
+                break;
             case SaloonPersonOfInterestConfronted sc:
                 Apply(sc);
                 break;
@@ -515,6 +518,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // the player has not collected a warrant for) to maintain parity. The
         // despawned warrants are retired from the surfacing pool.
         _unrelatedCriminalLedger.RecordGangMemberTakenIn();
+
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies an <see cref="UnrelatedCriminalTurnInSettled"/> event to mutate session state.
+    /// Pays the bounty, records the take-in on the ledger (which may spawn a replacement),
+    /// and marks the warrant as collected. See BUNCH-107.
+    /// </summary>
+    private void Apply(UnrelatedCriminalTurnInSettled e)
+    {
+        Player.AdjustCash(e.BountyAmount);
+
+        _unrelatedCriminalLedger.MarkWarrantCollected(e.WarrantId);
+        _unrelatedCriminalLedger.RecordTakenIn(e.WarrantId);
 
         _version++;
     }
@@ -3166,6 +3184,81 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         return _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+    }
+
+    /// <summary>
+    /// Settles the turn-in of an unrelated wanted criminal to the sheriff. The player
+    /// declares the warrant (collected from a wanted poster). If the criminal is active
+    /// in the <see cref="UnrelatedCriminalLedger"/>, the sheriff pays the bounty, the
+    /// ledger records the take-in (spawning a replacement when parity allows), and the
+    /// warrant is marked as collected. No confrontation step is required — the player
+    /// brings the criminal in directly. See BUNCH-107.
+    /// </summary>
+    public SheriffTurnInResult SettleUnrelatedCriminalTurnIn(WarrantId warrantId, bool isAlive)
+    {
+        if (IsArchived)
+        {
+            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+        }
+
+        if (IsJourneyModal())
+        {
+            return SheriffTurnInResult.Rejected(JourneyModalBlockMessage);
+        }
+
+        var contextChanged = EnterActionContext(TownActionContext.SheriffOffice);
+
+        var warrant = CaseFile.KnownWarrants.FirstOrDefault(w => w.Id.Equals(warrantId));
+        if (warrant is null)
+        {
+            return contextChanged
+                ? SheriffTurnInResult.Rejected($"You don't have a wanted notice for that person.").WithSessionChanged()
+                : SheriffTurnInResult.Rejected($"You don't have a wanted notice for that person.");
+        }
+
+        if (warrant.Terms.TargetKind != InvestigationTargetKind.UnrelatedWantedCriminal)
+        {
+            return contextChanged
+                ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.").WithSessionChanged()
+                : SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.");
+        }
+
+        if (!_unrelatedCriminalLedger.IsSurfacingEligible(warrantId))
+        {
+            return contextChanged
+                ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.").WithSessionChanged()
+                : SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.");
+        }
+
+        if (!isAlive && warrant.Terms.Disposition == WarrantDisposition.AliveOnly)
+        {
+            return contextChanged
+                ? SheriffTurnInResult.Rejected($"The warrant for {warrant.TargetName} requires an alive turn-in.", warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount).WithSessionChanged()
+                : SheriffTurnInResult.Rejected($"The warrant for {warrant.TargetName} requires an alive turn-in.", warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount);
+        }
+
+        var message = isAlive
+            ? $"You bring in {warrant.TargetName} alive under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant."
+            : $"You turn in the body of {warrant.TargetName} under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.";
+
+        var settledEvent = new UnrelatedCriminalTurnInSettled
+        {
+            WarrantId = warrantId,
+            TargetName = warrant.TargetName,
+            Disposition = warrant.Terms.Disposition,
+            IsAlive = isAlive,
+            BountyAmount = warrant.Terms.BountyAmount,
+            Message = message,
+            Day = Clock.Day,
+            Turn = Clock.Turn
+        };
+        ProduceEvent(settledEvent);
+
+        var result = isAlive
+            ? SheriffTurnInResult.AcceptedAlive(warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount, message)
+            : SheriffTurnInResult.AcceptedDead(warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount, message);
+
+        return result with { SessionChanged = true };
     }
 
     public CaseInvestigationResult FollowTelegraphLeads()

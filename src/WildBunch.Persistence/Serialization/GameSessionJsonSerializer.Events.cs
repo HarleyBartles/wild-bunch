@@ -41,6 +41,7 @@ public sealed partial class GameSessionJsonSerializer
         nameof(SaloonPersonOfInterestSpotted) => typeof(SaloonPersonOfInterestSpotted),
         nameof(WantedSuspectConfronted) => typeof(WantedSuspectConfronted),
         nameof(SheriffTurnInSettled) => typeof(SheriffTurnInSettled),
+        nameof(UnrelatedCriminalTurnInSettled) => typeof(UnrelatedCriminalTurnInSettled),
         nameof(SaloonPersonOfInterestConfronted) => typeof(SaloonPersonOfInterestConfronted),
         nameof(JourneyStarted) => typeof(JourneyStarted),
         nameof(TravelDayAdvanced) => typeof(TravelDayAdvanced),
