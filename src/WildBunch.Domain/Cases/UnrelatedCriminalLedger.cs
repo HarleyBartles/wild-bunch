@@ -124,9 +124,11 @@ public sealed class UnrelatedCriminalLedger
         if (wasActive)
         {
             _takenInIds.Add(criminalId);
+            return TrySpawnReplacement();
         }
 
-        return TrySpawnReplacement();
+        // The id was not active; do not spawn a replacement (no slot opened up).
+        return null;
     }
 
     /// <summary>

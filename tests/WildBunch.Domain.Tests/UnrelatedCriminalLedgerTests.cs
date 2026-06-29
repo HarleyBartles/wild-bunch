@@ -1,3 +1,4 @@
+using System.Text.Json;
 using WildBunch.Domain.Cases;
 
 namespace WildBunch.Domain.Tests;
@@ -282,6 +283,25 @@ public sealed class UnrelatedCriminalLedgerTests
     public void FromSnapshot_ThrowsOnNull()
     {
         Assert.Throws<ArgumentNullException>(() => UnrelatedCriminalLedger.FromSnapshot(null!));
+    }
+
+    [Fact]
+    public void Snapshot_SurvivesJsonSerializationRoundTrip()
+    {
+        var ledger = new UnrelatedCriminalLedger(
+            gangMemberCount: 7,
+            roster: Enumerable.Range(0, 21).Select(i => new WarrantId($"unrelated-{i}")).ToArray());
+        ledger.RecordTakenIn(new WarrantId("unrelated-0"));
+        ledger.MarkWarrantCollected(new WarrantId("unrelated-1"));
+
+        var snapshot = ledger.ToSnapshot();
+        var json = JsonSerializer.Serialize(snapshot);
+        var deserialized = JsonSerializer.Deserialize<UnrelatedCriminalLedgerSnapshot>(json);
+        var restored = UnrelatedCriminalLedger.FromSnapshot(deserialized!);
+
+        Assert.Equal(ledger.ActiveCriminalCount, restored.ActiveCriminalCount);
+        Assert.Equal(ledger.GangMembersAvailable, restored.GangMembersAvailable);
+        Assert.Equal(ledger.ActiveCriminalIds, restored.ActiveCriminalIds);
     }
 
 }
