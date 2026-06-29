@@ -1,0 +1,30 @@
+feat: add unrelated criminal sheriff turn-in (by warrant, pay bounty, wire ledger)
+
+Players can now turn in unrelated wanted criminals to the sheriff by
+declaring the warrant (collected from a wanted poster). The sheriff pays
+the bounty, the ledger records the take-in (spawning a replacement when
+parity allows), and the warrant is marked as collected. No confrontation
+step is required — the player brings the criminal in directly.
+
+This was flagged in the BUNCH-107 code review as an approved scope
+expansion item.
+
+Implementation:
+- New UnrelatedCriminalTurnInSettled event (carries WarrantId, not
+  SuspectId, since unrelated criminals are not gang-case suspects).
+- New GameSession.SettleUnrelatedCriminalTurnIn(WarrantId, isAlive)
+  method with validation: archived/journey blocks, unknown warrant,
+  non-unrelated warrant, retired/non-active criminal, alive-only
+  disposition with dead turn-in.
+- Apply(UnrelatedCriminalTurnInSettled) pays the bounty, marks the
+  warrant collected, and records the take-in on the ledger.
+- Event registered in both GameSession switch statements, the
+  GameSessionEventReplay switch, and the persistence event serializer.
+
+Adds three wiring tests: successful turn-in pays bounty and records
+take-in with replacement spawn; unknown warrant rejected; retired
+criminal rejected.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

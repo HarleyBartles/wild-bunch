@@ -1,112 +1,41 @@
-# Task 1 Report: Extend the BUNCH-102 setup read model for map coordinates
+# Task 1 Report: Fix SeedWorldMapLayout crash on derived town names
 
-## What I implemented
+## What I Implemented
 
-### 1. `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs` (new)
-A static, deterministic coordinate table for all 8 seeded towns plus a map projection of the canonical world's trail edges with ride-day distances.
+Replaced the hardcoded `TownCoordinates` dictionary in `SeedWorldMapLayout.cs` (keyed by town ID strings like "pinecross", "redmesa" — only 9 entries) with a deterministic slot-based coordinate generator. Slot 0 is placed at center (400, 450); remaining slots are arranged in a ring of radius 250 around the center, with the angle evenly distributed. This works for any town count (6-20) and any seed-derived town name from the 40-entry name pool.
 
-- `SeedMapTown` record: `Id`, `Name`, `Services`, `X`, `Y`.
-- `SeedMapTrailEdge` record: `Id`, `FromTownId`, `ToTownId`, `RideDayDistance`.
-- `SeedWorldMapLayout.GetMapTowns()` — builds the canonical world via `SeedWorldCatalog.CreateWorld(SeedWorldVariant.Canonical)` (accessible because the layout lives in the same assembly) and joins each town to its static coordinate. Returns all 8 towns.
-- `SeedWorldMapLayout.GetMapTrails()` — returns all 9 canonical trails with their `RideDayDistance` sourced from the world (not duplicated as literals).
-- Coordinates are modest integers in the 0–800 range, hand-placed so the trail graph is readable. No procedural map art.
+The `GetMapTrails()` method was unchanged in logic (it already used the world's trails directly) but kept consistent with the spec's layout.
 
-Coordinates:
-| Town      | X   | Y   |
-|-----------|-----|-----|
-| pinecross | 150 | 500 |
-| redmesa   | 450 | 400 |
-| holloway  | 300 | 650 |
-| sagewell  | 600 | 550 |
-| dryfork   | 700 | 300 |
-| emberfall | 800 | 500 |
-| hardpan   | 100 | 300 |
-| openpass  | 80  | 700 |
+Updated 3 existing tests in `GetStartingTownMapHandlerTests.cs` that asserted on hardcoded town IDs and trail IDs no longer produced by the seed-derived canonical world:
+- `ReturnsAllEightSeededTowns`: kept count=8 assertion; replaced hardcoded town ID checks with structural validity checks (non-empty id/name, distinct ids).
+- `TrailEdgesCarryCorrectRideDayDistances`: updated to use slot-based trail IDs (`trail-0-1`, `trail-0-2`, etc.) with the canonical variant's distances.
+- `TrailEdgesCoverAllNineSeededTrails` → `TrailEdgesCoverAllSeededTrails`: updated expected count from 9 to 12 (the canonical 8-town world has 12 slot-based trails).
 
-### 2. `src/WildBunch.Application/Games/Models/StartingTownMapDto.cs` (new)
-A companion map DTO (does not touch the existing `StartingTownDto`, preserving the `GET /api/games/starting-towns` contract):
+Added the new test `GetMapTowns_DoesNotCrashWithDerivedTownNames` per the task spec.
 
-- `StartingTownMapDto(Towns, Trails)`
-- `StartingTownMapTownDto(Id, Name, Services, X, Y, Selectable)`
-- `StartingTownMapTrailDto(Id, FromTownId, ToTownId, RideDayDistance)`
+## TDD Evidence
 
-### 3. `src/WildBunch.Application/Games/Queries/GetStartingTownMapQuery.cs` + `GetStartingTownMapHandler.cs` (new)
-- `GetStartingTownMapQuery` — parameterless query record.
-- `GetStartingTownMapHandler.HandleAsync` — reuses `StartingTownCatalog.GetStartingTownCandidates()` to compute the candidate id set, then projects `SeedWorldMapLayout.GetMapTowns()` into `StartingTownMapTownDto` with a `Selectable` flag set from the candidate set. Trail edges come from `SeedWorldMapLayout.GetMapTrails()`. No eligibility logic is duplicated.
+### RED (before implementation)
+Command: `dotnet test --filter "FullyQualifiedName~GetStartingTownMapHandlerTests"`
+Result: 6/6 FAILED with `KeyNotFoundException: The given key 'lostcanyon' was not present in the dictionary.`
+The failure was expected because the seed-derived canonical world produces town names from the 40-entry name pool (e.g. "lostcanyon"), which are not in the hardcoded 9-entry `TownCoordinates` dictionary.
 
-### 4. `tests/WildBunch.Application.Tests/GetStartingTownMapHandlerTests.cs` (new)
-8 tests covering:
-- All 8 seeded towns are returned.
-- `Selectable` towns match `StartingTownCatalog.GetStartingTownCandidates()` (set equality, order-insensitive).
-- The 4 selectable towns are exactly emberfall, pinecross, redmesa, sagewell.
-- Selectable town ids match `GetStartingTownsHandler` output (proves the candidate source is shared, not a second algorithm).
-- Coordinates are deterministic across calls.
-- Trail edges carry the correct ride-day distances from `SeedWorldCatalog` (all 9 edges asserted).
-- Trail edges only connect rendered towns (no dangling edge endpoints).
-- All 9 seeded trails are present.
+### GREEN (after implementation)
+Command: `dotnet test --filter "FullyQualifiedName~GetStartingTownMapHandlerTests"`
+Result: `Passed! - Failed: 0, Passed: 7, Skipped: 0, Total: 7, Duration: 52 ms`
 
-## The DTO shape I chose and why
+## Files Changed
+- `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs` — replaced hardcoded dictionary with slot-based coordinate generator
+- `tests/WildBunch.Application.Tests/GetStartingTownMapHandlerTests.cs` — added crash-guard test, updated 3 tests to use slot-based trail IDs and canonical counts
 
-I chose to include **all 8 seeded towns** in the map DTO (with a `Selectable` boolean flag) plus **all 9 trail edges**, rather than only the 4 candidate towns.
+## Test Results
+- `GetStartingTownMapHandlerTests`: 7/7 passing, output pristine (no warnings in the test assembly output)
+- Full `WildBunch.Application.Tests`: 177 passed, 4 failed. The 4 failures are **pre-existing** from the broader BUNCH-107 refactor (verified by reverting only my 2 files and confirming the same 4 tests still fail). They are in `GetStartingTownsHandlerTests`, `PurchaseStoreItemHandlerTests`, and `GetTownStoreOffersHandlerTests` — outside this task's scope.
 
-Rationale:
-- The task brief requires the layout to cover all 8 towns so trail edges between non-candidate towns still render.
-- If the DTO only listed the 4 candidate towns, the 5 trail edges touching non-candidate towns (e.g. `trail-pine-hollow`, `trail-red-dry`, `trail-pine-hardpan`, `trail-pine-openpass`, `trail-hollow-sage`) would dangle — referencing town ids with no corresponding marker. That is not an honest representation for a frontend to render.
-- Including all 8 towns with a `Selectable` flag gives full spatial context (the player sees the whole world graph) while keeping the candidate source shared: `Selectable` is derived solely from `StartingTownCatalog.GetStartingTownCandidates()`. The frontend renders all towns as markers but only marks candidates as clickable.
-- This is the smallest honest representation that (a) covers all 8 towns, (b) keeps every trail edge connected to a rendered marker, and (c) reuses the BUNCH-102 eligibility source without duplicating it.
+## Self-Review Findings
+- Implementation matches the task spec's suggested code exactly.
+- Only the 2 in-scope files were modified and committed; the other 89 uncommitted files in the worktree belong to the broader BUNCH-107 refactor.
+- The 4 pre-existing Application.Tests failures are noted as a concern (below) but are not caused by this change.
 
-The existing `StartingTownDto` is left untouched, so the existing `GET /api/games/starting-towns` contract is not broken. The map read model is a separate companion projection.
-
-## What I tested and test results
-
-### Build
-```
-dotnet build WildBunch.sln
-...
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-```
-
-### Focused tests (TDD RED → GREEN)
-First run (RED) — wrote the test file before the implementation existed; after implementation, one test failed because the map DTO preserves catalog order while `GetStartingTownCandidates()` returns name-ordered towns. Fixed the test to compare as order-insensitive sets (the map DTO's town order is intentionally the catalog order, not the candidate order):
-
-```
-dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~GetStartingTownMapHandlerTests|FullyQualifiedName~GetStartingTownsHandlerTests"
-...
-Passed!  - Failed:     0, Passed:    11, Skipped:     0, Total:    11, Duration: 67 ms
-```
-
-### Full Application.Tests project (no regressions)
-```
-dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --no-build
-...
-Passed!  - Failed:     0, Passed:   170, Skipped:     0, Total:   170, Duration: 271 ms
-```
-
-## TDD evidence
-- Wrote `GetStartingTownMapHandlerTests.cs` first (RED: the handler/DTO/layout types did not exist, so the test project did not compile).
-- Implemented `SeedWorldMapLayout`, `StartingTownMapDto`, `GetStartingTownMapQuery`, `GetStartingTownMapHandler`.
-- Build succeeded; ran tests — 1 failed on ordering semantics (`SelectableTownsMatchStartingTownCandidates` compared name-ordered candidates against catalog-ordered selectable towns).
-- Corrected the test to compare order-insensitively (the ordering difference is intentional and correct: the map DTO keeps catalog order; the candidate list is name-ordered).
-- Re-ran — GREEN: 11/11 passed, 170/170 full project passed.
-
-## Files changed
-- `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs` (new)
-- `src/WildBunch.Application/Games/Models/StartingTownMapDto.cs` (new)
-- `src/WildBunch.Application/Games/Queries/GetStartingTownMapQuery.cs` (new)
-- `src/WildBunch.Application/Games/Queries/GetStartingTownMapHandler.cs` (new)
-- `tests/WildBunch.Application.Tests/GetStartingTownMapHandlerTests.cs` (new)
-
-## Self-review findings
-- No comments added; follows existing code style (records, no doc comments on DTOs/handlers, `ArgumentNullException.ThrowIfNull` on query).
-- `StartingTownDto` and the existing `GET /api/games/starting-towns` contract are untouched.
-- Map truth stays in `WildBunch.GameContent/NewGame/` next to `SeedWorldCatalog.cs`; the frontend will consume read data only. No map truth moved into the web project.
-- Eligibility logic is not duplicated: `GetStartingTownMapHandler` calls `StartingTownCatalog.GetStartingTownCandidates()` for the candidate set, same as `GetStartingTownsHandler`.
-- Ride-day distances are sourced from the canonical `World` built by `SeedWorldCatalog.CreateWorld`, not redeclared as literals in the layout — so they cannot drift from the catalog.
-- No DB tables added; no runtime session state normalized. Read-only query handler.
-- `SeedWorldMapLayout` is `public` (like `StartingTownCatalog`) so the Application handler can call it; `SeedWorldCatalog` remains `internal`.
-- No ADR log read this turn, so no ADR freshness responsibility triggered.
-
-## Issues or concerns
-- None. The endpoint wiring (controller route for `GetStartingTownMapQuery`) is intentionally out of scope for this task (Task 1 is the read model + layout; a later task wires the web/controller seam).
+## Concerns
+- 4 pre-existing test failures in `WildBunch.Application.Tests` (GetStartingTownsHandlerTests, PurchaseStoreItemHandlerTests, GetTownStoreOffersHandlerTests) exist in the worktree independent of this task. They are part of the broader BUNCH-107 refactor and will need to be addressed by their respective task slices.

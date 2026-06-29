@@ -1,84 +1,155 @@
-### Task 4: Prove React owns the final confirmation and game creation
+﻿## Task 4: Build WantedPosterResolver (boring + salt mode)
 
 **Files:**
-- Inspect: `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts`
-- Inspect: `src/WildBunch.Web/src/api/types.ts`
-- Inspect: `src/WildBunch.Web/src/api/wildBunchApi.ts`
-- Inspect: `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx`
-- Create or modify: `src/WildBunch.Web/src/tests/StartFlow.test.tsx` or the BUNCH-102 start-flow test surface
-- Create or modify: `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx`
+- Create: `src/WildBunch.Domain/Cases/WantedPosterResolver.cs`
+- Test: `tests/WildBunch.Domain.Tests/WantedPosterResolverTests.cs`
 
 **Interfaces:**
-- Consumes: the React-selected starting town and the existing `startNewGame` mutation from BUNCH-102.
-- Produces: proof that the final `POST /api/games` call still comes from React-owned confirmation, not Phaser.
+- Consumes: `CaseFile.PublicWarrants` (pool of 28), `CaseFile.KnownWarrants` (already collected), `SaltSource`, town slot index, visit count
+- Produces: `WantedPosterResolver.Resolve(CaseFile, int townSlotIndex, int visitCount, SaltSource? salt)` â†’ `Warrant?` (the warrant that surfaces on the wanted poster in this town on this visit, or null if pool exhausted)
 
-- [ ] **Step 1: Verify the selected-town request and command seams already exist from BUNCH-102.**
+Selection rules:
+- Boring mode (salt is null): `warrants[(townSlotIndex + visitCount) % eligibleCount]` where eligible = all PublicWarrants not already in KnownWarrants, and culprit warrant excluded unless killer released
+- Salt mode: hash(salt + townSlotIndex + visitCount) % eligibleCount
 
-Do not re-add `StartingTownId` to the request chain; just confirm the upstream seam and reuse it.
+- [ ] **Step 1: Write failing tests**
 
-- [ ] **Step 2: Keep Phaser out of the game-creation path.**
+```csharp
+public sealed class WantedPosterResolverTests
+{
+    [Fact]
+    public void BoringMode_SameTownSameVisit_ReturnsSameWarrant()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
 
-React owns the selection state and the confirm action. Phaser must not call `POST /api/games`.
+        var first = resolver.Resolve(caseFile, townSlotIndex: 2, visitCount: 0, salt: null);
+        var second = resolver.Resolve(caseFile, townSlotIndex: 2, visitCount: 0, salt: null);
 
-- [ ] **Step 3: Add tests proving the final confirmation still happens through the normal start flow.**
+        Assert.NotNull(first);
+        Assert.Equal(first!.Id, second!.Id);
+    }
 
-The map can select a town, but the game should only start after React-owned confirmation.
+    [Fact]
+    public void BoringMode_DifferentTowns_ReturnDifferentWarrants()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
 
-- [ ] **Step 4: Add falsifiable proof that Phaser does not own game truth.**
+        var town0 = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null);
+        var town1 = resolver.Resolve(caseFile, townSlotIndex: 1, visitCount: 0, salt: null);
 
-Tests should prove Phaser does not call `POST /api/games`, does not decide eligibility, does not store selected-town truth, and does not bypass the React-owned final confirmation.
+        Assert.NotNull(town0);
+        Assert.NotNull(town1);
+        Assert.NotEqual(town0!.Id, town1!.Id);
+    }
 
-## Global Constraints (binding for this task)
+    [Fact]
+    public void BoringMode_CulpritWarrantNotSurfacesUntilReleased()
+    {
+        var caseFile = BuildTestCaseFile(killerReleased: false);
+        var resolver = new WantedPosterResolver();
 
-- `GameSession` remains the live-play aggregate root; Phaser must not own gameplay truth.
-- The Phaser layer is presentation/input only. It may emit `townSelected` intent, but it must not calculate legal moves, start eligibility, or route truth.
-- React owns the selection state and the confirm action. Phaser must not call `POST /api/games`.
-- Do not add comments unless asked. Follow existing code style.
+        // Try all town/visit combos â€” culprit warrant should never surface
+        for (int town = 0; town < 8; town++)
+        {
+            for (int visit = 0; visit < 5; visit++)
+            {
+                var warrant = resolver.Resolve(caseFile, town, visit, salt: null);
+                Assert.NotNull(warrant);
+                Assert.NotEqual(InvestigationTargetKind.TrueCulprit, warrant!.Terms.TargetKind);
+            }
+        }
+    }
 
-## Task 3 output (already landed on this branch)
+    [Fact]
+    public void BoringMode_AlreadyKnownWarrantsAreSkipped()
+    {
+        var caseFile = BuildTestCaseFile();
+        // Reveal a warrant, then ensure it doesn't surface again
+        var resolver = new WantedPosterResolver();
+        var first = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null);
+        Assert.NotNull(first);
+        caseFile.RevealWarrant(first!);
 
-Task 3 (commits `412c6db` + `4f48590`) added:
-- `PhaserMapHost.tsx` — Phaser scene receives `mapData`/`selectedTownId`/`onTownSelected` props; emits intent via callback; does NOT call any API. The scene has a `selectTown(townId)` method that validates `selectable` and calls `onTownSelected`.
-- `StartingTownStep.tsx` — uses `getStartingTownMap` query, renders `PhaserMapHost`, keeps button fallback (filtered to selectable towns), calls `onSelectTown` for both map and buttons.
-- `PreSessionSurface.tsx` (unchanged from BUNCH-102) — `handleStartWithTown(townId)` → `flow.setSelectedTownId` → `flow.goToStep("creating")` → `startNewGame(request)`. This is the React-owned confirmation path.
-- `StartFlow.test.tsx` — already mocks `getStartingTownMap` + `phaser`, primes map data, and asserts `createGame` is called with `startingTownId` after selecting a town.
+        var next = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null);
+        Assert.NotNull(next);
+        Assert.NotEqual(first!.Id, next!.Id);
+    }
 
-## What this task adds
+    [Fact]
+    public void SaltMode_SameInputsSameSalt_ReturnsSameWarrant()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
+        var salt = new FixedSaltSource(42);
 
-This is primarily a **test-coverage task** to add falsifiable proof that:
-1. The final `POST /api/games` (`createGame`) call comes from React-owned confirmation, not Phaser.
-2. Phaser does not call `createGame` / `POST /api/games`.
-3. Phaser does not decide eligibility (the `selectable` flag comes from the backend, not Phaser).
-4. Phaser does not store selected-town truth (it receives `selectedTownId` as a prop, emits intent, stores nothing).
-5. The game only starts after React-owned confirmation (selecting a town on the map → `onSelectTown` → `handleStartWithTown` → `createGame`).
+        var first = resolver.Resolve(caseFile, townSlotIndex: 3, visitCount: 1, salt: salt);
+        var second = resolver.Resolve(caseFile, townSlotIndex: 3, visitCount: 1, salt: salt);
 
-### Test additions
+        Assert.Equal(first!.Id, second!.Id);
+    }
 
-In `PhaserMapHost.test.tsx` (or a new `PhaserMapHostTruthBoundary.test.tsx` if cleaner):
-- Assert the Phaser scene instance does NOT have access to `createGame` or any API function (verify the scene constructor only receives `mapData`, `selectedTownId`, `onTownSelected` — no API client).
-- Assert `selectTown` only calls `onTownSelected` and does NOT call any fetch/API.
-- Assert the scene does not store selected-town truth mutably (the `selectedTownId` field is `readonly`).
+    [Fact]
+    public void SaltMode_DifferentSalt_ReturnsDifferentWarrant()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
 
-In `StartFlow.test.tsx` (extend existing tests):
-- Add a test that proves selecting a town on the map (via the map host's `onTownSelected`) triggers `createGame` with the correct `startingTownId` — i.e. the full React-owned chain works end-to-end.
-- Add a test that proves `createGame` is NOT called if the map host mounts but no town is selected (no premature game creation).
-- If practical, add a test asserting the Phaser mock's `Game` constructor is called (map mounts) but `createGame` is not called until a town is selected.
+        var saltA = new FixedSaltSource(42);
+        var saltB = new FixedSaltSource(99);
 
-### Inspection (no changes needed unless drift found)
+        var first = resolver.Resolve(caseFile, townSlotIndex: 3, visitCount: 1, salt: saltA);
+        var second = resolver.Resolve(caseFile, townSlotIndex: 3, visitCount: 1, salt: saltB);
 
-- `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts` — verify `startNewGame` is the React-owned mutation that calls `createGame` (`POST /api/games`).
-- `src/WildBunch.Web/src/api/wildBunchApi.ts` — verify `createGame` is the only function that POSTs to `/api/games`.
-- `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx` — verify no API imports, no `createGame` reference, no fetch calls.
+        Assert.NotEqual(first!.Id, second!.Id);
+    }
+}
+```
 
-## Validation
+- [ ] **Step 2: Run tests to verify they fail**
 
-Run from `src/WildBunch.Web/`:
-- `npm run typecheck` — must pass
-- `npm test` — must pass (all tests including new ones)
+Run: `dotnet test --filter "FullyQualifiedName~WantedPosterResolverTests"`
+Expected: FAIL (type not found)
 
-## Architecture rules (binding)
+- [ ] **Step 3: Implement WantedPosterResolver**
 
-- Phaser must not call `POST /api/games`, must not decide eligibility, must not store selected-town truth.
-- React owns the selection state and the confirm action.
-- Do not add comments. Follow existing code style.
-- Tests should prove behavior and safety, not implementation trivia.
+```csharp
+namespace WildBunch.Domain.Cases;
+
+public sealed class WantedPosterResolver
+{
+    public Warrant? Resolve(CaseFile caseFile, int townSlotIndex, int visitCount, SaltSource? salt)
+    {
+        ArgumentNullException.ThrowIfNull(caseFile);
+
+        var eligible = caseFile.PublicWarrants
+            .Where(w => !caseFile.KnownWarrants.Any(k => k.Id.Equals(w.Id)))
+            .Where(w => w.Terms.TargetKind != InvestigationTargetKind.TrueCulprit || caseFile.KillerReleaseState.IsReleased)
+            .ToArray();
+
+        if (eligible.Length == 0) return null;
+
+        var index = salt is null
+            ? (townSlotIndex + visitCount) % eligible.Length
+            : Math.Abs(salt.GetHashCode() + townSlotIndex * 31 + visitCount * 17) % eligible.Length;
+
+        return eligible[index];
+    }
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `dotnet test --filter "FullyQualifiedName~WantedPosterResolverTests"`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A
+git commit -m "feat: add WantedPosterResolver with boring/salt dual determinism"
+```
+
+---
+
