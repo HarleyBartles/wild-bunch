@@ -52,6 +52,17 @@ Harley confirmed: **Easy** (difficulty) and **Boring** (entropy) are both player
 4. **Frontend difficulty copy**: The difficulty options in `SetupHuntStep` are bare labels ("Easy", "Standard", "Challenging", "Brutal") with no description. Adding short flavor text makes difficulty understandable as game pressure, not randomness.
 5. **Browser/playtest proof**: The issue requires at least one browser proof that Harley can observe materially different difficulty envelopes — not just that the Session dev panel label changes. The proof must show either derived travel-rule facts changing in the dev panel after forcing difficulty, or a travel preview whose difficulty-derived values (e.g., expected days, canteen capacity) differ between difficulties.
 
+### Doctrine self-healing (execution-time, out of implementation scope)
+
+BUNCH-107 moved difficulty and entropy OUT of the seed into pressure-owned / entropy-owned / player-owned layers. The vendored `wild-bunch-project-doctrine` skill reference at `.agents/skills/wild-bunch-project-doctrine/references/difficulty-entropy-seeded-world-setup.md` still asserts the pre-BUNCH-107 posture on lines 46-47:
+
+> - Difficulty and entropy are part of seed identity.
+> - A seed under a different difficulty or entropy is a different world setup.
+
+These are now false. The seed (`SeedWorld`) owns only the world/map layer; difficulty is pressure-owned (`DifficultyEnvelope.For`); entropy is entropy-owned (`EntropyPolicy` + `MysteryTruthResolver`); starting town is player/setup-owned (`StartingTownPolicy`).
+
+**Execution-time task (not implementation work):** On execution, the worker must create a Linear issue in the MARK project to repair the upstream skill reference in `HarleyBartles/agent-asset-marketplace` and re-sync the vendored copy. The vendored skill files must not be hand-edited in this repo — the fix goes upstream and re-syncs via the standard three-command sequence (`git submodule update --remote .agents/plugins/marketplace-source`, `.\scripts\sync-skills.ps1`, `python scripts\generate_index_mesh.py`). This is tracked as a self-healing follow-up, not a BUNCH-94 implementation deliverable, and does not block the difficulty implementation tasks.
+
 ### What is explicitly out of scope
 
 - Do not implement BUNCH-93 entropy variance behavior.
@@ -61,6 +72,7 @@ Harley confirmed: **Easy** (difficulty) and **Boring** (entropy) are both player
 - Do not change the UUID seed codec, descriptor shape, or round-trip behavior.
 - Do not retroactively change starting health/cash when dev-forcing difficulty mid-session.
 - Do not add a "clear difficulty" operation — the dev can force back to the original difficulty. Unlike salt (which has a "runtime" default), difficulty always has a specific value.
+- Do not hand-edit vendored skill files in this repo. The doctrine self-healing above is upstream + re-sync, not a direct edit.
 
 ## Global Constraints
 
@@ -95,7 +107,7 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 | `Events/DevDifficultyForced.cs` | **Create.** New typed domain event: dev forced the session difficulty to a new value. Dev-only event. |
 | `Game/GameSession.cs` (modify) | Add `ForceDevDifficulty(GameDifficulty)` command method and `Apply(DevDifficultyForced)` method. |
 | `Game/GameSessionEventReplay.cs` (modify) | Add `DevDifficultyForced` case to `ApplyEvent` switch. |
-| `Game/GameSession.cs` `ApplyProducedEvent` (modify) | Add `DevDifficultyForced` case to the produce-time dispatch switch (around line 390). |
+| `Game/GameSession.cs` `ApplyProducedEvent` (modify) | Add `DevDifficultyForced` case to the produce-time dispatch switch (after the `DevSaltSourceCleared` case, around line 422). |
 
 ### Persistence layer (src/WildBunch.Persistence/)
 
@@ -110,7 +122,7 @@ Tests at both domain aggregate and integration levels must prove that `force-dif
 | `Dev/Commands/ForceDevDifficultyCommand.cs` | **Create.** Command record carrying `GameSessionId` and `GameDifficulty`. |
 | `Dev/Commands/ForceDevDifficultyHandler.cs` | **Create.** Handler that loads session, calls `ForceDevDifficulty`, stores/commits via `ExecuteWithRetryAsync`. |
 | `Dev/Models/ForceDevDifficultyRequestDto.cs` | **Create.** Dev-only request DTO carrying the new difficulty string value. |
-| `Dev/Models/SessionDevContextDto.cs` (modify) | Add `TravelRulesDevDto` nested record and `TravelRules` property carrying derived travel-rule facts (canteen capacity, ride day progress, encounter health losses). |
+| `Dev/Models/SessionDevContextDto.cs` (modify) | Add `TravelRulesDevDto` nested record and a `TravelRules` **record parameter** (the DTO is a positional record — add `TravelRulesDevDto? TravelRules` as the last constructor parameter, not an init-only property) carrying derived travel-rule facts (canteen capacity, ride day progress, encounter health losses). |
 | `Dev/Mapping/SessionDevContextMapper.cs` (modify) | Map `session.TravelRules` facts into the new `TravelRules` DTO field. |
 
 ### API layer (src/WildBunch.Api/)
@@ -848,10 +860,23 @@ public sealed record TravelRulesDevDto(
     int EncounterRunFootHealthLoss);
 ```
 
-Add a `TravelRules` property to `SessionDevContextDto`:
+Add `TravelRules` as a **record parameter** to `SessionDevContextDto` (it is a positional record — do not use an init-only property):
 
 ```csharp
-public TravelRulesDevDto? TravelRules { get; init; }
+public sealed record SessionDevContextDto(
+    Guid SessionId,
+    string Status,
+    string GameDifficulty,
+    string GameEntropy,
+    SaltPostureDevDto SaltPosture,
+    ClockDevDto Clock,
+    string? CurrentTownId,
+    string? CurrentTownName,
+    string CurrentActionContext,
+    bool HasActiveJourney,
+    bool SeedCodeRetained,
+    string? SeedCodeText,
+    TravelRulesDevDto? TravelRules);
 ```
 
 - [ ] **Step 2: Map derived travel-rule facts in SessionDevContextMapper**
@@ -969,7 +994,7 @@ In `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx`:
 
 1. Import `forceDevDifficulty` from `../devApi` (add to existing import on line 5).
 2. Import `SegmentedToggle` from `../../components/start-flow/SegmentedToggle`.
-3. Add a `difficultyOptions` constant (same values as `SetupHuntStep`):
+3. Add a `difficultyOptions` constant. The dev panel DTO carries `gameDifficulty` as a string (e.g. `"Standard"`), and the `forceDevDifficulty` API accepts a string, so use string values here — not the numeric `GameDifficulty` enum used in `SetupHuntStep`. `SegmentedToggle` is generic over `T extends string | number`, so string values are valid:
 
 ```typescript
 const difficultyOptions: ReadonlyArray<{ value: string; label: string }> = [
@@ -1116,16 +1141,9 @@ git commit -m "BUNCH-94: add difficulty control and derived travel-rule facts to
 
 - [ ] **Step 1: Add difficulty descriptions**
 
-In `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx`, update the `difficultyOptions` to include descriptions:
+In `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx`, the `difficultyOptions` array already exists (lines 23-28) — do NOT re-declare it. Only add a `difficultyDescriptions` map keyed by `GameDifficulty`:
 
 ```typescript
-const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
-  { value: 1, label: "Easy" },
-  { value: 0, label: "Standard" },
-  { value: 2, label: "Challenging" },
-  { value: 3, label: "Brutal" },
-];
-
 const difficultyDescriptions: Record<GameDifficulty, string> = {
   1: "Forgiving trails, generous supplies, softer consequences.",
   0: "A fair chase. The trail bites back but gives ground.",
@@ -1134,7 +1152,7 @@ const difficultyDescriptions: Record<GameDifficulty, string> = {
 };
 ```
 
-Add a description line below the difficulty `SegmentedToggle`:
+Add a description line below the difficulty `SegmentedToggle` inside the existing `<FieldGroup>` (the `FieldGroup` and `GroupLabel` styled components already exist at lines 183/188):
 
 ```tsx
 <FieldGroup>
@@ -1150,7 +1168,7 @@ Add a description line below the difficulty `SegmentedToggle`:
 </FieldGroup>
 ```
 
-Add the styled component:
+Add the styled component (local to this file, per the styling stack rule):
 
 ```typescript
 const DifficultyDescription = styled.p`
@@ -1245,11 +1263,12 @@ Start the API and frontend dev servers. Open the browser. Take screenshots showi
    - The difficulty label changed to "Brutal"
    - The derived travel-rule facts changed (canteen capacity = 1, mounted ride/day = 0.5, encounter fight ammo health loss = higher)
    This proves forcing difficulty changes a materially different difficulty envelope, not just a label.
-3. **Optional — travel preview proof**: If feasible without a long playtest, start a journey and observe that the travel preview reflects the new difficulty's ride-day progress (Brutal's slower mounted progress → more expected days than Standard for the same trail).
+3. **Dev panel compact AND expanded mode** (dev-overlay doctrine §9 closeout proof): Screenshot the Session dev panel in compact mode (default, with `Expand` button visible) and in expanded mode (after clicking Expand, with `Shrink` button visible). Both must show the difficulty control and derived travel-rule facts. Expanded mode must use width (two columns), not a tall single column (dev-overlay doctrine §4).
+4. **Optional — travel preview proof**: If feasible without a long playtest, start a journey and observe that the travel preview reflects the new difficulty's ride-day progress (Brutal's slower mounted progress → more expected days than Standard for the same trail).
 
 Save screenshots to `.agents/superpowers/output/screenshots/` (git-ignored).
 
-The proof must show that derived travel-rule facts change when difficulty is forced — a label-only change is not sufficient evidence for BUNCH-94's goal.
+The proof must show that derived travel-rule facts change when difficulty is forced — a label-only change is not sufficient evidence for BUNCH-94's goal. Per dev-overlay doctrine §9, closeout proof must include compact and expanded mode screenshots and test results for backend domain/application/API and frontend tests.
 
 - [ ] **Step 8: Grep proof — no stale travel-only names**
 
