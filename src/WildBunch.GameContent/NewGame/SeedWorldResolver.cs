@@ -37,6 +37,16 @@ namespace WildBunch.GameContent.NewGame;
 /// </summary>
 public static class SeedWorldResolver
 {
+    /// <summary>
+    /// Resolver contract version. Increment when the codec layout changes
+    /// in a way that breaks round-trip compatibility.
+    ///
+    /// Version history:
+    /// - v1-v5: Legacy codec versions (pre-BUNCH-107)
+    /// - v6: BUNCH-107 refactoring — direct bit-packing (O(1)), 22 bits used,
+    ///       106 reserved. Separated seed-owned (map/variant) from pressure-owned
+    ///       (difficulty/entropy) and player/setup-owned (starting town).
+    /// </summary>
     public const string ResolverContractVersion = "resolver-v6";
     private const string SeedCodeFormat = "D";
 
