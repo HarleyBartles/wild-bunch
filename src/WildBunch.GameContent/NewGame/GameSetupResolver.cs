@@ -55,8 +55,7 @@ internal sealed class GameSetupResolver
                 source,
                 world,
                 mysteryTruth.ResolvedCulpritIndex,
-                mysteryTruth.ResolvedAccusationIndex,
-                startingTownId);
+                mysteryTruth.ResolvedAccusationIndex);
 
         // 6. Compute final cash: difficulty-owned base + entropy-capped seed bonus.
         var finalCash = difficulty.StartingCash + mysteryTruth.AppliedCashBonus;
