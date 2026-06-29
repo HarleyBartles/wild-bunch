@@ -85,8 +85,8 @@ public sealed class GameSessionWantedPostersTests
         // reveal the same warrants/clues as in a town with NoticeBoard.
         var session = CreateSession(TownServices.None);
 
-        // Prove the precondition: the town has no NoticeBoard service.
-        Assert.False((session.CurrentTown.Services & TownServices.None) != 0);
+        // Prove the precondition: the town carries no services (TownServices.None).
+        Assert.Equal(TownServices.None, session.CurrentTown.Services);
 
         var result = session.ReadWantedPosters();
 

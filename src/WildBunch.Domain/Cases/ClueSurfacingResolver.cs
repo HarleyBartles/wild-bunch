@@ -56,9 +56,13 @@ public sealed class ClueSurfacingResolver
         unchecked
         {
             var hash = 17;
-            hash = hash * 31 + salt.GetHashCode(StringComparison.Ordinal);
-            hash = hash * 31 + townSlotIndex;
-            hash = hash * 31 + visitCount;
+            foreach (var c in salt)
+            {
+                hash = (hash * 31) + c;
+            }
+
+            hash = (hash * 31) + townSlotIndex;
+            hash = (hash * 31) + visitCount;
             return hash;
         }
     }

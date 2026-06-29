@@ -2741,13 +2741,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
         }
 
-        var warrant = _wantedPosterResolver.Resolve(CaseFile, CurrentTownSlotIndex, CurrentTownVisitCount, SaltSource);
+        // Boring mode (SaltSourceMode.Fixed) is deterministic and carries no
+        // entropy, so pass null to exercise the resolvers' boring-mode branch
+        // (simple slot/visit rotation) rather than their salt-hash branch.
+        var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
+        var warrant = _wantedPosterResolver.Resolve(CaseFile, CurrentTownSlotIndex, CurrentTownVisitCount, boringSalt);
         var clue = _clueSurfacingResolver.Resolve(
             CaseFile,
             InvestigationSourceKind.SheriffWarrants,
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
-            SaltSource);
+            boringSalt);
         if (clue is not null && !IsPlayerKnownClue(clue))
         {
             clue = null;
@@ -3128,7 +3132,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             InvestigationSourceKind.TelegraphLead,
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
-            SaltSource);
+            SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource);
         if (clue is not null && !IsPlayerKnownClue(clue))
         {
             clue = null;
@@ -3194,7 +3198,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             InvestigationSourceKind.LocalGossip,
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
-            SaltSource);
+            SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource);
         if (clue is not null && !IsPlayerKnownClue(clue))
         {
             clue = null;
