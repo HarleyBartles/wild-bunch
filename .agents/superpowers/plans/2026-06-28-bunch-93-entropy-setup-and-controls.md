@@ -146,7 +146,7 @@ After execution, Harley can:
 - `src/WildBunch.Application/Dev/Commands/SetDevEntropyCommand.cs` (new)
 - `src/WildBunch.Application/Dev/Commands/SetDevEntropyHandler.cs` (new)
 - `src/WildBunch.Application/Dev/Models/SetDevEntropyRequestDto.cs` (new)
-- `src/WildBunch.Api/Dev/DevEndpoints.cs` — map POST `/sessions/{id}/session/set-entropy`
+- `src/WildBunch.Api/Dev/DevEndpoints.cs` — map POST `/sessions/{id:guid}/session/set-entropy`
 - `src/WildBunch.Api/DependencyInjection.cs` — register handler (if needed)
 - `src/WildBunch.Web/src/dev/devApi.ts` — add `setDevEntropy` call
 - `src/WildBunch.Web/src/dev/panels/SessionDevPanel.tsx` — change "Entropy (inspect)" to an editable control
@@ -162,7 +162,7 @@ After execution, Harley can:
 5. Serialize/deserialize in `GameSessionJsonSerializer.Events.cs` (follow the `DevSaltSourceForced` serialization shape).
 6. `SetDevEntropyCommand` + `SetDevEntropyHandler` extending `GameSessionCommandHandler`.
 7. `SetDevEntropyRequestDto` with `GameEntropy` string field.
-8. Dev endpoint POST `/sessions/{id}/session/set-entropy` — guarded by `DevRoleGuard.EnsureDevAccess()`.
+8. Dev endpoint POST `/sessions/{id:guid}/session/set-entropy` — guarded by `DevRoleGuard.EnsureDevAccess()`.
 9. Frontend `devApi.ts` + `SessionDevPanel.tsx` — replace inspect-only row with a control (select or segmented toggle) that calls the new endpoint and refreshes the dev context.
 
 **Doctrine compliance (`.agents/dev-overlay/DOCTRINE.md`):**
