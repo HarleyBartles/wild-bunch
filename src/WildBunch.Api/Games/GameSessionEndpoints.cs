@@ -40,6 +40,11 @@ public static class GameSessionEndpoints
             .Produces<StartingTownMapDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        games.MapGet("{id:guid}/world-map", GetWorldMapAsync)
+            .WithName("GetWorldMap")
+            .Produces<StartingTownMapDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         games.MapGet("prologue", GetPrologueAsync)
             .WithName("GetPrologue")
             .Produces<PrologueDto>(StatusCodes.Status200OK);
@@ -141,6 +146,22 @@ public static class GameSessionEndpoints
     }
 
     private static async Task<IResult> GetStartingTownMapAsync(
+        Guid id,
+        GetStartingTownMapHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var map = await handler.HandleAsync(new GetStartingTownMapQuery(id), cancellationToken);
+            return Results.Ok(map);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> GetWorldMapAsync(
         Guid id,
         GetStartingTownMapHandler handler,
         CancellationToken cancellationToken)

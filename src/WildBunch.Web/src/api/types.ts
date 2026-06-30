@@ -16,6 +16,10 @@ export const JourneyStatus = {
   Failed: 3,
 } as const;
 export type TravelMode = 0 | 1;
+export const TravelMode = {
+  Mounted: 0,
+  Foot: 1,
+} as const;
 
 export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export const AvailableActionKind = {
