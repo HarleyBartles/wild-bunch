@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
+import { TravelMode } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
 import { useGameSession } from "../state/useGameSession";
 import { InventoryPanel } from "../components/InventoryPanel";
@@ -199,7 +200,7 @@ export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
             <Stack>
               <TravelPrepRide>
                 That's a <strong>{rideDays}-day ride</strong>
-                {preview.travelMode === 1 ? " on horseback" : " on foot"}.
+                {preview.travelMode === TravelMode.Mounted ? " on horseback" : " on foot"}.
               </TravelPrepRide>
               <InventoryPanel inventory={session.inventory} />
               <TravelPrepActions>
