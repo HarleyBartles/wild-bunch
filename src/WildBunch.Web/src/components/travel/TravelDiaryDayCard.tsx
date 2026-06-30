@@ -1,7 +1,6 @@
 import type { TravelDiaryDayDto } from "../../api/types";
 import { JourneyStatus } from "../../api/types";
 import { formatHorseTravelState, formatJourneyStatus, formatTravelMode } from "../../ui/formatters";
-import { formatSignedNumber } from "./travelShared";
 import styled from "styled-components";
 
 interface TravelDiaryDayCardProps {
@@ -58,16 +57,6 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
       {day.trailEvent ? (
         <TrailNote>
           <strong>{day.trailEvent.title}</strong>
-          <TrailNoteMeta>
-            <span>Wallet Δ {formatSignedNumber(day.trailEvent.walletDelta, 2)}</span>
-            <span>Food Δ {formatSignedNumber(day.trailEvent.foodDelta)}</span>
-            <span>Canteen Δ {formatSignedNumber(day.trailEvent.canteenChargeDelta)}</span>
-            <span>Delay Δ {formatSignedNumber(day.trailEvent.delayDays)}</span>
-            <span>Lawman heat Δ {formatSignedNumber(day.trailEvent.heatIncrease)}</span>
-            {hasHorseState ? <span>Horse hunger Δ {formatSignedNumber(day.trailEvent.horseHungerDelta)}</span> : null}
-            {hasHorseState ? <span>Horse thirst Δ {formatSignedNumber(day.trailEvent.horseThirstDelta)}</span> : null}
-            {hasHorseState ? <span>Horse exhaustion Δ {formatSignedNumber(day.trailEvent.horseExhaustionDelta)}</span> : null}
-          </TrailNoteMeta>
         </TrailNote>
       ) : null}
 
@@ -75,13 +64,6 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
         <ResolutionNote>
           <strong>{day.encounterResolution.choiceLabel}</strong>
           <p>{renderResolutionSummary(day.encounterResolution)}</p>
-          <TrailNoteMeta>
-            <span>Health Δ {formatSignedNumber(day.encounterResolution.healthDelta)}</span>
-            <span>Wallet Δ {formatSignedNumber(day.encounterResolution.walletDelta, 2)}</span>
-            <span>Ammo Δ {formatSignedNumber(-day.encounterResolution.ammoSpent)}</span>
-            <span>Lawman heat Δ {formatSignedNumber(day.encounterResolution.heatIncrease)}</span>
-            {hasHorseState ? <span>Horse exhaustion Δ {formatSignedNumber(day.encounterResolution.horseExhaustionDelta)}</span> : null}
-          </TrailNoteMeta>
         </ResolutionNote>
       ) : null}
 
@@ -108,17 +90,15 @@ function renderResolutionSummary(resolution: NonNullable<TravelDiaryDayDto["enco
 function renderDayMeta(day: TravelDiaryDayDto) {
   const hasHorseState = day.horseStateAfter !== null;
   const pieces = [
-    `Health ${day.currentHealth} (${formatSignedNumber(day.healthDelta)})`,
-    `Wallet ${day.currentWallet.toFixed(2)} (${formatSignedNumber(day.walletDelta, 2)})`,
-    `Food ${day.currentFood} (${formatSignedNumber(day.foodDelta)})`,
-    `Canteen ${day.currentCanteenCharges} (${formatSignedNumber(day.canteenChargeDelta)})`,
-    `Ammo ${day.currentAmmo} (${formatSignedNumber(-day.ammoSpent)})`,
-    `Lawman heat ${day.currentHeat} (${formatSignedNumber(day.heatIncrease)})`,
+    `Health ${day.currentHealth}`,
+    `Wallet ${day.currentWallet.toFixed(2)}`,
+    `Food ${day.currentFood}`,
+    `Canteen ${day.currentCanteenCharges}`,
+    `Lawman heat ${day.currentHeat}`,
   ];
 
   if (hasHorseState) {
     pieces.splice(3, 0, `Horse ${formatHorseTravelState(day.horseStateAfter)}`);
-    pieces.splice(4, 0, `Horse feed ${day.currentHorseFeed} (${formatSignedNumber(day.horseFeedDelta)})`);
   }
 
   return pieces.join(" | ");
@@ -223,14 +203,6 @@ const TrailNote = styled.div`
     margin: 0;
     color: color-mix(in srgb, var(--text) 80%, transparent);
   }
-`;
-
-const TrailNoteMeta = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  color: color-mix(in srgb, var(--text) 64%, transparent);
-  font-size: 0.84rem;
 `;
 
 const ResolutionNote = styled.div`

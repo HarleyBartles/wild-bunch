@@ -1,29 +1,12 @@
 import styled from "styled-components";
-import type { InventoryCapabilitiesDto, InventoryDto, InventoryItemDto } from "../api/types";
-import { formatCanteenState, formatCapabilityLabel, formatHorseTravelState, formatItemKind } from "../ui/formatters";
+import type { InventoryDto, InventoryItemDto } from "../api/types";
+import { formatCanteenState, formatHorseTravelState, formatItemKind } from "../ui/formatters";
 import {
   StatusCard,
   StatList,
   Stack,
   ItemCard,
 } from "./ui/sharedStyled";
-
-const TagRow = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-`;
-
-const Tag = styled.span`
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--muted);
-`;
 
 const ItemList = styled(Stack)`
   margin-top: 16px;
@@ -56,14 +39,6 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           <dt>Canteen</dt>
           <dd>{formatCanteenState(inventory.canteenState)}</dd>
         </div>
-        <div>
-          <dt>Loadout items</dt>
-          <dd>{inventory.items.length}</dd>
-        </div>
-        <div>
-          <dt>Capabilities</dt>
-          <dd>{Object.values(inventory.capabilities).filter(Boolean).length}</dd>
-        </div>
       </StatList>
       <ItemList>
         {inventory.items.map((item: InventoryItemDto) => (
@@ -71,24 +46,19 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             <strong>
               {formatItemKind(item.kind)} x {item.quantity}
             </strong>
-            <ItemDetailLine>
-              {[
-                item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null,
-                item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null,
-              ]
-                .filter(Boolean)
-                .join(" | ") || "No travel state"}
-            </ItemDetailLine>
+            {item.horseState || item.canteenState ? (
+              <ItemDetailLine>
+                {[
+                  item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null,
+                  item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" | ")}
+              </ItemDetailLine>
+            ) : null}
           </ItemCard>
         ))}
       </ItemList>
-      <TagRow>
-        {Object.entries(inventory.capabilities).map(([key, enabled]) => (
-          <Tag key={key}>
-            {formatCapabilityLabel(key as keyof InventoryCapabilitiesDto)}: {enabled ? "Yes" : "No"}
-          </Tag>
-        ))}
-      </TagRow>
     </StatusCard>
   );
 }

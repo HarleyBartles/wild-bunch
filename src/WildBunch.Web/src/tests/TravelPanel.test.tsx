@@ -256,9 +256,8 @@ describe("TravelPanel", () => {
     expect(screen.getByText(/^horse$/i)).toBeInTheDocument();
     expect(screen.getAllByText("I set out for Dust Fork on a 3-day badlands trail by mounted travel.")).toHaveLength(1);
     expect(screen.getByText("The first light caught the dust behind us, and the road stayed open.")).toBeInTheDocument();
-    expect(screen.getByText(/Health 9 \(0\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Wallet 14\.00 \(0\.00\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ammo 0 \(0\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Health 9 \| Wallet 14\.00/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Ammo 0/i)).not.toBeInTheDocument();
     const advanceButton = await screen.findByRole("button", { name: /advance travel day/i });
     expect(diaryHeading.compareDocumentPosition(advanceButton) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     await waitFor(() => {
@@ -368,7 +367,7 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session, false, onTurnResult);
 
-    const fightBullets = await screen.findByLabelText(/fight bullets/i);
+    const fightBullets = await screen.findByLabelText(/^bullets$/i);
     fireEvent.change(fightBullets, { target: { value: "3" } });
 
     await user.click(screen.getByRole("button", { name: "Fight" }));
@@ -410,7 +409,7 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session, false, onTurnResult);
 
-    const bribeAmount = await screen.findByLabelText(/bribe amount/i);
+    const bribeAmount = await screen.findByLabelText(/^bribe$/i);
     fireEvent.change(bribeAmount, { target: { value: "7.25" } });
 
     await user.click(screen.getByRole("button", { name: "Bribe" }));

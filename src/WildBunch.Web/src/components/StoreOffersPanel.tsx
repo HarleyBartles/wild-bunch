@@ -4,7 +4,6 @@ import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
 import { formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
 import {
   StatusCard,
-  StatList,
   Stack,
   ItemCard,
   Muted,
@@ -113,24 +112,6 @@ export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: Sto
       {!loading && storeOffers === null ? <Muted>Town catalog unavailable.</Muted> : null}
       {storeOffers ? (
         <>
-          <StatList>
-            <div>
-              <dt>Town</dt>
-              <dd>{storeOffers.townName}</dd>
-            </div>
-            <div>
-              <dt>Town id</dt>
-              <dd>{storeOffers.townId}</dd>
-            </div>
-            <div>
-              <dt>Catalog</dt>
-              <dd>{storeOffers.available ? "Available" : "Unavailable"}</dd>
-            </div>
-            <div>
-              <dt>Source</dt>
-              <dd>{storeOffers.sourceNote}</dd>
-            </div>
-          </StatList>
           <OfferList>
             {storeOffers.offers.length > 0 ? (
               storeOffers.offers.map((offer) => (
