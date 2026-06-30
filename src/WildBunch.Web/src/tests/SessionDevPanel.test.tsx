@@ -4,13 +4,14 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SessionDevPanel } from "../dev/panels/SessionDevPanel";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng } from "../dev/devApi";
+import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng, setDevEntropy } from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionDevContext: vi.fn(),
   lockRng: vi.fn(),
   clearRng: vi.fn(),
   forceDevDifficulty: vi.fn(),
+  setDevEntropy: vi.fn(),
   getSessionAudit: vi.fn(),
   getTravelDevContext: vi.fn(),
   forceTravelOverride: vi.fn(),
@@ -45,6 +46,7 @@ const mockedGetContext = vi.mocked(getSessionDevContext);
 const mockedLock = vi.mocked(lockRng);
 const mockedClear = vi.mocked(clearRng);
 const mockedForceDifficulty = vi.mocked(forceDevDifficulty);
+const mockedSetEntropy = vi.mocked(setDevEntropy);
 
 afterEach(() => {
   cleanup();
@@ -179,6 +181,37 @@ describe("SessionDevPanel", () => {
 
     await waitFor(() => {
       expect(mockedForceDifficulty).toHaveBeenCalledWith("test-game-5", { difficulty: "Brutal" });
+    });
+  });
+
+  it("renders entropy control", async () => {
+    seedGameId("test-game-6");
+    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-6" });
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByText("Active")).toBeInTheDocument();
+    });
+    // Entropy SegmentedToggle labels are visible
+    expect(screen.getByRole("button", { name: "Boring" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Classic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Wild" })).toBeInTheDocument();
+  });
+
+  it("calls setDevEntropy when entropy option is clicked", async () => {
+    seedGameId("test-game-7");
+    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-7" });
+    mockedSetEntropy.mockResolvedValue(undefined);
+    renderPanel();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Wild" })).toBeInTheDocument();
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Wild" }));
+
+    await waitFor(() => {
+      expect(mockedSetEntropy).toHaveBeenCalledWith("test-game-7", { entropy: "Wild" });
     });
   });
 });

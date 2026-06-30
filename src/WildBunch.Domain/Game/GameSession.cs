@@ -423,6 +423,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case DevDifficultyForced ddf:
                 Apply(ddf);
                 break;
+            case DevEntropyChanged dec:
+                Apply(dec);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }
@@ -818,6 +821,18 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(DevDifficultyForced e)
     {
         GameDifficulty = e.ForcedDifficulty;
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a DevEntropyChanged event. Changes the session entropy,
+    /// which affects travel variance going forward. Dev-only event — does
+    /// not affect past travel outcomes or hidden truth.
+    /// See BUNCH-93.
+    /// </summary>
+    internal void Apply(DevEntropyChanged e)
+    {
+        GameEntropy = e.NewEntropy;
         _version++;
     }
 
@@ -1248,6 +1263,25 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         ProduceEvent(new DevDifficultyForced
         {
             ForcedDifficulty = difficulty
+        });
+    }
+
+    /// <summary>
+    /// Dev command: forces the session entropy to a new value for playtesting.
+    /// Changes the travel variance profile going forward. Does not retroactively
+    /// change past travel outcomes or hidden truth.
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-93.
+    /// </summary>
+    public void SetDevEntropy(GameEntropy entropy)
+    {
+        if (!Enum.IsDefined(typeof(GameEntropy), entropy))
+        {
+            throw new ArgumentException("Invalid game entropy value.", nameof(entropy));
+        }
+
+        ProduceEvent(new DevEntropyChanged
+        {
+            NewEntropy = entropy
         });
     }
 

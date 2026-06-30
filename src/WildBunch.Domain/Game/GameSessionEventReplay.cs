@@ -164,6 +164,9 @@ public sealed partial class GameSession
             case DevDifficultyForced ddf:
                 session.Apply(ddf);
                 break;
+            case DevEntropyChanged dec:
+                session.Apply(dec);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
         }

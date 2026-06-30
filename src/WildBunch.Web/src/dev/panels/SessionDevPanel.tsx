@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { SegmentedToggle } from "../../components/start-flow/SegmentedToggle";
-import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng } from "../devApi";
+import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng, setDevEntropy } from "../devApi";
 
 interface SessionDevPanelProps {
   expanded?: boolean;
@@ -14,6 +14,13 @@ const difficultyOptions: ReadonlyArray<{ value: string; label: string }> = [
   { value: "Standard", label: "Standard" },
   { value: "Challenging", label: "Challenging" },
   { value: "Brutal", label: "Brutal" },
+];
+
+const entropyOptions: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "Boring", label: "Boring" },
+  { value: "Classic", label: "Classic" },
+  { value: "Adventurous", label: "Adventurous" },
+  { value: "Wild", label: "Wild" },
 ];
 
 export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
@@ -76,6 +83,19 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
       refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force difficulty.");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const handleSetEntropy = async (value: string) => {
+    setError(null);
+    setActionPending(true);
+    try {
+      await setDevEntropy(gameId, { entropy: value });
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set entropy.");
     } finally {
       setActionPending(false);
     }
@@ -175,10 +195,17 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
               <Value>{data?.travelRules?.encounterRunFootHealthLoss ?? "—"}</Value>
             </Row>
           </TravelRulesGrid>
-          <Row>
-            <Label>Entropy (inspect):</Label>
-            <Value>{data?.gameEntropy}</Value>
-          </Row>
+          <Field>
+            <Label>Entropy:</Label>
+            <SegmentedToggle
+              options={entropyOptions}
+              value={data?.gameEntropy ?? "Classic"}
+              onSelect={handleSetEntropy}
+            />
+          </Field>
+          <MutedText>
+            Setting entropy changes travel variance going forward. It does not change past travel outcomes or hidden truth.
+          </MutedText>
           <Row>
             <Label>Salt mode:</Label>
             <Value>{data?.saltPosture?.mode}</Value>

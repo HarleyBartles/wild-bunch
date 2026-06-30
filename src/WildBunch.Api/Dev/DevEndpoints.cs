@@ -81,6 +81,13 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest);
 
+        dev.MapPost("/sessions/{id:guid}/session/set-entropy", SetDevEntropyAsync)
+            .WithName("SetDevEntropy")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
+
         return app;
     }
 
@@ -365,6 +372,44 @@ public static class DevEndpoints
             }
 
             await handler.HandleAsync(new ForceDevDifficultyCommand(id, difficulty), cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    }
+
+    private static async Task<IResult> SetDevEntropyAsync(
+        Guid id,
+        DevRoleGuard guard,
+        SetDevEntropyHandler handler,
+        SetDevEntropyRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            if (request is null || string.IsNullOrWhiteSpace(request.Entropy))
+            {
+                return Results.BadRequest("Entropy is required.");
+            }
+
+            if (!Enum.TryParse<GameEntropy>(request.Entropy, ignoreCase: true, out var entropy)
+                || !Enum.IsDefined(typeof(GameEntropy), entropy))
+            {
+                return Results.BadRequest($"Invalid entropy value: {request.Entropy}");
+            }
+
+            await handler.HandleAsync(new SetDevEntropyCommand(id, entropy), cancellationToken);
             return Results.NoContent();
         }
         catch (DevAccessDeniedException)
