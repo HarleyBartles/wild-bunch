@@ -62,7 +62,7 @@ Every execution PR must include the updated repo-resident plan file with checked
 
 Use `/connector-safety` as mandatory for Linear connector writes and blocked-write recovery, including issue create or update, comments, status changes, labels, relations or blockers, documents, assignments, and project moves. If a Linear write is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, route into `/connector-safety` immediately instead of retrying from memory or paraphrasing the same payload.
 
-For any mention of Linear `delegate` or `!`-prefixed labels, defer to `/linear` as the owning connector surface and keep this skill focused on packet shape.
+For any mention of Linear `delegate` or `!`-prefixed labels, defer to `/using-linear` as the owning connector surface and keep this skill focused on packet shape.
 
 For normal Linear packets that are long, dense, connector-hostile, or need attached docs for source seams, plans, guardrails, validation, coverage maps, or evidence, compact the issue directly in place and keep the issue body as the TOC/control surface. For worker-ready repo tasks, route the packet through `linear-issue-shaping` and follow its compact worker issue-shape reference. Do not duplicate the compact issue-shape procedure here.
 
