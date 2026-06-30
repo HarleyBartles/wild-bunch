@@ -14,13 +14,13 @@ internal static class BoringScenarioBuilder
         => new(
             ScenarioName: "MountedTravelReady",
             Fixture: ScenarioSeedCatalog.CanonicalMountedStandard,
-            PreviewDestinationTownId: "redmesa");
+            PreviewDestinationTownId: "quartzsite");
 
     public static BoringScenario NoHorseFootTravelReady()
         => new(
             ScenarioName: "NoHorseFootTravelReady",
             Fixture: ScenarioSeedCatalog.NoHorseLightEasy,
-            PreviewDestinationTownId: "redmesa");
+            PreviewDestinationTownId: "quartzsite");
 
     public static BoringScenario HighRiskFoeInterruptRoute()
         => new(
@@ -31,7 +31,7 @@ internal static class BoringScenarioBuilder
         => new(
             ScenarioName: "PinecrossServicesOrWantedPosterReady",
             Fixture: ScenarioSeedCatalog.CanonicalPinecrossServices,
-            PreviewDestinationTownId: "redmesa");
+            PreviewDestinationTownId: "quartzsite");
 }
 
 internal sealed record BoringScenario(
@@ -46,7 +46,7 @@ internal sealed record BoringScenario(
     public void AssertReady()
         => Fixture.AssertCachedFixtureContract();
 
-    public StartGameRequest CreateRequest(string playerName)
+    public SetupGameRequest CreateRequest(string playerName)
         => Fixture.CreateRequest(playerName);
 
     public GameSession CreateSession(string playerName = "Fixture Validator")

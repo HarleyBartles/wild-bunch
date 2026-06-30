@@ -177,7 +177,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Contains("\"anchors\"", json, StringComparison.Ordinal);
         Assert.True(reloaded.KnownClues[0].Anchors.HasAnchors);
         Assert.Equal("Grey Jay", reloaded.KnownClues[0].Anchors.Subjects[0].Label);
-        Assert.Equal("Red Mesa", reloaded.KnownClues[0].Anchors.Locations[0].Label);
+        Assert.Equal("Quartzsite", reloaded.KnownClues[0].Anchors.Locations[0].Label);
         Assert.Equal("rail spur", reloaded.KnownClues[0].Anchors.Locations[0].Route);
         Assert.Equal(ClueRecency.Recent, reloaded.KnownClues[0].Anchors.Times[0].Recency);
         Assert.Contains("heading", reloaded.KnownClues[0].Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
@@ -607,7 +607,7 @@ public sealed class GameSessionDifficultyPersistenceTests
             new Clue(
                 new ClueId("clue-1"),
                 ClueKind.Whereabouts,
-                "Local gossip out of Red Mesa says the rider kept to the rail spur after dark.",
+                "Local gossip out of Quartzsite says the rider kept to the rail spur after dark.",
                 new[] { new SuspectId("suspect-1") },
                 InvestigationTargetKind.Suspected,
                 InvestigationSourceKind.LocalGossip,
@@ -620,7 +620,7 @@ public sealed class GameSessionDifficultyPersistenceTests
                     },
                     locations: new[]
                     {
-                        new ClueLocationAnchor("Red Mesa", TownId: new TownId("redmesa"), Place: "Red Mesa", Route: "rail spur")
+                        new ClueLocationAnchor("Quartzsite", TownId: new TownId("quartzsite"), Place: "Quartzsite", Route: "rail spur")
                     },
                     times: new[]
                     {
@@ -628,7 +628,7 @@ public sealed class GameSessionDifficultyPersistenceTests
                     },
                     directions: new[]
                     {
-                        new ClueDirectionAnchor("heading north", Movement: "heading north", Route: "rail spur", DestinationTownId: new TownId("redmesa"))
+                        new ClueDirectionAnchor("heading north", Movement: "heading north", Route: "rail spur", DestinationTownId: new TownId("quartzsite"))
                     }))
         };
 

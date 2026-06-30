@@ -12,7 +12,7 @@ seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy
 ```
 
 - `SeedWorldResolver.Resolve(Guid)` — UUID → `SeedWorld` (seed-owned world/map layer)
-- `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` — `SeedWorld` → UUID via direct bit-packing (O(1), 22 bits used, 106 reserved)
+- `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` — `SeedWorld` → UUID via direct bit-packing (O(1), 24 bits used, 104 reserved)
 - `DifficultyEnvelope.For(GameDifficulty)` — player-selected difficulty → pressure-owned envelope (cash, loadout, horse/saddle, travel rules)
 - `EntropyPolicy.For(GameEntropy)` — player-selected entropy → entropy policy (salt mode, cash bonus cap)
 - `MysteryTruthResolver.Resolve(SeedWorld, EntropyPolicy)` — entropy-applied mystery truth (culprit index, accusation index, salt source).

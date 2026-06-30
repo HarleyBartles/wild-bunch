@@ -1,0 +1,31 @@
+BUNCH-109: Start flow phase tracking and entropy-salted trail distances
+
+Add StartFlowPhase enum (NotStarted -> SetupComplete -> PrologueViewed ->
+GameStarted) persisted via PlayerSetupCompleted and PrologueViewed domain
+events. The game start flow is now resumable after page refresh - the
+backend phase is the source of truth, not frontend local state.
+
+Three new API endpoints replace the old direct-create:
+- POST /api/games/setup (creates setup-phase session)
+- POST /api/games/{id}/prologue-viewed (marks prologue viewed)
+- POST /api/games/{id}/start (completes game start with town selection)
+
+Add TrailDistanceSalter with entropy-bounded per-trail swing:
+- Boring +/-0, Classic +/-1, Adventurous +/-2, Wild +/-3, floor at 1
+- Applied in GameSetupResolver.Resolve between world build and start town
+- Topology preserved - only RideDayDistance changes
+
+Make the start-screen map endpoint session-scoped:
+- GET /api/games/{id}/starting-town-map (was parameterless)
+- Loads from session's salted world, not unsalted canonical world
+- Returns 404 for missing sessions
+
+Fix integration test fixture drift from BUNCH-93/94/107 map layout
+refactoring. Switch ScenarioSeedCatalog fixtures to Boring entropy (+/-0)
+for deterministic distance assertions.
+
+All 965 .NET tests pass (139+186+474+166). All 182 frontend tests pass.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

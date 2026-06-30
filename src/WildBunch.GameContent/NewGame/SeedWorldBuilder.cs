@@ -30,9 +30,10 @@ internal static class SeedWorldBuilder
             seedWorld.DefaultCulpritIndex,
             seedWorld.CashBonus,
             seedWorld.ProsperityPalette,
-            seedWorld.ServicesPalette);
+            seedWorld.ServicesPalette,
+            seedWorld.MapLayoutPalette);
 
-        var trails = SeedWorldCatalog.BuildTrails(seedWorld.WorldVariant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(seedWorld.WorldVariant, townNames, seedWorld.MapLayoutPalette);
 
         return SeedWorldCatalog.CreateWorld(
             seedWorld.WorldVariant,
@@ -52,6 +53,7 @@ internal static class SeedWorldBuilder
             && seedWorld.TownCount == 8
             && seedWorld.ServicesPalette == ServicesPalette.HubTelegraph
             && seedWorld.ProsperityPalette == ProsperityPalette.UniformProsperous
+            && seedWorld.MapLayoutPalette == MapLayoutPalette.HubAndSpoke
             && seedWorld.AccusationIndex == 1
             && seedWorld.DefaultCulpritIndex == 3
             && seedWorld.CashBonus == 0;

@@ -11,6 +11,7 @@ public sealed record GameSessionReadModel(
     GameStatus Status,
     GameDifficulty GameDifficulty,
     GameEntropy GameEntropy,
+    StartFlowPhase StartFlowPhase,
     Player Player,
     World World,
     CaseFile CaseFile,

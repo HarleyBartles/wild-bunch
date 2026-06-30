@@ -121,11 +121,10 @@ describe("PhaserMapHost", () => {
 });
 
 describe("PhaserMapHost truth boundary", () => {
-  it("does not give the scene access to createGame or any API function", () => {
+  it("does not give the scene access to any API function", () => {
     renderHost();
 
     const scene = mockState.games[0].config.scene as StartingTownMapScene;
-    expect((scene as unknown as Record<string, unknown>).createGame).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).api).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).requestJson).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).fetch).toBeUndefined();

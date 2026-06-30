@@ -69,26 +69,6 @@ public sealed class GameSessionCommandHandlerTests
     }
 
     [Fact]
-    public async Task ExecuteNewSessionAsync_StoresCommitsAndMarksEventsCommitted()
-    {
-        var repo = new InMemoryGameSessionRepository();
-
-        var handler = new TestCommandHandler(repo, repo);
-        var result = await handler.ExecuteNewSessionAsync(async ct =>
-        {
-            var session = CreateSession();
-            await Task.Yield();
-            return (session, "created");
-        });
-
-        Assert.Equal("created", result);
-        Assert.Equal(1, repo.StoreCalls);
-        Assert.Equal(1, repo.CommitCalls);
-        var stored = repo.Sessions.Single();
-        Assert.Empty(stored.UncommittedEvents);
-    }
-
-    [Fact]
     public async Task ExecuteWithRetryAsync_RetriesOnConcurrencyException()
     {
         var repo = new ConcurrencyRetryRepository();

@@ -15,7 +15,6 @@ import {
   getGame,
   getJournal,
   getTownStoreOffers,
-  createGame,
   archiveGame,
   buyStoreItem,
   checkLocalRecords,
@@ -31,7 +30,6 @@ import { getSessionAudit } from "../dev/devApi";
 
 vi.mock("../api/wildBunchApi", () => ({
   buyStoreItem: vi.fn(),
-  createGame: vi.fn(),
   archiveGame: vi.fn(),
   getAvailableActions: vi.fn(),
   getGame: vi.fn(),
@@ -61,7 +59,6 @@ const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
-const mockedCreateGame = vi.mocked(createGame);
 const mockedArchiveGame = vi.mocked(archiveGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
 const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
@@ -105,6 +102,7 @@ function createSession(): GameSessionDto {
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
+    startFlowPhase: 3,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
@@ -190,7 +188,6 @@ function primeMocks() {
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
-  mockedCreateGame.mockResolvedValue(createSession());
   mockedArchiveGame.mockResolvedValue(undefined);
   mockedBuyStoreItem.mockResolvedValue({
     success: true,

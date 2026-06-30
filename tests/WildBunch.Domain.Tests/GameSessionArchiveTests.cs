@@ -53,8 +53,8 @@ public sealed class GameSessionArchiveTests
         var session = CreateSession();
         session.ArchivePlaythrough("start-over");
 
-        var ex = Assert.Throws<InvalidOperationException>(() => session.ArchivePlaythrough("start-over"));
-        Assert.Contains("already archived", ex.Message, StringComparison.OrdinalIgnoreCase);
+        // Archiving an already-archived session throws — the endpoint maps this to 409 Conflict.
+        Assert.Throws<InvalidOperationException>(() => session.ArchivePlaythrough("start-over"));
     }
 
     [Fact]

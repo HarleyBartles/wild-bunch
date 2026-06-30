@@ -18,8 +18,7 @@ public sealed class GameApiInvestigationActionsTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
@@ -75,7 +74,7 @@ public sealed class GameApiInvestigationActionsTests
         var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
 
         Assert.NotNull(telegraphResult);
-        // BUNCH-107: Lost Canyon (the starting town) has Telegraph service
+        // BUNCH-107: Hardpan (the starting town) has Telegraph service
         // (HubTelegraph palette, slot 0). Following telegraph leads should
         // succeed and surface a new clue.
         Assert.True(telegraphResult!.Success);

@@ -15,19 +15,20 @@ namespace WildBunch.GameContent.NewGame;
 /// <code>
 /// Bytes 0-7 (low):
 ///   bits  0-1:   variant (2)
-///   bits  2-4:   accusationIndex (3)
-///   bits  5-7:   defaultCulpritIndex (3)
-///   bits  8-11:  cashBonus (4)
-///   bits 12-15:  townCount (4, offset-encoded: 0-15 → 5-20 towns)
-///   bits 16-18:  prosperityPaletteIndex (3, indexes 8 palettes)
-///   bits 19-21:  servicesPaletteIndex (3, indexes 8 palettes)
-///   bits 22-63:  reserved (42)
+///   bits  2-5:   accusationIndex (4, bandwidth for up to 16 suspects; current roster is 7)
+///   bits  6-9:   defaultCulpritIndex (4, bandwidth for up to 16 suspects; current roster is 7)
+///   bits 10-13:  cashBonus (4)
+///   bits 14-17:  townCount (4, offset-encoded: 0-15 → 5-20 towns)
+///   bits 18-20:  prosperityPaletteIndex (3, indexes 8 palettes)
+///   bits 21-23:  servicesPaletteIndex (3, indexes 8 palettes)
+///   bits 24-26:  mapLayoutPalette (3, indexes layout palettes; 4 used, 4 reserved)
+///   bits 27-63:  reserved (37)
 ///
 /// Bytes 8-15 (high): reserved (64)
 /// </code>
 ///
-/// Total used: 22 bits. Reserved: 106 bits for future seed-owned fields
-/// (gang members, warrants, etc.). Bandwidth scales with max selection (20),
+/// Total used: 27 bits. Reserved: 101 bits for future seed-owned fields
+/// (warrants, etc.). Bandwidth scales with max selection (20),
 /// not catalog size — the name pool can grow to any size with zero bit cost.
 ///
 /// Town names are derived from the encoded fields via a deterministic
@@ -46,8 +47,16 @@ public static class SeedWorldResolver
     /// - v6: BUNCH-107 refactoring — direct bit-packing (O(1)), 22 bits used,
     ///       106 reserved. Separated seed-owned (map/variant) from pressure-owned
     ///       (difficulty/entropy) and player/setup-owned (starting town).
+    /// - v7: Expanded accusationIndex and defaultCulpritIndex from 3 bits to 4 bits
+    ///       (bandwidth for up to 16 suspects; current roster is 7). 24 bits used,
+    ///       104 reserved. No domain behavior change — validation still enforces 0-6.
+    /// - v8: Added MapLayoutPalette (2 bits, positions 24-25). Supports HubAndSpoke,
+    ///       LinearChain, Ring layouts. 26 bits used, 102 reserved.
+    /// - v9: Expanded MapLayoutPalette from 2 bits to 3 bits (positions 24-26).
+    ///       Supports HubAndSpoke, LinearChain, Ring, DoubleLine layouts. 27 bits used,
+    ///       101 reserved.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v6";
+    public const string ResolverContractVersion = "resolver-v9";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
@@ -98,25 +107,37 @@ public static class SeedWorldResolver
         var low = BitConverter.ToUInt64(bytes, 0);
 
         var variant = (SeedWorldVariant)(low & 0x3UL);
-        var accusationIndex = (int)((low >> 2) & 0x7UL);
-        var defaultCulpritIndex = (int)((low >> 5) & 0x7UL);
-        var cashBonus = (int)((low >> 8) & 0xFUL);
-        var townCountEncoded = (int)((low >> 12) & 0xFUL);
-        var prosperityPalette = (ProsperityPalette)((low >> 16) & 0x7UL);
-        var servicesPalette = (ServicesPalette)((low >> 19) & 0x7UL);
+        var accusationIndex = (int)((low >> 2) & 0xFUL);
+        var defaultCulpritIndex = (int)((low >> 6) & 0xFUL);
+        var cashBonus = (int)((low >> 10) & 0xFUL);
+        var townCountEncoded = (int)((low >> 14) & 0xFUL);
+        var prosperityPalette = (ProsperityPalette)((low >> 18) & 0x7UL);
+        var servicesPalette = (ServicesPalette)((low >> 21) & 0x7UL);
+        var mapLayoutPalette = (MapLayoutPalette)((low >> 24) & 0x7UL);
+
+        // 4-bit suspect fields produce 0-15, but the current roster is 7 suspects (indices 0-6).
+        // Clamp to the current legal range. When the roster grows, raise this clamp.
+        // The codec has bandwidth for up to 16 suspects without refactoring.
+        if (accusationIndex > 6) accusationIndex = 6;
+        if (defaultCulpritIndex > 6) defaultCulpritIndex = 6;
+
+        // 3-bit mapLayoutPalette produces 0-7, but we currently define 4 layouts (indices 0-3).
+        // Wrap within the current legal range using modulo. When more layouts are added,
+        // this naturally expands the modulo divisor.
+        mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 4);
 
         // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
         var townCount = townCountEncoded + TownCountOffset;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
+            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
 
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
 
         return new SeedWorld(
             seedCode,
@@ -124,6 +145,7 @@ public static class SeedWorldResolver
             townCount,
             servicesPalette,
             prosperityPalette,
+            mapLayoutPalette,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
@@ -157,6 +179,15 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Services palette is invalid.");
         }
 
+        if (!Enum.IsDefined(typeof(MapLayoutPalette), seedWorld.MapLayoutPalette))
+        {
+            return SeedWorldValidationResult.Failed("Map layout palette is invalid.");
+        }
+
+        // Suspect indices: the codec allocates 4 bits each (0-15) for forward
+        // compatibility, but the current gang roster is 7 suspects (indices 0-6).
+        // Validation enforces the current legal range; raise both the validation
+        // and the clamp in Resolve() when the roster grows.
         if (seedWorld.AccusationIndex is < 0 or > 6)
         {
             return SeedWorldValidationResult.Failed("Accusation index is outside the legal envelope.");
@@ -207,12 +238,13 @@ public static class SeedWorldResolver
 
         ulong low = 0;
         low |= (ulong)((int)seedWorld.WorldVariant & 0x3);
-        low |= (ulong)(seedWorld.AccusationIndex & 0x7) << 2;
-        low |= (ulong)(seedWorld.DefaultCulpritIndex & 0x7) << 5;
-        low |= (ulong)(seedWorld.CashBonus & 0xF) << 8;
-        low |= (ulong)((seedWorld.TownCount - TownCountOffset) & 0xF) << 12;
-        low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 16;
-        low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 19;
+        low |= (ulong)(seedWorld.AccusationIndex & 0xF) << 2;
+        low |= (ulong)(seedWorld.DefaultCulpritIndex & 0xF) << 6;
+        low |= (ulong)(seedWorld.CashBonus & 0xF) << 10;
+        low |= (ulong)((seedWorld.TownCount - TownCountOffset) & 0xF) << 14;
+        low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 18;
+        low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 21;
+        low |= (ulong)((int)seedWorld.MapLayoutPalette & 0x7) << 24;
 
         ulong high = 0UL;
 
@@ -231,16 +263,17 @@ public static class SeedWorldResolver
         var cashBonus = 0;
         var prosperityPalette = ProsperityPalette.UniformProsperous;
         var servicesPalette = ServicesPalette.HubTelegraph;
+        var mapLayoutPalette = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
+            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
 
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
 
         return new SeedWorld(
             Guid.Empty,
@@ -248,6 +281,7 @@ public static class SeedWorldResolver
             townCount,
             servicesPalette,
             prosperityPalette,
+            mapLayoutPalette,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,

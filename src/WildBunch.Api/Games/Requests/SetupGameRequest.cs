@@ -2,9 +2,8 @@ using WildBunch.Domain.Travel;
 
 namespace WildBunch.Api.Games;
 
-public sealed record StartGameRequest(
+public sealed record SetupGameRequest(
     string PlayerName,
     GameDifficulty GameDifficulty = GameDifficulty.Standard,
     string? SeedCode = null,
-    GameEntropy GameEntropy = GameEntropy.Classic,
-    string? StartingTownId = null);
+    GameEntropy GameEntropy = GameEntropy.Classic);

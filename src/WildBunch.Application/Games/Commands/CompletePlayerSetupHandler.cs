@@ -4,11 +4,17 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.GameContent.Abstractions;
 
 namespace WildBunch.Application.Games.Commands;
 
-public sealed class StartNewGameHandler : GameSessionCommandHandler
+/// <summary>
+/// Creates a new game session in the setup-complete phase.
+/// Archives any pre-existing non-archived sessions (one-active-playthrough invariant).
+/// The world and case file are resolved from the seed code at this point.
+/// </summary>
+public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
 {
     private const string SupersededByNewPlaythrough = "superseded-by-new-playthrough";
 
@@ -16,7 +22,7 @@ public sealed class StartNewGameHandler : GameSessionCommandHandler
     private readonly HudProjector _hudProjector;
     private readonly DiaryProjector _diaryProjector;
 
-    public StartNewGameHandler(
+    public CompletePlayerSetupHandler(
         INewGameFactory newGameFactory,
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
@@ -29,19 +35,10 @@ public sealed class StartNewGameHandler : GameSessionCommandHandler
         _diaryProjector = diaryProjector;
     }
 
-    /// <summary>
-    /// Creates a new game session while enforcing the one-active-playthrough invariant:
-    /// any pre-existing <see cref="GameStatus.Active"/> sessions are archived
-    /// (<see cref="PlaythroughArchived"/> with reason <c>superseded-by-new-playthrough</c>)
-    /// in the SAME correlation id and SAME unit-of-work commit as the new session create.
-    /// This guarantees that after any successful call, at most one Active session exists
-    /// in the persisted store. See BUNCH-102.
-    /// </summary>
-    public async Task<GameSessionDto> HandleAsync(StartNewGameCommand command, CancellationToken cancellationToken = default)
+    public async Task<GameSessionDto> HandleAsync(CompletePlayerSetupCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        // One correlation id for the entire archive-old + create-new flow.
         var correlationId = Guid.NewGuid();
 
         // 1. Archive all pre-existing Active sessions (one-active-playthrough invariant).
@@ -54,24 +51,33 @@ public sealed class StartNewGameHandler : GameSessionCommandHandler
                 activeSession, correlationId, cancellationToken).ConfigureAwait(false);
         }
 
-        // 2. Create the new session and stage it on the same DbContext.
-        var newSession = _newGameFactory.Create(
-            command.PlayerName, command.GameDifficulty, command.SetupSeedCode, command.GameEntropy, command.StartingTownId);
+        // 2. Resolve the world and case file from the seed code (without starting the game).
+        var (world, caseFile, seedCodeText) = _newGameFactory.ResolveWorld(
+            command.PlayerName, command.GameDifficulty, command.SeedCode, command.GameEntropy);
+
+        // 3. Create the session in setup-complete phase.
+        var newSession = GameSession.StartSetup(
+            command.PlayerName,
+            world,
+            caseFile,
+            command.GameDifficulty,
+            command.GameEntropy,
+            seedCodeText);
+
         await GameSessionRepository.StoreAsync(
             newSession, correlationId, cancellationToken).ConfigureAwait(false);
 
-        // 3. Commit everything in one transaction (single EF SaveChanges + commit).
+        // 4. Commit everything in one transaction.
         await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        // 4. Mark events committed on all touched sessions.
+        // 5. Mark events committed on all touched sessions.
         foreach (var archived in activeSessions)
         {
             archived.MarkEventsCommitted();
         }
-
         newSession.MarkEventsCommitted();
 
-        // 5. Project HUD/diary for the new session (same as before).
+        // 6. Return the DTO with start flow phase.
         var dto = GameSessionMapper.ToDto(newSession);
         var events = await GameSessionRepository.GetEventStreamAsync(
             newSession.Id, 0, cancellationToken).ConfigureAwait(false);

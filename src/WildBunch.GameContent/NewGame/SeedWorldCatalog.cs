@@ -9,6 +9,21 @@ public enum SeedWorldVariant
     Rail = 2
 }
 
+/// <summary>
+/// Map layout palette defines how towns are positioned and connected.
+/// HubAndSpoke: central hub town with outer ring towns connected via spokes and ring
+/// LinearChain: towns connected in a line/chain
+/// Ring: towns connected in a circle with no hub
+/// DoubleLine: two parallel lines of towns with cross connections
+/// </summary>
+public enum MapLayoutPalette
+{
+    HubAndSpoke = 0,
+    LinearChain = 1,
+    Ring = 2,
+    DoubleLine = 3
+}
+
 internal sealed record SeedTrailVariant(
     TrailTerrain Terrain,
     WaterFeature WaterFeature,
@@ -189,68 +204,6 @@ internal static class SeedWorldCatalog
     ];
 
     /// <summary>
-    /// Slot-based trail topology. Trails connect slot indices; a trail is
-    /// included when both slot indices are less than the town count.
-    /// Terrain/water/distance come from the variant. This guarantees a
-    /// connected graph for any town count from 5 to 20.
-    /// </summary>
-    public static IReadOnlyList<SlotTrailDefinition> SlotTrails { get; } =
-    [
-        // Base connectivity (slots 0-4, always present for min 5 towns)
-        new(0, 1, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m)),
-        new(0, 2, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 2m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 2m)),
-        new(1, 3, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)),
-        new(2, 4, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.River, 3m)),
-        new(1, 4, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Mountains, WaterFeature.Spring, 5m)),
-        new(0, 3, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 5m)),
-        // Additional trails for slot 5 (count >= 6)
-        new(3, 5, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m)),
-        new(4, 5, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 5m)),
-        // Additional trails for slot 6 (count >= 7)
-        new(5, 6, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m)),
-        new(0, 6, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 3m)),
-        // Additional trails for slot 7 (count >= 8)
-        new(6, 7, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m)),
-        new(3, 7, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m)),
-        // Additional trails for slot 8 (count >= 9)
-        new(7, 8, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.River, 4m)),
-        new(4, 8, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 6m), new SeedTrailVariant(TrailTerrain.Mountains, WaterFeature.None, 6m)),
-        // Additional trails for slot 9 (count >= 10)
-        new(8, 9, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m)),
-        new(5, 9, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m)),
-        // Additional trails for slot 10 (count >= 11)
-        new(9, 10, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m)),
-        new(2, 10, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 6m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 6m)),
-        // Additional trails for slot 11 (count >= 12)
-        new(10, 11, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m)),
-        new(6, 11, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 5m)),
-        // Additional trails for slot 12 (count >= 13)
-        new(11, 12, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.River, 4m)),
-        new(7, 12, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 6m), new SeedTrailVariant(TrailTerrain.Mountains, WaterFeature.None, 6m)),
-        // Additional trails for slot 13 (count >= 14)
-        new(12, 13, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m)),
-        new(8, 13, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 5m)),
-        // Additional trails for slot 14 (count >= 15)
-        new(13, 14, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m)),
-        new(3, 14, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 7m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 7m)),
-        // Additional trails for slot 15 (count >= 16)
-        new(14, 15, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m)),
-        new(9, 15, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 5m)),
-        // Additional trails for slot 16 (count >= 17)
-        new(15, 16, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.River, 4m)),
-        new(10, 16, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 6m), new SeedTrailVariant(TrailTerrain.Mountains, WaterFeature.None, 6m)),
-        // Additional trails for slot 17 (count >= 18)
-        new(16, 17, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m)),
-        new(11, 17, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 5m)),
-        // Additional trails for slot 18 (count >= 19)
-        new(17, 18, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m)),
-        new(4, 18, TrailRisk.High, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 7m), new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 7m)),
-        // Additional trails for slot 19 (count >= 20)
-        new(18, 19, TrailRisk.Low, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m), new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.None, 3m)),
-        new(12, 19, TrailRisk.Moderate, new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 5m), new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 5m))
-    ];
-
-    /// <summary>
     /// Derives town names from the encoded seed fields. Uses a deterministic
     /// xorshift PRNG seeded from the encoded fields to shuffle the name pool,
     /// then takes the first N entries. This is round-trip stable: the same
@@ -264,17 +217,19 @@ internal static class SeedWorldCatalog
         int defaultCulpritIndex,
         int cashBonus,
         ProsperityPalette prosperityPalette,
-        ServicesPalette servicesPalette)
+        ServicesPalette servicesPalette,
+        MapLayoutPalette mapLayoutPalette)
     {
         // Combine encoded fields into a 32-bit seed.
         var seed = (uint)(
             ((int)variant & 0x3) |
-            ((accusationIndex & 0x7) << 2) |
-            ((defaultCulpritIndex & 0x7) << 5) |
-            ((cashBonus & 0xF) << 8) |
-            ((townCount & 0xF) << 12) |
-            ((int)prosperityPalette & 0x7) << 16 |
-            ((int)servicesPalette & 0x7) << 19);
+            ((accusationIndex & 0xF) << 2) |
+            ((defaultCulpritIndex & 0xF) << 6) |
+            ((cashBonus & 0xF) << 10) |
+            ((townCount & 0xF) << 14) |
+            ((int)prosperityPalette & 0x7) << 18 |
+            ((int)servicesPalette & 0x7) << 21 |
+            ((int)mapLayoutPalette & 0x3) << 24);
 
         // xorshift32 PRNG — deterministic, stable across runs.
         // Guard against seed=0: xorshift32 has 0 as a fixed point (produces all
@@ -307,18 +262,19 @@ internal static class SeedWorldCatalog
     }
 
     /// <summary>
-    /// Builds the trail graph for a world with the given town count and
-    /// variant. Trails are included when both slot indices are less than
-    /// the town count. Slot indices are mapped to derived town IDs.
+    /// Builds the trail graph for a world with the given town count, variant,
+    /// and map layout palette. Trails are included when both slot indices are
+    /// less than the town count. Slot indices are mapped to derived town IDs.
     /// </summary>
     public static IReadOnlyList<SeedWorldTrail> BuildTrails(
         SeedWorldVariant variant,
-        IReadOnlyList<TownNameEntry> townNames)
+        IReadOnlyList<TownNameEntry> townNames,
+        MapLayoutPalette mapLayoutPalette)
     {
         var trails = new List<SeedWorldTrail>();
         var count = townNames.Count;
 
-        foreach (var def in SlotTrails)
+        foreach (var def in GenerateTrailsForLayout(mapLayoutPalette, count))
         {
             if (def.FromSlot < count && def.ToSlot < count)
             {
@@ -331,6 +287,119 @@ internal static class SeedWorldCatalog
                     tv.Terrain,
                     tv.WaterFeature,
                     tv.RideDayDistance));
+            }
+        }
+
+        return trails;
+    }
+
+    /// <summary>
+    /// Generates trail definitions for a given layout palette and town count.
+    /// HubAndSpoke: hub (slot 0) with spokes to all outer towns, outer towns form a ring
+    /// LinearChain: adjacent slots only (0-1, 1-2, 2-3, etc.)
+    /// Ring: towns form a circle, no hub
+    /// </summary>
+    private static IReadOnlyList<SlotTrailDefinition> GenerateTrailsForLayout(
+        MapLayoutPalette layout,
+        int townCount)
+    {
+        return layout switch
+        {
+            MapLayoutPalette.HubAndSpoke => GenerateHubAndSpokeTrails(townCount),
+            MapLayoutPalette.LinearChain => GenerateLinearChainTrails(townCount),
+            MapLayoutPalette.Ring => GenerateRingTrails(townCount),
+            MapLayoutPalette.DoubleLine => GenerateDoubleLineTrails(townCount),
+            _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
+        };
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateHubAndSpokeTrails(int count)
+    {
+        var trails = new List<SlotTrailDefinition>();
+
+        // Spokes: hub (slot 0) to each outer town
+        for (var i = 1; i < count; i++)
+        {
+            trails.Add(new SlotTrailDefinition(
+                0, i, TrailRisk.Low,
+                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
+                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m)));
+        }
+
+        // Ring: outer towns connected in a circle
+        for (var i = 1; i < count; i++)
+        {
+            var next = i == count - 1 ? 1 : i + 1;
+            trails.Add(new SlotTrailDefinition(
+                i, next, TrailRisk.Moderate,
+                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+        }
+
+        return trails;
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateLinearChainTrails(int count)
+    {
+        var trails = new List<SlotTrailDefinition>();
+        for (var i = 0; i < count - 1; i++)
+        {
+            trails.Add(new SlotTrailDefinition(
+                i, i + 1, TrailRisk.Low,
+                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+        }
+        return trails;
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateRingTrails(int count)
+    {
+        var trails = new List<SlotTrailDefinition>();
+        for (var i = 0; i < count; i++)
+        {
+            var next = i == count - 1 ? 0 : i + 1;
+            trails.Add(new SlotTrailDefinition(
+                i, next, TrailRisk.Low,
+                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+        }
+        return trails;
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateDoubleLineTrails(int count)
+    {
+        var trails = new List<SlotTrailDefinition>();
+        var mid = count / 2;
+
+        // Two parallel lines: 0-1-2-...-mid and mid+1-mid+2-...-count-1
+        for (var i = 0; i < mid; i++)
+        {
+            var next = i == mid - 1 ? mid : i + 1;
+            trails.Add(new SlotTrailDefinition(
+                i, next, TrailRisk.Low,
+                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+        }
+
+        for (var i = mid; i < count; i++)
+        {
+            var next = i == count - 1 ? mid : i + 1;
+            trails.Add(new SlotTrailDefinition(
+                i, next, TrailRisk.Low,
+                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
+                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+        }
+
+        // Cross connections between the two lines
+        for (var i = 0; i < mid; i++)
+        {
+            var crossIndex = mid + i;
+            if (crossIndex < count)
+            {
+                trails.Add(new SlotTrailDefinition(
+                    i, crossIndex, TrailRisk.Moderate,
+                    new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m),
+                    new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 4m)));
             }
         }
 
@@ -384,8 +453,9 @@ internal static class SeedWorldCatalog
             defaultCulpritIndex: 3,
             cashBonus: 0,
             prosperityPalette: ProsperityPalette.UniformProsperous,
-            servicesPalette: ServicesPalette.HubTelegraph);
-        var trails = BuildTrails(SeedWorldVariant.Canonical, townNames);
+            servicesPalette: ServicesPalette.HubTelegraph,
+            mapLayoutPalette: MapLayoutPalette.HubAndSpoke);
+        var trails = BuildTrails(SeedWorldVariant.Canonical, townNames, MapLayoutPalette.HubAndSpoke);
         return CreateWorld(
             SeedWorldVariant.Canonical,
             townNames,

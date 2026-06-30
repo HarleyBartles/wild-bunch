@@ -591,10 +591,10 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
     private static GameSession CreateSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.Telegraph);
         var world = new DomainWorld(
-            new[] { pinecross, redmesa },
-            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });
+            new[] { pinecross, quartzsite },
+            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });
 
         var suspects = new[]
         {
@@ -613,10 +613,10 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
     private static GameSession CreateSessionWithWarrantedSaloonSuspect()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.None);
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.None);
         var world = new DomainWorld(
-            new[] { pinecross, redmesa },
-            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });
+            new[] { pinecross, quartzsite },
+            new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });
 
         var suspects = new[]
         {

@@ -1,0 +1,29 @@
+BUNCH-109: remove legacy POST /api/games seam, fix ViewPrologue contract
+
+Remove the old direct-create game start flow entirely. The three-step flow
+(setup -> prologue-viewed -> start) is now the only path.
+
+Removed:
+- POST /api/games endpoint and CreateGameAsync
+- StartNewGameHandler, StartNewGameCommand, StartGameRequest
+- ExecuteNewSessionAsync (unused after handler removal)
+- createGame(), StartGamePanel, CampRoute, StartGameRequest type (frontend)
+- startNewGame from useCurrentGameSession
+
+Fixed:
+- ViewPrologue now throws for NotStarted/GameStarted phases
+- ViewPrologue is idempotent for already-PrologueViewed phase
+- ViewPrologueCommand no longer carries RevealedSuspectIdentifier
+- StartFlowEventSourcingTests verify the throwing contract
+
+Migrated:
+- StartNewGameHandlerTests -> CompletePlayerSetupHandlerTests
+- StartNewGameOneActivePlaythroughTests -> CompletePlayerSetupOneActivePlaythroughTests
+- All 15 integration test files use ThreeStepGameSetup.CreateStartedGameAsync()
+- 11 frontend test files cleaned of createGame references
+
+All 962 .NET tests pass. All 174 frontend tests pass.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

@@ -4,8 +4,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { PreSessionSurface } from "../flow/PreSessionSurface";
-import type { GameSessionDto, StartGameRequest } from "../api/types";
-import { createGame, getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns, getStartingTownMap } from "../api/wildBunchApi";
+import type { GameSessionDto } from "../api/types";
+import { getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns, getStartingTownMap, setupGame, markPrologueViewed, startGameWithTown } from "../api/wildBunchApi";
 
 const phaserMockState = vi.hoisted(() => ({
   games: [] as Array<{ config: { scene: { selectTown: (townId: string) => void; onTownSelected?: (townId: string) => void } } }>,
@@ -31,7 +31,9 @@ vi.mock("phaser", () => {
 });
 
 vi.mock("../api/wildBunchApi", () => ({
-  createGame: vi.fn(),
+  setupGame: vi.fn(),
+  markPrologueViewed: vi.fn(),
+  startGameWithTown: vi.fn(),
   getGame: vi.fn(),
   getAvailableActions: vi.fn(),
   getJournal: vi.fn(),
@@ -52,7 +54,9 @@ vi.mock("../api/wildBunchApi", () => ({
   getStartingTownMap: vi.fn(),
 }));
 
-const mockedCreateGame = vi.mocked(createGame);
+const mockedSetupGame = vi.mocked(setupGame);
+const mockedMarkPrologueViewed = vi.mocked(markPrologueViewed);
+const mockedStartGameWithTown = vi.mocked(startGameWithTown);
 const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
@@ -73,6 +77,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
+    startFlowPhase: 3,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
@@ -161,7 +166,9 @@ function primeMocks() {
     },
     logEntries: [],
   });
-  mockedCreateGame.mockResolvedValue(createSession());
+  mockedSetupGame.mockResolvedValue(createSession({ startFlowPhase: 1 }));
+  mockedMarkPrologueViewed.mockResolvedValue(createSession({ startFlowPhase: 2 }));
+  mockedStartGameWithTown.mockResolvedValue(createSession({ startFlowPhase: 3 }));
   mockedGetPrologue.mockResolvedValue({
     heading: "The story so far",
     body: "A culprit is on the run. The trail is fresh, but it won't stay that way for long.",
@@ -226,11 +233,10 @@ describe("StartFlow", () => {
     scene.onTownSelected("t-town");
 
     await waitFor(() => {
-      expect(mockedCreateGame).toHaveBeenCalledTimes(1);
+      expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
     });
 
-    const request: StartGameRequest = mockedCreateGame.mock.calls[0][0];
-    expect(request.playerName).toBe("Ranger Vale");
+    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "t-town" });
   });
 
   it("advances from story to town step", async () => {
@@ -274,30 +280,7 @@ describe("StartFlow", () => {
     });
   });
 
-  it("does not call createGame during the setup or story steps", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
-
-    // createGame (POST /api/games) must not have been called yet — only at the final step.
-    expect(mockedCreateGame).not.toHaveBeenCalled();
-  });
-
-  it("calls createGame with playerName, difficulty, gameEntropy, and startingTownId at the final step", async () => {
+  it("calls setupGame with playerName, difficulty, gameEntropy at the setup step and startGameWithTown at the final step", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
@@ -310,6 +293,17 @@ describe("StartFlow", () => {
     await user.click(screen.getByRole("button", { name: /^wild$/i }));
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    // setupGame should have been called at the setup step
+    await waitFor(() => {
+      expect(mockedSetupGame).toHaveBeenCalledTimes(1);
+    });
+
+    const setupRequest = mockedSetupGame.mock.calls[0][0];
+    expect(setupRequest.playerName).toBe("Ranger Vale");
+    expect(setupRequest.seedCode).toBeTruthy();
+    expect(setupRequest.gameDifficulty).toBe(2);
+    expect(setupRequest.gameEntropy).toBe(3);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
@@ -327,15 +321,10 @@ describe("StartFlow", () => {
     scene.onTownSelected("t-town");
 
     await waitFor(() => {
-      expect(mockedCreateGame).toHaveBeenCalledTimes(1);
+      expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
     });
 
-    const request: StartGameRequest = mockedCreateGame.mock.calls[0][0];
-    expect(request.playerName).toBe("Ranger Vale");
-    expect(request.startingTownId).toBe("t-town");
-    expect(request.seedCode).toBeTruthy();
-    expect(request.gameDifficulty).toBe(2);
-    expect(request.gameEntropy).toBe(3);
+    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "t-town" });
   });
 
   it("shows the creating step after selecting a town", async () => {
@@ -389,7 +378,7 @@ describe("StartFlow", () => {
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
 
-  it("calls createGame with the correct startingTownId when a town is selected via the map host", async () => {
+  it("calls startGameWithTown with the correct startingTownId when a town is selected via the map host", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
@@ -416,15 +405,13 @@ describe("StartFlow", () => {
     scene.selectTown("dust-fork");
 
     await waitFor(() => {
-      expect(mockedCreateGame).toHaveBeenCalledTimes(1);
+      expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
     });
 
-    const request: StartGameRequest = mockedCreateGame.mock.calls[0][0];
-    expect(request.startingTownId).toBe("dust-fork");
-    expect(request.playerName).toBe("Ranger Vale");
+    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "dust-fork" });
   });
 
-  it("mounts the Phaser map but does not call createGame until a town is selected", async () => {
+  it("mounts the Phaser map but does not call startGameWithTown until a town is selected", async () => {
     primeMocks();
     const user = userEvent.setup();
     renderSurface();
@@ -447,40 +434,14 @@ describe("StartFlow", () => {
       expect(phaserMockState.games.length).toBeGreaterThan(0);
     });
 
-    expect(mockedCreateGame).not.toHaveBeenCalled();
+    expect(mockedStartGameWithTown).not.toHaveBeenCalled();
 
     const scene = phaserMockState.games[0].config.scene;
     scene.selectTown("t-town");
 
     await waitFor(() => {
-      expect(mockedCreateGame).toHaveBeenCalledTimes(1);
+      expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
     });
-  });
-
-  it("does not call createGame when the map mounts and no town is selected", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(phaserMockState.games.length).toBeGreaterThan(0);
-    });
-
-    expect(mockedCreateGame).not.toHaveBeenCalled();
   });
 
   it("shows a description for the selected difficulty", async () => {

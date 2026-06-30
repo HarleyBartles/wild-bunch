@@ -8,7 +8,8 @@ import type {
   JournalDto,
   PrologueDto,
   ResolveJourneyEncounterRequest,
-  StartGameRequest,
+  SetupGameRequest,
+  StartGameWithTownRequest,
   StartingTownDto,
   StartingTownMapDto,
   TownStoreOffersDto,
@@ -21,10 +22,23 @@ import type {
 } from "./types";
 import { requestJson } from "./httpClient";
 
-export function createGame(request: StartGameRequest) {
-  return requestJson<GameSessionDto>("/api/games", {
+export function setupGame(request: SetupGameRequest) {
+  return requestJson<GameSessionDto>("/api/games/setup", {
     method: "POST",
-    body: JSON.stringify(request satisfies StartGameRequest),
+    body: JSON.stringify(request satisfies SetupGameRequest),
+  });
+}
+
+export function markPrologueViewed(gameId: string) {
+  return requestJson<GameSessionDto>(`/api/games/${gameId}/prologue-viewed`, {
+    method: "POST",
+  });
+}
+
+export function startGameWithTown(gameId: string, request: StartGameWithTownRequest) {
+  return requestJson<GameSessionDto>(`/api/games/${gameId}/start`, {
+    method: "POST",
+    body: JSON.stringify(request satisfies StartGameWithTownRequest),
   });
 }
 
@@ -168,6 +182,6 @@ export function getStartingTowns() {
   return requestJson<StartingTownDto[]>("/api/games/starting-towns");
 }
 
-export function getStartingTownMap() {
-  return requestJson<StartingTownMapDto>("/api/games/starting-town-map");
+export function getStartingTownMap(sessionId: string) {
+  return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/starting-town-map`);
 }

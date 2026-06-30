@@ -19,8 +19,7 @@ public sealed class GameApiWantedPostersTests
 
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
@@ -142,8 +141,7 @@ public sealed class GameApiWantedPostersTests
 
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
@@ -155,11 +153,11 @@ public sealed class GameApiWantedPostersTests
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("redmesa"));
+            new TravelRequest("quartzsite"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
-        // Advance until the journey completes and the player arrives in redmesa.
+        // Advance until the journey completes and the player arrives in quartzsite.
         // Force Quiet days so the journey is not interrupted by encounters.
         string? arrivedTownId = null;
         for (var step = 0; step < 12; step++)
@@ -175,14 +173,14 @@ public sealed class GameApiWantedPostersTests
             Assert.NotNull(advanceResult);
 
             if (advanceResult!.JourneyStatus == WildBunch.Domain.Travel.JourneyStatus.Completed
-                && advanceResult.CurrentSession.Player.CurrentTownId == "redmesa")
+                && advanceResult.CurrentSession.Player.CurrentTownId == "quartzsite")
             {
                 arrivedTownId = advanceResult.CurrentSession.Player.CurrentTownId;
                 break;
             }
         }
 
-        Assert.Equal("redmesa", arrivedTownId);
+        Assert.Equal("quartzsite", arrivedTownId);
 
         // Acknowledge the journey arrival to exit journey modal and enable town actions.
         var acknowledgeResponse = await client.PostAsync(
@@ -197,7 +195,7 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(result);
         Assert.True(result!.Success);
-        Assert.Equal("redmesa", result.CurrentJournal.CurrentTown.Id);
+        Assert.Equal("quartzsite", result.CurrentJournal.CurrentTown.Id);
         Assert.True(result.CurrentJournal.LogEntries.Count >= 4);
 
         var payload = await response.Content.ReadAsStringAsync();

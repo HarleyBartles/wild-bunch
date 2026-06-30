@@ -6,7 +6,7 @@ namespace WildBunch.Api.Games.Validation;
 
 public static class RequestValidation
 {
-    public static bool TryValidate(StartGameRequest? request, out IResult? result)
+    public static bool TryValidate(SetupGameRequest? request, out IResult? result)
     {
         var errors = new Dictionary<string, string[]>();
 
@@ -21,6 +21,18 @@ public static class RequestValidation
             {
                 errors["seedCode"] = [errorMessage ?? "Seed code is invalid."];
             }
+        }
+
+        return WriteResult(errors, out result);
+    }
+
+    public static bool TryValidate(StartGameWithTownRequest? request, out IResult? result)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (request is null || string.IsNullOrWhiteSpace(request.StartingTownId))
+        {
+            errors["startingTownId"] = ["Starting town id is required."];
         }
 
         return WriteResult(errors, out result);

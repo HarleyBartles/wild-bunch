@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Game;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
@@ -9,14 +10,14 @@ public sealed class StartingTownMapEndpointTests
 {
     private static readonly string[] SeededTownIds =
     [
-        "lostcanyon",
-        "goldgulch",
-        "redmesa",
-        "tumbleweed",
+        "hardpan",
         "quartzsite",
         "emberfall",
-        "rattlesnake",
-        "boulderwash"
+        "boulderwash",
+        "openpass",
+        "holloway",
+        "rattleridge",
+        "brokenarrow"
     ];
 
     [Fact]
@@ -24,8 +25,9 @@ public sealed class StartingTownMapEndpointTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
 
-        var response = await client.GetAsync("/api/games/starting-town-map");
+        var response = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -41,8 +43,9 @@ public sealed class StartingTownMapEndpointTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
 
-        var response = await client.GetAsync("/api/games/starting-town-map");
+        var response = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
         var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
 
         Assert.NotNull(map);
@@ -59,8 +62,9 @@ public sealed class StartingTownMapEndpointTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
 
-        var response = await client.GetAsync("/api/games/starting-town-map");
+        var response = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
         var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
 
         Assert.NotNull(map);
@@ -72,12 +76,13 @@ public sealed class StartingTownMapEndpointTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
 
-        var response = await client.GetAsync("/api/games/starting-town-map");
+        var response = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
         var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
 
         Assert.NotNull(map);
-        Assert.Equal(12, map.Trails.Count);
+        Assert.Equal(14, map.Trails.Count);
         Assert.All(map!.Trails, trail =>
         {
             Assert.False(string.IsNullOrWhiteSpace(trail.Id));
@@ -92,13 +97,39 @@ public sealed class StartingTownMapEndpointTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
 
-        var response = await client.GetAsync("/api/games/starting-town-map");
+        var response = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
         var payload = await response.Content.ReadAsStringAsync();
 
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetStartingTownMapReturnsNotFoundForMissingSession()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}/starting-town-map");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static async Task<Guid> CreateSessionAsync(HttpClient client)
+    {
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        // The map endpoint is used during town selection, so we only need
+        // a setup-phase session (not a fully-started game).
+        var response = await client.PostAsJsonAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
+        var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(session);
+        return session!.Id;
     }
 }

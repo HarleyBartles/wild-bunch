@@ -13,6 +13,7 @@ public sealed record GameSessionDto(
     GameStatus Status,
     GameDifficulty GameDifficulty,
     GameEntropy GameEntropy,
+    StartFlowPhase StartFlowPhase,
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,

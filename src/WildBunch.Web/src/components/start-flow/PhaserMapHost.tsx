@@ -51,8 +51,13 @@ export class StartingTownMapScene extends Phaser.Scene {
       (height - padding * 2) / dataHeight,
     );
 
-    const toScreenX = (x: number) => padding + (x - minX) * scale;
-    const toScreenY = (y: number) => padding + (y - minY) * scale;
+    const scaledWidth = dataWidth * scale;
+    const scaledHeight = dataHeight * scale;
+    const offsetX = (width - scaledWidth) / 2;
+    const offsetY = (height - scaledHeight) / 2;
+
+    const toScreenX = (x: number) => offsetX + (x - minX) * scale;
+    const toScreenY = (y: number) => offsetY + (y - minY) * scale;
 
     const townById = new Map(this.mapData.towns.map((t) => [t.id, t]));
 
@@ -159,4 +164,7 @@ const MapCanvas = styled.div`
   border: 1px solid var(--border);
   background: #a8c890;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;

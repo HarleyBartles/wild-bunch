@@ -1,9 +1,12 @@
 import { useMemo } from "react";
-import { JourneyStatus } from "../api/types";
+import { JourneyStatus, StartFlowPhase } from "../api/types";
 import { useGameSession } from "../state/useGameSession";
 
 export type GamePhase =
   | "pre-session"
+  | "setup"
+  | "prologue"
+  | "town-selection"
   | "in-town"
   | "on-trail"
   | "arrival";
@@ -21,7 +24,10 @@ export interface GamePhaseState {
  *
  * Phases:
  * - pre-session: no session loaded
- * - in-town: session exists, no active journey
+ * - setup: session exists but setup not yet complete (should not normally occur)
+ * - prologue: setup complete, prologue not yet viewed
+ * - town-selection: prologue viewed, town not yet selected
+ * - in-town: game started, no active journey
  * - on-trail: journey is Active or Interrupted
  * - arrival: journey is Completed, awaiting acknowledgement
  */
@@ -30,6 +36,34 @@ export function useGamePhase(): GamePhaseState {
 
   return useMemo(() => {
     if (!session) {
+      return {
+        phase: "pre-session" as const,
+        hasSession: false,
+        isOnTrail: false,
+        isArrivalPending: false,
+      };
+    }
+
+    // Check start flow phase first — if the game hasn't fully started yet,
+    // route to the appropriate start flow step.
+    if (session.startFlowPhase !== StartFlowPhase.GameStarted) {
+      if (session.startFlowPhase === StartFlowPhase.SetupComplete) {
+        return {
+          phase: "prologue" as const,
+          hasSession: true,
+          isOnTrail: false,
+          isArrivalPending: false,
+        };
+      }
+      if (session.startFlowPhase === StartFlowPhase.PrologueViewed) {
+        return {
+          phase: "town-selection" as const,
+          hasSession: true,
+          isOnTrail: false,
+          isArrivalPending: false,
+        };
+      }
+      // NotStarted or unknown — treat as pre-session
       return {
         phase: "pre-session" as const,
         hasSession: false,

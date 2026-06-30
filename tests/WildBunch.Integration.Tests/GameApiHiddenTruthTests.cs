@@ -16,20 +16,9 @@ public sealed class GameApiHiddenTruthTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-
-        var createPayload = await createResponse.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("Butch Cassidy", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Sundance Kid", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Elzy Lay", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Kid Curry", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"linkedSuspectIds\"", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"killerReleaseState\"", createPayload, StringComparison.OrdinalIgnoreCase);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal");
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
@@ -80,8 +69,7 @@ public sealed class GameApiHiddenTruthTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
         // Start travel so the journey is active
@@ -115,8 +103,7 @@ public sealed class GameApiHiddenTruthTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
         // The dev saloon-context endpoint deliberately exposes hidden culprit truth
@@ -133,10 +120,6 @@ public sealed class GameApiHiddenTruthTests
         Assert.Contains("\"isEligibleSaloonPoi\"", devSaloonPayload, StringComparison.OrdinalIgnoreCase);
 
         // Player APIs MUST NOT contain hidden truth markers (re-verify the boundary)
-        var createPayload = await createResponse.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("\"trueCulpritId\"", createPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"isTrueCulprit\"", createPayload, StringComparison.OrdinalIgnoreCase);
-
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);

@@ -1,0 +1,16 @@
+BUNCH-109: revert unrelated archive idempotency change
+
+Restore the original double-archive conflict behavior:
+- GameSession.ArchivePlaythrough throws InvalidOperationException
+  when the session is already archived (was silently returning)
+- ArchiveGameReturnsConflictForDoubleArchive expects 409 Conflict
+  (was expecting 200 OK)
+- GameSessionArchiveTests.ArchivePlaythrough_Throws_On_Double_Archive
+  restores the throw assertion (was asserting idempotent no-op)
+
+This archive contract is outside BUNCH-109 scope. The endpoint already
+maps InvalidOperationException to 409 Conflict — no endpoint change needed.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

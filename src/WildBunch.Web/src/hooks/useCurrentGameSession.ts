@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acknowledgeTravelArrival,
   archiveGame,
-  createGame,
   checkLocalRecords,
   followTelegraphLeads,
   getAvailableActions,
@@ -13,7 +12,10 @@ import {
   gatherLocalGossip,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
+  markPrologueViewed,
   readWantedPosters,
+  setupGame,
+  startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
 import { AvailableActionKind } from "../api/types";
@@ -22,7 +24,7 @@ import type {
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
-  StartGameRequest,
+  SetupGameRequest,
   WantedPosterDto,
 } from "../api/types";
 
@@ -137,19 +139,40 @@ export function useCurrentGameSession() {
     [queryClient],
   );
 
-  const startGameMutation = useMutation({
-    mutationFn: (request: StartGameRequest) => createGame(request),
+  const setupGameMutation = useMutation({
+    mutationFn: (request: SetupGameRequest) => setupGame(request),
     onSuccess: async (createdSession) => {
       window.localStorage.setItem(storageKey, createdSession.id);
       setStoredGameId(createdSession.id);
-      setWantedPosters([]);
-      setDeclaredWantedIdentityHandle("");
       setError("");
       await invalidateGameQueries(createdSession.id);
-      setNotice(`New game started for ${createdSession.player.name}.`);
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to start a new game.");
+      setError(exception instanceof Error ? exception.message : "Unable to complete setup.");
+    },
+  });
+
+  const markPrologueViewedMutation = useMutation({
+    mutationFn: (activeGameId: string) => markPrologueViewed(activeGameId),
+    onSuccess: async (updatedSession) => {
+      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      await invalidateGameQueries(updatedSession.id);
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to mark prologue as viewed.");
+    },
+  });
+
+  const startGameWithTownMutation = useMutation({
+    mutationFn: ({ activeGameId, townId }: { activeGameId: string; townId: string }) =>
+      startGameWithTown(activeGameId, { startingTownId: townId }),
+    onSuccess: async (updatedSession) => {
+      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      await invalidateGameQueries(updatedSession.id);
+      setNotice(`New game started for ${updatedSession.player.name}.`);
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to start the game.");
     },
   });
 
@@ -304,17 +327,15 @@ export function useCurrentGameSession() {
     lookAroundSaloonMutation.isPending ||
     confrontSaloonMutation.isPending;
 
-  const busyMode: BusyMode = startGameMutation.isPending
-    ? "starting"
-    : travelMutation.isPending
-      ? "traveling"
-      : readWantedPostersMutation.isPending
-        ? "reading"
-        : investigationPending
-          ? "investigating"
-          : sessionQuery.isFetching || actionsQuery.isFetching || journalQuery.isFetching
-            ? "refreshing"
-            : "idle";
+  const busyMode: BusyMode = travelMutation.isPending
+    ? "traveling"
+    : readWantedPostersMutation.isPending
+      ? "reading"
+      : investigationPending
+        ? "investigating"
+        : sessionQuery.isFetching || actionsQuery.isFetching || journalQuery.isFetching
+          ? "refreshing"
+          : "idle";
 
   const loading = busyMode !== "idle";
 
@@ -326,11 +347,31 @@ export function useCurrentGameSession() {
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
   const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest && declaredWantedIdentityHandle);
 
-  const startNewGame = useCallback(
-    async (request: StartGameRequest) => {
-      await startGameMutation.mutateAsync(request);
+  const handleSetupGame = useCallback(
+    async (request: SetupGameRequest) => {
+      await setupGameMutation.mutateAsync(request);
     },
-    [startGameMutation],
+    [setupGameMutation],
+  );
+
+  const handleMarkPrologueViewed = useCallback(
+    async () => {
+      if (!gameId) {
+        return;
+      }
+      await markPrologueViewedMutation.mutateAsync(gameId);
+    },
+    [gameId, markPrologueViewedMutation],
+  );
+
+  const handleStartGameWithTown = useCallback(
+    async (townId: string) => {
+      if (!gameId) {
+        return;
+      }
+      await startGameWithTownMutation.mutateAsync({ activeGameId: gameId, townId });
+    },
+    [gameId, startGameWithTownMutation],
   );
 
   const reloadCurrentGame = useCallback(
@@ -479,7 +520,9 @@ export function useCurrentGameSession() {
     canConfrontSaloonPersonOfInterest,
     declaredWantedIdentityHandle,
     setDeclaredWantedIdentityHandle,
-    startNewGame,
+    handleSetupGame,
+    handleMarkPrologueViewed,
+    handleStartGameWithTown,
     reloadCurrentGame,
     handleTravelTurnResult,
     handleTravel,

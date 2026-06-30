@@ -54,11 +54,18 @@ internal sealed class GameSetupResolver
         //    choose the starting town.
         var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
 
+        // 3b. Apply entropy-salted trail distances. The seed owns baseline
+        //     distances; entropy corrupts them downstream. Boring preserves
+        //     the seed defaults (±0). Classic/Adventurous/Wild apply a bounded
+        //     per-trail swing so the map doesn't look like a perfect geometric
+        //     shape while keeping the topology intact.
+        var saltedWorld = TrailDistanceSalter.Apply(world, entropy, mysteryTruth.SaltSource);
+
         // 4. Resolve starting town via the setup/policy seam. The player can
         //    start in any town that exists in the generated world. If no town
         //    is supplied, a safe non-seed-authored default is used.
         //    Future seam: difficulty may constrain eligibility.
-        var startingTownId = StartingTownPolicy.ResolveStartingTown(world, playerChosenStartingTownId);
+        var startingTownId = StartingTownPolicy.ResolveStartingTown(saltedWorld, playerChosenStartingTownId);
 
         // 5. Build case file using resolved culprit/accusation indices from
         //    MysteryTruthResolution — NOT raw seed world defaults.
@@ -66,12 +73,12 @@ internal sealed class GameSetupResolver
         var caseFile = isCanonical
             ? SeedCaseBuilder.CreateCanonicalCaseFile(
                 source,
-                world,
+                saltedWorld,
                 mysteryTruth.ResolvedCulpritIndex,
                 mysteryTruth.ResolvedAccusationIndex)
             : SeedCaseBuilder.CreateCaseFile(
                 source,
-                world,
+                saltedWorld,
                 mysteryTruth.ResolvedCulpritIndex,
                 mysteryTruth.ResolvedAccusationIndex);
 
@@ -93,7 +100,7 @@ internal sealed class GameSetupResolver
             seedWorld,
             difficulty.Difficulty,
             entropy.GameEntropy,
-            world,
+            saltedWorld,
             startingTownId,
             caseFile,
             startingWallet,

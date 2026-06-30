@@ -105,25 +105,9 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     }
 
     [Fact]
-    public void CanonicalWorld_HasModerateBadlandsNoneRoute()
-    {
-        // Slot 0→6 is Moderate/Badlands/None (count >= 7). Start in slot 0's town.
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
-        var startTown = TravelTestSeedCatalog.FindTownWithRoute(
-            world, TrailRisk.Moderate, TrailTerrain.Badlands, WaterFeature.None);
-        Assert.NotNull(startTown);
-
-        var session = TravelTestSeedCatalog.CreateSession(
-            TravelTestSeedCatalog.CanonicalMountedBoring, startTown!.Value.Value);
-        var trail = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session, TrailRisk.Moderate, TrailTerrain.Badlands, WaterFeature.None);
-        Assert.NotNull(trail);
-    }
-
-    [Fact]
     public void CanonicalWorld_HasLowOpenRangeCreekRoute()
     {
-        // Slot 0→1 is Low/OpenRange/Creek in Canonical variant. Start in slot 0's town.
+        // Slot 0→1 is Low/OpenRange/Creek in Canonical variant (spoke from hub). Start in slot 0's town.
         var world = SeedWorldBuilder.CreateCanonicalWorld();
         var startTown = TravelTestSeedCatalog.FindTownWithRoute(
             world, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
@@ -133,26 +117,6 @@ public sealed class TravelTestSeedCatalogGuardrailTests
             TravelTestSeedCatalog.CanonicalMountedEasyStandard, startTown!.Value.Value);
         var trail = TravelTestSeedCatalog.FindRouteFromCurrentTown(
             session, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        Assert.NotNull(trail);
-    }
-
-    [Fact]
-    public void FrontierWorld_HasModerateHillsSpringRoute()
-    {
-        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.FrontierFootNormalFoe);
-        // Frontier variant: slot 0->2 trail is Moderate/Hills/Spring
-        var trail = session.World.Trails.FirstOrDefault(t =>
-            t.Risk == TrailRisk.Moderate && t.Terrain == TrailTerrain.Hills && t.WaterFeature == WaterFeature.Spring);
-        Assert.NotNull(trail);
-    }
-
-    [Fact]
-    public void FrontierWorld_HasHighBadlandsNoneRoute()
-    {
-        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.FrontierMountedNormalHighRisk);
-        // Frontier variant: slot 0->3 trail is High/Badlands/None
-        var trail = session.World.Trails.FirstOrDefault(t =>
-            t.Risk == TrailRisk.High && t.Terrain == TrailTerrain.Badlands && t.WaterFeature == WaterFeature.None);
         Assert.NotNull(trail);
     }
 

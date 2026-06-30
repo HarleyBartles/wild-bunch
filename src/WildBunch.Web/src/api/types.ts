@@ -1,6 +1,13 @@
 export type GameStatus = 0 | 1 | 2 | 3;
 export type GameDifficulty = 0 | 1 | 2 | 3;
 export type GameEntropy = 0 | 1 | 2 | 3;
+export type StartFlowPhase = 0 | 1 | 2 | 3;
+export const StartFlowPhase = {
+  NotStarted: 0,
+  SetupComplete: 1,
+  PrologueViewed: 2,
+  GameStarted: 3,
+} as const;
 export type JourneyStatus = 0 | 1 | 2 | 3;
 export const JourneyStatus = {
   Active: 0,
@@ -46,12 +53,15 @@ export type StoreOfferAvailability = 0 | 1;
 export type CaseIdentityKind = 0 | 1 | 2 | 3 | 4;
 export type CaseIdentityStatus = 0 | 1 | 2 | 3;
 
-export interface StartGameRequest {
+export interface SetupGameRequest {
   playerName: string;
   gameDifficulty: GameDifficulty;
   seedCode?: string | null;
   gameEntropy?: GameEntropy;
-  startingTownId?: string | null;
+}
+
+export interface StartGameWithTownRequest {
+  startingTownId: string;
 }
 
 export interface TravelRequest {
@@ -473,6 +483,7 @@ export interface GameSessionDto {
   status: GameStatus;
   gameDifficulty: GameDifficulty;
   gameEntropy: GameEntropy;
+  startFlowPhase: StartFlowPhase;
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;

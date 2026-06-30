@@ -41,6 +41,7 @@ internal static class GameSessionReadStoreLoader
             Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
             (GameDifficulty)store.Envelope.GameDifficulty,
             entropy,
+            DeriveStartFlowPhase(store.AllEvents),
             player,
             world,
             serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile)),
@@ -52,6 +53,25 @@ internal static class GameSessionReadStoreLoader
                 : null,
             store.TravelDiaryDays,
             store.LogEntries);
+    }
+
+    private static StartFlowPhase DeriveStartFlowPhase(IReadOnlyList<IDomainEvent> events)
+    {
+        var hasGameStarted = false;
+        var hasPrologueViewed = false;
+        var hasSetupCompleted = false;
+
+        foreach (var e in events)
+        {
+            if (e is GameStarted) hasGameStarted = true;
+            else if (e is PrologueViewed) hasPrologueViewed = true;
+            else if (e is PlayerSetupCompleted) hasSetupCompleted = true;
+        }
+
+        if (hasGameStarted) return StartFlowPhase.GameStarted;
+        if (hasPrologueViewed) return StartFlowPhase.PrologueViewed;
+        if (hasSetupCompleted) return StartFlowPhase.SetupComplete;
+        return StartFlowPhase.NotStarted;
     }
 
     public static async Task<JournalSnapshot?> LoadJournalSnapshotAsync(
@@ -145,12 +165,14 @@ internal static class GameSessionReadStoreLoader
             envelope,
             components,
             logEntries,
-            diaryDays.Select(serializer.DeserializeTravelDiaryDay).ToArray());
+            diaryDays.Select(serializer.DeserializeTravelDiaryDay).ToArray(),
+            domainEvents);
     }
 
     private sealed record GameSessionStore(
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<GameLogEntry> LogEntries,
-        IReadOnlyList<TravelDiaryDayState> TravelDiaryDays);
+        IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
+        IReadOnlyList<IDomainEvent> AllEvents);
 }

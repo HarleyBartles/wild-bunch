@@ -15,15 +15,16 @@ internal static class SeedWorldSeedCodeFactory
         var townCount = 8;
         var prosperityPalette = ProsperityPalette.UniformProsperous;
         var servicesPalette = ServicesPalette.HubTelegraph;
+        var mapLayoutPalette = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
+            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
 
         var target = new SeedWorld(
             Guid.Empty,
@@ -31,6 +32,7 @@ internal static class SeedWorldSeedCodeFactory
             townCount,
             servicesPalette,
             prosperityPalette,
+            mapLayoutPalette,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
@@ -55,15 +57,16 @@ internal static class SeedWorldSeedCodeFactory
     {
         var variant = (SeedWorldVariant)worldVariant;
         var townCount = 8;
+        var mapLayoutPalette = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
+            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
 
         var target = new SeedWorld(
             Guid.Empty,
@@ -71,6 +74,7 @@ internal static class SeedWorldSeedCodeFactory
             townCount,
             servicesPalette,
             prosperityPalette,
+            mapLayoutPalette,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,

@@ -18,10 +18,7 @@ public sealed class GameApiArchiveTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
         Assert.Equal(GameStatus.Active, createdSession!.Status);
 
@@ -64,10 +61,7 @@ public sealed class GameApiArchiveTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
         var firstArchive = await client.PostAsync($"/api/games/{createdSession!.Id}/archive", content: null);
@@ -75,6 +69,7 @@ public sealed class GameApiArchiveTests
 
         var secondArchive = await client.PostAsync($"/api/games/{createdSession.Id}/archive", content: null);
 
+        // ArchivePlaythrough throws when archiving an already-archived session — endpoint maps to 409 Conflict.
         Assert.Equal(HttpStatusCode.Conflict, secondArchive.StatusCode);
     }
 }

@@ -14,11 +14,12 @@ namespace WildBunch.Application.Tests;
 
 /// <summary>
 /// Application-level tests for the one-active-playthrough invariant enforced by
-/// <see cref="StartNewGameHandler"/>. The invariant: before creating a new session,
-/// all pre-existing Active sessions are archived in the SAME correlation id and SAME
-/// unit-of-work commit as the new session create. See BUNCH-102.
+/// <see cref="CompletePlayerSetupHandler"/>. The invariant: before creating a new
+/// setup-phase session, all pre-existing Active sessions are archived in the SAME
+/// correlation id and SAME unit-of-work commit as the new session create.
+/// See BUNCH-102.
 /// </summary>
-public sealed class StartNewGameOneActivePlaythroughTests
+public sealed class CompletePlayerSetupOneActivePlaythroughTests
 {
     [Fact]
     public async Task ArchivesExistingActiveSessionAndCreatesNewOneInSingleCommit()
@@ -28,10 +29,16 @@ public sealed class StartNewGameOneActivePlaythroughTests
         var existingSession = CreateActiveSession("Ranger Vale");
         existingSession.MarkEventsCommitted();
         repository.Seed(existingSession);
-        var handler = new StartNewGameHandler(factory, repository, repository,
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
             new HudProjector(), new DiaryProjector());
 
-        var result = await handler.HandleAsync(new StartNewGameCommand("Trail Hand"));
+        var result = await handler.HandleAsync(new CompletePlayerSetupCommand
+        {
+            PlayerName = "Trail Hand",
+            GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
+            SeedCode = "00000000-0000-0000-0000-000000000000",
+            GameEntropy = WildBunch.Domain.Travel.GameEntropy.Classic,
+        });
 
         // The new session is Active.
         Assert.Equal(GameStatus.Active, result.Status);
@@ -69,10 +76,16 @@ public sealed class StartNewGameOneActivePlaythroughTests
         var secondExisting = CreateActiveSession("Trail Hand");
         secondExisting.MarkEventsCommitted();
         repository.Seed(secondExisting);
-        var handler = new StartNewGameHandler(factory, repository, repository,
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
             new HudProjector(), new DiaryProjector());
 
-        var result = await handler.HandleAsync(new StartNewGameCommand("Newcomer"));
+        var result = await handler.HandleAsync(new CompletePlayerSetupCommand
+        {
+            PlayerName = "Newcomer",
+            GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
+            SeedCode = "00000000-0000-0000-0000-000000000000",
+            GameEntropy = WildBunch.Domain.Travel.GameEntropy.Classic,
+        });
 
         // The new session is Active.
         Assert.Equal(GameStatus.Active, result.Status);
@@ -107,10 +120,16 @@ public sealed class StartNewGameOneActivePlaythroughTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new StartNewGameHandler(factory, repository, repository,
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
             new HudProjector(), new DiaryProjector());
 
-        var result = await handler.HandleAsync(new StartNewGameCommand("Ranger Vale"));
+        var result = await handler.HandleAsync(new CompletePlayerSetupCommand
+        {
+            PlayerName = "Ranger Vale",
+            GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
+            SeedCode = "00000000-0000-0000-0000-000000000000",
+            GameEntropy = WildBunch.Domain.Travel.GameEntropy.Classic,
+        });
 
         // The new session is Active.
         Assert.Equal(GameStatus.Active, result.Status);

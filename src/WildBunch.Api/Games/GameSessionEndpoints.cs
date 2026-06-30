@@ -13,19 +13,32 @@ public static class GameSessionEndpoints
 {
     public static IEndpointRouteBuilder MapGameSessionEndpoints(this IEndpointRouteBuilder games)
     {
-        games.MapPost(string.Empty, CreateGameAsync)
-            .WithName("CreateGame")
-            .Accepts<StartGameRequest>("application/json")
+        games.MapPost("setup", SetupGameAsync)
+            .WithName("SetupGame")
+            .Accepts<SetupGameRequest>("application/json")
             .Produces<GameSessionDto>(StatusCodes.Status201Created)
+            .ProducesValidationProblem();
+
+        games.MapPost("{id:guid}/prologue-viewed", MarkPrologueViewedAsync)
+            .WithName("MarkPrologueViewed")
+            .Produces<GameSessionDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        games.MapPost("{id:guid}/start", StartGameAsync)
+            .WithName("StartGameWithTown")
+            .Accepts<StartGameWithTownRequest>("application/json")
+            .Produces<GameSessionDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem();
 
         games.MapGet("starting-towns", GetStartingTownsAsync)
             .WithName("GetStartingTowns")
             .Produces<IReadOnlyList<StartingTownDto>>(StatusCodes.Status200OK);
 
-        games.MapGet("starting-town-map", GetStartingTownMapAsync)
+        games.MapGet("{id:guid}/starting-town-map", GetStartingTownMapAsync)
             .WithName("GetStartingTownMap")
-            .Produces<StartingTownMapDto>(StatusCodes.Status200OK);
+            .Produces<StartingTownMapDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
         games.MapGet("prologue", GetPrologueAsync)
             .WithName("GetPrologue")
@@ -44,9 +57,9 @@ public static class GameSessionEndpoints
         return games;
     }
 
-    private static async Task<IResult> CreateGameAsync(
-        StartGameRequest? request,
-        StartNewGameHandler handler,
+    private static async Task<IResult> SetupGameAsync(
+        SetupGameRequest? request,
+        CompletePlayerSetupHandler handler,
         CancellationToken cancellationToken)
     {
         if (!RequestValidation.TryValidate(request, out var validationResult))
@@ -56,9 +69,67 @@ public static class GameSessionEndpoints
 
         var validatedRequest = request!;
         var session = await handler.HandleAsync(
-            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.GameDifficulty, validatedRequest.SeedCode, validatedRequest.GameEntropy, validatedRequest.StartingTownId),
+            new CompletePlayerSetupCommand
+            {
+                PlayerName = validatedRequest.PlayerName,
+                GameDifficulty = validatedRequest.GameDifficulty,
+                GameEntropy = validatedRequest.GameEntropy,
+                SeedCode = validatedRequest.SeedCode ?? string.Empty
+            },
             cancellationToken);
         return Results.Created($"/api/games/{session.Id}", session);
+    }
+
+    private static async Task<IResult> MarkPrologueViewedAsync(
+        Guid id,
+        ViewPrologueHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var session = await handler.HandleAsync(
+                new ViewPrologueCommand(),
+                new GameSessionId(id),
+                cancellationToken);
+            return Results.Ok(session);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> StartGameAsync(
+        Guid id,
+        StartGameWithTownRequest? request,
+        CompleteGameStartHandler handler,
+        CancellationToken cancellationToken)
+    {
+        if (!RequestValidation.TryValidate(request, out var validationResult))
+        {
+            return validationResult!;
+        }
+
+        var validatedRequest = request!;
+        try
+        {
+            var session = await handler.HandleAsync(
+                new CompleteGameStartCommand
+                {
+                    SessionId = new GameSessionId(id),
+                    StartingTownId = validatedRequest.StartingTownId
+                },
+                cancellationToken);
+            return Results.Ok(session);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { error = ex.Message });
+        }
     }
 
     private static async Task<IResult> GetStartingTownsAsync(
@@ -70,11 +141,19 @@ public static class GameSessionEndpoints
     }
 
     private static async Task<IResult> GetStartingTownMapAsync(
+        Guid id,
         GetStartingTownMapHandler handler,
         CancellationToken cancellationToken)
     {
-        var map = await handler.HandleAsync(new GetStartingTownMapQuery(), cancellationToken);
-        return Results.Ok(map);
+        try
+        {
+            var map = await handler.HandleAsync(new GetStartingTownMapQuery(id), cancellationToken);
+            return Results.Ok(map);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
     }
 
     private static async Task<IResult> GetPrologueAsync(

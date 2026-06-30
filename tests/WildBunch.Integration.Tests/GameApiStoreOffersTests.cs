@@ -17,13 +17,12 @@ public sealed class GameApiStoreOffersTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
-        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/lostcanyon/store-offers");
+        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/hardpan/store-offers");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -31,8 +30,8 @@ public sealed class GameApiStoreOffersTests
 
         Assert.NotNull(catalog);
         Assert.True(catalog!.Available);
-        Assert.Equal("lostcanyon", catalog.TownId);
-        Assert.Equal("Lost Canyon", catalog.TownName);
+        Assert.Equal("hardpan", catalog.TownId);
+        Assert.Equal("Hardpan", catalog.TownName);
         Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.GeneralStore);
         Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.Stable);
 
@@ -50,8 +49,7 @@ public sealed class GameApiStoreOffersTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
 
@@ -69,16 +67,15 @@ public sealed class GameApiStoreOffersTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
-        // Every town now has a prosperity-based store. Gold Gulch is in the
+        // Every town now has a prosperity-based store. Emberfall is in the
         // canonical world but is not the current town — the catalog should
         // still be available with general store offers.
-        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/goldgulch/store-offers");
+        var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/emberfall/store-offers");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

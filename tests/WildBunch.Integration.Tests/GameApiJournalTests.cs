@@ -20,8 +20,7 @@ public sealed class GameApiJournalTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
@@ -37,8 +36,8 @@ public sealed class GameApiJournalTests
         Assert.Equal(createdSession.Status, journal.Status);
         Assert.Equal(createdSession.Clock.Day, journal.Clock.Day);
         Assert.Equal(createdSession.Clock.Turn, journal.Clock.Turn);
-        Assert.Equal("lostcanyon", journal.CurrentTown.Id);
-        Assert.Equal("Lost Canyon", journal.CurrentTown.Name);
+        Assert.Equal("hardpan", journal.CurrentTown.Id);
+        Assert.Equal("Hardpan", journal.CurrentTown.Name);
         Assert.Equal("Find the culprit before the law closes in.", journal.CaseFile.CaseSummary);
         Assert.Equal("The culprit has a scar on the left cheek.", journal.CaseFile.OpeningLead);
         Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
@@ -78,14 +77,13 @@ public sealed class GameApiJournalTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var buyResponse = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession.Id}/towns/lostcanyon/store/buy",
+            $"/api/games/{createdSession.Id}/towns/hardpan/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
         var buyResult = await buyResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
         Assert.NotNull(buyResult);
@@ -110,19 +108,18 @@ public sealed class GameApiJournalTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("redmesa"));
+            new TravelRequest("quartzsite"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
-        await AdvanceUntilTownAsync(client, createdSession.Id, "redmesa");
+        await AdvanceUntilTownAsync(client, createdSession.Id, "quartzsite");
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -131,8 +128,8 @@ public sealed class GameApiJournalTests
         var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
 
         Assert.NotNull(journal);
-        Assert.Equal("redmesa", journal!.CurrentTown.Id);
-        Assert.Equal(3, journal.Clock.Day);
+        Assert.Equal("quartzsite", journal!.CurrentTown.Id);
+        Assert.Equal(5, journal.Clock.Day);
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal("The culprit has a scar on the left cheek.", journal.CaseFile.OpeningLead);
@@ -157,15 +154,14 @@ public sealed class GameApiJournalTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("redmesa"));
+            new TravelRequest("quartzsite"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 

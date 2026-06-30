@@ -31,7 +31,7 @@ public sealed class BoringScenarioBuilderTests
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
         Assert.Equal(TravelMode.Mounted, previewValue.TravelMode);
         Assert.True(previewValue.MountedTravelAvailable);
-        Assert.Equal("redmesa", previewValue.DestinationTownId);
+        Assert.Equal("quartzsite", previewValue.DestinationTownId);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class BoringScenarioBuilderTests
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
         Assert.Equal(TravelMode.Mounted, previewValue.TravelMode);
         Assert.True(previewValue.MountedTravelAvailable);
-        Assert.Equal("redmesa", previewValue.DestinationTownId);
+        Assert.Equal("quartzsite", previewValue.DestinationTownId);
     }
 
     [Fact]
@@ -82,8 +82,8 @@ public sealed class BoringScenarioBuilderTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
-        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "lostcanyon" && trail.ToTownId.Value == "redmesa");
-        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "lostcanyon" && trail.ToTownId.Value == "goldgulch");
+        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "hardpan" && trail.ToTownId.Value == "quartzsite");
+        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "hardpan" && trail.ToTownId.Value == "emberfall");
     }
 
     [Fact]

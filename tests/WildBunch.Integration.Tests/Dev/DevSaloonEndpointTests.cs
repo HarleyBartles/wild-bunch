@@ -196,10 +196,7 @@ public sealed class DevSaloonEndpointTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        createResponse.EnsureSuccessStatusCode();
-        var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(created);
-        return created!.Id;
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+        return created.Id;
     }
 }
