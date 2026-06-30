@@ -114,6 +114,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public GameStatus Status { get; private set; }
 
+    /// <summary>
+    /// Tracks progress through the start game flow (setup → prologue → map selection → game started).
+    /// This is persisted via domain events (PlayerSetupCompleted, PrologueViewed) and
+    /// allows the frontend to resume from the correct step after a refresh.
+    /// </summary>
+    public StartFlowPhase StartFlowPhase { get; private set; } = StartFlowPhase.NotStarted;
+
     public Player Player { get; private set; }
 
     public DomainWorld World { get; }
@@ -860,6 +867,109 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Player.SetCanteenState(canteen.AdjustCharges(canteenChargeDelta));
     }
 
+    /// <summary>
+    /// Starts a new game session in the setup-complete phase (after player has completed initial setup).
+    /// This creates a session that has PlayerSetupCompleted applied but not yet GameStarted.
+    /// The session can be advanced to GameStarted by calling CompleteGameStart().
+    /// </summary>
+    public static GameSession StartSetup(
+        string playerName,
+        DomainWorld world,
+        CaseFile caseFile,
+        GameDifficulty gameDifficulty,
+        GameEntropy gameEntropy,
+        string seedCode)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(caseFile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
+
+        var resolvedSaltSource = SaltSource.CreateRuntime();
+
+        // Create the PlayerSetupCompleted event
+        var setupEvent = new PlayerSetupCompleted
+        {
+            PlayerName = playerName,
+            GameDifficulty = gameDifficulty,
+            GameEntropy = gameEntropy,
+            SeedCode = seedCode
+        };
+
+        // Create a placeholder session
+        var placeholderPlayer = new Player(
+            playerName,
+            world.Towns.First().Id, // Temporary, will be set when GameStarted is emitted
+            health: StartingHealthFor(gameDifficulty),
+            WildBunch.Domain.Economy.Wallet.Starting(25m),
+            DomainInventory.Empty());
+
+        var session = new GameSession(
+            GameSessionId.New(),
+            placeholderPlayer,
+            world,
+            caseFile,
+            new PursuitState(),
+            new GameClock(),
+            GameStatus.Active,
+            journey: null,
+            gameDifficulty,
+            resolvedSaltSource,
+            gameEntropy,
+            currentTownVisit: null,
+            Array.Empty<TravelJourneySnapshot>(),
+            Array.Empty<WantedSuspectPresenceEntry>());
+
+        // Apply the setup event
+        session.Apply(setupEvent);
+        session._uncommittedEvents.Add(setupEvent);
+
+        return session;
+    }
+
+    /// <summary>
+    /// Completes the game start by selecting a starting town and emitting GameStarted.
+    /// This transitions the session from SetupComplete/PrologueViewed to GameStarted.
+    /// The wallet and inventory come from the difficulty envelope (application layer concern).
+    /// </summary>
+    public void CompleteGameStart(
+        TownId startingTownId,
+        WildBunch.Domain.Economy.Wallet? wallet = null,
+        DomainInventory? inventory = null)
+    {
+        if (StartFlowPhase == StartFlowPhase.GameStarted)
+        {
+            return; // Already started
+        }
+
+        if (StartFlowPhase == StartFlowPhase.NotStarted)
+        {
+            throw new InvalidOperationException("Cannot complete game start before setup is complete.");
+        }
+
+        var startingTown = World.GetTown(startingTownId);
+        var startingHealth = StartingHealthFor(GameDifficulty);
+        var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
+        var resolvedInventory = inventory ?? DomainInventory.Empty();
+
+        var e = new GameStarted
+        {
+            PlayerName = Player.Name,
+            StartingTownId = startingTown.Id,
+            StartingTownName = startingTown.Name,
+            StartingHealth = startingHealth,
+            StartingWallet = resolvedWallet.Cash,
+            StartingInventoryItems = resolvedInventory.Items.ToArray(),
+            GameDifficulty = GameDifficulty,
+            SaltSource = SaltSource,
+            GameEntropy = GameEntropy,
+            SeedCode = SeedCode
+        };
+
+        Apply(e);
+        _uncommittedEvents.Add(e);
+    }
+
     public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
         => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard, seedCode: null);
 
@@ -937,6 +1047,28 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Records that the player has viewed the prologue and the starting clue was revealed.
+    /// This emits a <see cref="PrologueViewed"/> event and advances the start flow phase.
+    /// </summary>
+    public void ViewPrologue(string revealedSuspectIdentifier)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(revealedSuspectIdentifier);
+
+        if (StartFlowPhase != StartFlowPhase.SetupComplete)
+        {
+            return; // Must complete setup first
+        }
+
+        var e = new PrologueViewed
+        {
+            RevealedSuspectIdentifier = revealedSuspectIdentifier
+        };
+
+        Apply(e);
+        _uncommittedEvents.Add(e);
+    }
+
+    /// <summary>
     /// Archives this playthrough: marks the session <see cref="GameStatus.Archived"/>
     /// and emits a <see cref="PlaythroughArchived"/> event carrying a snapshot of the
     /// player's last position (town, day, turn) and the status before archive. Archive
@@ -951,7 +1083,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (Status == GameStatus.Archived)
         {
-            throw new InvalidOperationException("This playthrough is already archived.");
+            return;
         }
 
         var e = new PlaythroughArchived
@@ -996,7 +1128,39 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         SaltSource = e.SaltSource;
         GameEntropy = e.GameEntropy;
         SeedCode = e.SeedCode;
+        StartFlowPhase = StartFlowPhase.GameStarted;
         AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="PlayerSetupCompleted"/> event to mutate session state.
+    /// This marks the transition from "no game" to "setup complete, ready to view prologue".
+    /// Sets SeedCode, GameDifficulty, and GameEntropy from the event so that
+    /// setup-phase sessions have these values available before GameStarted is emitted.
+    /// </summary>
+    private void Apply(PlayerSetupCompleted e)
+    {
+        StartFlowPhase = StartFlowPhase.SetupComplete;
+        SeedCode = e.SeedCode;
+        GameDifficulty = e.GameDifficulty;
+        GameEntropy = e.GameEntropy;
+        Player = new Player(
+            e.PlayerName,
+            Player.CurrentTownId,
+            health: Player.Health,
+            Player.Wallet,
+            Player.Inventory);
+        _version++;
+    }
+
+    /// <summary>
+    /// Applies a <see cref="PrologueViewed"/> event to mutate session state.
+    /// This marks the transition from "setup complete" to "ready to select starting town".
+    /// </summary>
+    private void Apply(PrologueViewed e)
+    {
+        StartFlowPhase = StartFlowPhase.PrologueViewed;
         _version++;
     }
 

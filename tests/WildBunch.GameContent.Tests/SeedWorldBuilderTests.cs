@@ -12,7 +12,7 @@ public sealed class SeedWorldBuilderTests
         var world = SeedWorldBuilder.CreateCanonicalWorld();
 
         Assert.Equal(8, world.Towns.Count);
-        Assert.Equal(12, world.Trails.Count);
+        Assert.Equal(14, world.Trails.Count);
 
         // Every town name must come from the name pool.
         var poolIds = SeedWorldCatalog.NamePool.Select(n => n.Id).ToHashSet();
@@ -132,7 +132,8 @@ public sealed class SeedWorldBuilderTests
             defaultCulpritIndex: 0,
             cashBonus: 0,
             ProsperityPalette.UniformProsperous,
-            ServicesPalette.HubTelegraph);
+            ServicesPalette.HubTelegraph,
+            MapLayoutPalette.HubAndSpoke);
 
         Assert.Equal(5, townNames.Count);
         // The shuffle must not be a no-op — at least one town must differ from
@@ -221,18 +222,19 @@ public sealed class SeedWorldBuilderTests
         var accusationIndex = 1;
         var defaultCulpritIndex = 3;
         var cashBonus = 0;
+        var mapLayout = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperity, services);
+            cashBonus, prosperity, services, mapLayout);
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(services, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayout);
 
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
-            Guid.Empty, variant, townCount, services, prosperity,
+            Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
             selectedTownIds, townServices, trails));
 
@@ -247,18 +249,19 @@ public sealed class SeedWorldBuilderTests
         var cashBonus = 0;
         var prosperity = ProsperityPalette.UniformProsperous;
         var services = ServicesPalette.HubTelegraph;
+        var mapLayout = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperity, services);
+            cashBonus, prosperity, services, mapLayout);
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(services, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayout);
 
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
-            Guid.Empty, variant, townCount, services, prosperity,
+            Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
             selectedTownIds, townServices, trails));
 

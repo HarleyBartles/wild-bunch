@@ -42,16 +42,34 @@ public sealed partial class GameSession
             throw new ArgumentException("Cannot rehydrate a session from an empty event stream.", nameof(events));
         }
 
-        // Extract starting town from the first event (GameStarted) to construct a placeholder Player
-        // for the constructor. Apply(GameStarted) will overwrite Player with the real state.
-        var gameStarted = events.OfType<GameStarted>().FirstOrDefault()
-            ?? throw new ArgumentException("Event stream must start with a GameStarted event.", nameof(events));
+        // The first event may be PlayerSetupCompleted (start flow) or GameStarted (legacy/direct start).
+        // For setup-phase sessions, we use the PlayerSetupCompleted event to construct a placeholder.
+        // For GameStarted sessions, we use the GameStarted event as before.
+        var firstEvent = events[0];
+
+        var gameStarted = events.OfType<GameStarted>().FirstOrDefault();
+        var setupCompleted = events.OfType<PlayerSetupCompleted>().FirstOrDefault();
+
+        if (gameStarted is null && setupCompleted is null)
+        {
+            throw new ArgumentException(
+                "Event stream must contain a PlayerSetupCompleted or GameStarted event.", nameof(events));
+        }
+
+        // Use GameStarted if available (it has the starting town), otherwise use PlayerSetupCompleted
+        var playerName = gameStarted?.PlayerName ?? setupCompleted!.PlayerName;
+        var startingTownId = gameStarted?.StartingTownId ?? world.Towns.First().Id;
+        var startingHealth = gameStarted?.StartingHealth ?? 100; // Placeholder for setup-phase sessions
+        var startingWallet = gameStarted?.StartingWallet ?? 25m;
+        var gameDifficulty = gameStarted?.GameDifficulty ?? setupCompleted!.GameDifficulty;
+        var saltSource = gameStarted?.SaltSource ?? SaltSource.CreateRuntime();
+        var gameEntropy = gameStarted?.GameEntropy ?? setupCompleted!.GameEntropy;
 
         var placeholderPlayer = new Player(
-            gameStarted.PlayerName,
-            gameStarted.StartingTownId,
-            health: gameStarted.StartingHealth,
-            Wallet.Starting(gameStarted.StartingWallet),
+            playerName,
+            startingTownId,
+            health: startingHealth,
+            Wallet.Starting(startingWallet),
             DomainInventory.Empty());
 
         var session = new GameSession(
@@ -63,9 +81,9 @@ public sealed partial class GameSession
             new GameClock(),
             GameStatus.Active,
             journey: null,
-            gameStarted.GameDifficulty,
-            gameStarted.SaltSource,
-            gameStarted.GameEntropy,
+            gameDifficulty,
+            saltSource,
+            gameEntropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
@@ -91,6 +109,12 @@ public sealed partial class GameSession
         {
             case GameStarted gs:
                 session.Apply(gs);
+                break;
+            case PlayerSetupCompleted psc:
+                session.Apply(psc);
+                break;
+            case PrologueViewed pv:
+                session.Apply(pv);
                 break;
             case PlaythroughArchived pa:
                 session.Apply(pa);

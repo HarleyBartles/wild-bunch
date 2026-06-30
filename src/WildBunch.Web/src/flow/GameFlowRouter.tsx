@@ -22,7 +22,7 @@ export function GameFlowRouter() {
   const setDevSurface = useSetDevSurface();
 
   useEffect(() => {
-    if (phase === "pre-session") {
+    if (phase === "pre-session" || phase === "setup" || phase === "prologue" || phase === "town-selection") {
       setDevSurface("pre-session");
     } else if (phase === "on-trail") {
       setDevSurface("trail");
@@ -35,6 +35,9 @@ export function GameFlowRouter() {
 
   switch (phase) {
     case "pre-session":
+    case "setup":
+    case "prologue":
+    case "town-selection":
       return <PreSessionSurface />;
     case "in-town":
       return (

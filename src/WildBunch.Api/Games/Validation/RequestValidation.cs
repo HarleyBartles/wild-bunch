@@ -26,6 +26,38 @@ public static class RequestValidation
         return WriteResult(errors, out result);
     }
 
+    public static bool TryValidate(SetupGameRequest? request, out IResult? result)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (request is null || string.IsNullOrWhiteSpace(request.PlayerName))
+        {
+            errors["playerName"] = ["Player name is required."];
+        }
+
+        if (!string.IsNullOrWhiteSpace(request?.SeedCode))
+        {
+            if (!StartingWorldDescriptorCodeValidator.TryValidate(request.SeedCode, out var errorMessage))
+            {
+                errors["seedCode"] = [errorMessage ?? "Seed code is invalid."];
+            }
+        }
+
+        return WriteResult(errors, out result);
+    }
+
+    public static bool TryValidate(StartGameWithTownRequest? request, out IResult? result)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (request is null || string.IsNullOrWhiteSpace(request.StartingTownId))
+        {
+            errors["startingTownId"] = ["Starting town id is required."];
+        }
+
+        return WriteResult(errors, out result);
+    }
+
     public static bool TryValidate(TravelRequest? request, out IResult? result)
     {
         var errors = new Dictionary<string, string[]>();

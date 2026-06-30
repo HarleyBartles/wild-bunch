@@ -12,6 +12,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
+    startFlowPhase: 3,
     player: {
       name: "Ruth",
       currentTownId: "t-town",

@@ -33,7 +33,7 @@ public sealed class SeededNewGameFactoryTests
         Assert.True(capabilities.RevolverUsable);
         Assert.False(capabilities.RifleUsable);
         Assert.Equal(8, session.World.Towns.Count);
-        Assert.Equal(12, session.World.Trails.Count);
+        Assert.Equal(14, session.World.Trails.Count);
         // Slot 0 and slot 1 are always connected (base topology).
         var towns = session.World.Towns.ToArray();
         Assert.Contains(session.World.Trails, trail => trail.Connects(towns[0].Id, towns[1].Id));

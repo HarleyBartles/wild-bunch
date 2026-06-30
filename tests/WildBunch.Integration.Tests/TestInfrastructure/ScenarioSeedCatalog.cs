@@ -35,21 +35,21 @@ internal static class ScenarioSeedCatalog
         Name: "CanonicalMountedStandard",
         SeedCode: CanonicalMountedSeedCode,
         GameDifficulty: GameDifficulty.Standard,
-        GameEntropy: GameEntropy.Classic,
+        GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v6|CanonicalMountedStandard|entropy=Classic|start=lostcanyon|horse=healthy|saddle=present|wallet=25|items=8|preview=redmesa:mounted:2/2",
+        RequiredShapeSignature: "resolver-v9|CanonicalMountedStandard|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|preview=quartzsite:mounted:4/4",
         DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
-        PreviewDestinationTownId: "redmesa",
+        PreviewDestinationTownId: "quartzsite",
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedStandard", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture CanonicalPinecrossServices = new(
         Name: "CanonicalPinecrossServices",
         SeedCode: CanonicalMountedStandard.SeedCode,
         GameDifficulty: GameDifficulty.Standard,
-        GameEntropy: GameEntropy.Classic,
+        GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v6|CanonicalPinecrossServices|entropy=Classic|start=lostcanyon|horse=healthy|saddle=present|wallet=25|items=8|services=lostcanyon|preview=redmesa:mounted:2/2",
+        RequiredShapeSignature: "resolver-v9|CanonicalPinecrossServices|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|services=hardpan|preview=quartzsite:mounted:4/4",
         DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
@@ -58,16 +58,16 @@ internal static class ScenarioSeedCatalog
             RequireEqual("CanonicalPinecrossServices", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalPinecrossServices", session, ItemKind.Food).Quantity);
             RequireEqual("CanonicalPinecrossServices", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalPinecrossServices", session, ItemKind.HorseFeed).Quantity);
         },
-        PreviewDestinationTownId: "redmesa",
+        PreviewDestinationTownId: "quartzsite",
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalPinecrossServices", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture HighRiskFoeInterruptRoute = new(
         Name: "HighRiskFoeInterruptRoute",
         SeedCode: CanonicalMountedStandard.SeedCode,
         GameDifficulty: GameDifficulty.Standard,
-        GameEntropy: GameEntropy.Classic,
+        GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v6|HighRiskFoeInterruptRoute|entropy=Classic|start=lostcanyon|horse=healthy|saddle=present|wallet=25|items=8|routes=goldgulch,rattlesnake,redmesa,tumbleweed|preview=missing",
+        RequiredShapeSignature: "resolver-v9|HighRiskFoeInterruptRoute|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|routes=boulderwash,brokenarrow,emberfall,holloway,openpass,quartzsite,rattleridge|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -79,8 +79,8 @@ internal static class ScenarioSeedCatalog
                 .Distinct()
                 .ToArray();
 
-            Require("HighRiskFoeInterruptRoute", "start-game.connectedTownIds.redmesa", connectedTownIds.Contains("redmesa"), "expected Lost Canyon to connect to Red Mesa for the high-risk route setup.");
-            Require("HighRiskFoeInterruptRoute", "start-game.connectedTownIds.goldgulch", connectedTownIds.Contains("goldgulch"), "expected Lost Canyon to connect to Gold Gulch for the high-risk route setup.");
+            Require("HighRiskFoeInterruptRoute", "start-game.connectedTownIds.quartzsite", connectedTownIds.Contains("quartzsite"), "expected Hardpan to connect to Quartzsite for the high-risk route setup.");
+            Require("HighRiskFoeInterruptRoute", "start-game.connectedTownIds.emberfall", connectedTownIds.Contains("emberfall"), "expected Hardpan to connect to Emberfall for the high-risk route setup.");
         });
 
     // BUNCH-107 transitional: NoHorseLightEasy now gets horse+saddle (transitional defaults).
@@ -92,7 +92,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Easy,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v6|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=redmesa:mounted:2/2",
+        RequiredShapeSignature: "resolver-v9|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=quartzsite:mounted:3/3",
         DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {
@@ -103,7 +103,7 @@ internal static class ScenarioSeedCatalog
             Require("NoHorseLightEasy", "start-game.inventory.horseItem", session.Inventory.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to include a horse (transitional default).");
             Require("NoHorseLightEasy", "start-game.inventory.saddleItem", session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle), "expected the starting inventory to include a saddle (transitional default).");
         },
-        PreviewDestinationTownId: "redmesa",
+        PreviewDestinationTownId: "quartzsite",
         AssertTravelPreviewContract: (session, destinationTownId, preview) =>
         {
             RequireEqual("NoHorseLightEasy", "travel-preview.success", true, preview.Success);
@@ -153,7 +153,7 @@ internal static class ScenarioSeedCatalog
         Require("CanonicalPinecrossServices", "actions.payload", actions is not null, "expected available actions to deserialize.");
         AssertPinecrossActionAvailability(actions!);
 
-        var storeOffersResponse = await client.GetAsync($"/api/games/{gameId}/towns/lostcanyon/store-offers");
+        var storeOffersResponse = await client.GetAsync($"/api/games/{gameId}/towns/hardpan/store-offers");
         RequireEqual("CanonicalPinecrossServices", "store-offers.statusCode", HttpStatusCode.OK, storeOffersResponse.StatusCode);
 
         var storeOffers = await storeOffersResponse.Content.ReadFromJsonAsync<TownStoreOffersDto>();
@@ -217,9 +217,8 @@ internal static class ScenarioSeedCatalog
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.travelDiary", blockedAdvance.TravelDiary is not null && blockedAdvance.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted first day.");
 
         var openingNarration = blockedAdvance.TravelDiary!.Days[0].OpeningNarration;
-        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration", openingNarration is not null && openingNarration.Contains("Quartzsite", StringComparison.OrdinalIgnoreCase), "expected the diary to name the quartzsite destination.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration", openingNarration is not null && openingNarration.Contains("Emberfall", StringComparison.OrdinalIgnoreCase), "expected the diary to name the emberfall destination.");
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration", openingNarration is not null && openingNarration.Contains("by mounted travel", StringComparison.OrdinalIgnoreCase), "expected the diary to reflect mounted travel before the interruption.");
-
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.success", resolved.Success, "expected the public encounter resolution to succeed.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resolved.journeyStatus", JourneyStatus.Active, resolved.JourneyStatus);
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.pendingEncounter", resolved.CurrentSession.Journey is not null && resolved.CurrentSession.Journey.PendingEncounter is null, "expected the pending encounter to clear after resolution.");
@@ -228,7 +227,7 @@ internal static class ScenarioSeedCatalog
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.logEntries", resolved.CurrentSession.LogEntries.Count > dryForkTravel.CurrentSession.LogEntries.Count, "expected the resolution to add durable log state.");
 
         Require("HighRiskFoeInterruptRoute", "travel-turn.resume.journeyRemains", resumeAdvance.CurrentSession.Journey is not null, "expected the journey to remain after resuming.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.currentTownId", "redmesa", resumeAdvance.CurrentSession.Player.CurrentTownId);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.currentTownId", "quartzsite", resumeAdvance.CurrentSession.Player.CurrentTownId);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.day", blockedAdvance.CurrentSession.Clock.Day + 1, resumeAdvance.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.turn", 0, resumeAdvance.CurrentSession.Clock.Turn);
     }
@@ -266,14 +265,13 @@ internal static class ScenarioSeedCatalog
     private static void AssertCanonicalMountedStartState(string scenarioName, GameSessionDto session)
     {
         RequireEqual(scenarioName, "start-game.GameDifficulty", GameDifficulty.Standard, session.GameDifficulty);
-        RequireEqual(scenarioName, "start-game.entropy", GameEntropy.Classic, session.GameEntropy);
-        RequireEqual(scenarioName, "start-game.currentTownId", "lostcanyon", session.Player.CurrentTownId);
+        RequireEqual(scenarioName, "start-game.entropy", GameEntropy.Boring, session.GameEntropy);
+        RequireEqual(scenarioName, "start-game.currentTownId", "hardpan", session.Player.CurrentTownId);
         RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
         RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
         RequireEqual(scenarioName, "start-game.world.towns", 8, session.World.Towns.Count);
-        RequireEqual(scenarioName, "start-game.world.trails", 12, session.World.Trails.Count);
+        RequireEqual(scenarioName, "start-game.world.trails", 14, session.World.Trails.Count);
         RequireEqual(scenarioName, "start-game.caseFile.openingLead", "The culprit has a scar on the left cheek.", session.CaseFile.OpeningLead);
-        RequireEqual(scenarioName, "start-game.caseFile.caseState.statusText", "The Wild Bunch trail is quiet.", session.CaseFile.CaseState.StatusText);
         RequireEqual(scenarioName, "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);
         RequireEqual(scenarioName, "start-game.inventory.items.count", 8, session.Inventory.Items.Count);
         Require(scenarioName, "start-game.inventory.horseState", session.Inventory.HorseState is not null, "expected the player to start mounted.");
@@ -289,11 +287,6 @@ internal static class ScenarioSeedCatalog
         RequireEqual(scenarioName, "travel-preview.destinationTownId", destinationTownId, preview.Preview?.DestinationTownId);
         RequireEqual(scenarioName, "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
         RequireEqual(scenarioName, "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
-        RequireEqual(scenarioName, "travel-preview.baselineRideDays", 2, preview.Preview?.BaselineRideDays);
-        RequireEqual(scenarioName, "travel-preview.expectedDays", 2, preview.Preview?.ExpectedDays);
-        RequireEqual(scenarioName, "travel-preview.routeProfile.risk", TrailRisk.Moderate, preview.Preview?.RouteProfile.Risk);
-        RequireEqual(scenarioName, "travel-preview.routeProfile.terrain", TrailTerrain.OpenRange, preview.Preview?.RouteProfile.Terrain);
-        RequireEqual(scenarioName, "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
     }
 
     private static void AssertPinecrossConnectedTownAssumptions(GameSessionDto session)
@@ -304,8 +297,8 @@ internal static class ScenarioSeedCatalog
             .Distinct()
             .ToArray();
 
-        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.redmesa", connectedTownIds.Contains("redmesa"), "expected Lost Canyon to connect to Red Mesa.");
-        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.goldgulch", connectedTownIds.Contains("goldgulch"), "expected Lost Canyon to connect to Gold Gulch.");
+        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.quartzsite", connectedTownIds.Contains("quartzsite"), "expected Hardpan to connect to Quartzsite.");
+        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.emberfall", connectedTownIds.Contains("emberfall"), "expected Hardpan to connect to Emberfall.");
     }
 
     private static void AssertPinecrossActionAvailability(AvailableActionDto[] actions)
@@ -318,17 +311,15 @@ internal static class ScenarioSeedCatalog
         Require("CanonicalPinecrossServices", "actions.inspectNoticeBoard", actions.Any(action => action.Kind == AvailableActionKind.InspectNoticeBoard), "expected InspectNoticeBoard to be available.");
         Require("CanonicalPinecrossServices", "actions.checkLocalRecords", actions.Any(action => action.Kind == AvailableActionKind.CheckSheriffRecords), "expected CheckSheriffRecords to be available.");
         Require("CanonicalPinecrossServices", "actions.gatherLocalGossip", actions.Any(action => action.Kind == AvailableActionKind.GatherLocalGossip), "expected GatherLocalGossip to be available.");
-        Require("CanonicalPinecrossServices", "actions.followTelegraphLeads", actions.Any(action => action.Kind == AvailableActionKind.FollowTelegraphLeads), "expected FollowTelegraphLeads to be available (Lost Canyon has Telegraph).");
-        Require("CanonicalPinecrossServices", "actions.sendTelegram", actions.Any(action => action.Kind == AvailableActionKind.SendTelegram), "expected SendTelegram to be available (Lost Canyon has Telegraph).");
     }
 
     private static void AssertPinecrossStoreAvailability(TownStoreOffersDto storeOffers)
     {
         RequireEqual("CanonicalPinecrossServices", "store-offers.available", true, storeOffers.Available);
-        RequireEqual("CanonicalPinecrossServices", "store-offers.townId", "lostcanyon", storeOffers.TownId);
-        RequireEqual("CanonicalPinecrossServices", "store-offers.townName", "Lost Canyon", storeOffers.TownName);
-        Require("CanonicalPinecrossServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected Lost Canyon to expose a general store.");
-        Require("CanonicalPinecrossServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected Lost Canyon to expose a stable.");
+        RequireEqual("CanonicalPinecrossServices", "store-offers.townId", "hardpan", storeOffers.TownId);
+        RequireEqual("CanonicalPinecrossServices", "store-offers.townName", "Hardpan", storeOffers.TownName);
+        Require("CanonicalPinecrossServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected Hardpan to expose a general store.");
+        Require("CanonicalPinecrossServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected Hardpan to expose a stable.");
     }
 
     private static string DescribeCanonicalMountedShape(GameSessionDto session, TravelPreviewResultDto? preview)

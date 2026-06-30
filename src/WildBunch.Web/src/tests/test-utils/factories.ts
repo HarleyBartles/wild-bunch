@@ -3,6 +3,7 @@ import type {
   JournalDto,
   TownStoreOffersDto,
 } from "../../api/types";
+import { StartFlowPhase } from "../../api/types";
 
 /**
  * Minimal valid GameSessionDto for tests. Pass overrides to customize.
@@ -13,6 +14,7 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
+    startFlowPhase: StartFlowPhase.GameStarted,
     player: {
       name: "Ruth",
       currentTownId: "t-town",

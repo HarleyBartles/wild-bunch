@@ -1,6 +1,7 @@
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.Abstractions;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent.Tests;
@@ -120,15 +121,16 @@ internal static class TravelTestSeedCatalog
         var townCount = 8;
         var prosperityPalette = ProsperityPalette.UniformProsperous;
         var servicesPalette = ServicesPalette.HubTelegraph;
+        var mapLayoutPalette = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
+            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
 
         return new SeedWorld(
             Guid.Empty,
@@ -136,6 +138,7 @@ internal static class TravelTestSeedCatalog
             townCount,
             servicesPalette,
             prosperityPalette,
+            mapLayoutPalette,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
@@ -157,8 +160,25 @@ internal static class TravelTestSeedCatalog
     /// <summary>
     /// Creates a game session from a seed world entry by deriving a UUID and passing it through
     /// <see cref="SeededNewGameFactory"/>. This is the canonical way to start a test game.
+    /// Uses a FixedSaltSourceFactory for deterministic trail distance salting.
     /// </summary>
     internal static GameSession CreateSession(SeedWorldEntry entry, string playerName = "Ranger Vale")
+    {
+        var seedCode = ResolveSeedCode(entry);
+        var factory = new SeededNewGameFactory(new FixedSaltSourceFactory());
+        return factory.Create(
+            playerName,
+            entry.GameDifficulty,
+            seedCode,
+            entry.GameEntropy);
+    }
+
+    /// <summary>
+    /// Creates a game session with Runtime salt (default factory) for tests that
+    /// verify Runtime salt mode behavior. Most tests should use <see cref="CreateSession"/>
+    /// instead for deterministic trail distance salting.
+    /// </summary>
+    internal static GameSession CreateSessionWithRuntimeSalt(SeedWorldEntry entry, string playerName = "Ranger Vale")
     {
         var seedCode = ResolveSeedCode(entry);
         var factory = new SeededNewGameFactory();
@@ -176,7 +196,7 @@ internal static class TravelTestSeedCatalog
     internal static GameSession CreateSession(SeedWorldEntry entry, string startingTownId, string playerName = "Ranger Vale")
     {
         var seedCode = ResolveSeedCode(entry);
-        var factory = new SeededNewGameFactory();
+        var factory = new SeededNewGameFactory(new FixedSaltSourceFactory());
         return factory.Create(
             playerName,
             entry.GameDifficulty,
@@ -226,6 +246,16 @@ internal static class TravelTestSeedCatalog
             t.Risk == risk && t.Terrain == terrain && t.WaterFeature == water);
         return trail?.FromTownId;
     }
+}
+
+/// <summary>
+/// Test-only salt source factory that always produces a Fixed salt.
+/// Ensures deterministic trail distance salting across test sessions.
+/// </summary>
+internal sealed class FixedSaltSourceFactory : ISaltSourceFactory
+{
+    public SaltSource Create(string? setupSeedCode, GameDifficulty gameDifficulty)
+        => SaltSource.CreateFixed("test-fixed-salt");
 }
 
 /// <summary>

@@ -42,6 +42,9 @@ public static class DependencyInjection
         services.AddSingleton<JournalResolver>();
         services.AddSingleton<TownStoreCatalogResolver>();
         services.AddScoped<StartNewGameHandler>();
+        services.AddScoped<CompletePlayerSetupHandler>();
+        services.AddScoped<ViewPrologueHandler>();
+        services.AddScoped<CompleteGameStartHandler>();
         services.AddScoped<GetGameSessionHandler>();
         services.AddScoped<GetStartingTownsHandler>();
         services.AddScoped<GetStartingTownMapHandler>();

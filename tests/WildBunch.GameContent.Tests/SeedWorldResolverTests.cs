@@ -17,6 +17,7 @@ public sealed class SeedWorldResolverTests
         Assert.Equal(seedWorld.TownCount, resolved.TownCount);
         Assert.Equal(seedWorld.ServicesPalette, resolved.ServicesPalette);
         Assert.Equal(seedWorld.ProsperityPalette, resolved.ProsperityPalette);
+        Assert.Equal(seedWorld.MapLayoutPalette, resolved.MapLayoutPalette);
         Assert.Equal(seedWorld.SelectedTownIds, resolved.SelectedTownIds);
         Assert.Equal(seedWorld.AccusationIndex, resolved.AccusationIndex);
         Assert.Equal(seedWorld.DefaultCulpritIndex, resolved.DefaultCulpritIndex);
@@ -65,6 +66,7 @@ public sealed class SeedWorldResolverTests
         var invalidTownCount = valid with { TownCount = 99 };
         var invalidProsperity = valid with { ProsperityPalette = (ProsperityPalette)99 };
         var invalidServices = valid with { ServicesPalette = (ServicesPalette)99 };
+        var invalidLayout = valid with { MapLayoutPalette = (MapLayoutPalette)99 };
 
         Assert.False(SeedWorldResolver.Validate(invalidAccusation).Success);
         Assert.False(SeedWorldResolver.Validate(invalidCulprit).Success);
@@ -72,6 +74,7 @@ public sealed class SeedWorldResolverTests
         Assert.False(SeedWorldResolver.Validate(invalidTownCount).Success);
         Assert.False(SeedWorldResolver.Validate(invalidProsperity).Success);
         Assert.False(SeedWorldResolver.Validate(invalidServices).Success);
+        Assert.False(SeedWorldResolver.Validate(invalidLayout).Success);
     }
 
     [Fact]
@@ -119,36 +122,36 @@ public sealed class SeedWorldResolverTests
         var variantWorld = SeedWorldResolver.Resolve(new Guid(variantBytes));
         Assert.NotEqual(baseWorld.WorldVariant, variantWorld.WorldVariant);
 
-        // Change accusation (bits 2-4): increment by 1.
+        // Change accusation (bits 2-5): increment by 1.
         var newAccusation = (baseWorld.AccusationIndex + 1) % 7;
-        var accusationLow = (low & ~(0x7UL << 2)) | ((ulong)newAccusation << 2);
+        var accusationLow = (low & ~(0xFUL << 2)) | ((ulong)newAccusation << 2);
         var accusationBytes = new byte[16];
         BitConverter.TryWriteBytes(accusationBytes.AsSpan(0), accusationLow);
         BitConverter.TryWriteBytes(accusationBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
         var accusationWorld = SeedWorldResolver.Resolve(new Guid(accusationBytes));
         Assert.NotEqual(baseWorld.AccusationIndex, accusationWorld.AccusationIndex);
 
-        // Change townCount (bits 12-15): encoded value 3 → town count 8 (3+5 offset).
+        // Change townCount (bits 14-17): encoded value 3 → town count 8 (3+5 offset).
         var newCountEncoded = 3;
-        var countLow = (low & ~(0xFUL << 12)) | ((ulong)newCountEncoded << 12);
+        var countLow = (low & ~(0xFUL << 14)) | ((ulong)newCountEncoded << 14);
         var countBytes = new byte[16];
         BitConverter.TryWriteBytes(countBytes.AsSpan(0), countLow);
         BitConverter.TryWriteBytes(countBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
         var countWorld = SeedWorldResolver.Resolve(new Guid(countBytes));
         Assert.Equal(8, countWorld.TownCount);
 
-        // Change prosperityPalette (bits 16-18): set to Dustbowl.
+        // Change prosperityPalette (bits 18-20): set to Dustbowl.
         var newProsperity = ProsperityPalette.Dustbowl;
-        var prosperityLow = (low & ~(0x7UL << 16)) | ((ulong)newProsperity << 16);
+        var prosperityLow = (low & ~(0x7UL << 18)) | ((ulong)newProsperity << 18);
         var prosperityBytes = new byte[16];
         BitConverter.TryWriteBytes(prosperityBytes.AsSpan(0), prosperityLow);
         BitConverter.TryWriteBytes(prosperityBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
         var prosperityWorld = SeedWorldResolver.Resolve(new Guid(prosperityBytes));
         Assert.Equal(ProsperityPalette.Dustbowl, prosperityWorld.ProsperityPalette);
 
-        // Change servicesPalette (bits 19-21): set to AllTelegraph.
+        // Change servicesPalette (bits 21-23): set to AllTelegraph.
         var newServices = ServicesPalette.AllTelegraph;
-        var servicesLow = (low & ~(0x7UL << 19)) | ((ulong)newServices << 19);
+        var servicesLow = (low & ~(0x7UL << 21)) | ((ulong)newServices << 21);
         var servicesBytes = new byte[16];
         BitConverter.TryWriteBytes(servicesBytes.AsSpan(0), servicesLow);
         BitConverter.TryWriteBytes(servicesBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
@@ -219,7 +222,7 @@ public sealed class SeedWorldResolverTests
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
         Assert.Equal(8, seedWorld.TownCount);
         Assert.Equal(8, seedWorld.SelectedTownIds.Count);
-        Assert.Equal(12, seedWorld.Trails.Count);
+        Assert.Equal(14, seedWorld.Trails.Count);
     }
 
     [Fact]
@@ -246,18 +249,19 @@ public sealed class SeedWorldResolverTests
         var cashBonus = 0;
         var prosperity = ProsperityPalette.UniformProsperous;
         var services = ServicesPalette.HubTelegraph;
+        var mapLayout = MapLayoutPalette.HubAndSpoke;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperity, services);
+            cashBonus, prosperity, services, mapLayout);
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(services, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayout);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
-            Guid.Empty, variant, townCount, services, prosperity,
+            Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
             selectedTownIds, townServices, trails));
     }

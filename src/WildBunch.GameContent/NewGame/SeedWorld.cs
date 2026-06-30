@@ -5,11 +5,11 @@ namespace WildBunch.GameContent.NewGame;
 /// <summary>
 /// Seed-owned deterministic world/map layer decoded from the UUID seed code.
 /// Owns generated world facts: world variant, town count, services palette,
-/// prosperity palette, trail graph with baseline terrain/water/distance,
+/// prosperity palette, map layout palette, trail graph with baseline terrain/water/distance,
 /// accusation/default culprit candidates, and seed-derived cash bonus.
 ///
 /// The seed encodes only: variant, townCount, servicesPalette,
-/// prosperityPalette, accusationIndex, defaultCulpritIndex, cashBonus.
+/// prosperityPalette, mapLayoutPalette, accusationIndex, defaultCulpritIndex, cashBonus.
 /// Town names are derived from the encoded fields via a deterministic
 /// shuffle of the name pool — they are flavor, not encoded state. This
 /// means the catalog can grow to any size without increasing UUID bandwidth.
@@ -23,7 +23,7 @@ namespace WildBunch.GameContent.NewGame;
 ///   player's start choice against the generated world.
 /// - SeedWorld owns the candidate/generated map: how many towns, what
 ///   services each slot has (via palette), what prosperity each slot has
-///   (via palette), and the trail graph between slots.
+///   (via palette), the map layout (via palette), and the trail graph between slots.
 /// - Same seed + same difficulty should produce the same resolved map.
 /// - Difficulty may later influence map pressure/layout realization
 ///   downstream of the seed codec, not by hiding difficulty inside the seed.
@@ -34,6 +34,7 @@ public sealed record SeedWorld(
     int TownCount,
     ServicesPalette ServicesPalette,
     ProsperityPalette ProsperityPalette,
+    MapLayoutPalette MapLayoutPalette,
     int AccusationIndex,
     int DefaultCulpritIndex,
     int CashBonus,

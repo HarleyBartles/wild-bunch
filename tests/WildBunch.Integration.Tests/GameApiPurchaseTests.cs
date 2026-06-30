@@ -25,7 +25,7 @@ public sealed class GameApiPurchaseTests
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/lostcanyon/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/hardpan/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -57,7 +57,7 @@ public sealed class GameApiPurchaseTests
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/redmesa/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/quartzsite/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -67,7 +67,7 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(result);
         Assert.False(result!.Success);
         Assert.Equal("You must be in that town to buy there.", result.Message);
-        Assert.Equal("lostcanyon", result.CurrentSession.Player.CurrentTownId);
+        Assert.Equal("hardpan", result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
     }
 
@@ -87,7 +87,7 @@ public sealed class GameApiPurchaseTests
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/lostcanyon/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/hardpan/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.HorseFeed, 100));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -116,11 +116,11 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
 
-        // Lost Canyon is Prosperous — it has a general store, stable, and gunsmith.
+        // Hardpan is Prosperous — it has a general store, stable, and gunsmith.
         // Revolver is sold by the gunsmith, not the stable. Requesting it from
         // the stable vendor triggers the "not available" path.
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/lostcanyon/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/hardpan/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.Stable, WildBunch.Domain.Inventory.ItemKind.Revolver, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

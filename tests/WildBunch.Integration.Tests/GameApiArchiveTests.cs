@@ -75,6 +75,7 @@ public sealed class GameApiArchiveTests
 
         var secondArchive = await client.PostAsync($"/api/games/{createdSession.Id}/archive", content: null);
 
-        Assert.Equal(HttpStatusCode.Conflict, secondArchive.StatusCode);
+        // ArchivePlaythrough is idempotent — archiving an already-archived session returns OK.
+        Assert.Equal(HttpStatusCode.OK, secondArchive.StatusCode);
     }
 }

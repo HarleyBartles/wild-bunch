@@ -13,7 +13,10 @@ import {
   gatherLocalGossip,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
+  markPrologueViewed,
   readWantedPosters,
+  setupGame,
+  startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
 import { AvailableActionKind } from "../api/types";
@@ -22,6 +25,7 @@ import type {
   GameSessionDto,
   GameTurnResultDto,
   JournalDto,
+  SetupGameRequest,
   StartGameRequest,
   WantedPosterDto,
 } from "../api/types";
@@ -150,6 +154,43 @@ export function useCurrentGameSession() {
     },
     onError: (exception: unknown) => {
       setError(exception instanceof Error ? exception.message : "Unable to start a new game.");
+    },
+  });
+
+  const setupGameMutation = useMutation({
+    mutationFn: (request: SetupGameRequest) => setupGame(request),
+    onSuccess: async (createdSession) => {
+      window.localStorage.setItem(storageKey, createdSession.id);
+      setStoredGameId(createdSession.id);
+      setError("");
+      await invalidateGameQueries(createdSession.id);
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to complete setup.");
+    },
+  });
+
+  const markPrologueViewedMutation = useMutation({
+    mutationFn: (activeGameId: string) => markPrologueViewed(activeGameId),
+    onSuccess: async (updatedSession) => {
+      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      await invalidateGameQueries(updatedSession.id);
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to mark prologue as viewed.");
+    },
+  });
+
+  const startGameWithTownMutation = useMutation({
+    mutationFn: ({ activeGameId, townId }: { activeGameId: string; townId: string }) =>
+      startGameWithTown(activeGameId, { startingTownId: townId }),
+    onSuccess: async (updatedSession) => {
+      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      await invalidateGameQueries(updatedSession.id);
+      setNotice(`New game started for ${updatedSession.player.name}.`);
+    },
+    onError: (exception: unknown) => {
+      setError(exception instanceof Error ? exception.message : "Unable to start the game.");
     },
   });
 
@@ -333,6 +374,33 @@ export function useCurrentGameSession() {
     [startGameMutation],
   );
 
+  const handleSetupGame = useCallback(
+    async (request: SetupGameRequest) => {
+      await setupGameMutation.mutateAsync(request);
+    },
+    [setupGameMutation],
+  );
+
+  const handleMarkPrologueViewed = useCallback(
+    async () => {
+      if (!gameId) {
+        return;
+      }
+      await markPrologueViewedMutation.mutateAsync(gameId);
+    },
+    [gameId, markPrologueViewedMutation],
+  );
+
+  const handleStartGameWithTown = useCallback(
+    async (townId: string) => {
+      if (!gameId) {
+        return;
+      }
+      await startGameWithTownMutation.mutateAsync({ activeGameId: gameId, townId });
+    },
+    [gameId, startGameWithTownMutation],
+  );
+
   const reloadCurrentGame = useCallback(
     async (activeGameId: string | null = gameId) => {
       if (!activeGameId) {
@@ -480,6 +548,9 @@ export function useCurrentGameSession() {
     declaredWantedIdentityHandle,
     setDeclaredWantedIdentityHandle,
     startNewGame,
+    handleSetupGame,
+    handleMarkPrologueViewed,
+    handleStartGameWithTown,
     reloadCurrentGame,
     handleTravelTurnResult,
     handleTravel,

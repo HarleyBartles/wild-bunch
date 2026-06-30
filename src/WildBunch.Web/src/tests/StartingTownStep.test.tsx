@@ -49,6 +49,7 @@ function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTow
 }
 
 function renderStep(overrides: {
+  sessionId?: string;
   selectedTownId?: string | null;
   onSelectTown?: (townId: string) => void;
 } = {}) {
@@ -64,6 +65,7 @@ function renderStep(overrides: {
   render(
     <QueryClientProvider client={queryClient}>
       <StartingTownStep
+        sessionId={overrides.sessionId ?? "test-session-id"}
         selectedTownId={overrides.selectedTownId ?? null}
         onSelectTown={onSelectTown}
       />

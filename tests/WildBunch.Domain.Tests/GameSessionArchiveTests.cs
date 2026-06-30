@@ -48,13 +48,15 @@ public sealed class GameSessionArchiveTests
     }
 
     [Fact]
-    public void ArchivePlaythrough_Throws_On_Double_Archive()
+    public void ArchivePlaythrough_IsIdempotent_On_Double_Archive()
     {
         var session = CreateSession();
         session.ArchivePlaythrough("start-over");
 
-        var ex = Assert.Throws<InvalidOperationException>(() => session.ArchivePlaythrough("start-over"));
-        Assert.Contains("already archived", ex.Message, StringComparison.OrdinalIgnoreCase);
+        // Archiving an already-archived session is a no-op, not an error.
+        // This prevents 409s from duplicate requests (React StrictMode, retries).
+        session.ArchivePlaythrough("start-over");
+        Assert.Equal(GameStatus.Archived, session.Status);
     }
 
     [Fact]

@@ -5,14 +5,15 @@ import { getStartingTownMap } from "../../api/wildBunchApi";
 import { PhaserMapHost } from "./PhaserMapHost";
 
 interface StartingTownStepProps {
+  sessionId: string;
   selectedTownId: string | null;
   onSelectTown: (townId: string) => void;
 }
 
-export function StartingTownStep({ selectedTownId, onSelectTown }: StartingTownStepProps) {
+export function StartingTownStep({ sessionId, selectedTownId, onSelectTown }: StartingTownStepProps) {
   const mapQuery = useQuery({
-    queryKey: ["starting-town-map"],
-    queryFn: () => getStartingTownMap(),
+    queryKey: ["starting-town-map", sessionId],
+    queryFn: () => getStartingTownMap(sessionId),
     staleTime: Infinity,
     retry: false,
   });

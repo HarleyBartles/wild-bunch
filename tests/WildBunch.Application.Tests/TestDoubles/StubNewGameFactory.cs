@@ -44,6 +44,20 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public GameSession CreatedSession => _sessionToReturn;
 
+    public (World World, CaseFile CaseFile, string SeedCodeText) ResolveWorld(
+        string playerName,
+        GameDifficulty gameDifficulty,
+        string? setupSeedCode,
+        GameEntropy gameEntropy)
+    {
+        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? string.Empty);
+    }
+
+    public (Wallet Wallet, Inventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)
+    {
+        return (_sessionToReturn.Player.Wallet, _sessionToReturn.Player.Inventory);
+    }
+
     private static GameSession CreateSession()
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);

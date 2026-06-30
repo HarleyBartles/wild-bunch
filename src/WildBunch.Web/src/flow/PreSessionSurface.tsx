@@ -1,6 +1,8 @@
 import styled from "styled-components";
+import { useGamePhase } from "../hooks/useGamePhase";
 import { useGameSession } from "../state/useGameSession";
 import { useStartFlow } from "../hooks/useStartFlow";
+import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { FlowSurface, FlowNotice, FlowError } from "../components/ui/sharedStyled";
 import { SetupHuntStep } from "../components/start-flow/SetupHuntStep";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
@@ -22,6 +24,7 @@ const FlowHeroLead = styled.p`
 `;
 
 export function PreSessionSurface() {
+  const { phase } = useGamePhase();
   const {
     session,
     loading,
@@ -29,14 +32,37 @@ export function PreSessionSurface() {
     notice,
     error,
     startNewGame,
+    handleSetupGame,
+    handleMarkPrologueViewed,
+    handleStartGameWithTown,
   } = useGameSession();
   const flow = useStartFlow({ session, resetToken });
+
+  // Determine which step to show based on backend start flow phase.
+  // On refresh, the backend phase is the source of truth.
+  const effectiveStep = deriveEffectiveStep(phase, flow.step);
+
+  async function handleSetupComplete() {
+    const seedCode = await encodeGameSetupSeed(flow.seedState);
+    const trimmedName = flow.playerName.trim();
+    await handleSetupGame({
+      playerName: trimmedName,
+      gameDifficulty: flow.gameDifficulty,
+      seedCode,
+      gameEntropy: flow.gameEntropy,
+    });
+    flow.advance();
+  }
+
+  async function handlePrologueViewed() {
+    await handleMarkPrologueViewed();
+    flow.advance();
+  }
 
   async function handleStartWithTown(townId: string) {
     flow.setSelectedTownId(townId);
     flow.goToStep("creating");
-    const request = await flow.buildStartGameRequest(townId);
-    await startNewGame(request);
+    await handleStartGameWithTown(townId);
   }
 
   return (
@@ -49,7 +75,7 @@ export function PreSessionSurface() {
         </FlowHeroLead>
       </FlowHero>
 
-      {flow.step === "name" && (
+      {effectiveStep === "name" && (
         <SetupHuntStep
           playerName={flow.playerName}
           gameDifficulty={flow.gameDifficulty}
@@ -62,30 +88,43 @@ export function PreSessionSurface() {
           onGameEntropyChange={flow.setGameEntropy}
           onSeedDraftChange={flow.setSeedDraft}
           onRandomizeSeed={flow.randomizeSeed}
-          onContinue={flow.advance}
+          onContinue={handleSetupComplete}
         />
       )}
 
-      {flow.step === "story" && (
+      {effectiveStep === "story" && (
         <StorySoFarStep
-          onContinue={flow.advance}
+          onContinue={handlePrologueViewed}
           seedCode={flow.seedState.seedCode}
           gameDifficulty={flow.gameDifficulty}
           gameEntropy={flow.gameEntropy}
         />
       )}
 
-      {flow.step === "town" && (
+      {effectiveStep === "town" && (
         <StartingTownStep
+          sessionId={session?.id ?? ""}
           selectedTownId={flow.selectedTownId}
           onSelectTown={handleStartWithTown}
         />
       )}
 
-      {flow.step === "creating" && <CreatingStep busy={loading} />}
+      {effectiveStep === "creating" && <CreatingStep busy={loading} />}
 
       {notice ? <FlowNotice>{notice}</FlowNotice> : null}
       {error ? <FlowError>{error}</FlowError> : null}
     </FlowSurface>
   );
+}
+
+function deriveEffectiveStep(
+  phase: ReturnType<typeof useGamePhase>["phase"],
+  localStep: ReturnType<typeof useStartFlow>["step"],
+): "name" | "story" | "town" | "creating" {
+  // If the backend says we're in the prologue phase, show the story step
+  if (phase === "prologue") return "story";
+  // If the backend says we're in town-selection, show the town step
+  if (phase === "town-selection") return "town";
+  // Otherwise use the local step (for the initial name step before setup is saved)
+  return localStep;
 }

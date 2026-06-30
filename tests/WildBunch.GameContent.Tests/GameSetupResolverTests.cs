@@ -137,11 +137,12 @@ public sealed class GameSetupResolverTests
     public void BoringEntropyUsesFixedSaltAndOthersUseRuntimeSalt()
     {
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var resolver = new GameSetupResolver();
 
-        var boringSetup = BuildSetup(seedWorld, DifficultyEnvelope.For(GameDifficulty.Standard), EntropyPolicy.For(GameEntropy.Boring));
+        var boringSetup = resolver.Resolve(seedWorld, DifficultyEnvelope.For(GameDifficulty.Standard), EntropyPolicy.For(GameEntropy.Boring));
         Assert.Equal(SaltSourceMode.Fixed, boringSetup.SaltSource.Mode);
 
-        var classicSetup = BuildSetup(seedWorld, DifficultyEnvelope.For(GameDifficulty.Standard), EntropyPolicy.For(GameEntropy.Classic));
+        var classicSetup = resolver.Resolve(seedWorld, DifficultyEnvelope.For(GameDifficulty.Standard), EntropyPolicy.For(GameEntropy.Classic));
         Assert.Equal(SaltSourceMode.Runtime, classicSetup.SaltSource.Mode);
     }
 
@@ -189,7 +190,7 @@ public sealed class GameSetupResolverTests
     }
 
     private static ResolvedGameSetup BuildSetup(SeedWorld seedWorld, DifficultyEnvelope difficulty, EntropyPolicy entropy)
-        => new GameSetupResolver().Resolve(seedWorld, difficulty, entropy);
+        => new GameSetupResolver(new FixedSaltSourceFactory()).Resolve(seedWorld, difficulty, entropy);
 
     private static string BuildSetupSignature(ResolvedGameSetup setup)
         => string.Join(

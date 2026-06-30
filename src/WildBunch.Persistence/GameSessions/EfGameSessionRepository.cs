@@ -335,8 +335,28 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Set SeedCode from snapshot as a cache. The true source of truth is the
         // GameStarted event, which will be applied during event replay if there are
         // post-snapshot events. When the snapshot is current, this restores the
-        // persisted seed code. See BUNCH-101.
-        GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", store.Envelope.SeedCode);
+        // persisted seed code. For setup-phase sessions (no GameStarted yet),
+        // the seed code comes from the PlayerSetupCompleted event. See BUNCH-101.
+        var seedCode = store.Envelope.SeedCode;
+        if (seedCode is null)
+        {
+            var setupEvent = store.AllEvents.OfType<PlayerSetupCompleted>().FirstOrDefault();
+            if (setupEvent is not null)
+            {
+                seedCode = setupEvent.SeedCode;
+            }
+        }
+        GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", seedCode);
+
+        // Set StartFlowPhase from the event stream. The Apply methods for
+        // PlayerSetupCompleted, PrologueViewed, and GameStarted set this during
+        // post-snapshot replay. When the snapshot is current (no post-snapshot
+        // events), we derive it from the full event stream.
+        if (!hasPostSnapshotEvents)
+        {
+            var derivedPhase = DeriveStartFlowPhase(store.AllEvents);
+            GameSessionRehydrator.SetBackingField(session, "<StartFlowPhase>k__BackingField", derivedPhase);
+        }
 
         // Set CurrentActionContext from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).
@@ -452,6 +472,25 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         {
             _dbContext.GameSessionDiaryDays.Remove(existing[index]);
         }
+    }
+
+    private static StartFlowPhase DeriveStartFlowPhase(IReadOnlyList<IDomainEvent> events)
+    {
+        var hasGameStarted = false;
+        var hasPrologueViewed = false;
+        var hasSetupCompleted = false;
+
+        foreach (var e in events)
+        {
+            if (e is GameStarted) hasGameStarted = true;
+            else if (e is PrologueViewed) hasPrologueViewed = true;
+            else if (e is PlayerSetupCompleted) hasSetupCompleted = true;
+        }
+
+        if (hasGameStarted) return StartFlowPhase.GameStarted;
+        if (hasPrologueViewed) return StartFlowPhase.PrologueViewed;
+        if (hasSetupCompleted) return StartFlowPhase.SetupComplete;
+        return StartFlowPhase.NotStarted;
     }
 
     private sealed record GameSessionStore(
