@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { TravelMode } from "../api/types";
-import { previewTravel } from "../api/wildBunchApi";
+import { getWorldMap, previewTravel } from "../api/wildBunchApi";
 import { useGameSession } from "../state/useGameSession";
 import { InventoryPanel } from "../components/InventoryPanel";
+import { PhaserMapHost } from "../components/start-flow/PhaserMapHost";
 import {
   FlowSurface,
   BackButton,
@@ -13,7 +15,6 @@ import {
   Stack,
   Button,
   Muted,
-  ItemCard,
   FlowNotice,
   FlowError,
 } from "../components/ui/sharedStyled";
@@ -42,59 +43,6 @@ const TravelPrepActions = styled.div`
   display: flex;
   gap: 12px;
   margin-top: 12px;
-`;
-
-const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
-  width: 100%;
-  text-align: left;
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  transition:
-    transform 0.15s ease-out,
-    border-color 0.15s ease-out;
-
-  &:hover:not(:disabled) {
-    border-color: var(--accent);
-    transform: translateY(-1px);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  p {
-    margin: 0;
-    font-size: 0.88rem;
-  }
-
-  strong {
-    display: block;
-  }
-`;
-
-const RouteDetails = styled.div`
-  display: grid;
-  gap: 4px;
-`;
-
-const RoutePreview = styled.p`
-  color: var(--text);
-  font-size: 0.88rem;
-  line-height: 1.4;
-`;
-
-const RouteMeta = styled.div`
-  text-align: right;
-  font-size: 0.84rem;
 `;
 
 interface TravelPrepSurfaceProps {
@@ -230,7 +178,10 @@ export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
     );
   }
 
-  // Destination selection screen
+  // Destination selection screen — visual map
+  const currentTownId = session.player.currentTownId;
+  const selectableTownIds = destinations.map((d) => d.town.id);
+
   return (
     <FlowSurface $variant="travel-prep">
       <PlaceHeader>
@@ -242,33 +193,56 @@ export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
       <TravelPrepBody>
         <Stack>
           {destinations.length > 0 ? (
-            destinations.map(({ town, trailCount }) => (
-              <DestinationCard
-                key={town.id}
-                type="button"
-                onClick={() => setSelectedDestId(town.id)}
-                disabled={!gameId || loading}
-              >
-                <RouteDetails>
-                  <strong>{town.name}</strong>
-                  <RoutePreview>
-                    {previewLoading && selectedDestId === town.id
-                      ? "Checking the route..."
-                      : "Click to check the ride"}
-                  </RoutePreview>
-                </RouteDetails>
-                <RouteMeta>
-                  <span>
-                    {trailCount} trail{trailCount === 1 ? "" : "s"}
-                  </span>
-                </RouteMeta>
-              </DestinationCard>
-            ))
+            <TravelMapSelection
+              gameId={gameId}
+              currentTownId={currentTownId}
+              selectableTownIds={selectableTownIds}
+              selectedDestId={selectedDestId}
+              onSelectDestination={(townId) => setSelectedDestId(townId)}
+            />
           ) : (
             <Muted>No trails lead out of this town.</Muted>
           )}
         </Stack>
       </TravelPrepBody>
     </FlowSurface>
+  );
+}
+
+function TravelMapSelection({
+  gameId,
+  currentTownId,
+  selectableTownIds,
+  selectedDestId,
+  onSelectDestination,
+}: {
+  gameId: string | null;
+  currentTownId: string;
+  selectableTownIds: string[];
+  selectedDestId: string | null;
+  onSelectDestination: (townId: string) => void;
+}) {
+  const mapQuery = useQuery({
+    queryKey: ["world-map", gameId],
+    queryFn: () => getWorldMap(gameId as string),
+    enabled: Boolean(gameId),
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  const mapData = mapQuery.data ?? null;
+
+  if (mapQuery.isLoading || !mapData) {
+    return <Muted>Unfolding the map…</Muted>;
+  }
+
+  return (
+    <PhaserMapHost
+      mapData={mapData}
+      selectedTownId={selectedDestId}
+      onTownSelected={onSelectDestination}
+      currentTownId={currentTownId}
+      selectableTownIds={selectableTownIds}
+    />
   );
 }

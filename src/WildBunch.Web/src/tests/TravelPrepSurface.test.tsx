@@ -4,6 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { TravelPrepSurface } from "../flow/TravelPrepSurface";
+import { StartingTownMapScene } from "../components/start-flow/PhaserMapHost";
 import {
   AvailableActionKind,
   StartFlowPhase,
@@ -20,11 +21,19 @@ import {
   travel,
 } from "../api/wildBunchApi";
 
+const mockState = vi.hoisted(() => ({
+  games: [] as Array<{ config: { scene: StartingTownMapScene }; destroyed: boolean; destroy: () => void }>,
+}));
+
 vi.mock("phaser", () => {
   class Game {
     public config: unknown;
-    constructor(config: unknown) { this.config = config; }
-    destroy() {}
+    public destroyed = false;
+    constructor(config: unknown) {
+      this.config = config;
+      mockState.games.push(this as never);
+    }
+    destroy() { this.destroyed = true; }
   }
   class Scene { constructor(_key?: string) {} }
   const Scale = { FIT: 0, CENTER_BOTH: 0 };
@@ -68,6 +77,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   window.localStorage.clear();
+  mockState.games.length = 0;
 });
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
@@ -227,13 +237,15 @@ describe("TravelPrepSurface travel-mode display", () => {
     primeMocks();
     mockedPreviewTravel.mockResolvedValue(createPreview({ travelMode: 0 }));
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
-    const user = userEvent.setup();
     renderPrep();
 
-    // TravelPrepSurface renders the destination selection screen directly.
-    // Click the destination to enter the prep/confirmation screen.
-    const destButton = await screen.findByRole("button", { name: /dust fork/i });
-    await user.click(destButton);
+    // TravelPrepSurface renders the destination selection screen with a Phaser map.
+    // Select a destination through the scene to enter the prep/confirmation screen.
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    const scene = mockState.games[0].config.scene;
+    scene.selectTown("dust-fork");
 
     await waitFor(() => {
       expect(screen.getByText(/on horseback/i)).toBeInTheDocument();
@@ -245,15 +257,41 @@ describe("TravelPrepSurface travel-mode display", () => {
     primeMocks();
     mockedPreviewTravel.mockResolvedValue(createPreview({ travelMode: 1 }));
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
-    const user = userEvent.setup();
     renderPrep();
 
-    const destButton = await screen.findByRole("button", { name: /dust fork/i });
-    await user.click(destButton);
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    const scene = mockState.games[0].config.scene;
+    scene.selectTown("dust-fork");
 
     await waitFor(() => {
       expect(screen.getByText(/on foot/i)).toBeInTheDocument();
     });
     expect(screen.queryByText(/on horseback/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("TravelPrepSurface map integration", () => {
+  it("renders the Phaser map for destination selection", async () => {
+    primeMocks();
+    mockedPreviewTravel.mockResolvedValue(createPreview());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    renderPrep();
+
+    // The map should render (PhaserMapHost renders an img element).
+    expect(await screen.findByRole("img", { name: /trail map/i })).toBeInTheDocument();
+  });
+
+  it("does not render the old text destination list", async () => {
+    primeMocks();
+    mockedPreviewTravel.mockResolvedValue(createPreview());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    renderPrep();
+
+    await screen.findByRole("img", { name: /trail map/i });
+
+    // The old text list showed "Click to check the ride" on each card.
+    expect(screen.queryByText(/click to check the ride/i)).not.toBeInTheDocument();
   });
 });
