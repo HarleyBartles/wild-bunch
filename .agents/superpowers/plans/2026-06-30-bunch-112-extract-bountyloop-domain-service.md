@@ -391,21 +391,36 @@ If nothing changed, skip the commit. (No files were added/removed — only conte
 
 - [ ] **Step 4: Push the branch and open the PR**
 
+Write the PR body to a body file under `.agents/superpowers/sdd/` (do not use an inline shell heredoc — PowerShell mangles them), then create the PR from the body file:
+
 ```
 git push -u origin harleydbartles/bunch-112-extract-bountyloop-domain-service
-gh pr create --title "BUNCH-112: Extract BountyLoop domain service from GameSession aggregate" --body "$(cat <<'EOF'
+gh pr create --title "BUNCH-112: Extract BountyLoop domain service from GameSession aggregate" --body-file .agents/superpowers/sdd/bunch-112-impl-pr-body.md --base main
+```
+
+The PR body file is a worker return artifact. Use the implementation return template below (Step 6) as the body content, with every `<return>` field filled in from the actual run. Do not commit the body file to the branch unless repo policy requires it; the sdd folder is for session artifacts. Record the PR URL.
+
+- [ ] **Step 5: Update Linear route state**
+
+Post a Linear comment on BUNCH-112 with: branch name, head commit, PR URL, line-count proof, and validation counts. Do NOT close the issue (workers do not close issues).
+
+- [ ] **Step 6: Fill in the implementation return template**
+
+The implementation return (PR body + Linear closeout) must fill in every `<return>` field below from the actual run. These are return-time evidence fields, not current plan claims. The plan does not assert any of these values; the implementer proves them at GREEN.
+
+```markdown
 ## Summary
 - Completes the BUNCH-72 `BountyLoopCoordinator` stepping stone: moves all remaining bounty-loop command methods, event `Apply` handlers, dev-saloon-override commands, and saloon-POI eligibility helpers from `GameSession.cs` into `GameSession.BountyLoopCoordinator.cs`.
 - `GameSession` retains public command entry points (with `IsArchived`/`IsJourneyModal` guards), the `Apply` dispatch switch, and aggregate-wide helpers. The coordinator is a nested `internal sealed` class — aggregate-owned internal cohesion, not aggregate bypass (ADR-0002, ADR-0020).
 - No public API, DTO, event payload, message string, persistence shape, or behavior changes. Pure mechanical move + visibility adjustment.
 
 ## Validation
-- [ ] `dotnet build WildBunch.sln` — PASS
-- [ ] `dotnet test WildBunch.sln` (via `.\scripts\postgres-dev.ps1 validate`) — PASS, counts: <fill in>
-- [ ] Bounty-loop domain test filter — PASS, same counts as baseline
-- [ ] `GameSession.cs` line count: <fill in> (was 3588)
-- [ ] `GameSession.BountyLoopCoordinator.cs` line count: <fill in>
-- [ ] Index mesh regenerated (no change expected)
+- `dotnet build WildBunch.sln` — PASS (warnings: <return warning count>)
+- `dotnet test WildBunch.sln` (via `.\scripts\postgres-dev.ps1 validate`) — PASS, passed: <return>, failed: <return>, skipped: <return>
+- Bounty-loop domain test filter — PASS, same counts as Task 1 baseline (baseline: <return>, final: <return>)
+- `GameSession.cs` line count: <return> (was 3588)
+- `GameSession.BountyLoopCoordinator.cs` line count: <return>
+- Index mesh regenerated (changed: <return yes/no>)
 
 #### Test plan
 - [ ] Full domain test suite green
@@ -415,14 +430,9 @@ gh pr create --title "BUNCH-112: Extract BountyLoop domain service from GameSess
 - [ ] Dev saloon override tests green
 
 Generated with [Devin](https://devin.ai)
-EOF
-)"
 ```
-Record the PR URL.
 
-- [ ] **Step 5: Update Linear route state**
-
-Post a Linear comment on BUNCH-112 with: branch name, head commit, PR URL, line-count proof, and validation counts. Do NOT close the issue (workers do not close issues).
+Replace every `<return ...>` token with the observed value before publishing the PR or posting the Linear closeout. A return that leaves any `<return>` token unfilled is AMBER, not GREEN.
 
 ## Self-Review
 
@@ -434,7 +444,7 @@ Post a Linear comment on BUNCH-112 with: branch name, head commit, PR URL, line-
 - "Verify bounty loop logic is properly encapsulated in the service" — Tasks 2–6 move all bounty-loop logic into the coordinator file; Task 7 reports the line-count proof.
 - Files `GameSession.cs` and `GameSession.BountyLoopCoordinator.cs` — both modified across tasks.
 
-**2. Placeholder scan:** No TBDs, no "implement later", no "add appropriate error handling". Every step names exact line ranges, exact method names, and exact delegate bodies.
+**2. Placeholder scan:** No TBDs, no "implement later", no "add appropriate error handling". Every implementation step names exact line ranges, exact method names, and exact delegate bodies. The only template tokens are `<return ...>` fields in the Step 6 implementation return template, which are explicit return-time evidence fields the implementer must fill in from the actual run — they are not plan placeholders and are framed as such (a return that leaves them unfilled is AMBER).
 
 **3. Type consistency:** All result types (`CaseInvestigationResult`, `SheriffTurnInResult`, `SaloonPersonOfInterestConfrontationResult`, `WantedSuspectConfrontationResult`) are referenced by their existing names. Method signatures match the existing public surface. The coordinator's `Apply` handlers use the same `internal void Apply(EventType e)` signature the `GameSession` dispatch expects.
 
