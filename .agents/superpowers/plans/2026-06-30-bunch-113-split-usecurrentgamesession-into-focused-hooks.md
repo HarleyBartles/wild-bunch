@@ -40,7 +40,7 @@ The composition layer (`useCurrentGameSession`) consumes these exact signatures 
 
 ```ts
 // useGameSessionState.ts
-function useGameSessionState(sessionData: GameSessionDto | undefined): {
+function useGameSessionState(): {
   storedGameId: string | null;
   setStoredGameId: (id: string | null) => void;
   wantedPosters: WantedPosterDto[];
@@ -87,6 +87,7 @@ type GameSessionMutations = {
 
 function useGameSessionMutations(args: {
   gameId: string | null;
+  declaredWantedIdentityHandle: string;
   setStoredGameId: (id: string | null) => void;
   setWantedPosters: (posters: WantedPosterDto[]) => void;
   setDeclaredWantedIdentityHandle: (handle: string) => void;
@@ -328,10 +329,10 @@ git commit -m "BUNCH-113: extract formatting and storage-key utilities to pure m
 - Create: `src/WildBunch.Web/src/hooks/useGameSessionState.ts`
 
 **Interfaces:**
-- Consumes: `GameSessionDto`, `WantedPosterDto` from `../api/types`; `readStoredGameId` from `../utils/formatting`.
+- Consumes: `WantedPosterDto` from `../api/types`; `readStoredGameId` from `../utils/formatting`.
 - Produces: the `useGameSessionState` hook with the signature in the Interfaces section above.
 
-This hook owns the six `useState` slices and the two syncing `useEffect`s (wanted-poster sync from session data, declared-handle default selection). It does NOT own mutations or queries.
+This hook owns the six `useState` slices and the declared-handle defaulting `useEffect`. It does NOT own the wanted-poster sync effect (that lives in the composition layer, which has access to `sessionQuery.data`), mutations, or queries.
 
 - [ ] **Step 1: Write the hook**
 
@@ -339,25 +340,16 @@ Create `src/WildBunch.Web/src/hooks/useGameSessionState.ts`:
 
 ```ts
 import { useEffect, useState } from "react";
-import type { GameSessionDto, WantedPosterDto } from "../api/types";
+import type { WantedPosterDto } from "../api/types";
 import { readStoredGameId } from "../utils/formatting";
 
-export function useGameSessionState(sessionData: GameSessionDto | undefined) {
+export function useGameSessionState() {
   const [storedGameId, setStoredGameId] = useState<string | null>(readStoredGameId);
   const [wantedPosters, setWantedPosters] = useState<WantedPosterDto[]>([]);
   const [declaredWantedIdentityHandle, setDeclaredWantedIdentityHandle] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [resetToken, setResetToken] = useState(0);
-
-  // Load wanted posters from session state once they're known.
-  // The readWantedPosters API call adds them to KnownWarrants and the journal,
-  // but we should use the session DTO to avoid requiring a separate API call
-  // every time we want to declare an identity.
-  useEffect(() => {
-    const posters = sessionData?.wantedPosters;
-    setWantedPosters(posters ?? []);
-  }, [sessionData?.wantedPosters]);
 
   useEffect(() => {
     if (wantedPosters.length === 0) {
@@ -533,6 +525,7 @@ import { formatMoney, storageKey } from "../utils/formatting";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
+  declaredWantedIdentityHandle: string;
   setStoredGameId: (id: string | null) => void;
   setWantedPosters: (posters: WantedPosterDto[]) => void;
   setDeclaredWantedIdentityHandle: (handle: string) => void;
@@ -542,6 +535,7 @@ type UseGameSessionMutationsArgs = {
 
 export function useGameSessionMutations({
   gameId,
+  declaredWantedIdentityHandle,
   setStoredGameId,
   setWantedPosters,
   setDeclaredWantedIdentityHandle,
@@ -759,22 +753,6 @@ export function useGameSessionMutations({
 }
 ```
 
-Note: `confrontSaloonMutation` references `declaredWantedIdentityHandle` from the state hook. This is passed in via the args. To keep the mutation's `mutationFn` closure correct, the hook needs `declaredWantedIdentityHandle` in its args. Update the `UseGameSessionMutationsArgs` type and destructure to include it:
-
-```ts
-type UseGameSessionMutationsArgs = {
-  gameId: string | null;
-  declaredWantedIdentityHandle: string;
-  setStoredGameId: (id: string | null) => void;
-  setWantedPosters: (posters: WantedPosterDto[]) => void;
-  setDeclaredWantedIdentityHandle: (handle: string) => void;
-  setNotice: (notice: string) => void;
-  setError: (error: string) => void;
-};
-```
-
-And add `declaredWantedIdentityHandle,` to the destructured args.
-
 - [ ] **Step 2: Run typecheck**
 
 Run: `cd src/WildBunch.Web && npm run typecheck`
@@ -805,10 +783,9 @@ This task replaces the 544-line monolith with a composition layer that wires the
 Replace the entire contents of `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts` with:
 
 ```ts
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type {
-  AvailableActionDto,
   GameSessionDto,
   GameTurnResultDto,
   SetupGameRequest,
@@ -831,6 +808,9 @@ type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "
 export function useCurrentGameSession() {
   const queryClient = useQueryClient();
 
+  const state = useGameSessionState();
+  const gameId = state.storedGameId;
+
   const {
     sessionQuery,
     actionsQuery,
@@ -840,11 +820,16 @@ export function useCurrentGameSession() {
     actions,
     currentTown,
     cockpitMode,
-  } = useGameSessionQueries(null as unknown as string);
+  } = useGameSessionQueries(gameId);
 
-  const state = useGameSessionState(sessionQuery.data);
-
-  const gameId = state.storedGameId;
+  // Load wanted posters from session state once they're known.
+  // The readWantedPosters API call adds them to KnownWarrants and the journal,
+  // but we should use the session DTO to avoid requiring a separate API call
+  // every time we want to declare an identity.
+  useEffect(() => {
+    const posters = sessionQuery.data?.wantedPosters;
+    state.setWantedPosters(posters ?? []);
+  }, [sessionQuery.data?.wantedPosters, state]);
 
   const {
     setupGameMutation,
@@ -1096,39 +1081,10 @@ export function useCurrentGameSession() {
 }
 ```
 
-**Critical detail — the queries hook and `gameId` ordering:** The original hook read `storedGameId` first, then created queries keyed on it. In the composition layer, `useGameSessionState` must run before `useGameSessionQueries` so `gameId` is available. However, `useGameSessionState` needs `sessionQuery.data` for the wanted-poster sync effect. This creates a circular dependency.
-
-Resolution: call `useGameSessionQueries` with the `storedGameId` from state. But state is created first. So the order is:
-1. `useGameSessionState(undefined)` — creates state, `storedGameId` available.
-2. `useGameSessionQueries(state.storedGameId)` — creates queries keyed on stored game id.
-3. Re-sync wanted posters: the state hook's effect already depends on `sessionQuery.data?.wantedPosters`. Pass `sessionQuery.data` into the state hook.
-
-But hooks cannot be called conditionally or re-ordered per render. The correct pattern is:
-
-```ts
-const state = useGameSessionState(undefined); // placeholder, see below
-const { sessionQuery, ... } = useGameSessionQueries(state.storedGameId);
-```
-
-The wanted-poster sync effect inside `useGameSessionState` needs `sessionQuery.data`. Since `useGameSessionState` runs before `useGameSessionQueries`, pass `sessionQuery.data` by restructuring: move the wanted-poster sync effect OUT of `useGameSessionState` and into the composition layer, OR pass `sessionQuery.data` into the state hook on a second pass.
-
-**Chosen resolution:** Move the wanted-poster sync `useEffect` into the composition layer (it is the only place that has both `sessionQuery.data` and `setWantedPosters`). Update `useGameSessionState` to NOT include that effect. The declared-handle default effect stays in `useGameSessionState` since it only depends on `wantedPosters` (owned by state).
-
-Update Task 3's `useGameSessionState` to remove the wanted-poster sync effect. The composition layer adds:
-
-```ts
-useEffect(() => {
-  const posters = sessionQuery.data?.wantedPosters;
-  state.setWantedPosters(posters ?? []);
-}, [sessionQuery.data?.wantedPosters, state]);
-```
-
-Add `useEffect` to the imports in the composition layer.
-
 - [ ] **Step 2: Run typecheck**
 
 Run: `cd src/WildBunch.Web && npm run typecheck`
-Expected: PASS. If `AvailableActionDto` import is now unused, remove it.
+Expected: PASS.
 
 - [ ] **Step 3: Run the full test suite to verify no regressions**
 
@@ -1228,4 +1184,4 @@ Expected: significantly smaller than the original 544 lines (target: under 250 l
 
 **Type consistency:** `useGameSessionState` return keys match what the composition layer destructures. `useGameSessionMutations` args include `declaredWantedIdentityHandle` (needed by `confrontSaloonMutation`). `storageKey` is exported from `formatting.ts` and imported by both `useGameSessionMutations` and the composition layer.
 
-**Circular dependency resolution:** The wanted-poster sync effect is moved from `useGameSessionState` to the composition layer (Task 6) because it needs `sessionQuery.data` which is only available after `useGameSessionQueries` runs. Task 3's code block must be updated to remove that effect — this is called out explicitly in Task 6's notes.
+**Hook ordering:** The composition layer calls `useGameSessionState()` first (no args — owns local state and the declared-handle defaulting effect), then `useGameSessionQueries(state.storedGameId)` (keys queries on the stored game id), then runs the wanted-poster sync `useEffect` inline (it needs `sessionQuery.data` from the queries hook and `state.setWantedPosters` from the state hook, so it can only live in the composition layer). This preserves the original behavior: `storedGameId` is read first, queries are keyed on it, and wanted posters sync from session data.
