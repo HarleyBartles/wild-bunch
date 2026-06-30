@@ -26,7 +26,7 @@
 | `src/WildBunch.Application/Projections/HudProjector.cs` | HUD projection | Modify — add `PlaythroughArchived` and `UnrelatedCriminalTurnInSettled` arms |
 | `src/WildBunch.Application/Projections/DiaryProjector.cs` | Diary projection | Modify — add `PlaythroughArchived` arm |
 | `src/WildBunch.Application/Projections/CaseFileViewProjector.cs` | Case file view projection | Modify — add `PlaythroughArchived` arm (no-op) |
-| `tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs` | Existing projector tests | Modify — add tests proving the new arms |
+| `tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs` | Existing projector tests | Modify — add tests proving the new arms (behavioral for Tasks 1-3; IL-inspection + behavioral for Task 4 no-op arm) |
 
 ---
 
@@ -313,18 +313,124 @@ current day/turn and the archive reason."
 
 ## Task 4: Handle `PlaythroughArchived` in `CaseFileViewProjector`
 
-The case file view has no dedicated archive state, but BUNCH-91's completeness check requires the event to be explicitly listed in the projector's switch as handled.
+The case file view has no dedicated archive state, but BUNCH-91's completeness check requires the event to be explicitly listed in the projector's switch as handled. Because the arm is a no-op, a purely behavioral test would pass even without the arm (unhandled events fall through the switch silently). To satisfy the TDD red-green cycle, the test uses a reflection-based IL inspection to verify the `Project` method's compiled body references the `PlaythroughArchived` type — this fails before the switch arm exists and passes after it is added. The test also asserts the archive event does not alter the seed case file view.
 
 **Files:**
 - Modify: `src/WildBunch.Application/Projections/CaseFileViewProjector.cs`
+- Test: `tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs`
 
 **Interfaces:**
-- Consumes: `PlaythroughArchived`.
-- Produces: No change to `CaseFileViewProjection` state.
+- Consumes: `PlaythroughArchived` with `ArchivedAtUtc`, `ArchiveReason`, `PlayerName`, `LastTownId`, `LastTownName`, `Day`, `Turn`, `StatusBeforeArchive`.
+- Produces: No change to `CaseFileViewProjection` state. The projector's `Project` method IL now references `PlaythroughArchived`.
 
-- [ ] **Step 1: Add the `PlaythroughArchived` arm to the case file switch**
+- [ ] **Step 1: Write the failing test**
 
-In `src/WildBunch.Application/Projections/CaseFileViewProjector.cs`, add the following case:
+In `tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs`, add the following test and helper method:
+
+```csharp
+    [Fact]
+    public void CaseFileViewProjector_PlaythroughArchived_IsHandledAndPreservesSeedView()
+    {
+        var projector = new CaseFileViewProjector();
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+
+        var gameStarted = new GameStarted
+        {
+            PlayerName = "Ranger Vale",
+            StartingTownId = new TownId("pinecross"),
+            StartingTownName = "Pinecross",
+            StartingHealth = 100,
+            StartingWallet = 25m,
+            StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+            GameDifficulty = GameDifficulty.Standard,
+            SaltSource = SaltSource.CreateFixed(string.Empty),
+            GameEntropy = GameEntropy.Classic
+        };
+        var archived = new PlaythroughArchived
+        {
+            ArchivedAtUtc = DateTime.UtcNow,
+            ArchiveReason = "Completed",
+            PlayerName = "Ranger Vale",
+            LastTownId = new TownId("pinecross"),
+            LastTownName = "Pinecross",
+            Day = 1,
+            Turn = "Morning",
+            StatusBeforeArchive = GameStatus.Completed
+        };
+
+        // The projector must explicitly handle PlaythroughArchived. Because the arm is a
+        // no-op, a behavioral assertion alone cannot distinguish "handled" from "ignored".
+        // This IL inspection verifies the Project method's compiled body references the
+        // PlaythroughArchived type — it fails before the switch arm exists and passes after.
+        Assert.True(
+            ProjectMethodHandlesEventType(typeof(CaseFileViewProjector), typeof(PlaythroughArchived)),
+            "CaseFileViewProjector.Project must handle PlaythroughArchived events.");
+
+        // The archive event must not alter the seed case file view.
+        var baseEvents = new IDomainEvent[] { gameStarted };
+        var archivedEvents = new IDomainEvent[] { gameStarted, archived };
+
+        var baseView = projector.Project(Guid.NewGuid(), caseFile, baseEvents);
+        var archivedView = projector.Project(Guid.NewGuid(), caseFile, archivedEvents);
+
+        Assert.Equal(baseView.DiscoveredSuspects.Count, archivedView.DiscoveredSuspects.Count);
+        Assert.Equal(baseView.KnownClues.Count, archivedView.KnownClues.Count);
+        Assert.Equal(baseView.KnownWarrants.Count, archivedView.KnownWarrants.Count);
+        Assert.Equal(baseView.Confrontations.Count, archivedView.Confrontations.Count);
+        Assert.Equal(baseView.Settlements.Count, archivedView.Settlements.Count);
+    }
+
+    /// <summary>
+    /// Verifies that a projector's Project method IL references the given event type.
+    /// This is used to prove a no-op switch arm exists for projection completeness checks.
+    /// It scans for isinst (0x75) and castclass (0x74) opcodes followed by a type token
+    /// that resolves to the target event type.
+    /// </summary>
+    private static bool ProjectMethodHandlesEventType(Type projectorType, Type eventType)
+    {
+        var method = projectorType.GetMethod(
+            nameof(CaseFileViewProjector.Project),
+            BindingFlags.Public | BindingFlags.Instance);
+        if (method is null) return false;
+
+        var il = method.GetMethodBody()?.GetILAsByteArray();
+        if (il is null) return false;
+
+        var module = projectorType.Module;
+        for (int i = 0; i <= il.Length - 5; i++)
+        {
+            // isinst (0x75) and castclass (0x74) are the standard opcodes for type-based
+            // pattern matching in C# switch statements. Both are followed by a 4-byte type token.
+            if (il[i] != 0x75 && il[i] != 0x74) continue;
+
+            int token = il[i + 1] | (il[i + 2] << 8) | (il[i + 3] << 16) | (il[i + 4] << 24);
+            try
+            {
+                if (module.ResolveType(token) == eventType) return true;
+            }
+            catch (ArgumentException)
+            {
+                // Token does not resolve to a type — skip.
+            }
+        }
+        return false;
+    }
+```
+
+- [ ] **Step 2: Run the new test to confirm it fails**
+
+Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~CaseFileViewProjector_PlaythroughArchived"`
+
+Expected: FAIL — `ProjectMethodHandlesEventType` returns `false` because the `Project` method IL does not reference `PlaythroughArchived` before the switch arm is added.
+
+- [ ] **Step 3: Add the `PlaythroughArchived` arm to the case file switch**
+
+In `src/WildBunch.Application/Projections/CaseFileViewProjector.cs`, add the following case inside the `foreach` switch, after the `SheriffTurnInSettled` case:
 
 ```csharp
                 case PlaythroughArchived:
@@ -332,72 +438,72 @@ In `src/WildBunch.Application/Projections/CaseFileViewProjector.cs`, add the fol
                     break;
 ```
 
-Place it after the `SheriffTurnInSettled` case or near the end of the switch.
+- [ ] **Step 4: Run the test to verify it passes**
 
-- [ ] **Step 2: Compile to verify the event type is reachable**
+Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~CaseFileViewProjector_PlaythroughArchived"`
 
-Run: `dotnet build src/WildBunch.Application`
+Expected: PASS — the IL now references `PlaythroughArchived` via the `isinst` instruction, and the seed case file view is preserved.
 
-Expected: PASS with no warnings or errors.
-
-- [ ] **Step 3: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/WildBunch.Application/Projections/CaseFileViewProjector.cs
+git add src/WildBunch.Application/Projections/CaseFileViewProjector.cs tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs
 git commit -m "BUNCH-110: Handle PlaythroughArchived in CaseFileViewProjector
 
 The case file view has no state to update on archive, but the event must
-be explicitly listed as handled so projection completeness checks pass."
+be explicitly listed as handled so projection completeness checks pass.
+Add a failing-then-passing test that uses IL inspection to verify the
+Project method references PlaythroughArchived, since a no-op arm cannot
+be distinguished from an unhandled event by behavior alone."
 ```
 
 ---
 
-## Task 5: Full validation and projection completeness
+## Task 5: Full validation
 
 **Files:**
-- Modify: `tests/WildBunch.Application.Tests/Projections/ProjectionTests.cs` (if needed)
-- Run: `dotnet test`
+- Run: targeted and full validation commands (no source changes expected)
 
 **Interfaces:**
 - Consumes: All three projectors and all relevant event types.
-- Produces: A passing test suite with all new event arms covered.
+- Produces: A passing test suite with all four new event arms covered.
 
-- [ ] **Step 1: Run the full application test suite**
+- [ ] **Step 1: Run the Application test project (required)**
 
-Run: `dotnet test tests/WildBunch.Application.Tests`
+Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj`
 
-Expected: All tests pass, including the three new ones.
+Expected: All tests pass, including the four new ones (HudProjector_PlaythroughArchived, HudProjector_UnrelatedCriminalTurnInSettled, DiaryProjector_PlaythroughArchived, CaseFileViewProjector_PlaythroughArchived_IsHandledAndPreservesSeedView).
 
-- [ ] **Step 2: Run the full repo test suite**
+- [ ] **Step 2: Run the repo's full validation suite (optional, if integration-backed tests are in scope)**
 
-Run: `dotnet test`
+If running the full test suite (which may include PostgreSQL-backed integration tests), use the repo-local validation lane so the connection string is set in-process:
 
-Expected: All tests pass.
+Run: `.\scripts\postgres-dev.ps1 validate`
+
+This provisions the persistent cluster, exports the repo-local connection string, restores tools, and runs EF + test checks together. See `AGENTS.md` Validation section for details.
+
+If the full suite is not needed for this projection-only change, Step 1 is sufficient.
 
 - [ ] **Step 3: Commit any final index mesh updates**
 
-If `dotnet test` created a `TestResults/` directory, do not commit it. If the plan file itself changed, it was already committed. Regenerate the index mesh if the plan file added new entries under `.agents/superpowers/plans/`:
-
-```bash
-python scripts/generate_index_mesh.py
-```
-
-If the index mesh changes, commit the updated `INDEX.md` files.
+If `dotnet test` created a `TestResults/` directory, do not commit it (it is gitignored and excluded from the index mesh generator). The plan file was already committed in the preflight PR; no additional index mesh regeneration is needed unless new files were added outside the plan.
 
 ---
 
 ## Self-Review
 
 **1. Spec coverage:**
-- Add `PlaythroughArchived` to `HudProjector` → Task 1.
-- Add `PlaythroughArchived` to `DiaryProjector` → Task 3.
-- Add `PlaythroughArchived` to `CaseFileViewProjector` → Task 4.
-- Add `UnrelatedCriminalTurnInSettled` to `HudProjector` → Task 2.
-- Validation via `dotnet test` → Task 5.
+- Add `PlaythroughArchived` to `HudProjector` → Task 1 (failing-then-passing behavioral test).
+- Add `UnrelatedCriminalTurnInSettled` to `HudProjector` → Task 2 (failing-then-passing behavioral test).
+- Add `PlaythroughArchived` to `DiaryProjector` → Task 3 (failing-then-passing behavioral test).
+- Add `PlaythroughArchived` to `CaseFileViewProjector` → Task 4 (failing-then-passing IL-inspection + behavioral test, because the arm is a no-op).
+- Validation via `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj` → Task 5 Step 1 (required); full suite via `.\scripts\postgres-dev.ps1 validate` → Task 5 Step 2 (optional, for integration-backed tests).
 
-**2. Placeholder scan:** No TBD/TODO/"implement later" placeholders. Every step includes exact file paths, code, and expected test output.
+**2. Placeholder scan:** No TBD/TODO/"implement later" placeholders. Every step includes exact file paths, code, and expected test output. All four new projector arms have failing-then-passing xUnit tests.
 
-**3. Type consistency:** All event property names (`ArchivedAtUtc`, `ArchiveReason`, `LastTownId`, `LastTownName`, `Day`, `Turn`, `StatusBeforeArchive`, `BountyAmount`, `WarrantId`, `TargetName`, `Disposition`, `IsAlive`, `Message`) match the current domain event records.
+**3. Type consistency:** All event property names (`ArchivedAtUtc`, `ArchiveReason`, `LastTownId`, `LastTownName`, `Day`, `Turn`, `StatusBeforeArchive`, `BountyAmount`, `WarrantId`, `TargetName`, `Disposition`, `IsAlive`, `Message`) match the current domain event records. The `CaseFile` constructor call in Task 4 matches the existing `CaseFileViewProjector_ProducesViewFromSeedCaseFile` test pattern (4-argument overload: `accusation`, `suspects`, `trueCulpritId`, `knownClues`).
+
+**4. TDD red-green for no-op arm:** Task 4's `CaseFileViewProjector` arm is a no-op, so a behavioral test alone cannot fail before the arm exists (unhandled events fall through the switch silently). The test uses reflection-based IL inspection (`isinst`/`castclass` opcode scan) to verify the `Project` method's compiled body references `PlaythroughArchived`. This fails before the arm is added and passes after, satisfying the TDD red-green cycle. BUNCH-91's future completeness check can build on this pattern or replace it with a dedicated contract.
 
 ## Execution Handoff
 
