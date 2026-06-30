@@ -5,14 +5,19 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { router } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import {
+  AvailableActionKind,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+} from "../api/types";
 import {
   archiveGame,
+  buyStoreItem,
   getAvailableActions,
   getGame,
   getJournal,
   getTownStoreOffers,
-  buyStoreItem,
   checkLocalRecords,
   followTelegraphLeads,
   gatherLocalGossip,
@@ -21,6 +26,9 @@ import {
   lookAroundSaloon,
   readWantedPosters,
   travel,
+  setupGame,
+  startGameWithTown,
+  markPrologueViewed,
 } from "../api/wildBunchApi";
 import { getSessionAudit } from "../dev/devApi";
 
@@ -39,6 +47,9 @@ vi.mock("../api/wildBunchApi", () => ({
   followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
+  setupGame: vi.fn(),
+  startGameWithTown: vi.fn(),
+  markPrologueViewed: vi.fn(),
 }));
 
 vi.mock("../dev/devApi", () => ({
@@ -51,6 +62,9 @@ const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
+const mockedSetupGame = vi.mocked(setupGame);
+const mockedStartGameWithTown = vi.mocked(startGameWithTown);
+const mockedMarkPrologueViewed = vi.mocked(markPrologueViewed);
 const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
 const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
@@ -167,27 +181,39 @@ function createStoreOffers(): TownStoreOffersDto {
     townName: "Tumbleweed",
     available: true,
     sourceNote: "General store",
-    offers: [],
+    offers: [
+      {
+        vendorType: 0,
+        itemKind: 0,
+        displayName: "Canned beans",
+        price: 1.5,
+        availability: 0,
+        sourceNote: "Shelf stock",
+      },
+    ],
   };
 }
 
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+    { kind: AvailableActionKind.BuySupplies, label: "Buy supplies" },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
   mockedArchiveGame.mockResolvedValue(undefined);
   mockedBuyStoreItem.mockResolvedValue({
     success: true,
-    message: "Purchased",
+    message: "You bought 1 canned beans for $1.50.",
     currentSession: createSession(),
     journeyStatus: null,
     journey: null,
     trailEvent: null,
     travelDiary: null,
   });
+  mockedSetupGame.mockResolvedValue(createSession());
+  mockedStartGameWithTown.mockResolvedValue(createSession());
+  mockedMarkPrologueViewed.mockResolvedValue(createSession());
   mockedReadWantedPosters.mockResolvedValue({
     success: true,
     message: "Read wanted posters",
@@ -228,144 +254,72 @@ function primeMocks() {
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
 
-async function openConfirmDialog(user: ReturnType<typeof userEvent.setup>) {
-  const hud = await screen.findByRole("banner", { name: /game status/i });
-
-  await waitFor(() => {
-    expect(mockedGetGame).toHaveBeenCalledWith("game-1");
-  });
-
-  await user.click(within(hud).getByRole("button", { name: /game settings/i }));
-  const overlay = await screen.findByRole("dialog", { name: /game settings/i });
-
-  await user.click(within(overlay).getByRole("button", { name: /start over/i }));
-
-  return screen.getByRole("dialog", { name: /start over\?/i });
-}
-
-describe("Start Over confirmation", () => {
-  it("calls archiveGame with the correct game id when Confirm is clicked", async () => {
+describe("Store purchase feedback", () => {
+  it("shows the purchase confirmation notice on the store surface after a successful buy", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     renderShell();
 
     const user = userEvent.setup();
-    const confirmDialog = await openConfirmDialog(user);
 
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
+    // Wait for the town hub to render with the Store place card.
+    const storeCard = await screen.findByRole("button", { name: /store/i });
+    await user.click(storeCard);
 
+    // The store surface should render with the buy button.
+    const buyButton = await screen.findByRole("button", { name: /^buy$/i });
+    await user.click(buyButton);
+
+    // The purchase confirmation notice should appear.
     await waitFor(() => {
-      expect(mockedArchiveGame).toHaveBeenCalledWith("game-1");
+      expect(screen.getByText("You bought 1 canned beans for $1.50.")).toBeInTheDocument();
     });
   });
+});
 
-  it("clears localStorage and storedGameId on Confirm, returning to the start flow", async () => {
+describe("Archive notice clears on new game setup", () => {
+  it("clears the archive notice when a new game is set up", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     renderShell();
 
     const user = userEvent.setup();
-    const confirmDialog = await openConfirmDialog(user);
 
+    // Archive the playthrough via Game Settings.
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+    await user.click(within(hud).getByRole("button", { name: /game settings/i }));
+    const settingsOverlay = await screen.findByRole("dialog", { name: /game settings/i });
+    await user.click(within(settingsOverlay).getByRole("button", { name: /start over/i }));
+    const confirmDialog = await screen.findByRole("dialog", { name: /start over\?/i });
     await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
 
-    // localStorage key is cleared.
-    await waitFor(() => {
-      expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
-    });
-
-    // The session is gone — the Game Settings button becomes disabled (no session).
-    await waitFor(() => {
-      const hud = screen.getByRole("banner", { name: /game status/i });
-      expect(within(hud).getByRole("button", { name: /game settings/i })).toBeDisabled();
-    });
-
-    // The pre-session surface renders the start flow heading.
-    expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
-  });
-
-  it("shows the success notice after archiving", async () => {
-    primeMocks();
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
-
-    renderShell();
-
-    const user = userEvent.setup();
-    const confirmDialog = await openConfirmDialog(user);
-
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
-
+    // The archive notice should appear on the pre-session surface.
     await waitFor(() => {
       expect(
         screen.getByText("Your old playthrough has been archived. Start a new one when you are ready."),
       ).toBeInTheDocument();
     });
-  });
 
-  it("does not call archiveGame when Cancel is clicked", async () => {
-    primeMocks();
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    // Now set up a new game. Enter a player name and continue.
+    const nameInput = screen.getByLabelText(/your name/i);
+    await user.type(nameInput, "Jesse");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    renderShell();
-
-    const user = userEvent.setup();
-    const confirmDialog = await openConfirmDialog(user);
-
-    await user.click(within(confirmDialog).getByRole("button", { name: /keep riding/i }));
-
+    // Wait for setupGame to be called.
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
+      expect(mockedSetupGame).toHaveBeenCalled();
     });
 
-    expect(mockedArchiveGame).not.toHaveBeenCalled();
-  });
-
-  it("leaves session state unchanged when Cancel is clicked", async () => {
-    primeMocks();
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
-
-    renderShell();
-
-    const user = userEvent.setup();
-    const confirmDialog = await openConfirmDialog(user);
-
-    await user.click(within(confirmDialog).getByRole("button", { name: /keep riding/i }));
-
+    // The archive notice should be cleared — it should no longer be in the document.
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
-    });
-
-    // localStorage still holds the game id.
-    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
-
-    // The Game Settings overlay remains open and the session is still active.
-    expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
-
-    const hud = screen.getByRole("banner", { name: /game status/i });
-    expect(within(hud).getByRole("button", { name: /game settings/i })).toBeEnabled();
-  });
-
-  it("closes the Game Settings overlay after a successful archive", async () => {
-    primeMocks();
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
-
-    renderShell();
-
-    const user = userEvent.setup();
-    const confirmDialog = await openConfirmDialog(user);
-
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
-
-    // The ConfirmDialog should close.
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
-    });
-
-    // The Game Settings overlay should also close.
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: /game settings/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Your old playthrough has been archived. Start a new one when you are ready."),
+      ).not.toBeInTheDocument();
     });
   });
 });
