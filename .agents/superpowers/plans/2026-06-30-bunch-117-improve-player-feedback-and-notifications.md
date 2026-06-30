@@ -28,6 +28,7 @@
 | `src/WildBunch.Web/src/flow/GlobalOverlays.tsx` | Global overlay layer — owns the Game Settings modal and Start Over confirm dialog | Modify |
 | `src/WildBunch.Web/src/tests/StorePlaceFeedback.test.tsx` | New test file — verifies store purchase notice renders and archive notice clears on new game setup | Create |
 | `src/WildBunch.Web/src/tests/StartOverConfirmation.test.tsx` | Existing test — add test verifying Game Settings overlay closes after successful archive | Modify |
+| `.agents/superpowers/output/screenshots/bunch-117/` | Browser playtest screenshot evidence for all three fixes (git-ignored — cite in PR, do not commit) | Create (evidence only) |
 
 ---
 
@@ -618,6 +619,64 @@ verifying the Game Settings overlay closes after a successful archive."
 
 ---
 
+### Task 5: Browser/manual playtest validation (required closeout)
+
+BUNCH-117 explicitly requires manual playtest validation. This is a required closeout step during implementation, not deferred to PR review. The automated tests in Task 4 cover the behavioral assertions, but the issue calls for verifying the notifications "work correctly" in the live game surface. Use the `game-playtest` skill for browser automation and screenshot capture.
+
+**Files:**
+- Evidence output: `.agents/superpowers/output/screenshots/bunch-117/` (git-ignored per repo policy — cite filenames in the PR body, do not commit the image files)
+
+**Interfaces:**
+- Consumes: All three implemented fixes (Tasks 1-3) and the running dev server.
+- Produces: Screenshot evidence (or an explicit written pass/fail checklist if screenshots are unavailable) cited in the implementation PR closeout.
+
+- [ ] **Step 1: Boot the dev server and backend**
+
+Run the backend and web dev server per repo conventions. The web dev server is `cd src/WildBunch.Web && npm run dev`. Ensure the backend API is reachable (the dev server proxies to it).
+
+- [ ] **Step 2: Verify fix 1 — store purchase confirmation appears after a successful buy**
+
+1. Start a new game and reach a town hub that has a store.
+2. Enter the store.
+3. Buy an available offer.
+4. Capture a screenshot showing the purchase confirmation notice on the store surface.
+5. Save as `.agents/superpowers/output/screenshots/bunch-117/01-store-purchase-notice.png`.
+
+Expected: The `FlowNotice` banner appears on the store surface showing the purchase confirmation message (e.g. "You bought..."). The cash HUD metric updates.
+
+- [ ] **Step 3: Verify fix 2 — archive notice clears when a new game setup starts**
+
+1. From an active game, open Game Settings → Start Over → confirm archive.
+2. Capture a screenshot showing the archive notice on the pre-session surface: `.agents/superpowers/output/screenshots/bunch-117/02-archive-notice-present.png`.
+3. Enter a player name and continue through setup (trigger `setupGame`).
+4. Capture a screenshot showing the archive notice is gone after setup starts: `.agents/superpowers/output/screenshots/bunch-117/03-archive-notice-cleared.png`.
+
+Expected: The archive notice ("Your old playthrough has been archived...") is visible immediately after archiving, then disappears once a new game setup is triggered.
+
+- [ ] **Step 4: Verify fix 3 — Game Settings overlay closes after successful Start Over archive**
+
+1. From an active game, open Game Settings → Start Over → confirm archive.
+2. Capture a screenshot showing the state after archive completes: `.agents/superpowers/output/screenshots/bunch-117/04-settings-closed-after-archive.png`.
+
+Expected: Both the ConfirmDialog and the Game Settings overlay are closed. The player lands on the pre-session/start flow surface with the archive notice visible. No empty settings modal remains over the pre-session surface.
+
+- [ ] **Step 5: If screenshots are unavailable, record an explicit written pass/fail checklist**
+
+If browser automation or screenshot capture is unavailable (e.g. dev server won't boot, browser tooling missing, environment constraints), do not skip this task. Instead, record a written pass/fail checklist in the PR body explaining:
+- Why screenshots were unavailable (exact command run and failure output).
+- For each of the three fixes: a manual pass/fail assertion with the observed state.
+- Whether the automated tests (Task 4) still pass as the fallback evidence.
+
+- [ ] **Step 6: Cite screenshot evidence in the implementation PR closeout**
+
+In the implementation PR body, cite the screenshot filenames/paths from `.agents/superpowers/output/screenshots/bunch-117/` for each of the three fixes. Do not commit the screenshot files to the repo (they are git-ignored per `.agents/superpowers/output/screenshots/.gitignore`). If using the written checklist fallback, include it directly in the PR body.
+
+- [ ] **Step 7: Stop any worker-owned dev servers or browser sessions**
+
+If the dev server or browser automation was started for this validation, stop those worker-owned processes before completing the closeout. Per the GREEN standard, account for used ports and repo/file-lock risk in the closeout proof block.
+
+---
+
 ## Self-Review
 
 **1. Spec coverage:**
@@ -625,7 +684,7 @@ verifying the Game Settings overlay closes after a successful archive."
 - Issue 2 (persistent notification): Task 2 clears the notice in `setupGameMutation.onSuccess`. ✓
 - Issue 3 (Game Settings modal UX — immediate fix: close parent modal after archive): Task 3 closes the Game Settings overlay after successful archive. The "expandable submenu" long-term option is explicitly out of scope per the issue's "Immediate fix" language and scope discipline. ✓
 - Validation ("Run npm test"): Task 4 runs `npm test` and `npm run typecheck`. ✓
-- Manual playtest: deferred to PR review — the plan covers automated test coverage for all three fixes.
+- Manual playtest ("Manual playtest to verify notifications work correctly"): Task 5 is a required closeout step — browser/manual smoke with screenshot evidence for all three fixes, stored under `.agents/superpowers/output/screenshots/bunch-117/` and cited in the implementation PR. A written pass/fail checklist fallback is allowed only when screenshots are unavailable, with the reason recorded. Not deferred to PR review. ✓
 
 **2. Placeholder scan:** No TBD, TODO, or "implement later" found. All code blocks contain actual implementation code. Test code includes full mock setup and assertions.
 
