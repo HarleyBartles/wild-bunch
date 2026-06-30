@@ -33,6 +33,10 @@ export function GameFlowRouter() {
     }
   }, [phase, activePlace, setDevSurface]);
 
+  useEffect(() => {
+    setActivePlace(null);
+  }, [phase]);
+
   switch (phase) {
     case "pre-session":
     case "setup":
