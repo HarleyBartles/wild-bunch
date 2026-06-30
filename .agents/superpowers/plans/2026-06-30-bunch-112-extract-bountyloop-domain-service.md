@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - `GameSession` remains the live-play aggregate root and the only externally loaded/persisted root (ADR-0002, ADR-0020).
-- `BountyLoop` is a child domain component inside the session boundary, NOT a separate aggregate root, NOT a standalone application service, and NOT a nested class with `_session` access. It is a `sealed` class in `WildBunch.Domain/Game/BountyLoop.cs`.
+- `BountyLoop` is a child domain component inside the session boundary, NOT a separate aggregate root, NOT a standalone application service, and NOT a nested class with `_session` access. It is an `internal sealed` class in `WildBunch.Domain/Game/BountyLoop.cs` — internal because it is a session-internal component, not a public domain-service surface. If a concrete external caller later requires public visibility, widen at that point with justification.
 - `BountyLoop` must NOT reference `GameSession` in any way — no field, no parameter, no method call. This is the key falsification check.
 - Do NOT introduce separate persistence tables, repositories, or EF entities for `BountyLoop`. Keep JSON snapshot/runtime-session persistence. The snapshot record shape stays the same; only the rehydration construction path changes.
 - Do NOT change any public method signature on `GameSession`, DTO shape, result-object shape, message string, or event payload.
@@ -76,7 +76,7 @@
 
 ```csharp
 /// <summary>Read-only inputs for a saloon look-around decision.</summary>
-public sealed record SaloonLookAroundContext(
+internal sealed record SaloonLookAroundContext(
     TownId TownId,
     int Day,
     int Turn,
@@ -91,7 +91,7 @@ public sealed record SaloonLookAroundContext(
     Func<CitizenEncounter, string> CitizenDescriptorResolver);
 
 /// <summary>Read-only inputs for a saloon POI confrontation decision.</summary>
-public sealed record SaloonConfrontationContext(
+internal sealed record SaloonConfrontationContext(
     SuspectId? ActiveSaloonSuspectId,
     string? ActiveSaloonDescriptor,
     SaloonPersonOfInterestKind? ActiveSaloonPOIKind,
@@ -105,7 +105,7 @@ public sealed record SaloonConfrontationContext(
     string? DeclaredWantedIdentityHandle);
 
 /// <summary>Read-only inputs for a wanted-suspect confrontation decision.</summary>
-public sealed record WantedSuspectConfrontationContext(
+internal sealed record WantedSuspectConfrontationContext(
     SuspectId TargetSuspectId,
     WantedSuspectConfrontationChoice Choice,
     string? DeclaredWantedIdentityHandle,
@@ -115,7 +115,7 @@ public sealed record WantedSuspectConfrontationContext(
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates);
 
 /// <summary>Read-only inputs for a sheriff turn-in assess/settle decision.</summary>
-public sealed record SheriffTurnInContext(
+internal sealed record SheriffTurnInContext(
     SuspectId TargetSuspectId,
     bool IsAlive,
     bool IsJourneyModal,
@@ -126,7 +126,7 @@ public sealed record SheriffTurnInContext(
     int ClockTurn);
 
 /// <summary>Read-only inputs for an unrelated-criminal turn-in decision.</summary>
-public sealed record UnrelatedCriminalTurnInContext(
+internal sealed record UnrelatedCriminalTurnInContext(
     WarrantId WarrantId,
     bool IsAlive,
     IReadOnlyList<Warrant> KnownWarrants,
@@ -141,7 +141,7 @@ public sealed record UnrelatedCriminalTurnInContext(
 /// Result from a BountyLoop command method. Carries the public result object
 /// plus events that GameSession must produce. BountyLoop does not produce events.
 /// </summary>
-public sealed record BountyLoopResult<TResult>(TResult Result, IReadOnlyList<IDomainEvent> Events);
+internal sealed record BountyLoopResult<TResult>(TResult Result, IReadOnlyList<IDomainEvent> Events);
 ```
 
 ---
@@ -192,7 +192,7 @@ Expected: PASS, zero errors. Record warning count separately.
 
 - [ ] **Step 1: Create `BountyLoopContexts.cs` with all context records and the result wrapper**
 
-Create the file with the context records and `BountyLoopResult<TResult>` shown in the "Context Records and Result Types" section above. Add `using` directives for `WildBunch.Domain.Cases`, `WildBunch.Domain.Events`, `WildBunch.Domain.World`. The context records are `public sealed record` types in `namespace WildBunch.Domain.Game`.
+Create the file with the context records and `BountyLoopResult<TResult>` shown in the "Context Records and Result Types" section above. Add `using` directives for `WildBunch.Domain.Cases`, `WildBunch.Domain.Events`, `WildBunch.Domain.World`. The context records are `internal sealed record` types in `namespace WildBunch.Domain.Game` — they are internal because `BountyLoop` is an internal child component inside the `GameSession` session boundary, not a public domain-service surface. If a concrete external caller later requires public visibility, widen at that point with justification.
 
 - [ ] **Step 2: Create `BountyLoop.cs` with the class skeleton**
 
@@ -209,13 +209,13 @@ namespace WildBunch.Domain.Game;
 /// enter action context, adjust cash, or mutate CaseFile/TownVisitState/Player.
 /// See BUNCH-112 and ADR-0002/ADR-0020.
 /// </summary>
-public sealed class BountyLoop
+internal sealed class BountyLoop
 {
     private readonly WantedSuspectPresenceLedger _presenceLedger;
     private UnrelatedCriminalLedger _unrelatedCriminalLedger;
     private DevSaloonOverride? _pendingDevSaloonOverride;
 
-    public BountyLoop(
+    internal BountyLoop(
         IReadOnlyList<WantedSuspectPresenceEntry>? presenceEntries,
         UnrelatedCriminalLedger unrelatedCriminalLedger)
     {
@@ -224,14 +224,14 @@ public sealed class BountyLoop
             ?? throw new ArgumentNullException(nameof(unrelatedCriminalLedger));
     }
 
-    public IReadOnlyList<WantedSuspectPresenceEntry> PresenceEntries => _presenceLedger.Entries;
-    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
-    public DevSaloonOverride? PendingDevSaloonOverride => _pendingDevSaloonOverride;
+    internal IReadOnlyList<WantedSuspectPresenceEntry> PresenceEntries => _presenceLedger.Entries;
+    internal UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
+    internal DevSaloonOverride? PendingDevSaloonOverride => _pendingDevSaloonOverride;
 
-    public WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
+    internal WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
         => _presenceLedger.GetState(suspectId);
 
-    public bool TryGetWantedSuspectPresenceState(SuspectId suspectId, out WantedSuspectPresenceState state)
+    internal bool TryGetWantedSuspectPresenceState(SuspectId suspectId, out WantedSuspectPresenceState state)
         => _presenceLedger.TryGetState(suspectId, out state);
 
     // Command methods — filled in by Tasks 3–7
@@ -578,7 +578,7 @@ git commit -m "BUNCH-112: move sheriff and unrelated-criminal turn-in decision l
 
 Move the validation + event-construction logic from `GameSession.ForceDevSaloonOverride` (lines ~1335–1383) and `ClearDevSaloonOverride` (lines ~1387–1394). `ForceDevSaloonOverride` receives the `DevSaloonOverride` record plus an eligibility-check function (or the suspect list + eligibility function), validates, sets `_pendingDevSaloonOverride`, and returns `BountyLoopResult<Unit>` with the `DevSaloonOverrideForced` event. `ClearDevSaloonOverride` clears `_pendingDevSaloonOverride` and returns the `DevSaloonOverrideCleared` event. The eligibility check (`IsEligibleSaloonPersonOfInterestCandidate`) is now on `BountyLoop`, so `BountyLoop` can do the validation itself if it receives the `CaseFile` suspects list as a context input. Define:
 ```csharp
-public BountyLoopResult<bool> ForceDevSaloonOverride(
+internal BountyLoopResult<bool> ForceDevSaloonOverride(
     DevSaloonOverride overrideValue,
     IReadOnlyList<Suspect> suspects,
     IReadOnlyList<string> citizenRoleKeys,
