@@ -15,15 +15,15 @@ seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy
 - `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)` — `SeedWorld` → UUID via direct bit-packing (O(1), 22 bits used, 106 reserved)
 - `DifficultyEnvelope.For(GameDifficulty)` — player-selected difficulty → pressure-owned envelope (cash, loadout, horse/saddle, travel rules)
 - `EntropyPolicy.For(GameEntropy)` — player-selected entropy → entropy policy (salt mode, cash bonus cap)
-- `MysteryTruthResolver.Resolve(SeedWorld, EntropyPolicy)` — entropy-applied mystery truth (culprit index, accusation index, salt source). BUNCH-93 will expand this.
+- `MysteryTruthResolver.Resolve(SeedWorld, EntropyPolicy)` — entropy-applied mystery truth (culprit index, accusation index, salt source).
 - `GameSetupResolver.Resolve(...)` — orchestrates the full pipeline, produces `ResolvedGameSetup`
 - `StartingTownPolicy.ResolveStartingTown(World, TownId?)` — validates player's chosen starting town against the generated world; provides safe default (slot-0 town of the derived world) if none supplied
 
 ## Seed-Owned vs Pressure-Owned
 
 - **Seed-owned** (`SeedWorld`): world variant, selected town IDs, trail graph (with baseline terrain/water/distance), accusation/default culprit candidates, cash bonus. The seed owns the map.
-- **Pressure-owned** (`DifficultyEnvelope`): difficulty, starting cash, loadout profile, horse/saddle posture, travel rules profile. BUNCH-94 will expand this.
-- **Entropy-owned** (`EntropyPolicy` + `MysteryTruthResolver`): salt mode, cash bonus cap, and (future) culprit reroll/feature reallocation. BUNCH-93 will expand this.
+- **Pressure-owned** (`DifficultyEnvelope`): difficulty, starting cash, loadout profile, horse/saddle posture, travel rules profile.
+- **Entropy-owned** (`EntropyPolicy` + `MysteryTruthResolver`): salt mode, cash bonus cap, and (future) culprit reroll/feature reallocation. See [`.agents/docs/entropy-and-seed-policy.md`](../../.agents/docs/entropy-and-seed-policy.md) for the full entropy ladder and boundary.
 - **Player/setup-owned** (`StartingTownPolicy`): starting town choice. The player can start in any town that exists in the generated world. The seed does NOT choose the starting town.
 
 ## Seed-Derived Town Selection
