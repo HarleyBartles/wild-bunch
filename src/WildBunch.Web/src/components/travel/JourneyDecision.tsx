@@ -40,7 +40,6 @@ export function JourneyDecision({ encounter, ammo, cash, busy, refreshing, onRes
     <DecisionPanel>
       <DecisionHeading>
         <strong>Trail decision</strong>
-        <span>{encounter.kind}</span>
       </DecisionHeading>
       <DecisionBody>{encounter.message}</DecisionBody>
 
@@ -48,7 +47,7 @@ export function JourneyDecision({ encounter, ammo, cash, busy, refreshing, onRes
         <EncounterControls>
           {hasFightChoice ? (
             <ControlCard>
-              <ControlLabel htmlFor="journey-fight-bullets">Fight bullets</ControlLabel>
+              <ControlLabel htmlFor="journey-fight-bullets">Bullets</ControlLabel>
               <ControlInput
                 id="journey-fight-bullets"
                 type="number"
@@ -69,7 +68,7 @@ export function JourneyDecision({ encounter, ammo, cash, busy, refreshing, onRes
 
           {hasBribeChoice ? (
             <ControlCard>
-              <ControlLabel htmlFor="journey-bribe-amount">Bribe amount</ControlLabel>
+              <ControlLabel htmlFor="journey-bribe-amount">Bribe</ControlLabel>
               <ControlInput
                 id="journey-bribe-amount"
                 type="number"

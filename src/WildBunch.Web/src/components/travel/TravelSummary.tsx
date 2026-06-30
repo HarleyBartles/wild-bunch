@@ -53,16 +53,6 @@ export function TravelSummary({ session }: TravelSummaryProps) {
           <dd>{journey.waterSecure ? "Secure" : "Drying out"}</dd>
         </SummaryItem>
         <SummaryItem>
-          <dt>Canteen needed</dt>
-          <dd>
-            {journey.requiredCanteenCharges} needed, {journey.availableCanteenCharges} available
-          </dd>
-        </SummaryItem>
-        <SummaryItem>
-          <dt>Delay margin</dt>
-          <dd>{journey.delayMarginDays}</dd>
-        </SummaryItem>
-        <SummaryItem>
           <dt>Terrain</dt>
           <dd>{formatTrailTerrain(journey.routeProfile.terrain)}</dd>
         </SummaryItem>
@@ -73,10 +63,6 @@ export function TravelSummary({ session }: TravelSummaryProps) {
         <SummaryItem>
           <dt>Risk</dt>
           <dd>{formatRisk(journey.routeProfile.risk)}</dd>
-        </SummaryItem>
-        <SummaryItem>
-          <dt>Ride-day distance</dt>
-          <dd>{journey.routeProfile.rideDayDistance.toFixed(2)}</dd>
         </SummaryItem>
       </SummaryGrid>
 
