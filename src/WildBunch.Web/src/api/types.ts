@@ -17,23 +17,21 @@ export const JourneyStatus = {
 } as const;
 export type TravelMode = 0 | 1;
 
-export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
+export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export const AvailableActionKind = {
   Travel: 0,
   ViewMap: 1,
   ViewJournal: 2,
   BuySupplies: 3,
-  StayAtLodging: 4,
-  VisitDoctor: 5,
-  SendTelegram: 6,
-  ReadWantedPosters: 7,
-  AdvanceTravelDay: 8,
-  ResolveTravelEncounter: 9,
-  InspectNoticeBoard: 10,
-  CheckSheriffRecords: 11,
-  FollowTelegraphLeads: 12,
-  GatherLocalGossip: 13,
-  LookAroundSaloon: 14,
+  SendTelegram: 4,
+  ReadWantedPosters: 5,
+  AdvanceTravelDay: 6,
+  ResolveTravelEncounter: 7,
+  InspectNoticeBoard: 8,
+  CheckSheriffRecords: 9,
+  FollowTelegraphLeads: 10,
+  GatherLocalGossip: 11,
+  LookAroundSaloon: 12,
 } as const;
 
 export type TrailRisk = 1 | 2 | 3;
@@ -324,12 +322,24 @@ export interface WorldDto {
   trails: TrailDto[];
 }
 
+export type InvestigationSourceKind = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export const InvestigationSourceKind = {
+  NoticeBoard: 0,
+  LocalRecords: 1,
+  TelegraphLead: 2,
+  LocalGossip: 3,
+  StableLedger: 4,
+  SheriffWarrants: 5,
+  SaloonLookAround: 6,
+} as const;
+
 export interface ClueDto {
   id: string;
   kind: ClueKind;
   description: string;
   sourceLabel: string | null;
   context: string | null;
+  sourceKind: InvestigationSourceKind | null;
   anchors: ClueAnchorsDto;
 }
 

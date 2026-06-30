@@ -15,6 +15,7 @@ public static class CaseReadMapper
             clue.Description,
             clue.Source,
             clue.Context,
+            clue.SourceKind,
             ToDto(clue.Anchors));
 
     public static string ToLeadSummary(Clue clue)

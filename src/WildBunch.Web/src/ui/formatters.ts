@@ -39,26 +39,22 @@ export function formatActionKind(kind: number) {
     case 3:
       return "Buy supplies";
     case 4:
-      return "Stay at lodging";
-    case 5:
-      return "Visit doctor";
-    case 6:
       return "Send telegram";
-    case 7:
+    case 5:
       return "Read wanted posters";
-    case 8:
+    case 6:
       return "Advance travel day";
-    case 9:
+    case 7:
       return "Resolve travel encounter";
-    case 10:
+    case 8:
       return "Inspect notice board";
-    case 11:
+    case 9:
       return "Check local records";
-    case 12:
+    case 10:
       return "Follow telegraph leads";
-    case 13:
+    case 11:
       return "Gather local gossip";
-    case 14:
+    case 12:
       return "Look around saloon";
     default:
       return `Action ${kind}`;

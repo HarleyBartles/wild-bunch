@@ -1,6 +1,8 @@
 import styled from "styled-components";
 import { useGameSession } from "../../state/useGameSession";
 import { WantedPosterSurface } from "../../components/WantedPosterSurface";
+import { InvestigationSourceKind } from "../../api/types";
+import type { ClueDto } from "../../api/types";
 import {
   FlowSurface,
   FlowNotice,
@@ -11,6 +13,7 @@ import {
   Stack,
   Button,
   Muted,
+  ItemCard,
 } from "../../components/ui/sharedStyled";
 
 const PlaceHeader = styled.header`
@@ -28,6 +31,12 @@ const PlaceBody = styled.div`
   gap: 20px;
 `;
 
+const LeadMeta = styled.p`
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+`;
+
 interface SheriffPlaceProps {
   onLeave: () => void;
 }
@@ -35,6 +44,7 @@ interface SheriffPlaceProps {
 export function SheriffPlace({ onLeave }: SheriffPlaceProps) {
   const {
     session,
+    journal,
     wantedPosters,
     loading,
     busyMode,
@@ -49,6 +59,10 @@ export function SheriffPlace({ onLeave }: SheriffPlaceProps) {
   if (!session) {
     return null;
   }
+
+  const sheriffLeads: ClueDto[] = (journal?.caseFile.knownClues ?? []).filter(
+    (clue) => clue.sourceKind === InvestigationSourceKind.LocalRecords,
+  );
 
   return (
     <FlowSurface $variant="place">
@@ -90,6 +104,20 @@ export function SheriffPlace({ onLeave }: SheriffPlaceProps) {
             >
               {busyMode === "investigating" ? "Checking..." : "Check local records"}
             </Button>
+            {sheriffLeads.length > 0 ? (
+              <Stack>
+                {sheriffLeads.map((clue) => (
+                  <ItemCard key={clue.id}>
+                    <strong>{clue.description}</strong>
+                    {clue.sourceLabel ? (
+                      <LeadMeta>Source: {clue.sourceLabel}</LeadMeta>
+                    ) : null}
+                  </ItemCard>
+                ))}
+              </Stack>
+            ) : (
+              <Muted>No leads from local records yet.</Muted>
+            )}
           </Stack>
         </Panel>
         {notice ? <FlowNotice>{notice}</FlowNotice> : null}
