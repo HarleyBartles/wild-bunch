@@ -101,15 +101,30 @@ The fix: reset `activePlace` to `null` whenever the game phase changes. This ens
 
 - [ ] **Step 1: Write the failing test for travel-mode display**
 
-Create `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`:
+Create `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`. `TravelPrepSurface` only accepts an `onBack` prop and pulls `session`, `gameId`, `loading`, `handleTravel`, `notice`, and `error` from `useGameSession()` context. The test must render through `GameSessionProvider` with mocked API functions, following the pattern from `tests/StartFlow.test.tsx` and `tests/AppShell.test.tsx`.
 
 ```tsx
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { GameSessionDto, TravelPreviewResultDto } from "../api/types";
-import { previewTravel, travel } from "../api/wildBunchApi";
+import { GameSessionProvider } from "../state/GameSessionProvider";
 import { TravelPrepSurface } from "../flow/TravelPrepSurface";
+import {
+  AvailableActionKind,
+  StartFlowPhase,
+  type GameSessionDto,
+  type JournalDto,
+  type TravelPreviewResultDto,
+} from "../api/types";
+import {
+  getAvailableActions,
+  getGame,
+  getJournal,
+  getWorldMap,
+  previewTravel,
+  travel,
+} from "../api/wildBunchApi";
 
 vi.mock("phaser", () => {
   class Game {
@@ -123,17 +138,42 @@ vi.mock("phaser", () => {
 });
 
 vi.mock("../api/wildBunchApi", () => ({
+  getGame: vi.fn(),
+  getAvailableActions: vi.fn(),
+  getJournal: vi.fn(),
   previewTravel: vi.fn(),
   travel: vi.fn(),
   getWorldMap: vi.fn(),
+  getStartingTownMap: vi.fn(),
+  setupGame: vi.fn(),
+  markPrologueViewed: vi.fn(),
+  startGameWithTown: vi.fn(),
+  advanceTravelDay: vi.fn(),
+  acknowledgeTravelArrival: vi.fn(),
+  archiveGame: vi.fn(),
+  getTownStoreOffers: vi.fn(),
+  buyStoreItem: vi.fn(),
+  checkLocalRecords: vi.fn(),
+  inspectNoticeBoard: vi.fn(),
+  confrontSaloonPersonOfInterest: vi.fn(),
+  lookAroundSaloon: vi.fn(),
+  readWantedPosters: vi.fn(),
+  followTelegraphLeads: vi.fn(),
+  gatherLocalGossip: vi.fn(),
+  getPrologue: vi.fn(),
+  getStartingTowns: vi.fn(),
 }));
 
+const mockedGetGame = vi.mocked(getGame);
+const mockedGetAvailableActions = vi.mocked(getAvailableActions);
+const mockedGetJournal = vi.mocked(getJournal);
 const mockedPreviewTravel = vi.mocked(previewTravel);
-const mockedTravel = vi.mocked(travel);
+const mockedGetWorldMap = vi.mocked(getWorldMap);
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  window.localStorage.clear();
 });
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
@@ -142,7 +182,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
-    startFlowPhase: 3,
+    startFlowPhase: StartFlowPhase.GameStarted,
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
     world: {
       towns: [
@@ -189,6 +229,27 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
   };
 }
 
+function createJournal(): JournalDto {
+  return {
+    id: "game-1",
+    status: 0,
+    clock: { day: 1, turn: 0, timeOfDay: "Morning" },
+    currentTown: { id: "t-town", name: "Tumbleweed" },
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: { statusText: "" },
+      caseSummary: "",
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+      knownWarrants: [],
+      wantedPosters: [],
+    },
+    logEntries: [],
+  };
+}
+
 function createPreview(overrides: Partial<TravelPreviewResultDto["preview"]> = {}): TravelPreviewResultDto {
   return {
     success: true,
@@ -232,22 +293,58 @@ function createPreview(overrides: Partial<TravelPreviewResultDto["preview"]> = {
     },
   };
 }
+
+function primeMocks(session: GameSessionDto = createSession()) {
+  mockedGetGame.mockResolvedValue(session);
+  mockedGetAvailableActions.mockResolvedValue([
+    { kind: AvailableActionKind.Travel, label: "Hit the trail" },
+  ]);
+  mockedGetJournal.mockResolvedValue(createJournal());
+  mockedGetWorldMap.mockResolvedValue({
+    towns: [
+      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
+    ],
+    trails: [
+      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
+    ],
+  });
+}
+
+function renderPrep() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <GameSessionProvider>
+        <TravelPrepSurface onBack={vi.fn()} />
+      </GameSessionProvider>
+    </QueryClientProvider>,
+  );
+  return { queryClient };
+}
 ```
 
-Add the test that fails with the current inverted logic — when `travelMode` is `0` (Mounted), the surface should say "on horseback", not "on foot":
+The test that fails with the current inverted logic — when `travelMode` is `0` (Mounted), the surface should say "on horseback", not "on foot":
 
 ```tsx
 describe("TravelPrepSurface travel-mode display", () => {
   it("shows 'on horseback' when travelMode is Mounted (0)", async () => {
-    const user = userEvent.setup();
-    const session = createSession();
+    primeMocks();
     mockedPreviewTravel.mockResolvedValue(createPreview({ travelMode: 0 }));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const user = userEvent.setup();
+    renderPrep();
 
-    render(
-      <TravelPrepSurface onBack={vi.fn()} session={session} gameId={session.id} loading={false} handleTravel={vi.fn()} notice="" error="" />,
-    );
+    // Wait for the town hub to render, then click "Hit the trail" to enter travel prep.
+    await screen.findByRole("heading", { name: /tumbleweed/i });
+    await user.click(screen.getByRole("button", { name: /hit the trail/i }));
 
-    // Click the destination to enter the prep/confirmation screen
+    // Click the destination to enter the prep/confirmation screen.
     const destButton = await screen.findByRole("button", { name: /dust fork/i });
     await user.click(destButton);
 
@@ -258,13 +355,14 @@ describe("TravelPrepSurface travel-mode display", () => {
   });
 
   it("shows 'on foot' when travelMode is Foot (1)", async () => {
-    const user = userEvent.setup();
-    const session = createSession();
+    primeMocks();
     mockedPreviewTravel.mockResolvedValue(createPreview({ travelMode: 1 }));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const user = userEvent.setup();
+    renderPrep();
 
-    render(
-      <TravelPrepSurface onBack={vi.fn()} session={session} gameId={session.id} loading={false} handleTravel={vi.fn()} notice="" error="" />,
-    );
+    await screen.findByRole("heading", { name: /tumbleweed/i });
+    await user.click(screen.getByRole("button", { name: /hit the trail/i }));
 
     const destButton = await screen.findByRole("button", { name: /dust fork/i });
     await user.click(destButton);
@@ -277,7 +375,7 @@ describe("TravelPrepSurface travel-mode display", () => {
 });
 ```
 
-Note: `TravelPrepSurface` currently pulls from `useGameSession()` context. The test must either wrap in a `GameSessionProvider` with mocked queries, or the component must be refactored to accept props. Since the existing `TravelPrepSurface` uses `useGameSession()`, the test should use `renderInSessionProvider` from `test-utils/renderHelpers.tsx` with mocked API functions. Adjust the test to use the session provider pattern. See `tests/TravelRoutesPanel.test.tsx` for the direct-props pattern and `tests/StartFlow.test.tsx` for the provider pattern. Use whichever matches the component's actual interface after Task 5 props adjustment.
+These tests render `TravelPrepSurface` through `GameSessionProvider` with mocked API functions — no direct props beyond `onBack`. The test sets `localStorage` so the session hydrates, clicks "Hit the trail" in the town hub to enter the travel prep surface, then clicks the destination button to trigger the preview and enter the prep/confirmation screen where the travel-mode text appears.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1126,38 +1224,42 @@ existing starting-town selection behavior."
 
 - [ ] **Step 1: Write the failing test for map-based destination selection**
 
-Add to `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`:
+Add to `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`. These tests use the same `GameSessionProvider` pattern, `primeMocks`, `createSession`, and `renderPrep` helpers established in Task 1 Step 1. `TravelPrepSurface` only accepts `onBack` — no direct props for session/gameId/etc.
 
 ```tsx
 describe("TravelPrepSurface map integration", () => {
   it("renders the Phaser map for destination selection", async () => {
-    const session = createSession();
+    primeMocks();
     mockedPreviewTravel.mockResolvedValue(createPreview());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const user = userEvent.setup();
+    renderPrep();
 
-    render(
-      <TravelPrepSurface onBack={vi.fn()} session={session} gameId={session.id} loading={false} handleTravel={vi.fn()} notice="" error="" />,
-    );
+    // Wait for the town hub, then enter travel prep.
+    await screen.findByRole("heading", { name: /tumbleweed/i });
+    await user.click(screen.getByRole("button", { name: /hit the trail/i }));
 
+    // The map should render (PhaserMapHost renders a canvas or img element).
     expect(await screen.findByRole("img", { name: /trail map/i })).toBeInTheDocument();
   });
 
   it("does not render the old text destination list", async () => {
-    const session = createSession();
+    primeMocks();
     mockedPreviewTravel.mockResolvedValue(createPreview());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const user = userEvent.setup();
+    renderPrep();
 
-    render(
-      <TravelPrepSurface onBack={vi.fn()} session={session} gameId={session.id} loading={false} handleTravel={vi.fn()} notice="" error="" />,
-    );
+    await screen.findByRole("heading", { name: /tumbleweed/i });
+    await user.click(screen.getByRole("button", { name: /hit the trail/i }));
 
-    // The old text list showed "Click to check the ride" on each card
+    // The old text list showed "Click to check the ride" on each card.
     await waitFor(() => {
       expect(screen.queryByText(/click to check the ride/i)).not.toBeInTheDocument();
     });
   });
 });
 ```
-
-Note: These tests assume `TravelPrepSurface` is refactored to accept props directly instead of pulling from `useGameSession()`. If the component keeps using `useGameSession()`, use `renderInSessionProvider` and mock the API functions instead. Match the pattern from `tests/StartFlow.test.tsx`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1346,10 +1448,12 @@ Store screenshots under `.agents/superpowers/output/screenshots/bunch-115/` with
 - Bug 3 (arrival routing): Task 2 resets `activePlace` on phase change. ✓
 - Issue validation: `npm test` covered by Task 6 Step 3; browser smoke playtest required by Task 6 Step 7 with three specific smoke checks (mounted travel text, map rendering + selection, town hub after arrival). ✓
 
-**2. Placeholder scan:** No "TBD", "TODO", "implement later", or placeholder assertions in the plan. All test code blocks contain real, executable assertions:
+**2. Placeholder scan:** No "TBD", "TODO", "implement later", placeholder assertions, or "adjust as needed" notes in the plan. All test code blocks are executable as written — they use the `GameSessionProvider` pattern with mocked API functions, matching the component's actual interface (`TravelPrepSurface` accepts only `onBack` and pulls the rest from `useGameSession()` context):
+- Task 1 `TravelPrepSurface.test.tsx`: renders through `GameSessionProvider` with mocked `getGame`, `getAvailableActions`, `getJournal`, `previewTravel`, and `getWorldMap`. Sets `localStorage` to hydrate the session, clicks "Hit the trail" in the town hub to enter travel prep, clicks the destination button to trigger the preview, and asserts "on horseback" / "on foot" text based on `travelMode`. No direct props beyond `onBack`. ✓
 - Task 2 `GameFlowRouter.test.tsx`: renders through `GameSessionProvider`, clicks "Hit the trail" to set `activePlace = "trailhead"`, uses `queryClient.setQueryData` to transition to arrival phase, clicks "Step into town", and asserts `screen.getByRole("heading", { name: /tumbleweed/i })` is present while `screen.queryByRole("heading", { name: /hit the trail/i })` is absent. This test fails before the `activePlace` reset fix and passes after. ✓
 - Task 3 `WorldMapEndpointTests.cs`: integration test hitting `GET /api/games/{id}/world-map` via `HttpClient`, asserting 200 OK with map data and 404 for missing sessions. Fails before the route exists, passes after. ✓
 - Task 3 `GetWorldMapHandlerTests.cs`: handler-level contract test (passes before endpoint exists — guards the handler contract, not the route). ✓
+- Task 5 `TravelPrepSurface.test.tsx` (map integration): extends the Task 1 test file using the same `GameSessionProvider` pattern, `primeMocks`, `createSession`, and `renderPrep` helpers. Asserts the Phaser map renders and the old text destination list is gone. No direct props beyond `onBack`. ✓
 
 **3. Type consistency:**
 - `TravelMode` const: `Mounted: 0, Foot: 1` — matches C# enum. ✓
