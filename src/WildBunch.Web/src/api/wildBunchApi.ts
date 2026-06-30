@@ -185,3 +185,7 @@ export function getStartingTowns() {
 export function getStartingTownMap(sessionId: string) {
   return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/starting-town-map`);
 }
+
+export function getWorldMap(sessionId: string) {
+  return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/world-map`);
+}
