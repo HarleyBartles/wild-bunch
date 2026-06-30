@@ -144,6 +144,7 @@ export function useCurrentGameSession() {
     onSuccess: async (createdSession) => {
       window.localStorage.setItem(storageKey, createdSession.id);
       setStoredGameId(createdSession.id);
+      setNotice("");
       setError("");
       await invalidateGameQueries(createdSession.id);
     },
