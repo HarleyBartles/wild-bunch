@@ -1054,9 +1054,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(revealedSuspectIdentifier);
 
-        if (StartFlowPhase != StartFlowPhase.SetupComplete)
+        if (StartFlowPhase == StartFlowPhase.PrologueViewed)
         {
-            return; // Must complete setup first
+            return; // Already viewed — idempotent
+        }
+
+        if (StartFlowPhase == StartFlowPhase.NotStarted)
+        {
+            throw new InvalidOperationException("Cannot view prologue before setup is complete.");
+        }
+
+        if (StartFlowPhase == StartFlowPhase.GameStarted)
+        {
+            throw new InvalidOperationException("Cannot view prologue after the game has started.");
         }
 
         var e = new PrologueViewed

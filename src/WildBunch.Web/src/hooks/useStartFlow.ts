@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { GameEntropy, GameSessionDto, StartGameRequest, GameDifficulty } from "../api/types";
+import type { GameEntropy, GameSessionDto, GameDifficulty } from "../api/types";
 import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { useStartGameSeed } from "./useStartGameSeed";
 
@@ -109,4 +109,3 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
   };
 }
 
-export type StartGameHandler = (request: StartGameRequest) => Promise<void>;

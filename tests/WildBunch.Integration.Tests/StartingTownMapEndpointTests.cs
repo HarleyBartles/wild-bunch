@@ -124,7 +124,9 @@ public sealed class StartingTownMapEndpointTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        // The map endpoint is used during town selection, so we only need
+        // a setup-phase session (not a fully-started game).
+        var response = await client.PostAsJsonAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
         var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(session);

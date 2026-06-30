@@ -9,7 +9,6 @@ import type {
   PrologueDto,
   ResolveJourneyEncounterRequest,
   SetupGameRequest,
-  StartGameRequest,
   StartGameWithTownRequest,
   StartingTownDto,
   StartingTownMapDto,
@@ -22,13 +21,6 @@ import type {
   WantedSuspectConfrontationResultDto,
 } from "./types";
 import { requestJson } from "./httpClient";
-
-export function createGame(request: StartGameRequest) {
-  return requestJson<GameSessionDto>("/api/games", {
-    method: "POST",
-    body: JSON.stringify(request satisfies StartGameRequest),
-  });
-}
 
 export function setupGame(request: SetupGameRequest) {
   return requestJson<GameSessionDto>("/api/games/setup", {

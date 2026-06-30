@@ -46,7 +46,7 @@ internal sealed record BoringScenario(
     public void AssertReady()
         => Fixture.AssertCachedFixtureContract();
 
-    public StartGameRequest CreateRequest(string playerName)
+    public SetupGameRequest CreateRequest(string playerName)
         => Fixture.CreateRequest(playerName);
 
     public GameSession CreateSession(string playerName = "Fixture Validator")

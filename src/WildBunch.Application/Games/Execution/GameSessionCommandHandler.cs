@@ -73,27 +73,4 @@ public abstract class GameSessionCommandHandler
 
         throw lastConcurrencyException ?? new InvalidOperationException("Command failed after maximum retries.");
     }
-
-    /// <summary>
-    /// Executes a command that creates a new session (no load step).
-    /// Used by StartNewGameHandler.
-    /// </summary>
-    public async Task<T> ExecuteNewSessionAsync<T>(
-        Func<CancellationToken, Task<(GameSession Session, T Result)>> createAsync,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(createAsync);
-
-        var correlationId = Guid.NewGuid();
-        var (session, result) = await createAsync(cancellationToken).ConfigureAwait(false);
-
-        if (session.UncommittedEvents.Count > 0)
-        {
-            await GameSessionRepository.StoreAsync(session, correlationId, cancellationToken).ConfigureAwait(false);
-            await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-            session.MarkEventsCommitted();
-        }
-
-        return result;
-    }
 }

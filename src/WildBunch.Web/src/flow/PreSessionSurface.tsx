@@ -31,7 +31,6 @@ export function PreSessionSurface() {
     resetToken,
     notice,
     error,
-    startNewGame,
     handleSetupGame,
     handleMarkPrologueViewed,
     handleStartGameWithTown,

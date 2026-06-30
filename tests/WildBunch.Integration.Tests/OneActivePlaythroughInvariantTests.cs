@@ -31,18 +31,12 @@ public sealed class OneActivePlaythroughInvariantTests
         scenario.AssertReady();
 
         // Create session A.
-        var createAResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        Assert.Equal(HttpStatusCode.Created, createAResponse.StatusCode);
-        var sessionA = await createAResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionA);
-        Assert.Equal(GameStatus.Active, sessionA!.Status);
+        var sessionA = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+        Assert.Equal(GameStatus.Active, sessionA.Status);
 
         // Create session B — this must archive session A.
-        var createBResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Trail Hand"));
-        Assert.Equal(HttpStatusCode.Created, createBResponse.StatusCode);
-        var sessionB = await createBResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionB);
-        Assert.Equal(GameStatus.Active, sessionB!.Status);
+        var sessionB = await client.CreateStartedGameAsync(scenario, "Trail Hand");
+        Assert.Equal(GameStatus.Active, sessionB.Status);
 
         // Assert against persisted PostgreSQL state: query the GameSessions table directly.
         using var scope = factory.Services.CreateScope();
@@ -108,25 +102,16 @@ public sealed class OneActivePlaythroughInvariantTests
         scenario.AssertReady();
 
         // Create session A.
-        var createAResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        Assert.Equal(HttpStatusCode.Created, createAResponse.StatusCode);
-        var sessionA = await createAResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionA);
-        Assert.Equal(GameStatus.Active, sessionA!.Status);
+        var sessionA = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+        Assert.Equal(GameStatus.Active, sessionA.Status);
 
         // Create session B — this must archive session A.
-        var createBResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Trail Hand"));
-        Assert.Equal(HttpStatusCode.Created, createBResponse.StatusCode);
-        var sessionB = await createBResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionB);
-        Assert.Equal(GameStatus.Active, sessionB!.Status);
+        var sessionB = await client.CreateStartedGameAsync(scenario, "Trail Hand");
+        Assert.Equal(GameStatus.Active, sessionB.Status);
 
         // Create session C — this must archive session B.
-        var createCResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Newcomer"));
-        Assert.Equal(HttpStatusCode.Created, createCResponse.StatusCode);
-        var sessionC = await createCResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionC);
-        Assert.Equal(GameStatus.Active, sessionC!.Status);
+        var sessionC = await client.CreateStartedGameAsync(scenario, "Newcomer");
+        Assert.Equal(GameStatus.Active, sessionC.Status);
 
         // Assert against persisted PostgreSQL state: query the GameSessions table directly.
         using var scope = factory.Services.CreateScope();
@@ -187,11 +172,8 @@ public sealed class OneActivePlaythroughInvariantTests
         scenario.AssertReady();
 
         // Create session A.
-        var createAResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        Assert.Equal(HttpStatusCode.Created, createAResponse.StatusCode);
-        var sessionA = await createAResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionA);
-        Assert.Equal(GameStatus.Active, sessionA!.Status);
+        var sessionA = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+        Assert.Equal(GameStatus.Active, sessionA.Status);
 
         // Archive session A via the explicit archive endpoint (player-start-over reason).
         var archiveResponse = await client.PostAsync($"/api/games/{sessionA.Id}/archive", content: null);
@@ -199,11 +181,8 @@ public sealed class OneActivePlaythroughInvariantTests
 
         // Create session B — there are no Active sessions, so nothing should be archived,
         // and session A must remain Archived (no resurrection).
-        var createBResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Trail Hand"));
-        Assert.Equal(HttpStatusCode.Created, createBResponse.StatusCode);
-        var sessionB = await createBResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(sessionB);
-        Assert.Equal(GameStatus.Active, sessionB!.Status);
+        var sessionB = await client.CreateStartedGameAsync(scenario, "Trail Hand");
+        Assert.Equal(GameStatus.Active, sessionB.Status);
 
         // Assert against persisted PostgreSQL state: query the GameSessions table directly.
         using var scope = factory.Services.CreateScope();

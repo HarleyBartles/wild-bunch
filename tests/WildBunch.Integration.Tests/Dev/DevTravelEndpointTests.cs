@@ -130,13 +130,10 @@ public sealed class DevTravelEndpointTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        createResponse.EnsureSuccessStatusCode();
-        var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(created);
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         var travelResponse = await client.PostAsJsonAsync(
-            $"/api/games/{created!.Id}/travel",
+            $"/api/games/{created.Id}/travel",
             new TravelRequest(scenario.PreviewDestinationTownId!));
         travelResponse.EnsureSuccessStatusCode();
         var turnResult = await travelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();

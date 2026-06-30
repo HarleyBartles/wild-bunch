@@ -232,7 +232,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.turn", 0, resumeAdvance.CurrentSession.Clock.Turn);
     }
 
-    public static StartGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)
+    public static SetupGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)
         => new(
             playerName,
             fixture.GameDifficulty,

@@ -21,6 +21,11 @@ internal sealed record ScenarioSeedFixture(
     Action<GameSessionDto, string, TravelPreviewResultDto>? AssertTravelPreviewContract = null,
     Action<GameSessionDto, string, TravelPreviewResultDto, GameTurnResultDto>? AssertTravelTurnContract = null)
 {
+    /// <summary>
+    /// The default starting town for this fixture (slot-0 town of the seed-derived world).
+    /// Used by the three-step setup helper when no explicit starting town is supplied.
+    /// </summary>
+    public string DefaultStartingTownId => "hardpan";
     public void AssertCachedFixtureContract()
     {
         if (!string.Equals(ResolverContractVersion, SeedWorldResolver.ResolverContractVersion, StringComparison.Ordinal))

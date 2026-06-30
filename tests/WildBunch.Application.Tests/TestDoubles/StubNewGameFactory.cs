@@ -50,7 +50,11 @@ public sealed class StubNewGameFactory : INewGameFactory
         string? setupSeedCode,
         GameEntropy gameEntropy)
     {
-        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? string.Empty);
+        RequestedPlayerNames.Add(playerName);
+        RequestedGameDifficulties.Add(gameDifficulty);
+        RequestedSetupSeedCodes.Add(setupSeedCode);
+        RequestedEntropies.Add(gameEntropy);
+        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000");
     }
 
     public (Wallet Wallet, Inventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)

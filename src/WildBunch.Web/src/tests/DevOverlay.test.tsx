@@ -20,7 +20,6 @@ vi.mock("../dev/devApi", () => ({
 
 vi.mock("../api/wildBunchApi", () => ({
   buyStoreItem: vi.fn(),
-  createGame: vi.fn(),
   getAvailableActions: vi.fn(),
   getGame: vi.fn(),
   getJournal: vi.fn(),

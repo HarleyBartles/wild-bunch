@@ -11,36 +11,36 @@ namespace WildBunch.Integration.Tests;
 public sealed class GameApiValidationTests
 {
     [Fact]
-    public async Task PostGamesWithBlankPlayerNameReturnsValidationProblem()
+    public async Task PostSetupWithBlankPlayerNameReturnsValidationProblem()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("   "));
+        var response = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest("   "));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "playerName");
     }
 
     [Fact]
-    public async Task PostGamesWithInvalidSeedCodeReturnsValidationProblem()
+    public async Task PostSetupWithInvalidSeedCodeReturnsValidationProblem()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale", SeedCode: "not-a-uuid"));
+        var response = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest("Ranger Vale", SeedCode: "not-a-uuid"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "seedCode");
     }
 
     [Fact]
-    public async Task PostGamesWithMissingPlayerNameReturnsValidationProblem()
+    public async Task PostSetupWithMissingPlayerNameReturnsValidationProblem()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games", new { });
+        var response = await client.PostAsJsonAsync("/api/games/setup", new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "playerName");
@@ -51,14 +51,13 @@ public sealed class GameApiValidationTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-
-        Assert.NotNull(createdSession);
+        var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/travel",
+            $"/api/games/{createdSession.Id}/travel",
             new TravelRequest("   "));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -70,14 +69,13 @@ public sealed class GameApiValidationTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-
-        Assert.NotNull(createdSession);
+        var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/travel",
+            $"/api/games/{createdSession.Id}/travel",
             new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -89,14 +87,13 @@ public sealed class GameApiValidationTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-
-        Assert.NotNull(createdSession);
+        var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/pinecross/store/buy",
+            $"/api/games/{createdSession.Id}/towns/pinecross/store/buy",
             new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -108,14 +105,13 @@ public sealed class GameApiValidationTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-
-        Assert.NotNull(createdSession);
+        var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/pinecross/store/buy",
+            $"/api/games/{createdSession.Id}/towns/pinecross/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 0));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -152,13 +148,12 @@ public sealed class GameApiValidationTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario);
 
-        Assert.NotNull(createdSession);
-
-        var negativeSkipResponse = await client.GetAsync($"/api/games/{createdSession!.Id}/journal?skip=-1");
+        var negativeSkipResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal?skip=-1");
         Assert.Equal(HttpStatusCode.BadRequest, negativeSkipResponse.StatusCode);
         await AssertValidationProblemAsync(negativeSkipResponse, "skip");
 
@@ -172,14 +167,13 @@ public sealed class GameApiValidationTests
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", new StartGameRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-
-        Assert.NotNull(createdSession);
+        var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var travelResponse = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/travel",
+            $"/api/games/{createdSession.Id}/travel",
             new TravelRequest("nonexistent-town"));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);

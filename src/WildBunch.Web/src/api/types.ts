@@ -53,14 +53,6 @@ export type StoreOfferAvailability = 0 | 1;
 export type CaseIdentityKind = 0 | 1 | 2 | 3 | 4;
 export type CaseIdentityStatus = 0 | 1 | 2 | 3;
 
-export interface StartGameRequest {
-  playerName: string;
-  gameDifficulty: GameDifficulty;
-  seedCode?: string | null;
-  gameEntropy?: GameEntropy;
-  startingTownId?: string | null;
-}
-
 export interface SetupGameRequest {
   playerName: string;
   gameDifficulty: GameDifficulty;

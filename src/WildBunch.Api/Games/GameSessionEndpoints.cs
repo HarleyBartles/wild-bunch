@@ -31,12 +31,6 @@ public static class GameSessionEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem();
 
-        games.MapPost(string.Empty, CreateGameAsync)
-            .WithName("CreateGame")
-            .Accepts<StartGameRequest>("application/json")
-            .Produces<GameSessionDto>(StatusCodes.Status201Created)
-            .ProducesValidationProblem();
-
         games.MapGet("starting-towns", GetStartingTownsAsync)
             .WithName("GetStartingTowns")
             .Produces<IReadOnlyList<StartingTownDto>>(StatusCodes.Status200OK);
@@ -61,23 +55,6 @@ public static class GameSessionEndpoints
             .Produces(StatusCodes.Status404NotFound);
 
         return games;
-    }
-
-    private static async Task<IResult> CreateGameAsync(
-        StartGameRequest? request,
-        StartNewGameHandler handler,
-        CancellationToken cancellationToken)
-    {
-        if (!RequestValidation.TryValidate(request, out var validationResult))
-        {
-            return validationResult!;
-        }
-
-        var validatedRequest = request!;
-        var session = await handler.HandleAsync(
-            new StartNewGameCommand(validatedRequest.PlayerName, validatedRequest.GameDifficulty, validatedRequest.SeedCode, validatedRequest.GameEntropy, validatedRequest.StartingTownId),
-            cancellationToken);
-        return Results.Created($"/api/games/{session.Id}", session);
     }
 
     private static async Task<IResult> SetupGameAsync(
@@ -111,7 +88,7 @@ public static class GameSessionEndpoints
         try
         {
             var session = await handler.HandleAsync(
-                new ViewPrologueCommand { RevealedSuspectIdentifier = string.Empty },
+                new ViewPrologueCommand(),
                 new GameSessionId(id),
                 cancellationToken);
             return Results.Ok(session);

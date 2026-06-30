@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acknowledgeTravelArrival,
   archiveGame,
-  createGame,
   checkLocalRecords,
   followTelegraphLeads,
   getAvailableActions,
@@ -26,7 +25,6 @@ import type {
   GameTurnResultDto,
   JournalDto,
   SetupGameRequest,
-  StartGameRequest,
   WantedPosterDto,
 } from "../api/types";
 
@@ -140,22 +138,6 @@ export function useCurrentGameSession() {
       ]),
     [queryClient],
   );
-
-  const startGameMutation = useMutation({
-    mutationFn: (request: StartGameRequest) => createGame(request),
-    onSuccess: async (createdSession) => {
-      window.localStorage.setItem(storageKey, createdSession.id);
-      setStoredGameId(createdSession.id);
-      setWantedPosters([]);
-      setDeclaredWantedIdentityHandle("");
-      setError("");
-      await invalidateGameQueries(createdSession.id);
-      setNotice(`New game started for ${createdSession.player.name}.`);
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to start a new game.");
-    },
-  });
 
   const setupGameMutation = useMutation({
     mutationFn: (request: SetupGameRequest) => setupGame(request),
@@ -345,17 +327,15 @@ export function useCurrentGameSession() {
     lookAroundSaloonMutation.isPending ||
     confrontSaloonMutation.isPending;
 
-  const busyMode: BusyMode = startGameMutation.isPending
-    ? "starting"
-    : travelMutation.isPending
-      ? "traveling"
-      : readWantedPostersMutation.isPending
-        ? "reading"
-        : investigationPending
-          ? "investigating"
-          : sessionQuery.isFetching || actionsQuery.isFetching || journalQuery.isFetching
-            ? "refreshing"
-            : "idle";
+  const busyMode: BusyMode = travelMutation.isPending
+    ? "traveling"
+    : readWantedPostersMutation.isPending
+      ? "reading"
+      : investigationPending
+        ? "investigating"
+        : sessionQuery.isFetching || actionsQuery.isFetching || journalQuery.isFetching
+          ? "refreshing"
+          : "idle";
 
   const loading = busyMode !== "idle";
 
@@ -366,13 +346,6 @@ export function useCurrentGameSession() {
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
   const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest && declaredWantedIdentityHandle);
-
-  const startNewGame = useCallback(
-    async (request: StartGameRequest) => {
-      await startGameMutation.mutateAsync(request);
-    },
-    [startGameMutation],
-  );
 
   const handleSetupGame = useCallback(
     async (request: SetupGameRequest) => {
@@ -547,7 +520,6 @@ export function useCurrentGameSession() {
     canConfrontSaloonPersonOfInterest,
     declaredWantedIdentityHandle,
     setDeclaredWantedIdentityHandle,
-    startNewGame,
     handleSetupGame,
     handleMarkPrologueViewed,
     handleStartGameWithTown,

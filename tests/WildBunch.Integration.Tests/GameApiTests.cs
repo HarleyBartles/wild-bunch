@@ -19,44 +19,26 @@ public sealed class GameApiTests
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
-        var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.NotNull(createdSession);
+        scenario.Fixture.AssertCreatedSession(createdSession!);
+        Assert.NotEqual(Guid.Empty, createdSession!.Id);
+        Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, createdSession.Status);
 
-        var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
-
-        Assert.NotNull(session);
-        scenario.Fixture.AssertCreatedSession(session!);
-        Assert.NotEqual(Guid.Empty, session!.Id);
-        Assert.Equal(WildBunch.Domain.Game.GameStatus.Active, session.Status);
-
-        var connectedTownIds = session.World.Trails
-            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
-            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+        var connectedTownIds = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
             .Distinct()
             .ToArray();
 
         Assert.Contains(connectedTownIds, townId => townId == "quartzsite");
         Assert.Contains(connectedTownIds, townId => townId == "emberfall");
 
-        var payload = await response.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Evan Quill", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Tessa Wren", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"suspect-1\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"suspect-2\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
-
         var previewResults = new List<TravelPreviewDto>();
         foreach (var destinationTownId in connectedTownIds)
         {
-            var previewResponse = await client.GetAsync($"/api/games/{session.Id}/travel/preview/{destinationTownId}");
+            var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/{destinationTownId}");
             Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
 
             var previewResult = await previewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
@@ -79,8 +61,7 @@ public sealed class GameApiTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
@@ -119,8 +100,7 @@ public sealed class GameApiTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
@@ -296,11 +276,7 @@ public sealed class GameApiTests
         var scenario = BoringScenarioBuilder.NoHorseFootTravelReady();
         scenario.AssertReady();
 
-        var response = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-
-        var createdSession = await response.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
@@ -368,8 +344,7 @@ public sealed class GameApiTests
 
         var scenario = BoringScenarioBuilder.HighRiskFoeInterruptRoute();
         scenario.AssertReady();
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        var createdSession = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);

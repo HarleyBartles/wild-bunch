@@ -17,12 +17,9 @@ public sealed class DevEndpointTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        createResponse.EnsureSuccessStatusCode();
-        var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(created);
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
-        var auditResponse = await client.GetAsync($"/api/dev/sessions/{created!.Id}/audit");
+        var auditResponse = await client.GetAsync($"/api/dev/sessions/{created.Id}/audit");
         Assert.Equal(HttpStatusCode.OK, auditResponse.StatusCode);
 
         var payload = await auditResponse.Content.ReadAsStringAsync();
@@ -60,13 +57,10 @@ public sealed class DevEndpointTests
         var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
         scenario.AssertReady();
 
-        var createResponse = await client.PostAsJsonAsync("/api/games", scenario.CreateRequest("Ranger Vale"));
-        createResponse.EnsureSuccessStatusCode();
-        var created = await createResponse.Content.ReadFromJsonAsync<GameSessionDto>();
-        Assert.NotNull(created);
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         // The player-facing audit path must remain closed even though /api/dev/ exists.
-        var playerAuditResponse = await client.GetAsync($"/api/games/{created!.Id}/projections/audit");
+        var playerAuditResponse = await client.GetAsync($"/api/games/{created.Id}/projections/audit");
         Assert.Equal(HttpStatusCode.NotFound, playerAuditResponse.StatusCode);
     }
 }

@@ -70,18 +70,30 @@ public class StartFlowEventSourcingTests
     }
 
     [Fact]
-    public void ViewPrologue_WhenNotSetupComplete_DoesNothing()
+    public void ViewPrologue_WhenAlreadyPrologueViewed_IsIdempotent()
     {
         var session = CreateSetupSession();
         session.MarkEventsCommitted();
-        // Manually reset to NotStarted via reflection is not clean.
-        // Instead, calling ViewPrologue on a SetupComplete session then calling again should be a no-op.
+
         session.ViewPrologue("descriptor-1");
         session.MarkEventsCommitted();
 
         session.ViewPrologue("descriptor-2");
 
         Assert.Empty(session.UncommittedEvents);
+    }
+
+    [Fact]
+    public void ViewPrologue_WhenGameStarted_Throws()
+    {
+        var session = CreateSetupSession();
+        session.MarkEventsCommitted();
+        session.ViewPrologue("descriptor-1");
+        session.MarkEventsCommitted();
+        session.CompleteGameStart(new TownId("pinecross"));
+        session.MarkEventsCommitted();
+
+        Assert.Throws<InvalidOperationException>(() => session.ViewPrologue("descriptor-2"));
     }
 
     [Fact]
