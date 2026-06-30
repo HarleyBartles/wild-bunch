@@ -122,6 +122,7 @@ public sealed record ClueDto(
     string Description,
     string? SourceLabel,
     string? Context,
+    InvestigationSourceKind? SourceKind,
     ClueAnchorsDto Anchors);
 
 public sealed record WarrantDto(
