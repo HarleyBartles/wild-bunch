@@ -7,25 +7,36 @@ interface PhaserMapHostProps {
   mapData: StartingTownMapDto;
   selectedTownId: string | null;
   onTownSelected: (townId: string) => void;
+  currentTownId?: string | null;
+  selectableTownIds?: string[] | null;
 }
 
 export class StartingTownMapScene extends Phaser.Scene {
   private readonly mapData: StartingTownMapDto;
   public readonly selectedTownId: string | null;
   private readonly onTownSelected: (townId: string) => void;
+  private readonly currentTownId: string | null;
+  private readonly selectableTownIds: Set<string> | null;
 
   constructor(
     mapData: StartingTownMapDto,
     selectedTownId: string | null,
     onTownSelected: (townId: string) => void,
+    currentTownId: string | null = null,
+    selectableTownIds: string[] | null = null,
   ) {
     super("starting-town-map");
     this.mapData = mapData;
     this.selectedTownId = selectedTownId;
     this.onTownSelected = onTownSelected;
+    this.currentTownId = currentTownId;
+    this.selectableTownIds = selectableTownIds ? new Set(selectableTownIds) : null;
   }
 
   selectTown(townId: string): void {
+    if (this.selectableTownIds && !this.selectableTownIds.has(townId)) {
+      return;
+    }
     const town = this.mapData.towns.find((t) => t.id === townId);
     if (town) {
       this.onTownSelected(townId);
@@ -86,25 +97,38 @@ export class StartingTownMapScene extends Phaser.Scene {
         .setOrigin(0.5);
     }
 
-    // All listed towns are selectable starting-town candidates
+    // All listed towns are visible; interactivity is gated by selectableTownIds
     for (const town of this.mapData.towns) {
       const x = toScreenX(town.x);
       const y = toScreenY(town.y);
       const isSelected = this.selectedTownId === town.id;
+      const isCurrent = this.currentTownId === town.id;
+      const isSelectable = !this.selectableTownIds || this.selectableTownIds.has(town.id);
       const radius = 14;
 
-      const circle = this.add.circle(x, y, radius, 0xc9a84c);
+      let fillColor = 0xc9a84c;
+      if (isCurrent) {
+        fillColor = 0x8b6914;
+      } else if (!isSelectable) {
+        fillColor = 0x9a9a8a;
+      }
+
+      const circle = this.add.circle(x, y, radius, fillColor);
 
       if (isSelected) {
         circle.setStrokeStyle(4, 0xf0e6d2);
+      } else if (isCurrent) {
+        circle.setStrokeStyle(3, 0xf0e6d2);
       } else {
         circle.setStrokeStyle(2, 0x000000);
       }
 
-      circle.setInteractive({ useHandCursor: true });
-      circle.on("pointerover", () => circle.setScale(1.25));
-      circle.on("pointerout", () => circle.setScale(1));
-      circle.on("pointerdown", () => this.selectTown(town.id));
+      if (isSelectable && !isCurrent) {
+        circle.setInteractive({ useHandCursor: true });
+        circle.on("pointerover", () => circle.setScale(1.25));
+        circle.on("pointerout", () => circle.setScale(1));
+        circle.on("pointerdown", () => this.selectTown(town.id));
+      }
 
       this.add
         .text(x, y + radius + 16, town.name, {
@@ -118,7 +142,7 @@ export class StartingTownMapScene extends Phaser.Scene {
   }
 }
 
-export function PhaserMapHost({ mapData, selectedTownId, onTownSelected }: PhaserMapHostProps) {
+export function PhaserMapHost({ mapData, selectedTownId, onTownSelected, currentTownId, selectableTownIds }: PhaserMapHostProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onTownSelectedRef = useRef(onTownSelected);
   onTownSelectedRef.current = onTownSelected;
@@ -126,8 +150,12 @@ export function PhaserMapHost({ mapData, selectedTownId, onTownSelected }: Phase
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const scene = new StartingTownMapScene(mapData, selectedTownId, (townId: string) =>
-      onTownSelectedRef.current(townId),
+    const scene = new StartingTownMapScene(
+      mapData,
+      selectedTownId,
+      (townId: string) => onTownSelectedRef.current(townId),
+      currentTownId ?? null,
+      selectableTownIds ?? null,
     );
 
     const game = new Phaser.Game({
@@ -145,7 +173,7 @@ export function PhaserMapHost({ mapData, selectedTownId, onTownSelected }: Phase
     return () => {
       game.destroy(true);
     };
-  }, [mapData, selectedTownId]);
+  }, [mapData, selectedTownId, currentTownId, selectableTownIds]);
 
   return (
     <MapCanvas

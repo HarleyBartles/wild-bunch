@@ -165,3 +165,34 @@ describe("PhaserMapHost truth boundary", () => {
     expect(scene.selectedTownId).toBe("dust-fork");
   });
 });
+
+describe("PhaserMapHost travel mode", () => {
+  it("only emits onTownSelected for selectable towns when selectableTownIds is provided", () => {
+    const onTownSelected = vi.fn();
+    render(
+      <PhaserMapHost
+        mapData={createMapData()}
+        selectedTownId={null}
+        onTownSelected={onTownSelected}
+        currentTownId="t-town"
+        selectableTownIds={["dust-fork"]}
+      />,
+    );
+
+    const scene = mockState.games[0].config.scene;
+    scene.selectTown("dust-fork");
+    expect(onTownSelected).toHaveBeenCalledWith("dust-fork");
+
+    scene.selectTown("t-town");
+    expect(onTownSelected).not.toHaveBeenCalledWith("t-town");
+  });
+
+  it("makes all towns selectable when selectableTownIds is not provided", () => {
+    const onTownSelected = vi.fn();
+    renderHost({ onTownSelected });
+
+    const scene = mockState.games[0].config.scene;
+    scene.selectTown("t-town");
+    expect(onTownSelected).toHaveBeenCalledWith("t-town");
+  });
+});
