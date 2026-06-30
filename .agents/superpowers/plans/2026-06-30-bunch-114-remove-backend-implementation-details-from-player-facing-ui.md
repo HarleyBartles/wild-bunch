@@ -157,19 +157,21 @@ In the `InventoryPanel` function, remove the "Loadout items" `<div>` (lines 59-6
       </StatList>
 ```
 
-- [ ] **Step 4: Remove "No travel state" fallback**
+- [ ] **Step 4: Render item detail line only when horse/canteen detail exists**
 
-In the item list `ItemDetailLine`, change the fallback from `"No travel state"` to an empty string `""` so items without horse/canteen state render no detail line instead of backend terminology:
+Compute the item detail text and render the `<ItemDetailLine>` only when there is horse or canteen state to show. Items without either (e.g. plain food, ammo) render no detail line at all instead of the backend "No travel state" fallback. Replace the existing `<ItemDetailLine>` block (lines 74-81) with:
 
 ```tsx
-            <ItemDetailLine>
-              {[
-                item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null,
-                item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null,
-              ]
-                .filter(Boolean)
-                .join(" | ") || ""}
-            </ItemDetailLine>
+            {item.horseState || item.canteenState ? (
+              <ItemDetailLine>
+                {[
+                  item.horseState ? `Horse: ${formatHorseTravelState(item.horseState)}` : null,
+                  item.canteenState ? `Canteen: ${formatCanteenState(item.canteenState)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" | ")}
+              </ItemDetailLine>
+            ) : null}
 ```
 
 - [ ] **Step 5: Remove capabilities TagRow**
@@ -510,12 +512,30 @@ Expected: PASS
 Run: `dotnet test`
 Expected: PASS
 
-- [ ] **Step 4: Verify worktree is clean**
+- [ ] **Step 4: Browser/manual playtest of affected surfaces**
+
+The Linear issue explicitly requires a manual playtest to verify the UI is cleaner and more player-friendly. Start the dev server and exercise each affected surface, capturing screenshot evidence under `.agents/superpowers/output/screenshots/` (git-ignored).
+
+Run: `cd src/WildBunch.Web && npm run dev`
+
+Playtest checklist (verify each surface no longer shows the removed backend details):
+
+1. **Store offers** (visit a town store): confirm no Town/Town id/Catalog/Source StatList; offer cards still show name, price, kind, availability, buy control.
+2. **Inventory** (open inventory panel): confirm no Loadout items count, no Capabilities count, no capability flag tags; items without horse/canteen state render no detail line (no "No travel state"); items with horse/canteen state still show that detail.
+3. **Trail ledger** (start or resume a journey): confirm no Delay margin, no Ride-day distance, no Canteen needed; Route, Travel mode, Remaining days/distance, Horse, Water pressure, Terrain, Water feature, Risk still present.
+4. **Travel diary** (advance at least one trail day with a trail event and/or encounter): confirm no delta meta (Wallet Δ, Food Δ, etc.) on trail events or resolutions; day meta shows current values only (no parentheticals); no Horse feed or Ammo entries in day meta.
+5. **Encounter UI** (trigger a journey encounter with fight/bribe choices): confirm no encounter kind label; fight control labeled "Bullets"; bribe control labeled "Bribe".
+
+Capture screenshots of each surface and save to `.agents/superpowers/output/screenshots/bunch-114/` (e.g. `store-offers.png`, `inventory.png`, `trail-ledger.png`, `travel-diary.png`, `encounter.png`). These are git-ignored and cited in the PR/return notes by filename.
+
+If screenshot capture is unavailable in the execution environment, state that explicitly in the PR body and provide a written playtest checklist with pass/fail per surface instead.
+
+- [ ] **Step 5: Verify worktree is clean**
 
 Run: `git status`
-Expected: clean working tree (all changes committed)
+Expected: clean working tree (all changes committed; screenshots are git-ignored and should not appear)
 
-- [ ] **Step 5: Push branch and create PR**
+- [ ] **Step 6: Push branch and create PR**
 
 ```bash
 git push -u origin harleydbartles/bunch-114-remove-backend-implementation-details-from-player-facing-ui
@@ -523,9 +543,9 @@ git push -u origin harleydbartles/bunch-114-remove-backend-implementation-detail
 
 Create PR with `gh pr create`:
 - Title: `BUNCH-114: Remove backend implementation details from player-facing UI`
-- Body: Summary of all 5 component cleanups + test updates, with test/build evidence.
+- Body: Summary of all 5 component cleanups + test updates, with test/build evidence and playtest checklist results (citing screenshot filenames or explaining screenshot unavailability).
 
-- [ ] **Step 6: Update Linear issue with route state**
+- [ ] **Step 7: Update Linear issue with route state**
 
 Post a comment on BUNCH-114 with:
 - Plan path: `.agents/superpowers/plans/2026-06-30-bunch-114-remove-backend-implementation-details-from-player-facing-ui.md`
