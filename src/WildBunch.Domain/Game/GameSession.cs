@@ -1093,7 +1093,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         if (Status == GameStatus.Archived)
         {
-            return;
+            throw new InvalidOperationException("Cannot archive a playthrough that is already archived.");
         }
 
         var e = new PlaythroughArchived
