@@ -83,7 +83,8 @@ The fix: reset `activePlace` to `null` whenever the game phase changes. This ens
 - `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx` — new test file for travel-mode display and map integration
 - `src/WildBunch.Web/src/tests/GameFlowRouter.test.tsx` — new test file for arrival routing
 - `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx` — add tests for travel-mode scene behavior
-- `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs` — new test file for world-map endpoint handler (alias validation)
+- `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs` — new test file for world-map handler contract validation
+- `tests/WildBunch.Integration.Tests/WorldMapEndpointTests.cs` — new integration test file for world-map endpoint (HTTP route, 200 OK, 404 for missing session)
 
 ---
 
@@ -345,9 +346,27 @@ Create `src/WildBunch.Web/src/tests/GameFlowRouter.test.tsx`:
 
 ```tsx
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import type { GameSessionDto } from "../api/types";
-import { JourneyStatus, StartFlowPhase } from "../api/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { GameSessionProvider } from "../state/GameSessionProvider";
+import { GameFlowRouter } from "../flow/GameFlowRouter";
+import {
+  AvailableActionKind,
+  JourneyStatus,
+  StartFlowPhase,
+  type GameSessionDto,
+  type JournalDto,
+} from "../api/types";
+import {
+  acknowledgeTravelArrival,
+  getAvailableActions,
+  getGame,
+  getJournal,
+  previewTravel,
+  travel,
+  getWorldMap,
+} from "../api/wildBunchApi";
 
 vi.mock("phaser", () => {
   class Game {
@@ -360,32 +379,249 @@ vi.mock("phaser", () => {
   return { default: { Game, Scene, Scale }, Game, Scene, Scale };
 });
 
+vi.mock("../api/wildBunchApi", () => ({
+  getGame: vi.fn(),
+  getAvailableActions: vi.fn(),
+  getJournal: vi.fn(),
+  previewTravel: vi.fn(),
+  travel: vi.fn(),
+  acknowledgeTravelArrival: vi.fn(),
+  getWorldMap: vi.fn(),
+  getStartingTownMap: vi.fn(),
+  setupGame: vi.fn(),
+  markPrologueViewed: vi.fn(),
+  startGameWithTown: vi.fn(),
+  advanceTravelDay: vi.fn(),
+  archiveGame: vi.fn(),
+  getTownStoreOffers: vi.fn(),
+  buyStoreItem: vi.fn(),
+  checkLocalRecords: vi.fn(),
+  inspectNoticeBoard: vi.fn(),
+  confrontSaloonPersonOfInterest: vi.fn(),
+  lookAroundSaloon: vi.fn(),
+  readWantedPosters: vi.fn(),
+  followTelegraphLeads: vi.fn(),
+  gatherLocalGossip: vi.fn(),
+  getPrologue: vi.fn(),
+  getStartingTowns: vi.fn(),
+}));
+
+const mockedGetGame = vi.mocked(getGame);
+const mockedGetAvailableActions = vi.mocked(getAvailableActions);
+const mockedGetJournal = vi.mocked(getJournal);
+const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
+const mockedPreviewTravel = vi.mocked(previewTravel);
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  window.localStorage.clear();
 });
-```
 
-This test verifies that after a journey completes and arrival is acknowledged, the town hub renders (not the travel prep surface). The test must mock `useGamePhase` or provide a session that transitions through phases. Since `GameFlowRouter` uses `useGamePhase` which reads from `useGameSession`, the test should use `renderInSessionProvider` and mock the API to return sessions in different states.
+const routeProfile = {
+  trailId: "trail-1",
+  risk: 1 as const,
+  terrain: 0 as const,
+  waterFeature: 0 as const,
+  rideDayDistance: 3,
+  mountedRideDayProgress: 1,
+  footRideDayProgress: 0.5,
+  warnings: [],
+};
 
-Use the pattern from `tests/StartFlow.test.tsx` — mock `wildBunchApi` and render through the provider. The test renders `GameFlowRouter` with a session that has a completed journey (arrival phase), then acknowledges arrival (session updates to no journey = in-town phase), and verifies the town hub heading appears instead of the travel prep heading.
+function createInTownSession(): GameSessionDto {
+  return {
+    id: "game-1",
+    status: 0,
+    gameDifficulty: 0,
+    gameEntropy: 1,
+    startFlowPhase: StartFlowPhase.GameStarted,
+    player: { name: "Ruth", currentTownId: "t-town", health: 9 },
+    world: {
+      towns: [
+        { id: "t-town", name: "Tumbleweed", services: 0 },
+        { id: "dust-fork", name: "Dust Fork", services: 0 },
+      ],
+      trails: [
+        { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3 },
+      ],
+    },
+    caseFile: {
+      accusationId: null,
+      openingLead: "The trail went cold outside town.",
+      caseState: { statusText: "Still chasing leads." },
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+    },
+    inventory: {
+      wallet: { cash: 14 },
+      items: [],
+      horseState: null,
+      canteenState: null,
+      capabilities: {
+        mountedTravelAvailable: false,
+        horseUpkeepRequired: false,
+        normalRouteWaterSecure: false,
+        trailUtility: false,
+        closeThreatAvailable: false,
+        firearmThreatAvailable: false,
+        gunfightCapable: false,
+        revolverUsable: false,
+        rifleUsable: false,
+      },
+    },
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
+    pursuitState: { heat: 1 },
+    journey: null,
+    travelDiary: null,
+    logEntries: [],
+    activeSaloonPersonOfInterest: null,
+    wantedPosters: [],
+  };
+}
 
-```tsx
+function createArrivalSession(): GameSessionDto {
+  return {
+    ...createInTownSession(),
+    journey: {
+      originTownId: "t-town",
+      originTownName: "Tumbleweed",
+      destinationTownId: "dust-fork",
+      destinationTownName: "Dust Fork",
+      travelMode: 1,
+      status: JourneyStatus.Completed,
+      mountedTravelAvailable: false,
+      waterSecure: true,
+      rideDayDistance: 3,
+      remainingRideDayDistance: 0,
+      baselineRideDays: 3,
+      expectedDays: 3,
+      remainingDays: 0,
+      canteenChargesPerDay: 0,
+      requiredCanteenCharges: 0,
+      availableCanteenCharges: 0,
+      canteenReserveCharges: 0,
+      delayMarginDays: 0,
+      delayRisk: false,
+      requiredFood: 0,
+      availableFood: 0,
+      requiredHorseFeed: 0,
+      availableHorseFeed: 0,
+      horseState: null,
+      daysTravelled: 3,
+      delayDays: 0,
+      pendingEncounter: null,
+      warnings: [],
+      routeProfile,
+    },
+  };
+}
+
+function createJournal(): JournalDto {
+  return {
+    id: "game-1",
+    status: 0,
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
+    currentTown: { id: "t-town", name: "Tumbleweed" },
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: { statusText: "" },
+      caseSummary: "",
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+      knownWarrants: [],
+      wantedPosters: [],
+    },
+    logEntries: [],
+  };
+}
+
+function primeMocks() {
+  mockedGetGame.mockResolvedValue(createInTownSession());
+  mockedGetAvailableActions.mockResolvedValue([
+    { kind: AvailableActionKind.Travel, label: "Hit the trail" },
+  ]);
+  mockedGetJournal.mockResolvedValue(createJournal());
+  mockedPreviewTravel.mockResolvedValue({ success: false, message: "", preview: null });
+  mockedAcknowledgeTravelArrival.mockResolvedValue({
+    success: true,
+    message: "You step into town.",
+    currentSession: createInTownSession(),
+    journeyStatus: null,
+    journey: null,
+    trailEvent: null,
+    travelDiary: null,
+  });
+}
+
+function renderRouter() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <GameSessionProvider>
+        <GameFlowRouter />
+      </GameSessionProvider>
+    </QueryClientProvider>,
+  );
+  return { queryClient };
+}
+
 describe("GameFlowRouter arrival routing", () => {
   it("shows town hub after acknowledging arrival, not travel prep", async () => {
-    // This test requires mocking the full session lifecycle.
-    // See tests/StartFlow.test.tsx for the provider + mock pattern.
-    // 1. Render with a session that has a Completed journey (arrival phase)
-    // 2. Mock acknowledgeTravelArrival to return a session with journey: null
-    // 3. Click "Step into town"
-    // 4. Verify the town hub heading (current town name) appears,
-    //    not "Hit the trail" (travel prep heading)
-    expect(true).toBe(true); // Placeholder — fill in with real test
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const user = userEvent.setup();
+    const { queryClient } = renderRouter();
+
+    // Wait for the town hub to render (in-town phase, journey is null).
+    const townHeading = await screen.findByRole("heading", { name: /tumbleweed/i });
+    expect(townHeading).toBeInTheDocument();
+
+    // Click "Hit the trail" to enter the travel prep surface.
+    // This sets activePlace to "trailhead" inside GameFlowRouter.
+    await user.click(screen.getByRole("button", { name: /hit the trail/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /hit the trail/i })).toBeInTheDocument();
+    });
+
+    // Simulate the journey completing: directly set the session to one
+    // with a Completed journey. This triggers useGamePhase to return
+    // "arrival", so GameFlowRouter renders ArrivalSurface.
+    queryClient.setQueryData(["session", "game-1"], createArrivalSession());
+
+    // Wait for the arrival surface to render.
+    const arrivalHeading = await screen.findByRole("heading", { name: /you've arrived in dust fork/i });
+    expect(arrivalHeading).toBeInTheDocument();
+
+    // Click "Step into town" to acknowledge arrival.
+    // The acknowledgeTravelArrival mutation fires; its onSuccess sets the
+    // session back to the in-town session (journey: null) and invalidates
+    // queries so getGame refetches and confirms the in-town state.
+    await user.click(screen.getByRole("button", { name: /step into town/i }));
+
+    // After acknowledgment, the phase returns to "in-town".
+    // BUG (before fix): activePlace is still "trailhead", so
+    //   TownHubSurface renders TravelPrepSurface (heading "Hit the trail")
+    //   instead of the town hub (heading "Tumbleweed").
+    // FIX (after fix): activePlace resets to null on phase change, so
+    //   the town hub renders with the town name heading.
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /tumbleweed/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("heading", { name: /hit the trail/i })).not.toBeInTheDocument();
   });
 });
 ```
 
-Note: The full test implementation depends on the session provider mocking pattern. Follow `tests/StartFlow.test.tsx` which mocks `getGame`, `getAvailableActions`, `getJournal`, `acknowledgeTravelArrival`, etc. and uses `renderInSessionProvider`. The key assertion: after arrival acknowledgment, `screen.getByRole("heading", { name: /tumbleweed/i })` (town name) is present and `screen.queryByRole("heading", { name: /hit the trail/i })` is absent.
+This test fails before the fix because `activePlace` stays `"trailhead"` after the phase transitions from `arrival` back to `in-town`, causing `TownHubSurface` to render `TravelPrepSurface` (heading "Hit the trail") instead of the town hub (heading "Tumbleweed"). After the fix (`useEffect` resetting `activePlace` to `null` on phase change), the town hub renders correctly.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -432,15 +668,92 @@ of the town hub. Reset activePlace to null on phase change."
 **Files:**
 - Modify: `src/WildBunch.Api/Games/GameSessionEndpoints.cs:38-41` — add `world-map` route aliasing `GetStartingTownMapHandler`
 - Modify: `src/WildBunch.Web/src/api/wildBunchApi.ts` — add `getWorldMap` function
-- Test: `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs` — new file
+- Test: `tests/WildBunch.Integration.Tests/WorldMapEndpointTests.cs` — new file (endpoint-level integration test)
+- Test: `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs` — new file (handler contract test)
 
 **Interfaces:**
 - Consumes: `GetStartingTownMapHandler` (existing) — returns `StartingTownMapDto`
 - Produces: `GET /api/games/{id}/world-map` endpoint returning `StartingTownMapDto`; `getWorldMap(sessionId)` frontend function
 
-- [ ] **Step 1: Write the failing test for the world-map handler**
+- [ ] **Step 1: Write the failing integration test for the world-map endpoint**
 
-Create `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs`:
+Create `tests/WildBunch.Integration.Tests/WorldMapEndpointTests.cs`. This test exercises the actual HTTP route — it fails before the endpoint exists (404 NotFound for the route itself) and passes after the endpoint is added. Follow the pattern from `StartingTownMapEndpointTests.cs`:
+
+```csharp
+using System.Net;
+using System.Net.Http.Json;
+using WildBunch.Application.Games.Models;
+using WildBunch.Integration.Tests.TestInfrastructure;
+
+namespace WildBunch.Integration.Tests;
+
+public sealed class WorldMapEndpointTests
+{
+    [Fact]
+    public async Task GetWorldMapReturnsOkWithTownsAndTrails()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
+
+        var response = await client.GetAsync($"/api/games/{sessionId}/world-map");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
+        Assert.NotNull(map);
+        Assert.NotEmpty(map!.Towns);
+        Assert.NotEmpty(map.Trails);
+    }
+
+    [Fact]
+    public async Task GetWorldMapReturnsSameShapeAsStartingTownMap()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var sessionId = await CreateSessionAsync(client);
+
+        var worldMapResponse = await client.GetAsync($"/api/games/{sessionId}/world-map");
+        var startingTownMapResponse = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
+
+        Assert.Equal(HttpStatusCode.OK, worldMapResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, startingTownMapResponse.StatusCode);
+
+        var worldMap = await worldMapResponse.Content.ReadFromJsonAsync<StartingTownMapDto>();
+        var startingTownMap = await startingTownMapResponse.Content.ReadFromJsonAsync<StartingTownMapDto>();
+
+        Assert.NotNull(worldMap);
+        Assert.NotNull(startingTownMap);
+        Assert.Equal(startingTownMap!.Towns.Count, worldMap!.Towns.Count);
+        Assert.Equal(startingTownMap.Trails.Count, worldMap.Trails.Count);
+    }
+
+    [Fact]
+    public async Task GetWorldMapReturnsNotFoundForMissingSession()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}/world-map");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static async Task<Guid> CreateSessionAsync(HttpClient client)
+    {
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+
+        var response = await client.PostAsJsonAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
+        var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
+
+        Assert.NotNull(session);
+        return session!.Id;
+    }
+}
+```
+
+Also create `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs` as a handler-level contract test:
 
 ```csharp
 using WildBunch.Application.Abstractions;
@@ -464,18 +777,6 @@ public sealed class GetWorldMapHandlerTests
         var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
         Assert.Equal(8, result.Towns.Count);
         Assert.Equal(14, result.Trails.Count);
-    }
-
-    [Fact]
-    public async Task TownsHaveCoordinates()
-    {
-        var (handler, sessionId) = CreateHandlerWithSession();
-        var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
-        Assert.All(result.Towns, town =>
-        {
-            Assert.True(town.X >= 0);
-            Assert.True(town.Y >= 0);
-        });
     }
 
     [Fact]
@@ -515,12 +816,12 @@ public sealed class GetWorldMapHandlerTests
 }
 ```
 
-Note: This test validates that the same handler works for the world-map use case. The handler is already tested by `GetStartingTownMapHandlerTests`, so this is a lightweight alias validation. If the test passes before adding the endpoint (because the handler already exists), that is expected — the test guards the handler contract for the world-map route.
+- [ ] **Step 2: Run integration test to verify it fails (endpoint does not exist yet)**
 
-- [ ] **Step 2: Run test to verify it passes (handler already exists)**
+Run: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests --filter WorldMapEndpointTests`
+Expected: FAIL — `GetWorldMapReturnsOkWithTownsAndTrails` gets 404 NotFound because the `/api/games/{id}/world-map` route does not exist yet. `GetWorldMapReturnsNotFoundForMissingSession` may pass trivially (any unknown route returns 404), but `GetWorldMapReturnsOkWithTownsAndTrails` and `GetWorldMapReturnsSameShapeAsStartingTownMap` fail because the route is not mapped.
 
-Run: `dotnet test tests/WildBunch.Application.Tests --filter GetWorldMapHandlerTests`
-Expected: PASS — the handler already exists and works.
+The handler-level test (`GetWorldMapHandlerTests`) will pass because the handler already exists — that is expected. The handler test guards the contract; the integration test guards the route.
 
 - [ ] **Step 3: Add the world-map endpoint route**
 
@@ -569,18 +870,24 @@ Run: `dotnet build`
 Expected: PASS
 
 Run: `dotnet test tests/WildBunch.Application.Tests --filter GetWorldMapHandlerTests`
-Expected: PASS
+Expected: PASS — handler contract test passes.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Run integration test to verify the endpoint now works**
+
+Run: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests --filter WorldMapEndpointTests`
+Expected: PASS — `GetWorldMapReturnsOkWithTownsAndTrails` gets 200 OK, `GetWorldMapReturnsSameShapeAsStartingTownMap` confirms the world-map and starting-town-map endpoints return the same shape, and `GetWorldMapReturnsNotFoundForMissingSession` gets 404 for a random GUID.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/WildBunch.Api/Games/GameSessionEndpoints.cs src/WildBunch.Web/src/api/wildBunchApi.ts tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs
+git add src/WildBunch.Api/Games/GameSessionEndpoints.cs src/WildBunch.Web/src/api/wildBunchApi.ts tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs tests/WildBunch.Integration.Tests/WorldMapEndpointTests.cs
 git commit -m "feat: add GET /api/games/{id}/world-map endpoint aliasing starting-town-map
 
 The world-map route returns the same StartingTownMapDto (towns with
 coordinates + trails with ride-day distances) via the existing
 GetStartingTownMapHandler. This provides a semantically named endpoint
-for the travel flow's map selection."
+for the travel flow's map selection. Integration test proves the route
+returns 200 OK with map data and 404 for missing sessions."
 ```
 
 ---
@@ -1015,15 +1322,19 @@ git status
 git commit -m "chore: regenerate index mesh for BUNCH-115 changes"
 ```
 
-- [ ] **Step 7: Manual playtest (optional but recommended)**
+- [ ] **Step 7: Browser smoke playtest (required — BUNCH-115 is a travel-flow UI issue)**
 
-Start the dev server and playtest:
-1. Start a game with a horse
-2. Go to travel prep — verify "on horseback" shows (not "on foot")
-3. Verify the visual map renders with current town highlighted
-4. Click a connected destination — verify the prep screen shows
-5. Start the ride, advance travel days until arrival
-6. Acknowledge arrival — verify the town hub shows (not travel prep)
+BUNCH-115 is a travel-flow UI issue and the Linear validation explicitly asks for manual playtest evidence. This step is **required**, not optional. The closeout is not GREEN without it.
+
+Start the dev server (`cd src/WildBunch.Web && npm run dev` or the repo-local dev command) and capture browser screenshots under `.agents/superpowers/output/screenshots/` proving all three fixes:
+
+1. **Mounted travel displays as "on horseback"** — Start a game with a horse (mounted travel available). Go to travel prep, select a connected destination. Verify the prep text says "on horseback" (not "on foot"). Screenshot the prep screen showing the correct travel-mode text.
+
+2. **Travel map renders and connected towns can be selected** — On the travel prep destination selection screen, verify the visual Phaser map renders with the current town highlighted as origin. Click a connected destination — verify it is selectable and the prep screen appears. Screenshot the map showing the current town and connected destinations.
+
+3. **After arrival acknowledgement, the town hub renders** — Start the ride, advance travel days until arrival. Click "Step into town". Verify the town hub renders (town name heading + place cards), not the travel prep surface ("Hit the trail" heading). Screenshot the town hub after arrival.
+
+Store screenshots under `.agents/superpowers/output/screenshots/bunch-115/` with descriptive filenames (e.g. `01-mounted-travel-mode.png`, `02-travel-map-selection.png`, `03-town-hub-after-arrival.png`). These are git-ignored and cited in the PR closeout, not committed to the repo.
 
 ---
 
@@ -1031,11 +1342,14 @@ Start the dev server and playtest:
 
 **1. Spec coverage:**
 - Bug 1 (travel mode display): Task 1 fixes the inverted ternary and adds a `TravelMode` const. ✓
-- Bug 2 (visual map for travel): Task 3 adds the `world-map` endpoint, Task 4 generalizes `PhaserMapHost`, Task 5 integrates the map into `TravelPrepSurface`. ✓
+- Bug 2 (visual map for travel): Task 3 adds the `world-map` endpoint (with integration test proving the route returns 200 + 404), Task 4 generalizes `PhaserMapHost`, Task 5 integrates the map into `TravelPrepSurface`. ✓
 - Bug 3 (arrival routing): Task 2 resets `activePlace` on phase change. ✓
-- Issue validation: `npm test` covered by Task 6 Step 3; manual playtest covered by Task 6 Step 7. ✓
+- Issue validation: `npm test` covered by Task 6 Step 3; browser smoke playtest required by Task 6 Step 7 with three specific smoke checks (mounted travel text, map rendering + selection, town hub after arrival). ✓
 
-**2. Placeholder scan:** No "TBD", "TODO", or "implement later" in the plan. Test code blocks contain real assertions. The `GameFlowRouter.test.tsx` test in Task 2 Step 1 includes a note about the provider mocking pattern with a reference to `StartFlow.test.tsx` — the implementer should follow that pattern. This is guidance, not a placeholder.
+**2. Placeholder scan:** No "TBD", "TODO", "implement later", or placeholder assertions in the plan. All test code blocks contain real, executable assertions:
+- Task 2 `GameFlowRouter.test.tsx`: renders through `GameSessionProvider`, clicks "Hit the trail" to set `activePlace = "trailhead"`, uses `queryClient.setQueryData` to transition to arrival phase, clicks "Step into town", and asserts `screen.getByRole("heading", { name: /tumbleweed/i })` is present while `screen.queryByRole("heading", { name: /hit the trail/i })` is absent. This test fails before the `activePlace` reset fix and passes after. ✓
+- Task 3 `WorldMapEndpointTests.cs`: integration test hitting `GET /api/games/{id}/world-map` via `HttpClient`, asserting 200 OK with map data and 404 for missing sessions. Fails before the route exists, passes after. ✓
+- Task 3 `GetWorldMapHandlerTests.cs`: handler-level contract test (passes before endpoint exists — guards the handler contract, not the route). ✓
 
 **3. Type consistency:**
 - `TravelMode` const: `Mounted: 0, Foot: 1` — matches C# enum. ✓
