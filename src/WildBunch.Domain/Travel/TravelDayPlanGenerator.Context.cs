@@ -164,27 +164,28 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, 2, 0);
         }
 
-        // Entropy adjusts encounter count: Boring = fewer encounters, Wild = more encounters
+        // Entropy adjusts encounter-count spread (variance), not mean frequency.
+        // Boring is near-deterministic via SaltSourceMode.Fixed (no salt in seed),
+        // so it needs no weight adjustment here — the same route/session inputs
+        // produce the same plan every time.
+        // Adventurous/Wild widen the spread and increase volatility.
         switch (context.GameEntropy)
         {
             case GameEntropy.Boring:
-                AddWeight(weights, 0, 2);
-                AddWeight(weights, 1, -1);
-                AddWeight(weights, 2, -1);
-                AddWeight(weights, 3, -1);
+                // No weight adjustment. Determinism comes from Fixed salt mode.
                 break;
             case GameEntropy.Classic:
                 // No adjustment (baseline)
                 break;
             case GameEntropy.Adventurous:
-                AddWeight(weights, 0, -1);
-                AddWeight(weights, 1, 1);
+                AddWeight(weights, 0, 1);
+                AddWeight(weights, 1, -1);
                 AddWeight(weights, 2, 1);
                 AddWeight(weights, 3, 0);
                 break;
             case GameEntropy.Wild:
-                AddWeight(weights, 0, -2);
-                AddWeight(weights, 1, 2);
+                AddWeight(weights, 0, 2);
+                AddWeight(weights, 1, -2);
                 AddWeight(weights, 2, 2);
                 AddWeight(weights, 3, 1);
                 break;
@@ -272,14 +273,14 @@ internal static partial class TravelDayPlanGenerator
                 break;
         }
 
-        // Entropy adjusts category weights: Boring = more quiet days, Wild = more rare events
+        // Entropy adjusts category weights for volatility/surprise.
+        // Boring needs no adjustment — determinism comes from Fixed salt mode.
+        // Adventurous/Wild increase lucky/unlucky swings and reduce quiet predictability.
+        // Entropy must not increase Foe pressure — difficulty owns lethality.
         switch (context.GameEntropy)
         {
             case GameEntropy.Boring:
-                AddWeight(weights, TravelDayEncounterCategory.Quiet, 2);
-                AddWeight(weights, TravelDayEncounterCategory.Lucky, -1);
-                AddWeight(weights, TravelDayEncounterCategory.Unlucky, -1);
-                AddWeight(weights, TravelDayEncounterCategory.Foe, -1);
+                // No weight adjustment. Determinism comes from Fixed salt mode.
                 break;
             case GameEntropy.Classic:
                 // No adjustment (baseline)
@@ -288,13 +289,13 @@ internal static partial class TravelDayPlanGenerator
                 AddWeight(weights, TravelDayEncounterCategory.Quiet, -1);
                 AddWeight(weights, TravelDayEncounterCategory.Lucky, 1);
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 1);
-                AddWeight(weights, TravelDayEncounterCategory.Foe, 0);
                 break;
             case GameEntropy.Wild:
                 AddWeight(weights, TravelDayEncounterCategory.Quiet, -2);
                 AddWeight(weights, TravelDayEncounterCategory.Lucky, 2);
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 2);
-                AddWeight(weights, TravelDayEncounterCategory.Foe, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Environmental, 1);
+                AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
                 break;
         }
 

@@ -42,7 +42,7 @@ const gameEntropyOptions: ReadonlyArray<{ value: GameEntropy; label: string }> =
 ];
 
 const entropyDescriptions: Record<GameEntropy, string> = {
-  0: "Calm trails. Fewer surprises, more quiet days.",
+  0: "Near-deterministic trails. Same route, same results — no salt-driven surprises.",
   1: "Balanced variance. The standard trail rhythm.",
   2: "More lucky breaks and bad luck. Livelier trails.",
   3: "Big swings. Frequent windfalls and mishaps.",
