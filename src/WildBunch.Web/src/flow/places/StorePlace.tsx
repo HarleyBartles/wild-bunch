@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { useGameSession } from "../../state/useGameSession";
 import { StoreOffersPanel } from "../../components/StoreOffersPanel";
 import { InventoryPanel } from "../../components/InventoryPanel";
-import { FlowSurface, BackButton } from "../../components/ui/sharedStyled";
+import { FlowSurface, BackButton, FlowNotice, FlowError } from "../../components/ui/sharedStyled";
 
 const PlaceHeader = styled.header`
   display: grid;
@@ -24,7 +24,7 @@ interface StorePlaceProps {
 }
 
 export function StorePlace({ onLeave }: StorePlaceProps) {
-  const { session, storeOffers, storeOffersLoading, loading, handleBuyOffer } = useGameSession();
+  const { session, storeOffers, storeOffersLoading, loading, handleBuyOffer, notice, error } = useGameSession();
 
   if (!session) {
     return null;
@@ -46,6 +46,8 @@ export function StorePlace({ onLeave }: StorePlaceProps) {
           onBuyOffer={handleBuyOffer}
         />
         <InventoryPanel inventory={session.inventory} />
+        {notice ? <FlowNotice>{notice}</FlowNotice> : null}
+        {error ? <FlowError>{error}</FlowError> : null}
       </PlaceBody>
     </FlowSurface>
   );
