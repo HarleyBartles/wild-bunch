@@ -17,9 +17,7 @@ public sealed class GameSessionBountyLoopCoordinatorTests
         var session = CreateArmedWantedSession();
         var suspectId = new SuspectId("suspect-1");
 
-        var coordinator = new GameSession.BountyLoopCoordinator(session);
-
-        var repeatTurnIn = coordinator.SettleSheriffTurnIn(suspectId, isAlive: true);
+        var repeatTurnIn = session.SettleSheriffTurnIn(suspectId, isAlive: true);
 
         Assert.False(repeatTurnIn.Success);
         Assert.Equal(SheriffTurnInOutcome.Rejected, repeatTurnIn.Outcome);

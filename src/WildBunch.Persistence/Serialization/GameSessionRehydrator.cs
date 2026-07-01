@@ -110,16 +110,4 @@ internal static class GameSessionRehydrator
         SetBackingField(session, "<CurrentActionContext>k__BackingField", context);
         SetBackingField(session, "<CurrentActionContextTownId>k__BackingField", townId);
     }
-
-    /// <summary>
-    /// Overwrites the session's <c>_unrelatedCriminalLedger</c> with a restored
-    /// snapshot. The constructor builds a fresh ledger from the case file; this
-    /// method replaces it with the persisted state so that active/taken-in/
-    /// collected/retired sets, gang parity, and next spawn index survive reload.
-    /// See BUNCH-107.
-    /// </summary>
-    public static void SetUnrelatedCriminalLedger(GameSession session, WildBunch.Domain.Cases.UnrelatedCriminalLedger ledger)
-    {
-        SetBackingField(session, "_unrelatedCriminalLedger", ledger);
-    }
 }

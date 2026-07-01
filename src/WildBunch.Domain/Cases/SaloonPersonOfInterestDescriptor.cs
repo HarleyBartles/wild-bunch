@@ -9,7 +9,19 @@ public static class SaloonPersonOfInterestDescriptor
         ArgumentNullException.ThrowIfNull(suspect);
         ArgumentNullException.ThrowIfNull(caseFile);
 
-        var warrantDescriptor = caseFile.KnownWarrants.FirstOrDefault(warrant => MatchesKnownWarrant(warrant, suspect));
+        return Describe(suspect, caseFile.KnownWarrants);
+    }
+
+    /// <summary>
+    /// Describes a suspect using the known warrants list directly.
+    /// Used by BountyLoop which receives warrants via context records.
+    /// </summary>
+    public static string Describe(Suspect suspect, IReadOnlyList<Warrant> knownWarrants)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+        ArgumentNullException.ThrowIfNull(knownWarrants);
+
+        var warrantDescriptor = knownWarrants.FirstOrDefault(warrant => MatchesKnownWarrant(warrant, suspect));
         if (warrantDescriptor is not null)
         {
             var descriptor = warrantDescriptor.Terms.KnownFeatures.FirstOrDefault();

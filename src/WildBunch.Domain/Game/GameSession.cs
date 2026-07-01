@@ -37,13 +37,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
-    private readonly WantedSuspectPresenceLedger _wantedSuspectPresenceLedger;
-    private readonly UnrelatedCriminalLedger _unrelatedCriminalLedger;
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
-    private readonly BountyLoopCoordinator _bountyLoopCoordinator;
+    private readonly BountyLoop _bountyLoop;
     private DevTravelOverride? _pendingDevTravelOverride;
-    private DevSaloonOverride? _pendingDevSaloonOverride;
 
     // Stateless domain-service resolvers for investigation surfacing.
     // BUNCH-107: replace ordered-peek selection with town/visit-aware resolver selection.
@@ -89,14 +86,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         _currentTown.PrimeCurrentTown();
-        _bountyLoopCoordinator = new BountyLoopCoordinator(this);
 
         if (completedJourneyHistory is not null)
         {
             _completedJourneyHistory.AddRange(completedJourneyHistory);
         }
-
-        _wantedSuspectPresenceLedger = new WantedSuspectPresenceLedger(wantedSuspectPresenceEntries);
 
         // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
         // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
@@ -105,12 +99,35 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
         // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
         // the ledger itself is the parity source of truth.
-        _unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+        var unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+
+        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
 
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
 
     public GameSessionId Id { get; }
+
+    /// <summary>
+    /// Restores BountyLoop-owned state from a persisted snapshot. Called by the
+    /// rehydration path after the constructor builds a fresh BountyLoop. The
+    /// presence ledger is already constructed from constructor inputs; this
+    /// restores the unrelated-criminal ledger and pending dev saloon override.
+    /// See BUNCH-112.
+    /// </summary>
+    internal void RestoreBountyLoopState(
+        WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger,
+        DevSaloonOverride? pendingDevSaloonOverride)
+    {
+        if (unrelatedCriminalLedger is not null)
+        {
+            _bountyLoop.RestoreUnrelatedCriminalLedger(unrelatedCriminalLedger);
+        }
+        if (pendingDevSaloonOverride is not null)
+        {
+            _bountyLoop.RestorePendingDevSaloonOverride(pendingDevSaloonOverride);
+        }
+    }
 
     public GameStatus Status { get; private set; }
 
@@ -157,7 +174,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Pending dev override for the next saloon look-around. Dev-only state.
     /// Consumed once by the next LookAroundSaloon. See BUNCH-90.
     /// </summary>
-    internal DevSaloonOverride? PendingDevSaloonOverride => _pendingDevSaloonOverride;
+    internal DevSaloonOverride? PendingDevSaloonOverride => _bountyLoop.PendingDevSaloonOverride;
 
     [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
@@ -166,7 +183,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
 
-    public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _wantedSuspectPresenceLedger.Entries;
+    public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _bountyLoop.PresenceEntries;
 
     /// <summary>
     /// Unrelated criminal parity ledger (BUNCH-107). Tracks the active pool of
@@ -175,7 +192,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and
     /// <see cref="Apply(UnrelatedCriminalTurnInSettled)"/> (unrelated-criminal take-ins).
     /// </summary>
-    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
+    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _bountyLoop.UnrelatedCriminalLedger;
 
     /// <summary>
     /// Events produced by command methods but not yet committed to the event stream.
@@ -505,7 +522,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 Clock.Day,
                 Clock.Turn);
             CaseFile.RecordWantedSuspectConfrontationState(confrontationState);
-            UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
+            _bountyLoop.Apply(e);
         }
 
         _version++;
@@ -531,7 +548,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // target. The ledger despawns excess unrelated criminals (preferring ones
         // the player has not collected a warrant for) to maintain parity. The
         // despawned warrants are retired from the surfacing pool.
-        _unrelatedCriminalLedger.RecordGangMemberTakenIn();
+        _bountyLoop.Apply(e);
 
         _version++;
     }
@@ -545,8 +562,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         Player.AdjustCash(e.BountyAmount);
 
-        _unrelatedCriminalLedger.MarkWarrantCollected(e.WarrantId);
-        _unrelatedCriminalLedger.RecordTakenIn(e.WarrantId);
+        _bountyLoop.Apply(e);
 
         _version++;
     }
@@ -767,10 +783,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideForced e)
     {
-        _pendingDevSaloonOverride = new DevSaloonOverride(
-            e.ForcedKind,
-            e.ForcedSuspectId,
-            e.ForcedCitizenRoleKey);
+        _bountyLoop.Apply(e);
         _version++;
     }
 
@@ -780,7 +793,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideCleared e)
     {
-        _pendingDevSaloonOverride = null;
+        _bountyLoop.Apply(e);
         _version++;
     }
 
@@ -792,7 +805,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideConsumed e)
     {
-        _pendingDevSaloonOverride = null;
+        _bountyLoop.Apply(e);
         _version++;
     }
 
@@ -1235,13 +1248,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
-        => _wantedSuspectPresenceLedger.GetState(suspectId);
+        => _bountyLoop.GetWantedSuspectPresenceState(suspectId);
 
     public bool TryGetWantedSuspectPresenceState(SuspectId suspectId, out WantedSuspectPresenceState state)
-        => _wantedSuspectPresenceLedger.TryGetState(suspectId, out state);
+        => _bountyLoop.TryGetWantedSuspectPresenceState(suspectId, out state);
 
     public void SetWantedSuspectPresenceState(SuspectId suspectId, WantedSuspectPresenceState state)
-        => _wantedSuspectPresenceLedger.SetState(suspectId, state);
+        => _bountyLoop.SetWantedSuspectPresenceState(suspectId, state);
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
@@ -1340,44 +1353,18 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             throw new InvalidOperationException("Cannot force a saloon override while a journey is active.");
         }
 
-        // Validate specific-suspect eligibility at force time.
-        // The only ineligibility is being the unreleased true killer.
-        if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
+        var context = new DevSaloonOverrideContext(
+            overrideValue,
+            CaseFile.Suspects,
+            CaseFile.TrueCulpritId,
+            CaseFile.KillerReleaseState,
+            CitizenCast.Roles.Select(r => r.Key).ToList());
+
+        var result = _bountyLoop.ForceDevSaloonOverride(context);
+        foreach (var e in result.Events)
         {
-            var suspectId = overrideValue.ForcedSuspectId.Value;
-
-            // Reject unknown suspect IDs.
-            if (!CaseFile.Suspects.Any(s => s.Id == overrideValue.ForcedSuspectId))
-            {
-                throw new InvalidOperationException(
-                    $"Unknown suspect ID: {suspectId.Value}. Cannot force a saloon override for a suspect that does not exist.");
-            }
-
-            var suspect = CaseFile.Suspects.First(s => s.Id == overrideValue.ForcedSuspectId);
-            if (!IsEligibleSaloonPersonOfInterestCandidate(suspect))
-            {
-                var reason = GetSaloonPoiIneligibilityReason(suspect);
-                throw new InvalidOperationException(
-                    $"Cannot force a saloon override for suspect {suspectId.Value} ({suspect.Name}). " +
-                    $"{reason ?? "Suspect is not eligible as a saloon POI candidate."}");
-            }
+            ProduceEvent(e);
         }
-
-        if (overrideValue.ForcedKind is DevSaloonPoiKind.Citizen && overrideValue.ForcedCitizenRoleKey is not null)
-        {
-            if (!CitizenCast.Roles.Any(r => string.Equals(r.Key, overrideValue.ForcedCitizenRoleKey, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new InvalidOperationException(
-                    $"Unknown citizen role key: {overrideValue.ForcedCitizenRoleKey}. Cannot force a saloon override for a citizen role that does not exist.");
-            }
-        }
-
-        ProduceEvent(new DevSaloonOverrideForced
-        {
-            ForcedKind = overrideValue.ForcedKind,
-            ForcedSuspectId = overrideValue.ForcedSuspectId,
-            ForcedCitizenRoleKey = overrideValue.ForcedCitizenRoleKey
-        });
     }
 
     /// <summary>
@@ -1386,12 +1373,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public void ClearDevSaloonOverride()
     {
-        if (_pendingDevSaloonOverride is null)
+        if (_bountyLoop.PendingDevSaloonOverride is null)
         {
             return; // No-op if nothing to clear - idempotent
         }
 
-        ProduceEvent(new DevSaloonOverrideCleared());
+        var result = _bountyLoop.ClearDevSaloonOverride();
+        foreach (var e in result.Events)
+        {
+            ProduceEvent(e);
+        }
     }
 
     /// <summary>
@@ -3072,8 +3063,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // entropy, so pass null to exercise the resolvers' boring-mode branch
         // (simple slot/visit rotation) rather than their salt-hash branch.
         var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
-        var retiredWarrantIds = _unrelatedCriminalLedger.RetiredWarrantIds
-            .Concat(_unrelatedCriminalLedger.TakenInCriminalIds)
+        var retiredWarrantIds = _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
+            .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
             .ToHashSet();
         var warrant = _wantedPosterResolver.Resolve(
             CaseFile,
@@ -3166,198 +3157,29 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // Emits TownActionContextEntered event if context changed (advances turn).
         EnterActionContext(TownActionContext.Saloon);
 
-        // Dev override: capture the pending override before producing the consumed event,
-        // because ProduceEvent(new DevSaloonOverrideConsumed()) calls Apply() which clears
-        // _pendingDevSaloonOverride. The forced POI must be built from the captured value.
-        // See BUNCH-90.
-        var pendingDevOverride = _pendingDevSaloonOverride;
-
-        if (pendingDevOverride is not null)
-        {
-            ProduceEvent(new DevSaloonOverrideConsumed());
-
-            // Build the forced POI from the captured override value.
-            // The consumed event has already cleared _pendingDevSaloonOverride.
-            if (pendingDevOverride.ForcedKind is DevSaloonPoiKind.Suspect)
-            {
-                Suspect? forcedSuspect = null;
-                if (pendingDevOverride.ForcedSuspectId is not null)
-                {
-                    // Specific suspect was forced - validated at force time.
-                    forcedSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id == pendingDevOverride.ForcedSuspectId);
-                }
-
-                // If no specific suspect or the specific suspect is not found, use normal candidate selection.
-                if (forcedSuspect is null && pendingDevOverride.ForcedSuspectId is null)
-                {
-                    TryGetEligibleSaloonSuspectCandidate(out forcedSuspect);
-                }
-
-                if (forcedSuspect is not null)
-                {
-                    var descriptor = SaloonPersonOfInterestDescriptor.Describe(forcedSuspect, CaseFile);
-                    var spotMessage = $"You look around the saloon and spot {descriptor}.";
-                    ProduceEvent(new SaloonPersonOfInterestSpotted
-                    {
-                        SourceKind = InvestigationSourceKind.SaloonLookAround,
-                        TownId = CurrentTown.TownId,
-                        Message = spotMessage,
-                        SuspectId = forcedSuspect.Id,
-                        Descriptor = descriptor,
-                        PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
-                        RecordLog = true
-                    });
-                    return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
-                }
-            }
-            else if (pendingDevOverride.ForcedKind is DevSaloonPoiKind.None)
-            {
-                // Nobody of interest — the saloon is quiet.
-                var nobodyMessage = "You look around the saloon, but nobody of interest catches your eye.";
-                ProduceEvent(new SaloonPersonOfInterestSpotted
-                {
-                    SourceKind = InvestigationSourceKind.SaloonLookAround,
-                    TownId = CurrentTown.TownId,
-                    Message = nobodyMessage,
-                    RecordLog = true
-                });
-                return CaseInvestigationResult.Succeeded(nobodyMessage, sessionChanged: true);
-            }
-            else
-            {
-                // Citizen - spots a citizen from the source-backed cast.
-                // The false-lead outcome comes from the normal confrontation flow
-                // when the player declares a wrong wanted identity on a citizen POI.
-                // Citizen features are drawn from the shared suspect feature vocabulary.
-                var forcedFeatureDescriptions = CollectSuspectFeatureDescriptions();
-                CitizenEncounter forcedEncounter;
-                if (pendingDevOverride.ForcedCitizenRoleKey is not null)
-                {
-                    forcedEncounter = CitizenCast.SelectByRoleKey(pendingDevOverride.ForcedCitizenRoleKey, forcedFeatureDescriptions);
-                }
-                else
-                {
-                    forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, forcedFeatureDescriptions);
-                }
-                var forcedCitizenDescriptor = CitizenCast.ResolveDescriptor(forcedEncounter);
-                var forcedCitizenMessage = $"You look around the saloon and spot {forcedCitizenDescriptor}.";
-                ProduceEvent(new SaloonPersonOfInterestSpotted
-                {
-                    SourceKind = InvestigationSourceKind.SaloonLookAround,
-                    TownId = CurrentTown.TownId,
-                    Message = forcedCitizenMessage,
-                    Descriptor = forcedCitizenDescriptor,
-                    PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
-                    CitizenRole = forcedEncounter.Role.Key,
-                    RecordLog = false
-                });
-                return CaseInvestigationResult.Succeeded(forcedCitizenMessage, sessionChanged: true);
-            }
-        }
-
-        // Normal path: no dev override active.
-        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))
-        {
-            var repeatMessage = "You look around the saloon again, but nobody of interest is here.";
-            var repeatEvent = new SaloonPersonOfInterestSpotted
-            {
-                SourceKind = InvestigationSourceKind.SaloonLookAround,
-                TownId = CurrentTown.TownId,
-                Message = repeatMessage,
-                RecordLog = true
-            };
-            ProduceEvent(repeatEvent);
-            return CaseInvestigationResult.Succeeded(repeatMessage, sessionChanged: true);
-        }
-
-        // BUNCH-106: Simplified saloon POI selection.
-        // The candidate pool is: each eligible non-culprit suspect + each citizen role + one "nobody" slot.
-        // Any non-culprit suspect can walk into any saloon — no town presence, warrant, or poster gates.
-        // The true killer is excluded until the killer-release gate opens.
-        // The roll is deterministic using the salt source + town + day + turn + visit number.
         var eligibleSuspects = CaseFile.Suspects.Where(IsEligibleSaloonPersonOfInterestCandidate).ToList();
-        var citizenRoleCount = CitizenCast.Roles.Count;
-        var poolSize = eligibleSuspects.Count + citizenRoleCount + 1; // +1 for "nobody"
-        var rollHash = StableSaloonRollHash(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, SaltSource.Salt);
-        var rollIndex = rollHash % poolSize;
+        var context = new SaloonLookAroundContext(
+            CurrentTown.TownId,
+            Clock.Day,
+            Clock.Turn,
+            CurrentTownVisit.CurrentTownState.VisitNumber,
+            SaltSource.Salt,
+            eligibleSuspects,
+            CaseFile.KnownWarrants,
+            CitizenCast.Roles.Count,
+            CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround),
+            _bountyLoop.PendingDevSaloonOverride,
+            CollectSuspectFeatureDescriptions(),
+            (townId, day, turn, visit, features) => CitizenCast.Select(townId, day, turn, visit, features),
+            (roleKey, features) => CitizenCast.SelectByRoleKey(roleKey, features),
+            encounter => CitizenCast.ResolveDescriptor(encounter));
 
-        // Nobody of interest.
-        if (rollIndex == poolSize - 1)
+        var result = _bountyLoop.LookAroundSaloon(context);
+        foreach (var e in result.Events)
         {
-            var nobodyMessage = "You look around the saloon, but nobody of interest catches your eye.";
-            var nobodyEvent = new SaloonPersonOfInterestSpotted
-            {
-                SourceKind = InvestigationSourceKind.SaloonLookAround,
-                TownId = CurrentTown.TownId,
-                Message = nobodyMessage,
-                RecordLog = true
-            };
-            ProduceEvent(nobodyEvent);
-            return CaseInvestigationResult.Succeeded(nobodyMessage, sessionChanged: true);
+            ProduceEvent(e);
         }
-
-        // Suspect slot.
-        if (rollIndex < eligibleSuspects.Count)
-        {
-            var suspect = eligibleSuspects[rollIndex];
-            var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
-            var spotMessage = $"You look around the saloon and spot {descriptor}.";
-            var spotEvent = new SaloonPersonOfInterestSpotted
-            {
-                SourceKind = InvestigationSourceKind.SaloonLookAround,
-                TownId = CurrentTown.TownId,
-                Message = spotMessage,
-                SuspectId = suspect.Id,
-                Descriptor = descriptor,
-                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
-                RecordLog = true
-            };
-            ProduceEvent(spotEvent);
-            return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
-        }
-
-        // Citizen slot.
-        var citizenFeatureDescriptions = CollectSuspectFeatureDescriptions();
-        var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, citizenFeatureDescriptions);
-        var citizenDescriptor = CitizenCast.ResolveDescriptor(citizenEncounter);
-        var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
-        var citizenEvent = new SaloonPersonOfInterestSpotted
-        {
-            SourceKind = InvestigationSourceKind.SaloonLookAround,
-            TownId = CurrentTown.TownId,
-            Message = citizenMessage,
-            Descriptor = citizenDescriptor,
-            PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
-            CitizenRole = citizenEncounter.Role.Key,
-            RecordLog = false
-        };
-        ProduceEvent(citizenEvent);
-        return CaseInvestigationResult.Succeeded(citizenMessage, sessionChanged: true);
-    }
-
-    /// <summary>
-    /// Stable manual hash for deterministic saloon POI rolls. Uses the salt source
-    /// so different sessions get different rolls for the same town/day/turn/visit.
-    /// Does NOT use <see cref="string.GetHashCode()"/> (not stable across restarts).
-    /// </summary>
-    private static int StableSaloonRollHash(TownId townId, int day, int turn, int visitNumber, string salt)
-    {
-        unchecked
-        {
-            var hash = 17;
-            foreach (var c in salt)
-            {
-                hash = (hash * 31) + c;
-            }
-            foreach (var c in townId.Value)
-            {
-                hash = (hash * 31) + c;
-            }
-            hash = (hash * 31) + day;
-            hash = (hash * 31) + turn;
-            hash = (hash * 31) + visitNumber;
-            return Math.Abs(hash);
-        }
+        return result.Result;
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
@@ -3367,7 +3189,82 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return SaloonPersonOfInterestConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
         }
 
-        return _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+        var context = new SaloonConfrontationContext(
+            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
+            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+            CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
+            CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole,
+            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId is { } poiId
+                ? GetWantedSuspectPresenceState(poiId)
+                : null,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
+            Player.GetCapabilities(TravelRules).FirearmThreatAvailable,
+            Player.Wallet.Cash,
+            CitizenDeclarationFine,
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            Clock.Day,
+            Clock.Turn,
+            declaredWantedIdentityHandle);
+
+        var outcome = _bountyLoop.ConfrontSaloonPersonOfInterest(context);
+
+        // Produce pre-settlement events.
+        foreach (var e in outcome.Events)
+        {
+            ProduceEvent(e);
+        }
+
+        // If there's a settlement request, orchestrate EnterActionContext + SettleSheriffTurnIn
+        // between the pre-settlement events and the final SaloonPersonOfInterestConfronted event.
+        if (outcome.SettlementRequest is { } request)
+        {
+            var settlementResult = SettleSheriffTurnIn(request.TargetSuspectId, request.IsAlive);
+            if (!settlementResult.Success)
+            {
+                ProduceEvent(new SaloonPersonOfInterestConfronted
+                {
+                    Message = settlementResult.Message,
+                    DeclaredWantedIdentityHandle = request.DeclaredWantedIdentityHandle,
+                    TargetName = request.WarrantTargetName,
+                    PersonOfInterestKind = request.PersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                    Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
+                });
+                return SaloonPersonOfInterestConfrontationResult.Rejected(
+                    settlementResult.Message,
+                    request.DeclaredWantedIdentityHandle,
+                    request.WarrantTargetName,
+                    settlementResult.Disposition,
+                    sessionChanged: true,
+                    personOfInterestKind: request.PersonOfInterestKind);
+            }
+
+            var settlementMessage = $"{request.ArmedWantedMessage} The sheriff pays you ${settlementResult.BountyAmount:0.00}.";
+            ProduceEvent(new SaloonPersonOfInterestConfronted
+            {
+                Message = settlementMessage,
+                DeclaredWantedIdentityHandle = request.DeclaredWantedIdentityHandle,
+                TargetSuspectId = request.TargetSuspectId,
+                TargetName = request.WarrantTargetName,
+                PersonOfInterestKind = request.PersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true
+            });
+            return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(
+                WantedSuspectConfrontationResult.Surrendered(
+                    request.DeclaredWantedIdentityHandle,
+                    request.WarrantTargetName,
+                    settlementResult.Disposition ?? WarrantDisposition.AliveOnly,
+                    request.ArmedWantedMessage)) with
+            {
+                Message = settlementMessage
+            };
+        }
+
+        return outcome.Result;
     }
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
@@ -3377,7 +3274,43 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
         }
 
-        return _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
+        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        if (activeSaloonSuspectId is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected(
+                "There is no wanted suspect waiting in the saloon.",
+                declaredWantedIdentityHandle);
+        }
+
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id.Equals(activeSaloonSuspectId));
+        if (targetSuspect is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected(
+                "That person is not part of this case.",
+                declaredWantedIdentityHandle);
+        }
+
+        if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
+        {
+            ProduceEvent(new SaloonPersonOfInterestConfronted
+            {
+                Message = $"There is no wanted notice for {targetSuspect.Name}.",
+                DeclaredWantedIdentityHandle = declaredWantedIdentityHandle,
+                TargetSuspectId = targetSuspect.Id,
+                TargetName = targetSuspect.Name,
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
+            });
+            return WantedSuspectConfrontationResult.Rejected(
+                $"There is no wanted notice for {targetSuspect.Name}.",
+                declaredWantedIdentityHandle,
+                targetSuspect.Name,
+                sessionChanged: true);
+        }
+
+        // Delegate to ConfrontSaloonPersonOfInterest which now orchestrates through _bountyLoop.
+        return ResolveSaloonPersonOfInterestCompatibilityResult(
+            ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle));
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
@@ -3390,23 +3323,23 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
         }
 
-        return _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
-    }
+        var context = new WantedSuspectConfrontationContext(
+            targetSuspectId,
+            choice,
+            declaredWantedIdentityHandle,
+            CanConfrontWantedSuspectInCurrentContext(targetSuspectId),
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId));
 
-    private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
-    {
-        var nextPresenceState = choice switch
+        var result = _bountyLoop.ResolveWantedSuspectConfrontation(context);
+        foreach (var e in result.Events)
         {
-            WantedSuspectConfrontationChoice.Surrendered => WantedSuspectPresenceState.SecuredAlive,
-            WantedSuspectConfrontationChoice.Fled => WantedSuspectPresenceState.GoneToGround,
-            WantedSuspectConfrontationChoice.Killed => WantedSuspectPresenceState.SecuredDead,
-            _ => WantedSuspectPresenceState.Unavailable
-        };
-
-        if (nextPresenceState != WantedSuspectPresenceState.Unavailable)
-        {
-            SetWantedSuspectPresenceState(suspectId, nextPresenceState);
+            ProduceEvent(e);
         }
+        return result.Result;
     }
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
@@ -3416,7 +3349,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
         }
 
-        return _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
+        var context = new SheriffTurnInContext(
+            targetSuspectId,
+            isAlive,
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
+            CaseFile.SheriffTurnInSettlements,
+            Clock.Day,
+            Clock.Turn);
+
+        return _bountyLoop.AssessSheriffTurnIn(context);
     }
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
@@ -3426,7 +3371,51 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
         }
 
-        return _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+        // Enter SheriffOffice context BEFORE assessment. This emits a TownActionContextEntered
+        // event if the context changed (advances turn). Even rejected turn-ins produce the
+        // context event — going to the sheriff's office takes time regardless of outcome.
+        var contextChanged = EnterActionContext(TownActionContext.SheriffOffice);
+
+        var context = new SheriffTurnInContext(
+            targetSuspectId,
+            isAlive,
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
+            CaseFile.SheriffTurnInSettlements,
+            Clock.Day,
+            Clock.Turn);
+
+        var assessment = _bountyLoop.AssessSheriffTurnIn(context);
+        if (!assessment.Success)
+        {
+            return contextChanged ? assessment.WithSessionChanged() : assessment;
+        }
+
+        if (!_bountyLoop.TryCreateSettlementState(
+                context,
+                assessment,
+                out var settlementState,
+                out var rejectionResult))
+        {
+            return contextChanged ? rejectionResult.WithSessionChanged() : rejectionResult;
+        }
+
+        ProduceEvent(new SheriffTurnInSettled
+        {
+            TargetSuspectId = targetSuspectId,
+            TargetName = assessment.TargetName!,
+            Disposition = assessment.Disposition!.Value,
+            IsAlive = isAlive,
+            BountyAmount = settlementState.BountyAmount,
+            Message = assessment.Message!,
+            Day = settlementState.Day,
+            Turn = settlementState.Turn
+        });
+
+        return assessment with { SessionChanged = true };
     }
 
     /// <summary>
@@ -3466,7 +3455,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 : SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.");
         }
 
-        if (!_unrelatedCriminalLedger.IsSurfacingEligible(warrantId))
+        if (!_bountyLoop.UnrelatedCriminalLedger.IsSurfacingEligible(warrantId))
         {
             return contextChanged
                 ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.").WithSessionChanged()
@@ -3966,16 +3955,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// gate opens. See BUNCH-106 realignment.
     /// </summary>
     internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
-    {
-        ArgumentNullException.ThrowIfNull(suspect);
-
-        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
-        {
-            return CaseFile.KillerReleaseState.IsReleased;
-        }
-
-        return true;
-    }
+        => _bountyLoop.IsEligibleSaloonPersonOfInterestCandidate(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
 
     /// <summary>
     /// Dev-only: describes why a suspect is ineligible as a saloon POI candidate.
@@ -3983,22 +3963,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// being the unreleased true killer. See BUNCH-90 and BUNCH-106 realignment.
     /// </summary>
     internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
-    {
-        ArgumentNullException.ThrowIfNull(suspect);
-
-        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
-        {
-            var killerRelease = CaseFile.KillerReleaseState;
-            if (killerRelease.IsReleased)
-            {
-                return null;
-            }
-
-            return killerRelease.StatusText;
-        }
-
-        return null;
-    }
+        => _bountyLoop.GetSaloonPoiIneligibilityReason(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
 
     private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)
         => result.ToWantedSuspectResult();

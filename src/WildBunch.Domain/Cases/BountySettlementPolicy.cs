@@ -17,12 +17,40 @@ public static class BountySettlementPolicy
     {
         ArgumentNullException.ThrowIfNull(caseFile);
 
+        return TryCreateSheriffTurnInSettlementState(
+            caseFile.SheriffTurnInSettlements,
+            assessment,
+            targetSuspectId,
+            isAlive,
+            day,
+            turn,
+            out settlementState,
+            out rejectionResult);
+    }
+
+    /// <summary>
+    /// Overload that takes the existing settlement states directly, for use by
+    /// BountyLoop which receives them via context records instead of a CaseFile.
+    /// </summary>
+    public static bool TryCreateSheriffTurnInSettlementState(
+        IReadOnlyList<SheriffTurnInSettlementState> existingSettlements,
+        SheriffTurnInResult assessment,
+        SuspectId targetSuspectId,
+        bool isAlive,
+        int day,
+        int turn,
+        out SheriffTurnInSettlementState settlementState,
+        out SheriffTurnInResult rejectionResult)
+    {
+        ArgumentNullException.ThrowIfNull(existingSettlements);
+
         if (!assessment.Success)
         {
             throw new ArgumentException("A successful sheriff turn-in assessment is required.", nameof(assessment));
         }
 
-        if (caseFile.TryGetSheriffTurnInSettlementState(targetSuspectId, out var existingSettlement))
+        var existingSettlement = existingSettlements.FirstOrDefault(s => s.SuspectId.Equals(targetSuspectId));
+        if (existingSettlement is not null)
         {
             settlementState = null!;
             rejectionResult = SheriffTurnInResult.Rejected(

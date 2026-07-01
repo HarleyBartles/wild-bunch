@@ -373,23 +373,22 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", pendingDevOverride);
         }
 
-        // Set PendingDevSaloonOverride from snapshot. See BUNCH-90.
+        // Restore BountyLoop-owned state from snapshot (dev saloon override + unrelated
+        // criminal ledger). The constructor builds a fresh BountyLoop; this overwrites
+        // the owned state with persisted values. See BUNCH-90, BUNCH-107, BUNCH-112.
         var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride);
         var pendingDevSaloonOverride = _serializer.DeserializePendingDevSaloonOverride(devSaloonOverrideJson);
-        if (pendingDevSaloonOverride is not null)
-        {
-            GameSessionRehydrator.SetBackingField(session, "_pendingDevSaloonOverride", pendingDevSaloonOverride);
-        }
 
-        // Restore the UnrelatedCriminalLedger from the persisted snapshot.
-        // The constructor builds a fresh ledger from the case file; this overwrites
-        // it with the persisted state so active/taken-in/collected/retired sets,
-        // gang parity, and next spawn index survive reload. See BUNCH-107.
         var unrelatedCriminalLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.UnrelatedCriminalLedger);
+        WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger = null;
         if (unrelatedCriminalLedgerJson is not null)
         {
-            var ledger = _serializer.DeserializeUnrelatedCriminalLedger(unrelatedCriminalLedgerJson);
-            GameSessionRehydrator.SetUnrelatedCriminalLedger(session, ledger);
+            unrelatedCriminalLedger = _serializer.DeserializeUnrelatedCriminalLedger(unrelatedCriminalLedgerJson);
+        }
+
+        if (pendingDevSaloonOverride is not null || unrelatedCriminalLedger is not null)
+        {
+            session.RestoreBountyLoopState(unrelatedCriminalLedger, pendingDevSaloonOverride);
         }
 
         if (hasPostSnapshotEvents)
