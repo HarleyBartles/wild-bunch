@@ -290,7 +290,7 @@ public sealed record TravelDiaryEncounterResolutionDto(
     int HorseExhaustionDelta,
     bool ContinuedOnFoot);
 
-public sealed record GameClockDto(int Day, int Turn, string TimeOfDay);
+public sealed record GameClockDto(int Day, int Turn, string TimeOfDay, string BeatLabel);
 
 public sealed record PursuitStateDto(int Heat);
 
