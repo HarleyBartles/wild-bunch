@@ -39,6 +39,61 @@ internal sealed class JourneyLoop
     // Command methods — filled in by Tasks 3–7
     // Apply methods — filled in by Task 8
 
+    internal void Apply(JourneyStarted e)
+    {
+        _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+        _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
+        _travelDiaryDays.Clear();
+    }
+
+    internal void Apply(DevTravelOverrideForced e)
+    {
+        _pendingDevTravelOverride = new DevTravelOverride(
+            e.ForcedCategory,
+            e.FoeProfile,
+            e.EncounterMessage);
+    }
+
+    internal void Apply(DevTravelOverrideCleared e)
+    {
+        _pendingDevTravelOverride = null;
+    }
+
+    internal void Apply(DevTravelOverrideConsumed e)
+    {
+        _pendingDevTravelOverride = null;
+    }
+
+    internal JourneyLoopResult<bool> ForceDevTravelOverride(ForceDevTravelOverrideContext context)
+    {
+        if (_journey is null || _journey.Status != JourneyStatus.Active)
+        {
+            throw new InvalidOperationException("Cannot force a travel override without an active journey.");
+        }
+        if (_journey.PendingEncounter is not null)
+        {
+            throw new InvalidOperationException("Cannot force a travel override while an encounter is pending.");
+        }
+
+        var e = new DevTravelOverrideForced
+        {
+            ForcedCategory = context.Override.ForcedCategory,
+            FoeProfile = context.Override.FoeProfile,
+            EncounterMessage = context.Override.EncounterMessage
+        };
+        return new JourneyLoopResult<bool>(true, [e]);
+    }
+
+    internal JourneyLoopResult<bool> ClearDevTravelOverride()
+    {
+        if (_pendingDevTravelOverride is null)
+        {
+            return new JourneyLoopResult<bool>(true, []); // No-op, idempotent
+        }
+
+        return new JourneyLoopResult<bool>(true, [new DevTravelOverrideCleared()]);
+    }
+
     internal void RestoreTravelDiaryDays(IReadOnlyList<TravelDiaryDayState> days)
     {
         _travelDiaryDays.Clear();

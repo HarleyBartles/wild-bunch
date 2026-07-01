@@ -578,6 +578,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(JourneyStarted e)
     {
+        _journeyLoop.Apply(e);
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
         _travelDiaryDays.Clear();
@@ -707,6 +708,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevTravelOverrideForced e)
     {
+        _journeyLoop.Apply(e);
         _pendingDevTravelOverride = new DevTravelOverride(
             e.ForcedCategory,
             e.FoeProfile,
@@ -720,6 +722,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevTravelOverrideCleared e)
     {
+        _journeyLoop.Apply(e);
         _pendingDevTravelOverride = null;
         _version++;
     }
@@ -732,6 +735,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevTravelOverrideConsumed e)
     {
+        _journeyLoop.Apply(e);
         _pendingDevTravelOverride = null;
         _version++;
     }
@@ -1262,21 +1266,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public void ForceDevTravelOverride(DevTravelOverride overrideValue)
     {
         ArgumentNullException.ThrowIfNull(overrideValue);
-        if (Journey is null || Journey.Status != JourneyStatus.Active)
+        var context = new ForceDevTravelOverrideContext(overrideValue);
+        var result = _journeyLoop.ForceDevTravelOverride(context);
+        foreach (var e in result.Events)
         {
-            throw new InvalidOperationException("Cannot force a travel override without an active journey.");
+            ProduceEvent(e);
         }
-        if (Journey.PendingEncounter is not null)
-        {
-            throw new InvalidOperationException("Cannot force a travel override while an encounter is pending.");
-        }
-
-        ProduceEvent(new DevTravelOverrideForced
-        {
-            ForcedCategory = overrideValue.ForcedCategory,
-            FoeProfile = overrideValue.FoeProfile,
-            EncounterMessage = overrideValue.EncounterMessage
-        });
     }
 
     /// <summary>
@@ -1285,12 +1280,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public void ClearDevTravelOverride()
     {
-        if (_pendingDevTravelOverride is null)
+        var result = _journeyLoop.ClearDevTravelOverride();
+        foreach (var e in result.Events)
         {
-            return; // No-op if nothing to clear - idempotent
+            ProduceEvent(e);
         }
-
-        ProduceEvent(new DevTravelOverrideCleared());
     }
 
     /// <summary>
