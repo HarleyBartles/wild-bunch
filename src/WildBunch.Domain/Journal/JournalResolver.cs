@@ -7,8 +7,7 @@ public sealed class JournalResolver
     /// <summary>
     /// Resolves a journal snapshot from the session state and projection-backed
     /// log entries. The caller must project log entries from the event stream
-    /// via JournalLogProjector (Application.Projections) — do not pass
-    /// session.LogEntries (projection-legacy per ADR-0028). See BUNCH-86.
+    /// via JournalLogProjector (Application.Projections). See BUNCH-86.
     /// </summary>
     public JournalSnapshot Resolve(GameSession session, IReadOnlyList<GameLogEntry> logEntries)
     {

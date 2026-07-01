@@ -11,17 +11,10 @@ using DomainWorld = WildBunch.Domain.World.World;
 using TownId = WildBunch.Domain.World.TownId;
 using WildBunch.Domain.WantedPosters;
 
-// GameSession contains both migrated (event-sourced) and non-migrated (direct-mutation)
-// flows per ADR-0028. The non-migrated flows still call AddLogEntry, which is [Obsolete]
-// (projection-legacy). These call sites are known legacy and will be migrated flow-by-flow
-// in follow-up issues. Do not add new AddLogEntry call sites; use typed domain events instead.
-#pragma warning disable CS0618
-
 namespace WildBunch.Domain.Game;
 
-// Event-sourced flows (migrated): StartNew, Purchase.
-// Direct-mutation flows (not-yet-migrated): all others.
-// See ADR-0028 and follow-up issues for the migration path.
+// All flows are event-sourced per ADR-0028. Log/journal reads derive from the typed
+// domain event stream via JournalLogProjector / GameSessionLogProjection.
 // Do not add new direct-mutation command methods; use the event-sourced pattern.
 
 /// <summary>
@@ -34,7 +27,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private const string ArchivedBlockMessage = "This playthrough is archived.";
     private const decimal CitizenDeclarationFine = 10m;
 
-    private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
     private int _nextJourneySequence = 1;
@@ -175,9 +167,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Consumed once by the next LookAroundSaloon. See BUNCH-90.
     /// </summary>
     internal DevSaloonOverride? PendingDevSaloonOverride => _bountyLoop.PendingDevSaloonOverride;
-
-    [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
-    public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
 
     public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _travelDiaryDays;
 
@@ -481,11 +470,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         CurrentTown.CheckSource(e.SourceKind);
 
-        if (e.RecordLog)
-        {
-            RecordCaseUpdate(e.Message);
-        }
-
         if (e.SuspectId is not null && e.Descriptor is not null)
         {
             CurrentTownVisit.CurrentTownState.SetActiveSaloonPersonOfInterest(e.SuspectId.Value, e.Descriptor);
@@ -508,8 +492,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     private void Apply(WantedSuspectConfronted e)
     {
-        RecordCaseUpdate(e.Message);
-
         if (e.Outcome is not WantedSuspectConfrontationOutcome.Abandoned)
         {
             var confrontationState = new WantedSuspectConfrontationState(
@@ -571,8 +553,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Applies a <see cref="SaloonPersonOfInterestConfronted"/> event to mutate session state.
     /// This is the event-sourced mutation path for the saloon person confrontation flow:
     /// it clears the active saloon person of interest and optionally fines the player.
-    /// No RecordCaseUpdate call — log entries come from delegated WantedSuspectConfronted
-    /// events. Clock advancement is handled by EnterActionContext (already in Saloon context).
+    /// Log entries come from delegated WantedSuspectConfronted events via JournalLogProjector.
+    /// Clock advancement is handled by EnterActionContext (already in Saloon context).
     /// See ADR-0028 and BUNCH-80.
     /// </summary>
     private void Apply(SaloonPersonOfInterestConfronted e)
@@ -588,18 +570,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Records a travel-kind log entry. This is the travel equivalent of
-    /// <see cref="RecordCaseUpdate"/> and is called from the travel Apply methods
-    /// so that diary/audit accumulation stays consistent between command and replay paths.
-    /// See ADR-0028 and BUNCH-83.
-    /// </summary>
-    private void RecordTravelUpdate(string message)
-    {
-        if (!string.IsNullOrWhiteSpace(message))
-            AddLogEntry(GameLogEntryKind.Travel, message);
-    }
-
-    /// <summary>
     /// Applies a <see cref="JourneyStarted"/> event. JourneySnapshot is ABSOLUTE —
     /// Apply sets <see cref="Journey"/> from it. See ADR-0028 and BUNCH-83.
     /// </summary>
@@ -609,7 +579,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
         _travelDiaryDays.Clear();
         PursuitState.SetHeat(e.PursuitHeat);
-        RecordTravelUpdate(e.DiaryMessage);
         _version++;
     }
 
@@ -617,8 +586,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Applies a <see cref="TravelDayAdvanced"/> event. Day is ABSOLUTE — Apply calls
     /// <see cref="GameClock.Set"/>. JourneySnapshot is ABSOLUTE. HealthDelta is ADDITIVE.
     /// PursuitHeat is ABSOLUTE — Apply calls <see cref="PursuitState.SetHeat"/>.
-    /// AdditionalDiaryMessages are logged via RecordTravelUpdate before DiaryMessage.
-    /// See ADR-0028 and BUNCH-83.
+    /// AdditionalDiaryMessages and DiaryMessage are projected from the event stream
+    /// via JournalLogProjector on read paths. See ADR-0028 and BUNCH-83.
     /// </summary>
     internal void Apply(TravelDayAdvanced e)
     {
@@ -632,11 +601,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // already set these values, so these are no-ops. On replay, they set the
         // correct values from the snapshot. See ADR-0028 and BUNCH-83.
         SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
-        foreach (var narration in e.AdditionalDiaryMessages)
-            RecordTravelUpdate(narration);
-        RecordTravelUpdate(e.DiaryMessage);
-        if (!string.IsNullOrEmpty(e.HorseLostMessage))
-            RecordTravelUpdate(e.HorseLostMessage);
         _version++;
     }
 
@@ -684,9 +648,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Player.SetCash(e.WalletCash);
         PursuitState.SetHeat(e.PursuitHeat);
         SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
-        RecordTravelUpdate(e.DiaryMessage);
-        if (!string.IsNullOrEmpty(e.HorseLostMessage))
-            RecordTravelUpdate(e.HorseLostMessage);
         _version++;
     }
 
@@ -707,9 +668,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         if (e.StolenItemKind is { } kind && e.StolenItemQuantity > 0)
             Player.RemoveQuantity(kind, e.StolenItemQuantity);
         PursuitState.SetHeat(e.PursuitHeat);
-        foreach (var narration in e.AdditionalDiaryMessages)
-            RecordTravelUpdate(narration);
-        RecordTravelUpdate(e.DiaryMessage);
         _version++;
     }
 
@@ -725,7 +683,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Player.TravelTo(e.DestinationTownId);
         RefreshTownVisit(e.DestinationTownId);
         RefillCanteenAfterArrival();
-        RecordTravelUpdate(e.DiaryMessage);
         _version++;
     }
 
@@ -738,7 +695,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         _completedJourneyHistory.Add(e.JourneySnapshot);
         Journey = null;
-        RecordTravelUpdate(e.DiaryMessage);
         _version++;
     }
 
@@ -1152,7 +1108,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = e.GameEntropy;
         SeedCode = e.SeedCode;
         StartFlowPhase = StartFlowPhase.GameStarted;
-        AddLogEntry(GameLogEntryKind.Opening, $"The hunt begins in {e.StartingTownName}.");
         _version++;
     }
 
@@ -1209,8 +1164,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         Player.SpendCash(e.TotalPrice);
         Player.AddItem(e.ItemKind, e.Quantity);
-        var quantityLabel = e.Quantity == 1 ? e.DisplayName : $"{e.Quantity} {e.DisplayName}";
-        AddLogEntry(GameLogEntryKind.Purchase, $"Purchased {quantityLabel} for ${e.TotalPrice:0.00}.");
         _version++;
     }
 
@@ -1231,8 +1184,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             CurrentTown.CheckSource(e.SourceKind);
         }
-
-        RecordCaseUpdate(e.Message);
 
         if (e.ClueId is not null)
         {
@@ -3756,11 +3707,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
     }
 
-    public void RecordCaseUpdate(string message)
-    {
-        AddLogEntry(GameLogEntryKind.CaseUpdate, message);
-    }
-
     public void AppendTravelDiaryDay(TravelDiaryDayState travelDiaryDay)
     {
         ArgumentNullException.ThrowIfNull(travelDiaryDay);
@@ -3880,12 +3826,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         _travelDiaryDays.Clear();
         _travelDiaryDays.AddRange(travelDiaryDays);
-    }
-
-    [Obsolete("AddLogEntry is projection-legacy per ADR-0028. Use typed domain events and IDomainEventProjector instead.")]
-    private void AddLogEntry(GameLogEntryKind kind, string message)
-    {
-        _logEntries.Add(new GameLogEntry(kind, message, Clock.Day, Clock.Turn));
     }
 
     private static string DescribeClueLead(string description)
