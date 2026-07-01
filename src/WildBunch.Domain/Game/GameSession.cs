@@ -160,7 +160,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Pending dev override for the next saloon look-around. Dev-only state.
     /// Consumed once by the next LookAroundSaloon. See BUNCH-90.
     /// </summary>
-    internal DevSaloonOverride? PendingDevSaloonOverride => _pendingDevSaloonOverride;
+    internal DevSaloonOverride? PendingDevSaloonOverride => _bountyLoop.PendingDevSaloonOverride;
 
     [Obsolete("LogEntries is projection-legacy per ADR-0028. Derive diary/audit from typed domain events via IDomainEventProjector instead.")]
     public IReadOnlyList<GameLogEntry> LogEntries => _logEntries;
@@ -770,10 +770,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideForced e)
     {
-        _pendingDevSaloonOverride = new DevSaloonOverride(
+        _bountyLoop.RestorePendingDevSaloonOverride(new DevSaloonOverride(
             e.ForcedKind,
             e.ForcedSuspectId,
-            e.ForcedCitizenRoleKey);
+            e.ForcedCitizenRoleKey));
         _version++;
     }
 
@@ -783,7 +783,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideCleared e)
     {
-        _pendingDevSaloonOverride = null;
+        _bountyLoop.RestorePendingDevSaloonOverride(null);
         _version++;
     }
 
@@ -795,7 +795,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideConsumed e)
     {
-        _pendingDevSaloonOverride = null;
+        _bountyLoop.RestorePendingDevSaloonOverride(null);
         _version++;
     }
 
@@ -1343,44 +1343,18 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             throw new InvalidOperationException("Cannot force a saloon override while a journey is active.");
         }
 
-        // Validate specific-suspect eligibility at force time.
-        // The only ineligibility is being the unreleased true killer.
-        if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
+        var context = new DevSaloonOverrideContext(
+            overrideValue,
+            CaseFile.Suspects,
+            CaseFile.TrueCulpritId,
+            CaseFile.KillerReleaseState,
+            CitizenCast.Roles.Select(r => r.Key).ToList());
+
+        var result = _bountyLoop.ForceDevSaloonOverride(context);
+        foreach (var e in result.Events)
         {
-            var suspectId = overrideValue.ForcedSuspectId.Value;
-
-            // Reject unknown suspect IDs.
-            if (!CaseFile.Suspects.Any(s => s.Id == overrideValue.ForcedSuspectId))
-            {
-                throw new InvalidOperationException(
-                    $"Unknown suspect ID: {suspectId.Value}. Cannot force a saloon override for a suspect that does not exist.");
-            }
-
-            var suspect = CaseFile.Suspects.First(s => s.Id == overrideValue.ForcedSuspectId);
-            if (!IsEligibleSaloonPersonOfInterestCandidate(suspect))
-            {
-                var reason = GetSaloonPoiIneligibilityReason(suspect);
-                throw new InvalidOperationException(
-                    $"Cannot force a saloon override for suspect {suspectId.Value} ({suspect.Name}). " +
-                    $"{reason ?? "Suspect is not eligible as a saloon POI candidate."}");
-            }
+            ProduceEvent(e);
         }
-
-        if (overrideValue.ForcedKind is DevSaloonPoiKind.Citizen && overrideValue.ForcedCitizenRoleKey is not null)
-        {
-            if (!CitizenCast.Roles.Any(r => string.Equals(r.Key, overrideValue.ForcedCitizenRoleKey, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new InvalidOperationException(
-                    $"Unknown citizen role key: {overrideValue.ForcedCitizenRoleKey}. Cannot force a saloon override for a citizen role that does not exist.");
-            }
-        }
-
-        ProduceEvent(new DevSaloonOverrideForced
-        {
-            ForcedKind = overrideValue.ForcedKind,
-            ForcedSuspectId = overrideValue.ForcedSuspectId,
-            ForcedCitizenRoleKey = overrideValue.ForcedCitizenRoleKey
-        });
     }
 
     /// <summary>
@@ -1389,12 +1363,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public void ClearDevSaloonOverride()
     {
-        if (_pendingDevSaloonOverride is null)
+        if (_bountyLoop.PendingDevSaloonOverride is null)
         {
             return; // No-op if nothing to clear - idempotent
         }
 
-        ProduceEvent(new DevSaloonOverrideCleared());
+        var result = _bountyLoop.ClearDevSaloonOverride();
+        foreach (var e in result.Events)
+        {
+            ProduceEvent(e);
+        }
     }
 
     /// <summary>
@@ -3180,7 +3158,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CaseFile.KnownWarrants,
             CitizenCast.Roles.Count,
             CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround),
-            _pendingDevSaloonOverride,
+            _bountyLoop.PendingDevSaloonOverride,
             CollectSuspectFeatureDescriptions(),
             (townId, day, turn, visit, features) => CitizenCast.Select(townId, day, turn, visit, features),
             (roleKey, features) => CitizenCast.SelectByRoleKey(roleKey, features),
@@ -3983,16 +3961,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// gate opens. See BUNCH-106 realignment.
     /// </summary>
     internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
-    {
-        ArgumentNullException.ThrowIfNull(suspect);
-
-        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
-        {
-            return CaseFile.KillerReleaseState.IsReleased;
-        }
-
-        return true;
-    }
+        => _bountyLoop.IsEligibleSaloonPersonOfInterestCandidate(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
 
     /// <summary>
     /// Dev-only: describes why a suspect is ineligible as a saloon POI candidate.
@@ -4000,22 +3969,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// being the unreleased true killer. See BUNCH-90 and BUNCH-106 realignment.
     /// </summary>
     internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
-    {
-        ArgumentNullException.ThrowIfNull(suspect);
-
-        if (suspect.Id.Equals(CaseFile.TrueCulpritId))
-        {
-            var killerRelease = CaseFile.KillerReleaseState;
-            if (killerRelease.IsReleased)
-            {
-                return null;
-            }
-
-            return killerRelease.StatusText;
-        }
-
-        return null;
-    }
+        => _bountyLoop.GetSaloonPoiIneligibilityReason(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
 
     private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)
         => result.ToWantedSuspectResult();

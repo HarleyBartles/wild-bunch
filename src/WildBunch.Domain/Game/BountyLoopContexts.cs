@@ -73,6 +73,14 @@ internal sealed record UnrelatedCriminalTurnInContext(
     int ClockDay,
     int ClockTurn);
 
+/// <summary>Read-only inputs for a dev saloon override force decision.</summary>
+internal sealed record DevSaloonOverrideContext(
+    DevSaloonOverride Override,
+    IReadOnlyList<Suspect> Suspects,
+    SuspectId TrueCulpritId,
+    KillerReleaseState KillerReleaseState,
+    IReadOnlyList<string> CitizenRoleKeys);
+
 /// <summary>
 /// Result from a BountyLoop command method. Carries the public result object
 /// plus events that GameSession must produce. BountyLoop does not produce events.

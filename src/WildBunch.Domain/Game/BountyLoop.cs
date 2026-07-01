@@ -540,6 +540,90 @@ internal sealed class BountyLoop
 
     // --- Helpers ---
 
+    internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect, SuspectId trueCulpritId, KillerReleaseState killerRelease)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+
+        if (suspect.Id.Equals(trueCulpritId))
+        {
+            return killerRelease.IsReleased;
+        }
+
+        return true;
+    }
+
+    internal string? GetSaloonPoiIneligibilityReason(Suspect suspect, SuspectId trueCulpritId, KillerReleaseState killerRelease)
+    {
+        ArgumentNullException.ThrowIfNull(suspect);
+
+        if (suspect.Id.Equals(trueCulpritId))
+        {
+            if (killerRelease.IsReleased)
+            {
+                return null;
+            }
+
+            return killerRelease.StatusText;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Dev command: forces a saloon override. Validates suspect/citizen eligibility
+    /// and returns the DevSaloonOverrideForced event for GameSession to produce.
+    /// </summary>
+    internal BountyLoopResult<bool> ForceDevSaloonOverride(DevSaloonOverrideContext context)
+    {
+        var overrideValue = context.Override;
+
+        if (overrideValue.ForcedKind is DevSaloonPoiKind.Suspect && overrideValue.ForcedSuspectId is not null)
+        {
+            var suspectId = overrideValue.ForcedSuspectId.Value;
+
+            if (!context.Suspects.Any(s => s.Id == overrideValue.ForcedSuspectId))
+            {
+                throw new InvalidOperationException(
+                    $"Unknown suspect ID: {suspectId.Value}. Cannot force a saloon override for a suspect that does not exist.");
+            }
+
+            var suspect = context.Suspects.First(s => s.Id == overrideValue.ForcedSuspectId);
+            if (!IsEligibleSaloonPersonOfInterestCandidate(suspect, context.TrueCulpritId, context.KillerReleaseState))
+            {
+                var reason = GetSaloonPoiIneligibilityReason(suspect, context.TrueCulpritId, context.KillerReleaseState);
+                throw new InvalidOperationException(
+                    $"Cannot force a saloon override for suspect {suspectId.Value} ({suspect.Name}). " +
+                    $"{reason ?? "Suspect is not eligible as a saloon POI candidate."}");
+            }
+        }
+
+        if (overrideValue.ForcedKind is DevSaloonPoiKind.Citizen && overrideValue.ForcedCitizenRoleKey is not null)
+        {
+            if (!context.CitizenRoleKeys.Any(key => string.Equals(key, overrideValue.ForcedCitizenRoleKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException(
+                    $"Unknown citizen role key: {overrideValue.ForcedCitizenRoleKey}. Cannot force a saloon override for a citizen role that does not exist.");
+            }
+        }
+
+        var e = new DevSaloonOverrideForced
+        {
+            ForcedKind = overrideValue.ForcedKind,
+            ForcedSuspectId = overrideValue.ForcedSuspectId,
+            ForcedCitizenRoleKey = overrideValue.ForcedCitizenRoleKey
+        };
+        return new BountyLoopResult<bool>(true, [e]);
+    }
+
+    /// <summary>
+    /// Dev command: clears any pending saloon override.
+    /// Returns the DevSaloonOverrideCleared event for GameSession to produce.
+    /// </summary>
+    internal BountyLoopResult<bool> ClearDevSaloonOverride()
+    {
+        return new BountyLoopResult<bool>(true, [new DevSaloonOverrideCleared()]);
+    }
+
     private static bool MatchesKnownWarrant(Warrant warrant, Suspect targetSuspect)
     {
         ArgumentNullException.ThrowIfNull(warrant);
