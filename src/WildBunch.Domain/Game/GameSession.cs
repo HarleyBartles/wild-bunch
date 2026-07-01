@@ -30,6 +30,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly TownAggregate _currentTown;
     private readonly BountyLoop _bountyLoop;
     private readonly JourneyLoop _journeyLoop;
+    private readonly ActionContextTracker _actionContextTracker = new();
+    private DevTravelOverride? _pendingDevTravelOverride;
 
     // Stateless domain-service resolvers for investigation surfacing.
     // BUNCH-107: replace ordered-peek selection with town/visit-aware resolver selection.
@@ -251,7 +253,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <see cref="EnterActionContext"/>. Persisted in the session snapshot and reconstructed
     /// from event replay. See ADR-0028 and BUNCH-80 clock/turn correction.
     /// </summary>
-    public TownActionContext CurrentActionContext { get; private set; } = TownActionContext.None;
+    public TownActionContext CurrentActionContext => _actionContextTracker.CurrentActionContext;
 
     /// <summary>
     /// The town in which the <see cref="CurrentActionContext"/> was entered. A context is
@@ -259,7 +261,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// suppress time advancement when entering Saloon in Town B. Event-sourced alongside
     /// <see cref="CurrentActionContext"/> via <see cref="Apply(TownActionContextEntered)"/>.
     /// </summary>
-    public TownId? CurrentActionContextTownId { get; private set; }
+    public TownId? CurrentActionContextTownId => _actionContextTracker.CurrentActionContextTownId;
 
     /// <summary>
     /// Enters an action context within the current town. If the context is different from the
@@ -274,38 +276,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public bool EnterActionContext(TownActionContext context)
     {
-        if (context == TownActionContext.None)
+        var inputs = new ActionContextEnterInputs(Clock, PursuitState, CurrentTown.TownId);
+        var e = _actionContextTracker.EnterActionContext(context, inputs);
+        if (e is null)
         {
             return false;
         }
 
-        // Same context only suppresses time advancement if it was entered in the same town.
-        if (context == CurrentActionContext && CurrentTown.TownId.Equals(CurrentActionContextTownId))
-        {
-            return false;
-        }
-
-        // Compute resulting clock state (do NOT mutate Clock directly — Apply does that).
-        var newTurn = Clock.Turn + 1;
-        var newDay = Clock.Day;
-        var newHeat = PursuitState.Heat;
-        if (newTurn >= 4)
-        {
-            newDay++;
-            newTurn = 0;
-            // A full day passed in town — heat increases by 1 (lawman pressure).
-            newHeat = PursuitState.Heat + 1;
-        }
-
-        var e = new TownActionContextEntered
-        {
-            Context = context,
-            TownId = CurrentTown.TownId,
-            Day = newDay,
-            Turn = newTurn,
-            TimeOfDay = (TimeOfDay)newTurn,
-            PursuitHeat = newHeat
-        };
         ProduceEvent(e);
         return true;
     }
@@ -327,18 +304,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public bool CanConfrontWantedSuspectInCurrentContext(SuspectId targetSuspectId)
     {
-        if (CurrentActionContext != TownActionContext.Saloon)
-        {
-            return false;
-        }
-
-        if (CurrentActionContextTownId is null || !CurrentActionContextTownId.Equals(CurrentTown.TownId))
-        {
-            return false;
-        }
-
         var activeSaloonPoiId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        return activeSaloonPoiId is not null && activeSaloonPoiId.Equals(targetSuspectId);
+        var inputs = new CanConfrontInContextInputs(targetSuspectId, CurrentTown.TownId, activeSaloonPoiId);
+        return _actionContextTracker.CanConfrontWantedSuspectInCurrentContext(inputs);
     }
 
     /// <summary>
@@ -452,8 +420,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     private void Apply(TownActionContextEntered e)
     {
-        CurrentActionContext = e.Context;
-        CurrentActionContextTownId = e.TownId;
+        _actionContextTracker.Apply(e);
         Clock.Set(e.Day, e.Turn);
         PursuitState.SetHeat(e.PursuitHeat);
         _version++;
@@ -1423,11 +1390,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Also available for test helpers that simulate town changes via
     /// <see cref="TownVisitState.Reset"/> directly.
     /// </summary>
-    internal void ResetActionContextForTownChange()
-    {
-        CurrentActionContext = TownActionContext.None;
-        CurrentActionContextTownId = null;
-    }
+    internal void ResetActionContextForTownChange() => _actionContextTracker.Reset();
 
     private void RefillCanteenAfterArrival()
     {
