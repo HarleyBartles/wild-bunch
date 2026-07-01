@@ -56,6 +56,10 @@ public sealed class CaseFileViewProjector
                         st.TargetSuspectId, st.TargetName, st.Disposition,
                         st.IsAlive, st.BountyAmount, st.Day, st.Turn));
                     break;
+
+                case PlaythroughArchived:
+                    // No case file view state change on archive.
+                    break;
             }
         }
 

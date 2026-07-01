@@ -1,3 +1,4 @@
+using System.Reflection;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -694,5 +695,210 @@ public sealed class ProjectionTests
         var view = projector.Project(Guid.NewGuid(), caseFile, events);
 
         Assert.Empty(view.Confrontations);
+    }
+
+    [Fact]
+    public void HudProjector_PlaythroughArchived_SetsStatusToArchived()
+    {
+        var projector = new HudProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new PlaythroughArchived
+            {
+                ArchivedAtUtc = DateTime.UtcNow,
+                ArchiveReason = "Completed",
+                PlayerName = "Ranger Vale",
+                LastTownId = new TownId("pinecross"),
+                LastTownName = "Pinecross",
+                Day = 1,
+                Turn = "Morning",
+                StatusBeforeArchive = GameStatus.Completed
+            }
+        };
+
+        var hud = projector.Project(events);
+
+        Assert.Equal(GameStatus.Archived, hud.Status);
+        Assert.Equal(new TownId("pinecross"), hud.CurrentTownId);
+        Assert.Equal("Pinecross", hud.CurrentTownName);
+    }
+
+    [Fact]
+    public void HudProjector_UnrelatedCriminalTurnInSettled_IncreasesWalletCash()
+    {
+        var projector = new HudProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new UnrelatedCriminalTurnInSettled
+            {
+                WarrantId = new WarrantId("warrant-1"),
+                TargetName = "Bloody Bob",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                IsAlive = true,
+                BountyAmount = 50m,
+                Message = "Turned in Bloody Bob for $50.",
+                Day = 1,
+                Turn = 1
+            }
+        };
+
+        var hud = projector.Project(events);
+
+        Assert.Equal(75m, hud.WalletCash);
+    }
+
+    [Fact]
+    public void DiaryProjector_PlaythroughArchived_AddsArchiveEntry()
+    {
+        var projector = new DiaryProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new PlaythroughArchived
+            {
+                ArchivedAtUtc = DateTime.UtcNow,
+                ArchiveReason = "Completed",
+                PlayerName = "Ranger Vale",
+                LastTownId = new TownId("pinecross"),
+                LastTownName = "Pinecross",
+                Day = 1,
+                Turn = "Morning",
+                StatusBeforeArchive = GameStatus.Completed
+            }
+        };
+
+        var diary = projector.Project(events);
+
+        Assert.Equal(2, diary.Entries.Count);
+        Assert.Contains("archived", diary.Entries[1].Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Completed", diary.Entries[1].Summary);
+    }
+
+    [Fact]
+    public void CaseFileViewProjector_PlaythroughArchived_IsHandledAndPreservesSeedView()
+    {
+        var projector = new CaseFileViewProjector();
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+
+        var gameStarted = new GameStarted
+        {
+            PlayerName = "Ranger Vale",
+            StartingTownId = new TownId("pinecross"),
+            StartingTownName = "Pinecross",
+            StartingHealth = 100,
+            StartingWallet = 25m,
+            StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+            GameDifficulty = GameDifficulty.Standard,
+            SaltSource = SaltSource.CreateFixed(string.Empty),
+            GameEntropy = GameEntropy.Classic
+        };
+        var archived = new PlaythroughArchived
+        {
+            ArchivedAtUtc = DateTime.UtcNow,
+            ArchiveReason = "Completed",
+            PlayerName = "Ranger Vale",
+            LastTownId = new TownId("pinecross"),
+            LastTownName = "Pinecross",
+            Day = 1,
+            Turn = "Morning",
+            StatusBeforeArchive = GameStatus.Completed
+        };
+
+        // The projector must explicitly handle PlaythroughArchived. Because the arm is a
+        // no-op, a behavioral assertion alone cannot distinguish "handled" from "ignored".
+        // This IL inspection verifies the Project method's compiled body references the
+        // PlaythroughArchived type — it fails before the switch arm exists and passes after.
+        Assert.True(
+            ProjectMethodHandlesEventType(typeof(CaseFileViewProjector), typeof(PlaythroughArchived)),
+            "CaseFileViewProjector.Project must handle PlaythroughArchived events.");
+
+        // The archive event must not alter the seed case file view.
+        var baseEvents = new IDomainEvent[] { gameStarted };
+        var archivedEvents = new IDomainEvent[] { gameStarted, archived };
+
+        var baseView = projector.Project(Guid.NewGuid(), caseFile, baseEvents);
+        var archivedView = projector.Project(Guid.NewGuid(), caseFile, archivedEvents);
+
+        Assert.Equal(baseView.DiscoveredSuspects.Count, archivedView.DiscoveredSuspects.Count);
+        Assert.Equal(baseView.KnownClues.Count, archivedView.KnownClues.Count);
+        Assert.Equal(baseView.KnownWarrants.Count, archivedView.KnownWarrants.Count);
+        Assert.Equal(baseView.Confrontations.Count, archivedView.Confrontations.Count);
+        Assert.Equal(baseView.Settlements.Count, archivedView.Settlements.Count);
+    }
+
+    /// <summary>
+    /// Verifies that a projector's Project method IL references the given event type.
+    /// This is used to prove a no-op switch arm exists for projection completeness checks.
+    /// It scans for isinst (0x75) and castclass (0x74) opcodes followed by a type token
+    /// that resolves to the target event type.
+    /// </summary>
+    private static bool ProjectMethodHandlesEventType(Type projectorType, Type eventType)
+    {
+        var method = projectorType.GetMethod(
+            nameof(CaseFileViewProjector.Project),
+            BindingFlags.Public | BindingFlags.Instance);
+        if (method is null) return false;
+
+        var il = method.GetMethodBody()?.GetILAsByteArray();
+        if (il is null) return false;
+
+        var module = projectorType.Module;
+        for (int i = 0; i <= il.Length - 5; i++)
+        {
+            // isinst (0x75) and castclass (0x74) are the standard opcodes for type-based
+            // pattern matching in C# switch statements. Both are followed by a 4-byte type token.
+            if (il[i] != 0x75 && il[i] != 0x74) continue;
+
+            int token = il[i + 1] | (il[i + 2] << 8) | (il[i + 3] << 16) | (il[i + 4] << 24);
+            try
+            {
+                if (module.ResolveType(token) == eventType) return true;
+            }
+            catch (ArgumentException)
+            {
+                // Token does not resolve to a type — skip.
+            }
+        }
+        return false;
     }
 }

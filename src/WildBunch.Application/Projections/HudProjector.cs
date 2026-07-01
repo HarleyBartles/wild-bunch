@@ -55,6 +55,10 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     walletCash += st.BountyAmount;
                     break;
 
+                case UnrelatedCriminalTurnInSettled ut:
+                    walletCash += ut.BountyAmount;
+                    break;
+
                 case SaloonPersonOfInterestConfronted sc:
                     if (sc.WalletAfter is { } walletAfter)
                     {
@@ -99,6 +103,15 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     currentTownName = jc.DestinationTownName;
                     // Canteen is refilled on arrival — sync from snapshot.
                     SyncInventoryFromJourneySnapshot(inventory, jc.JourneySnapshot);
+                    break;
+
+                case PlaythroughArchived pa:
+                    status = GameStatus.Archived;
+                    if (pa.LastTownId is { } lastTownId)
+                    {
+                        currentTownId = lastTownId;
+                        currentTownName = pa.LastTownName ?? currentTownName;
+                    }
                     break;
             }
         }
