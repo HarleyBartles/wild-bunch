@@ -298,6 +298,13 @@ found outside the ADRs already handled.
   `GameSession.cs`) — defined but never called in production code or tests.
   Dead code. Removal is clearly safe: no caller, no behavior change, no
   public API/DTO/event-payload/snapshot-shape change.
+- **Removed:** `_pendingDevTravelOverride` field (line 36 in
+  `GameSession.cs`) — declared but never used. Leftover from the BUNCH-119
+  JourneyLoop extraction (the override state moved to `JourneyLoop`).
+  Removal is clearly safe: no reference after the extraction, no behavior
+  change, no shape change. The compiler confirmed the field was unused
+  (`warning CS0169: The field 'GameSession._pendingDevTravelOverride' is
+  never used`); the warning is gone after removal.
 - **Not removed (documented as future extraction candidates):** the
   duplicate warrant helpers (`MatchesKnownWarrant`,
   `DescribeWarrantDisposition`, `DescribeConfrontationNarration`) on
