@@ -37,14 +37,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<GameLogEntry> _logEntries = [];
     private readonly List<TravelDiaryDayState> _travelDiaryDays = [];
     private readonly List<TravelJourneySnapshot> _completedJourneyHistory = [];
-    private readonly WantedSuspectPresenceLedger _wantedSuspectPresenceLedger;
-    private readonly UnrelatedCriminalLedger _unrelatedCriminalLedger;
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
-    private readonly BountyLoopCoordinator _bountyLoopCoordinator;
     private readonly BountyLoop _bountyLoop;
     private DevTravelOverride? _pendingDevTravelOverride;
-    private DevSaloonOverride? _pendingDevSaloonOverride;
 
     // Stateless domain-service resolvers for investigation surfacing.
     // BUNCH-107: replace ordered-peek selection with town/visit-aware resolver selection.
@@ -90,14 +86,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         _currentTown.PrimeCurrentTown();
-        _bountyLoopCoordinator = new BountyLoopCoordinator(this);
 
         if (completedJourneyHistory is not null)
         {
             _completedJourneyHistory.AddRange(completedJourneyHistory);
         }
-
-        _wantedSuspectPresenceLedger = new WantedSuspectPresenceLedger(wantedSuspectPresenceEntries);
 
         // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
         // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
@@ -106,9 +99,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
         // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
         // the ledger itself is the parity source of truth.
-        _unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+        var unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
 
-        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, _unrelatedCriminalLedger);
+        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
 
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
