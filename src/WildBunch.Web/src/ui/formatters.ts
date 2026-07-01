@@ -272,30 +272,6 @@ export function formatJourneyRandomnessMode(mode: number) {
   }
 }
 
-export function formatStoreVendorType(vendorType: number) {
-  switch (vendorType) {
-    case 0:
-      return "General store";
-    case 1:
-      return "Stable";
-    case 2:
-      return "Gunsmith";
-    default:
-      return `Vendor ${vendorType}`;
-  }
-}
-
-export function formatStoreOfferAvailability(availability: number) {
-  switch (availability) {
-    case 0:
-      return "Available";
-    case 1:
-      return "Unavailable";
-    default:
-      return `Availability ${availability}`;
-  }
-}
-
 export function formatHorseTravelState(state: HorseTravelStateDto | null) {
   if (state === null) {
     return "None";
