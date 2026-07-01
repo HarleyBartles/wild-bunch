@@ -31,7 +31,6 @@ internal static class GameSessionRehydrator
         },
         modifiers: null);
 
-    private static readonly FieldInfo? LogEntriesField = typeof(GameSession).GetField("_logEntries", BindingFlags.Instance | BindingFlags.NonPublic);
     private static readonly FieldInfo? TravelDiaryDaysField = typeof(GameSession).GetField("_travelDiaryDays", BindingFlags.Instance | BindingFlags.NonPublic);
 
     public static GameSession Create(
@@ -56,17 +55,6 @@ internal static class GameSessionRehydrator
         }
 
         return (GameSession)Constructor.Invoke(new object?[] { id, player, world, caseFile, pursuitState, clock, status, journey, gameDifficulty, saltSource, entropy, townVisitState, completedJourneyHistory ?? Array.Empty<TravelJourneySnapshot>(), wantedSuspectPresenceEntries ?? Array.Empty<WantedSuspectPresenceEntry>() });
-    }
-
-    public static void ReplaceLogEntries(GameSession session, IReadOnlyList<GameLogEntry> logEntries)
-    {
-        if (LogEntriesField?.GetValue(session) is not List<GameLogEntry> entries)
-        {
-            throw new InvalidOperationException("Unable to access game log entries for rehydration.");
-        }
-
-        entries.Clear();
-        entries.AddRange(logEntries);
     }
 
     public static void ReplaceTravelDiaryDays(GameSession session, IReadOnlyList<TravelDiaryDayState> travelDiaryDays)

@@ -23,8 +23,7 @@ public sealed partial class GameSessionJsonSerializer
         TravelJourneySnapshot? journey,
         IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceEntry> wantedSuspectPresenceEntries,
-        IReadOnlyList<TravelDiaryDayState> travelDiaryDays,
-        IReadOnlyList<GameLogEntry> logEntries)
+        IReadOnlyList<TravelDiaryDayState> travelDiaryDays)
     {
         var session = GameSessionRehydrator.Create(
             new GameSessionId(id),
@@ -43,7 +42,6 @@ public sealed partial class GameSessionJsonSerializer
             wantedSuspectPresenceEntries);
 
         GameSessionRehydrator.ReplaceTravelDiaryDays(session, travelDiaryDays);
-        GameSessionRehydrator.ReplaceLogEntries(session, logEntries);
         return session;
     }
 }

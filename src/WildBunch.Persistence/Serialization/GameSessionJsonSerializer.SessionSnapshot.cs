@@ -3,9 +3,6 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
-// LogEntries is [Obsolete] (projection-legacy per ADR-0028).
-#pragma warning disable CS0618
-
 namespace WildBunch.Persistence.Serialization;
 
 public sealed partial class GameSessionJsonSerializer
@@ -29,7 +26,6 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<JourneySnapshot>? CompletedJourneyHistory,
         IReadOnlyList<WantedSuspectPresenceSnapshot> WantedSuspectPresenceLedger,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
-        IReadOnlyList<GameLogEntrySnapshot> LogEntries,
         DevTravelOverride? PendingDevTravelOverride,
         DevSaloonOverride? PendingDevSaloonOverride,
         UnrelatedCriminalLedgerSnapshot? UnrelatedCriminalLedger)
@@ -54,7 +50,6 @@ public sealed partial class GameSessionJsonSerializer
                 session.CompletedJourneyHistory.Select(JourneySnapshot.FromDomain).ToArray(),
                 session.WantedSuspectPresenceEntries.Select(WantedSuspectPresenceSnapshot.FromDomain).ToArray(),
                 session.TravelDiaryDays.ToArray(),
-                session.LogEntries.Select(GameLogEntrySnapshot.FromDomain).ToArray(),
                 session.PendingDevTravelOverride,
                 session.PendingDevSaloonOverride,
                 session.UnrelatedCriminalLedger.ToSnapshot());
@@ -94,7 +89,6 @@ public sealed partial class GameSessionJsonSerializer
             GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", SeedCode);
             
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
-            GameSessionRehydrator.ReplaceLogEntries(session, LogEntries.Select(GameLogEntrySnapshot.ToDomain).ToArray());
             if (PendingDevTravelOverride is not null)
             {
                 GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", PendingDevTravelOverride);

@@ -8,9 +8,6 @@ using WildBunch.Domain.World;
 using WildBunch.Application.Games.Models;
 using WildBunch.Persistence.Serialization;
 
-// LogEntries is [Obsolete] (projection-legacy per ADR-0028).
-#pragma warning disable CS0618
-
 namespace WildBunch.Persistence.GameSessions;
 
 internal static class GameSessionReadStoreLoader
@@ -52,7 +49,7 @@ internal static class GameSessionReadStoreLoader
                 ? serializer.DeserializeJourneySnapshot(journeyJson)
                 : null,
             store.TravelDiaryDays,
-            store.LogEntries);
+            new JournalLogProjector().Project(store.AllEvents));
     }
 
     private static StartFlowPhase DeriveStartFlowPhase(IReadOnlyList<IDomainEvent> events)
@@ -95,7 +92,7 @@ internal static class GameSessionReadStoreLoader
         var caseFile = serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile));
         var currentTown = world.GetTown(player.CurrentTownId);
         var clock = serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
-        var logEntries = ApplySlice(store.LogEntries, skip, take);
+        var logEntries = ApplySlice(new JournalLogProjector().Project(store.AllEvents), skip, take);
 
         return new JournalSnapshot(
             store.Envelope.Id,
@@ -138,9 +135,10 @@ internal static class GameSessionReadStoreLoader
             .ToDictionaryAsync(component => component.ComponentName, cancellationToken)
             .ConfigureAwait(false);
 
-        // BUNCH-84/BUNCH-86: derive LogEntries from the event stream via
-        // JournalLogProjector. The legacy log entries table has been fully removed;
-        // both the read-store loader and the command-load path now use projection.
+        // BUNCH-84/BUNCH-86: LogEntries are derived from the event stream via
+        // JournalLogProjector on demand at the call sites. The legacy log entries
+        // table has been fully removed; both the read-store loader and the
+        // command-load path now use projection.
         var storedEvents = await dbContext.StoredEvents.AsNoTracking()
             .Where(e => e.StreamId == id.Value)
             .OrderBy(e => e.Sequence)
@@ -152,7 +150,6 @@ internal static class GameSessionReadStoreLoader
         {
             domainEvents[i] = serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
         }
-        var logEntries = new JournalLogProjector().Project(domainEvents);
 
         var diaryDays = await dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
@@ -164,7 +161,6 @@ internal static class GameSessionReadStoreLoader
         return new GameSessionStore(
             envelope,
             components,
-            logEntries,
             diaryDays.Select(serializer.DeserializeTravelDiaryDay).ToArray(),
             domainEvents);
     }
@@ -172,7 +168,6 @@ internal static class GameSessionReadStoreLoader
     private sealed record GameSessionStore(
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
-        IReadOnlyList<GameLogEntry> LogEntries,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         IReadOnlyList<IDomainEvent> AllEvents);
 }
