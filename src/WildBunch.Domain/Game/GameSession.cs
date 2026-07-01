@@ -169,7 +169,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
 
-    public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _wantedSuspectPresenceLedger.Entries;
+    public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _bountyLoop.PresenceEntries;
 
     /// <summary>
     /// Unrelated criminal parity ledger (BUNCH-107). Tracks the active pool of
@@ -178,7 +178,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and
     /// <see cref="Apply(UnrelatedCriminalTurnInSettled)"/> (unrelated-criminal take-ins).
     /// </summary>
-    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
+    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _bountyLoop.UnrelatedCriminalLedger;
 
     /// <summary>
     /// Events produced by command methods but not yet committed to the event stream.
@@ -508,7 +508,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 Clock.Day,
                 Clock.Turn);
             CaseFile.RecordWantedSuspectConfrontationState(confrontationState);
-            UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
+            _bountyLoop.Apply(e);
         }
 
         _version++;
@@ -534,7 +534,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // target. The ledger despawns excess unrelated criminals (preferring ones
         // the player has not collected a warrant for) to maintain parity. The
         // despawned warrants are retired from the surfacing pool.
-        _unrelatedCriminalLedger.RecordGangMemberTakenIn();
+        _bountyLoop.Apply(e);
 
         _version++;
     }
@@ -548,8 +548,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         Player.AdjustCash(e.BountyAmount);
 
-        _unrelatedCriminalLedger.MarkWarrantCollected(e.WarrantId);
-        _unrelatedCriminalLedger.RecordTakenIn(e.WarrantId);
+        _bountyLoop.Apply(e);
 
         _version++;
     }
@@ -770,10 +769,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideForced e)
     {
-        _bountyLoop.RestorePendingDevSaloonOverride(new DevSaloonOverride(
-            e.ForcedKind,
-            e.ForcedSuspectId,
-            e.ForcedCitizenRoleKey));
+        _bountyLoop.Apply(e);
         _version++;
     }
 
@@ -783,7 +779,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideCleared e)
     {
-        _bountyLoop.RestorePendingDevSaloonOverride(null);
+        _bountyLoop.Apply(e);
         _version++;
     }
 
@@ -795,7 +791,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevSaloonOverrideConsumed e)
     {
-        _bountyLoop.RestorePendingDevSaloonOverride(null);
+        _bountyLoop.Apply(e);
         _version++;
     }
 
@@ -1238,13 +1234,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     public WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
-        => _wantedSuspectPresenceLedger.GetState(suspectId);
+        => _bountyLoop.GetWantedSuspectPresenceState(suspectId);
 
     public bool TryGetWantedSuspectPresenceState(SuspectId suspectId, out WantedSuspectPresenceState state)
-        => _wantedSuspectPresenceLedger.TryGetState(suspectId, out state);
+        => _bountyLoop.TryGetWantedSuspectPresenceState(suspectId, out state);
 
     public void SetWantedSuspectPresenceState(SuspectId suspectId, WantedSuspectPresenceState state)
-        => _wantedSuspectPresenceLedger.SetState(suspectId, state);
+        => _bountyLoop.SetWantedSuspectPresenceState(suspectId, state);
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
@@ -3053,8 +3049,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // entropy, so pass null to exercise the resolvers' boring-mode branch
         // (simple slot/visit rotation) rather than their salt-hash branch.
         var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
-        var retiredWarrantIds = _unrelatedCriminalLedger.RetiredWarrantIds
-            .Concat(_unrelatedCriminalLedger.TakenInCriminalIds)
+        var retiredWarrantIds = _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
+            .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
             .ToHashSet();
         var warrant = _wantedPosterResolver.Resolve(
             CaseFile,
@@ -3332,22 +3328,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return result.Result;
     }
 
-    private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
-    {
-        var nextPresenceState = choice switch
-        {
-            WantedSuspectConfrontationChoice.Surrendered => WantedSuspectPresenceState.SecuredAlive,
-            WantedSuspectConfrontationChoice.Fled => WantedSuspectPresenceState.GoneToGround,
-            WantedSuspectConfrontationChoice.Killed => WantedSuspectPresenceState.SecuredDead,
-            _ => WantedSuspectPresenceState.Unavailable
-        };
-
-        if (nextPresenceState != WantedSuspectPresenceState.Unavailable)
-        {
-            SetWantedSuspectPresenceState(suspectId, nextPresenceState);
-        }
-    }
-
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
     {
         if (IsArchived)
@@ -3461,7 +3441,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 : SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.");
         }
 
-        if (!_unrelatedCriminalLedger.IsSurfacingEligible(warrantId))
+        if (!_bountyLoop.UnrelatedCriminalLedger.IsSurfacingEligible(warrantId))
         {
             return contextChanged
                 ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.").WithSessionChanged()

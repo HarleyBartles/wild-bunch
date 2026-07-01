@@ -36,6 +36,9 @@ internal sealed class BountyLoop
     internal bool TryGetWantedSuspectPresenceState(SuspectId suspectId, out WantedSuspectPresenceState state)
         => _presenceLedger.TryGetState(suspectId, out state);
 
+    internal void SetWantedSuspectPresenceState(SuspectId suspectId, WantedSuspectPresenceState state)
+        => _presenceLedger.SetState(suspectId, state);
+
     // Command methods — filled in by Tasks 3–7
     // Apply methods — filled in by Task 8
 
@@ -746,6 +749,61 @@ internal sealed class BountyLoop
     internal void RestorePendingDevSaloonOverride(DevSaloonOverride? overrideValue)
     {
         _pendingDevSaloonOverride = overrideValue;
+    }
+
+    // --- Apply methods for owned-state mutations ---
+
+    internal void Apply(WantedSuspectConfronted e)
+    {
+        if (e.Outcome is not WantedSuspectConfrontationOutcome.Abandoned)
+        {
+            UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
+        }
+    }
+
+    internal void Apply(SheriffTurnInSettled e)
+    {
+        _unrelatedCriminalLedger.RecordGangMemberTakenIn();
+    }
+
+    internal void Apply(UnrelatedCriminalTurnInSettled e)
+    {
+        _unrelatedCriminalLedger.MarkWarrantCollected(e.WarrantId);
+        _unrelatedCriminalLedger.RecordTakenIn(e.WarrantId);
+    }
+
+    internal void Apply(DevSaloonOverrideForced e)
+    {
+        _pendingDevSaloonOverride = new DevSaloonOverride(
+            e.ForcedKind,
+            e.ForcedSuspectId,
+            e.ForcedCitizenRoleKey);
+    }
+
+    internal void Apply(DevSaloonOverrideCleared e)
+    {
+        _pendingDevSaloonOverride = null;
+    }
+
+    internal void Apply(DevSaloonOverrideConsumed e)
+    {
+        _pendingDevSaloonOverride = null;
+    }
+
+    private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
+    {
+        var nextPresenceState = choice switch
+        {
+            WantedSuspectConfrontationChoice.Surrendered => WantedSuspectPresenceState.SecuredAlive,
+            WantedSuspectConfrontationChoice.Fled => WantedSuspectPresenceState.GoneToGround,
+            WantedSuspectConfrontationChoice.Killed => WantedSuspectPresenceState.SecuredDead,
+            _ => WantedSuspectPresenceState.Unavailable
+        };
+
+        if (nextPresenceState != WantedSuspectPresenceState.Unavailable)
+        {
+            _presenceLedger.SetState(suspectId, nextPresenceState);
+        }
     }
 
     /// <summary>
