@@ -26,11 +26,16 @@ internal sealed record SaloonConfrontationContext(
     SuspectId? ActiveSaloonSuspectId,
     string? ActiveSaloonDescriptor,
     SaloonPersonOfInterestKind? ActiveSaloonPOIKind,
+    string? ActiveSaloonCitizenRole,
+    WantedSuspectPresenceState? ActiveSaloonSuspectPresenceState,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates,
     bool FirearmThreatAvailable,
     decimal PlayerCash,
+    decimal CitizenDeclarationFine,
+    bool IsJourneyModal,
+    string JourneyModalBlockMessage,
     int ClockDay,
     int ClockTurn,
     string? DeclaredWantedIdentityHandle);
@@ -41,6 +46,8 @@ internal sealed record WantedSuspectConfrontationContext(
     WantedSuspectConfrontationChoice Choice,
     string? DeclaredWantedIdentityHandle,
     bool CanConfrontInCurrentContext,
+    bool IsJourneyModal,
+    string JourneyModalBlockMessage,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates);
@@ -50,9 +57,11 @@ internal sealed record SheriffTurnInContext(
     SuspectId TargetSuspectId,
     bool IsAlive,
     bool IsJourneyModal,
+    string JourneyModalBlockMessage,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates,
+    IReadOnlyList<SheriffTurnInSettlementState> ExistingSettlements,
     int ClockDay,
     int ClockTurn);
 
@@ -69,3 +78,27 @@ internal sealed record UnrelatedCriminalTurnInContext(
 /// plus events that GameSession must produce. BountyLoop does not produce events.
 /// </summary>
 internal sealed record BountyLoopResult<TResult>(TResult Result, IReadOnlyList<IDomainEvent> Events);
+
+/// <summary>
+/// Outcome from a saloon POI confrontation. Carries the public result, events to produce,
+/// and an optional settlement request for the armed-correct-declaration branch where
+/// GameSession must orchestrate EnterActionContext(SheriffOffice) + SettleSheriffTurnIn
+/// between the WantedSuspectConfronted and SaloonPersonOfInterestConfronted events.
+/// </summary>
+internal sealed record SaloonConfrontationOutcome(
+    SaloonPersonOfInterestConfrontationResult Result,
+    IReadOnlyList<IDomainEvent> Events,
+    SaloonSettlementRequest? SettlementRequest);
+
+/// <summary>
+/// Request for GameSession to orchestrate a sheriff turn-in settlement after a saloon
+/// confrontation. BountyLoop cannot call EnterActionContext, so it returns this request
+/// and GameSession handles the EnterActionContext + SettleSheriffTurnIn orchestration.
+/// </summary>
+internal sealed record SaloonSettlementRequest(
+    SuspectId TargetSuspectId,
+    bool IsAlive,
+    string? DeclaredWantedIdentityHandle,
+    string ArmedWantedMessage,
+    string WarrantTargetName,
+    SaloonPersonOfInterestKind? PersonOfInterestKind);

@@ -3201,7 +3201,82 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return SaloonPersonOfInterestConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
         }
 
-        return _bountyLoopCoordinator.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+        var context = new SaloonConfrontationContext(
+            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
+            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+            CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
+            CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole,
+            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId is { } poiId
+                ? GetWantedSuspectPresenceState(poiId)
+                : null,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
+            Player.GetCapabilities(TravelRules).FirearmThreatAvailable,
+            Player.Wallet.Cash,
+            CitizenDeclarationFine,
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            Clock.Day,
+            Clock.Turn,
+            declaredWantedIdentityHandle);
+
+        var outcome = _bountyLoop.ConfrontSaloonPersonOfInterest(context);
+
+        // Produce pre-settlement events.
+        foreach (var e in outcome.Events)
+        {
+            ProduceEvent(e);
+        }
+
+        // If there's a settlement request, orchestrate EnterActionContext + SettleSheriffTurnIn
+        // between the pre-settlement events and the final SaloonPersonOfInterestConfronted event.
+        if (outcome.SettlementRequest is { } request)
+        {
+            var settlementResult = SettleSheriffTurnIn(request.TargetSuspectId, request.IsAlive);
+            if (!settlementResult.Success)
+            {
+                ProduceEvent(new SaloonPersonOfInterestConfronted
+                {
+                    Message = settlementResult.Message,
+                    DeclaredWantedIdentityHandle = request.DeclaredWantedIdentityHandle,
+                    TargetName = request.WarrantTargetName,
+                    PersonOfInterestKind = request.PersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                    Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
+                });
+                return SaloonPersonOfInterestConfrontationResult.Rejected(
+                    settlementResult.Message,
+                    request.DeclaredWantedIdentityHandle,
+                    request.WarrantTargetName,
+                    settlementResult.Disposition,
+                    sessionChanged: true,
+                    personOfInterestKind: request.PersonOfInterestKind);
+            }
+
+            var settlementMessage = $"{request.ArmedWantedMessage} The sheriff pays you ${settlementResult.BountyAmount:0.00}.";
+            ProduceEvent(new SaloonPersonOfInterestConfronted
+            {
+                Message = settlementMessage,
+                DeclaredWantedIdentityHandle = request.DeclaredWantedIdentityHandle,
+                TargetSuspectId = request.TargetSuspectId,
+                TargetName = request.WarrantTargetName,
+                PersonOfInterestKind = request.PersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true
+            });
+            return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(
+                WantedSuspectConfrontationResult.Surrendered(
+                    request.DeclaredWantedIdentityHandle,
+                    request.WarrantTargetName,
+                    settlementResult.Disposition ?? WarrantDisposition.AliveOnly,
+                    request.ArmedWantedMessage)) with
+            {
+                Message = settlementMessage
+            };
+        }
+
+        return outcome.Result;
     }
 
     public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
@@ -3211,7 +3286,43 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
         }
 
-        return _bountyLoopCoordinator.ConfrontSaloonWantedSuspect(declaredWantedIdentityHandle);
+        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        if (activeSaloonSuspectId is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected(
+                "There is no wanted suspect waiting in the saloon.",
+                declaredWantedIdentityHandle);
+        }
+
+        var targetSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id.Equals(activeSaloonSuspectId));
+        if (targetSuspect is null)
+        {
+            return WantedSuspectConfrontationResult.Rejected(
+                "That person is not part of this case.",
+                declaredWantedIdentityHandle);
+        }
+
+        if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
+        {
+            ProduceEvent(new SaloonPersonOfInterestConfronted
+            {
+                Message = $"There is no wanted notice for {targetSuspect.Name}.",
+                DeclaredWantedIdentityHandle = declaredWantedIdentityHandle,
+                TargetSuspectId = targetSuspect.Id,
+                TargetName = targetSuspect.Name,
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
+            });
+            return WantedSuspectConfrontationResult.Rejected(
+                $"There is no wanted notice for {targetSuspect.Name}.",
+                declaredWantedIdentityHandle,
+                targetSuspect.Name,
+                sessionChanged: true);
+        }
+
+        // Delegate to ConfrontSaloonPersonOfInterest which now orchestrates through _bountyLoop.
+        return ResolveSaloonPersonOfInterestCompatibilityResult(
+            ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle));
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
@@ -3224,7 +3335,23 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
         }
 
-        return _bountyLoopCoordinator.ResolveWantedSuspectConfrontation(targetSuspectId, choice, declaredWantedIdentityHandle);
+        var context = new WantedSuspectConfrontationContext(
+            targetSuspectId,
+            choice,
+            declaredWantedIdentityHandle,
+            CanConfrontWantedSuspectInCurrentContext(targetSuspectId),
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId));
+
+        var result = _bountyLoop.ResolveWantedSuspectConfrontation(context);
+        foreach (var e in result.Events)
+        {
+            ProduceEvent(e);
+        }
+        return result.Result;
     }
 
     private void UpdateWantedSuspectPresence(SuspectId suspectId, WantedSuspectConfrontationChoice choice)
@@ -3250,7 +3377,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
         }
 
-        return _bountyLoopCoordinator.AssessSheriffTurnIn(targetSuspectId, isAlive);
+        var context = new SheriffTurnInContext(
+            targetSuspectId,
+            isAlive,
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
+            CaseFile.SheriffTurnInSettlements,
+            Clock.Day,
+            Clock.Turn);
+
+        return _bountyLoop.AssessSheriffTurnIn(context);
     }
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
@@ -3260,7 +3399,51 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
         }
 
-        return _bountyLoopCoordinator.SettleSheriffTurnIn(targetSuspectId, isAlive);
+        // Enter SheriffOffice context BEFORE assessment. This emits a TownActionContextEntered
+        // event if the context changed (advances turn). Even rejected turn-ins produce the
+        // context event — going to the sheriff's office takes time regardless of outcome.
+        var contextChanged = EnterActionContext(TownActionContext.SheriffOffice);
+
+        var context = new SheriffTurnInContext(
+            targetSuspectId,
+            isAlive,
+            IsJourneyModal(),
+            JourneyModalBlockMessage,
+            CaseFile.Suspects,
+            CaseFile.KnownWarrants,
+            CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
+            CaseFile.SheriffTurnInSettlements,
+            Clock.Day,
+            Clock.Turn);
+
+        var assessment = _bountyLoop.AssessSheriffTurnIn(context);
+        if (!assessment.Success)
+        {
+            return contextChanged ? assessment.WithSessionChanged() : assessment;
+        }
+
+        if (!_bountyLoop.TryCreateSettlementState(
+                context,
+                assessment,
+                out var settlementState,
+                out var rejectionResult))
+        {
+            return contextChanged ? rejectionResult.WithSessionChanged() : rejectionResult;
+        }
+
+        ProduceEvent(new SheriffTurnInSettled
+        {
+            TargetSuspectId = targetSuspectId,
+            TargetName = assessment.TargetName!,
+            Disposition = assessment.Disposition!.Value,
+            IsAlive = isAlive,
+            BountyAmount = settlementState.BountyAmount,
+            Message = assessment.Message!,
+            Day = settlementState.Day,
+            Turn = settlementState.Turn
+        });
+
+        return assessment with { SessionChanged = true };
     }
 
     /// <summary>
