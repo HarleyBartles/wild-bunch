@@ -138,6 +138,12 @@ The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_me
 - Travel advances one trail day at a time; do not reintroduce instant multi-day travel.
 - Keep temporary cockpit/debug-shell UI light; do not spend architecture cleanup effort polishing it for its own sake.
 
+### GameSession child-component boundaries
+- `GameSession` remains the session aggregate root, command entry point, event-production boundary, apply-dispatch owner, and persistence boundary. It may orchestrate cross-component behavior. It should not directly accumulate all game rules.
+- Add behavior directly to `GameSession` when it coordinates across child components, owns a session-level concern (clock, pursuit, player, world, case file), or is the event-production/apply-dispatch/persistence seam.
+- Create or extend an internal child domain component when the behavior owns state plus rules, has a clear event family or state family, and can receive narrow context records. A lawful child component is `internal sealed`, lives under `src/WildBunch.Domain/Game/`, receives narrow context records (not the parent aggregate), returns results plus events-to-produce, does NOT reference `GameSession`, does NOT produce events directly, does NOT call `EnterActionContext`, does NOT mutate owners it does not own, and does NOT own infrastructure or persistence. Owned state is restored during snapshot rehydration via a `Restore*` helper on `GameSession` that delegates to the child.
+- See `.agents/docs/game-session-decomposition-audit.md` for the current child-component inventory and the decomposition trajectory.
+
 ## Persistence / Model Posture
 - POCO domain models are fine when they keep the domain plain, composable, and naturally serializable.
 - Do not couple domain models to EF/table shape.

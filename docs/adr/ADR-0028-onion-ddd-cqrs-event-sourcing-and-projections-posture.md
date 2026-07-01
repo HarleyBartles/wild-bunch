@@ -24,7 +24,7 @@ architecture, persistence, process
 - `depends on`: ADR-0002, ADR-0003, ADR-0013, ADR-0014, ADR-0020
 - `informs`: ADR-0015, ADR-0017, ADR-0019
 - `related to`: ADR-0034 (playthrough archive lifecycle — `PlaythroughArchived` is a typed domain event replayed through Apply per this posture)
-- `related to`: BUNCH-3 (replayable session persistence), BUNCH-67 (refactor GameSession into domain aggregates), BUNCH-77 (this campaign)
+- `related to`: BUNCH-3 (replayable session persistence), BUNCH-67 (refactor GameSession into domain aggregates — closed as historical/superseded; see Historical Notes), BUNCH-77 (this campaign)
 
 ## Context
 
@@ -203,3 +203,7 @@ This ADR is doctrine-only on landing. Proof is the ADR file itself plus the READ
 - When all flows are migrated and the transitional coexistence ends.
 - When SignalR transport is introduced.
 - When `GameLogEntry` is fully removed.
+
+## Historical Notes
+
+BUNCH-67 (refactor GameSession into domain aggregates), BUNCH-68 (map GameSession responsibility slices and aggregate candidates), and BUNCH-72 (introduce bounty loop aggregate candidate inside GameSession) are closed as historical/superseded. The concrete child-component extraction pattern established by BUNCH-112 (`BountyLoop`), BUNCH-119 (`JourneyLoop`), and BUNCH-120 (`InvestigationLoop` + `ActionContextTracker` + `StoreLoop`) supersedes the earlier "future sub-aggregate splits" language referenced in this ADR. The references to BUNCH-67 above (lines 27, 57, 124, 140, 161, 202) are retained as part of the ADR's reasoning record but should be read as historical context, not as open future work. The current child-component inventory and lawful boundary rules are recorded in `.agents/docs/game-session-decomposition-audit.md` and the root `AGENTS.md` "GameSession child-component boundaries" subsection. Do not reopen the BUNCH-67/68/72 tracks.
