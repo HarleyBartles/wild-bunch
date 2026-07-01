@@ -30,11 +30,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly TownAggregate _currentTown;
     private readonly BountyLoop _bountyLoop;
     private readonly JourneyLoop _journeyLoop;
-
-    // Stateless domain-service resolvers for investigation surfacing.
-    // BUNCH-107: replace ordered-peek selection with town/visit-aware resolver selection.
-    private static readonly WantedPosterResolver _wantedPosterResolver = new();
-    private static readonly ClueSurfacingResolver _clueSurfacingResolver = new();
+    private readonly ActionContextTracker _actionContextTracker = new();
+    private readonly InvestigationLoop _investigationLoop = new();
+    private readonly StoreLoop _storeLoop = new();
+    private DevTravelOverride? _pendingDevTravelOverride;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
@@ -119,6 +118,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void RestorePendingDevTravelOverride(DevTravelOverride? overrideValue)
     {
         _journeyLoop.RestorePendingDevTravelOverride(overrideValue);
+    }
+
+    /// <summary>
+    /// Restores ActionContextTracker-owned state from a persisted snapshot. Called by the
+    /// rehydration path after the constructor builds a fresh ActionContextTracker.
+    /// See BUNCH-120.
+    /// </summary>
+    internal void RestoreActionContextState(TownActionContext context, TownId? townId)
+    {
+        _actionContextTracker.RestoreState(context, townId);
     }
 
     public GameStatus Status { get; private set; }
@@ -251,7 +260,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <see cref="EnterActionContext"/>. Persisted in the session snapshot and reconstructed
     /// from event replay. See ADR-0028 and BUNCH-80 clock/turn correction.
     /// </summary>
-    public TownActionContext CurrentActionContext { get; private set; } = TownActionContext.None;
+    public TownActionContext CurrentActionContext => _actionContextTracker.CurrentActionContext;
 
     /// <summary>
     /// The town in which the <see cref="CurrentActionContext"/> was entered. A context is
@@ -259,7 +268,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// suppress time advancement when entering Saloon in Town B. Event-sourced alongside
     /// <see cref="CurrentActionContext"/> via <see cref="Apply(TownActionContextEntered)"/>.
     /// </summary>
-    public TownId? CurrentActionContextTownId { get; private set; }
+    public TownId? CurrentActionContextTownId => _actionContextTracker.CurrentActionContextTownId;
 
     /// <summary>
     /// Enters an action context within the current town. If the context is different from the
@@ -274,38 +283,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public bool EnterActionContext(TownActionContext context)
     {
-        if (context == TownActionContext.None)
+        var inputs = new ActionContextEnterInputs(Clock, PursuitState, CurrentTown.TownId);
+        var e = _actionContextTracker.EnterActionContext(context, inputs);
+        if (e is null)
         {
             return false;
         }
 
-        // Same context only suppresses time advancement if it was entered in the same town.
-        if (context == CurrentActionContext && CurrentTown.TownId.Equals(CurrentActionContextTownId))
-        {
-            return false;
-        }
-
-        // Compute resulting clock state (do NOT mutate Clock directly — Apply does that).
-        var newTurn = Clock.Turn + 1;
-        var newDay = Clock.Day;
-        var newHeat = PursuitState.Heat;
-        if (newTurn >= 4)
-        {
-            newDay++;
-            newTurn = 0;
-            // A full day passed in town — heat increases by 1 (lawman pressure).
-            newHeat = PursuitState.Heat + 1;
-        }
-
-        var e = new TownActionContextEntered
-        {
-            Context = context,
-            TownId = CurrentTown.TownId,
-            Day = newDay,
-            Turn = newTurn,
-            TimeOfDay = (TimeOfDay)newTurn,
-            PursuitHeat = newHeat
-        };
         ProduceEvent(e);
         return true;
     }
@@ -327,18 +311,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public bool CanConfrontWantedSuspectInCurrentContext(SuspectId targetSuspectId)
     {
-        if (CurrentActionContext != TownActionContext.Saloon)
-        {
-            return false;
-        }
-
-        if (CurrentActionContextTownId is null || !CurrentActionContextTownId.Equals(CurrentTown.TownId))
-        {
-            return false;
-        }
-
         var activeSaloonPoiId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        return activeSaloonPoiId is not null && activeSaloonPoiId.Equals(targetSuspectId);
+        var inputs = new CanConfrontInContextInputs(targetSuspectId, CurrentTown.TownId, activeSaloonPoiId);
+        return _actionContextTracker.CanConfrontWantedSuspectInCurrentContext(inputs);
     }
 
     /// <summary>
@@ -452,8 +427,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     private void Apply(TownActionContextEntered e)
     {
-        CurrentActionContext = e.Context;
-        CurrentActionContextTownId = e.TownId;
+        _actionContextTracker.Apply(e);
         Clock.Set(e.Day, e.Turn);
         PursuitState.SetHeat(e.PursuitHeat);
         _version++;
@@ -1423,11 +1397,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Also available for test helpers that simulate town changes via
     /// <see cref="TownVisitState.Reset"/> directly.
     /// </summary>
-    internal void ResetActionContextForTownChange()
-    {
-        CurrentActionContext = TownActionContext.None;
-        CurrentActionContextTownId = null;
-    }
+    internal void ResetActionContextForTownChange() => _actionContextTracker.Reset();
 
     private void RefillCanteenAfterArrival()
     {
@@ -1777,48 +1747,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         EnterActionContext(TownActionContext.Store);
 
-        if (quantity < 1)
+        var context = new StorePurchaseContext(
+            offer,
+            quantity,
+            CurrentTown.TownId,
+            Player.Wallet.Cash,
+            Player.CanAfford,
+            Player.HasItem);
+        var outcome = _storeLoop.Purchase(context);
+        if (!outcome.Success)
         {
-            return StorePurchaseResult.Failed("Quantity must be at least 1.");
+            return StorePurchaseResult.Failed(outcome.Message);
         }
 
-        if (offer.ItemKind == ItemKind.Horse && quantity != 1)
-        {
-            return StorePurchaseResult.Failed("Horse items must have a quantity of 1.");
-        }
-
-        if (quantity != 1 && !IsStackableItemKind(offer.ItemKind))
-        {
-            return StorePurchaseResult.Failed($"{offer.ItemKind} does not stack.");
-        }
-
-        var totalPrice = offer.Price * quantity;
-        if (!Player.CanAfford(totalPrice))
-        {
-            return StorePurchaseResult.Failed("Not enough cash.");
-        }
-
-        if (!CanPurchaseInventoryItem(offer, quantity, out var inventoryFailureMessage))
-        {
-            return StorePurchaseResult.Failed(inventoryFailureMessage);
-        }
-
-        // Produce typed domain event and apply it (event-sourced mutation path)
-        var e = new StoreItemPurchased
-        {
-            TownId = CurrentTown.TownId,
-            ItemKind = offer.ItemKind,
-            DisplayName = offer.DisplayName,
-            Quantity = quantity,
-            UnitPrice = offer.Price,
-            TotalPrice = totalPrice,
-            WalletAfter = Player.Wallet.Cash - totalPrice
-        };
-        Apply(e);
-        _uncommittedEvents.Add(e);
-
-        var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
-        return StorePurchaseResult.Succeeded($"Purchased {quantityLabel} for ${totalPrice:0.00}.");
+        ProduceEvent(outcome.Event!);
+        return StorePurchaseResult.Succeeded(outcome.Message);
     }
 
     public ReadWantedPostersResult ReadWantedPosters()
@@ -1835,100 +1778,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         EnterActionContext(TownActionContext.SheriffOffice);
 
-        if (CurrentTownVisit.WantedPostersSpent)
-        {
-            var msg = "You study the wanted posters again, but find nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.SheriffWarrants,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
-        }
-
-        // Boring mode (SaltSourceMode.Fixed) is deterministic and carries no
-        // entropy, so pass null to exercise the resolvers' boring-mode branch
-        // (simple slot/visit rotation) rather than their salt-hash branch.
         var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
-        var retiredWarrantIds = _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
-            .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
-            .ToHashSet();
-        var warrant = _wantedPosterResolver.Resolve(
+        var context = new InvestigationContext(
             CaseFile,
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             boringSalt,
-            retiredWarrantIds.Count > 0 ? retiredWarrantIds : null);
-        var clue = _clueSurfacingResolver.Resolve(
-            CaseFile,
-            InvestigationSourceKind.SheriffWarrants,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            boringSalt);
-        if (clue is not null && !IsPlayerKnownClue(clue))
-        {
-            clue = null;
-        }
-
-        if (warrant is null && clue is null)
-        {
-            var msg = "You study the wanted posters, but find nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.SheriffWarrants,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
-        }
-
-        if (warrant is not null && clue is not null)
-        {
-            var msg = $"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}, noting a public lead: {DescribeClueLead(clue.Description)}.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.SheriffWarrants,
-                TownId = CurrentTown.TownId,
-                Message = msg,
-                ClueId = clue?.Id,
-                WarrantId = warrant?.Id
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a wanted notice and a public lead.", sessionChanged: true);
-        }
-
-        if (warrant is not null)
-        {
-            var msg = $"You study the wanted posters and copy down a wanted notice for {warrant.TargetName}.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.SheriffWarrants,
-                TownId = CurrentTown.TownId,
-                Message = msg,
-                WarrantId = warrant?.Id
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return ReadWantedPostersResult.Succeeded(msg, sessionChanged: true);
-        }
-
-        var clueOnlyMsg = $"You study the wanted posters and note a public lead: {DescribeClueLead(clue!.Description)}.";
-        var clueOnlyEvent = new InvestigationPerformed
-        {
-            SourceKind = InvestigationSourceKind.SheriffWarrants,
-            TownId = CurrentTown.TownId,
-            Message = clueOnlyMsg,
-            ClueId = clue?.Id
-        };
-        Apply(clueOnlyEvent);
-        _uncommittedEvents.Add(clueOnlyEvent);
-        return ReadWantedPostersResult.Succeeded("You study the wanted posters and uncover a public lead.", sessionChanged: true);
+            RetiredWarrantIds,
+            CurrentTown.TownId,
+            CurrentTown.TownName,
+            BeatNarration: null,
+            IsSourceSpent: CurrentTownVisit.WantedPostersSpent,
+            IsSourceAvailable: true);
+        var outcome = _investigationLoop.ReadWantedPosters(context);
+        ProduceEvent(outcome.Event);
+        return ReadWantedPostersResult.Succeeded(outcome.DisplayMessage, sessionChanged: true);
     }
 
     public CaseInvestigationResult LookAroundSaloon()
@@ -2306,56 +2170,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         EnterActionContext(TownActionContext.TelegraphOffice);
         var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TelegraphOffice, CurrentTown.TownName);
 
-        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead))
-        {
-            var msg = "You ask after telegraph leads again, but no new wire has come in.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.TelegraphLead,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var clue = _clueSurfacingResolver.Resolve(
+        var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
+        var context = new InvestigationContext(
             CaseFile,
-            InvestigationSourceKind.TelegraphLead,
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
-            SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource);
-        if (clue is not null && !IsPlayerKnownClue(clue))
-        {
-            clue = null;
-        }
-
-        if (clue is null)
-        {
-            var msg = "You follow the telegraph leads, but find nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.TelegraphLead,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var foundMsg = $"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.";
-        var foundEvent = new InvestigationPerformed
-        {
-            SourceKind = InvestigationSourceKind.TelegraphLead,
-            TownId = CurrentTown.TownId,
-            Message = foundMsg,
-            ClueId = clue?.Id
-        };
-        Apply(foundEvent);
-        _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You follow the telegraph leads and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
+            boringSalt,
+            RetiredWarrantIds,
+            CurrentTown.TownId,
+            CurrentTown.TownName,
+            beatNarration,
+            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead),
+            IsSourceAvailable: true);
+        var outcome = _investigationLoop.FollowTelegraphLeads(context);
+        ProduceEvent(outcome.Event);
+        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
     }
 
     public CaseInvestigationResult GatherLocalGossip()
@@ -2374,56 +2203,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         EnterActionContext(TownActionContext.Saloon);
         var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.Saloon, CurrentTown.TownName);
 
-        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip))
-        {
-            var msg = "You ask around again, but hear nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.LocalGossip,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var clue = _clueSurfacingResolver.Resolve(
+        var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
+        var context = new InvestigationContext(
             CaseFile,
-            InvestigationSourceKind.LocalGossip,
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
-            SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource);
-        if (clue is not null && !IsPlayerKnownClue(clue))
-        {
-            clue = null;
-        }
-
-        if (clue is null)
-        {
-            var msg = "You ask around for local gossip, but hear nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.LocalGossip,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var foundMsg = $"You ask around for local gossip and uncover a public lead: {DescribeClueLead(clue.Description)}.";
-        var foundEvent = new InvestigationPerformed
-        {
-            SourceKind = InvestigationSourceKind.LocalGossip,
-            TownId = CurrentTown.TownId,
-            Message = foundMsg,
-            ClueId = clue?.Id
-        };
-        Apply(foundEvent);
-        _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You ask around for local gossip and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
+            boringSalt,
+            RetiredWarrantIds,
+            CurrentTown.TownId,
+            CurrentTown.TownName,
+            beatNarration,
+            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip),
+            IsSourceAvailable: true);
+        var outcome = _investigationLoop.GatherLocalGossip(context);
+        ProduceEvent(outcome.Event);
+        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
     }
 
     public CaseInvestigationResult InspectNoticeBoard()
@@ -2442,47 +2236,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         EnterActionContext(TownActionContext.TownSquare);
         var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TownSquare, CurrentTown.TownName);
 
-        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard))
-        {
-            var msg = "You inspect the notice board again, but nothing new has been posted.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.NoticeBoard,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var clue = CaseFile.PeekNextPublicClue(c => c.SourceKind == InvestigationSourceKind.NoticeBoard);
-
-        if (clue is null)
-        {
-            var msg = "You inspect the notice board, but find nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.NoticeBoard,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var foundMsg = $"You inspect the notice board and uncover a civic notice: {DescribeClueLead(clue.Description)}.";
-        var foundEvent = new InvestigationPerformed
-        {
-            SourceKind = InvestigationSourceKind.NoticeBoard,
-            TownId = CurrentTown.TownId,
-            Message = foundMsg,
-            ClueId = clue?.Id
-        };
-        Apply(foundEvent);
-        _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a civic notice.", sessionChanged: true, beatNarration: beatNarration);
+        var context = new InvestigationContext(
+            CaseFile,
+            CurrentTownSlotIndex,
+            CurrentTownVisitCount,
+            SaltSource: null,
+            RetiredWarrantIds,
+            CurrentTown.TownId,
+            CurrentTown.TownName,
+            beatNarration,
+            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard),
+            IsSourceAvailable: true);
+        var outcome = _investigationLoop.InspectNoticeBoard(context);
+        ProduceEvent(outcome.Event);
+        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
     }
 
     public CaseInvestigationResult CheckSheriffRecords()
@@ -2501,47 +2268,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         EnterActionContext(TownActionContext.SheriffOffice);
         var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.SheriffOffice, CurrentTown.TownName);
 
-        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords))
-        {
-            var msg = "You check the local records again, but find nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.LocalRecords,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalRecords);
-
-        if (clue is null)
-        {
-            var msg = "You check the local records, but find nothing new.";
-            var e = new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.LocalRecords,
-                TownId = CurrentTown.TownId,
-                Message = msg
-            };
-            Apply(e);
-            _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
-        }
-
-        var foundMsg = $"You check the local records and uncover a public lead: {DescribeClueLead(clue.Description)}.";
-        var foundEvent = new InvestigationPerformed
-        {
-            SourceKind = InvestigationSourceKind.LocalRecords,
-            TownId = CurrentTown.TownId,
-            Message = foundMsg,
-            ClueId = clue?.Id
-        };
-        Apply(foundEvent);
-        _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
+        var context = new InvestigationContext(
+            CaseFile,
+            CurrentTownSlotIndex,
+            CurrentTownVisitCount,
+            SaltSource: null,
+            RetiredWarrantIds,
+            CurrentTown.TownId,
+            CurrentTown.TownName,
+            beatNarration,
+            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords),
+            IsSourceAvailable: true);
+        var outcome = _investigationLoop.CheckSheriffRecords(context);
+        ProduceEvent(outcome.Event);
+        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
     }
 
     public void AppendTravelDiaryDay(TravelDiaryDayState travelDiaryDay)
@@ -2620,9 +2360,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _journeyLoop.RestoreTravelDiaryDays(travelDiaryDays);
     }
 
-    private static string DescribeClueLead(string description)
-        => description.Trim().TrimEnd('.', '!', '?');
-
     private IReadOnlyList<string> CollectSuspectFeatureDescriptions()
         => CaseFile.Suspects
             .SelectMany(s => s.Profile.IdentifyingFacts)
@@ -2631,20 +2368,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             .Where(d => !string.IsNullOrWhiteSpace(d))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-
-    private static bool IsPlayerKnownClue(Clue clue)
-    {
-        ArgumentNullException.ThrowIfNull(clue);
-
-        if (clue.Kind is ClueKind.Warrant or ClueKind.Alias or ClueKind.IdentityFact or ClueKind.CulpritTrail)
-        {
-            return true;
-        }
-
-        return clue.Anchors.Subjects.Any(subject =>
-            !string.IsNullOrWhiteSpace(subject.Alias)
-            || !string.IsNullOrWhiteSpace(subject.Feature));
-    }
 
     /// <summary>
     /// The current town's slot index — its position in <see cref="World"/>'s town list.
@@ -2674,6 +2397,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// resolvers to vary which warrant/clue surfaces per visit.
     /// </summary>
     private int CurrentTownVisitCount => CurrentTownVisit.CurrentTownState.VisitNumber;
+
+    /// <summary>
+    /// The set of retired and taken-in warrant IDs from the BountyLoop's unrelated-criminal
+    /// ledger. Passed to InvestigationLoop via the context record so the wanted-poster
+    /// resolver can skip already-resolved warrants. See BUNCH-120.
+    /// </summary>
+    private IReadOnlySet<WarrantId> RetiredWarrantIds
+        => _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
+            .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
+            .ToHashSet();
 
     private bool TryGetEligibleSaloonSuspectCandidate(out Suspect suspect)
     {
@@ -2716,51 +2449,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => Journey is not null;
 
     private bool IsArchived => Status == GameStatus.Archived;
-
-    private bool CanPurchaseInventoryItem(StoreOffer offer, int quantity, out string failureMessage)
-    {
-        if (quantity < 1)
-        {
-            failureMessage = "Quantity must be at least 1.";
-            return false;
-        }
-
-        if (offer.ItemKind == ItemKind.Horse)
-        {
-            if (quantity != 1)
-            {
-                failureMessage = "Horse items must have a quantity of 1.";
-                return false;
-            }
-
-            if (Player.HasItem(ItemKind.Horse))
-            {
-                failureMessage = "Horse already exists in inventory.";
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
-        }
-
-        if (quantity != 1 && !IsStackableItemKind(offer.ItemKind))
-        {
-            failureMessage = $"{offer.ItemKind} does not stack.";
-            return false;
-        }
-
-        if (!IsStackableItemKind(offer.ItemKind) && Player.HasItem(offer.ItemKind))
-        {
-            failureMessage = $"{offer.ItemKind} already exists in inventory.";
-            return false;
-        }
-
-        failureMessage = string.Empty;
-        return true;
-    }
-
-    private static bool IsStackableItemKind(ItemKind kind)
-        => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo or ItemKind.RifleAmmo;
 
     private int SpendFirearmAmmo(int requestedBullets)
     {
