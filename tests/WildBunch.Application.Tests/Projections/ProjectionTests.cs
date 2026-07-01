@@ -695,4 +695,42 @@ public sealed class ProjectionTests
 
         Assert.Empty(view.Confrontations);
     }
+
+    [Fact]
+    public void HudProjector_PlaythroughArchived_SetsStatusToArchived()
+    {
+        var projector = new HudProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new PlaythroughArchived
+            {
+                ArchivedAtUtc = DateTime.UtcNow,
+                ArchiveReason = "Completed",
+                PlayerName = "Ranger Vale",
+                LastTownId = new TownId("pinecross"),
+                LastTownName = "Pinecross",
+                Day = 1,
+                Turn = "Morning",
+                StatusBeforeArchive = GameStatus.Completed
+            }
+        };
+
+        var hud = projector.Project(events);
+
+        Assert.Equal(GameStatus.Archived, hud.Status);
+        Assert.Equal(new TownId("pinecross"), hud.CurrentTownId);
+        Assert.Equal("Pinecross", hud.CurrentTownName);
+    }
 }

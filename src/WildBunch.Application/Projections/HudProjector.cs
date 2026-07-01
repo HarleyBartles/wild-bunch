@@ -100,6 +100,15 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     // Canteen is refilled on arrival — sync from snapshot.
                     SyncInventoryFromJourneySnapshot(inventory, jc.JourneySnapshot);
                     break;
+
+                case PlaythroughArchived pa:
+                    status = GameStatus.Archived;
+                    if (pa.LastTownId is { } lastTownId)
+                    {
+                        currentTownId = lastTownId;
+                        currentTownName = pa.LastTownName ?? currentTownName;
+                    }
+                    break;
             }
         }
 
