@@ -42,7 +42,7 @@ public sealed class GameSessionBountyLoopCoordinatorTests
                 "Reno Pike",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("a black duster") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("a black duster", "a black duster", "wears a black duster")) }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge)
         };

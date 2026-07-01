@@ -82,7 +82,7 @@ public sealed class StubNewGameFactory : INewGameFactory
                 "Ira Flint",
                 new SuspectProfile(
                     new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
-                    new[] { new SuspectIdentityFact("Wears a brass buckle with a cracked star engraving.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Wears a brass buckle with a cracked star engraving.", "a brass buckle with a cracked star engraving", "wears a brass buckle with a cracked star engraving")) }),
                 SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge)
         };

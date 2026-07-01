@@ -44,7 +44,7 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
         var session = CreateSession(
             suspectProfile: new SuspectProfile(
                 Array.Empty<SuspectAlias>(),
-                new[] { new SuspectIdentityFact("a brass buckle with a cracked star engraving") }),
+                new[] { new SuspectIdentityFact(FeatureLanguage.Raw("a brass buckle with a cracked star engraving", "a brass buckle with a cracked star engraving", "has a brass buckle with a cracked star engraving")) }),
             suspectTraits: SuspectTraits.Empty);
 
         AssertDescriptorParity(session, "a stranger with a brass buckle with a cracked star engraving");

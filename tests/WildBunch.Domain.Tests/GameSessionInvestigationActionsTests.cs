@@ -670,7 +670,7 @@ public sealed class GameSessionInvestigationActionsTests
                 "Ira Flint",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("a pale scar across the left cheek") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("a pale scar across the left cheek", "a pale scar across the left cheek", "has a pale scar across the left cheek")) }),
                 SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
@@ -679,7 +679,7 @@ public sealed class GameSessionInvestigationActionsTests
                 "Jonah Pike",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("a black duster") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("a black duster", "a black duster", "wears a black duster")) }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge)
         };

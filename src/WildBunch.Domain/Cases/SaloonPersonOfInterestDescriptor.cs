@@ -31,7 +31,8 @@ public static class SaloonPersonOfInterestDescriptor
             }
         }
 
-        var profileDescriptor = suspect.Profile.IdentifyingFacts.FirstOrDefault().Description;
+        var primaryFact = suspect.Profile.IdentifyingFacts.FirstOrDefault();
+        var profileDescriptor = primaryFact.Language?.HasForm;
         if (!string.IsNullOrWhiteSpace(profileDescriptor))
         {
             return FormatPublicDescriptor(profileDescriptor);

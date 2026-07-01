@@ -3895,7 +3895,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => CaseFile.Suspects
             .SelectMany(s => s.Profile.IdentifyingFacts)
             .Where(f => f.IsPrimary)
-            .Select(f => f.Description)
+            .Select(f => f.Language.HasForm)
             .Where(d => !string.IsNullOrWhiteSpace(d))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();

@@ -44,7 +44,7 @@ public sealed class CaseProgressTests
                 },
                 new[]
                 {
-                    new SuspectIdentityFact("A pale scar cuts across the left cheek.")
+                    new SuspectIdentityFact(FeatureLanguage.Raw("A pale scar cuts across the left cheek.", "a pale scar across the left cheek", "has a pale scar across the left cheek"))
                 }),
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed),
             SuspectStatus.AtLarge);
@@ -53,7 +53,7 @@ public sealed class CaseProgressTests
         Assert.Single(suspect.Profile.IdentifyingFacts);
         Assert.Equal("Red Wren", suspect.Profile.Aliases[0].Name);
         Assert.Equal(AliasKind.Nickname, suspect.Profile.Aliases[0].Kind);
-        Assert.Equal("A pale scar cuts across the left cheek.", suspect.Profile.IdentifyingFacts[0].Description);
+        Assert.Equal("A pale scar cuts across the left cheek.", suspect.Profile.IdentifyingFacts[0].Language.HasForm);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class CaseProgressTests
                 "Tessa Wren",
                 new SuspectProfile(
                     new[] { new SuspectAlias("Red Wren", AliasKind.Nickname) },
-                    new[] { new SuspectIdentityFact("A pale scar cuts across the left cheek.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("A pale scar cuts across the left cheek.", "a pale scar across the left cheek", "has a pale scar across the left cheek")) }),
                 SuspectTraits.FromTags(SuspectTraitTags.Armed),
                 SuspectStatus.AtLarge)
         };

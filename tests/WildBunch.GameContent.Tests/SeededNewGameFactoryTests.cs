@@ -59,8 +59,8 @@ public sealed class SeededNewGameFactoryTests
         var culpritOpeningFeature = Assert.Single(CaseSuspectFeaturePool.FeaturePool, feature => feature.OpeningLeadText == session.CaseFile.OpeningLead.Description);
         Assert.True(culpritOpeningFeature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable));
         Assert.True(culpritOpeningFeature.HasTag(CaseSuspectFeatureTags.ClassicNod));
-        Assert.Equal(culpritOpeningFeature.Description, session.CaseFile.Suspects[3].Profile.IdentifyingFacts[0].Description);
-        Assert.All(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Description == fact.Description));
+        Assert.Equal(culpritOpeningFeature.Description, session.CaseFile.Suspects[3].Profile.IdentifyingFacts[0].Language.HasForm);
+        Assert.All(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Description == fact.Language.HasForm));
         Assert.Contains(session.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit

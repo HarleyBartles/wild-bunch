@@ -142,7 +142,7 @@ public sealed class GetJournalHandlerTests
                 "Jonah Pike",
                 new SuspectProfile(
                     new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
-                    new[] { new SuspectIdentityFact("Wears a cracked leather gauntlet on the right hand.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Wears a cracked leather gauntlet on the right hand.", "a cracked leather gauntlet on the right hand", "wears a cracked leather gauntlet on the right hand")) }),
                 SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge),
             new Suspect(
@@ -150,7 +150,7 @@ public sealed class GetJournalHandlerTests
                 "Mira Cline",
                 new SuspectProfile(
                     new[] { new SuspectAlias("M.K. Rook", AliasKind.KnownAs) },
-                    new[] { new SuspectIdentityFact("Carries a tin badge clipped to a saddle strap.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Carries a tin badge clipped to a saddle strap.", "a tin badge clipped to a saddle strap", "carries a tin badge clipped to a saddle strap")) }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge)
         };

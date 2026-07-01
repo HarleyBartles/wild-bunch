@@ -52,7 +52,7 @@ public static class SaloonDevContextMapper
                 HasKnownWarrant: warrant is not null,
                 PresenceState: session.TryGetWantedSuspectPresenceState(s.Id, out var presence) ? presence.ToString() : null,
                 Aliases: s.Profile.Aliases.Select(a => a.Name).ToList(),
-                IdentifyingFacts: s.Profile.IdentifyingFacts.Select(f => f.Description).ToList(),
+                IdentifyingFacts: s.Profile.IdentifyingFacts.Select(f => f.Language.HasForm).ToList(),
                 TraitTags: s.Traits.Tags.Select(t => t.Value).ToList(),
                 BountyAmount: warrant?.Terms.BountyAmount,
                 WarrantDisposition: warrant is not null ? warrant.Terms.Disposition.ToString() : null,
