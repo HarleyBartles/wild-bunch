@@ -26,6 +26,7 @@ public static class TravelDiaryMapper
         ISet<string> selectedFlavourIds)
     {
         var renderedDay = TravelDiaryTextRenderer.RenderDay(day, travelRulesProfile, selectedFlavourIds);
+        var beatSlots = TrailBeatSlotProjection.FromDayState(day);
 
         return new TravelDiaryDayDto(
             day.DayNumber,
@@ -65,7 +66,8 @@ public static class TravelDiaryMapper
             day.CurrentAmmo,
             day.CurrentHeat,
             renderedDay.Entries,
-            day.Warnings);
+            day.Warnings,
+            beatSlots);
     }
 
     private static TravelDiaryEncounterResolutionDto ToDto(DomainTravelDiaryEncounterResolutionState resolution)

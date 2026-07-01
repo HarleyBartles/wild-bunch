@@ -2987,6 +2987,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return StorePurchaseResult.Failed(JourneyModalBlockMessage);
         }
 
+        EnterActionContext(TownActionContext.Store);
+
         if (quantity < 1)
         {
             return StorePurchaseResult.Failed("Quantity must be at least 1.");
@@ -3155,7 +3157,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         // Enter saloon context BEFORE local action resolution.
         // Emits TownActionContextEntered event if context changed (advances turn).
+        var beatSpent = Clock.TimeOfDay;
         EnterActionContext(TownActionContext.Saloon);
+        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.Saloon, CurrentTown.TownName);
 
         var eligibleSuspects = CaseFile.Suspects.Where(IsEligibleSaloonPersonOfInterestCandidate).ToList();
         var context = new SaloonLookAroundContext(
@@ -3179,7 +3183,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             ProduceEvent(e);
         }
-        return result.Result;
+        return result.Result with { BeatNarration = beatNarration };
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
@@ -3510,7 +3514,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed("There is no telegraph office here.");
         }
 
+        var beatSpent = Clock.TimeOfDay;
         EnterActionContext(TownActionContext.TelegraphOffice);
+        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TelegraphOffice, CurrentTown.TownName);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead))
         {
@@ -3523,7 +3529,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var clue = _clueSurfacingResolver.Resolve(
@@ -3548,7 +3554,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var foundMsg = $"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.";
@@ -3561,7 +3567,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You follow the telegraph leads and uncover a public lead.", sessionChanged: true);
+        return CaseInvestigationResult.Succeeded("You follow the telegraph leads and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
     }
 
     public CaseInvestigationResult GatherLocalGossip()
@@ -3576,7 +3582,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
+        var beatSpent = Clock.TimeOfDay;
         EnterActionContext(TownActionContext.Saloon);
+        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.Saloon, CurrentTown.TownName);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip))
         {
@@ -3589,7 +3597,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var clue = _clueSurfacingResolver.Resolve(
@@ -3614,7 +3622,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var foundMsg = $"You ask around for local gossip and uncover a public lead: {DescribeClueLead(clue.Description)}.";
@@ -3627,7 +3635,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You ask around for local gossip and uncover a public lead.", sessionChanged: true);
+        return CaseInvestigationResult.Succeeded("You ask around for local gossip and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
     }
 
     public CaseInvestigationResult InspectNoticeBoard()
@@ -3642,7 +3650,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
+        var beatSpent = Clock.TimeOfDay;
         EnterActionContext(TownActionContext.TownSquare);
+        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TownSquare, CurrentTown.TownName);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard))
         {
@@ -3655,7 +3665,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var clue = CaseFile.PeekNextPublicClue(c => c.SourceKind == InvestigationSourceKind.NoticeBoard);
@@ -3671,7 +3681,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var foundMsg = $"You inspect the notice board and uncover a civic notice: {DescribeClueLead(clue.Description)}.";
@@ -3684,7 +3694,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a civic notice.", sessionChanged: true);
+        return CaseInvestigationResult.Succeeded("You inspect the notice board and uncover a civic notice.", sessionChanged: true, beatNarration: beatNarration);
     }
 
     public CaseInvestigationResult CheckSheriffRecords()
@@ -3699,7 +3709,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
         }
 
+        var beatSpent = Clock.TimeOfDay;
         EnterActionContext(TownActionContext.SheriffOffice);
+        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.SheriffOffice, CurrentTown.TownName);
 
         if (CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords))
         {
@@ -3712,7 +3724,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var clue = CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalRecords);
@@ -3728,7 +3740,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             };
             Apply(e);
             _uncommittedEvents.Add(e);
-            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true);
+            return CaseInvestigationResult.Succeeded(msg, sessionChanged: true, beatNarration: beatNarration);
         }
 
         var foundMsg = $"You check the local records and uncover a public lead: {DescribeClueLead(clue.Description)}.";
@@ -3741,7 +3753,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         };
         Apply(foundEvent);
         _uncommittedEvents.Add(foundEvent);
-        return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true);
+        return CaseInvestigationResult.Succeeded("You check the local records and uncover a public lead.", sessionChanged: true, beatNarration: beatNarration);
     }
 
     public void RecordCaseUpdate(string message)

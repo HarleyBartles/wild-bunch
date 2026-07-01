@@ -85,10 +85,11 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             .OrderBy(e => e.Sequence)
             .ToArrayAsync();
 
-        Assert.Equal(2, storedEvents.Length);
+        Assert.Equal(3, storedEvents.Length);
         Assert.Equal("GameStarted", storedEvents[0].EventType);
-        Assert.Equal("StoreItemPurchased", storedEvents[1].EventType);
-        Assert.Equal(2, storedEvents[1].Sequence);
+        Assert.Equal("TownActionContextEntered", storedEvents[1].EventType);
+        Assert.Equal("StoreItemPurchased", storedEvents[2].EventType);
+        Assert.Equal(3, storedEvents[2].Sequence);
     }
 
     [Fact]
@@ -150,10 +151,11 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         var events = await repo.GetEventStreamAsync(session.Id);
 
-        Assert.Equal(2, events.Count);
+        Assert.Equal(3, events.Count);
         Assert.IsType<GameStarted>(events[0]);
-        Assert.IsType<StoreItemPurchased>(events[1]);
-        var purchase = (StoreItemPurchased)events[1];
+        Assert.IsType<TownActionContextEntered>(events[1]);
+        Assert.IsType<StoreItemPurchased>(events[2]);
+        var purchase = (StoreItemPurchased)events[2];
         Assert.Equal(3, purchase.Quantity);
     }
 
@@ -182,8 +184,9 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         // Get events after version 1 (the GameStarted)
         var events = await repo.GetEventStreamAsync(session.Id, fromVersion: 1);
 
-        Assert.Single(events);
-        Assert.IsType<StoreItemPurchased>(events[0]);
+        Assert.Equal(2, events.Count);
+        Assert.IsType<TownActionContextEntered>(events[0]);
+        Assert.IsType<StoreItemPurchased>(events[1]);
     }
 
     /// <summary>
@@ -489,14 +492,14 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         }
 
         // Load through the repository. The snapshot is at version 1, the stream
-        // is at version 2, so one post-snapshot event (StoreItemPurchased) must be
-        // replayed. The loaded aggregate's Version must equal StreamVersion (2),
-        // not StreamVersion + 1 (3) which would be the bug.
+        // is at version 3, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
+        // replayed. The loaded aggregate's Version must equal StreamVersion (3),
+        // not StreamVersion + 1 (4) which would be the bug.
         using var loadScope = services.CreateScope();
         var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
         var loaded2 = await loadRepo.GetByIdAsync(sessionId);
         Assert.NotNull(loaded2);
-        Assert.Equal(2, loaded2!.Version);
+        Assert.Equal(3, loaded2!.Version);
     }
 
     /// <summary>
@@ -514,9 +517,9 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var services = CreateServices(database.ConnectionString);
 
         // Seed: create + commit (v1), then reload + purchase + commit (v2).
-        // After this, SnapshotVersion == StreamVersion == 2 in the DB.
+        // After this, SnapshotVersion == StreamVersion == 3 in the DB.
         // v1 produces GameStarted (1 log entry: opening).
-        // v2 produces StoreItemPurchased (1 log entry: purchase).
+        // v2,v3 produce TownActionContextEntered + StoreItemPurchased (1 log entry: purchase).
         // Full-stream projection = 2 log entries.
         GameSessionId sessionId;
         using (var seedScope = services.CreateScope())
@@ -539,7 +542,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         }
 
         // Force a lagging snapshot: set SnapshotVersion back to 1 while
-        // StreamVersion stays at 2. This simulates a snapshot that was not
+        // StreamVersion stays at 3. This simulates a snapshot that was not
         // refreshed after the last event append.
         using (var adminScope = services.CreateScope())
         {
@@ -550,7 +553,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         }
 
         // Load through the repository. The snapshot is at version 1, the stream
-        // is at version 2, so one post-snapshot event (StoreItemPurchased) must be
+        // is at version 3, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
         // replayed via ApplyCommittedEvents. The aggregate's LogEntries must
         // contain exactly 2 entries (opening + purchase), not 3 (which would
         // indicate the purchase entry was duplicated by full-stream projection
@@ -560,7 +563,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var loaded2 = await loadRepo.GetByIdAsync(sessionId);
         Assert.NotNull(loaded2);
 
-        // The full event stream has 2 events (GameStarted + StoreItemPurchased).
+        // The full event stream has 3 events (GameStarted + TownActionContextEntered + StoreItemPurchased).
         // The projector produces 2 log entries (opening + purchase).
         // The aggregate's LogEntries must match — no duplication from
         // snapshot-prefix projection + post-snapshot replay.

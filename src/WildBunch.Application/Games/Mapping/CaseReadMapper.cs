@@ -1,5 +1,6 @@
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Application.Games.Mapping;
 
@@ -28,6 +29,21 @@ public static class CaseReadMapper
             anchors.Times.Select(ToDto).ToArray(),
             anchors.Directions.Select(ToDto).ToArray());
 
+    public static ClueTimeAnchorDto ToDto(ClueTimeAnchor anchor)
+    {
+        string? timeOfDayLabel = null;
+        if (anchor.Turn is not null && anchor.Day is not null)
+        {
+            timeOfDayLabel = BeatLabelRenderer.Render((TimeOfDay)anchor.Turn.Value, anchor.Day.Value);
+        }
+        else if (anchor.Turn is not null)
+        {
+            timeOfDayLabel = ((TimeOfDay)anchor.Turn.Value).ToString();
+        }
+
+        return new ClueTimeAnchorDto(anchor.Recency, anchor.Day, anchor.Turn, timeOfDayLabel);
+    }
+
     private static ClueSubjectAnchorDto ToDto(ClueSubjectAnchor anchor)
         => new(
             anchor.Label,
@@ -40,12 +56,6 @@ public static class CaseReadMapper
             anchor.Label,
             anchor.Place,
             anchor.Route);
-
-    private static ClueTimeAnchorDto ToDto(ClueTimeAnchor anchor)
-        => new(
-            anchor.Recency,
-            anchor.Day,
-            anchor.Turn);
 
     private static ClueDirectionAnchorDto ToDto(ClueDirectionAnchor anchor)
         => new(

@@ -133,8 +133,10 @@ public class GameSessionEventSourcingTests
 
         session.Purchase(offer, 3);
 
-        var single = Assert.Single(session.UncommittedEvents);
-        var purchased = Assert.IsType<StoreItemPurchased>(single);
+        // BUNCH-5: Purchase now enters Store context first, producing TownActionContextEntered + StoreItemPurchased
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
+        var purchased = Assert.IsType<StoreItemPurchased>(session.UncommittedEvents[1]);
         Assert.Equal(new TownId("pinecross"), purchased.TownId);
         Assert.Equal(DomainItemKind.Food, purchased.ItemKind);
         Assert.Equal(3, purchased.Quantity);
@@ -156,7 +158,8 @@ public class GameSessionEventSourcingTests
 
         session.Purchase(offer, 2);
 
-        Assert.Equal(versionBefore + 1, session.Version);
+        // BUNCH-5: Purchase now enters Store context first, producing 2 events (TownActionContextEntered + StoreItemPurchased)
+        Assert.Equal(versionBefore + 2, session.Version);
     }
 
     [Fact]

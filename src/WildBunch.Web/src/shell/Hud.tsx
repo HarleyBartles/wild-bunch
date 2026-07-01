@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { formatGameStatus } from "../ui/formatters";
+import { formatClockBeat } from "../ui/beatFormatters";
 import { useGameSession } from "../state/useGameSession";
 
 interface HudProps {
@@ -44,8 +45,8 @@ export function Hud({ onOpenJournal, onOpenGameSettings }: HudProps) {
         <small>Player</small>
       </Metric>
       <Metric>
-        <strong>{`Day ${session.clock.day}, ${session.clock.timeOfDay}`}</strong>
-        <small>Clock</small>
+        <strong>{formatClockBeat(session.clock)}</strong>
+        <small>Time of day</small>
       </Metric>
       <Metric>
         <strong>{currentTown?.name ?? "On the trail"}</strong>
