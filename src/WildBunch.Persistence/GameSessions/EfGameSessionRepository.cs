@@ -342,7 +342,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Set CurrentActionContext from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).
         // When the snapshot is current, this restores the persisted context.
-        GameSessionRehydrator.SetCurrentActionContext(session, currentActionContext, currentActionContextTownId);
+        GameSessionRehydrator.RestoreActionContextState(session, currentActionContext, currentActionContextTownId);
 
         // Set PendingDevTravelOverride from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(DevTravelOverrideForced/Cleared/Consumed).

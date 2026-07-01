@@ -123,6 +123,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _journeyLoop.RestorePendingDevTravelOverride(overrideValue);
     }
 
+    /// <summary>
+    /// Restores ActionContextTracker-owned state from a persisted snapshot. Called by the
+    /// rehydration path after the constructor builds a fresh ActionContextTracker.
+    /// See BUNCH-120.
+    /// </summary>
+    internal void RestoreActionContextState(TownActionContext context, TownId? townId)
+    {
+        _actionContextTracker.RestoreState(context, townId);
+    }
+
     public GameStatus Status { get; private set; }
 
     /// <summary>

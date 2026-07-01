@@ -80,14 +80,13 @@ internal static class GameSessionRehydrator
     }
 
     /// <summary>
-    /// Sets the session's CurrentActionContext and the town it was entered in when loading
-    /// from snapshot. These are also reconstructed from event replay via
-    /// Apply(TownActionContextEntered). Both paths (snapshot load + event replay) must
-    /// produce the same values. See ADR-0028 and BUNCH-80.
+    /// Restores the session's ActionContextTracker-owned state (CurrentActionContext and
+    /// the town it was entered in) when loading from snapshot. These are also reconstructed
+    /// from event replay via Apply(TownActionContextEntered). Both paths (snapshot load +
+    /// event replay) must produce the same values. See ADR-0028, BUNCH-80, and BUNCH-120.
     /// </summary>
-    public static void SetCurrentActionContext(GameSession session, TownActionContext context, TownId? townId)
+    public static void RestoreActionContextState(GameSession session, TownActionContext context, TownId? townId)
     {
-        SetBackingField(session, "<CurrentActionContext>k__BackingField", context);
-        SetBackingField(session, "<CurrentActionContextTownId>k__BackingField", townId);
+        session.RestoreActionContextState(context, townId);
     }
 }

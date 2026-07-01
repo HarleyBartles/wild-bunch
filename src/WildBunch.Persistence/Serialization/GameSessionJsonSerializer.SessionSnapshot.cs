@@ -80,7 +80,7 @@ public sealed partial class GameSessionJsonSerializer
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
             TownId? contextTownId = CurrentActionContextTownId is null ? null : new TownId(CurrentActionContextTownId);
-            GameSessionRehydrator.SetCurrentActionContext(session, CurrentActionContext, contextTownId);
+            GameSessionRehydrator.RestoreActionContextState(session, CurrentActionContext, contextTownId);
             
             // Set SeedCode from snapshot as a cache. The true source of truth is the
             // GameStarted event, which will be applied during event replay if there are
