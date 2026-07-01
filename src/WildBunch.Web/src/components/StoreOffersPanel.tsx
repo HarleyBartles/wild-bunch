@@ -1,41 +1,48 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
-import { formatItemKind, formatStoreOfferAvailability, formatStoreVendorType } from "../ui/formatters";
 import {
   StatusCard,
   Stack,
-  ItemCard,
   Muted,
-  Field,
   Button,
 } from "./ui/sharedStyled";
 
-const OfferKindLine = styled.p`
-  margin: 4px 0 0;
-  font-size: 0.88rem;
-  color: var(--muted);
-`;
-
-const OfferAvailabilityLine = styled.p`
-  margin: 2px 0 0;
-  font-size: 0.84rem;
-  color: var(--muted);
-`;
-
-const BuyRow = styled.div`
+const OfferRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  margin-top: 12px;
-  align-items: flex-end;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
 `;
 
-const QuantityField = styled(Field).attrs({ as: "label" })`
+const OfferName = styled.span`
+  font-weight: 600;
+`;
+
+const OfferPrice = styled.span`
+  color: var(--muted);
+`;
+
+const OfferSpacer = styled.span`
   flex: 1;
 `;
 
+const QuantityInput = styled.input`
+  width: 64px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-size: 0.9rem;
+`;
+
 const OfferList = styled(Stack)`
-  margin-top: 16px;
+  gap: 6px;
 `;
 
 interface StoreOffersPanelProps {
@@ -49,7 +56,7 @@ function quantityKey(offer: StoreOfferDto) {
   return `${offer.vendorType}-${offer.itemKind}`;
 }
 
-function StoreOfferCard({
+function StoreOfferRow({
   offer,
   disabled,
   onBuyOffer,
@@ -70,63 +77,50 @@ function StoreOfferCard({
   }
 
   return (
-    <ItemCard>
-      <strong>
-        {offer.displayName} ${offer.price.toFixed(2)}
-      </strong>
-      <OfferKindLine>
-        {formatItemKind(offer.itemKind)} - {formatStoreVendorType(offer.vendorType)}
-      </OfferKindLine>
-      <OfferAvailabilityLine>
-        {formatStoreOfferAvailability(offer.availability)} - {offer.sourceNote}
-      </OfferAvailabilityLine>
-      <BuyRow>
-        <QuantityField>
-          <span>Quantity</span>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            value={quantity}
-            onChange={(event) => setQuantity(event.target.value)}
-            disabled={disabled}
-          />
-        </QuantityField>
-        <Button
-          type="button"
-          onClick={handleBuy}
-          disabled={disabled || offer.availability !== 0}
-        >
-          Buy
-        </Button>
-      </BuyRow>
-    </ItemCard>
+    <OfferRow>
+      <OfferName>{offer.displayName}</OfferName>
+      <OfferPrice>${offer.price.toFixed(2)}</OfferPrice>
+      <OfferSpacer />
+      <QuantityInput
+        type="number"
+        min="1"
+        step="1"
+        aria-label={`Quantity for ${offer.displayName}`}
+        value={quantity}
+        onChange={(event) => setQuantity(event.target.value)}
+        disabled={disabled}
+      />
+      <Button
+        type="button"
+        onClick={handleBuy}
+        disabled={disabled || offer.availability !== 0}
+      >
+        Buy
+      </Button>
+    </OfferRow>
   );
 }
 
 export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: StoreOffersPanelProps) {
   return (
     <StatusCard>
-      <h3>Store offers</h3>
       {loading && storeOffers === null ? <Muted>Loading town offers...</Muted> : null}
       {!loading && storeOffers === null ? <Muted>Town catalog unavailable.</Muted> : null}
       {storeOffers ? (
-        <>
-          <OfferList>
-            {storeOffers.offers.length > 0 ? (
-              storeOffers.offers.map((offer) => (
-                <StoreOfferCard
-                  key={quantityKey(offer)}
-                  offer={offer}
-                  disabled={busy || loading}
-                  onBuyOffer={onBuyOffer}
-                />
-              ))
-            ) : (
-              <Muted>No store offers are available in this town.</Muted>
-            )}
-          </OfferList>
-        </>
+        <OfferList>
+          {storeOffers.offers.length > 0 ? (
+            storeOffers.offers.map((offer) => (
+              <StoreOfferRow
+                key={quantityKey(offer)}
+                offer={offer}
+                disabled={busy || loading}
+                onBuyOffer={onBuyOffer}
+              />
+            ))
+          ) : (
+            <Muted>No store offers are available in this town.</Muted>
+          )}
+        </OfferList>
       ) : null}
     </StatusCard>
   );
