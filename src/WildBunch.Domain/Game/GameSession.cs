@@ -3169,198 +3169,29 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // Emits TownActionContextEntered event if context changed (advances turn).
         EnterActionContext(TownActionContext.Saloon);
 
-        // Dev override: capture the pending override before producing the consumed event,
-        // because ProduceEvent(new DevSaloonOverrideConsumed()) calls Apply() which clears
-        // _pendingDevSaloonOverride. The forced POI must be built from the captured value.
-        // See BUNCH-90.
-        var pendingDevOverride = _pendingDevSaloonOverride;
-
-        if (pendingDevOverride is not null)
-        {
-            ProduceEvent(new DevSaloonOverrideConsumed());
-
-            // Build the forced POI from the captured override value.
-            // The consumed event has already cleared _pendingDevSaloonOverride.
-            if (pendingDevOverride.ForcedKind is DevSaloonPoiKind.Suspect)
-            {
-                Suspect? forcedSuspect = null;
-                if (pendingDevOverride.ForcedSuspectId is not null)
-                {
-                    // Specific suspect was forced - validated at force time.
-                    forcedSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id == pendingDevOverride.ForcedSuspectId);
-                }
-
-                // If no specific suspect or the specific suspect is not found, use normal candidate selection.
-                if (forcedSuspect is null && pendingDevOverride.ForcedSuspectId is null)
-                {
-                    TryGetEligibleSaloonSuspectCandidate(out forcedSuspect);
-                }
-
-                if (forcedSuspect is not null)
-                {
-                    var descriptor = SaloonPersonOfInterestDescriptor.Describe(forcedSuspect, CaseFile);
-                    var spotMessage = $"You look around the saloon and spot {descriptor}.";
-                    ProduceEvent(new SaloonPersonOfInterestSpotted
-                    {
-                        SourceKind = InvestigationSourceKind.SaloonLookAround,
-                        TownId = CurrentTown.TownId,
-                        Message = spotMessage,
-                        SuspectId = forcedSuspect.Id,
-                        Descriptor = descriptor,
-                        PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
-                        RecordLog = true
-                    });
-                    return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
-                }
-            }
-            else if (pendingDevOverride.ForcedKind is DevSaloonPoiKind.None)
-            {
-                // Nobody of interest — the saloon is quiet.
-                var nobodyMessage = "You look around the saloon, but nobody of interest catches your eye.";
-                ProduceEvent(new SaloonPersonOfInterestSpotted
-                {
-                    SourceKind = InvestigationSourceKind.SaloonLookAround,
-                    TownId = CurrentTown.TownId,
-                    Message = nobodyMessage,
-                    RecordLog = true
-                });
-                return CaseInvestigationResult.Succeeded(nobodyMessage, sessionChanged: true);
-            }
-            else
-            {
-                // Citizen - spots a citizen from the source-backed cast.
-                // The false-lead outcome comes from the normal confrontation flow
-                // when the player declares a wrong wanted identity on a citizen POI.
-                // Citizen features are drawn from the shared suspect feature vocabulary.
-                var forcedFeatureDescriptions = CollectSuspectFeatureDescriptions();
-                CitizenEncounter forcedEncounter;
-                if (pendingDevOverride.ForcedCitizenRoleKey is not null)
-                {
-                    forcedEncounter = CitizenCast.SelectByRoleKey(pendingDevOverride.ForcedCitizenRoleKey, forcedFeatureDescriptions);
-                }
-                else
-                {
-                    forcedEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, forcedFeatureDescriptions);
-                }
-                var forcedCitizenDescriptor = CitizenCast.ResolveDescriptor(forcedEncounter);
-                var forcedCitizenMessage = $"You look around the saloon and spot {forcedCitizenDescriptor}.";
-                ProduceEvent(new SaloonPersonOfInterestSpotted
-                {
-                    SourceKind = InvestigationSourceKind.SaloonLookAround,
-                    TownId = CurrentTown.TownId,
-                    Message = forcedCitizenMessage,
-                    Descriptor = forcedCitizenDescriptor,
-                    PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
-                    CitizenRole = forcedEncounter.Role.Key,
-                    RecordLog = false
-                });
-                return CaseInvestigationResult.Succeeded(forcedCitizenMessage, sessionChanged: true);
-            }
-        }
-
-        // Normal path: no dev override active.
-        if (CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround))
-        {
-            var repeatMessage = "You look around the saloon again, but nobody of interest is here.";
-            var repeatEvent = new SaloonPersonOfInterestSpotted
-            {
-                SourceKind = InvestigationSourceKind.SaloonLookAround,
-                TownId = CurrentTown.TownId,
-                Message = repeatMessage,
-                RecordLog = true
-            };
-            ProduceEvent(repeatEvent);
-            return CaseInvestigationResult.Succeeded(repeatMessage, sessionChanged: true);
-        }
-
-        // BUNCH-106: Simplified saloon POI selection.
-        // The candidate pool is: each eligible non-culprit suspect + each citizen role + one "nobody" slot.
-        // Any non-culprit suspect can walk into any saloon — no town presence, warrant, or poster gates.
-        // The true killer is excluded until the killer-release gate opens.
-        // The roll is deterministic using the salt source + town + day + turn + visit number.
         var eligibleSuspects = CaseFile.Suspects.Where(IsEligibleSaloonPersonOfInterestCandidate).ToList();
-        var citizenRoleCount = CitizenCast.Roles.Count;
-        var poolSize = eligibleSuspects.Count + citizenRoleCount + 1; // +1 for "nobody"
-        var rollHash = StableSaloonRollHash(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, SaltSource.Salt);
-        var rollIndex = rollHash % poolSize;
+        var context = new SaloonLookAroundContext(
+            CurrentTown.TownId,
+            Clock.Day,
+            Clock.Turn,
+            CurrentTownVisit.CurrentTownState.VisitNumber,
+            SaltSource.Salt,
+            eligibleSuspects,
+            CaseFile.KnownWarrants,
+            CitizenCast.Roles.Count,
+            CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround),
+            _pendingDevSaloonOverride,
+            CollectSuspectFeatureDescriptions(),
+            (townId, day, turn, visit, features) => CitizenCast.Select(townId, day, turn, visit, features),
+            (roleKey, features) => CitizenCast.SelectByRoleKey(roleKey, features),
+            encounter => CitizenCast.ResolveDescriptor(encounter));
 
-        // Nobody of interest.
-        if (rollIndex == poolSize - 1)
+        var result = _bountyLoop.LookAroundSaloon(context);
+        foreach (var e in result.Events)
         {
-            var nobodyMessage = "You look around the saloon, but nobody of interest catches your eye.";
-            var nobodyEvent = new SaloonPersonOfInterestSpotted
-            {
-                SourceKind = InvestigationSourceKind.SaloonLookAround,
-                TownId = CurrentTown.TownId,
-                Message = nobodyMessage,
-                RecordLog = true
-            };
-            ProduceEvent(nobodyEvent);
-            return CaseInvestigationResult.Succeeded(nobodyMessage, sessionChanged: true);
+            ProduceEvent(e);
         }
-
-        // Suspect slot.
-        if (rollIndex < eligibleSuspects.Count)
-        {
-            var suspect = eligibleSuspects[rollIndex];
-            var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, CaseFile);
-            var spotMessage = $"You look around the saloon and spot {descriptor}.";
-            var spotEvent = new SaloonPersonOfInterestSpotted
-            {
-                SourceKind = InvestigationSourceKind.SaloonLookAround,
-                TownId = CurrentTown.TownId,
-                Message = spotMessage,
-                SuspectId = suspect.Id,
-                Descriptor = descriptor,
-                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
-                RecordLog = true
-            };
-            ProduceEvent(spotEvent);
-            return CaseInvestigationResult.Succeeded(spotMessage, sessionChanged: true);
-        }
-
-        // Citizen slot.
-        var citizenFeatureDescriptions = CollectSuspectFeatureDescriptions();
-        var citizenEncounter = CitizenCast.Select(CurrentTown.TownId, Clock.Day, Clock.Turn, CurrentTownVisit.CurrentTownState.VisitNumber, citizenFeatureDescriptions);
-        var citizenDescriptor = CitizenCast.ResolveDescriptor(citizenEncounter);
-        var citizenMessage = $"You look around the saloon and spot {citizenDescriptor}.";
-        var citizenEvent = new SaloonPersonOfInterestSpotted
-        {
-            SourceKind = InvestigationSourceKind.SaloonLookAround,
-            TownId = CurrentTown.TownId,
-            Message = citizenMessage,
-            Descriptor = citizenDescriptor,
-            PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
-            CitizenRole = citizenEncounter.Role.Key,
-            RecordLog = false
-        };
-        ProduceEvent(citizenEvent);
-        return CaseInvestigationResult.Succeeded(citizenMessage, sessionChanged: true);
-    }
-
-    /// <summary>
-    /// Stable manual hash for deterministic saloon POI rolls. Uses the salt source
-    /// so different sessions get different rolls for the same town/day/turn/visit.
-    /// Does NOT use <see cref="string.GetHashCode()"/> (not stable across restarts).
-    /// </summary>
-    private static int StableSaloonRollHash(TownId townId, int day, int turn, int visitNumber, string salt)
-    {
-        unchecked
-        {
-            var hash = 17;
-            foreach (var c in salt)
-            {
-                hash = (hash * 31) + c;
-            }
-            foreach (var c in townId.Value)
-            {
-                hash = (hash * 31) + c;
-            }
-            hash = (hash * 31) + day;
-            hash = (hash * 31) + turn;
-            hash = (hash * 31) + visitNumber;
-            return Math.Abs(hash);
-        }
+        return result.Result;
     }
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)

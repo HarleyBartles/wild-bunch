@@ -12,11 +12,13 @@ internal sealed record SaloonLookAroundContext(
     int VisitNumber,
     string Salt,
     IReadOnlyList<Suspect> EligibleSuspects,
+    IReadOnlyList<Warrant> KnownWarrants,
     int CitizenRoleCount,
     bool IsSaloonSourceSpent,
     DevSaloonOverride? PendingDevOverride,
     IReadOnlyList<string> SuspectFeatureDescriptions,
     Func<TownId, int, int, int, IReadOnlyList<string>, CitizenEncounter> CitizenSelect,
+    Func<string, IReadOnlyList<string>, CitizenEncounter> CitizenSelectByRoleKey,
     Func<CitizenEncounter, string> CitizenDescriptorResolver);
 
 /// <summary>Read-only inputs for a saloon POI confrontation decision.</summary>
