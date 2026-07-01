@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix three infrastructure/minor issues: (1) CORS policy too restrictive for Vite port fallback, (2) malformed prologue culprit identifier substitution, (3) duplicate "Horse feed" display names from different vendors.
+**Goal:** Fix three infrastructure/minor issues: (1) CORS policy too restrictive for Vite port fallback, (2) malformed prologue culprit identifier substitution via a proper structured language-model refactor, (3) duplicate "Horse feed" display names from different vendors.
 
-**Architecture:** Three independent, small fixes touching the API CORS registration, the domain descriptor formatter, and the domain store catalog. No aggregate-root or persistence changes. Each fix is independently testable and committable.
+**Architecture:** Issues 1 and 3 are small, independent fixes — CORS registration broadening and store-catalog display-name disambiguation. Issue 2 is a larger domain language-model refactor: it replaces pre-baked feature sentence strings with structured `FeatureDescriptor` tokens + a `FeatureLanguageService` that generates context-appropriate phrasing at runtime, and eliminates the fragile `NormalizeFeatureDescriptor` prefix-stripping that caused the bug. Issue 2 adds new domain files, changes `SuspectIdentityFact`, changes the JSON snapshot shape, and intentionally breaks old dev saves (acceptable per AGENTS.md). Issues 1 and 3 are independently testable and committable; Issue 2 is a multi-task sequence (2a->2b->2c->2d) that must be committed in order.
 
-**Tech Stack:** C#/.NET 9, ASP.NET Core CORS, xUnit, React + TypeScript + Vitest.
+**Tech Stack:** C#/.NET 10, ASP.NET Core CORS, xUnit, React + TypeScript + Vitest.
 
 ## Global Constraints
 
@@ -16,7 +16,9 @@
 - Horse and saddle are separate inventory concepts; `ItemKind.HorseFeed` is the shared inventory kind — do NOT split it. The fix is display-name disambiguation only.
 - Run `dotnet build` and `dotnet test` for backend validation.
 - Run `npm test` in `src/WildBunch.Web` for frontend validation (only if frontend files change).
-- Run `python scripts/generate_index_mesh.py` and commit updated INDEX.md if any file is added/removed (no new files are added in this plan, so this should be a no-op, but verify).
+- Run `python scripts/generate_index_mesh.py` and commit updated INDEX.md after files are added. **Issue 2 adds new files** (`FeatureLanguage.cs`, `FeatureLanguageService.cs`, test files, and a new `WildBunch.Api.Tests` project for Issue 1). The index mesh regeneration is **required**, not a no-op.
+- **Issue 2 changes `SuspectIdentityFactSnapshot` shape.** Old JSON saves will fail to deserialize. Per AGENTS.md: "In this greenfield repo, current mainline model correctness wins over old-save or legacy internal compatibility" and "Dev database drop/recreate is allowed." Run `.\scripts\postgres-dev.ps1 reset` if integration tests fail on stale snapshot data.
+- The CORS and Horse feed fixes (Issues 1 and 3) are independent of the language refactor. The language refactor (Issue 2) is **not** a small formatter-only patch — it touches the Domain, GameContent, Application, and Persistence layers.
 
 ---
 
@@ -81,7 +83,7 @@ public sealed class CorsPolicyTests
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.Api.Tests/CorsPolicyTests.cs`
+Run: `dotnet test tests/WildBunch.Api.Tests --filter CorsPolicyTests`
 Expected: FAIL — `IsOriginAllowed("http://localhost:5174")` returns false because the current policy only allows port 5173.
 
 - [ ] **Step 3: Implement the fix**
@@ -104,7 +106,7 @@ Replace the `WithOrigins(...)` call in `src/WildBunch.Api/DependencyInjection.cs
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test tests/WildBunch.Api.Tests/CorsPolicyTests.cs`
+Run: `dotnet test tests/WildBunch.Api.Tests --filter CorsPolicyTests`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -134,7 +136,51 @@ When the feature text is `"Is missing the right ear."`, normalization returns it
 
 ### Design
 
-**New Domain types** (`src/WildBunch.Domain/Cases/FeatureLanguage.cs`):
+This is the first implementation of a foundational runtime language service that the game will rely on for a bunch of stuff later. The design leaves explicit seams for future language concerns — person (first/second/third), tense, time-relative language, and other narrative voice variations (diary "I met..." vs event notification "You spot..." vs prologue "The one with...").
+
+**New Domain namespace:** `src/WildBunch.Domain/Language/` — general-purpose language infrastructure, not case-specific.
+
+**Narrative voice seam** (`src/WildBunch.Domain/Language/NarrativeVoice.cs`):
+
+```csharp
+/// <summary>
+/// The narrative voice in which game content is rendered. This is the
+/// primary seam for the language service — different game surfaces need
+/// different voices (diary = first person, event notifications = second
+/// person, prologue/clue anchors = third person). Only ThirdPerson is
+/// implemented in BUNCH-118; SecondPerson and FirstPerson are explicit
+/// future seams that throw NotImplementedException until implemented.
+/// </summary>
+public enum NarrativeVoice
+{
+    ThirdPerson = 0,   // "Has a limp in the left leg." / "a stranger with..."
+    SecondPerson = 1,  // FUTURE: "You notice a limp in their left leg." (event notifications)
+    FirstPerson = 2    // FUTURE: "I noticed a limp in their left leg." (diary/journal)
+}
+```
+
+**Language context** (`src/WildBunch.Domain/Language/LanguageContext.cs`):
+
+```csharp
+/// <summary>
+/// Carries the narrative context in which language is rendered. This is
+/// the extension point for future language concerns — tense, formality,
+/// time-relative language, etc. Only Voice is used in BUNCH-118; future
+/// fields are explicit seams.
+/// </summary>
+public sealed record LanguageContext(
+    NarrativeVoice Voice = NarrativeVoice.ThirdPerson
+    // FUTURE SEAMS — do not implement until needed:
+    // , NarrativeTense Tense = NarrativeTense.Past
+    // , NarrativeFormality Formality = NarrativeFormality.Plain
+    // , TimeRelativity TimeRelativity = TimeRelativity.Absolute
+    )
+{
+    public static LanguageContext Default { get; } = new();
+};
+```
+
+**Feature descriptor** (`src/WildBunch.Domain/Language/FeatureDescriptor.cs`):
 
 ```csharp
 public enum FeatureCategory
@@ -153,29 +199,121 @@ public enum FeatureSide
 }
 
 public sealed record FeatureDescriptor(FeatureCategory Category, string BodyPart, FeatureSide Side);
-
-public sealed record FeatureLanguage(
-    string HasForm,        // "Has a limp in the left leg." — full sentence for warrants/clue anchors
-    string WithForm,       // "a limp in the left leg" — noun phrase after "a stranger with"
-    string WhoForm,        // "has a limp in the left leg" — lowercase clause after "who"
-    string? OpeningLeadForm); // "The culprit walks with a limp in the left leg." — null for accessories
 ```
 
-**Language service** (`src/WildBunch.Domain/Cases/FeatureLanguageService.cs`):
+**Feature language** (`src/WildBunch.Domain/Language/FeatureLanguage.cs`):
 
-Generates `FeatureLanguage` from a `FeatureDescriptor` for primary markers. Each `FeatureCategory` has templates for all four forms. Accessories get hand-written `FeatureLanguage` values (their copy is too varied to template).
+```csharp
+/// <summary>
+/// The rendered language forms for a feature in a specific narrative voice.
+/// Currently only ThirdPerson forms are populated; SecondPerson and FirstPerson
+/// forms are explicit future seams (nullable, throw when accessed if voice is
+/// unsupported). The four ThirdPerson forms cover all current consumer surfaces:
+/// warrants/clue anchors (HasForm), saloon POI (WithForm), clue subordinate
+/// clauses (WhoForm), and opening leads (OpeningLeadForm).
+/// </summary>
+public sealed record FeatureLanguage(
+    string HasForm,           // "Has a limp in the left leg." — full sentence for warrants/clue anchors
+    string WithForm,          // "a limp in the left leg" — noun phrase after "a stranger with"
+    string WhoForm,           // "has a limp in the left leg" — lowercase clause after "who"
+    string? OpeningLeadForm,  // "The culprit walks with a limp in the left leg." — null for accessories
+    NarrativeVoice Voice = NarrativeVoice.ThirdPerson)
+{
+    /// <summary>
+    /// Constructs a FeatureLanguage from explicit forms, for test fixtures
+    /// and non-feature-pool identity facts that don't have structured tokens.
+    /// </summary>
+    public static FeatureLanguage Raw(string hasForm, string withForm, string? whoForm = null)
+        => new(hasForm, withForm, whoForm ?? hasForm.ToLowerInvariant(), null);
+}
+```
+
+**Language service** (`src/WildBunch.Domain/Language/LanguageService.cs`):
+
+The umbrella entry point for all language rendering. Currently delegates to `FeatureLanguageService` for feature descriptors. Future content types (diary entries, event notifications, travel diary flavour, etc.) plug into the same service.
+
+```csharp
+/// <summary>
+/// The top-level language service for the game. This is the umbrella entry
+/// point for all runtime language rendering. BUNCH-118 implements only
+/// feature-descriptor rendering in ThirdPerson. Future content types
+/// (diary, notifications, travel flavour) and future voices (SecondPerson,
+/// FirstPerson) are explicit seams — add new renderers here, do not create
+/// parallel language services.
+/// </summary>
+public static class LanguageService
+{
+    /// <summary>
+    /// Renders a feature descriptor in the given narrative context.
+    /// Currently only ThirdPerson is implemented.
+    /// </summary>
+    public static FeatureLanguage Render(FeatureDescriptor descriptor, LanguageContext? context = null)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        var ctx = context ?? LanguageContext.Default;
+
+        return ctx.Voice switch
+        {
+            NarrativeVoice.ThirdPerson => FeatureLanguageService.RenderThirdPerson(descriptor),
+            NarrativeVoice.SecondPerson => throw new NotImplementedException(
+                "SecondPerson feature rendering is not yet implemented. This is a future seam — "
+                + "event notifications will need 'You notice...' forms."),
+            NarrativeVoice.FirstPerson => throw new NotImplementedException(
+                "FirstPerson feature rendering is not yet implemented. This is a future seam — "
+                + "diary/journal entries will need 'I noticed...' forms."),
+            _ => throw new ArgumentOutOfRangeException(nameof(ctx), ctx.Voice, "Unsupported narrative voice.")
+        };
+    }
+}
+```
+
+**Feature language service** (`src/WildBunch.Domain/Language/FeatureLanguageService.cs`):
+
+The concrete renderer for feature descriptors in ThirdPerson. Each `FeatureCategory` has templates for all four forms. Accessories get hand-written `FeatureLanguage` values (their copy is too varied to template). This is internal to the language service — callers go through `LanguageService.Render`.
+
+```csharp
+internal static class FeatureLanguageService
+{
+    public static FeatureLanguage RenderThirdPerson(FeatureDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        return descriptor.Category switch
+        {
+            FeatureCategory.Limp => ForLimp(descriptor),
+            FeatureCategory.MissingPart => ForMissingPart(descriptor),
+            FeatureCategory.Scar => ForScar(descriptor),
+            FeatureCategory.Absence => ForAbsence(descriptor),
+            _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Category, "Unsupported feature category.")
+        };
+    }
+
+    // ... per-category template methods (ForLimp, ForMissingPart, ForScar, ForAbsence) ...
+}
+```
+
+**Future seams (explicit, not implemented in BUNCH-118):**
+
+| Seam | Where | What | When |
+|------|-------|------|------|
+| SecondPerson voice | `LanguageService.Render` switch | "You notice a limp in their left leg." | Event notifications, saloon look-around |
+| FirstPerson voice | `LanguageService.Render` switch | "I noticed a limp in their left leg." | Diary/journal entries |
+| Tense | `LanguageContext` | Past vs present vs future | Travel diary past tense, encounter present tense |
+| New content types | `LanguageService` | Diary entries, notifications, travel flavour | When those surfaces adopt structured language |
+| New feature categories | `FeatureLanguageService` | New `FeatureCategory` enum values + template methods | When new primary marker types are added |
 
 **Data flow change:**
 
 ```
 Before: CaseSuspectFeaturePool stores "Has a limp in the left leg." (string)
-        → SuspectIdentityFact(Description: "Has a limp in the left leg.")
-        → SaloonPersonOfInterestDescriptor tries to reverse-engineer noun phrase via NormalizeFeatureDescriptor
+        -> SuspectIdentityFact(Description: "Has a limp in the left leg.")
+        -> SaloonPersonOfInterestDescriptor tries to reverse-engineer noun phrase via NormalizeFeatureDescriptor
 
 After:  CaseSuspectFeaturePool stores FeatureDescriptor(Limp, "leg", Left)
-        → FeatureLanguageService.For(descriptor) → FeatureLanguage(HasForm, WithForm, WhoForm, OpeningLeadForm)
-        → SuspectIdentityFact(Language: featureLanguage)
-        → SaloonPersonOfInterestDescriptor uses Language.WithForm directly — no normalization
+        -> LanguageService.Render(descriptor) -> FeatureLanguage(HasForm, WithForm, WhoForm, OpeningLeadForm)
+        -> SuspectIdentityFact(Language: featureLanguage)
+        -> SaloonPersonOfInterestDescriptor uses Language.WithForm directly — no normalization
+        -> Future: LanguageService.Render(descriptor, new LanguageContext(Voice: FirstPerson)) for diary
 ```
 
 **What gets eliminated:**
@@ -275,7 +413,7 @@ public sealed class FeatureLanguageServiceTests
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter FeatureLanguageServiceTests`
 Expected: FAIL — types don't exist yet.
 
 - [ ] **Step 3: Implement FeatureLanguage and FeatureLanguageService**
@@ -389,7 +527,7 @@ public static class FeatureLanguageService
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter FeatureLanguageServiceTests`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -868,7 +1006,7 @@ public sealed class SaloonPersonOfInterestDescriptorTests
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter SaloonPersonOfInterestDescriptorTests`
 Expected: FAIL — the current `FormatPublicDescriptor` still calls `NormalizeFeatureDescriptor` which mangles "Is missing the right ear." and "Keeps a split-finger glove...".
 
 - [ ] **Step 3: Rewrite SaloonPersonOfInterestDescriptor**
@@ -948,7 +1086,7 @@ Note: `FormatTraitDescriptor` and `FormatPublicTraitDescriptor` remain for the t
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter SaloonPersonOfInterestDescriptorTests`
 Expected: PASS
 
 - [ ] **Step 5: Update parity tests**
@@ -987,7 +1125,7 @@ The assertion at line 38 stays: `AssertDescriptorParity(session, "a stranger wit
 
 - [ ] **Step 6: Run all descriptor and prologue tests**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs tests/WildBunch.Application.Tests/SaloonPersonOfInterestDescriptorParityTests.cs tests/WildBunch.Application.Tests/PrologueHandlerTests.cs`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter SaloonPersonOfInterestDescriptorTests && dotnet test tests/WildBunch.Application.Tests --filter "SaloonPersonOfInterestDescriptorParityTests|PrologueHandlerTests"`
 Expected: PASS
 
 - [ ] **Step 7: Run full test suite to find remaining breakage**
@@ -1064,7 +1202,7 @@ Add to `tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs`:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs --filter HorseFeedDisplayNamesAreDisambiguatedByVendor`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter HorseFeedDisplayNamesAreDisambiguatedByVendor`
 Expected: FAIL — both offers have `DisplayName == "Horse feed"`.
 
 - [ ] **Step 3: Implement the fix**
@@ -1087,12 +1225,12 @@ Stable offers (lines 109, 115) — change `"Horse feed"` to `"Horse feed (Stable
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs`
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter TownStoreCatalogResolverTests`
 Expected: PASS
 
 - [ ] **Step 5: Run purchase and store-offers tests to verify no regressions**
 
-Run: `dotnet test tests/WildBunch.Application.Tests/PurchaseStoreItemHandlerTests.cs tests/WildBunch.Application.Tests/GetTownStoreOffersHandlerTests.cs`
+Run: `dotnet test tests/WildBunch.Application.Tests --filter "PurchaseStoreItemHandlerTests|GetTownStoreOffersHandlerTests"`
 Expected: PASS — these tests assert on `ItemKind` and `VendorType`, not on the exact `DisplayName` string. If any test asserts the old `"Horse feed"` display name, update it to the new disambiguated name.
 
 - [ ] **Step 6: Commit**
@@ -1101,6 +1239,47 @@ Expected: PASS — these tests assert on `ItemKind` and `VendorType`, not on the
 git add src/WildBunch.Domain/Economy/TownStoreCatalogModels.cs tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs
 git commit -m "BUNCH-118: disambiguate duplicate Horse feed display names by vendor"
 ```
+
+---
+
+## Issue 2 closeout: snapshot shape migration + falsification
+
+Issue 2 changes `SuspectIdentityFactSnapshot` from `(string Description, bool IsPrimary)` to `(FeatureLanguageSnapshot Language, bool IsPrimary)`. This is an intentional, breaking snapshot shape change. Per AGENTS.md, current mainline model correctness wins over old-save compatibility and dev database drop/recreate is allowed. This section is the explicit verification that the break is real, expected, and cleanly handled — not silently swallowed.
+
+### Task 2e: Verify snapshot shape break + dev reset
+
+**Files:**
+- Read-only verification: `src/WildBunch.Persistence/.../SuspectIdentityFactSnapshot.cs` (or equivalent codec)
+- Read-only verification: `tests/WildBunch.Integration.Tests/` (snapshot round-trip tests)
+
+- [ ] **Step 1: Confirm the new snapshot shape is in place**
+
+Run: `grep -rn "FeatureLanguageSnapshot" src/WildBunch.Persistence`
+Expected: At least one hit in the snapshot codec that defines/uses `FeatureLanguageSnapshot` for `SuspectIdentityFactSnapshot.Language`.
+
+- [ ] **Step 2: Falsify old-save deserialization (intentional break proof)**
+
+Write a temporary test (or add a `[Fact]` to an existing persistence test project) that attempts to deserialize a JSON payload with the OLD shape (`"Description": "...", "IsPrimary": true` and no `Language` field) into the new `SuspectIdentityFactSnapshot`. Expected: deserialization FAILS (throws or produces a `null`/default `Language`). This proves the break is real and not silently masked by a compatibility shim.
+
+If deserialization silently succeeds by defaulting `Language` to null/empty, that means a compatibility shim was accidentally introduced — remove it and re-run. Per AGENTS.md: "Do not add compatibility shims for obsolete old saves or internal models unless Harley explicitly asks for one."
+
+Delete the temporary test after it confirms the break (or keep it as a regression guard if it cleanly asserts the throw — worker's discretion, but do NOT keep a test that passes by silently accepting old saves).
+
+- [ ] **Step 3: Run EF migrations list to confirm no schema drift**
+
+Run: `dotnet tool restore && dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`
+Expected: Lists current migrations without error. Runtime session persistence is JSON snapshot-oriented (not table-shaped for suspect identity), so no new migration is expected. If a migration is unexpectedly required, STOP and report — that indicates the snapshot codec leaked into table shape.
+
+- [ ] **Step 4: Reset dev database if integration tests fail on stale snapshot data**
+
+Run: `.\scripts\postgres-dev.ps1 ensure`
+Then: `.\scripts\postgres-dev.ps1 test -- dotnet test tests/WildBunch.Integration.Tests`
+Expected: PASS. If integration tests fail with deserialization errors on `SuspectIdentityFactSnapshot` (stale rows from the old shape), run `.\scripts\postgres-dev.ps1 reset` and re-run. The reset is the sanctioned path per AGENTS.md.
+
+- [ ] **Step 5: Confirm no compatibility shim was added**
+
+Run: `grep -rn "Description" src/WildBunch.Persistence | grep -i "SuspectIdentity"` (or equivalent)
+Expected: No leftover `Description` field on `SuspectIdentityFactSnapshot` and no `[Obsolete]`/`JsonExtensionData`/`[JsonInclude]` shim that maps the old `Description` string onto the new `Language` field. The old field must be fully removed, not layered over.
 
 ---
 
@@ -1138,9 +1317,10 @@ Post a comment on BUNCH-118 with the plan path, PR URL, and route state `approve
 
 **1. Spec coverage:**
 - CORS too restrictive → Task 1 ✓
-- Prologue grammar malformed → Tasks 2a-2d (structured features + language service, eliminates fragile normalization) ✓
+- Prologue grammar malformed → Tasks 2a-2d (structured features + language service, eliminates fragile normalization) + Task 2e (snapshot shape break verification + dev reset) ✓
 - Duplicate "Horse feed" names → Task 3 ✓
 - Validation: `dotnet test`, `npm test`, manual playtest → Final validation steps ✓ (manual playtest is issue-listed but not automatable here; the unit/integration tests cover the behavioral assertions)
+- Snapshot shape migration + falsification → Task 2e explicitly verifies the break, confirms no compatibility shim, and runs the sanctioned dev-database reset path ✓
 - "Store language variants with each and construct at runtime" → `FeatureLanguage` record stores all context forms; `FeatureLanguageService` generates them from structured `FeatureDescriptor` tokens for primary markers ✓
 - "Don't paper over it, do a full and proper fix" → `NormalizeFeatureDescriptor` eliminated entirely, not patched ✓
 
@@ -1160,6 +1340,7 @@ Post a comment on BUNCH-118 with the plan path, PR URL, and route state `approve
 - `SuspectIdentityFactSnapshot` changes from `(string Description, bool IsPrimary)` to `(FeatureLanguageSnapshot Language, bool IsPrimary)`.
 - Old JSON saves will fail to deserialize. Per AGENTS.md: "In this greenfield repo, current mainline model correctness wins over old-save or legacy internal compatibility" and "Dev database drop/recreate is allowed."
 - `ClueSubjectAnchorSnapshot` is unchanged — clue anchors still store `Feature` as a string (the `HasForm`).
+- Task 2e is the explicit closeout that falsifies old-save deserialization, confirms no compatibility shim, checks EF migrations for schema drift, and runs the sanctioned `.\scripts\postgres-dev.ps1 reset` if integration tests fail on stale data.
 
 **5. Scope discipline check:**
 - The language service refactor is explicitly requested by the user ("do a full and proper fix").
