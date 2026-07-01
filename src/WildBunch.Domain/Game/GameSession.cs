@@ -67,7 +67,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         PursuitState = pursuitState;
         Clock = clock;
         Status = status;
-        Journey = journey;
         GameDifficulty = gameDifficulty;
         GameEntropy = gameEntropy;
         SaltSource = saltSource;
@@ -143,7 +142,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public GameClock Clock { get; }
 
-    public TravelJourney? Journey { get; private set; }
+    public TravelJourney? Journey => _journeyLoop.Journey;
 
     public GameDifficulty GameDifficulty { get; private set; }
 
@@ -579,7 +578,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(JourneyStarted e)
     {
         _journeyLoop.Apply(e);
-        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
         _travelDiaryDays.Clear();
         PursuitState.SetHeat(e.PursuitHeat);
@@ -597,7 +595,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         Clock.Set(e.Day, turn: 0);
         _journeyLoop.Apply(e);
-        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         if (e.HealthDelta != 0)
             Player.AdjustHealth(e.HealthDelta);
         PursuitState.SetHeat(e.PursuitHeat);
@@ -650,7 +647,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(TrailEventApplied e)
     {
         _journeyLoop.Apply(e);
-        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         Player.SetCash(e.WalletCash);
         PursuitState.SetHeat(e.PursuitHeat);
         SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
@@ -667,7 +663,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(JourneyEncounterResolved e)
     {
         _journeyLoop.Apply(e);
-        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         Player.SetHealth(e.PlayerHealth);
         Player.SetCash(e.WalletCash);
         if (e.AmmoSpent > 0)
@@ -687,7 +682,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(JourneyCompleted e)
     {
         _journeyLoop.Apply(e);
-        Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         Player.TravelTo(e.DestinationTownId);
         RefreshTownVisit(e.DestinationTownId);
         RefillCanteenAfterArrival();
@@ -1984,29 +1978,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return JourneyArrivalAcknowledgementResult.Failed(ArchivedBlockMessage);
         }
 
-        if (Journey is null)
+        var context = new AcknowledgeJourneyArrivalContext(TravelRules);
+        var result = _journeyLoop.AcknowledgeJourneyArrival(context);
+        foreach (var e in result.Events)
         {
-            return JourneyArrivalAcknowledgementResult.Failed("No completed journey is waiting to be acknowledged.");
+            ProduceEvent(e);
         }
-
-        if (Journey.Status != JourneyStatus.Completed)
-        {
-            return JourneyArrivalAcknowledgementResult.Failed("The journey is not ready to be acknowledged.", Journey.ToSnapshot(TravelRules));
-        }
-
-        var completedSnapshot = Journey.ToSnapshot(TravelRules);
-        var arrivalMessage = $"You step into {completedSnapshot.DestinationTownName} and put the trail behind you.";
-        ProduceEvent(new JourneyArrivalAcknowledged
-        {
-            JourneySequence = completedSnapshot.JourneySequence,
-            JourneySnapshot = completedSnapshot,
-            DiaryMessage = string.Empty
-        });
-
-        return new JourneyArrivalAcknowledgementResult(
-            true,
-            arrivalMessage,
-            completedSnapshot);
+        return result.Result;
     }
 
     internal TravelDayGenerationContext CreateTravelDayGenerationContext(

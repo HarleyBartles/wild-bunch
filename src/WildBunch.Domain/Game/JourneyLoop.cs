@@ -154,6 +154,39 @@ internal sealed class JourneyLoop
         return new JourneyLoopResult<TravelJourneyStepResult>(result, [e]);
     }
 
+    internal JourneyLoopResult<JourneyArrivalAcknowledgementResult> AcknowledgeJourneyArrival(
+        AcknowledgeJourneyArrivalContext context)
+    {
+        if (_journey is null)
+        {
+            return new JourneyLoopResult<JourneyArrivalAcknowledgementResult>(
+                JourneyArrivalAcknowledgementResult.Failed("No completed journey is waiting to be acknowledged."),
+                []);
+        }
+
+        if (_journey.Status != JourneyStatus.Completed)
+        {
+            return new JourneyLoopResult<JourneyArrivalAcknowledgementResult>(
+                JourneyArrivalAcknowledgementResult.Failed(
+                    "The journey is not ready to be acknowledged.",
+                    _journey.ToSnapshot(context.TravelRules)),
+                []);
+        }
+
+        var completedSnapshot = _journey.ToSnapshot(context.TravelRules);
+        var arrivalMessage = $"You step into {completedSnapshot.DestinationTownName} and put the trail behind you.";
+
+        var e = new JourneyArrivalAcknowledged
+        {
+            JourneySequence = completedSnapshot.JourneySequence,
+            JourneySnapshot = completedSnapshot,
+            DiaryMessage = string.Empty
+        };
+
+        var result = new JourneyArrivalAcknowledgementResult(true, arrivalMessage, completedSnapshot);
+        return new JourneyLoopResult<JourneyArrivalAcknowledgementResult>(result, [e]);
+    }
+
     internal void RestoreTravelDiaryDays(IReadOnlyList<TravelDiaryDayState> days)
     {
         _travelDiaryDays.Clear();
