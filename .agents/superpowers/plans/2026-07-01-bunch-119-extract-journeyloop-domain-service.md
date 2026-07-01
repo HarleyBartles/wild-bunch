@@ -21,6 +21,7 @@
 - The journey snapshot (`TravelJourneySnapshot`) is the source of truth for food/canteen/horse-feed/horse-state during travel. The command-path direct Player mutations in `PrepareTravelDayAdvance` and `ApplyTrailEvent` are redundant with `SyncPlayerFromJourneySnapshot` in the Apply handlers (the code comments confirm this: "On the command path, these are no-ops"). `JourneyLoop` computes from owned journey state; `GameSession`'s Apply handlers sync Player from the journey snapshot in the event. This preserves the command-path == replay-path invariant.
 - Run `dotnet build` and `dotnet test` after every task. Run `.\scripts\postgres-dev.ps1 validate` only if a task touches persistence (Tasks 9–10 do).
 - If any task reveals a behavior change, STOP and report — do not "fix" it silently.
+- **BUNCH-111 composition rule:** BUNCH-111 (approved plan, PR #135) removes `RecordTravelUpdate`, `AddLogEntry`, `RecordCaseUpdate`, the `_logEntries` field, and the snapshot `LogEntries` field. This plan's Apply handlers (Task 8) retain `RecordTravelUpdate` calls in `GameSession` because BUNCH-119 branches from `origin/main` where those calls still exist. **BUNCH-119 must land before BUNCH-111 implementation.** If BUNCH-111 lands first, this plan must be refreshed: the `RecordTravelUpdate` calls in the Task 8 Apply handler examples must be removed, and the `TravelReplayEqualityTests` assertions that check `LogEntries.Count` (identified in BUNCH-111's plan) must already be gone. Do not attempt to merge BUNCH-119 and BUNCH-111 simultaneously — the `RecordTravelUpdate` removal in BUNCH-111 will conflict with the Apply handler rewiring in BUNCH-119 Task 8.
 
 ---
 
@@ -133,7 +134,7 @@ internal sealed record ForceDevTravelOverrideContext(
 
 /// <summary>
 /// Player capabilities snapshot for travel decisions. Computed by
-/// GameSession from Player state and passed to JourneyLoop as read-only context.
+/// the parent aggregate from Player state and passed to JourneyLoop as read-only context.
 /// </summary>
 internal sealed record PlayerCapabilities(
     bool MountedTravelAvailable,
@@ -145,7 +146,7 @@ internal sealed record PlayerCapabilities(
 ```csharp
 /// <summary>
 /// Result from a JourneyLoop command method. Carries the public result object
-/// plus events that GameSession must produce. JourneyLoop does not produce events.
+/// plus events that the parent aggregate must produce. JourneyLoop does not produce events.
 /// </summary>
 internal sealed record JourneyLoopResult<TResult>(TResult Result, IReadOnlyList<IDomainEvent> Events);
 ```
@@ -220,10 +221,10 @@ using WildBunch.Domain.Travel;
 namespace WildBunch.Domain.Game;
 
 /// <summary>
-/// Child domain component inside the GameSession boundary that owns travel/journey
+/// Child domain component inside the session boundary that owns travel/journey
 /// state and behavior. Receives narrow context records, returns results plus
-/// events-to-produce. Does NOT reference GameSession, produce events directly,
-/// enter action context, adjust cash, or mutate CaseFile/TownVisitState/Player.
+/// events-to-produce. Does NOT reference the parent aggregate, produce events
+/// directly, enter action context, adjust cash, or mutate CaseFile/TownVisitState/Player.
 /// See BUNCH-119 and ADR-0002/ADR-0020.
 /// </summary>
 internal sealed class JourneyLoop
@@ -1030,7 +1031,7 @@ Expected: PASS with the same counts as Task 1.
 - [ ] **Step 5: Commit**
 
 ```
-git add src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs src/WildBunch.Persistence/Serialization/GameSessionRehydrator.cs src/WildBunch.Persistence/Games/EfGameSessionRepository.cs
+git add src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs src/WildBunch.Persistence/Serialization/GameSessionRehydrator.cs src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs
 git commit -m "BUNCH-119: update snapshot rehydration to construct JourneyLoop from persisted state"
 ```
 
@@ -1067,10 +1068,10 @@ Search for remaining callers of `GameSessionRehydrator.ReplaceTravelDiaryDays`. 
 
 Run these checks and verify zero matches:
 ```
-rg "GameSession" src/WildBunch.Domain/Game/JourneyLoop.cs
-rg "ProduceEvent|EnterActionContext|Player\.AdjustCash|CaseFile\.Record|RecordCaseUpdate|CurrentTownVisit.*Set" src/WildBunch.Domain/Game/JourneyLoop.cs
+rg "GameSession" src/WildBunch.Domain/Game/JourneyLoop.cs src/WildBunch.Domain/Game/JourneyLoopContexts.cs
+rg "ProduceEvent|EnterActionContext|Player\.AdjustCash|CaseFile\.Record|RecordCaseUpdate|CurrentTownVisit.*Set" src/WildBunch.Domain/Game/JourneyLoop.cs src/WildBunch.Domain/Game/JourneyLoopContexts.cs
 ```
-Expected: zero matches for both. `JourneyLoop` must not reference `GameSession` or call any cross-owner mutation method.
+Expected: zero matches for both. `JourneyLoop` and its context types must not reference `GameSession` or call any cross-owner mutation method. The new files must not contain the string `GameSession` at all — not in code, not in comments, not in docstrings. If a comment needs to refer to the parent aggregate, use "the session" or "the parent aggregate" instead.
 
 - [ ] **Step 5: Run full validation**
 
@@ -1121,8 +1122,8 @@ git commit -m "BUNCH-119: regenerate index mesh for JourneyLoop files"
 
 After all tasks complete, verify:
 
-- `JourneyLoop` does NOT reference `GameSession` (zero code matches): `rg "GameSession" src/WildBunch.Domain/Game/JourneyLoop.cs`
-- `JourneyLoop` does NOT call `ProduceEvent`/`EnterActionContext`/`Player.AdjustCash`/`CaseFile.Record*`/`RecordCaseUpdate`/`CurrentTownVisit.Set*` (zero code matches): `rg "ProduceEvent|EnterActionContext|Player\.|CaseFile\.|RecordCaseUpdate|CurrentTownVisit" src/WildBunch.Domain/Game/JourneyLoop.cs`
+- `JourneyLoop` does NOT reference `GameSession` (zero matches in code or comments): `rg "GameSession" src/WildBunch.Domain/Game/JourneyLoop.cs src/WildBunch.Domain/Game/JourneyLoopContexts.cs`
+- `JourneyLoop` does NOT call `ProduceEvent`/`EnterActionContext`/`Player.AdjustCash`/`CaseFile.Record*`/`RecordCaseUpdate`/`CurrentTownVisit.Set*` (zero matches): `rg "ProduceEvent|EnterActionContext|Player\.|CaseFile\.|RecordCaseUpdate|CurrentTownVisit" src/WildBunch.Domain/Game/JourneyLoop.cs src/WildBunch.Domain/Game/JourneyLoopContexts.cs`
 - `GameSession` no longer directly owns travel/journey decision rules (the methods listed in the Boundary Definition have moved)
 - `GameSession` still controls guards, `EnterActionContext`, `ProduceEvent`, Apply dispatch, `_version++`
 - All 194 journey/travel tests pass with same counts as baseline
@@ -1139,4 +1140,5 @@ After all tasks complete, verify:
 ## Dependencies
 
 - Should land after BUNCH-112 (BountyLoop extraction, PR #131, merged at commit 2136584) — already on `main`.
+- **Must land before BUNCH-111 implementation** (AddLogEntry event-sourcing migration, approved plan PR #135). BUNCH-111 removes `RecordTravelUpdate`/`AddLogEntry`/`RecordCaseUpdate` and the `_logEntries` field. This plan's Task 8 Apply handlers retain `RecordTravelUpdate` calls because they branch from current `main` where those calls exist. If BUNCH-111 lands first, refresh this plan: remove `RecordTravelUpdate` calls from the Task 8 Apply examples and drop the `TravelReplayEqualityTests` `LogEntries.Count` assertions (already removed by BUNCH-111). Do not merge both simultaneously — Task 8's Apply rewiring conflicts with BUNCH-111's `RecordTravelUpdate` removal.
 - Should land before the aggregate-decomposition audit capstone.
