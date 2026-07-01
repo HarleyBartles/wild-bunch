@@ -13,7 +13,7 @@
 - `GameSession` remains the live-play aggregate root and the only externally loaded/persisted root (ADR-0002, ADR-0020).
 - `ActionContextTracker` is a child domain component inside the session boundary, NOT a separate aggregate root, NOT a standalone application service, and NOT a nested class with `_session` access. It is an `internal sealed` class in `WildBunch.Domain/Game/ActionContextTracker.cs` — internal because it is a session-internal component, not a public domain-service surface.
 - `InvestigationLoop` is a stateless child domain component inside the session boundary. It is an `internal sealed` class in `WildBunch.Domain/Game/InvestigationLoop.cs`. It holds no mutable state — only the static stateless resolver instances (`WantedPosterResolver`, `ClueSurfacingResolver`) and static helper methods.
-- Both components must NOT reference `GameSession` in any way — no field, no parameter, no method call. This is the key falsification check.
+- Both components must NOT reference `GameSession` in any way — no field, no parameter, no method call, and no comment containing the literal string `GameSession`. The falsification check is `rg "GameSession" <file>` → 0 matches. Doc comments use "parent aggregate" or "session boundary" instead.
 - Do NOT introduce separate persistence tables, repositories, or EF entities for either component. Keep JSON snapshot/runtime-session persistence. The snapshot record shape stays the same; only the rehydration construction path changes for `ActionContextTracker`.
 - Do NOT change any public method signature on `GameSession`, DTO shape, result-object shape, message string, or event payload.
 - Do NOT change clue, journal, wanted-poster, wallet, inventory, horse, bounty-loop, saloon, or travel state handling (out of scope).
@@ -131,7 +131,7 @@ internal sealed record InvestigationContext(
 
 /// <summary>
 /// Result of an investigation decision. Contains the event to produce and the
-/// display message for the player-facing result. GameSession produces the event
+/// display message for the player-facing result. The parent aggregate produces the event
 /// and wraps the display message in the appropriate result type.
 /// </summary>
 internal sealed record InvestigationOutcome(
@@ -229,10 +229,10 @@ using WildBunch.Domain.World;
 namespace WildBunch.Domain.Game;
 
 /// <summary>
-/// Child domain component inside the GameSession boundary that owns town action-context
+/// Child domain component inside the session boundary that owns town action-context
 /// state and turn-advancement tracking. Receives narrow context records, returns events
-/// to produce. Does NOT reference GameSession, produce events directly, enter action
-/// context (it IS the action context), or mutate Clock/PursuitState/CaseFile/Player.
+/// to produce. Does NOT reference the parent aggregate, produce events directly, enter
+/// action context (it IS the action context), or mutate Clock/PursuitState/CaseFile/Player.
 /// See BUNCH-120 and ADR-0002/ADR-0020.
 /// </summary>
 internal sealed class ActionContextTracker
@@ -244,7 +244,7 @@ internal sealed class ActionContextTracker
     /// Decides whether entering the given context produces a TownActionContextEntered event.
     /// Returns the event to produce, or null if no-op (None context, or same context in same town).
     /// Does NOT mutate Clock or PursuitState — the event carries the computed values and
-    /// GameSession's Apply handler sets them.
+    /// the parent aggregate's Apply handler sets them.
     /// </summary>
     internal TownActionContextEntered? EnterActionContext(
         TownActionContext context,
@@ -308,7 +308,7 @@ internal sealed class ActionContextTracker
 
     /// <summary>
     /// Resets CurrentActionContext and CurrentActionContextTownId to None/null.
-    /// Called by GameSession.RefreshTownVisit when the current town changes.
+    /// Called by the parent aggregate when the current town changes.
     /// </summary>
     internal void Reset()
     {
@@ -318,8 +318,8 @@ internal sealed class ActionContextTracker
 
     /// <summary>
     /// Applies a TownActionContextEntered event to mutate owned state.
-    /// GameSession's Apply handler calls this for the owned portion, then applies
-    /// cross-owner mutations (Clock.Set, PursuitState.SetHeat, _version++).
+    /// The parent aggregate's Apply handler calls this for the owned portion, then
+    /// applies cross-owner mutations (Clock.Set, PursuitState.SetHeat, _version++).
     /// </summary>
     internal void Apply(TownActionContextEntered e)
     {
@@ -328,8 +328,8 @@ internal sealed class ActionContextTracker
     }
 
     /// <summary>
-    /// Restores owned state from a persisted snapshot. Called by GameSession during
-    /// rehydration after the constructor builds a fresh ActionContextTracker.
+    /// Restores owned state from a persisted snapshot. Called by the parent aggregate
+    /// during rehydration after the constructor builds a fresh ActionContextTracker.
     /// </summary>
     internal void RestoreState(TownActionContext context, TownId? townId)
     {
@@ -354,7 +354,7 @@ internal sealed record CanConfrontInContextInputs(
 - [ ] **Step 2: Build to verify the new file compiles**
 
 Run: `dotnet build src/WildBunch.Domain/WildBunch.Domain.csproj`
-Expected: PASS (the class is not yet referenced by GameSession, but it must compile standalone)
+Expected: PASS (the class is not yet referenced by the parent aggregate, but it must compile standalone)
 
 - [ ] **Step 3: Commit**
 
@@ -614,10 +614,10 @@ using WildBunch.Domain.World;
 namespace WildBunch.Domain.Game;
 
 /// <summary>
-/// Stateless child domain component inside the GameSession boundary that owns investigation
+/// Stateless child domain component inside the session boundary that owns investigation
 /// source resolution and clue/warrant surfacing decision logic. Receives narrow context records,
-/// returns InvestigationPerformed events for GameSession to produce. Does NOT reference
-/// GameSession, produce events directly, enter action context, adjust cash, or mutate
+/// returns InvestigationPerformed events for the parent aggregate to produce. Does NOT reference
+/// the parent aggregate, produce events directly, enter action context, adjust cash, or mutate
 /// CaseFile/CurrentTown/TownVisitState/Player. See BUNCH-120 and ADR-0002/ADR-0020.
 /// </summary>
 internal sealed class InvestigationLoop
@@ -673,8 +673,8 @@ internal sealed record InvestigationContext(
 
 /// <summary>
 /// Result of an investigation decision. Contains the event to produce and the display message
-/// for the player-facing result. GameSession produces the event and wraps the display message
-/// in the appropriate result type (ReadWantedPostersResult or CaseInvestigationResult).
+/// for the player-facing result. The parent aggregate produces the event and wraps the display
+/// message in the appropriate result type (ReadWantedPostersResult or CaseInvestigationResult).
 /// </summary>
 internal sealed record InvestigationOutcome(
     InvestigationPerformed Event,
@@ -713,8 +713,8 @@ In `InvestigationLoop.cs`, replace the `// Command methods — filled in by Task
     /// <summary>
     /// Read wanted posters decision logic. Resolves a warrant and/or clue from the wanted
     /// poster resolver and clue surfacing resolver. Returns the InvestigationPerformed event
-    /// and display message. GameSession produces the event and wraps the display message in
-    /// a ReadWantedPostersResult.
+    /// and display message. The parent aggregate produces the event and wraps the display
+    /// message in a ReadWantedPostersResult.
     /// </summary>
     internal InvestigationOutcome ReadWantedPosters(InvestigationContext context)
     {
@@ -1319,10 +1319,10 @@ using WildBunch.Domain.World;
 namespace WildBunch.Domain.Game;
 
 /// <summary>
-/// Stateless child domain component inside the GameSession boundary that owns store
+/// Stateless child domain component inside the session boundary that owns store
 /// purchase decision logic. Receives narrow context records, returns StoreItemPurchased
-/// events for GameSession to produce. Does NOT reference GameSession, produce events
-/// directly, enter action context, or mutate Player. See BUNCH-120.
+/// events for the parent aggregate to produce. Does NOT reference the parent aggregate,
+/// produce events directly, enter action context, or mutate Player. See BUNCH-120.
 /// </summary>
 internal sealed class StoreLoop
 {
@@ -1521,23 +1521,42 @@ git commit -m "BUNCH-120: move Store/Purchase decision logic into StoreLoop"
 Run each of these searches and confirm zero matches:
 
 ```
-# ActionContextTracker does NOT reference GameSession
+# ActionContextTracker does NOT reference GameSession (no field, parameter, method call, or comment)
 rg "GameSession" src/WildBunch.Domain/Game/ActionContextTracker.cs
-# Expected: 0 matches (comments mentioning GameSession are OK if they say "does NOT reference")
+# Expected: 0 matches
 
-# InvestigationLoop does NOT reference GameSession
+# InvestigationLoop does NOT reference GameSession (no field, parameter, method call, or comment)
 rg "GameSession" src/WildBunch.Domain/Game/InvestigationLoop.cs
-# Expected: 0 matches (comments mentioning GameSession are OK if they say "does NOT reference")
+# Expected: 0 matches
 
 # StoreLoop does NOT reference GameSession (if Task 10 was done)
 rg "GameSession" src/WildBunch.Domain/Game/StoreLoop.cs
 # Expected: 0 matches
 
-# None of the three components call ProduceEvent, EnterActionContext, Player.AdjustCash,
-# CaseFile.Record*/Reveal*, CurrentTown.CheckSource/CheckWantedPosters,
-# CurrentTownVisit.CurrentTownState.Set*, Clock.Set, PursuitState.SetHeat
-rg "ProduceEvent|EnterActionContext|AdjustCash|RecordWantedSuspect|RecordSheriffTurnIn|RevealClueById|RevealWarrantById|CheckSource|CheckWantedPosters|SetHeat|Clock\.Set" src/WildBunch.Domain/Game/ActionContextTracker.cs src/WildBunch.Domain/Game/InvestigationLoop.cs src/WildBunch.Domain/Game/StoreLoop.cs
-# Expected: 0 matches (ActionContextTracker.EnterActionContext is its own method, not GameSession's)
+# None of the three components CALL forbidden surfaces.
+# Note: ActionContextTracker declares its own EnterActionContext method ( lawful — it IS
+# the action context). The search excludes the method declaration line and doc comments
+# by matching only call sites: a method name preceded by a dot (caller.Method) or an
+# identifier reference that is NOT a declaration. We search for calls to the parent
+# aggregate's ProduceEvent and to external EnterActionContext (not the component's own
+# declaration), plus the other forbidden mutation surfaces.
+rg "ProduceEvent|AdjustCash|RecordWantedSuspect|RecordSheriffTurnIn|RevealClueById|RevealWarrantById|CheckSource|CheckWantedPosters|SetHeat|Clock\.Set" src/WildBunch.Domain/Game/ActionContextTracker.cs src/WildBunch.Domain/Game/InvestigationLoop.cs src/WildBunch.Domain/Game/StoreLoop.cs
+# Expected: 0 matches
+
+# Separately verify no component CALLS an external EnterActionContext (i.e., calls it as
+# a method on another object, not its own declaration). ActionContextTracker's own
+# EnterActionContext declaration is lawful. Search for call patterns: a dot-prefixed
+# call or a bare call that is NOT the declaration. The declaration is:
+#   internal TownActionContextEntered? EnterActionContext(
+# Call sites would look like: something.EnterActionContext( or EnterActionContext( without
+# a return-type signature on the preceding line.
+rg -n "EnterActionContext" src/WildBunch.Domain/Game/InvestigationLoop.cs src/WildBunch.Domain/Game/StoreLoop.cs
+# Expected: 0 matches (InvestigationLoop and StoreLoop never call EnterActionContext at all)
+
+rg -n "EnterActionContext" src/WildBunch.Domain/Game/ActionContextTracker.cs
+# Expected: matches ONLY on the method declaration line (line with "internal TownActionContextEntered? EnterActionContext(")
+# and its doc-comment lines. Confirm there are NO call sites (no "something.EnterActionContext(" patterns).
+# Manual check: every match must be inside the method declaration or its /// doc comment, not a call.
 ```
 
 - [ ] **Step 2: Confirm GameSession still controls guards, ProduceEvent, Apply dispatch, _version++**
@@ -1632,10 +1651,12 @@ Post a Linear comment on BUNCH-120 with: branch name, head commit, PR URL, falsi
 
 ## Falsification checks
 
-- `ActionContextTracker` does NOT reference `GameSession`: search and confirm zero matches
-- `InvestigationLoop` does NOT reference `GameSession`: search and confirm zero matches
-- `StoreLoop` does NOT reference `GameSession` (if Task 10 done): search and confirm zero matches
-- None of the three components call `ProduceEvent`, `EnterActionContext` (except `ActionContextTracker` which IS the action context), `Player.AdjustCash`, `CaseFile.Record*`/`Reveal*`, `CurrentTown.CheckSource`/`CheckWantedPosters`, `CurrentTownVisit.CurrentTownState.Set*`, `Clock.Set`, `PursuitState.SetHeat`: search and confirm zero matches
+- `ActionContextTracker` does NOT contain the string `GameSession` (no field, parameter, method call, or comment): `rg "GameSession" src/WildBunch.Domain/Game/ActionContextTracker.cs` → 0 matches
+- `InvestigationLoop` does NOT contain the string `GameSession`: `rg "GameSession" src/WildBunch.Domain/Game/InvestigationLoop.cs` → 0 matches
+- `StoreLoop` does NOT contain the string `GameSession` (if Task 10 done): `rg "GameSession" src/WildBunch.Domain/Game/StoreLoop.cs` → 0 matches
+- None of the three components call `ProduceEvent`, `Player.AdjustCash`, `CaseFile.Record*`/`Reveal*`, `CurrentTown.CheckSource`/`CheckWantedPosters`, `CurrentTownVisit.CurrentTownState.Set*`, `Clock.Set`, `PursuitState.SetHeat`: `rg "ProduceEvent|AdjustCash|RecordWantedSuspect|RecordSheriffTurnIn|RevealClueById|RevealWarrantById|CheckSource|CheckWantedPosters|SetHeat|Clock\.Set" <three files>` → 0 matches
+- `InvestigationLoop` and `StoreLoop` never call `EnterActionContext` at all: `rg "EnterActionContext" src/WildBunch.Domain/Game/InvestigationLoop.cs src/WildBunch.Domain/Game/StoreLoop.cs` → 0 matches
+- `ActionContextTracker` declares its own `EnterActionContext` (lawful — it IS the action context) but never CALLS an external `EnterActionContext`: `rg -n "EnterActionContext" src/WildBunch.Domain/Game/ActionContextTracker.cs` → matches only on the declaration line and its doc comments, never on a call site (no `something.EnterActionContext(` pattern)
 - `GameSession` no longer directly owns investigation decision rules or action-context state: confirm method bodies are guard + context + call + produce
 - `GameSession` still controls guards, `ProduceEvent`, Apply dispatch, `_version++`: confirm
 - All investigation/clock/beat tests pass with same counts as baseline: confirm
@@ -1684,8 +1705,10 @@ Generated with [Devin](https://devin.ai)
 ## Architecture falsification checks (run before declaring GREEN)
 
 Before claiming complete, verify the plan did NOT:
-- leave `ActionContextTracker`, `InvestigationLoop`, or `StoreLoop` with any reference to `GameSession` — search and confirm zero matches.
-- leave any of the three components calling `ProduceEvent`, `EnterActionContext` (except `ActionContextTracker` which IS the action context), `Player.AdjustCash`, `CaseFile.Record*`/`Reveal*`, `CurrentTown.CheckSource`/`CheckWantedPosters`, `CurrentTownVisit.CurrentTownState.Set*`, `Clock.Set`, or `PursuitState.SetHeat` — search and confirm zero matches.
+- leave `ActionContextTracker`, `InvestigationLoop`, or `StoreLoop` containing the string `GameSession` (in code or comments) — `rg "GameSession" <file>` → 0 matches for each.
+- leave any of the three components calling `ProduceEvent`, `Player.AdjustCash`, `CaseFile.Record*`/`Reveal*`, `CurrentTown.CheckSource`/`CheckWantedPosters`, `CurrentTownVisit.CurrentTownState.Set*`, `Clock.Set`, or `PursuitState.SetHeat` — `rg "ProduceEvent|AdjustCash|RecordWantedSuspect|RecordSheriffTurnIn|RevealClueById|RevealWarrantById|CheckSource|CheckWantedPosters|SetHeat|Clock\.Set" <three files>` → 0 matches.
+- leave `InvestigationLoop` or `StoreLoop` calling `EnterActionContext` — `rg "EnterActionContext" <two files>` → 0 matches.
+- leave `ActionContextTracker` calling an external `EnterActionContext` (its own declaration is lawful) — `rg -n "EnterActionContext" src/WildBunch.Domain/Game/ActionContextTracker.cs` → matches only on the declaration line and doc comments, never a call site.
 - move business rules into a handler/service/persistence/UI layer — all three are domain classes in `WildBunch.Domain`.
 - make any of the three a separate aggregate root or repository — they have no persistence identity, no `IAggregateRoot`, no repository.
 - create a broad service that becomes an alternate mutation authority — all three return events as data; `GameSession` produces them.
