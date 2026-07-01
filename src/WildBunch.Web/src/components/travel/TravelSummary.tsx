@@ -1,5 +1,6 @@
 import type { GameSessionDto } from "../../api/types";
 import { formatHorseTravelState, formatJourneyStatus, formatRisk, formatTrailTerrain, formatTravelMode, formatWaterFeature } from "../../ui/formatters";
+import { formatRemainingRideDays } from "../../ui/beatFormatters";
 import { Card, SectionHeader } from "./travelShared";
 import styled from "styled-components";
 
@@ -35,8 +36,8 @@ export function TravelSummary({ session }: TravelSummaryProps) {
           <dd>{formatTravelMode(journey.travelMode)}</dd>
         </SummaryItem>
         <SummaryItem>
-          <dt>Remaining days</dt>
-          <dd>{journey.remainingDays}</dd>
+          <dt>Trail ahead</dt>
+          <dd>{formatRemainingRideDays(journey.remainingDays)}</dd>
         </SummaryItem>
         <SummaryItem>
           <dt>Remaining distance</dt>

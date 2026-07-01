@@ -8,6 +8,7 @@ import {
   Stack,
   ItemCard,
 } from "./ui/sharedStyled";
+import { formatClockBeat } from "../ui/beatFormatters";
 
 const ModalState = styled.div`
   padding: 18px;
@@ -114,7 +115,7 @@ function groupEntriesByDay(entries: GameLogEntryDto[]) {
 }
 
 function formatJournalClock(journal: JournalDto) {
-  return `Day ${journal.clock.day}, ${journal.clock.timeOfDay} in ${journal.currentTown.name}`;
+  return `${formatClockBeat(journal.clock)} in ${journal.currentTown.name}`;
 }
 
 function formatJournalEntryMessage(message: string) {

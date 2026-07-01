@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import styled from "styled-components";
-import type { JournalDto } from "../api/types";
+import type { ClueTimeAnchorDto, JournalDto } from "../api/types";
 import {
   formatCaseIdentityKind,
   formatCaseIdentityStatus,
@@ -9,6 +9,7 @@ import {
   formatSuspectStatus,
   formatWarrantDisposition,
 } from "../ui/formatters";
+import { formatClockBeat, formatClueWhen } from "../ui/beatFormatters";
 import { WantedPosterSurface } from "./WantedPosterSurface";
 import {
   StatusCard,
@@ -230,7 +231,7 @@ function addUniqueRow(rows: AnchorRow[], seenValues: Set<string>, label: string,
 function buildAnchorRows(anchors: {
   subjects: { label: string; alias: string | null; feature: string | null; fact: string | null }[];
   locations: { label: string; place: string | null; route: string | null }[];
-  times: { recency: number; day: number | null; turn: number | null }[];
+  times: ClueTimeAnchorDto[];
   directions: { label: string; movement: string | null; route: string | null }[];
 }) {
   const rows: AnchorRow[] = [];
@@ -265,15 +266,7 @@ function buildAnchorRows(anchors: {
   }
 
   for (const time of anchors.times) {
-    const parts = [formatClueRecency(time.recency)];
-    if (time.day !== null) {
-      parts.push(`day ${time.day}`);
-    }
-    if (time.turn !== null) {
-      parts.push(`turn ${time.turn}`);
-    }
-
-    addUniqueRow(rows, seenValues, "When", parts.join(", "));
+    addUniqueRow(rows, seenValues, "When", formatClueWhen(time));
   }
 
   for (const direction of anchors.directions) {
@@ -356,7 +349,7 @@ function renderWarrantFacts(record: {
 }
 
 function formatClockContext(journal: JournalDto) {
-  return `Day ${journal.clock.day}, ${journal.clock.timeOfDay} in ${journal.currentTown.name}`;
+  return `${formatClockBeat(journal.clock)} in ${journal.currentTown.name}`;
 }
 
 function formatBounty(amount: number) {
@@ -569,7 +562,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           <div>
             <dt>Time</dt>
             <dd>
-              Day {caseJournal.clock.day}, {caseJournal.clock.timeOfDay}
+              {formatClockBeat(caseJournal.clock)}
             </dd>
           </div>
           <div>
