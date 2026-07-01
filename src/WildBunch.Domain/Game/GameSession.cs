@@ -115,6 +115,27 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public GameSessionId Id { get; }
 
+    /// <summary>
+    /// Restores BountyLoop-owned state from a persisted snapshot. Called by the
+    /// rehydration path after the constructor builds a fresh BountyLoop. The
+    /// presence ledger is already constructed from constructor inputs; this
+    /// restores the unrelated-criminal ledger and pending dev saloon override.
+    /// See BUNCH-112.
+    /// </summary>
+    internal void RestoreBountyLoopState(
+        WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger,
+        DevSaloonOverride? pendingDevSaloonOverride)
+    {
+        if (unrelatedCriminalLedger is not null)
+        {
+            _bountyLoop.RestoreUnrelatedCriminalLedger(unrelatedCriminalLedger);
+        }
+        if (pendingDevSaloonOverride is not null)
+        {
+            _bountyLoop.RestorePendingDevSaloonOverride(pendingDevSaloonOverride);
+        }
+    }
+
     public GameStatus Status { get; private set; }
 
     /// <summary>

@@ -99,17 +99,13 @@ public sealed partial class GameSessionJsonSerializer
             {
                 GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", PendingDevTravelOverride);
             }
-            if (PendingDevSaloonOverride is not null)
+            if (PendingDevSaloonOverride is not null || UnrelatedCriminalLedger is not null)
             {
-                GameSessionRehydrator.SetBackingField(session, "_pendingDevSaloonOverride", PendingDevSaloonOverride);
-            }
-
-            // Restore the UnrelatedCriminalLedger from the persisted snapshot.
-            // The constructor builds a fresh ledger from the case file; this overwrites
-            // it with the persisted state. See BUNCH-107.
-            if (UnrelatedCriminalLedger is not null)
-            {
-                GameSessionRehydrator.SetUnrelatedCriminalLedger(session, WildBunch.Domain.Cases.UnrelatedCriminalLedger.FromSnapshot(UnrelatedCriminalLedger));
+                session.RestoreBountyLoopState(
+                    UnrelatedCriminalLedger is not null
+                        ? WildBunch.Domain.Cases.UnrelatedCriminalLedger.FromSnapshot(UnrelatedCriminalLedger)
+                        : null,
+                    PendingDevSaloonOverride);
             }
 
             return session;
