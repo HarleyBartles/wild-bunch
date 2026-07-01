@@ -25,7 +25,8 @@ public sealed record ClueLocationAnchorDto(
 public sealed record ClueTimeAnchorDto(
     ClueRecency Recency,
     int? Day,
-    int? Turn);
+    int? Turn,
+    string? TimeOfDayLabel = null);
 
 public sealed record ClueDirectionAnchorDto(
     string Label,

@@ -2987,6 +2987,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return StorePurchaseResult.Failed(JourneyModalBlockMessage);
         }
 
+        EnterActionContext(TownActionContext.Store);
+
         if (quantity < 1)
         {
             return StorePurchaseResult.Failed("Quantity must be at least 1.");
