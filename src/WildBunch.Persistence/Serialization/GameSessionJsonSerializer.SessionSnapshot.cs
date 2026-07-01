@@ -91,7 +91,7 @@ public sealed partial class GameSessionJsonSerializer
             GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
             if (PendingDevTravelOverride is not null)
             {
-                GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", PendingDevTravelOverride);
+                session.RestorePendingDevTravelOverride(PendingDevTravelOverride);
             }
             if (PendingDevSaloonOverride is not null || UnrelatedCriminalLedger is not null)
             {
