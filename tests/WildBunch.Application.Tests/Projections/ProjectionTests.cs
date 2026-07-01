@@ -733,4 +733,40 @@ public sealed class ProjectionTests
         Assert.Equal(new TownId("pinecross"), hud.CurrentTownId);
         Assert.Equal("Pinecross", hud.CurrentTownName);
     }
+
+    [Fact]
+    public void HudProjector_UnrelatedCriminalTurnInSettled_IncreasesWalletCash()
+    {
+        var projector = new HudProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new UnrelatedCriminalTurnInSettled
+            {
+                WarrantId = new WarrantId("warrant-1"),
+                TargetName = "Bloody Bob",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                IsAlive = true,
+                BountyAmount = 50m,
+                Message = "Turned in Bloody Bob for $50.",
+                Day = 1,
+                Turn = 1
+            }
+        };
+
+        var hud = projector.Project(events);
+
+        Assert.Equal(75m, hud.WalletCash);
+    }
 }
