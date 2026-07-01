@@ -2,7 +2,7 @@
 
 > **Execution receipt — all 11 tasks complete.** All checkboxes below are checked off. See the **Execution Receipt** section at the end of this file for what was actually executed, including in-scope corrections made during implementation.
 >
-> **Status:** PR #138 (https://github.com/HarleyBartles/wild-bunch/pull/138) is implementation-complete at head `f2e5c82`. BUNCH-119 (PR #139) must merge first per the dependency ordering; PR #138 requires a rebase onto post-BUNCH-119 main before merge.
+> **Status:** PR #138 (https://github.com/HarleyBartles/wild-bunch/pull/138) is merge-ready at final head `4251e45`. BUNCH-119 (PR #139) merged first; PR #138 was rebased onto `main` at `d783f1f`, conflicts resolved in `GameSession.cs`, and final validation/CI passed at `4251e45`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -1727,7 +1727,8 @@ Before claiming complete, verify the plan did NOT:
 **Executed by:** Devin (GLM-5.2 High) on 2026-07-01.
 **PR:** https://github.com/HarleyBartles/wild-bunch/pull/138
 **Branch:** `harleydbartles/bunch-120-decompose-remaining-town-action-seams-investigationloop-plus`
-**Head commit at execution completion:** `f2e5c82`
+**Head commit at execution completion:** `f2e5c82` (pre-rebase)
+**Final head after rebase onto post-BUNCH-119 main:** `4251e4563dc72f075d9e22482983d9df1538dd4d`
 **Linear issue:** BUNCH-120 — status set to "In Review"
 
 ### All 11 tasks executed
@@ -1744,16 +1745,21 @@ All checkboxes in this plan are checked off. The implementation followed the pla
 
 4. **`StoreLoop` included (Task 10):** The plan marked Task 10 as optional. It was included because the `Purchase` method calls `EnterActionContext(TownActionContext.Store)` and the store logic (`CanPurchaseInventoryItem`, `IsStackableItemKind`) is self-contained — it fell out naturally as the plan predicted.
 
-### Validation evidence at head `f2e5c82`
+### Validation evidence at final head `4251e45` (post-rebase)
 
 - `dotnet build WildBunch.sln`: 0 errors
 - `.\scripts\postgres-dev.ps1 validate`: **1024 passed, 0 failed, 0 skipped**
   - GameContent.Tests: 139, Application.Tests: 204, Domain.Tests: 511, Api.Tests: 1, Integration.Tests: 169
 - EF migrations list: 8 migrations, no new ones needed
-- Falsification checks: 0 `GameSession` references and 0 forbidden calls in all 3 new files
-- `GameSession.cs` line count: 4006 → 3693 (-313 lines)
+- Falsification checks: 0 `GameSession` references and 0 forbidden calls in all 3 new files (ActionContextTracker, InvestigationLoop, StoreLoop)
+- `GameSession.cs` line-count delta vs post-BUNCH-119 main: -311 lines (108 insertions, 419 deletions)
+- GitHub CI: all 3 checks SUCCESS (Backend, Frontend, Index mesh), mergeStateStatus CLEAN
 - INDEX.md regenerated for `src/WildBunch.Domain/Game/`
 
-### Merge ordering
+### Merge ordering — final state
 
-BUNCH-119 (PR #139, JourneyLoop) is still OPEN and must merge first. PR #138 requires a rebase onto post-BUNCH-119 main before merge. See the Linear issue comment and PR body for the ordering rationale.
+BUNCH-119 (PR #139, JourneyLoop) merged first at commit `d783f1f`. PR #138 was rebased onto `main` at `d783f1f`. Two conflicts were resolved in `GameSession.cs`:
+1. **Field declarations:** kept both `_journeyLoop` (BUNCH-119) and `_actionContextTracker` + `_pendingDevTravelOverride` (BUNCH-120)
+2. **Restore methods:** kept both `RestorePendingDevTravelOverride` (BUNCH-119) and `RestoreActionContextState` (BUNCH-120)
+
+INDEX.md was regenerated after the rebase to include both JourneyLoop and the three new child components. Final validation and CI passed at `4251e45`. PR #138 is merge-ready.
