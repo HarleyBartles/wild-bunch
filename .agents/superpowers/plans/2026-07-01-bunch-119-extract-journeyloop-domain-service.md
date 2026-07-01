@@ -271,7 +271,7 @@ internal sealed class JourneyLoop
         TravelJourney? journey,
         IReadOnlyList<TravelJourneySnapshot> completedHistory)
     {
-        // Copy the exact logic from GameSession.CalculateNextJourneySequence (lines 2922-2935).
+        // Copy the exact logic from the existing CalculateNextJourneySequence method at lines 2922-2935.
         // The sequence is max(journey?.JourneySequence, completedHistory.Max(x => x.JourneySequence)) + 1,
         // or 1 if both are empty.
     }
