@@ -101,20 +101,22 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         var offer = resolver.Resolve(reloaded.World.GetTown(reloaded.Player.CurrentTownId))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         reloaded.Purchase(offer, 3);
-        Assert.Single(reloaded.UncommittedEvents);
-        Assert.IsType<StoreItemPurchased>(reloaded.UncommittedEvents[0]);
+        Assert.Equal(2, reloaded.UncommittedEvents.Count);
+        Assert.IsType<TownActionContextEntered>(reloaded.UncommittedEvents[0]);
+        Assert.IsType<StoreItemPurchased>(reloaded.UncommittedEvents[1]);
 
         // 5. Store + commit
         await repo.StoreAsync(reloaded);
         await uow.CommitAsync();
         reloaded.MarkEventsCommitted();
-        Assert.Equal(2, reloaded.Version);
+        Assert.Equal(3, reloaded.Version);
 
         // 6. Replay from events
         var events = await repo.GetEventStreamAsync(session.Id);
-        Assert.Equal(2, events.Count);
+        Assert.Equal(3, events.Count);
         Assert.IsType<GameStarted>(events[0]);
-        Assert.IsType<StoreItemPurchased>(events[1]);
+        Assert.IsType<TownActionContextEntered>(events[1]);
+        Assert.IsType<StoreItemPurchased>(events[2]);
 
         // 7. Project from events
         var hud = hudProjector.Project(events);
@@ -123,9 +125,10 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         Assert.Equal(4, hud.InventoryItems.Single(i => i.ItemKind == DomainItemKind.Food).Quantity); // 1 + 3 = 4
 
         var audit = auditProjector.Project(events);
-        Assert.Equal(2, audit.Entries.Count);
+        Assert.Equal(3, audit.Entries.Count);
         Assert.Equal("GameStarted", audit.Entries[0].EventType);
-        Assert.Equal("StoreItemPurchased", audit.Entries[1].EventType);
+        Assert.Equal("TownActionContextEntered", audit.Entries[1].EventType);
+        Assert.Equal("StoreItemPurchased", audit.Entries[2].EventType);
     }
 
     [Fact]
