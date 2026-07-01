@@ -42,6 +42,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
     private readonly BountyLoopCoordinator _bountyLoopCoordinator;
+    private readonly BountyLoop _bountyLoop;
     private DevTravelOverride? _pendingDevTravelOverride;
     private DevSaloonOverride? _pendingDevSaloonOverride;
 
@@ -106,6 +107,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
         // the ledger itself is the parity source of truth.
         _unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+
+        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, _unrelatedCriminalLedger);
 
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
