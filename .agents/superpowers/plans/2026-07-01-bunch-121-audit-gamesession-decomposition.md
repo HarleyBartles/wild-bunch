@@ -334,7 +334,7 @@ If no cleanups were applied, record that finding in the audit report and skip th
 
 **Interfaces:**
 - Consumes: all prior tasks.
-- Produces: validation evidence, a clean worktree, branch head proof, PR publication, and a Linear route-state update.
+- Produces: validation evidence, a clean worktree, branch head proof, execution PR publication, and a Linear route-state update.
 
 - [ ] **Step 1: Run the full build**
 
@@ -354,50 +354,44 @@ Expected: success (the committed INDEX.md files match the generator output from 
 
 - [ ] **Step 4: Confirm a clean worktree and branch head proof**
 
-Run: `git status` (expected: clean), `git log --oneline -10` (record head SHA and commit list), `git rev-parse origin/main` (record remote head for the falsification check that the branch is ahead of main with the plan-only commits).
+Run: `git status` (expected: clean), `git log --oneline -10` (record head SHA and commit list), `git rev-parse origin/main` (record remote head for the falsification check that the execution branch is ahead of the merged main tip with the execution commits — the audit report, guidance edits, stale-guidance cleanup classification, optional small safe cleanup, and validation evidence).
 
-- [ ] **Step 5: Push the branch and open the plan-only PR**
+- [ ] **Step 5: Push the execution branch and open the execution PR**
 
-This is a preflight plan. The PR is plan-only: it contains the audit report, the guidance edits, the stale-guidance cleanup, and any small safe code cleanups — but it does NOT extract new child components and does NOT change behavior. Push the branch and open the PR:
+This is the **execution** phase, not the preflight phase. The plan-only PR (#140) was the preflight artifact and stops at approval; it has already been merged to `main` before this execution began. The executing worker started in a fresh worktree branched from the merged `main` tip and has now produced the deliverables: the audit report, the AGENTS/ADR guidance edits, the stale-guidance cleanup classification, any small safe code cleanups, and the validation evidence from Steps 1–3.
+
+Push the execution branch and open (or update, if the branch was already pushed mid-execution) the **execution PR**. The execution PR is NOT plan-only — it contains the actual deliverables. It still respects the scope guard: no new child components extracted, no behavior change, no public API/DTO/event-payload/snapshot-shape change.
 
 ```bash
 git push -u origin harleydbartles/bunch-121-audit-gamesession-decomposition-and-document-aggregate
-gh pr create --title "BUNCH-121: Audit GameSession decomposition and document aggregate-boundary guidance" --body "$(cat <<'EOF'
-## Summary
-- Adds `.agents/docs/game-session-decomposition-audit.md` (durable audit report)
-- Documents GameSession child-component boundary rules in root `AGENTS.md`
-- Updates ADR-0002 and ADR-0028 to cite the audit and mark BUNCH-67/68/72-era language as historical
-- Applies small safe cleanup (if any found by the audit)
-
-## Plan
-- `.agents/superpowers/plans/2026-07-01-bunch-121-audit-gamesession-decomposition.md`
-
-#### Test plan
-- [ ] `dotnet build WildBunch.sln` passes
-- [ ] `.\scripts\postgres-dev.ps1 validate` passes (EF + domain + integration)
-- [ ] `python scripts/generate_index_mesh.py --check` passes
-- [ ] Audit report exists at `.agents/docs/game-session-decomposition-audit.md`
-- [ ] No behavior change, no public API/DTO/event-payload/snapshot-shape change
-
-Generated with [Devin](https://devin.ai)
-EOF
-)"
+gh pr create --title "BUNCH-121: Audit GameSession decomposition and document aggregate-boundary guidance" --body-file .agents/superpowers/output/pr-body-bunch-121-execution.md
 ```
 
-Record the PR URL.
+The execution PR body (`.agents/superpowers/output/pr-body-bunch-121-execution.md`) should describe:
+- the audit report deliverable at `.agents/docs/game-session-decomposition-audit.md`;
+- the AGENTS.md / ADR-0002 / ADR-0028 guidance edits and the child-component boundary rules;
+- the stale BUNCH-67/68/72-era guidance cleanup classification (and any class (b) repairs);
+- any small safe cleanup applied (or the explicit "no clearly safe cleanup found" finding);
+- the validation evidence (build, `postgres-dev.ps1 validate`, `generate_index_mesh.py --check`);
+- the scope guard: no new child components, no behavior/API/DTO/event-payload/snapshot-shape changes;
+- a link to the merged plan PR (#140) for traceability.
+
+Record the execution PR URL.
 
 - [ ] **Step 6: Update Linear route state**
 
 Via the Linear connector (read the `using-linear` mutate-save reference first), post a comment on BUNCH-121 with a route-state block recording:
 
-- route-state: `preflight_complete_pending_approval`
+- route-state: `execution_complete_pending_review`
 - plan path: `.agents/superpowers/plans/2026-07-01-bunch-121-audit-gamesession-decomposition.md`
-- plan PR: <PR URL from Step 5>
-- plan branch: `harleydbartles/bunch-121-audit-gamesession-decomposition-and-document-aggregate`
-- plan head: <SHA from Step 4>
-- base: `99970d8` (origin/main)
+- plan PR (merged): https://github.com/HarleyBartles/wild-bunch/pull/140
+- execution PR: <execution PR URL from Step 5>
+- execution branch: `harleydbartles/bunch-121-audit-gamesession-decomposition-and-document-aggregate`
+- execution head: <SHA from Step 4>
+- base: <merged main tip the execution branch was cut from>
 - validation: build + postgres validate + index-mesh check results
-- next: approval + merge → route state becomes `approved_plan_execution_ready`
+- deliverables: audit report, guidance edits, stale-guidance cleanup classification, optional small safe cleanup
+- next: PR review + merge → closeout
 
 Do NOT close the Linear issue. Do NOT mutate GitHub issue state. Stop after the route-state update.
 
@@ -423,4 +417,6 @@ Do NOT close the Linear issue. Do NOT mutate GitHub issue state. Stop after the 
 
 ## Execution Handoff
 
-After this plan is approved and merged to `main`, route state becomes `approved_plan_execution_ready`. The executing worker should use `superpowers:executing-plans` to implement the plan task-by-task in a fresh worktree branched from the merged `main` tip.
+The current PR (#140) is **plan-only** and stops at approval. It contains only the plan file — no implementation. After it is approved and merged to `main`, route state becomes `approved_plan_execution_ready`.
+
+The executing worker then uses `superpowers:executing-plans` to implement the plan task-by-task in a **fresh worktree branched from the merged `main` tip** (not the plan branch). The execution produces the real deliverables — audit report, AGENTS/ADR guidance edits, stale-guidance cleanup classification, optional small safe cleanup, validation evidence — and pushes/updates an **execution PR** (not a plan-only PR). The execution PR body describes the deliverables and validation evidence and links back to the merged plan PR (#140) for traceability. The scope guard still holds: no new child components extracted, no behavior/API/DTO/event-payload/snapshot-shape changes.
