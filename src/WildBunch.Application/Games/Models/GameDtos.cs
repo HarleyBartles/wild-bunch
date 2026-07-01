@@ -240,6 +240,13 @@ public sealed record JourneyTrailEventDto(
 public sealed record TravelDiaryDto(
     IReadOnlyList<TravelDiaryDayDto> Days);
 
+public sealed record TrailBeatSlotDto(
+    int SlotIndex,
+    TrailBeatSlotType SlotType,
+    string Label,
+    string? Title,
+    string? Message);
+
 public sealed record TravelDiaryDayDto(
     int DayNumber,
     string OriginTownName,
@@ -278,7 +285,8 @@ public sealed record TravelDiaryDayDto(
     int CurrentAmmo,
     int CurrentHeat,
     IReadOnlyList<string> Entries,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<TrailBeatSlotDto> BeatSlots);
 
 public sealed record TravelDiaryEncounterResolutionDto(
     string ChoiceId,
