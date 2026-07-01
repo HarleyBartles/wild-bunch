@@ -76,7 +76,22 @@ const StorePlace = lazy(() => import("./flow/places/StorePlace"));
 
 `RouteLoading` fallback: a minimal styled-components spinner or muted "Loading..." — same visual register as existing `Muted` loading states.
 
-Phaser isolation: `PhaserMapHost` is imported by `StartingTownStep` (inside `PreSessionSurface`) and `TravelPrepSurface` (the trailhead route). Both are now behind lazy imports, so Phaser naturally lands in its own chunk. No special handling needed — Rollup splits it because it's only reachable through dynamic imports.
+Phaser isolation requires explicit dynamic import boundaries — route-level lazy loading alone is NOT sufficient. The current static import chains are:
+
+- `PreSessionSurface` -> `StartingTownStep` -> `PhaserMapHost` -> `phaser`
+- `TravelPrepSurface` -> `PhaserMapHost` -> `phaser`
+
+Lazy-loading `PreSessionSurface` as a route component would still pull Phaser into the start-flow chunk, because `StartingTownStep` is statically imported by `PreSessionSurface` and statically imports `PhaserMapHost`. The player would download Phaser on the very first page load (name/prologue step) before they ever reach town selection.
+
+Explicit Phaser isolation boundaries:
+
+1. **`StartingTownStep` lazy-loaded inside `PreSessionSurface`.** `PreSessionSurface` renders `StartingTownStep` only when `effectiveStep === "town"`. Replace the static import with `React.lazy(() => import("../components/start-flow/StartingTownStep"))` and wrap in `<Suspense>`. This ensures Phaser is only loaded when the player reaches the town-selection step, not during name/prologue.
+
+2. **`TravelPrepSurface` already lazy-loaded as a route component** (`/town/trailhead`). Since `PhaserMapHost` is statically imported by `TravelPrepSurface`, Phaser lands in the trailhead route chunk — which is only loaded when the player navigates to the trailhead. This is sufficient for the trailhead side.
+
+3. **`PhaserMapHost` itself is NOT modified.** The isolation happens at the consumer boundary (`StartingTownStep` lazy import, `TravelPrepSurface` route lazy import), not inside `PhaserMapHost`.
+
+If future start-flow steps need Phaser earlier, the lazy boundary should move to wrap `PhaserMapHost` directly inside `StartingTownStep` instead. The implementation plan should verify the chosen boundary by inspecting the Vite build output (see Acceptance checks below).
 
 Vendor chunk splitting via `manualChunks`:
 
@@ -103,14 +118,25 @@ Phaser is deliberately NOT in `manualChunks` — it isolates naturally via the l
 - `vendor.js` — React + ReactDOM (~130 kB)
 - `router.js` — TanStack Router + Query (~80 kB)
 - `styled.js` — styled-components (~45 kB)
-- `phaser.js` — Phaser (~1 MB, only loaded when map surfaces are visited)
+- `phaser.js` — Phaser (~1 MB, only loaded when town-selection or trailhead surfaces are visited)
 - `index.js` — app shell + root route (~small)
-- `start-flow.js` — PreSessionSurface + setup steps (~medium, pulls phaser.js)
+- `start-flow.js` — PreSessionSurface + SetupHuntStep + StorySoFarStep + CreatingStep (~small, does NOT include Phaser)
+- `StartingTownStep.js` — StartingTownStep + PhaserMapHost (~medium, pulls phaser.js — only loaded when effectiveStep === "town")
 - `town-hub.js` — TownHubSurface (~small)
 - `town-place-*.js` — each town place (~small each)
+- `town-place-trailhead.js` — TravelPrepSurface + PhaserMapHost (~medium, pulls phaser.js — only loaded when player navigates to trailhead)
 - `trail.js` — TrailFlowSurface (~small)
 
-The main `index.js` chunk should be well under 500 kB.
+The main `index.js` chunk should be well under 500 kB. The `start-flow.js` chunk must NOT contain Phaser — Phaser should only appear in `phaser.js`, `StartingTownStep.js`, and `town-place-trailhead.js`.
+
+### Acceptance checks for Phaser isolation
+
+After implementation, inspect the Vite build output to prove Phaser is isolated:
+
+1. Run `npm run build` and examine the chunk list in the output.
+2. Verify no chunk loaded on the initial `/` route (before town selection) contains Phaser. The `start-flow.js` chunk (or equivalent) must not import or bundle `phaser`.
+3. Verify Phaser appears in a separate chunk that is only referenced by `StartingTownStep` and `TravelPrepSurface` (the trailhead route).
+4. If Phaser still appears in the start-flow chunk, the lazy boundary is wrong — move it closer to `PhaserMapHost` (e.g. lazy-load `PhaserMapHost` inside `StartingTownStep` instead of lazy-loading `StartingTownStep` inside `PreSessionSurface`).
 
 ## File changes
 
@@ -133,7 +159,7 @@ The main `index.js` chunk should be well under 500 kB.
 
 - `src/flow/TownHubSurface.tsx` — remove `activePlace`/`onPlaceChange` props. Place cards use `useNavigate()`. Add arrival notice rendering when `?arrived=1` query param present.
 - `src/flow/TrailFlowSurface.tsx` — add completed-journey view: when `journey.status === Completed`, render last day's resolved content + arrival summary + "Step into town" button.
-- `src/flow/PreSessionSurface.tsx` — no functional change (lazy-loaded only).
+- `src/flow/PreSessionSurface.tsx` — lazy-loaded as route component. Additionally, replace static import of `StartingTownStep` with `React.lazy(() => import(...))` wrapped in `<Suspense>` so Phaser is not loaded for name/prologue steps.
 - `src/flow/places/StorePlace.tsx` — `onLeave` -> `useNavigate()` to `/town`.
 - `src/flow/places/SheriffPlace.tsx` — `onLeave` -> `useNavigate()` to `/town`.
 - `src/flow/places/SaloonPlace.tsx` — `onLeave` -> `useNavigate()` to `/town`.
@@ -174,4 +200,5 @@ The main `index.js` chunk should be well under 500 kB.
 
 - `npm test -- --run` — all tests pass (updated + new).
 - `npm run build` — passes without chunk-size warning.
+- **Phaser isolation check:** inspect the Vite build output chunk list. Verify the start-flow chunk (loaded on initial `/` route before town selection) does NOT contain Phaser. Phaser should only appear in chunks reachable via `StartingTownStep` (town-selection step) and `TravelPrepSurface` (trailhead route). See "Acceptance checks for Phaser isolation" above.
 - Manual playtest: deep-link to `/town/store` works, back button works, trail -> town transition shows arrival content, Phaser only loads when map surfaces are visited.
