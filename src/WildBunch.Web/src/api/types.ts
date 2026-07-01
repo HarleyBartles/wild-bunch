@@ -80,6 +80,7 @@ export interface GameClockDto {
   day: number;
   turn: number;
   timeOfDay: string;
+  beatLabel?: string;
 }
 
 export interface PursuitStateDto {
@@ -270,7 +271,18 @@ export interface TravelDiaryDayDto {
   resourceBeat: string | null;
   entries: string[];
   warnings: string[];
+  beatSlots?: TrailBeatSlotDto[];
 }
+
+export interface TrailBeatSlotDto {
+  slotIndex: number;
+  slotType: TrailBeatSlotType;
+  label: string;
+  title: string | null;
+  message: string | null;
+}
+
+export type TrailBeatSlotType = "Quiet" | "Minor" | "Eventful" | "Interrupting";
 
 export interface TravelDiaryDto {
   days: TravelDiaryDayDto[];
@@ -422,6 +434,7 @@ export interface ClueTimeAnchorDto {
   recency: ClueRecency;
   day: number | null;
   turn: number | null;
+  timeOfDayLabel?: string | null;
 }
 
 export interface ClueDirectionAnchorDto {
@@ -618,6 +631,7 @@ export interface InvestigationActionResultDto {
   success: boolean;
   message: string;
   currentJournal: JournalDto;
+  beatNarration?: string | null;
 }
 
 export interface GameTurnResultDto {
