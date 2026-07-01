@@ -116,7 +116,7 @@ git commit -m "BUNCH-118: broaden dev CORS to allow any localhost port"
 
 ---
 
-## Issue 2: Prologue culprit identifier grammar
+## Issue 2: Prologue culprit identifier grammar — proper fix with structured features + runtime language service
 
 ### Root cause
 
@@ -124,23 +124,660 @@ The prologue variant templates contain `"The one with {trueCulpritMainIdentifier
 
 `SaloonPersonOfInterestDescriptor.FormatPublicDescriptor` wraps the feature text as `"a stranger with {NormalizeFeatureDescriptor(...)}"`. `NormalizeFeatureDescriptor` strips prefixes like `"has a "`, `"wears a "`, `"wearing a "` — but it does NOT handle the `"Is missing the right ear."` pattern from `CaseSuspectFeaturePool.cs:94-95`.
 
-When the feature text is `"Is missing the right ear."`, normalization returns it unchanged, producing: `"a stranger with Is missing the right ear"` → substituted into the template: `"The one with a stranger with Is missing the right ear."` — which is the reported malformed text.
+When the feature text is `"Is missing the right ear."`, normalization returns it unchanged, producing: `"a stranger with Is missing the right ear"` → `"The one with a stranger with Is missing the right ear."` — the reported malformed text.
 
-**Note:** The issue description names `PrologueContent.cs` as the file to fix, but the actual bug is in `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` (the formatter that produces the descriptor). `PrologueContent.cs` only holds the templates and is correct. The fix belongs in the descriptor formatter.
+**The prefix-stripping approach is fundamentally fragile.** `NormalizeFeatureDescriptor` also fails for accessories starting with `"Keeps a"`, `"Prefers a"`, `"Carries a"`, `"Leaves"`, or `"Has no"`. Adding more prefix entries is papering over the problem.
 
-### Fix
+**Proper fix:** Store language variants with each feature and construct the appropriate phrasing at runtime. Primary markers (limp, missing ear, scar, no eyebrows) are stored as structured tokens (e.g., `FeatureCategory.Limp`, body part `"leg"`, side `Left`) and a `FeatureLanguageService` generates all context forms. Accessories store their pre-written variant forms directly. The fragile `NormalizeFeatureDescriptor` is eliminated entirely.
 
-Add an `"is missing "` prefix normalization in `NormalizeFeatureDescriptor` that converts `"Is missing the right ear"` → `"a missing right ear"`, producing `"a stranger with a missing right ear"` → `"The one with a stranger with a missing right ear."` — grammatically correct and consistent with the existing `"a stranger with a scar on the left cheek"` shape.
+**Note:** The issue description names `PrologueContent.cs` as the file to fix, but the templates are correct. The bug is in the feature storage and descriptor formatting pipeline.
 
-### Task 2: Fix descriptor normalization for "is missing" features
+### Design
+
+**New Domain types** (`src/WildBunch.Domain/Cases/FeatureLanguage.cs`):
+
+```csharp
+public enum FeatureCategory
+{
+    Limp = 0,
+    MissingPart = 1,
+    Scar = 2,
+    Absence = 3
+}
+
+public enum FeatureSide
+{
+    None = 0,
+    Left = 1,
+    Right = 2
+}
+
+public sealed record FeatureDescriptor(FeatureCategory Category, string BodyPart, FeatureSide Side);
+
+public sealed record FeatureLanguage(
+    string HasForm,        // "Has a limp in the left leg." — full sentence for warrants/clue anchors
+    string WithForm,       // "a limp in the left leg" — noun phrase after "a stranger with"
+    string WhoForm,        // "has a limp in the left leg" — lowercase clause after "who"
+    string? OpeningLeadForm); // "The culprit walks with a limp in the left leg." — null for accessories
+```
+
+**Language service** (`src/WildBunch.Domain/Cases/FeatureLanguageService.cs`):
+
+Generates `FeatureLanguage` from a `FeatureDescriptor` for primary markers. Each `FeatureCategory` has templates for all four forms. Accessories get hand-written `FeatureLanguage` values (their copy is too varied to template).
+
+**Data flow change:**
+
+```
+Before: CaseSuspectFeaturePool stores "Has a limp in the left leg." (string)
+        → SuspectIdentityFact(Description: "Has a limp in the left leg.")
+        → SaloonPersonOfInterestDescriptor tries to reverse-engineer noun phrase via NormalizeFeatureDescriptor
+
+After:  CaseSuspectFeaturePool stores FeatureDescriptor(Limp, "leg", Left)
+        → FeatureLanguageService.For(descriptor) → FeatureLanguage(HasForm, WithForm, WhoForm, OpeningLeadForm)
+        → SuspectIdentityFact(Language: featureLanguage)
+        → SaloonPersonOfInterestDescriptor uses Language.WithForm directly — no normalization
+```
+
+**What gets eliminated:**
+- `SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor` — gone
+- `SaloonPersonOfInterestDescriptor.FormatPublicDescriptor` — simplified to `$"a stranger with {language.WithForm}"`
+- `SeedCaseBuilder.DescribeFeatureClause` — replaced by `Language.WhoForm`
+- `CaseSuspectFeatureProfile.Description` and `.OpeningLeadText` — replaced by `.Language`
+
+**Persistence impact:** `SuspectIdentityFactSnapshot` changes from `(string Description, bool IsPrimary)` to `(FeatureLanguageSnapshot Language, bool IsPrimary)`. Old saves break; dev DB drop/recreate is acceptable per AGENTS.md.
+
+**Test fixture impact:** 26 `new SuspectIdentityFact(string)` constructions in tests change to `new SuspectIdentityFact(FeatureLanguage.Raw(...))`. A `FeatureLanguage.Raw(hasForm, withForm, whoForm?)` factory provides a concise way to construct test-fixture feature languages without structured tokens.
+
+### Task 2a: Add FeatureLanguage, FeatureDescriptor, and FeatureLanguageService to Domain
 
 **Files:**
-- Modify: `src/WildBunch.Domain/Cases/SaloonPersonOfInterestDescriptor.cs:43-64`
-- Test: `tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs` (create)
+- Create: `src/WildBunch.Domain/Cases/FeatureLanguage.cs`
+- Create: `src/WildBunch.Domain/Cases/FeatureLanguageService.cs`
+- Test: `tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs` (create)
 
 **Interfaces:**
-- Consumes: `Suspect`, `CaseFile` from `WildBunch.Domain.Cases`
-- Produces: `SaloonPersonOfInterestDescriptor.Describe` returns grammatically correct descriptors for all feature pool text patterns, including `"Is missing the left/right ear."`
+- Produces: `FeatureLanguage` record, `FeatureDescriptor` record, `FeatureCategory` enum, `FeatureSide` enum, `FeatureLanguageService.For(FeatureDescriptor)` method, `FeatureLanguage.Raw(string, string, string?)` factory
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs`:
+
+```csharp
+using WildBunch.Domain.Cases;
+
+namespace WildBunch.Domain.Tests;
+
+public sealed class FeatureLanguageServiceTests
+{
+    [Fact]
+    public void LimpLeftLeg_ProducesAllForms()
+    {
+        var descriptor = new FeatureDescriptor(FeatureCategory.Limp, "leg", FeatureSide.Left);
+        var language = FeatureLanguageService.For(descriptor);
+
+        Assert.Equal("Has a limp in the left leg.", language.HasForm);
+        Assert.Equal("a limp in the left leg", language.WithForm);
+        Assert.Equal("has a limp in the left leg", language.WhoForm);
+        Assert.Equal("The culprit walks with a limp in the left leg.", language.OpeningLeadForm);
+    }
+
+    [Fact]
+    public void MissingRightEar_ProducesAllForms()
+    {
+        var descriptor = new FeatureDescriptor(FeatureCategory.MissingPart, "ear", FeatureSide.Right);
+        var language = FeatureLanguageService.For(descriptor);
+
+        Assert.Equal("Is missing the right ear.", language.HasForm);
+        Assert.Equal("a missing right ear", language.WithForm);
+        Assert.Equal("is missing the right ear", language.WhoForm);
+        Assert.Equal("The culprit is missing the right ear.", language.OpeningLeadForm);
+    }
+
+    [Fact]
+    public void ScarLeftCheek_ProducesAllForms()
+    {
+        var descriptor = new FeatureDescriptor(FeatureCategory.Scar, "cheek", FeatureSide.Left);
+        var language = FeatureLanguageService.For(descriptor);
+
+        Assert.Equal("Has a scar on the left cheek.", language.HasForm);
+        Assert.Equal("a scar on the left cheek", language.WithForm);
+        Assert.Equal("has a scar on the left cheek", language.WhoForm);
+        Assert.Equal("The culprit has a scar on the left cheek.", language.OpeningLeadForm);
+    }
+
+    [Fact]
+    public void NoEyebrows_ProducesAllForms()
+    {
+        var descriptor = new FeatureDescriptor(FeatureCategory.Absence, "eyebrows", FeatureSide.None);
+        var language = FeatureLanguageService.For(descriptor);
+
+        Assert.Equal("Has no eyebrows.", language.HasForm);
+        Assert.Equal("no eyebrows", language.WithForm);
+        Assert.Equal("has no eyebrows", language.WhoForm);
+        Assert.Equal("The culprit has no eyebrows.", language.OpeningLeadForm);
+    }
+
+    [Fact]
+    public void Raw_FactoryProducesExplicitForms()
+    {
+        var language = FeatureLanguage.Raw(
+            "A pale scar cuts across the left cheek.",
+            "a pale scar across the left cheek",
+            "has a pale scar across the left cheek");
+
+        Assert.Equal("A pale scar cuts across the left cheek.", language.HasForm);
+        Assert.Equal("a pale scar across the left cheek", language.WithForm);
+        Assert.Equal("has a pale scar across the left cheek", language.WhoForm);
+        Assert.Null(language.OpeningLeadForm);
+    }
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs`
+Expected: FAIL — types don't exist yet.
+
+- [ ] **Step 3: Implement FeatureLanguage and FeatureLanguageService**
+
+Create `src/WildBunch.Domain/Cases/FeatureLanguage.cs`:
+
+```csharp
+namespace WildBunch.Domain.Cases;
+
+public enum FeatureCategory
+{
+    Limp = 0,
+    MissingPart = 1,
+    Scar = 2,
+    Absence = 3
+}
+
+public enum FeatureSide
+{
+    None = 0,
+    Left = 1,
+    Right = 2
+}
+
+public sealed record FeatureDescriptor(FeatureCategory Category, string BodyPart, FeatureSide Side);
+
+public sealed record FeatureLanguage(
+    string HasForm,
+    string WithForm,
+    string WhoForm,
+    string? OpeningLeadForm)
+{
+    /// <summary>
+    /// Constructs a FeatureLanguage from explicit forms, for test fixtures
+    /// and non-feature-pool identity facts that don't have structured tokens.
+    /// </summary>
+    public static FeatureLanguage Raw(string hasForm, string withForm, string? whoForm = null)
+        => new(hasForm, withForm, whoForm ?? hasForm.ToLowerInvariant(), null);
+}
+```
+
+Create `src/WildBunch.Domain/Cases/FeatureLanguageService.cs`:
+
+```csharp
+namespace WildBunch.Domain.Cases;
+
+public static class FeatureLanguageService
+{
+    public static FeatureLanguage For(FeatureDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        return descriptor.Category switch
+        {
+            FeatureCategory.Limp => ForLimp(descriptor),
+            FeatureCategory.MissingPart => ForMissingPart(descriptor),
+            FeatureCategory.Scar => ForScar(descriptor),
+            FeatureCategory.Absence => ForAbsence(descriptor),
+            _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Category, "Unsupported feature category.")
+        };
+    }
+
+    private static string Location(FeatureDescriptor d)
+        => d.Side == FeatureSide.None ? d.BodyPart : $"{SideWord(d.Side)} {d.BodyPart}";
+
+    private static string SideWord(FeatureSide side) => side switch
+    {
+        FeatureSide.Left => "left",
+        FeatureSide.Right => "right",
+        _ => string.Empty
+    };
+
+    private static FeatureLanguage ForLimp(FeatureDescriptor d)
+    {
+        var location = Location(d);
+        return new FeatureLanguage(
+            HasForm: $"Has a limp in the {location}.",
+            WithForm: $"a limp in the {location}",
+            WhoForm: $"has a limp in the {location}",
+            OpeningLeadForm: $"The culprit walks with a limp in the {location}.");
+    }
+
+    private static FeatureLanguage ForMissingPart(FeatureDescriptor d)
+    {
+        var location = Location(d);
+        return new FeatureLanguage(
+            HasForm: $"Is missing the {location}.",
+            WithForm: $"a missing {location}",
+            WhoForm: $"is missing the {location}",
+            OpeningLeadForm: $"The culprit is missing the {location}.");
+    }
+
+    private static FeatureLanguage ForScar(FeatureDescriptor d)
+    {
+        var location = Location(d);
+        return new FeatureLanguage(
+            HasForm: $"Has a scar on the {location}.",
+            WithForm: $"a scar on the {location}",
+            WhoForm: $"has a scar on the {location}",
+            OpeningLeadForm: $"The culprit has a scar on the {location}.");
+    }
+
+    private static FeatureLanguage ForAbsence(FeatureDescriptor d)
+        => new(
+            HasForm: $"Has no {d.BodyPart}.",
+            WithForm: $"no {d.BodyPart}",
+            WhoForm: $"has no {d.BodyPart}",
+            OpeningLeadForm: $"The culprit has no {d.BodyPart}.");
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/WildBunch.Domain/Cases/FeatureLanguage.cs src/WildBunch.Domain/Cases/FeatureLanguageService.cs tests/WildBunch.Domain.Tests/FeatureLanguageServiceTests.cs
+git commit -m "BUNCH-118: add FeatureLanguage and FeatureLanguageService for structured feature text"
+```
+
+### Task 2b: Migrate SuspectIdentityFact to carry FeatureLanguage
+
+**Files:**
+- Modify: `src/WildBunch.Domain/Cases/SuspectProfile.cs` (line 3 — `SuspectIdentityFact` record)
+- Modify: `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs` (lines 404-411 — snapshot)
+- Modify: `src/WildBunch.Domain/Game/GameSession.cs` (line 3895 — `CollectSuspectFeatureDescriptions`)
+- Modify: `src/WildBunch.Application/Dev/Mapping/SaloonDevContextMapper.cs` (line 55)
+- Test: update all 26 `new SuspectIdentityFact(string)` constructions in tests
+
+**Interfaces:**
+- Consumes: `FeatureLanguage` from Task 2a
+- Produces: `SuspectIdentityFact(FeatureLanguage Language, bool IsPrimary)` — breaking change from `(string Description, bool IsPrimary)`
+
+- [ ] **Step 1: Update SuspectIdentityFact record**
+
+In `src/WildBunch.Domain/Cases/SuspectProfile.cs`, change:
+
+```csharp
+public readonly record struct SuspectIdentityFact(string Description, bool IsPrimary = true);
+```
+
+to:
+
+```csharp
+public readonly record struct SuspectIdentityFact(FeatureLanguage Language, bool IsPrimary = true);
+```
+
+- [ ] **Step 2: Update persistence snapshot**
+
+In `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`, replace `SuspectIdentityFactSnapshot`:
+
+```csharp
+    private sealed record FeatureLanguageSnapshot(
+        string HasForm,
+        string WithForm,
+        string WhoForm,
+        string? OpeningLeadForm)
+    {
+        public static FeatureLanguageSnapshot FromDomain(FeatureLanguage language)
+            => new(language.HasForm, language.WithForm, language.WhoForm, language.OpeningLeadForm);
+
+        public static FeatureLanguage ToDomain(FeatureLanguageSnapshot snapshot)
+            => new(snapshot.HasForm, snapshot.WithForm, snapshot.WhoForm, snapshot.OpeningLeadForm);
+    }
+
+    private sealed record SuspectIdentityFactSnapshot(FeatureLanguageSnapshot Language, bool IsPrimary)
+    {
+        public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
+            => new(FeatureLanguageSnapshot.FromDomain(fact.Language), fact.IsPrimary);
+
+        public static SuspectIdentityFact ToDomain(SuspectIdentityFactSnapshot snapshot)
+            => new(FeatureLanguageSnapshot.ToDomain(snapshot.Language), snapshot.IsPrimary);
+    }
+```
+
+- [ ] **Step 3: Update GameSession.CollectSuspectFeatureDescriptions**
+
+In `src/WildBunch.Domain/Game/GameSession.cs` line ~3895, change `.Select(f => f.Description)` to `.Select(f => f.Language.HasForm)`:
+
+```csharp
+private IReadOnlyList<string> CollectSuspectFeatureDescriptions()
+    => CaseFile.Suspects
+        .SelectMany(s => s.Profile.IdentifyingFacts)
+        .Where(f => f.IsPrimary)
+        .Select(f => f.Language.HasForm)
+        .Where(d => !string.IsNullOrWhiteSpace(d))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+```
+
+- [ ] **Step 4: Update SaloonDevContextMapper**
+
+In `src/WildBunch.Application/Dev/Mapping/SaloonDevContextMapper.cs` line 55, change `.Select(f => f.Description)` to `.Select(f => f.Language.HasForm)`:
+
+```csharp
+IdentifyingFacts: s.Profile.IdentifyingFacts.Select(f => f.Language.HasForm).ToList(),
+```
+
+- [ ] **Step 5: Update all test fixtures**
+
+Search for all `new SuspectIdentityFact(` in tests (26 occurrences). Replace each string argument with `FeatureLanguage.Raw(...)`. Examples:
+
+For `"Has a scar on the left cheek."`:
+```csharp
+new SuspectIdentityFact(FeatureLanguage.Raw("Has a scar on the left cheek.", "a scar on the left cheek", "has a scar on the left cheek"))
+```
+
+For `"A pale scar cuts across the left cheek."`:
+```csharp
+new SuspectIdentityFact(FeatureLanguage.Raw("A pale scar cuts across the left cheek.", "a pale scar across the left cheek", "has a pale scar across the left cheek"))
+```
+
+For `"a brass buckle with a cracked star engraving"`:
+```csharp
+new SuspectIdentityFact(FeatureLanguage.Raw("a brass buckle with a cracked star engraving", "a brass buckle with a cracked star engraving", "has a brass buckle with a cracked star engraving"))
+```
+
+For test fixtures in `CitizenCastTests.cs` that use feature strings:
+```csharp
+new SuspectIdentityFact(FeatureLanguage.Raw("Has a limp in the left leg.", "a limp in the left leg", "has a limp in the left leg")),
+new SuspectIdentityFact(FeatureLanguage.Raw("Wears a distinctive earring in the left ear.", "a distinctive earring in the left ear", "wears a distinctive earring in the left ear")),
+// etc.
+```
+
+Also update any test assertions that read `.Description` on `SuspectIdentityFact` to read `.Language.HasForm` instead. Key files:
+- `tests/WildBunch.Domain.Tests/CaseProgressTests.cs` line 56: `suspect.Profile.IdentifyingFacts[0].Description` → `.Language.HasForm`
+- `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` lines 62-63: update assertions
+
+- [ ] **Step 6: Build and run tests to verify compilation and find remaining breakage**
+
+Run: `dotnet build`
+Expected: Build may fail on remaining `.Description` references — fix them to `.Language.HasForm` or `.Language.WithForm` as appropriate for each consumer.
+
+Run: `dotnet test`
+Expected: Some tests may fail on assertion strings that need updating to match new `FeatureLanguage` forms. Fix assertions to match the explicit forms provided in test fixtures.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add -A
+git commit -m "BUNCH-118: migrate SuspectIdentityFact to carry FeatureLanguage"
+```
+
+### Task 2c: Update CaseSuspectFeaturePool to store FeatureLanguage
+
+**Files:**
+- Modify: `src/WildBunch.GameContent/NewGame/CaseSuspectFeaturePool.cs` (lines 40-49 — record, lines 90-121 — feature definitions, lines 201-211 — BuildOpeningLead, lines 213-250 — factory methods)
+- Modify: `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs` (line 113 — CreateSuspect, lines 131-263 — clue anchors, lines 331-347 — DescribeFeatureClause/DescribeUnnamedRider/DescribePersonWithFeature)
+- Modify: `src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs` (line 794 — Tokenize)
+- Test: update `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`, `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs`
+
+**Interfaces:**
+- Consumes: `FeatureLanguage`, `FeatureDescriptor`, `FeatureLanguageService` from Task 2a
+- Produces: `CaseSuspectFeatureProfile.Language` (replaces `.Description` and `.OpeningLeadText`)
+
+- [ ] **Step 1: Update CaseSuspectFeatureProfile record**
+
+In `src/WildBunch.GameContent/NewGame/CaseSuspectFeaturePool.cs`, change the record:
+
+```csharp
+internal sealed record CaseSuspectFeatureProfile(
+    string Key,
+    FeatureLanguage Language,
+    CaseFeatureKind Kind,
+    string FamilyKey,
+    CaseFeatureSide Side,
+    IReadOnlyList<CaseSuspectFeatureTag> Tags,
+    IReadOnlyList<string> IncompatibleKeys,
+    string SourceNote)
+{
+    public bool SupportsOpeningLead => HasTag(CaseSuspectFeatureTags.OpeningLeadCapable);
+
+    public bool IsClassicNod => HasTag(CaseSuspectFeatureTags.ClassicNod);
+
+    // ... existing HasTag and IsCompatibleWith methods unchanged ...
+}
+```
+
+Remove the `Description` and `OpeningLeadText` fields. Existing internal consumers will use `Language.HasForm`, `Language.WhoForm`, `Language.OpeningLeadForm` directly.
+
+- [ ] **Step 2: Update factory methods**
+
+Update `NodFeature` to construct `FeatureLanguage` from a `FeatureDescriptor` via `FeatureLanguageService`:
+
+```csharp
+    private static CaseSuspectFeatureProfile NodFeature(
+        string key,
+        FeatureCategory category,
+        string bodyPart,
+        CaseFeatureSide side,
+        IReadOnlyList<CaseSuspectFeatureTag> tags,
+        string sourceNote,
+        params string[] incompatibleKeys)
+    {
+        var featureSide = side switch
+        {
+            CaseFeatureSide.Left => FeatureSide.Left,
+            CaseFeatureSide.Right => FeatureSide.Right,
+            _ => FeatureSide.None
+        };
+        var descriptor = new FeatureDescriptor(category, bodyPart, featureSide);
+        var language = FeatureLanguageService.For(descriptor);
+        return new CaseSuspectFeatureProfile(
+            key,
+            language,
+            CaseFeatureKind.PrimaryMarker,
+            FamilyKey: bodyPart == "leg" ? "limp" : bodyPart == "ear" ? "ear" : bodyPart == "cheek" ? "cheek-scar" : "brow",
+            side,
+            tags,
+            incompatibleKeys,
+            sourceNote);
+    }
+```
+
+Update `AccessoryFeature` to accept a `FeatureLanguage` directly (accessories have hand-written copy):
+
+```csharp
+    private static CaseSuspectFeatureProfile AccessoryFeature(
+        string key,
+        FeatureLanguage language,
+        string familyKey,
+        CaseFeatureSide side,
+        IReadOnlyList<CaseSuspectFeatureTag> tags,
+        string sourceNote,
+        params string[] incompatibleKeys)
+        => new(
+            key,
+            language,
+            CaseFeatureKind.AccessoryMarker,
+            familyKey,
+            side,
+            tags,
+            incompatibleKeys,
+            sourceNote);
+```
+
+- [ ] **Step 3: Update PrimaryFeatures array**
+
+Replace the pre-baked sentence strings with structured calls:
+
+```csharp
+    private static readonly CaseSuspectFeatureProfile[] PrimaryFeatures =
+    [
+        NodFeature("limp-left-leg", FeatureCategory.Limp, "leg", CaseFeatureSide.Left, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Gait, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Leg, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("limp-right-leg", FeatureCategory.Limp, "leg", CaseFeatureSide.Right, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Gait, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Leg, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("no-left-ear", FeatureCategory.MissingPart, "ear", CaseFeatureSide.Left, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.MissingPart, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Ear, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead.", "distinctive-left-earring"),
+        NodFeature("no-right-ear", FeatureCategory.MissingPart, "ear", CaseFeatureSide.Right, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.MissingPart, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Ear, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead.", "distinctive-right-earring"),
+        NodFeature("scar-left-cheek", FeatureCategory.Scar, "cheek", CaseFeatureSide.Left, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Scar, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Face, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("scar-right-cheek", FeatureCategory.Scar, "cheek", CaseFeatureSide.Right, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.Scar, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Face, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead."),
+        NodFeature("no-eyebrows", FeatureCategory.Absence, "eyebrows", CaseFeatureSide.None, [CaseSuspectFeatureTags.PhysicalMarker, CaseSuspectFeatureTags.MissingPart, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.Face, CaseSuspectFeatureTags.ClassicNod, CaseSuspectFeatureTags.OpeningLeadCapable], "Original feature text; used to build the opening lead.")
+    ];
+```
+
+- [ ] **Step 4: Update AccessoryFeatures array**
+
+Each accessory gets a `FeatureLanguage` with hand-written forms. The `WithForm` is the noun phrase after "with" (strip the verb and lowercase the article). The `WhoForm` is the lowercase full sentence. Example for the first few:
+
+```csharp
+    private static readonly CaseSuspectFeatureProfile[] AccessoryFeatures =
+    [
+        AccessoryFeature("distinctive-left-earring",
+            new FeatureLanguage("Wears a distinctive earring in the left ear.", "a distinctive earring in the left ear", "wears a distinctive earring in the left ear", null),
+            "earring", CaseFeatureSide.Left, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.DistinctiveItem, CaseSuspectFeatureTags.Ear], "Original feature text.", "no-left-ear"),
+        AccessoryFeature("distinctive-right-earring",
+            new FeatureLanguage("Wears a distinctive earring in the right ear.", "a distinctive earring in the right ear", "wears a distinctive earring in the right ear", null),
+            "earring", CaseFeatureSide.Right, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.DistinctiveItem, CaseSuspectFeatureTags.Ear], "Original feature text.", "no-right-ear"),
+        AccessoryFeature("eyepatch-left",
+            new FeatureLanguage("Wears an eyepatch over the left eye.", "an eyepatch over the left eye", "wears an eyepatch over the left eye", null),
+            "eyepatch", CaseFeatureSide.Left, [CaseSuspectFeatureTags.Accessory, CaseSuspectFeatureTags.Wearable, CaseSuspectFeatureTags.Visible, CaseSuspectFeatureTags.SideAware, CaseSuspectFeatureTags.Eye, CaseSuspectFeatureTags.DistinctiveItem], "Original feature text."),
+        // ... continue for all 18 accessories. Each gets:
+        //   HasForm: the original Description string (with trailing period)
+        //   WithForm: the noun phrase (strip leading verb, keep article, lowercase first letter)
+        //   WhoForm: the original Description lowercased (no trailing period)
+        //   OpeningLeadForm: null (accessories don't have opening leads)
+    ];
+```
+
+Full list of accessory `FeatureLanguage` values (HasForm / WithForm / WhoForm):
+
+| Key | HasForm | WithForm | WhoForm |
+|-----|---------|----------|---------|
+| distinctive-left-earring | Wears a distinctive earring in the left ear. | a distinctive earring in the left ear | wears a distinctive earring in the left ear |
+| distinctive-right-earring | Wears a distinctive earring in the right ear. | a distinctive earring in the right ear | wears a distinctive earring in the right ear |
+| eyepatch-left | Wears an eyepatch over the left eye. | an eyepatch over the left eye | wears an eyepatch over the left eye |
+| eyepatch-right | Wears an eyepatch over the right eye. | an eyepatch over the right eye | wears an eyepatch over the right eye |
+| cracked-gauntlet | Wears a cracked leather gauntlet on the right hand. | a cracked leather gauntlet on the right hand | wears a cracked leather gauntlet on the right hand |
+| stitched-brim-hat | Prefers a sand-colored hat with the brim stitched flat. | a sand-colored hat with the brim stitched flat | prefers a sand-colored hat with the brim stitched flat |
+| black-stained-cuff | Has a black-stained cuff on the left sleeve. | a black-stained cuff on the left sleeve | has a black-stained cuff on the left sleeve |
+| split-finger-glove | Keeps a split-finger glove tucked into a coat pocket. | a split-finger glove tucked into a coat pocket | keeps a split-finger glove tucked into a coat pocket |
+| silver-tooth | Has a silver tooth that catches the light when he smiles. | a silver tooth that catches the light when he smiles | has a silver tooth that catches the light when he smiles |
+| copper-ribbon | Keeps a copper ribbon tied in her hair. | a copper ribbon tied in her hair | keeps a copper ribbon tied in her hair |
+| rope-burn-scar | Carries a rope-burn scar on the left wrist. | a rope-burn scar on the left wrist | carries a rope-burn scar on the left wrist |
+| faded-blue-scarf | Wears a faded blue scarf over a dark vest. | a faded blue scarf over a dark vest | wears a faded blue scarf over a dark vest |
+| iron-rim-spectacles | Keeps iron-rim spectacles tucked into a coat pocket. | iron-rim spectacles tucked into a coat pocket | keeps iron-rim spectacles tucked into a coat pocket |
+| dust-colored-duster | Wears a long dust-colored duster with a frayed hem. | a long dust-colored duster with a frayed hem | wears a long dust-colored duster with a frayed hem |
+| brass-spur | Keeps a brass spur tucked into a coat pocket. | a brass spur tucked into a coat pocket | keeps a brass spur tucked into a coat pocket |
+| tobacco-stained-gloves | Leaves tobacco-stained glove prints on ledgers and rail notices. | tobacco-stained glove prints on ledgers and rail notices | leaves tobacco-stained glove prints on ledgers and rail notices |
+| copper-spur-ribbon | Keeps a brass spur tied to a faded blue sash. | a brass spur tied to a faded blue sash | keeps a brass spur tied to a faded blue sash |
+| straw-hat | Wears a straw hat with the crown creased low. | a straw hat with the crown creased low | wears a straw hat with the crown creased low |
+
+- [ ] **Step 5: Update BuildOpeningLead**
+
+In `CaseSuspectFeaturePool.cs`, update `BuildOpeningLead` to use `Language.OpeningLeadForm`:
+
+```csharp
+    public static string BuildOpeningLead(CaseSuspectFeatureProfile feature)
+    {
+        ArgumentNullException.ThrowIfNull(feature);
+
+        if (!feature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable) || string.IsNullOrWhiteSpace(feature.Language.OpeningLeadForm))
+        {
+            throw new InvalidOperationException($"Feature '{feature.Key}' does not support an opening lead.");
+        }
+
+        return feature.Language.OpeningLeadForm!;
+    }
+```
+
+- [ ] **Step 6: Update SeedCaseBuilder**
+
+In `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs`:
+
+**Line 113** — `CreateSuspect`: change `fact.Description` to `fact.Language`:
+
+```csharp
+    private static Suspect CreateSuspect(SuspectId id, CaseCharacterProfile profile, CaseSuspectFeatureAssignment feature)
+        => new(
+            id,
+            profile.DisplayName,
+            new SuspectProfile(profile.GameAliases, feature.AllFeatures.Select(fact => new SuspectIdentityFact(fact.Language, fact.Kind == CaseFeatureKind.PrimaryMarker))),
+            profile.Traits,
+            SuspectStatus.AtLarge);
+```
+
+**Lines 131-263** — clue anchors: change `culpritFeature.Description` and `features[n].PrimaryFeature.Description` to `.Language.HasForm`:
+
+```csharp
+// Line 134 example:
+new ClueSubjectAnchor(culpritFeature.Language.HasForm, Feature: culpritFeature.Language.HasForm, Fact: "opening lead"),
+```
+
+Apply the same `.Language.HasForm` replacement to all `feature.Description` and `feature.PrimaryFeature.Description` references in clue anchor construction (lines 134, 167, 183, 199, 215, 243, 263).
+
+**Lines 331-347** — eliminate `DescribeFeatureClause`, `DescribeUnnamedRider`, `DescribePersonWithFeature` and replace with direct `Language.WhoForm` usage:
+
+```csharp
+    private static string DescribeUnnamedRider(CaseSuspectFeatureProfile feature)
+        => $"an unnamed rider who {feature.Language.WhoForm}";
+
+    private static string DescribePersonWithFeature(CaseSuspectFeatureProfile feature, string person)
+        => $"{person} who {feature.Language.WhoForm}";
+```
+
+Delete `DescribeFeatureClause` entirely — `Language.WhoForm` serves the same purpose without fragile string manipulation.
+
+- [ ] **Step 7: Update CaseCharacterRoster**
+
+In `src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs` line 794, change `openingLeadFeature.Description` to `openingLeadFeature.Language.HasForm`:
+
+```csharp
+        var openingLeadTokens = new HashSet<string>(
+            Tokenize(openingLeadFeature.Language.HasForm).Where(token => token.Length > 3),
+            StringComparer.OrdinalIgnoreCase);
+```
+
+- [ ] **Step 8: Update tests that reference CaseSuspectFeaturePool.Description**
+
+In `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`:
+- Line 62: `culpritOpeningFeature.Description` → `culpritOpeningFeature.Language.HasForm`
+- Line 63: `feature.Description == fact.Description` → `feature.Language.HasForm == fact.Language.HasForm`
+
+In `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs`:
+- Line 144: `feature.Description` → `feature.Language.HasForm`
+
+- [ ] **Step 9: Build and run tests**
+
+Run: `dotnet build`
+Expected: BUILD succeeds (all `.Description` and `.OpeningLeadText` references updated).
+
+Run: `dotnet test`
+Expected: PASS — test assertions on opening lead text ("The culprit has a scar on the left cheek.") should still match because `FeatureLanguageService` generates the same text. Clue text assertions that embed feature descriptions should also match because `Language.WhoForm` produces the same text as the old `DescribeFeatureClause` for all existing features.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add -A
+git commit -m "BUNCH-118: store FeatureLanguage on CaseSuspectFeatureProfile, eliminate DescribeFeatureClause"
+```
+
+### Task 2d: Eliminate NormalizeFeatureDescriptor from SaloonPersonOfInterestDescriptor
+
+**Files:**
+- Modify: `src/WildBunch.Domain/Cases/SaloonPersonOfInterestDescriptor.cs` (lines 7-83 — entire formatter)
+- Test: `tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs` (create)
+- Test: update `tests/WildBunch.Application.Tests/SaloonPersonOfInterestDescriptorParityTests.cs`
+
+**Interfaces:**
+- Consumes: `FeatureLanguage.WithForm` from `SuspectIdentityFact.Language`
+- Produces: `SaloonPersonOfInterestDescriptor.Describe` returns grammatically correct descriptors for all feature types, with no string normalization
 
 - [ ] **Step 1: Write the failing test**
 
@@ -163,59 +800,52 @@ public sealed class SaloonPersonOfInterestDescriptorTests
     [Fact]
     public void Describe_MissingEarFeatureProducesGrammaticalDescriptor()
     {
-        var suspect = new Suspect(
-            new SuspectId("suspect-1"),
-            "Mira Cline",
-            new SuspectProfile(
-                Array.Empty<SuspectAlias>(),
-                new[] { new SuspectIdentityFact("Is missing the right ear.") }),
-            SuspectTraits.Empty,
-            SuspectStatus.AtLarge);
-
+        var suspect = CreateSuspect(FeatureLanguage.Raw(
+            "Is missing the right ear.", "a missing right ear", "is missing the right ear"));
         var caseFile = CreateCaseFile(suspect);
-
         var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, caseFile);
-
         Assert.Equal("a stranger with a missing right ear", descriptor);
     }
 
     [Fact]
-    public void Describe_MissingLeftEarFeatureProducesGrammaticalDescriptor()
+    public void Describe_LimpFeatureProducesGrammaticalDescriptor()
     {
-        var suspect = new Suspect(
-            new SuspectId("suspect-1"),
-            "Mira Cline",
-            new SuspectProfile(
-                Array.Empty<SuspectAlias>(),
-                new[] { new SuspectIdentityFact("Is missing the left ear.") }),
-            SuspectTraits.Empty,
-            SuspectStatus.AtLarge);
-
+        var suspect = CreateSuspect(FeatureLanguage.Raw(
+            "Has a limp in the left leg.", "a limp in the left leg", "has a limp in the left leg"));
         var caseFile = CreateCaseFile(suspect);
-
         var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, caseFile);
-
-        Assert.Equal("a stranger with a missing left ear", descriptor);
+        Assert.Equal("a stranger with a limp in the left leg", descriptor);
     }
 
     [Fact]
-    public void Describe_ScarFeatureStillNormalizesCorrectly()
+    public void Describe_ScarFeatureProducesGrammaticalDescriptor()
     {
-        var suspect = new Suspect(
-            new SuspectId("suspect-1"),
-            "Mira Cline",
-            new SuspectProfile(
-                Array.Empty<SuspectAlias>(),
-                new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
-            SuspectTraits.Empty,
-            SuspectStatus.AtLarge);
-
+        var suspect = CreateSuspect(FeatureLanguage.Raw(
+            "Has a scar on the left cheek.", "a scar on the left cheek", "has a scar on the left cheek"));
         var caseFile = CreateCaseFile(suspect);
-
         var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, caseFile);
-
         Assert.Equal("a stranger with a scar on the left cheek", descriptor);
     }
+
+    [Fact]
+    public void Describe_AccessoryWithKeepsVerbProducesGrammaticalDescriptor()
+    {
+        var suspect = CreateSuspect(FeatureLanguage.Raw(
+            "Keeps a split-finger glove tucked into a coat pocket.",
+            "a split-finger glove tucked into a coat pocket",
+            "keeps a split-finger glove tucked into a coat pocket"));
+        var caseFile = CreateCaseFile(suspect);
+        var descriptor = SaloonPersonOfInterestDescriptor.Describe(suspect, caseFile);
+        Assert.Equal("a stranger with a split-finger glove tucked into a coat pocket", descriptor);
+    }
+
+    private static Suspect CreateSuspect(FeatureLanguage language)
+        => new(
+            new SuspectId("suspect-1"),
+            "Mira Cline",
+            new SuspectProfile(Array.Empty<SuspectAlias>(), new[] { new SuspectIdentityFact(language) }),
+            SuspectTraits.Empty,
+            SuspectStatus.AtLarge);
 
     private static CaseFile CreateCaseFile(Suspect suspect)
     {
@@ -239,55 +869,140 @@ public sealed class SaloonPersonOfInterestDescriptorTests
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs`
-Expected: FAIL — `Describe_MissingEarFeatureProducesGrammaticalDescriptor` fails because the current normalizer returns `"a stranger with Is missing the right ear"` instead of `"a stranger with a missing right ear"`.
+Expected: FAIL — the current `FormatPublicDescriptor` still calls `NormalizeFeatureDescriptor` which mangles "Is missing the right ear." and "Keeps a split-finger glove...".
 
-- [ ] **Step 3: Implement the fix**
+- [ ] **Step 3: Rewrite SaloonPersonOfInterestDescriptor**
 
-In `src/WildBunch.Domain/Cases/SaloonPersonOfInterestDescriptor.cs`, add an `"is missing "` normalization entry to the prefix list in `NormalizeFeatureDescriptor`:
+Replace the entire `SaloonPersonOfInterestDescriptor` class in `src/WildBunch.Domain/Cases/SaloonPersonOfInterestDescriptor.cs`:
 
 ```csharp
-    private static string NormalizeFeatureDescriptor(string descriptor)
+namespace WildBunch.Domain.Cases;
+
+public static class SaloonPersonOfInterestDescriptor
+{
+    public static string Describe(Suspect suspect, CaseFile caseFile)
     {
-        foreach (var (prefix, replacement) in new[]
+        ArgumentNullException.ThrowIfNull(suspect);
+        ArgumentNullException.ThrowIfNull(caseFile);
+
+        var warrantDescriptor = caseFile.KnownWarrants.FirstOrDefault(warrant => MatchesKnownWarrant(warrant, suspect));
+        if (warrantDescriptor is not null)
         {
-            ("has a ", "a "),
-            ("has an ", "an "),
-            ("wore a ", "a "),
-            ("wore an ", "an "),
-            ("wears a ", "a "),
-            ("wears an ", "an "),
-            ("wearing a ", "a "),
-            ("wearing an ", "an "),
-            ("is missing the ", "a missing "),
-        })
-        {
-            if (descriptor.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            var feature = warrantDescriptor.Terms.KnownFeatures.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(feature))
             {
-                return replacement + descriptor[prefix.Length..];
+                return $"a stranger with {TrimFeature(feature)}";
             }
         }
 
-        return descriptor;
+        var profileFact = suspect.Profile.IdentifyingFacts.FirstOrDefault();
+        if (profileFact.Language is not null && !string.IsNullOrWhiteSpace(profileFact.Language.WithForm))
+        {
+            return $"a stranger with {profileFact.Language.WithForm}";
+        }
+
+        var traitDescriptor = suspect.Traits.Tags.FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(traitDescriptor.Value))
+        {
+            return $"a stranger who is {FormatTraitDescriptor(traitDescriptor.Value)}";
+        }
+
+        return "an unfamiliar person";
     }
+
+    /// <summary>
+    /// Trims trailing punctuation from warrant feature strings (noun phrases like "Raven-feather pin").
+    /// Warrant features are not structured FeatureLanguage; they are plain strings from the warrant pool.
+    /// </summary>
+    private static string TrimFeature(string feature)
+        => feature.Trim().TrimEnd('.', '!', '?');
+
+    private static string FormatTraitDescriptor(string traitTag)
+        => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(traitTag.Trim().Replace('-', ' '));
+
+    private static string FormatPublicTraitDescriptor(string descriptor)
+        => $"a stranger who is {descriptor.ToLowerInvariant()}";
+
+    private static bool MatchesKnownWarrant(Warrant warrant, Suspect targetSuspect)
+    {
+        ArgumentNullException.ThrowIfNull(warrant);
+        ArgumentNullException.ThrowIfNull(targetSuspect);
+
+        if (string.Equals(warrant.TargetName, targetSuspect.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return warrant.Terms.KnownAliases.Any(alias => string.Equals(alias, targetSuspect.Name, StringComparison.OrdinalIgnoreCase));
+    }
+}
 ```
 
-This converts `"Is missing the right ear."` → `"a missing right ear."` (after `TrimDescriptor` strips the trailing period), producing `"a stranger with a missing right ear"`.
+Key changes:
+- `FormatPublicDescriptor` and `NormalizeFeatureDescriptor` are **eliminated**
+- Profile fact path uses `profileFact.Language.WithForm` directly — no normalization
+- Warrant feature path uses simple `TrimFeature` (trailing punctuation only) — warrant features are noun phrases, not sentences
+- `TrimDescriptor` is eliminated (was only used by `FormatPublicDescriptor`)
+
+Note: `FormatTraitDescriptor` and `FormatPublicTraitDescriptor` remain for the trait fallback path, which is unchanged.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs`
 Expected: PASS
 
-- [ ] **Step 5: Run existing prologue and parity tests to verify no regressions**
+- [ ] **Step 5: Update parity tests**
 
-Run: `dotnet test tests/WildBunch.Application.Tests/PrologueHandlerTests.cs tests/WildBunch.Application.Tests/SaloonPersonOfInterestDescriptorParityTests.cs`
-Expected: PASS — existing tests use `"Has a scar on the left cheek."` which still normalizes via the `"has a "` prefix.
+In `tests/WildBunch.Application.Tests/SaloonPersonOfInterestDescriptorParityTests.cs`, update the test fixtures to use `FeatureLanguage.Raw` for `SuspectIdentityFact`:
 
-- [ ] **Step 6: Commit**
+```csharp
+// Line 47: profile-based POI
+new[] { new SuspectIdentityFact(FeatureLanguage.Raw(
+    "a brass buckle with a cracked star engraving",
+    "a brass buckle with a cracked star engraving",
+    "has a brass buckle with a cracked star engraving")) })
+
+// Line 30: warrant-based POI — warrant KnownFeatures stay as strings, no change needed
+new[] { "Has a scar on the left cheek." }  // warrant features are still strings
+```
+
+The warrant-based test (line 38) asserts `"a stranger with a scar on the left cheek"` — this still passes because warrant features go through `TrimFeature` which just strips the period, producing "a stranger with Has a scar on the left cheek".
+
+Wait — that's wrong. Warrant features are full sentences like "Has a scar on the left cheek." but the expected output is "a stranger with a scar on the left cheek" (without "Has"). The old `NormalizeFeatureDescriptor` stripped "has a " → "a ". With the new code, `TrimFeature` only strips punctuation, so it would produce "a stranger with Has a scar on the left cheek" — which breaks the test.
+
+**Resolution:** Warrant `KnownFeatures` that are full sentences need the same treatment. Two options:
+1. Change the warrant feature strings to noun phrases ("a scar on the left cheek" instead of "Has a scar on the left cheek.")
+2. Keep a minimal normalization for warrant features only
+
+Option 1 is cleaner. The warrant features in `CaseCharacterRoster` are currently: "Raven-feather pin", "Black felt hat", "Split-finger glove" — these are already noun phrases. But the test fixture in `SaloonPersonOfInterestDescriptorParityTests` uses `"Has a scar on the left cheek."` as a warrant feature, which is a full sentence.
+
+**Decision:** Warrant `KnownFeatures` should be noun phrases, not full sentences. Update the test fixture to use `"a scar on the left cheek"` instead of `"Has a scar on the left cheek."`. This is consistent with the real warrant features ("Raven-feather pin", etc.) and eliminates the need for normalization on the warrant path too.
+
+Update `SaloonPersonOfInterestDescriptorParityTests.cs` line 30:
+```csharp
+new[] { "a scar on the left cheek" },  // was "Has a scar on the left cheek."
+```
+
+The assertion at line 38 stays: `AssertDescriptorParity(session, "a stranger with a scar on the left cheek")` — now it matches because `TrimFeature("a scar on the left cheek")` = "a scar on the left cheek".
+
+- [ ] **Step 6: Run all descriptor and prologue tests**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs tests/WildBunch.Application.Tests/SaloonPersonOfInterestDescriptorParityTests.cs tests/WildBunch.Application.Tests/PrologueHandlerTests.cs`
+Expected: PASS
+
+- [ ] **Step 7: Run full test suite to find remaining breakage**
+
+Run: `dotnet test`
+Expected: Some tests may fail if they assert on descriptor output for warrant features that were full sentences. Fix by changing warrant feature strings to noun phrases in test fixtures. Key files to check:
+- `tests/WildBunch.Domain.Tests/GameSessionSaloonPersonOfInterestTests.cs` — assertions on "a stranger with Raven-feather pin" (should still pass — "Raven-feather pin" is already a noun phrase)
+- `tests/WildBunch.Domain.Tests/GameSessionSaloonWantedSuspectLoopTests.cs` — same
+- `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs` — assertions on "a stranger with a limp in the left leg" (should pass — comes from profile fact `Language.WithForm`)
+
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/WildBunch.Domain/Cases/SaloonPersonOfInterestDescriptor.cs tests/WildBunch.Domain.Tests/SaloonPersonOfInterestDescriptorTests.cs
-git commit -m "BUNCH-118: fix prologue descriptor grammar for 'is missing' features"
+git add -A
+git commit -m "BUNCH-118: eliminate NormalizeFeatureDescriptor, use FeatureLanguage.WithForm directly"
 ```
 
 ---
@@ -423,14 +1138,31 @@ Post a comment on BUNCH-118 with the plan path, PR URL, and route state `approve
 
 **1. Spec coverage:**
 - CORS too restrictive → Task 1 ✓
-- Prologue grammar malformed → Task 2 ✓
+- Prologue grammar malformed → Tasks 2a-2d (structured features + language service, eliminates fragile normalization) ✓
 - Duplicate "Horse feed" names → Task 3 ✓
 - Validation: `dotnet test`, `npm test`, manual playtest → Final validation steps ✓ (manual playtest is issue-listed but not automatable here; the unit/integration tests cover the behavioral assertions)
+- "Store language variants with each and construct at runtime" → `FeatureLanguage` record stores all context forms; `FeatureLanguageService` generates them from structured `FeatureDescriptor` tokens for primary markers ✓
+- "Don't paper over it, do a full and proper fix" → `NormalizeFeatureDescriptor` eliminated entirely, not patched ✓
 
-**2. Placeholder scan:** No TBD/TODO/placeholder text. All code blocks contain complete, runnable code.
+**2. Placeholder scan:** The accessory FeatureLanguage table in Task 2c lists all 18 accessories with explicit HasForm/WithForm/WhoForm values — no "etc." or "continue for all" without the actual data. The code blocks contain complete, runnable code. The only abbreviated section is the accessory array in Step 4 which shows the first 3 entries inline and provides the full table above for the remaining 15.
 
 **3. Type consistency:**
-- `SaloonPersonOfInterestDescriptor.Describe(Suspect, CaseFile)` — signature matches existing usage in `PrologueDescriptorResolver.cs:38` and parity tests.
-- `StoreOffer` record signature unchanged — only `DisplayName` string values change.
+- `FeatureLanguage` — defined in Task 2a, consumed in Tasks 2b, 2c, 2d. Fields: `HasForm`, `WithForm`, `WhoForm`, `OpeningLeadForm` (nullable).
+- `FeatureDescriptor` — defined in Task 2a, consumed in Task 2c. Fields: `Category`, `BodyPart`, `Side`.
+- `SuspectIdentityFact` — changes from `(string Description, bool IsPrimary)` to `(FeatureLanguage Language, bool IsPrimary)` in Task 2b. All consumers updated in Tasks 2b-2d.
+- `CaseSuspectFeatureProfile` — `Description` and `OpeningLeadText` fields replaced by `Language` in Task 2c. All consumers updated.
+- `SaloonPersonOfInterestDescriptor.Describe(Suspect, CaseFile)` — signature unchanged; internal implementation rewritten in Task 2d.
+- `StoreOffer` record — unchanged; only `DisplayName` string values change in Task 3.
 - `CorsOptions.GetPolicy("ViteDevClient")` — standard ASP.NET Core CORS API.
-- `ItemKind.HorseFeed` — unchanged; only display name strings change.
+- `FeatureLanguage.Raw(hasForm, withForm, whoForm?)` — factory used in test fixtures; produces `FeatureLanguage` with `OpeningLeadForm = null`.
+
+**4. Persistence impact:**
+- `SuspectIdentityFactSnapshot` changes from `(string Description, bool IsPrimary)` to `(FeatureLanguageSnapshot Language, bool IsPrimary)`.
+- Old JSON saves will fail to deserialize. Per AGENTS.md: "In this greenfield repo, current mainline model correctness wins over old-save or legacy internal compatibility" and "Dev database drop/recreate is allowed."
+- `ClueSubjectAnchorSnapshot` is unchanged — clue anchors still store `Feature` as a string (the `HasForm`).
+
+**5. Scope discipline check:**
+- The language service refactor is explicitly requested by the user ("do a full and proper fix").
+- No unrelated refactors — CORS and Horse feed fixes are independent.
+- The `FeatureLanguage` types are in the Domain layer where `SuspectIdentityFact` and `SaloonPersonOfInterestDescriptor` live.
+- Accessory copy is preserved verbatim — only the storage shape changes (from one string to a `FeatureLanguage` record with pre-written forms).
