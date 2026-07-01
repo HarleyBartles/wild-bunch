@@ -1461,6 +1461,23 @@ internal sealed class JourneyLoop
         _pendingDevTravelOverride = overrideValue;
     }
 
+    internal void AppendTravelDiaryDay(TravelDiaryDayState travelDiaryDay)
+    {
+        _travelDiaryDays.Add(travelDiaryDay);
+    }
+
+    internal bool UpdateLatestTravelDiaryDay(Func<TravelDiaryDayState, TravelDiaryDayState> update)
+    {
+        if (_travelDiaryDays.Count == 0)
+        {
+            return false;
+        }
+
+        var lastIndex = _travelDiaryDays.Count - 1;
+        _travelDiaryDays[lastIndex] = update(_travelDiaryDays[lastIndex]);
+        return true;
+    }
+
     private static int CalculateNextJourneySequence(
         TravelJourney? journey,
         IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory)
