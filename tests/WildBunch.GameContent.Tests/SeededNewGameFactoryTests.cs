@@ -56,11 +56,11 @@ public sealed class SeededNewGameFactoryTests
         }, session.CaseFile.Suspects.Select(suspect => suspect.Name).ToArray());
         Assert.Contains(session.CaseFile.Suspects[0].Profile.Aliases, alias => alias.Name == "Grey Jay");
         Assert.NotEmpty(session.CaseFile.Suspects[3].Profile.IdentifyingFacts);
-        var culpritOpeningFeature = Assert.Single(CaseSuspectFeaturePool.FeaturePool, feature => feature.OpeningLeadText == session.CaseFile.OpeningLead.Description);
+        var culpritOpeningFeature = Assert.Single(CaseSuspectFeaturePool.FeaturePool, feature => feature.Language.OpeningLeadForm == session.CaseFile.OpeningLead.Description);
         Assert.True(culpritOpeningFeature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable));
         Assert.True(culpritOpeningFeature.HasTag(CaseSuspectFeatureTags.ClassicNod));
-        Assert.Equal(culpritOpeningFeature.Description, session.CaseFile.Suspects[3].Profile.IdentifyingFacts[0].Language.HasForm);
-        Assert.All(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Description == fact.Language.HasForm));
+        Assert.Equal(culpritOpeningFeature.Language.HasForm, session.CaseFile.Suspects[3].Profile.IdentifyingFacts[0].Language.HasForm);
+        Assert.All(session.CaseFile.Suspects[3].Profile.IdentifyingFacts, fact => Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Language.HasForm == fact.Language.HasForm));
         Assert.Contains(session.CaseFile.KnownClues, clue =>
             clue.Kind == ClueKind.CulpritTrail
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit

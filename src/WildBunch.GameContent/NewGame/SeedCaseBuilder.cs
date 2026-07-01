@@ -110,7 +110,7 @@ internal static class SeedCaseBuilder
         => new(
             id,
             profile.DisplayName,
-            new SuspectProfile(profile.GameAliases, feature.AllFeatures.Select(fact => new SuspectIdentityFact(FeatureLanguage.Raw(fact.Description, fact.Description), fact.Kind == CaseFeatureKind.PrimaryMarker))),
+            new SuspectProfile(profile.GameAliases, feature.AllFeatures.Select(fact => new SuspectIdentityFact(fact.Language, fact.Kind == CaseFeatureKind.PrimaryMarker))),
             profile.Traits,
             SuspectStatus.AtLarge);
 
@@ -131,7 +131,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor(culpritFeature.Description, Feature: culpritFeature.Description, Fact: "opening lead"),
+                        new ClueSubjectAnchor(culpritFeature.Language.HasForm, Feature: culpritFeature.Language.HasForm, Fact: "opening lead"),
                     },
                     times: new[]
                     {
@@ -164,7 +164,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[0]), Alias: DescribePrimaryAlias(suspects[0]), Feature: features[0].PrimaryFeature.Description)
+                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[0]), Alias: DescribePrimaryAlias(suspects[0]), Feature: features[0].PrimaryFeature.Language.HasForm)
                     })),
             CreateClue(
                 source,
@@ -180,7 +180,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor(features[1].PrimaryFeature.Description, Feature: features[1].PrimaryFeature.Description)
+                        new ClueSubjectAnchor(features[1].PrimaryFeature.Language.HasForm, Feature: features[1].PrimaryFeature.Language.HasForm)
                     })),
             CreateClue(
                 source,
@@ -196,7 +196,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[2]), Alias: DescribePrimaryAlias(suspects[2]), Fact: features[2].PrimaryFeature.Description)
+                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[2]), Alias: DescribePrimaryAlias(suspects[2]), Fact: features[2].PrimaryFeature.Language.HasForm)
                     })),
             CreateClue(
                 source,
@@ -212,7 +212,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor(features[4].PrimaryFeature.Description, Feature: features[4].PrimaryFeature.Description)
+                        new ClueSubjectAnchor(features[4].PrimaryFeature.Language.HasForm, Feature: features[4].PrimaryFeature.Language.HasForm)
                     },
                     locations: new[]
                     {
@@ -240,7 +240,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor(culpritFeature.Description, Feature: culpritFeature.Description, Fact: "identity match")
+                        new ClueSubjectAnchor(culpritFeature.Language.HasForm, Feature: culpritFeature.Language.HasForm, Fact: "identity match")
                     },
                     times: new[]
                     {
@@ -260,7 +260,7 @@ internal static class SeedCaseBuilder
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
-                        new ClueSubjectAnchor("Red Mesa rider", Feature: culpritFeature.Description)
+                        new ClueSubjectAnchor("Red Mesa rider", Feature: culpritFeature.Language.HasForm)
                     },
                     locations: new[]
                     {
@@ -329,22 +329,10 @@ internal static class SeedCaseBuilder
             : suspect.Name;
 
     private static string DescribeUnnamedRider(CaseSuspectFeatureProfile feature)
-        => $"an unnamed rider who {DescribeFeatureClause(feature.Description)}";
+        => $"an unnamed rider who {feature.Language.WhoForm}";
 
     private static string DescribePersonWithFeature(CaseSuspectFeatureProfile feature, string person)
-        => $"{person} who {DescribeFeatureClause(feature.Description)}";
-
-    private static string DescribeFeatureClause(string featureDescription)
-    {
-        var trimmed = featureDescription.Trim().TrimEnd('.', '!', '?');
-
-        if (trimmed.Length == 0)
-        {
-            return "is described by an unrecorded feature";
-        }
-
-        return char.ToLowerInvariant(trimmed[0]) + trimmed[1..];
-    }
+        => $"{person} who {feature.Language.WhoForm}";
 
     private static IReadOnlyList<SuspectTurfAssignment> SelectSuspectTurfAssignments(
         GameSetupDeterministicSource source,
