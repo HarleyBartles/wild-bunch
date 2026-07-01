@@ -6,7 +6,7 @@
 
 **Architecture:** All player-facing log/journal reads already derive from the typed domain event stream via `JournalLogProjector` (BUNCH-84/86). The remaining `AddLogEntry`/`RecordCaseUpdate`/`RecordTravelUpdate` calls inside `Apply(...)` methods only populate the internal `_logEntries` list, which is no longer read by any live path. Removing them is safe because: (1) `JournalLogProjector` already reproduces the exact same `GameLogEntry` sequence from the event stream; (2) the snapshot `LogEntries` field is only used for rehydrating `_logEntries` during snapshot load, and post-snapshot events replay through `Apply` which would re-append — but since nothing reads `_logEntries`, both the snapshot field and the Apply-side appends are dead weight; (3) `RehydrateFromEvents` populates `_logEntries` via Apply, but no replay-equality test reads anything other than `.Count` (which will still match because both command and replay paths stop appending).
 
-**Tech Stack:** C#/.NET 8, xUnit, EF Core, JSON snapshot persistence.
+**Tech Stack:** C#/.NET 10 (`net10.0`), xUnit, EF Core, JSON snapshot persistence.
 
 ## Global Constraints
 
@@ -198,10 +198,12 @@ In `GameSessionRehydrator.cs`:
 - Remove the `LogEntriesField` static field
 - Remove the `ReplaceLogEntries` method
 
-- [ ] **Step 4: Build the Persistence project**
+- [ ] **Step 4: Build the Persistence project (intentional intermediate red state)**
 
 Run: `dotnet build src/WildBunch.Persistence/WildBunch.Persistence.csproj`
-Expected: Build fails only on `EfGameSessionRepository` and `GameSessionReadStoreLoader` (fixed in Task 3)
+Expected: Build fails only on `EfGameSessionRepository` and `GameSessionReadStoreLoader` (fixed in Task 3).
+
+**This is an intentional intermediate red state.** Task 2 is not independently shippable — the Persistence project will not compile until Task 3 removes the `LogEntries` references from `EfGameSessionRepository` and `GameSessionReadStoreLoader`. Tasks 2 and 3 must be landed together as a single reviewable unit; do not commit or push Task 2 in isolation.
 
 - [ ] **Step 5: Commit**
 
