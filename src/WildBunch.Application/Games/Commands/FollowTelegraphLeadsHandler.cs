@@ -33,7 +33,8 @@ public sealed class FollowTelegraphLeadsHandler : GameSessionCommandHandler
             return new InvestigationActionResultDto(
                 actionResult.Success,
                 actionResult.Message,
-                JournalMapper.ToDto(_journalResolver.Resolve(session, GameSessionLogProjection.Project(session))));
+                JournalMapper.ToDto(_journalResolver.Resolve(session, GameSessionLogProjection.Project(session))),
+                actionResult.BeatNarration);
         }, cancellationToken).ConfigureAwait(false);
     }
 }
