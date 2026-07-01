@@ -1,6 +1,7 @@
 import type { TravelDiaryDayDto } from "../../api/types";
 import { JourneyStatus } from "../../api/types";
 import { formatHorseTravelState, formatJourneyStatus, formatTravelMode } from "../../ui/formatters";
+import { formatBeatSlotLabel } from "../../ui/beatFormatters";
 import styled from "styled-components";
 
 interface TravelDiaryDayCardProps {
@@ -38,7 +39,7 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
     <DiaryDayCard>
       <DiaryDayHeader>
         <div>
-          <DayTitle>Day {day.dayNumber}</DayTitle>
+          <DayTitle>{day.journeyBeat ?? `Day ${day.dayNumber}`}</DayTitle>
           <DaySubhead>
             {day.originTownName} to {day.destinationTownName} | {formatTravelMode(day.startingTravelMode)} to{" "}
             {formatTravelMode(day.endingTravelMode)} | {day.status === JourneyStatus.Active ? "In motion" : formatJourneyStatus(day.status)}
@@ -48,7 +49,17 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
       </DiaryDayHeader>
 
       <DiaryBody>
+        {day.resourceBeat ? <OpeningNote>{day.resourceBeat}</OpeningNote> : null}
         {day.openingNarration ? <OpeningNote>{day.openingNarration}</OpeningNote> : null}
+        {day.beatSlots && day.beatSlots.length > 0 && (
+          <BeatSlotList>
+            {day.beatSlots.map((slot) => (
+              <BeatSlotItem key={slot.slotIndex} data-slot-type={slot.slotType.toLowerCase()}>
+                {formatBeatSlotLabel(slot.slotType)}
+              </BeatSlotItem>
+            ))}
+          </BeatSlotList>
+        )}
         {day.entries.map((entry, index) => (
           <DiaryParagraph key={`${day.dayNumber}-${index}`}>{entry}</DiaryParagraph>
         ))}
@@ -223,4 +234,25 @@ const DayMeta = styled.p`
   margin: 0;
   color: color-mix(in srgb, var(--text) 54%, transparent);
   font-size: 0.84rem;
+`;
+
+const BeatSlotList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem 0;
+`;
+
+const BeatSlotItem = styled.li`
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--text) 54%, transparent);
+  padding: 0.15rem 0;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+
+  &[data-slot-type="eventful"],
+  &[data-slot-type="interrupting"] {
+    color: var(--accent-ink);
+    border-left-color: var(--accent-strong);
+  }
 `;
