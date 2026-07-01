@@ -163,8 +163,11 @@ public static class CitizenCast
 
     /// <summary>
     /// Normalizes a feature description by stripping common prefixes ("has a",
-    /// "wears a", "wearing a", etc.) down to "a"/"an". Mirrors the normalization in
-    /// <see cref="Cases.SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor"/>.
+    /// "wears a", "wearing a", etc.) down to "a"/"an". This is a local duplicate of
+    /// the prefix-stripping that previously lived in
+    /// <see cref="Cases.SaloonPersonOfInterestDescriptor"/>; the saloon descriptor now
+    /// consumes structured <see cref="FeatureLanguage"/> forms directly and no longer
+    /// normalizes.
     /// </summary>
     private static string NormalizeFeatureDescriptor(string descriptor)
     {
