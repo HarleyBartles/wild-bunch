@@ -596,6 +596,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(TravelDayAdvanced e)
     {
         Clock.Set(e.Day, turn: 0);
+        _journeyLoop.Apply(e);
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         if (e.HealthDelta != 0)
             Player.AdjustHealth(e.HealthDelta);
@@ -648,6 +649,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(TrailEventApplied e)
     {
+        _journeyLoop.Apply(e);
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         Player.SetCash(e.WalletCash);
         PursuitState.SetHeat(e.PursuitHeat);
@@ -664,6 +666,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(JourneyEncounterResolved e)
     {
+        _journeyLoop.Apply(e);
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         Player.SetHealth(e.PlayerHealth);
         Player.SetCash(e.WalletCash);
@@ -683,6 +686,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(JourneyCompleted e)
     {
+        _journeyLoop.Apply(e);
         Journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         Player.TravelTo(e.DestinationTownId);
         RefreshTownVisit(e.DestinationTownId);
@@ -697,6 +701,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(JourneyArrivalAcknowledged e)
     {
+        _journeyLoop.Apply(e);
         _completedJourneyHistory.Add(e.JourneySnapshot);
         Journey = null;
         _version++;
@@ -1223,29 +1228,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         ArgumentNullException.ThrowIfNull(preview);
 
-        if (Journey is not null)
+        var context = new StartJourneyContext(preview, _journeyLoop.NextJourneySequence, TravelRules);
+        var result = _journeyLoop.StartJourney(context);
+        foreach (var e in result.Events)
         {
-            return TravelJourneyStepResult.Failed("You are already on the trail.");
+            ProduceEvent(e);
         }
-
-        var newJourney = TravelJourney.Start(preview, _nextJourneySequence, BuildJourneyOpeningNarration(preview));
-        var startMessage = $"You set out from {preview.OriginTownName} toward {preview.DestinationTownName} {DescribeTravelMode(preview.TravelMode)}. The route is {preview.RideDayDistance:0.##} ride-day unit(s) and should take {preview.ExpectedDays} day(s). {DescribeCanteenCoverage(preview)}.";
-        // Leaving town resets heat to 0 — lawman pressure clears when you hit the trail.
-        // Do not mutate PursuitState here; Apply(JourneyStarted) sets it from the event.
-        ProduceEvent(new JourneyStarted
-        {
-            JourneySnapshot = newJourney.ToSnapshot(TravelRules),
-            DiaryMessage = startMessage,
-            PursuitHeat = 0
-        });
-
-        return new TravelJourneyStepResult(
-            true,
-            JourneyStatus.Active,
-            startMessage,
-            startMessage,
-            0,
-            Journey!.ToSnapshot(TravelRules));
+        return result.Result;
     }
 
     public TravelJourneyStepResult AdvanceJourneyDay()

@@ -1,5 +1,6 @@
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Game;
 
@@ -44,6 +45,32 @@ internal sealed class JourneyLoop
         _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
         _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
         _travelDiaryDays.Clear();
+    }
+
+    internal void Apply(TravelDayAdvanced e)
+    {
+        _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+    }
+
+    internal void Apply(TrailEventApplied e)
+    {
+        _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+    }
+
+    internal void Apply(JourneyEncounterResolved e)
+    {
+        _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+    }
+
+    internal void Apply(JourneyCompleted e)
+    {
+        _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
+    }
+
+    internal void Apply(JourneyArrivalAcknowledged e)
+    {
+        _completedJourneyHistory.Add(e.JourneySnapshot);
+        _journey = null;
     }
 
     internal void Apply(DevTravelOverrideForced e)
@@ -94,6 +121,39 @@ internal sealed class JourneyLoop
         return new JourneyLoopResult<bool>(true, [new DevTravelOverrideCleared()]);
     }
 
+    internal JourneyLoopResult<TravelJourneyStepResult> StartJourney(StartJourneyContext context)
+    {
+        if (_journey is not null)
+        {
+            return new JourneyLoopResult<TravelJourneyStepResult>(
+                TravelJourneyStepResult.Failed("You are already on the trail."),
+                []);
+        }
+
+        var newJourney = TravelJourney.Start(
+            context.Preview,
+            _nextJourneySequence,
+            BuildJourneyOpeningNarration(context.Preview));
+        var startMessage = $"You set out from {context.Preview.OriginTownName} toward {context.Preview.DestinationTownName} {DescribeTravelMode(context.Preview.TravelMode)}. The route is {context.Preview.RideDayDistance:0.##} ride-day unit(s) and should take {context.Preview.ExpectedDays} day(s). {DescribeCanteenCoverage(context.Preview)}.";
+
+        var e = new JourneyStarted
+        {
+            JourneySnapshot = newJourney.ToSnapshot(context.TravelRules),
+            DiaryMessage = startMessage,
+            PursuitHeat = 0
+        };
+
+        var result = new TravelJourneyStepResult(
+            true,
+            JourneyStatus.Active,
+            startMessage,
+            startMessage,
+            0,
+            newJourney.ToSnapshot(context.TravelRules));
+
+        return new JourneyLoopResult<TravelJourneyStepResult>(result, [e]);
+    }
+
     internal void RestoreTravelDiaryDays(IReadOnlyList<TravelDiaryDayState> days)
     {
         _travelDiaryDays.Clear();
@@ -118,4 +178,87 @@ internal sealed class JourneyLoop
 
         return Math.Max(1, maxSequence + 1);
     }
+
+    private static string BuildJourneyOpeningNarration(TravelPreview preview)
+    {
+        var baselineRidePhrase = $"{preview.BaselineRideDays}-day {DescribeTerrain(preview.RouteProfile.Terrain)} ride";
+        var travelMode = DescribeTravelMode(preview.TravelMode);
+        var risk = DescribeRisk(preview.RouteProfile.Risk);
+        var waterPressure = preview.WaterSecure
+            ? $"I had enough water for the base trail, though the canteen still needed watching on a {preview.ExpectedDays}-day run."
+            : $"This dry trail asked for {preview.CanteenChargesPerDay} canteen charge(s) a day, and I did not have much slack.";
+        var foodPressure = preview.AvailableFood <= preview.ExpectedDays
+            ? "My food was tight enough that I noticed every meal."
+            : "My food should have held if the trail behaved itself.";
+        var horsePressure = preview.HorseState is null
+            ? "I was traveling without a horse, so the road had to be enough."
+            : preview.MountedTravelAvailable
+                ? "My horse was fit enough to carry me for now."
+                : "My horse was not fit for mounted travel, so I needed to mind the pace.";
+
+        var openingSentence = preview.TravelMode == TravelMode.Foot
+            ? preview.ExpectedDays != preview.BaselineRideDays
+                ? $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase}, but without a horse it would take {preview.ExpectedDays} days on foot."
+                : $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase} on foot."
+            : $"I set out for {preview.DestinationTownName} on a {baselineRidePhrase} {travelMode}.";
+
+        return $"{openingSentence} {risk} {waterPressure} {foodPressure} {horsePressure}";
+    }
+
+    private static string DescribeTravelMode(TravelMode travelMode)
+        => travelMode == TravelMode.Mounted ? "by mounted travel" : "on foot";
+
+    private static string DescribeCanteenCoverage(TravelPreview preview)
+        => DescribeCanteenCoverage(preview.RouteProfile.WaterFeature, preview.CanteenChargesPerDay, preview.CanteenReserveCharges, preview.DelayMarginDays);
+
+    private static string DescribeCanteenCoverage(TravelJourneySnapshot snapshot)
+        => DescribeCanteenCoverage(snapshot.RouteProfile.WaterFeature, snapshot.CanteenChargesPerDay, snapshot.CanteenReserveCharges, snapshot.DelayMarginDays);
+
+    private static string DescribeCanteenCoverage(
+        WaterFeature waterFeature,
+        int canteenChargesPerDay,
+        int canteenReserveCharges,
+        int delayMarginDays)
+    {
+        if (JourneyUpkeepRules.HasRouteWater(waterFeature))
+        {
+            return "Route water is secure, so no canteen reserve is required";
+        }
+
+        if (canteenChargesPerDay <= 0)
+        {
+            return "No canteen water is required on this trail";
+        }
+
+        if (canteenReserveCharges == 0)
+        {
+            return "The canteen exactly covers the base trail and has no reserve for delays";
+        }
+
+        if (canteenReserveCharges > 0)
+        {
+            return $"The canteen has {canteenReserveCharges} spare charge(s) and can absorb {delayMarginDays} delay day(s)";
+        }
+
+        return $"The canteen is short by {Math.Abs(canteenReserveCharges)} charge(s) for the base trail";
+    }
+
+    private static string DescribeTerrain(TrailTerrain terrain)
+        => terrain switch
+        {
+            TrailTerrain.OpenRange => "open-range",
+            TrailTerrain.Hills => "hill country",
+            TrailTerrain.Badlands => "badlands",
+            TrailTerrain.Mountains => "mountain",
+            _ => "trail"
+        };
+
+    private static string DescribeRisk(TrailRisk risk)
+        => risk switch
+        {
+            TrailRisk.Low => "The route looks steady enough for now.",
+            TrailRisk.Moderate => "The route has some teeth, so I will keep my eyes open.",
+            TrailRisk.High => "The route looks rough enough to demand respect.",
+            _ => "The route is hard to read."
+        };
 }
