@@ -85,7 +85,7 @@ public static class TestSessionFactory
                 "Mira Cline",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Has a scar on the left cheek.", "a scar on the left cheek", "has a scar on the left cheek")) }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
@@ -127,7 +127,7 @@ public static class TestSessionFactory
                 "Mira Cline",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("Has a scar on the left cheek.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Has a scar on the left cheek.", "a scar on the left cheek", "has a scar on the left cheek")) }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge),
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
@@ -380,7 +380,7 @@ public static class TestSessionFactory
                 "Reno Pike",
                 new SuspectProfile(
                     Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact("a black duster") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("a black duster", "a black duster", "wears a black duster")) }),
                 SuspectTraits.Empty,
                 SuspectStatus.AtLarge)
         };

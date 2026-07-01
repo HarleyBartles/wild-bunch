@@ -25,7 +25,9 @@ public static class DependencyInjection
         {
             options.AddPolicy("ViteDevClient", policy =>
             {
-                policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+                policy.SetIsOriginAllowed(origin =>
+                        origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase)
+                        || origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase))
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });

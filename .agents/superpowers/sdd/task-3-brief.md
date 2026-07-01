@@ -1,100 +1,82 @@
-﻿## Task 3: Strip town-specific warrants and clues from SeedCaseBuilder
+﻿### Task 3: Disambiguate duplicate "Horse feed" display names by vendor
 
 **Files:**
-- Modify: `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs`
-- Test: `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`
+- Modify: `src/WildBunch.Domain/Economy/TownStoreCatalogModels.cs` (lines 77, 84, 91, 97, 109, 115)
+- Test: `tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs` (add test)
 
 **Interfaces:**
-- Consumes: `CaseCharacterRoster.UnrelatedWantedCriminalPool` (21 entries after Task 2)
-- Produces: `SeedCaseBuilder.CreateCaseFile` / `CreateCanonicalCaseFile` that populate:
-  - KnownClues: 1 (prologue)
-  - PublicClues: 6 base surface-tagged clues (no town-specific additions)
-  - KnownWarrants: 0
-  - PublicWarrants: 7 gang warrants + 21 unrelated criminal warrants (28 total)
+- Consumes: `Town`, `TownProsperity` from `WildBunch.Domain.World`
+- Produces: `StoreOffer.DisplayName` for `ItemKind.HorseFeed` offers includes the vendor source suffix, e.g. `"Horse feed (General store)"` / `"Horse feed (Stable)"`
 
 - [ ] **Step 1: Write the failing test**
 
+Add to `tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs`:
+
 ```csharp
-[Fact]
-public void CaseFile_StartsWithOneKnownClueAndZeroKnownWarrants()
-{
-    var factory = new SeededNewGameFactory();
-    var session = factory.Create("Ranger Vale");
+    [Fact]
+    public void HorseFeedDisplayNamesAreDisambiguatedByVendor()
+    {
+        var resolver = new TownStoreCatalogResolver();
+        var town = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph, TownProsperity.Boomtown);
 
-    Assert.Single(session.CaseFile.KnownClues);
-    Assert.Empty(session.CaseFile.KnownWarrants);
-}
+        var catalog = resolver.Resolve(town);
 
-[Fact]
-public void CaseFile_PublicWarrants_HasSevenGangPlusTwentyOneUnrelated()
-{
-    var factory = new SeededNewGameFactory();
-    var session = factory.Create("Ranger Vale");
+        var horseFeedOffers = catalog.Offers
+            .Where(o => o.ItemKind == ItemKind.HorseFeed)
+            .ToList();
 
-    Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
-    Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
-    Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
-}
+        // Boomtown has both a general store and a stable selling horse feed
+        Assert.Equal(2, horseFeedOffers.Count);
 
-[Fact]
-public void CaseFile_PublicClues_HasSixBaseCluesNoTownSpecificOnes()
-{
-    var factory = new SeededNewGameFactory();
-    var session = factory.Create("Ranger Vale");
+        var generalStoreOffer = horseFeedOffers.Single(o => o.VendorType == StoreVendorType.GeneralStore);
+        var stableOffer = horseFeedOffers.Single(o => o.VendorType == StoreVendorType.Stable);
 
-    Assert.Equal(6, session.CaseFile.PublicClues.Count);
-}
+        Assert.Equal("Horse feed (General store)", generalStoreOffer.DisplayName);
+        Assert.Equal("Horse feed (Stable)", stableOffer.DisplayName);
+
+        // Display names must be distinct so the store panel doesn't show duplicate-looking cards
+        Assert.NotEqual(generalStoreOffer.DisplayName, stableOffer.DisplayName);
+    }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test --filter "FullyQualifiedName~CaseFile_StartsWithOneKnownClue|FullyQualifiedName~CaseFile_PublicWarrants_HasSevenGang|FullyQualifiedName~CaseFile_PublicClues_HasSixBase"`
-Expected: FAIL
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter HorseFeedDisplayNamesAreDisambiguatedByVendor`
+Expected: FAIL â€” both offers have `DisplayName == "Horse feed"`.
 
-- [ ] **Step 3: Strip town-specific methods from SeedCaseBuilder**
+- [ ] **Step 3: Implement the fix**
 
-Remove `CreateTownSpecificPublicClues` and `CreateTownSpecificPublicWarrants` methods entirely. Remove the calls to them in `CreatePublicClues` and `CreatePublicWarrants`.
+In `src/WildBunch.Domain/Economy/TownStoreCatalogModels.cs`, update all six `Horse feed` display names:
 
-- [ ] **Step 4: Restructure PublicWarrants to include all 7 gang + 21 unrelated**
+General store offers (lines 77, 84, 91, 97) â€” change `"Horse feed"` to `"Horse feed (General store)"`:
 
-Replace `CreatePublicWarrants` to build:
-- 7 gang member warrants (one per suspect, including true culprit â€” culprit's warrant has `InvestigationTargetKind.TrueCulprit`)
-- 21 unrelated criminal warrants from `CaseCharacterRoster.UnrelatedWantedCriminalPool`
-- All tagged with `InvestigationSourceKind.SheriffWarrants`
+```csharp
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (General store)", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+```
+(Repeat for each prosperity tier's general store horse feed offer, keeping the respective price.)
 
-Remove the `publicWarrant1` / `publicWarrant2` parameters from `BuildCase` and the public entry points.
+Stable offers (lines 109, 115) â€” change `"Horse feed"` to `"Horse feed (Stable)"`:
 
-- [ ] **Step 5: Run tests to verify they pass**
+```csharp
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (Stable)", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+```
+(Repeat for Boomtown and Prosperous stable horse feed offers.)
 
-Run: `dotnet test --filter "FullyQualifiedName~CaseFile_StartsWithOneKnownClue|FullyQualifiedName~CaseFile_PublicWarrants_HasSevenGang|FullyQualifiedName~CaseFile_PublicClues_HasSixBase"`
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests --filter TownStoreCatalogResolverTests`
 Expected: PASS
 
-- [ ] **Step 6: Fix SeededNewGameFactoryTests assertions**
+- [ ] **Step 5: Run purchase and store-offers tests to verify no regressions**
 
-Update `CreatesRicherSeedWorldAndCase`:
-- `PublicClues.Count` = 6 (not 20)
-- `PublicWarrants.Count` = 28 (not 9)
-- Remove assertions on specific town-specific warrant names/clue descriptions that no longer exist
-- Keep assertions on gang roster, culprit, opening lead, known clues
+Run: `dotnet test tests/WildBunch.Application.Tests --filter "PurchaseStoreItemHandlerTests|GetTownStoreOffersHandlerTests"`
+Expected: PASS â€” these tests assert on `ItemKind` and `VendorType`, not on the exact `DisplayName` string. If any test asserts the old `"Horse feed"` display name, update it to the new disambiguated name.
 
-- [ ] **Step 7: Fix GameSetupResolverTests assertions**
-
-Update `CanonicalTemplateUsesTheExplicitCanonicalPlan`:
-- `PublicClues.Count` = 6
-- `PublicWarrants.Count` = 28
-- Remove assertions on specific public warrant names that were the old 2 base warrants
-
-- [ ] **Step 8: Run all GameContent.Tests**
-
-Run: `dotnet test --filter "FullyQualifiedName~WildBunch.GameContent.Tests"`
-Expected: PASS
-
-- [ ] **Step 9: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add -A
-git commit -m "refactor: strip town-specific warrants/clues, restructure case file pools"
+git add src/WildBunch.Domain/Economy/TownStoreCatalogModels.cs tests/WildBunch.Domain.Tests/TownStoreCatalogResolverTests.cs
+git commit -m "BUNCH-118: disambiguate duplicate Horse feed display names by vendor"
 ```
 
 ---
-

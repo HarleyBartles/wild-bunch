@@ -129,9 +129,9 @@ public static class CitizenCast
     /// <summary>
     /// Returns the concealment descriptor shown during lookaround:
     /// "a stranger with {normalized feature}". If the encounter has no feature
-    /// description, returns "an unfamiliar face". Reuses the same normalization
-    /// logic as <see cref="Cases.SaloonPersonOfInterestDescriptor"/> (strip
-    /// "has a"/"wears a" prefixes to "a"/"an").
+    /// description, returns "an unfamiliar face". Normalizes the feature
+    /// description locally (the saloon descriptor now uses structured
+    /// <see cref="Cases.FeatureLanguage"/> forms directly).
     /// </summary>
     public static string ResolveDescriptor(CitizenEncounter encounter)
     {
@@ -163,8 +163,11 @@ public static class CitizenCast
 
     /// <summary>
     /// Normalizes a feature description by stripping common prefixes ("has a",
-    /// "wears a", "wearing a", etc.) down to "a"/"an". Mirrors the normalization in
-    /// <see cref="Cases.SaloonPersonOfInterestDescriptor.NormalizeFeatureDescriptor"/>.
+    /// "wears a", "wearing a", etc.) down to "a"/"an". This is a local duplicate of
+    /// the prefix-stripping that previously lived in
+    /// <see cref="Cases.SaloonPersonOfInterestDescriptor"/>; the saloon descriptor now
+    /// consumes structured <see cref="FeatureLanguage"/> forms directly and no longer
+    /// normalizes.
     /// </summary>
     private static string NormalizeFeatureDescriptor(string descriptor)
     {

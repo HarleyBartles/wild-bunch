@@ -791,7 +791,7 @@ internal static class CaseCharacterRoster
         }
 
         var openingLeadTokens = new HashSet<string>(
-            Tokenize(openingLeadFeature.Description).Where(token => token.Length > 3),
+            Tokenize(openingLeadFeature.Language.HasForm).Where(token => token.Length > 3),
             StringComparer.OrdinalIgnoreCase);
 
         var selectedFeatures = featurePool

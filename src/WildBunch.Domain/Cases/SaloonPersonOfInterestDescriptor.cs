@@ -24,17 +24,18 @@ public static class SaloonPersonOfInterestDescriptor
         var warrantDescriptor = knownWarrants.FirstOrDefault(warrant => MatchesKnownWarrant(warrant, suspect));
         if (warrantDescriptor is not null)
         {
-            var descriptor = warrantDescriptor.Terms.KnownFeatures.FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(descriptor))
+            var feature = warrantDescriptor.Terms.KnownFeatures.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(feature))
             {
-                return FormatPublicDescriptor(descriptor);
+                return $"a stranger with {TrimFeature(feature)}";
             }
         }
 
-        var profileDescriptor = suspect.Profile.IdentifyingFacts.FirstOrDefault().Description;
+        var primaryFact = suspect.Profile.IdentifyingFacts.FirstOrDefault();
+        var profileDescriptor = primaryFact.Language?.WithForm;
         if (!string.IsNullOrWhiteSpace(profileDescriptor))
         {
-            return FormatPublicDescriptor(profileDescriptor);
+            return $"a stranger with {profileDescriptor}";
         }
 
         var traitDescriptor = suspect.Traits.Tags.FirstOrDefault();
@@ -46,34 +47,14 @@ public static class SaloonPersonOfInterestDescriptor
         return "an unfamiliar person";
     }
 
-    private static string TrimDescriptor(string descriptor)
-        => descriptor.Trim().TrimEnd('.', '!', '?');
-
-    private static string FormatPublicDescriptor(string descriptor)
-        => $"a stranger with {NormalizeFeatureDescriptor(TrimDescriptor(descriptor))}";
-
-    private static string NormalizeFeatureDescriptor(string descriptor)
-    {
-        foreach (var (prefix, replacement) in new[]
-        {
-            ("has a ", "a "),
-            ("has an ", "an "),
-            ("wore a ", "a "),
-            ("wore an ", "an "),
-            ("wears a ", "a "),
-            ("wears an ", "an "),
-            ("wearing a ", "a "),
-            ("wearing an ", "an "),
-        })
-        {
-            if (descriptor.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return replacement + descriptor[prefix.Length..];
-            }
-        }
-
-        return descriptor;
-    }
+    /// <summary>
+    /// Trims trailing punctuation from warrant feature strings (noun phrases like
+    /// "Raven-feather pin"). Warrant <see cref="WarrantTerms.KnownFeatures"/> are plain
+    /// noun-phrase strings from the warrant pool, not structured
+    /// <see cref="FeatureLanguage"/>; no prefix normalization is applied.
+    /// </summary>
+    private static string TrimFeature(string feature)
+        => feature.Trim().TrimEnd('.', '!', '?');
 
     private static string FormatTraitDescriptor(string traitTag)
         => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(traitTag.Trim().Replace('-', ' '));

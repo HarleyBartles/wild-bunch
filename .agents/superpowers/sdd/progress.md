@@ -1,10 +1,32 @@
-Task 1: complete (commits a9a60d9..4b2bd75, review clean)
-Task 2: complete (commits 4b2bd75..f5fad5d, review clean)
-Task 3: complete (commits f5fad5d..a1c5ea4, review clean)
-Task 4: complete (commits a1c5ea4..1267ea1, review clean)
-Task 5: complete (commits a1c5ea4..758a243, review clean)
-Task 6: complete (commits 1267ea1..af69780, review clean after fixes)
-Task 7: complete (commits af69780..771bbb8, review clean)
-Task 8: complete (commits 771bbb8..fecbbce, review clean)
-Task 9: complete (commits fecbbce..7cecc5b, review clean after fixes)
-Task 10: complete (build 0 errors, 863 tests pass, EF migrations OK, worktree clean)
+# BUNCH-118 SDD Progress Ledger
+
+Plan: `.agents/superpowers/plans/2026-07-01-bunch-118-fix-infrastructure-and-minor-issues.md`
+Branch: `harleydbartles/bunch-118-fix-infrastructure-and-minor-issues`
+Merge base: `9ed4a69` (origin/main)
+
+## Tasks
+
+- [x] Task 1: Broaden dev CORS to allow any localhost port
+- [x] Task 2a: Add FeatureLanguage, FeatureDescriptor, FeatureLanguageService
+- [x] Task 2b: Migrate SuspectIdentityFact to carry FeatureLanguage
+- [x] Task 2c: Update CaseSuspectFeaturePool to store FeatureLanguage
+- [x] Task 2d: Eliminate NormalizeFeatureDescriptor from SaloonPersonOfInterestDescriptor
+- [x] Task 2e: Verify snapshot shape break + dev reset
+- [x] Task 3: Disambiguate duplicate Horse feed display names by vendor
+
+## Completion Log
+
+Task 1: complete (commits b07bc9c..8b9de5f, review clean — Approved, no Critical/Important)
+Task 2a: complete (commits 8b9de5f..c2e0580, review clean — Approved, 1 Minor: untested Raw fallback inherited from plan)
+Task 2b: complete (commits c2e0580..1ad16a2, review clean — Approved, 1 Minor: SeedCaseBuilder WithForm placeholder deferred to 2c)
+Task 2c: complete (commits 1ad16a2..5f9110a, review clean — Approved, no issues)
+Task 2d: complete (commits 5f9110a..ec7dfe4, review clean — Approved, no issues, bug fixed)
+Task 2e: complete (no commit — pure verification: break real, no shim, no schema drift, 169 integration tests pass)
+Task 3: complete (commits ec7dfe4..b2bac6c, review clean — Approved, no issues)
+
+## Final whole-branch review
+Branch quality: Approved. No Critical/Important. 4 Minor findings:
+1. FIXED (commit 10446d7): Stale doc comment on CitizenCast.ResolveDescriptor referencing old normalization shared with SaloonPersonOfInterestDescriptor.
+2. Deferred: FeatureLanguage.Raw default whoForm includes trailing punctuation (latent — all 26 callers pass whoForm explicitly).
+3. Deferred: NodFeature FamilyKey hardcoded bodyPart→key map with silent fallthrough to "brow" (only 4 categories today).
+4. Deferred: no-eyebrows has FeatureCategory.Absence but retains MissingPart tag (semantic, no functional impact).

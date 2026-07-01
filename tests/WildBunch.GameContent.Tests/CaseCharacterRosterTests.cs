@@ -46,7 +46,7 @@ public sealed class CaseCharacterRosterTests
         Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Key == "eyepatch-right");
         Assert.All(
             CaseSuspectFeaturePool.FeaturePool.Where(feature => feature.HasTag(CaseSuspectFeatureTags.OpeningLeadCapable)),
-            feature => Assert.False(string.IsNullOrWhiteSpace(feature.OpeningLeadText)));
+            feature => Assert.False(string.IsNullOrWhiteSpace(feature.Language.OpeningLeadForm)));
 
         var scarLeftTags = CaseSuspectFeaturePool.FeaturePool.Single(feature => feature.Key == "scar-left-cheek").Tags;
         Assert.Contains(scarLeftTags, tag => tag.Value == CaseSuspectFeatureTags.ClassicNod.Value);
@@ -141,7 +141,7 @@ public sealed class CaseCharacterRosterTests
     public void SharedFeatures_DoNotRevealCitizenRoleNames()
     {
         var featureDescriptions = CaseSuspectFeaturePool.FeaturePool
-            .Select(feature => feature.Description)
+            .Select(feature => feature.Language.HasForm)
             .Where(description => !string.IsNullOrWhiteSpace(description))
             .ToList();
 

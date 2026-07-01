@@ -401,13 +401,26 @@ public sealed partial class GameSessionJsonSerializer
             => new(snapshot.Name, snapshot.Kind);
     }
 
-    private sealed record SuspectIdentityFactSnapshot(string Description, bool IsPrimary)
+    private sealed record FeatureLanguageSnapshot(
+        string HasForm,
+        string WithForm,
+        string WhoForm,
+        string? OpeningLeadForm)
+    {
+        public static FeatureLanguageSnapshot FromDomain(FeatureLanguage language)
+            => new(language.HasForm, language.WithForm, language.WhoForm, language.OpeningLeadForm);
+
+        public static FeatureLanguage ToDomain(FeatureLanguageSnapshot snapshot)
+            => new(snapshot.HasForm, snapshot.WithForm, snapshot.WhoForm, snapshot.OpeningLeadForm);
+    }
+
+    private sealed record SuspectIdentityFactSnapshot(FeatureLanguageSnapshot Language, bool IsPrimary)
     {
         public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
-            => new(fact.Description, fact.IsPrimary);
+            => new(FeatureLanguageSnapshot.FromDomain(fact.Language), fact.IsPrimary);
 
         public static SuspectIdentityFact ToDomain(SuspectIdentityFactSnapshot snapshot)
-            => new(snapshot.Description, snapshot.IsPrimary);
+            => new(FeatureLanguageSnapshot.ToDomain(snapshot.Language), snapshot.IsPrimary);
     }
 
     private sealed record SuspectTraitsSnapshot(

@@ -1,99 +1,85 @@
-﻿## Task 1: Fix SeedWorldMapLayout crash on derived town names
+﻿### Task 1: Broaden dev CORS to allow any localhost port
 
 **Files:**
-- Modify: `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs`
-- Test: `tests/WildBunch.Application.Tests/GetStartingTownMapHandlerTests.cs`
+- Modify: `src/WildBunch.Api/DependencyInjection.cs:24-32`
+- Test: `tests/WildBunch.Api.Tests/CorsPolicyTests.cs` (create)
 
 **Interfaces:**
-- Consumes: `SeedWorldCatalog.CreateCanonicalWorld()` (existing)
-- Produces: `SeedWorldMapLayout.GetMapTowns()` / `GetMapTrails()` that no longer crash on derived town names
-
-The current `SeedWorldMapLayout` has a hardcoded `TownCoordinates` dictionary keyed by town ID string ("pinecross", "redmesa", etc.). With seed-derived town selection, town IDs come from the 40-entry name pool and won't all be in that dictionary. We need slot-based coordinates derived from the town's slot index.
+- Consumes: `IServiceCollection` from ASP.NET Core
+- Produces: A CORS policy named `"ViteDevClient"` that allows any `http://localhost:*` or `http://127.0.0.1:*` origin in development
 
 - [ ] **Step 1: Write the failing test**
 
+Create `tests/WildBunch.Api.Tests/CorsPolicyTests.cs`:
+
 ```csharp
-[Fact]
-public void GetMapTowns_DoesNotCrashWithDerivedTownNames()
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using WildBunch.Api;
+
+namespace WildBunch.Api.Tests;
+
+public sealed class CorsPolicyTests
 {
-    var towns = SeedWorldMapLayout.GetMapTowns();
-    Assert.NotEmpty(towns);
-    Assert.All(towns, town => Assert.True(town.X >= 0 && town.Y >= 0));
+    [Fact]
+    public void ViteDevClientPolicyAllowsAnyLocalhostPort()
+    {
+        var services = new ServiceCollection();
+        services.AddWildBunchServices(new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+
+        var corsOptions = services.BuildServiceProvider()
+            .GetRequiredService<Microsoft.Extensions.Options.IOptions<CorsOptions>>()
+            .Value;
+
+        var policy = corsOptions.GetPolicy("ViteDevClient");
+        Assert.NotNull(policy);
+
+        Assert.True(policy!.IsOriginAllowed("http://localhost:5173"));
+        Assert.True(policy.IsOriginAllowed("http://localhost:5174"));
+        Assert.True(policy.IsOriginAllowed("http://localhost:3000"));
+        Assert.True(policy.IsOriginAllowed("http://127.0.0.1:5173"));
+        Assert.True(policy.IsOriginAllowed("http://127.0.0.1:5174"));
+
+        // Non-local origins must still be rejected
+        Assert.False(policy.IsOriginAllowed("http://example.com:5173"));
+        Assert.False(policy.IsOriginAllowed("https://evil.com"));
+    }
 }
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test --filter "FullyQualifiedName~GetMapTowns_DoesNotCrashWithDerivedTownNames"`
-Expected: FAIL with KeyNotFoundException
+Run: `dotnet test tests/WildBunch.Api.Tests --filter CorsPolicyTests`
+Expected: FAIL â€” `IsOriginAllowed("http://localhost:5174")` returns false because the current policy only allows port 5173.
 
-- [ ] **Step 3: Implement slot-based coordinates**
+- [ ] **Step 3: Implement the fix**
 
-Replace the hardcoded `TownCoordinates` dictionary with a deterministic coordinate generator based on slot index. Use a simple radial/grid layout: slot 0 at center, remaining slots arranged in a ring or grid pattern.
+Replace the `WithOrigins(...)` call in `src/WildBunch.Api/DependencyInjection.cs`:
 
 ```csharp
-public static class SeedWorldMapLayout
-{
-    private const int CenterX = 400;
-    private const int CenterY = 450;
-    private const int RingRadius = 250;
-
-    public static IReadOnlyList<SeedMapTown> GetMapTowns()
-    {
-        var world = SeedWorldCatalog.CreateCanonicalWorld();
-        var towns = world.Towns.ToArray();
-        return towns
-            .Select((town, index) =>
+        services.AddCors(options =>
+        {
+            options.AddPolicy("ViteDevClient", policy =>
             {
-                var (x, y) = GetCoordinatesForSlot(index, towns.Length);
-                return new SeedMapTown(town.Id.Value, town.Name, town.Services, x, y);
-            })
-            .ToArray();
-    }
-
-    private static (int X, int Y) GetCoordinatesForSlot(int slotIndex, int totalTowns)
-    {
-        if (slotIndex == 0) return (CenterX, CenterY);
-        var angle = (slotIndex - 1) * (2.0 * Math.PI / Math.Max(1, totalTowns - 1));
-        var x = (int)(CenterX + RingRadius * Math.Cos(angle));
-        var y = (int)(CenterY + RingRadius * Math.Sin(angle));
-        return (x, y);
-    }
-
-    public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails()
-    {
-        var world = SeedWorldCatalog.CreateCanonicalWorld();
-        return world.Trails
-            .Select(trail => new SeedMapTrailEdge(
-                trail.Id.Value,
-                trail.FromTownId.Value,
-                trail.ToTownId.Value,
-                trail.RideDayDistance))
-            .ToArray();
-    }
-}
+                policy.SetIsOriginAllowed(origin =>
+                        origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase)
+                        || origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase))
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test --filter "FullyQualifiedName~GetMapTowns_DoesNotCrashWithDerivedTownNames"`
+Run: `dotnet test tests/WildBunch.Api.Tests --filter CorsPolicyTests`
 Expected: PASS
 
-- [ ] **Step 5: Fix GetStartingTownMapHandlerTests assertions**
-
-Update tests that assert on specific town counts (8), trail counts (9), and coordinate values to use the canonical world's actual counts and slot-based coordinates.
-
-- [ ] **Step 6: Run all Application.Tests to verify**
-
-Run: `dotnet test --filter "FullyQualifiedName~WildBunch.Application.Tests"`
-Expected: All GetStartingTownMapHandlerTests pass
-
-- [ ] **Step 7: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add -A
-git commit -m "fix: SeedWorldMapLayout uses slot-based coordinates instead of hardcoded town IDs"
+git add src/WildBunch.Api/DependencyInjection.cs tests/WildBunch.Api.Tests/CorsPolicyTests.cs
+git commit -m "BUNCH-118: broaden dev CORS to allow any localhost port"
 ```
 
 ---
-

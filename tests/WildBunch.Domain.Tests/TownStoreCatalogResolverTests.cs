@@ -62,4 +62,29 @@ public sealed class TownStoreCatalogResolverTests
         Assert.DoesNotContain(catalog.Offers, offer => offer.VendorType == StoreVendorType.Stable);
         Assert.DoesNotContain(catalog.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith);
     }
+
+    [Fact]
+    public void HorseFeedDisplayNamesAreDisambiguatedByVendor()
+    {
+        var resolver = new TownStoreCatalogResolver();
+        var town = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph, TownProsperity.Boomtown);
+
+        var catalog = resolver.Resolve(town);
+
+        var horseFeedOffers = catalog.Offers
+            .Where(o => o.ItemKind == ItemKind.HorseFeed)
+            .ToList();
+
+        // Boomtown has both a general store and a stable selling horse feed
+        Assert.Equal(2, horseFeedOffers.Count);
+
+        var generalStoreOffer = horseFeedOffers.Single(o => o.VendorType == StoreVendorType.GeneralStore);
+        var stableOffer = horseFeedOffers.Single(o => o.VendorType == StoreVendorType.Stable);
+
+        Assert.Equal("Horse feed (General store)", generalStoreOffer.DisplayName);
+        Assert.Equal("Horse feed (Stable)", stableOffer.DisplayName);
+
+        // Display names must be distinct so the store panel doesn't show duplicate-looking cards
+        Assert.NotEqual(generalStoreOffer.DisplayName, stableOffer.DisplayName);
+    }
 }

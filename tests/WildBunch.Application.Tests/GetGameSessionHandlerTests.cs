@@ -149,7 +149,7 @@ public sealed class GetGameSessionHandlerTests
                 "Ira Flint",
                 new SuspectProfile(
                     new[] { new SuspectAlias("Grey Jay", AliasKind.Nickname) },
-                    new[] { new SuspectIdentityFact("Wears a cracked leather gauntlet on the right hand.") }),
+                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Wears a cracked leather gauntlet on the right hand.", "a cracked leather gauntlet on the right hand", "wears a cracked leather gauntlet on the right hand")) }),
                 SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
                 SuspectStatus.AtLarge)
         };

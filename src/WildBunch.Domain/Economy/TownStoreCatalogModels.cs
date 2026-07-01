@@ -74,27 +74,27 @@ public sealed class TownStoreCatalogResolver
             TownProsperity.Boomtown => new[]
             {
                 new StoreOffer(ItemKind.Food, "Food", 2m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (General store)", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
                 new StoreOffer(ItemKind.Canteen, "Canteen", 5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
                 new StoreOffer(ItemKind.Knife, "Knife", 8m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
             },
             TownProsperity.Prosperous => new[]
             {
                 new StoreOffer(ItemKind.Food, "Food", 2m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (General store)", 1m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
                 new StoreOffer(ItemKind.Canteen, "Canteen", 5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
                 new StoreOffer(ItemKind.Knife, "Knife", 8m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
             },
             TownProsperity.Poor => new[]
             {
                 new StoreOffer(ItemKind.Food, "Food", 2.5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (General store)", 1.25m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
                 new StoreOffer(ItemKind.Canteen, "Canteen", 6m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
             },
             TownProsperity.Destitute => new[]
             {
                 new StoreOffer(ItemKind.Food, "Food", 3m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf"),
-                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (General store)", 1.5m, StoreVendorType.GeneralStore, StoreOfferAvailability.Available, "General store shelf")
             },
             _ => throw new ArgumentOutOfRangeException(nameof(prosperity), prosperity, "Unsupported prosperity tier.")
         };
@@ -106,13 +106,13 @@ public sealed class TownStoreCatalogResolver
             {
                 new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
                 new StoreOffer(ItemKind.Saddle, "Saddle", 20m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
-                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (Stable)", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
             },
             TownProsperity.Prosperous => new[]
             {
                 new StoreOffer(ItemKind.Horse, "Horse", 60m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
                 new StoreOffer(ItemKind.Saddle, "Saddle", 20m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room"),
-                new StoreOffer(ItemKind.HorseFeed, "Horse feed", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
+                new StoreOffer(ItemKind.HorseFeed, "Horse feed (Stable)", 1.25m, StoreVendorType.Stable, StoreOfferAvailability.Available, "Stable yard tack room")
             },
             TownProsperity.Poor => new[]
             {
