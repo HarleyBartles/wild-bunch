@@ -12,6 +12,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <!-- Pin Microsoft.OpenApi to 2.7.5 to fix GHSA-v5pm-xwqc-g5wc (stack overflow via circular schema refs).
+         Microsoft.AspNetCore.OpenApi 10.0.8 transitively pulls in 2.0.0 which is vulnerable. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
   </ItemGroup>
 
   <ItemGroup>

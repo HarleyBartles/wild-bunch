@@ -127,7 +127,7 @@ public sealed class GameSetupResolverTests
             var setup = BuildSetup(seedWorld, DifficultyEnvelope.For(GameDifficulty.Standard), entropy);
 
             // Transitional: all entropy modes use the template default culprit index.
-            Assert.Equal(seedWorld.DefaultCulpritIndex, 3);
+            Assert.Equal(3, seedWorld.DefaultCulpritIndex);
             Assert.Equal(seedWorld.DefaultCulpritIndex,
                 setup.CaseFile.Suspects.ToList().IndexOf(setup.CaseFile.Suspects.First(s => s.Id == setup.CaseFile.TrueCulpritId)));
         }

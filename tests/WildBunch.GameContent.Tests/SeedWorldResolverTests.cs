@@ -115,7 +115,7 @@ public sealed class SeedWorldResolverTests
 
         // Change variant (bits 0-1): flip to a different variant.
         var newVariant = ((int)baseWorld.WorldVariant + 1) % 3;
-        var variantLow = (low & ~0x3UL) | (ulong)newVariant;
+        var variantLow = (low & ~0x3UL) | (ulong)(uint)newVariant;
         var variantBytes = new byte[16];
         BitConverter.TryWriteBytes(variantBytes.AsSpan(0), variantLow);
         BitConverter.TryWriteBytes(variantBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));

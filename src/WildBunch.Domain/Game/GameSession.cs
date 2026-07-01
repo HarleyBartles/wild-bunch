@@ -462,9 +462,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <summary>
     /// Applies a <see cref="SaloonPersonOfInterestSpotted"/> event to mutate session state.
     /// This is the event-sourced mutation path for the saloon look-around flow: it marks the
-    /// saloon source as spent, appends the case-update log entry (if RecordLog), and sets the
-    /// active saloon person of interest. Clock advancement is handled by EnterActionContext.
-    /// See ADR-0028 and BUNCH-80.
+    /// saloon source as spent and sets the active saloon person of interest. Clock advancement
+    /// is handled by EnterActionContext. Log/journal entries are projected from the event
+    /// stream via JournalLogProjector. See ADR-0028 and BUNCH-80.
     /// </summary>
     private void Apply(SaloonPersonOfInterestSpotted e)
     {
@@ -485,10 +485,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <summary>
     /// Applies a <see cref="WantedSuspectConfronted"/> event to mutate session state.
     /// This is the event-sourced mutation path for the wanted-suspect confrontation flow:
-    /// it appends the case-update log entry, records the confrontation state (for non-abandoned
-    /// outcomes), and updates the wanted-suspect presence ledger. Clock advancement is handled
-    /// by EnterActionContext. The Clock.Turn + 1 offset is removed — confrontation state
-    /// records Clock.Turn directly. See ADR-0028 and BUNCH-80.
+    /// it records the confrontation state (for non-abandoned outcomes) and updates the
+    /// wanted-suspect presence ledger. Clock advancement is handled by EnterActionContext.
+    /// Log/journal entries are projected from the event stream via JournalLogProjector.
+    /// The Clock.Turn + 1 offset is removed — confrontation state records Clock.Turn directly.
+    /// See ADR-0028 and BUNCH-80.
     /// </summary>
     private void Apply(WantedSuspectConfronted e)
     {
@@ -571,7 +572,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     /// <summary>
     /// Applies a <see cref="JourneyStarted"/> event. JourneySnapshot is ABSOLUTE —
-    /// Apply sets <see cref="Journey"/> from it. See ADR-0028 and BUNCH-83.
+    /// JourneyLoop.Apply sets the active journey from it. GameSession sets pursuit
+    /// heat. See ADR-0028 and BUNCH-83.
     /// </summary>
     internal void Apply(JourneyStarted e)
     {
@@ -595,7 +597,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Player.AdjustHealth(e.HealthDelta);
         PursuitState.SetHeat(e.PursuitHeat);
         // Player food/canteen/horse feed/horse state are set ABSOLUTE from the journey
-        // snapshot. On the command path, direct mutations in PrepareTravelDayAdvance
+        // snapshot. On the command path, JourneyLoop.PrepareTravelDayAdvance
         // already set these values, so these are no-ops. On replay, they set the
         // correct values from the snapshot. See ADR-0028 and BUNCH-83.
         SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
@@ -686,9 +688,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Applies a <see cref="JourneyArrivalAcknowledged"/> event. Apply archives the
-    /// current journey into <see cref="CompletedJourneyHistory"/> and clears the active
-    /// journey. See ADR-0028 and BUNCH-83.
+    /// Applies a <see cref="JourneyArrivalAcknowledged"/> event. JourneyLoop.Apply
+    /// archives the current journey into <see cref="CompletedJourneyHistory"/> and
+    /// clears the active journey. See ADR-0028 and BUNCH-83.
     /// </summary>
     internal void Apply(JourneyArrivalAcknowledged e)
     {
@@ -697,8 +699,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Applies a DevTravelOverrideForced event. Sets the pending dev override.
-    /// Dev-only event — does not affect gameplay state directly. See BUNCH-89.
+    /// Applies a DevTravelOverrideForced event. JourneyLoop.Apply sets the pending
+    /// dev override. Dev-only event — does not affect gameplay state directly.
+    /// See BUNCH-89.
     /// </summary>
     internal void Apply(DevTravelOverrideForced e)
     {
@@ -707,8 +710,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Applies a DevTravelOverrideCleared event. Clears the pending dev override.
-    /// Dev-only event. See BUNCH-89.
+    /// Applies a DevTravelOverrideCleared event. JourneyLoop.Apply clears the
+    /// pending dev override. Dev-only event. See BUNCH-89.
     /// </summary>
     internal void Apply(DevTravelOverrideCleared e)
     {
@@ -717,10 +720,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Applies a DevTravelOverrideConsumed event. Clears the pending dev override.
-    /// This is the replay-safe consumption path: replaying Forced -> Consumed ->
-    /// TravelDayAdvanced reconstructs the correct final state with no pending override.
-    /// Dev-only event — not a gameplay outcome. See BUNCH-89.
+    /// Applies a DevTravelOverrideConsumed event. JourneyLoop.Apply clears the
+    /// pending dev override. This is the replay-safe consumption path: replaying
+    /// Forced -> Consumed -> TravelDayAdvanced reconstructs the correct final state
+    /// with no pending override. Dev-only event — not a gameplay outcome. See BUNCH-89.
     /// </summary>
     internal void Apply(DevTravelOverrideConsumed e)
     {
@@ -1165,9 +1168,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <summary>
     /// Applies an <see cref="InvestigationPerformed"/> event to mutate session state.
     /// This is the event-sourced mutation path for investigation flows: it marks the
-    /// investigation source as spent for the current visit, advances the clock, reveals
-    /// the clue and/or warrant carried by the event, and appends the case-update log
-    /// entry. See ADR-0028.
+    /// investigation source as spent for the current visit and reveals the clue and/or
+    /// warrant carried by the event. Clock advancement is handled by EnterActionContext.
+    /// Log/journal entries are projected from the event stream via JournalLogProjector.
+    /// See ADR-0028.
     /// </summary>
     private void Apply(InvestigationPerformed e)
     {
@@ -1229,8 +1233,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         // Advance clock only when the journey will actually advance (not blocked
         // by a pending encounter or inactive status). The clock advance must happen
-        // before trail events are produced so Apply(TrailEventApplied) records
-        // travel updates with the correct day. See ADR-0028 and BUNCH-83.
+        // before trail events are produced so the event's Day field captures the
+        // correct day. See ADR-0028 and BUNCH-83.
         if (Journey is not null && Journey.PendingEncounter is null && Journey.Status == JourneyStatus.Active)
         {
             Clock.AdvanceTravelDay();
@@ -1407,9 +1411,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _currentTown.EnterTown(currentTown);
         // The action context is scoped to the current town. When the town changes
         // (including a round-trip back to the same town), the context resets so that
-        // re-entering a location in the new town advances time. This is a direct
-        // mutation because travel/journey is not yet event-sourced; the context
-        // reset is a side effect of the town change, not a gameplay event.
+        // re-entering a location in the new town advances time. The context reset is
+        // a side effect of the town change, not a gameplay event.
         // See BUNCH-80 review feedback on town-scoped CurrentActionContext.
         ResetActionContextForTownChange();
     }

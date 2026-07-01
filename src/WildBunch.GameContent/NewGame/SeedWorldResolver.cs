@@ -237,7 +237,7 @@ public static class SeedWorldResolver
         }
 
         ulong low = 0;
-        low |= (ulong)((int)seedWorld.WorldVariant & 0x3);
+        low |= (ulong)(uint)((int)seedWorld.WorldVariant & 0x3);
         low |= (ulong)(seedWorld.AccusationIndex & 0xF) << 2;
         low |= (ulong)(seedWorld.DefaultCulpritIndex & 0xF) << 6;
         low |= (ulong)(seedWorld.CashBonus & 0xF) << 10;
