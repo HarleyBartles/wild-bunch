@@ -94,12 +94,6 @@ public sealed class TravelReplayEqualityTests
         Assert.Null(replayed.Journey);
         Assert.Equal(commandSession.CompletedJourneyHistory.Count, replayed.CompletedJourneyHistory.Count);
         Assert.Equal(commandSession.Version, replayed.Version);
-        // RehydrateFromEvents populates session.LogEntries via Apply but does not
-        // set CommittedEvents, so AllEvents is empty and GameSessionLogProjection
-        // cannot be used. Compare the legacy LogEntries directly (ADR-0028).
-#pragma warning disable CS0618
-        Assert.Equal(commandSession.LogEntries.Count, replayed.LogEntries.Count);
-#pragma warning restore CS0618
     }
 
     [Fact]
@@ -128,9 +122,6 @@ public sealed class TravelReplayEqualityTests
         Assert.Equal(commandSession.Player.Wallet.Cash, replayed.Player.Wallet.Cash);
         Assert.Equal(commandSession.Clock.Day, replayed.Clock.Day);
         Assert.Equal(commandSession.PursuitState.Heat, replayed.PursuitState.Heat);
-#pragma warning disable CS0618
-        Assert.Equal(commandSession.LogEntries.Count, replayed.LogEntries.Count);
-#pragma warning restore CS0618
         Assert.Equal(commandSession.Version, replayed.Version);
     }
 }

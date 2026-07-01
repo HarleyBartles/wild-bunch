@@ -10,7 +10,7 @@ namespace WildBunch.Domain.Events;
 /// HealthDelta is ADDITIVE — Apply adds to player health.
 /// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it (future lawman pressure; see ADR-0029).
 /// AdditionalDiaryMessages carries narration-only encounter messages that don't
-/// produce a typed TrailEventApplied event. Apply logs each via RecordTravelUpdate.
+/// produce a typed TrailEventApplied event. Projected via JournalLogProjector on read paths.
 /// </summary>
 public sealed record TravelDayAdvanced : IDomainEvent
 {

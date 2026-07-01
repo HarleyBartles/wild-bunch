@@ -3,10 +3,6 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 
-// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The mapper still
-// reads it for backward-compatible DTO output. Do not add new LogEntries consumers.
-#pragma warning disable CS0618
-
 namespace WildBunch.Application.Games.Mapping;
 
 public static class JournalMapper

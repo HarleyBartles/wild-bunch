@@ -1,16 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
-using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.Persistence.Serialization;
-
-// LogEntries is [Obsolete] (projection-legacy per ADR-0028). The repository still
-// persists and loads it for backward compatibility. Do not add new LogEntries consumers.
-#pragma warning disable CS0618
 
 namespace WildBunch.Persistence.GameSessions;
 
@@ -20,7 +15,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
-    private readonly JournalLogProjector _journalLogProjector = new();
 
     public EfGameSessionRepository(WildBunchDbContext dbContext, GameSessionJsonSerializer serializer)
     {
@@ -221,7 +215,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Load all events for log-entry projection and post-snapshot replay.
+        // Load all events for post-snapshot replay and projection-backed read paths.
         // After BUNCH-86, LogEntries are derived from the event stream via
         // JournalLogProjector, replacing the legacy log entries table.
         var allStoredEvents = await _dbContext.StoredEvents.AsNoTracking()
@@ -236,17 +230,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             allEvents[i] = _serializer.DeserializeEvent(allStoredEvents[i].EventType, allStoredEvents[i].PayloadJson);
         }
 
-        // Project only the snapshot-prefix events for aggregate LogEntries
-        // rehydration. Post-snapshot events are replayed via ApplyCommittedEvents
-        // in ToAggregate, and Apply(...) methods append their own log entries via
-        // AddLogEntry/RecordCaseUpdate/RecordTravelUpdate. If we projected the
-        // full stream here, post-snapshot entries would be duplicated after
-        // replay. See BUNCH-86.
-        var snapshotEvents = allEvents
-            .Take((int)envelope.SnapshotVersion.GetValueOrDefault())
-            .ToArray();
-        var logEntries = _journalLogProjector.Project(snapshotEvents);
-
         // Post-snapshot events for state replay (subset of allEvents).
         IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();
         if (envelope.SnapshotVersion < envelope.StreamVersion)
@@ -259,7 +242,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         return new GameSessionStore(
             envelope,
             components,
-            logEntries,
             diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
             postSnapshotEvents,
             allEvents);
@@ -315,8 +297,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             journey,
             completedJourneyHistory,
             wantedSuspectPresenceEntries,
-            store.TravelDiaryDays,
-            store.LogEntries);
+            store.TravelDiaryDays);
 
         // Set the aggregate version so that after any post-snapshot replay the
         // version equals StreamVersion. Each Apply call inside
@@ -398,7 +379,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // Set committed events for projection-backed read paths (BUNCH-86).
         // AllEvents = committed + uncommitted, used by JournalLogProjector
-        // to derive log entries without scraping session.LogEntries.
+        // to derive log entries from the event stream.
         session.SetCommittedEvents(store.AllEvents);
 
         return session;
@@ -495,7 +476,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     private sealed record GameSessionStore(
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
-        IReadOnlyList<GameLogEntry> LogEntries,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         IReadOnlyList<IDomainEvent> PostSnapshotEvents,
         IReadOnlyList<IDomainEvent> AllEvents);

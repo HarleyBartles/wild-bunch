@@ -14,7 +14,7 @@ namespace WildBunch.Domain.Events;
 /// heat model (ADR-0029), trail encounters do not affect heat; PursuitHeat is
 /// always the current heat value (unchanged by encounter resolution).
 /// AdditionalDiaryMessages carries narration-only encounter messages from the
-/// continued day plan after resolution. Apply logs each via RecordTravelUpdate.
+/// continued day plan after resolution. Projected via JournalLogProjector on read paths.
 /// </summary>
 public sealed record JourneyEncounterResolved : IDomainEvent
 {

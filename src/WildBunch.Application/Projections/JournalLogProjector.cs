@@ -5,10 +5,8 @@ namespace WildBunch.Application.Projections;
 
 /// <summary>
 /// Pure projector that derives the legacy <see cref="GameLogEntry"/> sequence from the
-/// typed domain event stream, reproducing exactly what <see cref="GameSession"/>'s Apply
-/// methods produce via AddLogEntry/RecordCaseUpdate/RecordTravelUpdate.
-/// This is the projection-backed replacement for the GameSessionLogEntries table on the
-/// journal read path. See ADR-0028 and BUNCH-84.
+/// typed domain event stream. This is the projection-backed replacement for the legacy
+/// aggregate log entries. See ADR-0028 and BUNCH-84.
 /// </summary>
 public sealed class JournalLogProjector
 {
