@@ -32,6 +32,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly JourneyLoop _journeyLoop;
     private readonly ActionContextTracker _actionContextTracker = new();
     private readonly InvestigationLoop _investigationLoop = new();
+    private readonly StoreLoop _storeLoop = new();
     private DevTravelOverride? _pendingDevTravelOverride;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
@@ -1746,48 +1747,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         EnterActionContext(TownActionContext.Store);
 
-        if (quantity < 1)
+        var context = new StorePurchaseContext(
+            offer,
+            quantity,
+            CurrentTown.TownId,
+            Player.Wallet.Cash,
+            Player.CanAfford,
+            Player.HasItem);
+        var outcome = _storeLoop.Purchase(context);
+        if (!outcome.Success)
         {
-            return StorePurchaseResult.Failed("Quantity must be at least 1.");
+            return StorePurchaseResult.Failed(outcome.Message);
         }
 
-        if (offer.ItemKind == ItemKind.Horse && quantity != 1)
-        {
-            return StorePurchaseResult.Failed("Horse items must have a quantity of 1.");
-        }
-
-        if (quantity != 1 && !IsStackableItemKind(offer.ItemKind))
-        {
-            return StorePurchaseResult.Failed($"{offer.ItemKind} does not stack.");
-        }
-
-        var totalPrice = offer.Price * quantity;
-        if (!Player.CanAfford(totalPrice))
-        {
-            return StorePurchaseResult.Failed("Not enough cash.");
-        }
-
-        if (!CanPurchaseInventoryItem(offer, quantity, out var inventoryFailureMessage))
-        {
-            return StorePurchaseResult.Failed(inventoryFailureMessage);
-        }
-
-        // Produce typed domain event and apply it (event-sourced mutation path)
-        var e = new StoreItemPurchased
-        {
-            TownId = CurrentTown.TownId,
-            ItemKind = offer.ItemKind,
-            DisplayName = offer.DisplayName,
-            Quantity = quantity,
-            UnitPrice = offer.Price,
-            TotalPrice = totalPrice,
-            WalletAfter = Player.Wallet.Cash - totalPrice
-        };
-        Apply(e);
-        _uncommittedEvents.Add(e);
-
-        var quantityLabel = quantity == 1 ? offer.DisplayName : $"{quantity} {offer.DisplayName}";
-        return StorePurchaseResult.Succeeded($"Purchased {quantityLabel} for ${totalPrice:0.00}.");
+        ProduceEvent(outcome.Event!);
+        return StorePurchaseResult.Succeeded(outcome.Message);
     }
 
     public ReadWantedPostersResult ReadWantedPosters()
@@ -2475,51 +2449,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => Journey is not null;
 
     private bool IsArchived => Status == GameStatus.Archived;
-
-    private bool CanPurchaseInventoryItem(StoreOffer offer, int quantity, out string failureMessage)
-    {
-        if (quantity < 1)
-        {
-            failureMessage = "Quantity must be at least 1.";
-            return false;
-        }
-
-        if (offer.ItemKind == ItemKind.Horse)
-        {
-            if (quantity != 1)
-            {
-                failureMessage = "Horse items must have a quantity of 1.";
-                return false;
-            }
-
-            if (Player.HasItem(ItemKind.Horse))
-            {
-                failureMessage = "Horse already exists in inventory.";
-                return false;
-            }
-
-            failureMessage = string.Empty;
-            return true;
-        }
-
-        if (quantity != 1 && !IsStackableItemKind(offer.ItemKind))
-        {
-            failureMessage = $"{offer.ItemKind} does not stack.";
-            return false;
-        }
-
-        if (!IsStackableItemKind(offer.ItemKind) && Player.HasItem(offer.ItemKind))
-        {
-            failureMessage = $"{offer.ItemKind} already exists in inventory.";
-            return false;
-        }
-
-        failureMessage = string.Empty;
-        return true;
-    }
-
-    private static bool IsStackableItemKind(ItemKind kind)
-        => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo or ItemKind.RifleAmmo;
 
     private int SpendFirearmAmmo(int requestedBullets)
     {
