@@ -32,6 +32,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private int _nextJourneySequence = 1;
     private readonly TownAggregate _currentTown;
     private readonly BountyLoop _bountyLoop;
+    private readonly JourneyLoop _journeyLoop;
     private DevTravelOverride? _pendingDevTravelOverride;
 
     // Stateless domain-service resolvers for investigation surfacing.
@@ -94,6 +95,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         var unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
 
         _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
+
+        _journeyLoop = new JourneyLoop(journey, _completedJourneyHistory);
 
         _nextJourneySequence = CalculateNextJourneySequence(journey, _completedJourneyHistory);
     }
