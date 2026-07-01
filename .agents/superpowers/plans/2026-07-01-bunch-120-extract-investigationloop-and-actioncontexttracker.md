@@ -1,5 +1,9 @@
 # BUNCH-120 Decompose Remaining Town Action Seams: InvestigationLoop + ActionContextTracker Implementation Plan
 
+> **Execution receipt — all 11 tasks complete.** All checkboxes below are checked off. See the **Execution Receipt** section at the end of this file for what was actually executed, including in-scope corrections made during implementation.
+>
+> **Status:** PR #138 (https://github.com/HarleyBartles/wild-bunch/pull/138) is implementation-complete at head `f2e5c82`. BUNCH-119 (PR #139) must merge first per the dependency ordering; PR #138 requires a rebase onto post-BUNCH-119 main before merge.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Decompose the `GameSession` aggregate by extracting two child domain components from the town-action seams: a stateless `InvestigationLoop` that owns investigation source resolution and clue/warrant surfacing decision logic, and a stateful `ActionContextTracker` that owns town action-context state and turn-advancement tracking. Both receive narrow inputs via context records, return explicit results + events to produce, and do NOT reference `GameSession`. `GameSession` retains guards, `ProduceEvent`, Apply dispatch, and the persistence boundary.
@@ -167,22 +171,22 @@ internal sealed record InvestigationOutcome(
 - Consumes: nothing (baseline capture)
 - Produces: baseline test counts and line counts for falsification checks
 
-- [ ] **Step 1: Capture GameSession.cs line count**
+- [x] **Step 1: Capture GameSession.cs line count**
 
 Run: `(Get-Content src/WildBunch.Domain/Game/GameSession.cs).Count`
 Expected: `4006` (record exact value — this is the baseline)
 
-- [ ] **Step 2: Capture baseline test counts**
+- [x] **Step 2: Capture baseline test counts**
 
 Run: `dotnet test WildBunch.sln --no-build 2>&1 | Select-String "Passed:|Failed:|Skipped:"`
 Expected: Record exact passed/failed/skipped counts. If build is needed, run `dotnet build` first.
 
-- [ ] **Step 3: Capture specific test file counts**
+- [x] **Step 3: Capture specific test file counts**
 
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~GameSessionInvestigationActionsTests|FullyQualifiedName~InvestigationEventSourcingTests|FullyQualifiedName~ClockTurnCorrectionTests|FullyQualifiedName~BeatModelEconomyTests" --no-build 2>&1 | Select-String "Passed:|Failed:|Skipped:"`
 Expected: Record exact counts for these test files — they are the regression baseline for the extraction.
 
-- [ ] **Step 4: Confirm the methods to extract are present and line-numbered**
+- [x] **Step 4: Confirm the methods to extract are present and line-numbered**
 
 Verify these methods exist at the expected locations in `GameSession.cs`:
 - `EnterActionContext` (line ~275)
@@ -202,7 +206,7 @@ Verify these methods exist at the expected locations in `GameSession.cs`:
 - `CanPurchaseInventoryItem` (line ~3928)
 - `IsStackableItemKind` (line ~3970)
 
-- [ ] **Step 5: Commit baseline evidence**
+- [x] **Step 5: Commit baseline evidence**
 
 ```bash
 git add -A
@@ -220,7 +224,7 @@ git commit -m "BUNCH-120: capture regression baseline for InvestigationLoop + Ac
 - Consumes: `TownActionContext`, `TownId`, `GameClock`, `PursuitState`, `SuspectId`, `TownActionContextEntered` event
 - Produces: `ActionContextTracker` class with `CurrentActionContext`, `CurrentActionContextTownId` properties, `EnterActionContext`, `CanConfrontWantedSuspectInCurrentContext`, `Reset`, `Apply(TownActionContextEntered)` methods, and context record types
 
-- [ ] **Step 1: Create the ActionContextTracker.cs file**
+- [x] **Step 1: Create the ActionContextTracker.cs file**
 
 ```csharp
 using WildBunch.Domain.Events;
@@ -351,12 +355,12 @@ internal sealed record CanConfrontInContextInputs(
     SuspectId? ActiveSaloonPersonOfInterestId);
 ```
 
-- [ ] **Step 2: Build to verify the new file compiles**
+- [x] **Step 2: Build to verify the new file compiles**
 
 Run: `dotnet build src/WildBunch.Domain/WildBunch.Domain.csproj`
 Expected: PASS (the class is not yet referenced by the parent aggregate, but it must compile standalone)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/ActionContextTracker.cs
@@ -374,7 +378,7 @@ git commit -m "BUNCH-120: add ActionContextTracker class skeleton with owned sta
 - Consumes: `ActionContextTracker.EnterActionContext` from Task 2
 - Produces: `GameSession.EnterActionContext` delegates to `_actionContextTracker`, produces returned event
 
-- [ ] **Step 1: Add the ActionContextTracker field to GameSession**
+- [x] **Step 1: Add the ActionContextTracker field to GameSession**
 
 In `GameSession.cs`, after the `_bountyLoop` field (line 34), add:
 
@@ -384,7 +388,7 @@ In `GameSession.cs`, after the `_bountyLoop` field (line 34), add:
     private DevTravelOverride? _pendingDevTravelOverride;
 ```
 
-- [ ] **Step 2: Replace the CurrentActionContext and CurrentActionContextTownId properties with delegate properties**
+- [x] **Step 2: Replace the CurrentActionContext and CurrentActionContextTownId properties with delegate properties**
 
 Replace lines 254–262:
 
@@ -396,7 +400,7 @@ Replace lines 254–262:
 
 Remove the old `private set` backing — these are now read-only delegates.
 
-- [ ] **Step 3: Rewrite EnterActionContext to delegate to the tracker**
+- [x] **Step 3: Rewrite EnterActionContext to delegate to the tracker**
 
 Replace the entire `EnterActionContext` method body (lines 275–311) with:
 
@@ -415,7 +419,7 @@ Replace the entire `EnterActionContext` method body (lines 275–311) with:
     }
 ```
 
-- [ ] **Step 4: Build and run tests**
+- [x] **Step 4: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -423,7 +427,7 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~ClockTurnCorrectionTests|FullyQualifiedName~BeatModelEconomyTests" --no-build`
 Expected: PASS with same counts as baseline (Task 1 Step 3)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/GameSession.cs
@@ -441,7 +445,7 @@ git commit -m "BUNCH-120: move EnterActionContext decision logic into ActionCont
 - Consumes: `ActionContextTracker.CanConfrontWantedSuspectInCurrentContext`, `ActionContextTracker.Reset` from Task 2
 - Produces: `GameSession.CanConfrontWantedSuspectInCurrentContext` and `ResetActionContextForTownChange` delegate to tracker
 
-- [ ] **Step 1: Rewrite CanConfrontWantedSuspectInCurrentContext to delegate**
+- [x] **Step 1: Rewrite CanConfrontWantedSuspectInCurrentContext to delegate**
 
 Replace the method body (lines 328–342) with:
 
@@ -454,7 +458,7 @@ Replace the method body (lines 328–342) with:
     }
 ```
 
-- [ ] **Step 2: Rewrite ResetActionContextForTownChange to delegate**
+- [x] **Step 2: Rewrite ResetActionContextForTownChange to delegate**
 
 Replace the method body (lines 1629–1633) with:
 
@@ -462,7 +466,7 @@ Replace the method body (lines 1629–1633) with:
     internal void ResetActionContextForTownChange() => _actionContextTracker.Reset();
 ```
 
-- [ ] **Step 3: Build and run tests**
+- [x] **Step 3: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -470,7 +474,7 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~GameSessionWantedSuspectConfrontationTests|FullyQualifiedName~ClockTurnCorrectionTests" --no-build`
 Expected: PASS with same counts as baseline
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/GameSession.cs
@@ -488,7 +492,7 @@ git commit -m "BUNCH-120: move CanConfrontWantedSuspectInCurrentContext and Rese
 - Consumes: `ActionContextTracker.Apply(TownActionContextEntered)` from Task 2
 - Produces: `GameSession.Apply(TownActionContextEntered)` calls `_actionContextTracker.Apply(e)` then applies cross-owner mutations
 
-- [ ] **Step 1: Rewrite Apply(TownActionContextEntered) to delegate owned state and keep cross-owner mutations**
+- [x] **Step 1: Rewrite Apply(TownActionContextEntered) to delegate owned state and keep cross-owner mutations**
 
 Replace the method body (lines 453–460) with:
 
@@ -502,7 +506,7 @@ Replace the method body (lines 453–460) with:
     }
 ```
 
-- [ ] **Step 2: Build and run tests**
+- [x] **Step 2: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -510,7 +514,7 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~ClockTurnCorrectionTests|FullyQualifiedName~InvestigationEventSourcingTests|FullyQualifiedName~BeatModelEconomyTests|FullyQualifiedName~GameSessionEventSourcingTests" --no-build`
 Expected: PASS with same counts as baseline
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/GameSession.cs
@@ -530,7 +534,7 @@ git commit -m "BUNCH-120: move owned-state Apply(TownActionContextEntered) into 
 - Consumes: `ActionContextTracker.RestoreState` from Task 2
 - Produces: `GameSession.RestoreActionContextState` internal method; rehydration calls it instead of `SetCurrentActionContext`
 
-- [ ] **Step 1: Add RestoreActionContextState method to GameSession**
+- [x] **Step 1: Add RestoreActionContextState method to GameSession**
 
 In `GameSession.cs`, near the `RestoreBountyLoopState` method (after line ~120), add:
 
@@ -546,7 +550,7 @@ In `GameSession.cs`, near the `RestoreBountyLoopState` method (after line ~120),
     }
 ```
 
-- [ ] **Step 2: Update GameSessionRehydrator to use RestoreActionContextState**
+- [x] **Step 2: Update GameSessionRehydrator to use RestoreActionContextState**
 
 In `GameSessionRehydrator.cs`, replace the `SetCurrentActionContext` method (lines 90–100) with:
 
@@ -563,7 +567,7 @@ In `GameSessionRehydrator.cs`, replace the `SetCurrentActionContext` method (lin
     }
 ```
 
-- [ ] **Step 3: Update GameSessionJsonSerializer.SessionSnapshot to call RestoreActionContextState**
+- [x] **Step 3: Update GameSessionJsonSerializer.SessionSnapshot to call RestoreActionContextState**
 
 In `GameSessionJsonSerializer.SessionSnapshot.cs`, replace lines 82–83:
 
@@ -572,7 +576,7 @@ In `GameSessionJsonSerializer.SessionSnapshot.cs`, replace lines 82–83:
             GameSessionRehydrator.RestoreActionContextState(session, CurrentActionContext, contextTownId);
 ```
 
-- [ ] **Step 4: Build and run tests**
+- [x] **Step 4: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -580,12 +584,12 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~EventStorePersistenceTests|FullyQualifiedName~EventSourcingEndToEndTests|FullyQualifiedName~GameSessionDifficultyPersistenceTests" --no-build`
 Expected: PASS with same counts as baseline
 
-- [ ] **Step 5: Run PostgreSQL-backed validation**
+- [x] **Step 5: Run PostgreSQL-backed validation**
 
 Run: `.\scripts\postgres-dev.ps1 validate`
 Expected: PASS (EF migrations list + full test suite)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/GameSession.cs src/WildBunch.Persistence/Serialization/GameSessionRehydrator.cs src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs
@@ -603,7 +607,7 @@ git commit -m "BUNCH-120: update snapshot rehydration to restore ActionContextTr
 - Consumes: `CaseFile`, `SaltSource`, `WantedPosterResolver`, `ClueSurfacingResolver`, `InvestigationPerformed` event, `InvestigationSourceKind`, `Clue`, `Warrant`, `TownId`
 - Produces: `InvestigationLoop` class (stateless), `InvestigationContext` record, `InvestigationOutcome` record
 
-- [ ] **Step 1: Create the InvestigationLoop.cs file with the skeleton, context/result types, and static helpers**
+- [x] **Step 1: Create the InvestigationLoop.cs file with the skeleton, context/result types, and static helpers**
 
 ```csharp
 using WildBunch.Domain.Cases;
@@ -681,12 +685,12 @@ internal sealed record InvestigationOutcome(
     string DisplayMessage);
 ```
 
-- [ ] **Step 2: Build to verify the new file compiles**
+- [x] **Step 2: Build to verify the new file compiles**
 
 Run: `dotnet build src/WildBunch.Domain/WildBunch.Domain.csproj`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/InvestigationLoop.cs
@@ -705,7 +709,7 @@ git commit -m "BUNCH-120: add InvestigationLoop class skeleton with context/resu
 - Consumes: `InvestigationContext`, `InvestigationOutcome` from Task 7
 - Produces: `InvestigationLoop.ReadWantedPosters(context)` returns `InvestigationOutcome`; `GameSession.ReadWantedPosters` delegates and produces event
 
-- [ ] **Step 1: Add ReadWantedPosters method to InvestigationLoop**
+- [x] **Step 1: Add ReadWantedPosters method to InvestigationLoop**
 
 In `InvestigationLoop.cs`, replace the `// Command methods — filled in by Tasks 8–9` comment with:
 
@@ -803,7 +807,7 @@ In `InvestigationLoop.cs`, replace the `// Command methods — filled in by Task
     }
 ```
 
-- [ ] **Step 2: Rewrite GameSession.ReadWantedPosters to delegate to InvestigationLoop**
+- [x] **Step 2: Rewrite GameSession.ReadWantedPosters to delegate to InvestigationLoop**
 
 Replace the entire method body (lines 2987–3095) with:
 
@@ -840,7 +844,7 @@ Replace the entire method body (lines 2987–3095) with:
     }
 ```
 
-- [ ] **Step 3: Add the InvestigationLoop field to GameSession**
+- [x] **Step 3: Add the InvestigationLoop field to GameSession**
 
 In `GameSession.cs`, after the `_actionContextTracker` field, add:
 
@@ -849,15 +853,15 @@ In `GameSession.cs`, after the `_actionContextTracker` field, add:
     private readonly InvestigationLoop _investigationLoop = new();
 ```
 
-- [ ] **Step 4: Remove the static resolver fields from GameSession**
+- [x] **Step 4: Remove the static resolver fields from GameSession**
 
 Remove lines 39–40 (the `_wantedPosterResolver` and `_clueSurfacingResolver` static fields and their comment). They are now on `InvestigationLoop`.
 
-- [ ] **Step 5: Remove the DescribeClueLead and IsPlayerKnownClue helpers from GameSession**
+- [x] **Step 5: Remove the DescribeClueLead and IsPlayerKnownClue helpers from GameSession**
 
 Remove the `DescribeClueLead` method (lines 3831–3832) and the `IsPlayerKnownClue` method (lines 3843–3855). They are now on `InvestigationLoop`.
 
-- [ ] **Step 6: Build and run tests**
+- [x] **Step 6: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -865,7 +869,7 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~GameSessionInvestigationActionsTests|FullyQualifiedName~InvestigationEventSourcingTests|FullyQualifiedName~GameSessionWantedPostersTests|FullyQualifiedName~GameSessionResolverWiringTests" --no-build`
 Expected: PASS with same counts as baseline
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/InvestigationLoop.cs src/WildBunch.Domain/Game/GameSession.cs
@@ -884,7 +888,7 @@ git commit -m "BUNCH-120: move ReadWantedPosters decision logic into Investigati
 - Consumes: `InvestigationContext`, `InvestigationOutcome` from Task 7
 - Produces: Four new `InvestigationLoop` methods; `GameSession` methods delegate and produce events
 
-- [ ] **Step 1: Add FollowTelegraphLeads method to InvestigationLoop**
+- [x] **Step 1: Add FollowTelegraphLeads method to InvestigationLoop**
 
 In `InvestigationLoop.cs`, after the `ReadWantedPosters` method, add:
 
@@ -946,7 +950,7 @@ In `InvestigationLoop.cs`, after the `ReadWantedPosters` method, add:
     }
 ```
 
-- [ ] **Step 2: Add GatherLocalGossip method to InvestigationLoop**
+- [x] **Step 2: Add GatherLocalGossip method to InvestigationLoop**
 
 ```csharp
     /// <summary>
@@ -1006,7 +1010,7 @@ In `InvestigationLoop.cs`, after the `ReadWantedPosters` method, add:
     }
 ```
 
-- [ ] **Step 3: Add InspectNoticeBoard method to InvestigationLoop**
+- [x] **Step 3: Add InspectNoticeBoard method to InvestigationLoop**
 
 ```csharp
     /// <summary>
@@ -1056,7 +1060,7 @@ In `InvestigationLoop.cs`, after the `ReadWantedPosters` method, add:
     }
 ```
 
-- [ ] **Step 4: Add CheckSheriffRecords method to InvestigationLoop**
+- [x] **Step 4: Add CheckSheriffRecords method to InvestigationLoop**
 
 ```csharp
     /// <summary>
@@ -1107,7 +1111,7 @@ In `InvestigationLoop.cs`, after the `ReadWantedPosters` method, add:
     }
 ```
 
-- [ ] **Step 5: Rewrite GameSession.FollowTelegraphLeads to delegate**
+- [x] **Step 5: Rewrite GameSession.FollowTelegraphLeads to delegate**
 
 Replace the entire method body (lines 3451–3522) with:
 
@@ -1151,7 +1155,7 @@ Replace the entire method body (lines 3451–3522) with:
     }
 ```
 
-- [ ] **Step 6: Rewrite GameSession.GatherLocalGossip to delegate**
+- [x] **Step 6: Rewrite GameSession.GatherLocalGossip to delegate**
 
 Replace the entire method body (lines 3524–3590) with:
 
@@ -1190,7 +1194,7 @@ Replace the entire method body (lines 3524–3590) with:
     }
 ```
 
-- [ ] **Step 7: Rewrite GameSession.InspectNoticeBoard to delegate**
+- [x] **Step 7: Rewrite GameSession.InspectNoticeBoard to delegate**
 
 Replace the entire method body (lines 3592–3649) with:
 
@@ -1228,7 +1232,7 @@ Replace the entire method body (lines 3592–3649) with:
     }
 ```
 
-- [ ] **Step 8: Rewrite GameSession.CheckSheriffRecords to delegate**
+- [x] **Step 8: Rewrite GameSession.CheckSheriffRecords to delegate**
 
 Replace the entire method body (lines 3651–3708) with:
 
@@ -1266,7 +1270,7 @@ Replace the entire method body (lines 3651–3708) with:
     }
 ```
 
-- [ ] **Step 9: Add a private helper for retired warrant IDs on GameSession**
+- [x] **Step 9: Add a private helper for retired warrant IDs on GameSession**
 
 All five investigation methods pass `RetiredWarrantIds` in their context records. Add a private helper near the other helpers so the logic is defined once:
 
@@ -1279,7 +1283,7 @@ All five investigation methods pass `RetiredWarrantIds` in their context records
 
 The `ReadWantedPosters` method (Task 8 Step 2) already uses `RetiredWarrantIds` in its context construction. The other four methods (Steps 5–8) also use `RetiredWarrantIds` — they don't read warrants, but passing the same property keeps the context construction uniform and avoids a separate empty-set allocation.
 
-- [ ] **Step 10: Build and run tests**
+- [x] **Step 10: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -1287,7 +1291,7 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~GameSessionInvestigationActionsTests|FullyQualifiedName~InvestigationEventSourcingTests|FullyQualifiedName~BeatModelEconomyTests|FullyQualifiedName~BeatNarrationDomainTests|FullyQualifiedName~ActionAvailabilityResolverTests" --no-build`
 Expected: PASS with same counts as baseline
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/InvestigationLoop.cs src/WildBunch.Domain/Game/GameSession.cs
@@ -1308,7 +1312,7 @@ git commit -m "BUNCH-120: move FollowTelegraphLeads, GatherLocalGossip, InspectN
 - Consumes: `StoreOffer`, `ItemKind`, `Player` (read-only via context)
 - Produces: `StoreLoop` class (stateless), `StorePurchaseContext` record, `StorePurchaseOutcome` record
 
-- [ ] **Step 1: Create StoreLoop.cs with the decision logic**
+- [x] **Step 1: Create StoreLoop.cs with the decision logic**
 
 ```csharp
 using WildBunch.Domain.Economy;
@@ -1437,7 +1441,7 @@ internal sealed record StorePurchaseOutcome(bool Success, StoreItemPurchased? Ev
 }
 ```
 
-- [ ] **Step 2: Rewrite GameSession.Purchase to delegate to StoreLoop**
+- [x] **Step 2: Rewrite GameSession.Purchase to delegate to StoreLoop**
 
 Replace the entire method body (lines 2927–2985) with:
 
@@ -1476,18 +1480,18 @@ Replace the entire method body (lines 2927–2985) with:
     }
 ```
 
-- [ ] **Step 3: Add the StoreLoop field to GameSession**
+- [x] **Step 3: Add the StoreLoop field to GameSession**
 
 ```csharp
     private readonly InvestigationLoop _investigationLoop = new();
     private readonly StoreLoop _storeLoop = new();
 ```
 
-- [ ] **Step 4: Remove CanPurchaseInventoryItem and IsStackableItemKind from GameSession**
+- [x] **Step 4: Remove CanPurchaseInventoryItem and IsStackableItemKind from GameSession**
 
 Remove the `CanPurchaseInventoryItem` method (lines 3928–3968) and `IsStackableItemKind` method (lines 3970–3971). They are now on `StoreLoop`.
 
-- [ ] **Step 5: Build and run tests**
+- [x] **Step 5: Build and run tests**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS
@@ -1495,7 +1499,7 @@ Expected: PASS
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~StorePurchase|FullyQualifiedName~Purchase|FullyQualifiedName~BeatModelEconomyTests" --no-build`
 Expected: PASS with same counts as baseline
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/StoreLoop.cs src/WildBunch.Domain/Game/GameSession.cs
@@ -1516,7 +1520,7 @@ git commit -m "BUNCH-120: move Store/Purchase decision logic into StoreLoop"
 - Consumes: all previous tasks
 - Produces: falsification check results, line-count proof, validation counts
 
-- [ ] **Step 1: Run falsification checks**
+- [x] **Step 1: Run falsification checks**
 
 Run each of these searches and confirm zero matches:
 
@@ -1559,7 +1563,7 @@ rg -n "EnterActionContext" src/WildBunch.Domain/Game/ActionContextTracker.cs
 # Manual check: every match must be inside the method declaration or its /// doc comment, not a call.
 ```
 
-- [ ] **Step 2: Confirm GameSession still controls guards, ProduceEvent, Apply dispatch, _version++**
+- [x] **Step 2: Confirm GameSession still controls guards, ProduceEvent, Apply dispatch, _version++**
 
 Verify in `GameSession.cs`:
 - All public command methods start with `IsArchived` / `IsJourneyModal` guards
@@ -1568,17 +1572,17 @@ Verify in `GameSession.cs`:
 - `Apply(InvestigationPerformed)` still calls `CurrentTown.CheckSource`/`CheckWantedPosters` and `CaseFile.RevealClueById`/`RevealWarrantById` and `_version++`
 - `_version++` is present in every Apply handler
 
-- [ ] **Step 3: Build the full solution**
+- [x] **Step 3: Build the full solution**
 
 Run: `dotnet build WildBunch.sln`
 Expected: PASS (record warnings separately from failures)
 
-- [ ] **Step 4: Run the full test suite via PostgreSQL validation lane**
+- [x] **Step 4: Run the full test suite via PostgreSQL validation lane**
 
 Run: `.\scripts\postgres-dev.ps1 validate`
 Expected: PASS (record exact passed/failed/skipped counts)
 
-- [ ] **Step 5: Capture line-count delta**
+- [x] **Step 5: Capture line-count delta**
 
 Run: `(Get-Content src/WildBunch.Domain/Game/GameSession.cs).Count`
 Expected: Record exact value (was 4006 at baseline)
@@ -1587,24 +1591,24 @@ Run: `(Get-Content src/WildBunch.Domain/Game/ActionContextTracker.cs).Count`
 Run: `(Get-Content src/WildBunch.Domain/Game/InvestigationLoop.cs).Count`
 Run: `(Get-Content src/WildBunch.Domain/Game/StoreLoop.cs).Count` (if Task 10 was done)
 
-- [ ] **Step 6: Regenerate index mesh**
+- [x] **Step 6: Regenerate index mesh**
 
 Run: `python scripts/generate_index_mesh.py`
 Expected: INDEX.md files updated for new files in `src/WildBunch.Domain/Game/`
 
-- [ ] **Step 7: Commit index mesh and any cleanup**
+- [x] **Step 7: Commit index mesh and any cleanup**
 
 ```bash
 git add -A
 git commit -m "BUNCH-120: regenerate index mesh for new child domain component files"
 ```
 
-- [ ] **Step 8: Run final falsification check — confirm no behavior change**
+- [x] **Step 8: Run final falsification check — confirm no behavior change**
 
 Run: `dotnet test WildBunch.sln --filter "FullyQualifiedName~GameSessionInvestigationActionsTests|FullyQualifiedName~InvestigationEventSourcingTests|FullyQualifiedName~ClockTurnCorrectionTests|FullyQualifiedName~BeatModelEconomyTests|FullyQualifiedName~GameSessionEventSourcingTests|FullyQualifiedName~EventStorePersistenceTests" --no-build`
 Expected: PASS with same counts as baseline (Task 1 Step 3)
 
-- [ ] **Step 9: Report validation evidence**
+- [x] **Step 9: Report validation evidence**
 
 Post a comment on the PR with:
 ```
@@ -1634,16 +1638,16 @@ Post a comment on the PR with:
 - Regenerated: <return yes/no>
 
 #### Test plan
-- [ ] Full domain test suite green
-- [ ] Full integration test suite green (PostgreSQL lane)
-- [ ] Investigation action tests green
-- [ ] Event-sourcing/replay equality tests green (proves Apply semantics unchanged)
-- [ ] Clock turn correction tests green
-- [ ] Beat model economy tests green
-- [ ] Snapshot persistence tests green
+- [x] Full domain test suite green
+- [x] Full integration test suite green (PostgreSQL lane)
+- [x] Investigation action tests green
+- [x] Event-sourcing/replay equality tests green (proves Apply semantics unchanged)
+- [x] Clock turn correction tests green
+- [x] Beat model economy tests green
+- [x] Snapshot persistence tests green
 ```
 
-- [ ] **Step 10: Update Linear route state**
+- [x] **Step 10: Update Linear route state**
 
 Post a Linear comment on BUNCH-120 with: branch name, head commit, PR URL, falsification check results, line-count proof, and validation counts. Do NOT close the issue.
 
@@ -1672,13 +1676,13 @@ Post a Linear comment on BUNCH-120 with: branch name, head commit, PR URL, falsi
 - Index mesh regenerated (changed: <return yes/no>)
 
 #### Test plan
-- [ ] Full domain test suite green
-- [ ] Full integration test suite green (PostgreSQL lane)
-- [ ] Investigation action tests green
-- [ ] Event-sourcing/replay equality tests green (proves Apply semantics unchanged)
-- [ ] Clock turn correction tests green
-- [ ] Beat model economy tests green
-- [ ] Snapshot persistence tests green
+- [x] Full domain test suite green
+- [x] Full integration test suite green (PostgreSQL lane)
+- [x] Investigation action tests green
+- [x] Event-sourcing/replay equality tests green (proves Apply semantics unchanged)
+- [x] Clock turn correction tests green
+- [x] Beat model economy tests green
+- [x] Snapshot persistence tests green
 
 Generated with [Devin](https://devin.ai)
 
@@ -1715,3 +1719,41 @@ Before claiming complete, verify the plan did NOT:
 - change clue, wanted-poster, wallet, inventory, horse, bounty-loop, saloon, or travel state handling — out of scope, untouched.
 - change persistence shape, snapshot codec record, or EF entity shape — snapshot record unchanged; only rehydration construction path changes for `ActionContextTracker`.
 - change any public method signature, DTO shape, result-object shape, message string, or event payload — Global Constraints, verified by test suite.
+
+---
+
+## Execution Receipt
+
+**Executed by:** Devin (GLM-5.2 High) on 2026-07-01.
+**PR:** https://github.com/HarleyBartles/wild-bunch/pull/138
+**Branch:** `harleydbartles/bunch-120-decompose-remaining-town-action-seams-investigationloop-plus`
+**Head commit at execution completion:** `f2e5c82`
+**Linear issue:** BUNCH-120 — status set to "In Review"
+
+### All 11 tasks executed
+
+All checkboxes in this plan are checked off. The implementation followed the plan task-by-task with the corrections noted below.
+
+### In-scope corrections made during execution
+
+1. **`InvestigationContext.RetiredWarrantIds` type fix (Task 8/9):** The plan originally specified `IReadOnlySet<Guid>` for the `RetiredWarrantIds` field on `InvestigationContext`. The `WantedPosterResolver.Resolve` method accepts `IReadOnlySet<WarrantId>?`, not `IReadOnlySet<Guid>`. The field type was corrected to `IReadOnlySet<WarrantId>?` to match the resolver signature. The `GameSession.RetiredWarrantIds` private helper was likewise typed as `IReadOnlySet<WarrantId>`. Recorded in commit `615deae`.
+
+2. **Tasks 3–5 combined into one commit:** Tasks 3, 4, and 5 were committed together because the build required all three to be done simultaneously — the delegate properties (`CurrentActionContext`, `CurrentActionContextTownId`) became read-only, which broke the `Apply` handler (Task 5) and `ResetActionContextForTownChange` (Task 4) until they were also rewired. The commits are: skeleton (Task 2, `1166292`), combined logic move (Tasks 3–5, `f1504f3`), rehydration (Task 6, `878940e`).
+
+3. **`EfGameSessionRepository.cs` call site updated (Task 6):** The plan identified two call sites for `SetCurrentActionContext` (the snapshot serializer and the rehydrator). A third call site was found in `EfGameSessionRepository.cs` (line 345) that also called `SetCurrentActionContext`. It was updated to call `RestoreActionContextState` in the same commit. Recorded in commit `878940e`.
+
+4. **`StoreLoop` included (Task 10):** The plan marked Task 10 as optional. It was included because the `Purchase` method calls `EnterActionContext(TownActionContext.Store)` and the store logic (`CanPurchaseInventoryItem`, `IsStackableItemKind`) is self-contained — it fell out naturally as the plan predicted.
+
+### Validation evidence at head `f2e5c82`
+
+- `dotnet build WildBunch.sln`: 0 errors
+- `.\scripts\postgres-dev.ps1 validate`: **1024 passed, 0 failed, 0 skipped**
+  - GameContent.Tests: 139, Application.Tests: 204, Domain.Tests: 511, Api.Tests: 1, Integration.Tests: 169
+- EF migrations list: 8 migrations, no new ones needed
+- Falsification checks: 0 `GameSession` references and 0 forbidden calls in all 3 new files
+- `GameSession.cs` line count: 4006 → 3693 (-313 lines)
+- INDEX.md regenerated for `src/WildBunch.Domain/Game/`
+
+### Merge ordering
+
+BUNCH-119 (PR #139, JourneyLoop) is still OPEN and must merge first. PR #138 requires a rebase onto post-BUNCH-119 main before merge. See the Linear issue comment and PR body for the ordering rationale.
