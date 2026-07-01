@@ -20,6 +20,7 @@ import type {
   WantedPosterDto,
 } from "../api/types";
 import { formatMoney, storageKey } from "../utils/formatting";
+import { formatInvestigationNotice } from "../ui/beatFormatters";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
@@ -156,7 +157,7 @@ export function useGameSessionMutations({
     onSuccess: async (result) => {
       queryClient.setQueryData(["journal", gameId], result.currentJournal);
       await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
+      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
       setError("");
     },
     onError: (exception: unknown) => {
@@ -169,7 +170,7 @@ export function useGameSessionMutations({
     onSuccess: async (result) => {
       queryClient.setQueryData(["journal", gameId], result.currentJournal);
       await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
+      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
       setError("");
     },
     onError: (exception: unknown) => {
@@ -182,7 +183,7 @@ export function useGameSessionMutations({
     onSuccess: async (result) => {
       queryClient.setQueryData(["journal", gameId], result.currentJournal);
       await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
+      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
       setError("");
     },
     onError: (exception: unknown) => {
