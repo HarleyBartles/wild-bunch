@@ -23,3 +23,10 @@ Task 2c: complete (commits 1ad16a2..5f9110a, review clean — Approved, no issue
 Task 2d: complete (commits 5f9110a..ec7dfe4, review clean — Approved, no issues, bug fixed)
 Task 2e: complete (no commit — pure verification: break real, no shim, no schema drift, 169 integration tests pass)
 Task 3: complete (commits ec7dfe4..b2bac6c, review clean — Approved, no issues)
+
+## Final whole-branch review
+Branch quality: Approved. No Critical/Important. 4 Minor findings:
+1. FIXED (commit 10446d7): Stale doc comment on CitizenCast.ResolveDescriptor referencing old normalization shared with SaloonPersonOfInterestDescriptor.
+2. Deferred: FeatureLanguage.Raw default whoForm includes trailing punctuation (latent — all 26 callers pass whoForm explicitly).
+3. Deferred: NodFeature FamilyKey hardcoded bodyPart→key map with silent fallthrough to "brow" (only 4 categories today).
+4. Deferred: no-eyebrows has FeatureCategory.Absence but retains MissingPart tag (semantic, no functional impact).
