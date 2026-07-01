@@ -123,6 +123,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
     }
 
+    /// <summary>
+    /// Restores the pending dev travel override during snapshot rehydration.
+    /// The override lives on <see cref="JourneyLoop"/> after BUNCH-119.
+    /// </summary>
+    internal void RestorePendingDevTravelOverride(DevTravelOverride? overrideValue)
+    {
+        _journeyLoop.RestorePendingDevTravelOverride(overrideValue);
+    }
+
     public GameStatus Status { get; private set; }
 
     /// <summary>
@@ -162,7 +171,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// Pending dev override for the next travel-day generation. Dev-only state.
     /// Consumed once by the next AdvanceJourneyDay. See BUNCH-89.
     /// </summary>
-    internal DevTravelOverride? PendingDevTravelOverride => _pendingDevTravelOverride;
+    internal DevTravelOverride? PendingDevTravelOverride => _journeyLoop.PendingDevTravelOverride;
 
     /// <summary>
     /// Pending dev override for the next saloon look-around. Dev-only state.
@@ -170,7 +179,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal DevSaloonOverride? PendingDevSaloonOverride => _bountyLoop.PendingDevSaloonOverride;
 
-    public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _travelDiaryDays;
+    public IReadOnlyList<TravelDiaryDayState> TravelDiaryDays => _journeyLoop.TravelDiaryDays;
 
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _completedJourneyHistory;
 
@@ -579,7 +588,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         _journeyLoop.Apply(e);
         _nextJourneySequence = e.JourneySnapshot.JourneySequence + 1;
-        _travelDiaryDays.Clear();
         PursuitState.SetHeat(e.PursuitHeat);
         _version++;
     }
@@ -670,6 +678,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         if (e.StolenItemKind is { } kind && e.StolenItemQuantity > 0)
             Player.RemoveQuantity(kind, e.StolenItemQuantity);
         PursuitState.SetHeat(e.PursuitHeat);
+        SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
         _version++;
     }
 
@@ -1238,7 +1247,38 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
         }
 
-        return AdvanceJourneyDayDeterministic();
+        // Advance clock only when the journey will actually advance (not blocked
+        // by a pending encounter or inactive status). The clock advance must happen
+        // before trail events are produced so Apply(TrailEventApplied) records
+        // travel updates with the correct day. See ADR-0028 and BUNCH-83.
+        if (Journey is not null && Journey.PendingEncounter is null && Journey.Status == JourneyStatus.Active)
+        {
+            Clock.AdvanceTravelDay();
+        }
+
+        var caps = Player.GetCapabilities(TravelRules);
+        var context = new AdvanceJourneyDayContext(
+            TravelRules,
+            SaltSource.Salt,
+            SaltSource.Mode,
+            GameEntropy,
+            Clock.Day,
+            PursuitState.Heat,
+            new PlayerCapabilities(caps.MountedTravelAvailable, caps.FirearmThreatAvailable),
+            Player.GetQuantity(ItemKind.Food),
+            Player.GetQuantity(ItemKind.HorseFeed),
+            Player.GetCanteenState(),
+            Player.GetHorseState(),
+            Player.Wallet.Cash,
+            Player.Health,
+            Player.GetQuantity(ItemKind.RevolverAmmo) + Player.GetQuantity(ItemKind.RifleAmmo));
+
+        var result = _journeyLoop.AdvanceJourneyDay(context);
+        foreach (var e in result.Events)
+        {
+            ProduceEvent(e);
+        }
+        return result.Result;
     }
 
     /// <summary>
@@ -2788,7 +2828,35 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             return JourneyEncounterResolutionResult.Failed(ArchivedBlockMessage, JourneyStatus.Failed);
         }
 
-        return ResolveJourneyEncounterDeterministic(choiceId, bulletSpend, bribeAmount, forcedRoll);
+        var caps = Player.GetCapabilities(TravelRules);
+        var context = new ResolveJourneyEncounterContext(
+            TravelRules,
+            SaltSource.Salt,
+            SaltSource.Mode,
+            GameEntropy,
+            Clock.Day,
+            PursuitState.Heat,
+            new PlayerCapabilities(caps.MountedTravelAvailable, caps.FirearmThreatAvailable),
+            Player.GetQuantity(ItemKind.Food),
+            Player.GetQuantity(ItemKind.HorseFeed),
+            Player.GetCanteenState(),
+            Player.GetHorseState(),
+            Player.Wallet.Cash,
+            Player.Health,
+            choiceId,
+            bulletSpend,
+            bribeAmount,
+            forcedRoll,
+            Player.GetQuantity(ItemKind.RevolverAmmo),
+            Player.GetQuantity(ItemKind.RifleAmmo),
+            Player.HasItem(ItemKind.Knife));
+
+        var result = _journeyLoop.ResolveJourneyEncounter(context);
+        foreach (var e in result.Events)
+        {
+            ProduceEvent(e);
+        }
+        return result.Result;
     }
 
     private static string DescribeTravelMode(TravelMode travelMode)
@@ -3788,8 +3856,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         ArgumentNullException.ThrowIfNull(travelDiaryDays);
 
-        _travelDiaryDays.Clear();
-        _travelDiaryDays.AddRange(travelDiaryDays);
+        _journeyLoop.RestoreTravelDiaryDays(travelDiaryDays);
     }
 
     private static string DescribeClueLead(string description)

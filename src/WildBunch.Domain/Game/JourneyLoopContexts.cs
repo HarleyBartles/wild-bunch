@@ -11,28 +11,47 @@ internal sealed record StartJourneyContext(
     TravelRulesProfile TravelRules);
 
 /// <summary>Read-only inputs for advancing a travel day.</summary>
-internal sealed record AdvanceJourneyDayContext(
+internal record AdvanceJourneyDayContext(
     TravelRulesProfile TravelRules,
     string Salt,
+    SaltSourceMode SaltMode,
+    GameEntropy GameEntropy,
     int ClockDay,
     int CurrentHeat,
     PlayerCapabilities Capabilities,
     int AvailableFood,
     int AvailableHorseFeed,
     CanteenState? CanteenState,
-    HorseTravelState? HorseState);
+    HorseTravelState? HorseState,
+    decimal PlayerCash,
+    int PlayerHealth,
+    int AvailableAmmo);
 
 /// <summary>Read-only inputs for resolving a journey encounter.</summary>
 internal sealed record ResolveJourneyEncounterContext(
+    TravelRulesProfile TravelRules,
+    string Salt,
+    SaltSourceMode SaltMode,
+    GameEntropy GameEntropy,
+    int ClockDay,
+    int CurrentHeat,
+    PlayerCapabilities Capabilities,
+    int AvailableFood,
+    int AvailableHorseFeed,
+    CanteenState? CanteenState,
+    HorseTravelState? HorseState,
+    decimal PlayerCash,
+    int PlayerHealth,
     string ChoiceId,
     int? BulletSpend,
     decimal? BribeAmount,
     ulong? ForcedRoll,
-    TravelRulesProfile TravelRules,
-    decimal PlayerCash,
-    int PlayerHealth,
-    int CurrentHeat,
-    int AvailableAmmo);
+    int AvailableRevolverAmmo,
+    int AvailableRifleAmmo,
+    bool HasKnife) : AdvanceJourneyDayContext(
+        TravelRules, Salt, SaltMode, GameEntropy, ClockDay, CurrentHeat, Capabilities,
+        AvailableFood, AvailableHorseFeed, CanteenState, HorseState,
+        PlayerCash, PlayerHealth, AvailableRevolverAmmo + AvailableRifleAmmo);
 
 /// <summary>Read-only inputs for acknowledging journey arrival.</summary>
 internal sealed record AcknowledgeJourneyArrivalContext(

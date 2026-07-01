@@ -351,7 +351,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var pendingDevOverride = _serializer.DeserializePendingDevTravelOverride(devOverrideJson);
         if (pendingDevOverride is not null)
         {
-            GameSessionRehydrator.SetBackingField(session, "_pendingDevTravelOverride", pendingDevOverride);
+            session.RestorePendingDevTravelOverride(pendingDevOverride);
         }
 
         // Restore BountyLoop-owned state from snapshot (dev saloon override + unrelated

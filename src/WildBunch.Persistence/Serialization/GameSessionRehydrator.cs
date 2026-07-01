@@ -31,8 +31,6 @@ internal static class GameSessionRehydrator
         },
         modifiers: null);
 
-    private static readonly FieldInfo? TravelDiaryDaysField = typeof(GameSession).GetField("_travelDiaryDays", BindingFlags.Instance | BindingFlags.NonPublic);
-
     public static GameSession Create(
         GameSessionId id,
         Player player,
@@ -59,13 +57,7 @@ internal static class GameSessionRehydrator
 
     public static void ReplaceTravelDiaryDays(GameSession session, IReadOnlyList<TravelDiaryDayState> travelDiaryDays)
     {
-        if (TravelDiaryDaysField?.GetValue(session) is not List<TravelDiaryDayState> entries)
-        {
-            throw new InvalidOperationException("Unable to access travel diary entries for rehydration.");
-        }
-
-        entries.Clear();
-        entries.AddRange(travelDiaryDays);
+        session.ReplaceTravelDiaryDays(travelDiaryDays);
     }
 
     public static void SetBackingField<T>(object target, string fieldName, T value)
