@@ -105,6 +105,11 @@ public sealed class DiaryProjector : IDomainEventProjector<DiaryProjection>
                     if (!string.IsNullOrEmpty(jaa.DiaryMessage))
                         entries.Add(new DiaryEntry(day, turn, jaa.DiaryMessage));
                     break;
+
+                case PlaythroughArchived pa:
+                    var location = string.IsNullOrEmpty(pa.LastTownName) ? "an unknown location" : pa.LastTownName;
+                    entries.Add(new DiaryEntry(day, turn, $"Playthrough archived at {location}: {pa.ArchiveReason}."));
+                    break;
             }
         }
 

@@ -769,4 +769,42 @@ public sealed class ProjectionTests
 
         Assert.Equal(75m, hud.WalletCash);
     }
+
+    [Fact]
+    public void DiaryProjector_PlaythroughArchived_AddsArchiveEntry()
+    {
+        var projector = new DiaryProjector();
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 100,
+                StartingWallet = 25m,
+                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new PlaythroughArchived
+            {
+                ArchivedAtUtc = DateTime.UtcNow,
+                ArchiveReason = "Completed",
+                PlayerName = "Ranger Vale",
+                LastTownId = new TownId("pinecross"),
+                LastTownName = "Pinecross",
+                Day = 1,
+                Turn = "Morning",
+                StatusBeforeArchive = GameStatus.Completed
+            }
+        };
+
+        var diary = projector.Project(events);
+
+        Assert.Equal(2, diary.Entries.Count);
+        Assert.Contains("archived", diary.Entries[1].Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Completed", diary.Entries[1].Summary);
+    }
 }
