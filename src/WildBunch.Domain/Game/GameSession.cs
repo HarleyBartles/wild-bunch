@@ -33,7 +33,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly ActionContextTracker _actionContextTracker = new();
     private readonly InvestigationLoop _investigationLoop = new();
     private readonly StoreLoop _storeLoop = new();
-    private DevTravelOverride? _pendingDevTravelOverride;
 
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
@@ -2407,23 +2406,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
             .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
             .ToHashSet();
-
-    private bool TryGetEligibleSaloonSuspectCandidate(out Suspect suspect)
-    {
-        foreach (var candidate in CaseFile.Suspects)
-        {
-            if (!IsEligibleSaloonPersonOfInterestCandidate(candidate))
-            {
-                continue;
-            }
-
-            suspect = candidate;
-            return true;
-        }
-
-        suspect = null!;
-        return false;
-    }
 
     /// <summary>
     /// A suspect is eligible as a saloon POI candidate if they are not the unreleased
