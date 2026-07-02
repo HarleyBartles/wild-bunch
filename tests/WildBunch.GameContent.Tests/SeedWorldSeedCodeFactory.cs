@@ -38,7 +38,8 @@ internal static class SeedWorldSeedCodeFactory
             cashBonus,
             selectedTownIds,
             townServices,
-            trails);
+            trails,
+            HasOutlierSlot: false);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(target);
     }
@@ -80,7 +81,8 @@ internal static class SeedWorldSeedCodeFactory
             cashBonus,
             selectedTownIds,
             townServices,
-            trails);
+            trails,
+            HasOutlierSlot: false);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(target);
     }

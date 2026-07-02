@@ -165,7 +165,8 @@ public static class SeedWorldResolver
             cashBonus,
             selectedTownIds,
             townServices,
-            trails);
+            trails,
+            HasOutlierSlot: false);
     }
 
     internal static SeedWorldValidationResult Validate(SeedWorld seedWorld)
@@ -301,7 +302,8 @@ public static class SeedWorldResolver
             cashBonus,
             selectedTownIds,
             townServices,
-            trails);
+            trails,
+            HasOutlierSlot: false);
     }
 
     private static Guid CreateCanonicalSeedCodeCore()

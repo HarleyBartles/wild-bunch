@@ -258,7 +258,7 @@ public sealed class SeedWorldBuilderTests
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails));
+            selectedTownIds, townServices, trails, HasOutlierSlot: false));
 
         return SeedWorldResolver.Resolve(seedCode);
     }
@@ -285,7 +285,7 @@ public sealed class SeedWorldBuilderTests
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails));
+            selectedTownIds, townServices, trails, HasOutlierSlot: false));
 
         return SeedWorldResolver.Resolve(seedCode);
     }

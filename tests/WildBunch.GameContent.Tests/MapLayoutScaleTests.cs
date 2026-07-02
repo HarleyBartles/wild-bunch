@@ -130,7 +130,8 @@ public class MapLayoutScaleTests
             cashBonus,
             dummyTownIds,
             dummyTownServices,
-            dummyTrails);
+            dummyTrails,
+            HasOutlierSlot: false);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
     }
