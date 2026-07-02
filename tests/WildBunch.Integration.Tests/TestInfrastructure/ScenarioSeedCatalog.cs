@@ -37,7 +37,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v9|CanonicalMountedStandard|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|preview=quartzsite:mounted:4/4",
+        RequiredShapeSignature: "resolver-v11|CanonicalMountedStandard|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|preview=quartzsite:mounted:4/4",
         DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         PreviewDestinationTownId: "quartzsite",
@@ -49,7 +49,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v9|CanonicalPinecrossServices|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|services=hardpan|preview=quartzsite:mounted:4/4",
+        RequiredShapeSignature: "resolver-v11|CanonicalPinecrossServices|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|services=hardpan|preview=quartzsite:mounted:4/4",
         DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
@@ -67,7 +67,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v9|HighRiskFoeInterruptRoute|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|routes=boulderwash,brokenarrow,emberfall,holloway,openpass,quartzsite,rattleridge|preview=missing",
+        RequiredShapeSignature: "resolver-v11|HighRiskFoeInterruptRoute|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|routes=boulderwash,brokenarrow,emberfall,holloway,openpass,quartzsite,rattleridge|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -92,7 +92,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Easy,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v9|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=quartzsite:mounted:3/3",
+        RequiredShapeSignature: "resolver-v11|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=quartzsite:mounted:3/3",
         DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {
