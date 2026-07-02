@@ -1,6 +1,6 @@
 # Entropic Map Mutation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement entropic map variation with hidden outlier slots, replacing the complex outlier removal logic with simple slot activation and redesigning layouts for better mutation support.
 
@@ -44,7 +44,7 @@
 - Consumes: None
 - Produces: Updated SeedWorld record with HasOutlierSlot property
 
-- [ ] **Step 1: Add HasOutlierSlot property to SeedWorld record**
+- [x] **Step 1: Add HasOutlierSlot property to SeedWorld record**
 
 ```csharp
 public sealed record SeedWorld(
@@ -63,7 +63,7 @@ public sealed record SeedWorld(
 }
 ```
 
-- [ ] **Step 2: Update canonical seed world creation to set HasOutlierSlot to false**
+- [x] **Step 2: Update canonical seed world creation to set HasOutlierSlot to false**
 
 ```csharp
 private static SeedWorld CreateCanonicalSeedWorldShape()
@@ -87,12 +87,12 @@ private static SeedWorld CreateCanonicalSeedWorldShape()
 }
 ```
 
-- [ ] **Step 3: Run existing tests to verify no breaking changes**
+- [x] **Step 3: Run existing tests to verify no breaking changes**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release`
 Expected: All tests pass (new property has default value)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorld.cs
@@ -110,7 +110,7 @@ git commit -m "feat: add HasOutlierSlot property to SeedWorld"
 - Consumes: SeedWorld with HasOutlierSlot property
 - Produces: Updated CreateRepresentativeSeedCode to encode outlier bit
 
-- [ ] **Step 1: Update CreateRepresentativeSeedCode to encode HasOutlierSlot bit**
+- [x] **Step 1: Update CreateRepresentativeSeedCode to encode HasOutlierSlot bit**
 
 ```csharp
 public static Guid CreateRepresentativeSeedCode(SeedWorld seedWorld)
@@ -143,7 +143,7 @@ public static Guid CreateRepresentativeSeedCode(SeedWorld seedWorld)
 }
 ```
 
-- [ ] **Step 2: Update Resolve to decode HasOutlierSlot bit**
+- [x] **Step 2: Update Resolve to decode HasOutlierSlot bit**
 
 ```csharp
 private static SeedWorld Resolve(Guid seedCode)
@@ -171,7 +171,7 @@ private static SeedWorld Resolve(Guid seedCode)
 }
 ```
 
-- [ ] **Step 3: Update Validate to check HasOutlierSlot is within valid range**
+- [x] **Step 3: Update Validate to check HasOutlierSlot is within valid range**
 
 ```csharp
 private static (bool Success, string? ErrorMessage) Validate(SeedWorld seedWorld)
@@ -189,12 +189,12 @@ private static (bool Success, string? ErrorMessage) Validate(SeedWorld seedWorld
 }
 ```
 
-- [ ] **Step 4: Run tests to verify encoding/decoding round-trip**
+- [x] **Step 4: Run tests to verify encoding/decoding round-trip**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release --filter "SeedWorldResolver"`
 Expected: All seed resolver tests pass
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs
@@ -212,7 +212,7 @@ git commit -m "feat: encode/decode HasOutlierSlot bit in seed codec"
 - Consumes: None
 - Produces: Updated MapLayoutPalette enum with 8 new layouts
 
-- [ ] **Step 1: Replace MapLayoutPalette enum with 8 new layouts**
+- [x] **Step 1: Replace MapLayoutPalette enum with 8 new layouts**
 
 ```csharp
 /// <summary>
@@ -233,7 +233,7 @@ public enum MapLayoutPalette
 }
 ```
 
-- [ ] **Step 2: Update enum references in code to use new layout names**
+- [x] **Step 2: Update enum references in code to use new layout names**
 
 Search and replace in `SeedWorldCatalog.cs`:
 - `MapLayoutPalette.Ring` → remove (no longer exists)
@@ -241,12 +241,12 @@ Search and replace in `SeedWorldCatalog.cs`:
 - `MapLayoutPalette.DoubleLine` → keep (same name)
 - `MapLayoutPalette.HubAndSpoke` → keep (same name)
 
-- [ ] **Step 3: Run tests to verify enum changes don't break existing code**
+- [x] **Step 3: Run tests to verify enum changes don't break existing code**
 
 Run: `dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj --configuration Release`
 Expected: Build succeeds (enum changes are backward compatible for existing layouts)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs
@@ -264,7 +264,7 @@ git commit -m "refactor: redesign MapLayoutPalette with 8 mutation-friendly layo
 - Consumes: Updated MapLayoutPalette enum
 - Produces: Trail definitions for 8 new layouts
 
-- [ ] **Step 1: Add trail definitions for XShaped layout**
+- [x] **Step 1: Add trail definitions for XShaped layout**
 
 ```csharp
 // In BuildTrails method, add XShaped case:
@@ -283,7 +283,7 @@ MapLayoutPalette.XShaped => new[]
 }
 ```
 
-- [ ] **Step 2: Add trail definitions for Tree layout**
+- [x] **Step 2: Add trail definitions for Tree layout**
 
 ```csharp
 MapLayoutPalette.Tree => new[]
@@ -299,7 +299,7 @@ MapLayoutPalette.Tree => new[]
 }
 ```
 
-- [ ] **Step 3: Add trail definitions for Star layout**
+- [x] **Step 3: Add trail definitions for Star layout**
 
 ```csharp
 MapLayoutPalette.Star => new[]
@@ -316,7 +316,7 @@ MapLayoutPalette.Star => new[]
 }
 ```
 
-- [ ] **Step 4: Add trail definitions for Cluster layout**
+- [x] **Step 4: Add trail definitions for Cluster layout**
 
 ```csharp
 MapLayoutPalette.Cluster => new[]
@@ -332,7 +332,7 @@ MapLayoutPalette.Cluster => new[]
 }
 ```
 
-- [ ] **Step 5: Add trail definitions for Mesh layout**
+- [x] **Step 5: Add trail definitions for Mesh layout**
 
 ```csharp
 MapLayoutPalette.Mesh => Enumerable.Range(0, 9)
@@ -341,7 +341,7 @@ MapLayoutPalette.Mesh => Enumerable.Range(0, 9)
     .ToArray()
 ```
 
-- [ ] **Step 6: Add trail definitions for Grid layout**
+- [x] **Step 6: Add trail definitions for Grid layout**
 
 ```csharp
 MapLayoutPalette.Grid => new[]
@@ -366,11 +366,11 @@ MapLayoutPalette.Grid => new[]
 }
 ```
 
-- [ ] **Step 7: Remove Ring and LinearChain cases from BuildTrails**
+- [x] **Step 7: Remove Ring and LinearChain cases from BuildTrails**
 
 Delete the cases for `MapLayoutPalette.Ring` and `MapLayoutPalette.LinearChain`.
 
-- [ ] **Step 8: Update DoubleLine to remove crossing trails**
+- [x] **Step 8: Update DoubleLine to remove crossing trails**
 
 ```csharp
 MapLayoutPalette.DoubleLine => new[]
@@ -387,12 +387,12 @@ MapLayoutPalette.DoubleLine => new[]
 }
 ```
 
-- [ ] **Step 9: Run tests to verify new layout definitions**
+- [x] **Step 9: Run tests to verify new layout definitions**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release --filter "SeedWorldCatalog"`
 Expected: All catalog tests pass
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs
@@ -410,15 +410,15 @@ git commit -m "feat: add trail definitions for 8 new layouts"
 - Consumes: Updated SeedWorld with HasOutlierSlot
 - Produces: Simplified builder without complex outlier removal
 
-- [ ] **Step 1: Remove ApplyOutlierClamping method entirely**
+- [x] **Step 1: Remove ApplyOutlierClamping method entirely**
 
 Delete the entire `ApplyOutlierClamping` method and its call from `DeriveDistancesAndAdjustCoordinates`.
 
-- [ ] **Step 2: Remove VerifyOutlierInvariant method entirely**
+- [x] **Step 2: Remove VerifyOutlierInvariant method entirely**
 
 Delete the entire `VerifyOutlierInvariant` method.
 
-- [ ] **Step 3: Simplify DeriveDistancesAndAdjustCoordinates to remove outlier phase**
+- [x] **Step 3: Simplify DeriveDistancesAndAdjustCoordinates to remove outlier phase**
 
 ```csharp
 private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, Dictionary<int, (int X, int Y)> AdjustedCoordinates, int? OutlierSlot) DeriveDistancesAndAdjustCoordinates(
@@ -462,7 +462,7 @@ private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, Dictionary<int, (in
 }
 ```
 
-- [ ] **Step 4: Remove layout-specific outlier protection from SelectRandomTrails**
+- [x] **Step 4: Remove layout-specific outlier protection from SelectRandomTrails**
 
 Simplify `SelectRandomTrails` to not take `outlierSlot` parameter:
 
@@ -489,16 +489,16 @@ private static List<SeedWorldTrail> SelectRandomTrails(
 }
 ```
 
-- [ ] **Step 5: Update all ApplyLayoutSpecificTrailRemoval calls to pass null for outlierSlot**
+- [x] **Step 5: Update all ApplyLayoutSpecificTrailRemoval calls to pass null for outlierSlot**
 
 Update calls in `ApplyHubAndSpokeTrailRemoval`, `ApplyRingTrailRemoval`, `ApplyDoubleLineTrailRemoval` to pass `null` instead of `outlierSlot`.
 
-- [ ] **Step 6: Run tests to verify simplified builder works**
+- [x] **Step 6: Run tests to verify simplified builder works**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release --filter "SeedWorldBuilder"`
 Expected: Tests may fail (expected - we removed outlier logic, will add back in next task)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
@@ -516,7 +516,7 @@ git commit -m "refactor: remove complex outlier removal logic from SeedWorldBuil
 - Consumes: SeedWorld with HasOutlierSlot
 - Produces: Outlier slot activation logic
 
-- [ ] **Step 1: Add ActivateOutlierSlot method**
+- [x] **Step 1: Add ActivateOutlierSlot method**
 
 ```csharp
 private static (IReadOnlyList<SeedWorldTrail> Trails, int? OutlierSlot) ActivateOutlierSlot(
@@ -580,7 +580,7 @@ private static int SelectOutlierConnectionTarget(
 }
 ```
 
-- [ ] **Step 2: Update CreateWorld to call ActivateOutlierSlot**
+- [x] **Step 2: Update CreateWorld to call ActivateOutlierSlot**
 
 ```csharp
 public static SeedWorld CreateWorld(SeedWorld seedWorld, GameSetupDeterministicSource source, GameEntropy entropy, SaltSource? saltSource)
@@ -605,7 +605,7 @@ public static SeedWorld CreateWorld(SeedWorld seedWorld, GameSetupDeterministicS
 }
 ```
 
-- [ ] **Step 3: Update CreateWorld to handle outlier town name**
+- [x] **Step 3: Update CreateWorld to handle outlier town name**
 
 ```csharp
 // In CreateWorld, after getting town names:
@@ -620,7 +620,7 @@ var townNames = SeedWorldCatalog.DeriveTownNames(
     seedWorld.MapLayoutPalette);
 ```
 
-- [ ] **Step 4: Update CreateWorld to mark outlier town with IsOutlier**
+- [x] **Step 4: Update CreateWorld to mark outlier town with IsOutlier**
 
 ```csharp
 // When building Town records:
@@ -637,12 +637,12 @@ var towns = townNames.Select((name, i) =>
 }).ToList();
 ```
 
-- [ ] **Step 5: Run tests to verify outlier activation works**
+- [x] **Step 5: Run tests to verify outlier activation works**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release --filter "SeedWorldBuilder"`
 Expected: Tests may need updates for new outlier behavior
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
@@ -660,7 +660,7 @@ git commit -m "feat: implement hidden outlier slot activation"
 - Consumes: Simplified builder without outlier logic
 - Produces: Simple trail removal based on entropy level
 
-- [ ] **Step 1: Simplify ApplyHubAndSpokeTrailRemoval**
+- [x] **Step 1: Simplify ApplyHubAndSpokeTrailRemoval**
 
 ```csharp
 private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyHubAndSpokeTrailRemoval(
@@ -709,11 +709,11 @@ private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) A
 }
 ```
 
-- [ ] **Step 2: Remove ApplyRingTrailRemoval entirely**
+- [x] **Step 2: Remove ApplyRingTrailRemoval entirely**
 
 Delete the entire method (Ring layout no longer exists).
 
-- [ ] **Step 3: Simplify ApplyDoubleLineTrailRemoval**
+- [x] **Step 3: Simplify ApplyDoubleLineTrailRemoval**
 
 ```csharp
 private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyDoubleLineTrailRemoval(
@@ -753,7 +753,7 @@ private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) A
 }
 ```
 
-- [ ] **Step 4: Add simple removal methods for new layouts**
+- [x] **Step 4: Add simple removal methods for new layouts**
 
 ```csharp
 private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyXShapedTrailRemoval(
@@ -795,7 +795,7 @@ private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) A
 // Similar methods for Tree, Star, Cluster, Mesh, Grid...
 ```
 
-- [ ] **Step 5: Update ApplyLayoutSpecificTrailRemoval to handle new layouts**
+- [x] **Step 5: Update ApplyLayoutSpecificTrailRemoval to handle new layouts**
 
 ```csharp
 private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyLayoutSpecificTrailRemoval(
@@ -822,12 +822,12 @@ private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) A
 }
 ```
 
-- [ ] **Step 6: Run tests to verify simplified removal works**
+- [x] **Step 6: Run tests to verify simplified removal works**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release --filter "SeedWorldBuilder"`
 Expected: Tests may need updates for new layouts
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
@@ -846,15 +846,15 @@ git commit -m "refactor: simplify layout-specific trail removal"
 - Consumes: Updated builder and layouts
 - Produces: Updated tests for new behavior
 
-- [ ] **Step 1: Update SeedWorldBuilderTests to test new layouts**
+- [x] **Step 1: Update SeedWorldBuilderTests to test new layouts**
 
 Add tests for XShaped, Tree, Star, Cluster, Mesh, Grid layouts. Remove tests for Ring and LinearChain.
 
-- [ ] **Step 2: Update GeometryCanonicalDistanceTests for simplified outlier logic**
+- [x] **Step 2: Update GeometryCanonicalDistanceTests for simplified outlier logic**
 
 Remove tests that expect complex outlier selection. Add tests for outlier slot activation.
 
-- [ ] **Step 3: Add test for outlier slot activation by entropy**
+- [x] **Step 3: Add test for outlier slot activation by entropy**
 
 ```csharp
 [Fact]
@@ -875,7 +875,7 @@ public void OutlierSlot_ActivatesBasedOnEntropy()
 }
 ```
 
-- [ ] **Step 4: Add test for outlier trail being exactly 6 days**
+- [x] **Step 4: Add test for outlier trail being exactly 6 days**
 
 ```csharp
 [Fact]
@@ -893,7 +893,7 @@ public void OutlierTrail_IsExactly6Days()
 }
 ```
 
-- [ ] **Step 5: Add test for normal trails being 2-5 days**
+- [x] **Step 5: Add test for normal trails being 2-5 days**
 
 ```csharp
 [Fact]
@@ -909,12 +909,12 @@ public void NormalTrails_Are2To5Days()
 }
 ```
 
-- [ ] **Step 6: Run all tests to verify updates**
+- [x] **Step 6: Run all tests to verify updates**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release`
 Expected: All tests pass
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/WildBunch.GameContent.Tests/
@@ -932,7 +932,7 @@ git commit -m "test: update tests for new layouts and simplified outlier logic"
 - Consumes: Implementation decisions from brainstorming
 - Produces: Updated spec with implementation details
 
-- [ ] **Step 1: Add implementation details section to spec**
+- [x] **Step 1: Add implementation details section to spec**
 
 Add a section documenting:
 - Final bit allocation (1 bit for HasOutlierSlot)
@@ -941,7 +941,7 @@ Add a section documenting:
 - Outlier name pool approach (deferred, use regular pool for now)
 - Layout-specific removal patterns
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add docs/superpowers/specs/2026-07-02-entropic-map-mutation-design.md
@@ -959,22 +959,22 @@ git commit -m "docs: update spec with implementation details"
 - Consumes: Complete implementation
 - Produces: Verification that all tests pass and CI is green
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --configuration Release`
 Expected: All tests pass
 
-- [ ] **Step 2: Run full solution build**
+- [x] **Step 2: Run full solution build**
 
 Run: `dotnet build src/WildBunch.sln --configuration Release`
 Expected: Build succeeds
 
-- [ ] **Step 3: Push changes and verify CI**
+- [x] **Step 3: Push changes and verify CI**
 
 Run: `git push`
 Expected: CI passes all checks
 
-- [ ] **Step 4: Commit final verification**
+- [x] **Step 4: Commit final verification**
 
 ```bash
 git add .
