@@ -31,9 +31,13 @@ internal static class SeedWorldBuilder
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
 
+        // Determine if outlier slot should be activated
+        var shouldActivateOutlier = seedWorld.HasOutlierSlot && entropy != GameEntropy.Boring;
+        var finalTownCount = shouldActivateOutlier ? seedWorld.TownCount + 1 : seedWorld.TownCount;
+
         var townNames = SeedWorldCatalog.DeriveTownNames(
             seedWorld.WorldVariant,
-            seedWorld.TownCount,
+            finalTownCount,
             seedWorld.AccusationIndex,
             seedWorld.DefaultCulpritIndex,
             seedWorld.CashBonus,
@@ -57,6 +61,22 @@ internal static class SeedWorldBuilder
             source,
             saltSource);
 
+        // Activate outlier slot if needed
+        int? outlierSlot = null;
+        if (shouldActivateOutlier)
+        {
+            var outlierSlotIndex = seedWorld.TownCount; // Outlier is at the next slot
+            var (trailsWithOutlier, activatedSlot) = ActivateOutlierSlot(
+                trimmedTrails,
+                adjustedCoordinates,
+                source,
+                saltSource,
+                entropy,
+                outlierSlotIndex);
+            trimmedTrails = trailsWithOutlier;
+            outlierSlot = activatedSlot;
+        }
+
         return SeedWorldCatalog.CreateWorld(
             seedWorld.WorldVariant,
             townNames,
@@ -64,7 +84,7 @@ internal static class SeedWorldBuilder
             seedWorld.ProsperityPalette,
             trimmedTrails,
             adjustedCoordinates,
-            null);
+            outlierSlot);
     }
 
     /// <summary>
@@ -124,6 +144,18 @@ internal static class SeedWorldBuilder
     private static int ComputeStableHash(string seedCode, int slot, string entropyMode, string salt)
     {
         var input = $"{seedCode}-{slot}-{entropyMode}-{salt}";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        var hashBytes = SHA256.HashData(bytes);
+        return BitConverter.ToInt32(hashBytes, 0);
+    }
+
+    /// <summary>
+    /// Computes a stable deterministic hash for entropy variance with string slot identifier.
+    /// Uses SHA256 over explicit inputs to ensure consistency across runs.
+    /// </summary>
+    private static int ComputeStableHash(string seedCode, string slotIdentifier, string entropyMode, string salt)
+    {
+        var input = $"{seedCode}-{slotIdentifier}-{entropyMode}-{salt}";
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
         var hashBytes = SHA256.HashData(bytes);
         return BitConverter.ToInt32(hashBytes, 0);
@@ -508,6 +540,65 @@ internal static class SeedWorldBuilder
 
         // Check that all town slots were visited
         return visited.Count == townCount;
+    }
+
+    /// <summary>
+    /// Activates the hidden outlier slot by creating an outlier town and trail.
+    /// The outlier is placed 6 days away from a deterministically selected target town.
+    /// Returns the updated trails list and the outlier slot index.
+    /// </summary>
+    private static (IReadOnlyList<SeedWorldTrail> Trails, int? OutlierSlot) ActivateOutlierSlot(
+        IReadOnlyList<SeedWorldTrail> trails,
+        Dictionary<int, (int X, int Y)> townCoordinates,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        GameEntropy entropy,
+        int outlierSlotIndex)
+    {
+        const double CoordinateScale = 25.0; // 1 ride-day per 25 coordinate units
+
+        // Select connection target using deterministic hash
+        var connectionTargetSlot = SelectOutlierConnectionTarget(townCoordinates, source, saltSource, entropy);
+
+        // Create outlier town coordinates (6 days away from target)
+        var targetCoords = townCoordinates[connectionTargetSlot];
+        var salt = saltSource?.Salt ?? "default";
+        var angle = ComputeStableHash(source.SeedCode, outlierSlotIndex, entropy.ToString(), salt) % 360;
+        var angleRad = angle * Math.PI / 180.0;
+        var outlierX = targetCoords.X + (int)(6 * CoordinateScale * Math.Cos(angleRad));
+        var outlierY = targetCoords.Y + (int)(6 * CoordinateScale * Math.Sin(angleRad));
+
+        townCoordinates[outlierSlotIndex] = (outlierX, outlierY);
+
+        // Create outlier trail
+        var targetTownId = connectionTargetSlot.ToString();
+        var outlierTownId = outlierSlotIndex.ToString();
+        var outlierTrail = new SeedWorldTrail(
+            $"trail-{connectionTargetSlot}-{outlierSlotIndex}",
+            targetTownId,
+            outlierTownId,
+            TrailRisk.High,
+            TrailTerrain.Mountains,
+            WaterFeature.None,
+            6m); // Exactly 6 days
+
+        var result = new List<SeedWorldTrail>(trails) { outlierTrail };
+        return (result, outlierSlotIndex);
+    }
+
+    /// <summary>
+    /// Selects a target town for the outlier to connect to using deterministic hash.
+    /// </summary>
+    private static int SelectOutlierConnectionTarget(
+        Dictionary<int, (int X, int Y)> townCoordinates,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        GameEntropy entropy)
+    {
+        var slots = townCoordinates.Keys.ToList();
+        var salt = saltSource?.Salt ?? "default";
+        var hash = ComputeStableHash(source.SeedCode, "outlier-target", entropy.ToString(), salt);
+        return slots[Math.Abs(hash) % slots.Count];
     }
 
     /// <summary>
