@@ -296,7 +296,7 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Completed, sixthAdvance.TravelDiary.Days[^1].Status);
         var finalFoodItem = sixthAdvance.CurrentSession.Inventory.Items.FirstOrDefault(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food);
         var finalFoodQuantity = finalFoodItem?.Quantity ?? 0;
-        Assert.Equal(startingFood - 6, finalFoodQuantity);
+        Assert.Equal(0, finalFoodQuantity); // Starting food is 4, journey is 6 days, so food runs out and caps at 0
         Assert.Equal(startingHorseFeed, sixthAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
         Assert.Equal(10, sixthAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
