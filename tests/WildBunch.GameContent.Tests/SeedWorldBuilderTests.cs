@@ -496,6 +496,5 @@ public sealed class SeedWorldBuilderTests
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
         => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 
-    // Note: Outlier slot activation tests are deferred until ActivateOutlierSlot is implemented
-    // in SeedWorldBuilder. The OutlierSlotType property exists but the activation logic is not yet wired up.
+
 }
