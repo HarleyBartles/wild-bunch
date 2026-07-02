@@ -417,7 +417,8 @@ internal static class SeedWorldCatalog
         ServicesPalette servicesPalette,
         ProsperityPalette prosperityPalette,
         IReadOnlyList<SeedWorldTrail> trails,
-        Dictionary<int, (int X, int Y)>? townCoordinates = null)
+        Dictionary<int, (int X, int Y)>? townCoordinates = null,
+        int? outlierSlot = null)
     {
         var towns = townNames
             .Select((entry, index) =>
@@ -427,7 +428,8 @@ internal static class SeedWorldCatalog
                 var (mapX, mapY) = townCoordinates != null && townCoordinates.TryGetValue(index, out var coords)
                     ? coords
                     : (0, 0);
-                return new Town(new TownId(entry.Id), entry.Name, services, prosperity, MapX: mapX, MapY: mapY);
+                var isOutlier = outlierSlot.HasValue && index == outlierSlot.Value;
+                return new Town(new TownId(entry.Id), entry.Name, services, prosperity, MapX: mapX, MapY: mapY, IsOutlier: isOutlier);
             })
             .ToArray();
         var domainTrails = trails
@@ -465,6 +467,8 @@ internal static class SeedWorldCatalog
             townNames,
             ServicesPalette.HubTelegraph,
             ProsperityPalette.UniformProsperous,
-            trails);
+            trails,
+            townCoordinates: null,
+            outlierSlot: null);
     }
 }
