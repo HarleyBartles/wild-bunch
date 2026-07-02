@@ -203,13 +203,13 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.Trails.Select(TrailSnapshot.ToDomain));
     }
 
-    private sealed record TownSnapshot(string Id, string Name, TownServices Services)
+    private sealed record TownSnapshot(string Id, string Name, TownServices Services, int MapX, int MapY)
     {
         public static TownSnapshot FromDomain(Town town)
-            => new(town.Id.Value, town.Name, town.Services);
+            => new(town.Id.Value, town.Name, town.Services, town.MapX, town.MapY);
 
         public static Town ToDomain(TownSnapshot snapshot)
-            => new(new TownId(snapshot.Id), snapshot.Name, snapshot.Services);
+            => new(new TownId(snapshot.Id), snapshot.Name, snapshot.Services, MapX: snapshot.MapX, MapY: snapshot.MapY);
     }
 
     private sealed record TrailSnapshot(
