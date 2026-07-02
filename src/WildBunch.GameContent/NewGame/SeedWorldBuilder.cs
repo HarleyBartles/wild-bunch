@@ -48,32 +48,22 @@ internal static class SeedWorldBuilder
         // Derive canonical distances from geometry
         var trailsWithGeometryDistances = DeriveDistancesFromGeometry(trails, townCoordinates);
 
-        // Trim outlier towns for Classic, Adventurous, and Wild entropy
-        // Boring keeps full connectivity
-        Dictionary<int, (int X, int Y)> trimmedTownCoordinates;
-        IReadOnlyList<TownNameEntry> trimmedTownNames;
-        IReadOnlyList<SeedWorldTrail> trimmedTrails;
-        if (entropy != GameEntropy.Boring)
-        {
-            var (names, trimmedTrailList, coords) = TrimOutlierTowns(townNames, trailsWithGeometryDistances, townCoordinates);
-            trimmedTownNames = names;
-            trimmedTrails = trimmedTrailList;
-            trimmedTownCoordinates = coords;
-        }
-        else
-        {
-            trimmedTownNames = townNames;
-            trimmedTrails = trailsWithGeometryDistances;
-            trimmedTownCoordinates = townCoordinates;
-        }
+        // Trim outlier trail sets for Classic, Adventurous, and Wild entropy.
+        // Boring keeps full trail connectivity.
+        // No towns are removed — only trail sets are trimmed so that a remote
+        // outlier town keeps exactly one 6-day trail (dead-end) and other
+        // excessive 6-day trails are reduced to 5 days.
+        var trimmedTrails = entropy != GameEntropy.Boring
+            ? TrimOutlierTrailSets(trailsWithGeometryDistances, townNames.Count)
+            : trailsWithGeometryDistances;
 
         return SeedWorldCatalog.CreateWorld(
             seedWorld.WorldVariant,
-            trimmedTownNames,
+            townNames,
             seedWorld.ServicesPalette,
             seedWorld.ProsperityPalette,
             trimmedTrails,
-            trimmedTownCoordinates);
+            townCoordinates);
     }
 
     /// <summary>
@@ -182,83 +172,122 @@ internal static class SeedWorldBuilder
     }
 
     /// <summary>
-    /// Trims at most one outlier town from the world for non-Boring entropy.
-    /// An outlier is defined as a town with the fewest trail connections
-    /// (degree) in the trail graph. Trimming maintains connectivity by ensuring
-    /// the remaining towns form a connected graph.
-    /// Returns the trimmed town names, trimmed trails, and a coordinate dictionary
-    /// keyed by the new compacted slot index with coordinates correctly mapped
-    /// from each surviving town's original slot index.
+    /// Trims outlier trail sets for non-Boring entropy. No towns are removed
+    /// from the world — only trail sets are adjusted:
+    /// - If any town has a 6-day trail, one outlier town is selected (the town
+    ///   with the most 6-day trails, breaking ties by lowest degree then lowest
+    ///   slot index). That outlier keeps exactly one 6-day trail (its remote
+    ///   dead-end) and its other trails are removed.
+    /// - Other towns that also have 6-day trails have those trails reduced to
+    ///   5 days so the outlier is the only true remote dead-end.
+    /// - Connectivity is preserved: the outlier remains reachable via its one
+    ///   retained trail, and all other towns keep their existing connections.
     /// </summary>
-    private static (IReadOnlyList<TownNameEntry> TrimmedTowns, IReadOnlyList<SeedWorldTrail> TrimmedTrails, Dictionary<int, (int X, int Y)> TrimmedCoordinates) TrimOutlierTowns(
-        IReadOnlyList<TownNameEntry> townNames,
+    private static IReadOnlyList<SeedWorldTrail> TrimOutlierTrailSets(
         IReadOnlyList<SeedWorldTrail> trails,
-        Dictionary<int, (int X, int Y)> townCoordinates)
+        int townCount)
     {
-        // Build adjacency list to count town degrees (by index in townNames list)
-        var townDegree = new Dictionary<int, int>();
-        for (var i = 0; i < townNames.Count; i++)
+        // Find all 6-day trails and which towns they connect
+        var sixDayTrails = trails.Where(t => t.RideDayDistance == 6m).ToList();
+        if (sixDayTrails.Count == 0)
+            return trails;
+
+        // Count how many 6-day trails each town is involved in
+        var sixDayCountByTown = new Dictionary<int, int>();
+        for (var i = 0; i < townCount; i++)
+            sixDayCountByTown[i] = 0;
+
+        foreach (var trail in sixDayTrails)
         {
-            townDegree[i] = 0;
+            var parts = trail.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+            if (fromSlot < townCount) sixDayCountByTown[fromSlot]++;
+            if (toSlot < townCount) sixDayCountByTown[toSlot]++;
         }
 
+        // Build overall degree (all trails, not just 6-day) for tie-breaking
+        var totalDegree = new Dictionary<int, int>();
+        for (var i = 0; i < townCount; i++)
+            totalDegree[i] = 0;
         foreach (var trail in trails)
         {
             var parts = trail.Id.Split('-');
             var fromSlot = int.Parse(parts[1]);
             var toSlot = int.Parse(parts[2]);
-            if (fromSlot < townNames.Count) townDegree[fromSlot]++;
-            if (toSlot < townNames.Count) townDegree[toSlot]++;
+            if (fromSlot < townCount) totalDegree[fromSlot]++;
+            if (toSlot < townCount) totalDegree[toSlot]++;
         }
 
-        // Find towns with the minimum degree (potential outliers)
-        var minDegree = townDegree.Values.Min();
-        var outlierIndices = townDegree
-            .Where(kvp => kvp.Value == minDegree)
-            .Select(kvp => kvp.Key)
-            .OrderBy(idx => idx)
-            .ToList();
+        // Select the outlier: town with the most 6-day trails,
+        // breaking ties by lowest total degree, then lowest slot index.
+        var outlierSlot = sixDayCountByTown
+            .Where(kvp => kvp.Value > 0)
+            .OrderByDescending(kvp => kvp.Value)
+            .ThenBy(kvp => totalDegree[kvp.Key])
+            .ThenBy(kvp => kvp.Key)
+            .First().Key;
 
-        // Only trim if we have enough towns to spare (more than 5)
-        if (townNames.Count <= 5)
+        // Pick the one 6-day trail to retain for the outlier.
+        // Prefer the 6-day trail that connects to the highest-degree neighbor
+        // (keeps the outlier connected to the most-connected hub).
+        var outlierSixDayTrails = sixDayTrails.Where(t =>
         {
-            return (townNames, trails, townCoordinates);
-        }
+            var parts = t.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+            return fromSlot == outlierSlot || toSlot == outlierSlot;
+        }).ToList();
 
-        // Try trimming each outlier and pick the first that maintains connectivity
-        foreach (var outlierIndex in outlierIndices)
-        {
-            var trimmedTownNames = townNames.Where((t, i) => i != outlierIndex).ToList();
-            var trimmedTrails = trails.Where(t =>
+        var retainedTrail = outlierSixDayTrails
+            .OrderByDescending(t =>
             {
                 var parts = t.Id.Split('-');
                 var fromSlot = int.Parse(parts[1]);
                 var toSlot = int.Parse(parts[2]);
-                return fromSlot != outlierIndex && toSlot != outlierIndex;
-            }).ToList();
+                var neighborSlot = fromSlot == outlierSlot ? toSlot : fromSlot;
+                return totalDegree[neighborSlot];
+            })
+            .ThenBy(t => t.Id)
+            .First();
 
-            // Verify connectivity is maintained
-            if (VerifyConnectivity(trimmedTownNames.Count, trimmedTrails))
+        // Build the trimmed trail list:
+        // - Remove all trails touching the outlier except the retained one
+        // - Reduce other 6-day trails (not touching the outlier) to 5 days
+        var result = new List<SeedWorldTrail>();
+        foreach (var trail in trails)
+        {
+            var parts = trail.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+            var touchesOutlier = fromSlot == outlierSlot || toSlot == outlierSlot;
+
+            if (touchesOutlier)
             {
-                // Build correct coordinate mapping: each new compacted index
-                // must map to the original slot's coordinates, not just index i.
-                var trimmedCoordinates = new Dictionary<int, (int X, int Y)>();
-                var newIndex = 0;
-                for (var oldIndex = 0; oldIndex < townNames.Count; oldIndex++)
-                {
-                    if (oldIndex != outlierIndex)
-                    {
-                        trimmedCoordinates[newIndex] = townCoordinates[oldIndex];
-                        newIndex++;
-                    }
-                }
-
-                return (trimmedTownNames, trimmedTrails, trimmedCoordinates);
+                // Keep only the retained trail for the outlier
+                if (trail.Id == retainedTrail.Id)
+                    result.Add(trail);
+                // All other trails touching the outlier are dropped
+            }
+            else
+            {
+                // Reduce non-outlier 6-day trails to 5 days
+                if (trail.RideDayDistance == 6m)
+                    result.Add(trail with { RideDayDistance = 5m });
+                else
+                    result.Add(trail);
             }
         }
 
-        // If no outlier can be trimmed without breaking connectivity, return original
-        return (townNames, trails, townCoordinates);
+        // Verify connectivity is preserved with all towns still present
+        if (!VerifyConnectivity(townCount, result))
+        {
+            // If trimming broke connectivity, fall back to just reducing
+            // all 6-day trails to 5 days without removing any trails
+            return trails.Select(t => t.RideDayDistance == 6m ? t with { RideDayDistance = 5m } : t).ToArray();
+        }
+
+        return result;
     }
 
     /// <summary>

@@ -291,7 +291,7 @@ public sealed class SeedWorldBuilderTests
     }
 
     [Fact]
-    public void CreateWorld_WildEntropy_TrimOutlierTowns_MaintainsConnectivity()
+    public void CreateWorld_WildEntropy_TrimOutlierTrails_MaintainsConnectivity()
     {
         // Create a seed world with many towns to have potential outliers
         var seedWorld = CreateSeedWorldWithCount(10);
@@ -301,9 +301,8 @@ public sealed class SeedWorldBuilderTests
         var boringWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Boring);
         var wildWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Wild);
 
-        // Wild entropy should trim at least one outlier town (fewer towns than boring)
-        Assert.True(wildWorld.Towns.Count < boringWorld.Towns.Count,
-            "Wild entropy should trim at least one outlier town");
+        // Wild entropy should NOT remove any towns — all towns remain present
+        Assert.Equal(boringWorld.Towns.Count, wildWorld.Towns.Count);
 
         // Verify connectivity is maintained (all towns should be reachable)
         var townIds = wildWorld.Towns.Select(t => t.Id).ToHashSet();
@@ -316,37 +315,35 @@ public sealed class SeedWorldBuilderTests
             Assert.Equal(townIds, reachable);
         }
 
-        // Verify that trails are trimmed appropriately
+        // Verify that trails are trimmed appropriately (fewer trails than boring
+        // if outlier trail trimming removed trails, but all towns remain)
         Assert.True(wildWorld.Trails.Count > 0, "At least some trails should remain after trimming");
-        Assert.True(wildWorld.Trails.Count < boringWorld.Trails.Count,
-            "Wild entropy should have fewer trails than boring after trimming");
     }
 
     [Fact]
-    public void CreateWorld_NonWildEntropy_DoesNotTrimOutlierTowns()
+    public void CreateWorld_NonBoringEntropy_TrimsOutlierTrails_NotTowns()
     {
         // Create a seed world with many towns
         var seedWorld = CreateSeedWorldWithCount(10);
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
 
-        // Test with Boring entropy
+        // Test with different entropy levels
         var boringWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Boring);
         var classicWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Classic);
         var adventurousWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Adventurous);
 
-        // Only Boring entropy should not trim towns - all towns should be present
+        // No towns should be removed — all entropy modes keep the same town count
         Assert.Equal(10, boringWorld.Towns.Count);
-        // Classic and Adventurous DO trim towns (they are entropic modes)
-        Assert.True(classicWorld.Towns.Count < 10);
-        Assert.True(adventurousWorld.Towns.Count < 10);
+        Assert.Equal(10, classicWorld.Towns.Count);
+        Assert.Equal(10, adventurousWorld.Towns.Count);
 
-        // Trails should be the full graph only for Boring entropy
-        Assert.True(boringWorld.Trails.Count > classicWorld.Trails.Count);
-        Assert.True(boringWorld.Trails.Count > adventurousWorld.Trails.Count);
+        // Trails may be trimmed (fewer than boring) but towns are never removed
+        Assert.True(boringWorld.Trails.Count >= classicWorld.Trails.Count);
+        Assert.True(boringWorld.Trails.Count >= adventurousWorld.Trails.Count);
     }
 
     [Fact]
-    public void CreateWorld_EntropicModes_TrimOutlierTowns_MaintainsConnectivity()
+    public void CreateWorld_EntropicModes_TrimOutlierTrails_MaintainsConnectivity()
     {
         // Create a seed world with many towns to have potential outliers
         var seedWorld = CreateSeedWorldWithCount(10);
@@ -358,13 +355,10 @@ public sealed class SeedWorldBuilderTests
         var adventurousWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Adventurous);
         var wildWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Wild);
 
-        // Entropic modes (Classic, Adventurous, Wild) should trim at least one outlier town
-        Assert.True(classicWorld.Towns.Count < boringWorld.Towns.Count,
-            "Classic entropy should trim at least one outlier town");
-        Assert.True(adventurousWorld.Towns.Count < boringWorld.Towns.Count,
-            "Adventurous entropy should trim at least one outlier town");
-        Assert.True(wildWorld.Towns.Count < boringWorld.Towns.Count,
-            "Wild entropy should trim at least one outlier town");
+        // Entropic modes should NOT remove any towns — all towns remain present
+        Assert.Equal(boringWorld.Towns.Count, classicWorld.Towns.Count);
+        Assert.Equal(boringWorld.Towns.Count, adventurousWorld.Towns.Count);
+        Assert.Equal(boringWorld.Towns.Count, wildWorld.Towns.Count);
 
         // Verify connectivity is maintained for all entropic modes
         foreach (var world in new[] { classicWorld, adventurousWorld, wildWorld })
@@ -382,8 +376,6 @@ public sealed class SeedWorldBuilderTests
 
             // Verify that trails are trimmed appropriately
             Assert.True(world.Trails.Count > 0, "At least some trails should remain after trimming");
-            Assert.True(world.Trails.Count < boringWorld.Trails.Count,
-                "Entropic modes should have fewer trails than boring after trimming");
         }
     }
 
