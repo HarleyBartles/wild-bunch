@@ -129,7 +129,7 @@ public sealed class GameApiJournalTests
 
         Assert.NotNull(journal);
         Assert.Equal("quartzsite", journal!.CurrentTown.Id);
-        Assert.Equal(7, journal.Clock.Day);
+        Assert.Equal(6, journal.Clock.Day);
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal("The culprit has a scar on the left cheek.", journal.CaseFile.OpeningLead);
