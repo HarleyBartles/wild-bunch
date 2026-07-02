@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Security.Cryptography;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -45,17 +46,16 @@ internal static class SeedWorldBuilder
         // Derive town coordinates from map layout geometry
         var townCoordinates = DeriveTownCoordinates(townNames.Count, seedWorld.MapLayoutPalette, entropy, source, saltSource);
 
-        // Derive canonical distances from geometry
-        var trailsWithGeometryDistances = DeriveDistancesFromGeometry(trails, townCoordinates);
-
-        // Trim outlier trail sets for Classic, Adventurous, and Wild entropy.
-        // Boring keeps full trail connectivity.
-        // No towns are removed — only trail sets are trimmed so that a remote
-        // outlier town keeps exactly one 6-day trail (dead-end) and other
-        // excessive 6-day trails are reduced to 5 days.
-        var trimmedTrails = entropy != GameEntropy.Boring
-            ? TrimOutlierTrailSets(trailsWithGeometryDistances, townNames.Count)
-            : trailsWithGeometryDistances;
+        // Derive ride-day distances and adjust coordinates in two passes:
+        // Pass 1: full variance → geometry → ride days → clamp → outlier selection → trail removal
+        // Pass 2: adjust coordinates to match final ride days for visual legibility
+        var (trimmedTrails, adjustedCoordinates, outlierSlot) = DeriveDistancesAndAdjustCoordinates(
+            trails,
+            townCoordinates,
+            seedWorld.MapLayoutPalette,
+            entropy,
+            source,
+            saltSource);
 
         return SeedWorldCatalog.CreateWorld(
             seedWorld.WorldVariant,
@@ -63,7 +63,8 @@ internal static class SeedWorldBuilder
             seedWorld.ServicesPalette,
             seedWorld.ProsperityPalette,
             trimmedTrails,
-            townCoordinates);
+            adjustedCoordinates,
+            outlierSlot);
     }
 
     /// <summary>
@@ -99,11 +100,7 @@ internal static class SeedWorldBuilder
                 var hash = ComputeStableHash(source.SeedCode, i, entropy.ToString(), salt);
                 var varianceX = (int)((hash % (varianceRange * 2 + 1)) - varianceRange);
                 var varianceY = (int)(((hash >> 16) % (varianceRange * 2 + 1)) - varianceRange);
-                
-                // Reduce variance by 4 to keep trails under 6 days
-                varianceX /= 4;
-                varianceY /= 4;
-                
+
                 // Layout-specific variance preferences
                 if (layout is MapLayoutPalette.LinearChain or MapLayoutPalette.DoubleLine)
                 {
@@ -111,7 +108,7 @@ internal static class SeedWorldBuilder
                     varianceX /= 2;
                     varianceY *= 2;
                 }
-                
+
                 baseCoords = (baseCoords.X + varianceX, baseCoords.Y + varianceY);
             }
             
@@ -128,166 +125,408 @@ internal static class SeedWorldBuilder
     {
         var input = $"{seedCode}-{slot}-{entropyMode}-{salt}";
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hashBytes = System.Security.Cryptography.SHA256.HashData(bytes);
+        var hashBytes = SHA256.HashData(bytes);
         return BitConverter.ToInt32(hashBytes, 0);
     }
 
     /// <summary>
-    /// Derives canonical ride-day distances from the Euclidean geometry of town coordinates.
-    /// Distance is calculated as the Euclidean distance between towns, scaled to ride-day units
-    /// (approximately 1 ride-day per 25 coordinate units), rounded to 1 decimal place.
-    /// Capped to 2-6 days.
+    /// Computes a stable deterministic hash for trail removal (no slot).
+    /// Uses SHA256 over explicit inputs to ensure consistency across runs.
     /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> DeriveDistancesFromGeometry(
+    private static int ComputeStableHash(string seedCode, string entropyMode, string salt)
+    {
+        var input = $"{seedCode}-{entropyMode}-{salt}";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        var hashBytes = SHA256.HashData(bytes);
+        return BitConverter.ToInt32(hashBytes, 0);
+    }
+
+    /// <summary>
+    /// Derives ride-day distances from geometry in two passes:
+    /// Pass 1: Derive raw distances from geometry, clamp to max 6 days, select outlier if any 6-day trails,
+    ///         clamp others to 2-5 days via modulo clamping, apply layout-specific trail removal.
+    /// Pass 2: Adjust coordinates to match final ride days so visual lines make sense relative to labels.
+    /// Returns the trimmed trails, adjusted coordinates, and the outlier town slot (if any).
+    /// </summary>
+    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, Dictionary<int, (int X, int Y)> AdjustedCoordinates, int? OutlierSlot) DeriveDistancesAndAdjustCoordinates(
         IReadOnlyList<SeedWorldTrail> trails,
-        Dictionary<int, (int X, int Y)> townCoordinates)
+        Dictionary<int, (int X, int Y)> townCoordinates,
+        MapLayoutPalette layout,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource)
     {
         const double CoordinateScale = 25.0; // 1 ride-day per 25 coordinate units
         const decimal MinDays = 2m;
         const decimal MaxDays = 6m;
 
-        return trails.Select(trail =>
+        // Pass 1: Derive raw distances from geometry
+        var trailsWithRawDistances = trails.Select(trail =>
         {
-            // Extract slot indices from trail ID (format: "trail-{fromSlot}-{toSlot}")
             var parts = trail.Id.Split('-');
             var fromSlot = int.Parse(parts[1]);
             var toSlot = int.Parse(parts[2]);
-
             var fromCoords = townCoordinates[fromSlot];
             var toCoords = townCoordinates[toSlot];
-
-            // Calculate Euclidean distance
             var dx = toCoords.X - fromCoords.X;
             var dy = toCoords.Y - fromCoords.Y;
             var coordinateDistance = Math.Sqrt(dx * dx + dy * dy);
-
-            // Scale to ride-day distance and round to 1 decimal place
-            var rideDayDistance = Math.Round(coordinateDistance / CoordinateScale, 1);
-            
-            // Cap to 2-6 days
-            var cappedDistance = Math.Max(MinDays, Math.Min(MaxDays, (decimal)rideDayDistance));
-
-            return trail with { RideDayDistance = cappedDistance };
+            var rawRideDays = Math.Round(coordinateDistance / CoordinateScale, 1);
+            var clampedRaw = Math.Max(MinDays, Math.Min(MaxDays, (decimal)rawRideDays));
+            return (trail, clampedRaw);
         }).ToArray();
+
+        // Check if any 6-day trails exist after geometry skewing
+        var hasSixDayTrails = trailsWithRawDistances.Any(t => t.clampedRaw == 6m);
+
+        // If any 6-day trails, select outlier and clamp others to 2-5 days
+        var (trailsAfterOutlierClamp, outlierSlot) = hasSixDayTrails
+            ? ApplyOutlierClamping(trailsWithRawDistances, townCoordinates.Count, source, saltSource)
+            : (trailsWithRawDistances.Select(t => t.trail with { RideDayDistance = t.clampedRaw }).ToArray(), (int?)null);
+
+        // Apply layout-specific trail removal by salt
+        var (trailsAfterRemoval, _) = ApplyLayoutSpecificTrailRemoval(trailsAfterOutlierClamp, layout, entropy, source, saltSource, townCoordinates.Count, outlierSlot);
+
+        // Pass 2: Adjust coordinates to match final ride days
+        var adjustedCoordinates = AdjustCoordinatesToMatchRideDays(trailsAfterRemoval, townCoordinates, CoordinateScale, MinDays, MaxDays, entropy);
+
+        return (trailsAfterRemoval, adjustedCoordinates, outlierSlot);
     }
 
     /// <summary>
-    /// Trims outlier trail sets for non-Boring entropy. No towns are removed
-    /// from the world — only trail sets are adjusted:
-    /// - If any town has a 6-day trail, one outlier town is selected (the town
-    ///   with the most 6-day trails, breaking ties by lowest degree then lowest
-    ///   slot index). That outlier keeps exactly one 6-day trail (its remote
-    ///   dead-end) and its other trails are removed.
-    /// - Other towns that also have 6-day trails have those trails reduced to
-    ///   5 days so the outlier is the only true remote dead-end.
-    /// - Connectivity is preserved: the outlier remains reachable via its one
-    ///   retained trail, and all other towns keep their existing connections.
+    /// Applies outlier clamping: if any 6-day trails exist, select one outlier town,
+    /// keep exactly one 6-day trail for the outlier, clamp all other trails to 2-5 days
+    /// via modulo clamping for fair spread.
+    /// Returns the trimmed trails and the outlier town slot (if any).
     /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> TrimOutlierTrailSets(
-        IReadOnlyList<SeedWorldTrail> trails,
-        int townCount)
+    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyOutlierClamping(
+        (SeedWorldTrail trail, decimal rawDistance)[] trailsWithDistances,
+        int townCount,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource)
     {
-        // Find all 6-day trails and which towns they connect
-        var sixDayTrails = trails.Where(t => t.RideDayDistance == 6m).ToList();
-        if (sixDayTrails.Count == 0)
-            return trails;
-
-        // Count how many 6-day trails each town is involved in
-        var sixDayCountByTown = new Dictionary<int, int>();
-        for (var i = 0; i < townCount; i++)
-            sixDayCountByTown[i] = 0;
-
-        foreach (var trail in sixDayTrails)
+        // Find towns with 6-day trails
+        var towns6Day = new HashSet<int>();
+        foreach (var (trail, rawDistance) in trailsWithDistances)
         {
-            var parts = trail.Id.Split('-');
-            var fromSlot = int.Parse(parts[1]);
-            var toSlot = int.Parse(parts[2]);
-            if (fromSlot < townCount) sixDayCountByTown[fromSlot]++;
-            if (toSlot < townCount) sixDayCountByTown[toSlot]++;
+            if (rawDistance == 6m)
+            {
+                var parts = trail.Id.Split('-');
+                var fromSlot = int.Parse(parts[1]);
+                var toSlot = int.Parse(parts[2]);
+                towns6Day.Add(fromSlot);
+                towns6Day.Add(toSlot);
+            }
         }
 
-        // Build overall degree (all trails, not just 6-day) for tie-breaking
+        if (towns6Day.Count == 0)
+            return (trailsWithDistances.Select(t => t.trail with { RideDayDistance = t.rawDistance }).ToArray(), (int?)null);
+
+        // Select outlier: town with most 6-day trails, tie-broken by degree then slot
+        var town6DayCount = towns6Day.ToDictionary(t => t, t => 0);
+        foreach (var (trail, rawDistance) in trailsWithDistances)
+        {
+            if (rawDistance == 6m)
+            {
+                var parts = trail.Id.Split('-');
+                var fromSlot = int.Parse(parts[1]);
+                var toSlot = int.Parse(parts[2]);
+                if (towns6Day.Contains(fromSlot)) town6DayCount[fromSlot]++;
+                if (towns6Day.Contains(toSlot)) town6DayCount[toSlot]++;
+            }
+        }
+
+        var outlierSlot = town6DayCount.OrderByDescending(kvp => kvp.Value).First().Key;
+
+        // Count total degree for tie-breaking
         var totalDegree = new Dictionary<int, int>();
-        for (var i = 0; i < townCount; i++)
-            totalDegree[i] = 0;
-        foreach (var trail in trails)
+        for (var i = 0; i < townCount; i++) totalDegree[i] = 0;
+        foreach (var (trail, _) in trailsWithDistances)
         {
             var parts = trail.Id.Split('-');
             var fromSlot = int.Parse(parts[1]);
             var toSlot = int.Parse(parts[2]);
-            if (fromSlot < townCount) totalDegree[fromSlot]++;
-            if (toSlot < townCount) totalDegree[toSlot]++;
+            totalDegree[fromSlot]++;
+            totalDegree[toSlot]++;
         }
 
-        // Select the outlier: town with the most 6-day trails,
-        // breaking ties by lowest total degree, then lowest slot index.
-        var outlierSlot = sixDayCountByTown
-            .Where(kvp => kvp.Value > 0)
-            .OrderByDescending(kvp => kvp.Value)
-            .ThenBy(kvp => totalDegree[kvp.Key])
-            .ThenBy(kvp => kvp.Key)
-            .First().Key;
+        // Re-select outlier with degree tie-break
+        var outlierCandidates = towns6Day.OrderByDescending(t => town6DayCount[t]).ThenBy(t => totalDegree[t]).ThenBy(t => t).ToList();
+        outlierSlot = outlierCandidates.First();
 
-        // Pick the one 6-day trail to retain for the outlier.
-        // Prefer the 6-day trail that connects to the highest-degree neighbor
-        // (keeps the outlier connected to the most-connected hub).
-        var outlierSixDayTrails = sixDayTrails.Where(t =>
-        {
-            var parts = t.Id.Split('-');
-            var fromSlot = int.Parse(parts[1]);
-            var toSlot = int.Parse(parts[2]);
-            return fromSlot == outlierSlot || toSlot == outlierSlot;
-        }).ToList();
-
-        var retainedTrail = outlierSixDayTrails
+        // Pick one 6-day trail to retain for the outlier (prefer highest-degree neighbor)
+        var outlier6DayTrails = trailsWithDistances
+            .Where(t => t.rawDistance == 6m)
+            .Where(t =>
+            {
+                var parts = t.trail.Id.Split('-');
+                var fromSlot = int.Parse(parts[1]);
+                var toSlot = int.Parse(parts[2]);
+                return fromSlot == outlierSlot || toSlot == outlierSlot;
+            })
             .OrderByDescending(t =>
             {
-                var parts = t.Id.Split('-');
+                var parts = t.trail.Id.Split('-');
                 var fromSlot = int.Parse(parts[1]);
                 var toSlot = int.Parse(parts[2]);
                 var neighborSlot = fromSlot == outlierSlot ? toSlot : fromSlot;
                 return totalDegree[neighborSlot];
             })
-            .ThenBy(t => t.Id)
+            .ThenBy(t => t.trail.Id)
             .First();
 
-        // Build the trimmed trail list:
-        // - Remove all trails touching the outlier except the retained one
-        // - Reduce other 6-day trails (not touching the outlier) to 5 days
+        // Build result: outlier keeps one 6-day trail, others clamped to 2-5 via modulo
         var result = new List<SeedWorldTrail>();
+        foreach (var (trail, rawDistance) in trailsWithDistances)
+        {
+            if (trail.Id == outlier6DayTrails.trail.Id)
+            {
+                result.Add(trail with { RideDayDistance = 6m });
+            }
+            else if (rawDistance == 6m)
+            {
+                // Clamp 6-day trails to 2-5 via modulo clamping
+                var clamped = ((rawDistance - 2m) % 4m) + 2m;
+                result.Add(trail with { RideDayDistance = clamped });
+            }
+            else
+            {
+                result.Add(trail with { RideDayDistance = rawDistance });
+            }
+        }
+
+        return (result, outlierSlot);
+    }
+
+    /// <summary>
+    /// Applies layout-specific trail removal by salt.
+    /// HubAndSpoke: remove random spokes/edges based on entropy
+    /// Ring: remove 1 trail (or replace to maintain connectivity)
+    /// LinearChain: no removal (line breaks)
+    /// DoubleLine: remove trails between lines, preserve crossing trails (1-3)
+    /// Returns the trimmed trails and the outlier slot (unchanged from input).
+    /// </summary>
+    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyLayoutSpecificTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        MapLayoutPalette layout,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount,
+        int? outlierSlot)
+    {
+        if (entropy == GameEntropy.Boring)
+            return (trails, outlierSlot);
+
+        // For now, implement HubAndSpoke trail removal
+        // Other layouts (Ring, LinearChain, DoubleLine) are TODO
+        if (layout == MapLayoutPalette.HubAndSpoke)
+        {
+            return ApplyHubAndSpokeTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot);
+        }
+
+        return (trails, outlierSlot);
+    }
+
+    /// <summary>
+    /// Applies HubAndSpoke-specific trail removal by salt.
+    /// Hub is slot 0, spokes are trails from slot 0 to outer slots.
+    /// Edge trails are trails between outer slots (the ring).
+    /// </summary>
+    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyHubAndSpokeTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount,
+        int? outlierSlot)
+    {
+        if (townCount < 3)
+            return (trails, outlierSlot); // Need at least 3 towns for meaningful removal
+
+        // Identify spokes (from slot 0) and edge trails (between outer slots)
+        var spokes = new List<SeedWorldTrail>();
+        var edgeTrails = new List<SeedWorldTrail>();
+
         foreach (var trail in trails)
         {
             var parts = trail.Id.Split('-');
             var fromSlot = int.Parse(parts[1]);
             var toSlot = int.Parse(parts[2]);
-            var touchesOutlier = fromSlot == outlierSlot || toSlot == outlierSlot;
 
-            if (touchesOutlier)
-            {
-                // Keep only the retained trail for the outlier
-                if (trail.Id == retainedTrail.Id)
-                    result.Add(trail);
-                // All other trails touching the outlier are dropped
-            }
+            if (fromSlot == 0 || toSlot == 0)
+                spokes.Add(trail);
             else
-            {
-                // Reduce non-outlier 6-day trails to 5 days
-                if (trail.RideDayDistance == 6m)
-                    result.Add(trail with { RideDayDistance = 5m });
-                else
-                    result.Add(trail);
-            }
+                edgeTrails.Add(trail);
         }
 
-        // Verify connectivity is preserved with all towns still present
+        // Determine how many trails to remove based on entropy
+        var (spokesToRemove, edgesToRemove) = entropy switch
+        {
+            GameEntropy.Classic => (1, 1),
+            GameEntropy.Adventurous => (2, 2),
+            GameEntropy.Wild => (3, 3),
+            _ => (0, 0)
+        };
+
+        // Clamp to available trails
+        spokesToRemove = Math.Min(spokesToRemove, spokes.Count - 1); // Keep at least 1 spoke
+        edgesToRemove = Math.Min(edgesToRemove, edgeTrails.Count - 1); // Keep at least 1 edge
+
+        if (spokesToRemove == 0 && edgesToRemove == 0)
+            return (trails, outlierSlot);
+
+        // Use salt for deterministic selection
+        if (saltSource == null)
+            return (trails, outlierSlot);
+
+        var salt = saltSource.Salt;
+        var random = new Random(ComputeStableHash(source.SeedCode, entropy.ToString(), salt));
+
+        // Select random spokes to remove (avoid removing the outlier's spoke if outlier exists)
+        var spokesToRemoveList = SelectRandomTrails(spokes, spokesToRemove, random, outlierSlot, trails);
+        var edgesToRemoveList = SelectRandomTrails(edgeTrails, edgesToRemove, random, null, trails);
+
+        // Build result without removed trails
+        var removedIds = new HashSet<string>(spokesToRemoveList.Concat(edgesToRemoveList).Select(t => t.Id));
+        var result = trails.Where(t => !removedIds.Contains(t.Id)).ToList();
+
+        // Verify connectivity
         if (!VerifyConnectivity(townCount, result))
         {
-            // If trimming broke connectivity, fall back to just reducing
-            // all 6-day trails to 5 days without removing any trails
-            return trails.Select(t => t.RideDayDistance == 6m ? t with { RideDayDistance = 5m } : t).ToArray();
+            // If removal broke connectivity, return original trails
+            return (trails, outlierSlot);
+        }
+
+        return (result, outlierSlot);
+    }
+
+    /// <summary>
+    /// Selects random trails for removal, avoiding trails that would disconnect the outlier.
+    /// </summary>
+    private static List<SeedWorldTrail> SelectRandomTrails(
+        List<SeedWorldTrail> trails,
+        int count,
+        Random random,
+        int? outlierSlot,
+        IReadOnlyList<SeedWorldTrail> allTrails)
+    {
+        if (count == 0 || trails.Count == 0)
+            return new List<SeedWorldTrail>();
+
+        var result = new List<SeedWorldTrail>();
+        var available = trails.ToList();
+
+        while (result.Count < count && available.Count > 0)
+        {
+            var index = random.Next(available.Count);
+            var trail = available[index];
+
+            // If outlier exists, avoid removing the trail that connects to it
+            if (outlierSlot.HasValue)
+            {
+                var parts = trail.Id.Split('-');
+                var fromSlot = int.Parse(parts[1]);
+                var toSlot = int.Parse(parts[2]);
+
+                // Check if this trail connects to the outlier
+                if (fromSlot == outlierSlot.Value || toSlot == outlierSlot.Value)
+                {
+                    // Find if the outlier has other trails remaining
+                    var outlierOtherTrails = allTrails
+                        .Where(t => t.Id != trail.Id)
+                        .Where(t =>
+                        {
+                            var p = t.Id.Split('-');
+                            var f = int.Parse(p[1]);
+                            var t2 = int.Parse(p[2]);
+                            return f == outlierSlot.Value || t2 == outlierSlot.Value;
+                        })
+                        .ToList();
+
+                    if (outlierOtherTrails.Count == 0)
+                    {
+                        // This is the only trail to the outlier, don't remove it
+                        available.RemoveAt(index);
+                        continue;
+                    }
+                }
+            }
+
+            result.Add(trail);
+            available.RemoveAt(index);
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Adjusts coordinates to match final ride days so visual lines make sense.
+    /// For Boring mode (no variance), scales coordinates to match ride days.
+    /// For non-Boring modes, keeps the original variance-based coordinates since
+    /// they already produce visible geometric differences.
+    /// </summary>
+    private static Dictionary<int, (int X, int Y)> AdjustCoordinatesToMatchRideDays(
+        IReadOnlyList<SeedWorldTrail> trails,
+        Dictionary<int, (int X, int Y)> originalCoordinates,
+        double coordinateScale,
+        decimal minDays,
+        decimal maxDays,
+        GameEntropy entropy)
+    {
+        // Only adjust coordinates for Boring mode (no variance)
+        // For non-Boring modes, the variance-based coordinates already produce
+        // visible geometric differences, so we keep them as-is
+        if (entropy != GameEntropy.Boring)
+            return originalCoordinates;
+
+        // For Boring mode, scale coordinates to match ride days
+        var totalCurrentDistance = 0.0;
+        var totalTargetDistance = 0.0;
+        var trailCount = 0;
+
+        foreach (var trail in trails)
+        {
+            var parts = trail.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+
+            if (!originalCoordinates.TryGetValue(fromSlot, out var fromCoords) ||
+                !originalCoordinates.TryGetValue(toSlot, out var toCoords))
+                continue;
+
+            var dx = toCoords.X - fromCoords.X;
+            var dy = toCoords.Y - fromCoords.Y;
+            var currentDistance = Math.Sqrt(dx * dx + dy * dy);
+            var targetDistance = (double)trail.RideDayDistance * coordinateScale;
+
+            totalCurrentDistance += currentDistance;
+            totalTargetDistance += targetDistance;
+            trailCount++;
+        }
+
+        if (trailCount == 0 || totalCurrentDistance == 0)
+            return originalCoordinates;
+
+        var scaleFactor = totalTargetDistance / totalCurrentDistance;
+
+        // Scale all coordinates uniformly around the center
+        var centerX = originalCoordinates.Values.Average(c => c.X);
+        var centerY = originalCoordinates.Values.Average(c => c.Y);
+
+        var adjustedCoordinates = new Dictionary<int, (int X, int Y)>();
+        foreach (var kvp in originalCoordinates)
+        {
+            var slot = kvp.Key;
+            var (x, y) = kvp.Value;
+
+            var scaledX = (int)Math.Round(centerX + (x - centerX) * scaleFactor);
+            var scaledY = (int)Math.Round(centerY + (y - centerY) * scaleFactor);
+
+            adjustedCoordinates[slot] = (scaledX, scaledY);
+        }
+
+        return adjustedCoordinates;
     }
 
     /// <summary>

@@ -16,10 +16,9 @@ public static class SeedWorldMapLayout
     {
         var towns = world.Towns.ToArray();
         return towns
-            .Select((town, index) =>
+            .Select(town =>
             {
-                var (x, y) = GetCoordinatesForSlot(index, towns.Length, layout);
-                return new SeedMapTown(town.Id.Value, town.Name, town.Services, x, y);
+                return new SeedMapTown(town.Id.Value, town.Name, town.Services, town.MapX, town.MapY);
             })
             .ToArray();
     }
