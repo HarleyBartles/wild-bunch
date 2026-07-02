@@ -51,9 +51,13 @@ public static class SeedWorldMapLayout
         return layout switch
         {
             MapLayoutPalette.HubAndSpoke => GetHubAndSpokeCoordinates(slotIndex, totalTowns),
-            MapLayoutPalette.LinearChain => GetLinearChainCoordinates(slotIndex, totalTowns),
-            MapLayoutPalette.Ring => GetRingCoordinates(slotIndex, totalTowns),
             MapLayoutPalette.DoubleLine => GetDoubleLineCoordinates(slotIndex, totalTowns),
+            MapLayoutPalette.XShaped => GetXShapedCoordinates(slotIndex, totalTowns),
+            MapLayoutPalette.Tree => GetTreeCoordinates(slotIndex, totalTowns),
+            MapLayoutPalette.Star => GetStarCoordinates(slotIndex, totalTowns),
+            MapLayoutPalette.Cluster => GetClusterCoordinates(slotIndex, totalTowns),
+            MapLayoutPalette.Mesh => GetMeshCoordinates(slotIndex, totalTowns),
+            MapLayoutPalette.Grid => GetGridCoordinates(slotIndex, totalTowns),
             _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
         };
     }
@@ -67,21 +71,40 @@ public static class SeedWorldMapLayout
         return (x, y);
     }
 
-    public static (int X, int Y) GetLinearChainCoordinates(int slotIndex, int totalTowns)
+    public static (int X, int Y) GetXShapedCoordinates(int slotIndex, int totalTowns)
     {
-        var spacing = 60;
-        var startX = CenterX - ((totalTowns - 1) * spacing) / 2;
-        var x = startX + slotIndex * spacing;
-        var y = CenterY;
-        return (x, y);
+        // TODO: Implement XShaped coordinates
+        throw new NotImplementedException("XShaped coordinates not yet implemented");
     }
 
-    public static (int X, int Y) GetRingCoordinates(int slotIndex, int totalTowns)
+    public static (int X, int Y) GetTreeCoordinates(int slotIndex, int totalTowns)
     {
-        var angle = slotIndex * (2.0 * Math.PI / totalTowns);
-        var x = (int)(CenterX + RingRadius * Math.Cos(angle));
-        var y = (int)(CenterY + RingRadius * Math.Sin(angle));
-        return (x, y);
+        // TODO: Implement Tree coordinates
+        throw new NotImplementedException("Tree coordinates not yet implemented");
+    }
+
+    public static (int X, int Y) GetStarCoordinates(int slotIndex, int totalTowns)
+    {
+        // TODO: Implement Star coordinates
+        throw new NotImplementedException("Star coordinates not yet implemented");
+    }
+
+    public static (int X, int Y) GetClusterCoordinates(int slotIndex, int totalTowns)
+    {
+        // TODO: Implement Cluster coordinates
+        throw new NotImplementedException("Cluster coordinates not yet implemented");
+    }
+
+    public static (int X, int Y) GetMeshCoordinates(int slotIndex, int totalTowns)
+    {
+        // TODO: Implement Mesh coordinates
+        throw new NotImplementedException("Mesh coordinates not yet implemented");
+    }
+
+    public static (int X, int Y) GetGridCoordinates(int slotIndex, int totalTowns)
+    {
+        // TODO: Implement Grid coordinates
+        throw new NotImplementedException("Grid coordinates not yet implemented");
     }
 
     public static (int X, int Y) GetDoubleLineCoordinates(int slotIndex, int totalTowns)

@@ -62,8 +62,11 @@ public static class SeedWorldResolver
     ///       Bit layout unchanged from v10. 27 bits used, 101 reserved.
     /// - v12: Added HasOutlierSlot bit (position 27). Indicates presence of outlier town slot.
     ///       28 bits used, 100 reserved.
+    /// - v13: Expanded MapLayoutPalette to 8 layouts (HubAndSpoke, DoubleLine, XShaped, Tree,
+    ///       Star, Cluster, Mesh, Grid). Removed LinearChain and Ring. Bit layout unchanged from v12.
+    ///       28 bits used, 100 reserved.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v12";
+    public const string ResolverContractVersion = "resolver-v13";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
@@ -129,10 +132,9 @@ public static class SeedWorldResolver
         if (accusationIndex > 6) accusationIndex = 6;
         if (defaultCulpritIndex > 6) defaultCulpritIndex = 6;
 
-        // 3-bit mapLayoutPalette produces 0-7, but we currently define 4 layouts (indices 0-3).
-        // Wrap within the current legal range using modulo. When more layouts are added,
-        // this naturally expands the modulo divisor.
-        mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 4);
+        // 3-bit mapLayoutPalette produces 0-7, which maps to 8 layouts.
+        // Wrap within the current legal range using modulo.
+        mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 8);
 
         // 3-bit prosperityPalette produces 0-7, which maps to 8 palettes.
         // Wrap within the current legal range using modulo.

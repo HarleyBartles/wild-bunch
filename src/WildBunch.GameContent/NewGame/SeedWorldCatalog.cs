@@ -11,17 +11,19 @@ public enum SeedWorldVariant
 
 /// <summary>
 /// Map layout palette defines how towns are positioned and connected.
-/// HubAndSpoke: central hub town with outer ring towns connected via spokes and ring
-/// LinearChain: towns connected in a line/chain
-/// Ring: towns connected in a circle with no hub
-/// DoubleLine: two parallel lines of towns with cross connections
+/// All layouts are designed with redundancy to support trail removal while maintaining connectivity.
+/// Trails only meet at towns - no crossing trails between towns.
 /// </summary>
 public enum MapLayoutPalette
 {
-    HubAndSpoke = 0,
-    LinearChain = 1,
-    Ring = 2,
-    DoubleLine = 3
+    HubAndSpoke = 0,        // Central hub with outer ring towns connected via spokes
+    DoubleLine = 1,          // Two parallel lines of towns, connected at endpoints
+    XShaped = 2,             // Four arms meeting at central town, each arm is a line of towns
+    Tree = 3,                // Hierarchical structure with main trunk and branches
+    Star = 4,                // Central hub with many dead-end spokes
+    Cluster = 5,             // Multiple mini-hubs (2-3 towns each) connected together
+    Mesh = 6,                // Fully connected network with lots of redundancy
+    Grid = 7                 // 2D grid structure (3x3 max) with trails along grid lines
 }
 
 internal sealed record SeedTrailVariant(
@@ -229,7 +231,7 @@ internal static class SeedWorldCatalog
             ((townCount & 0xF) << 14) |
             ((int)prosperityPalette & 0x7) << 18 |
             ((int)servicesPalette & 0x7) << 21 |
-            ((int)mapLayoutPalette & 0x3) << 24);
+            ((int)mapLayoutPalette & 0x7) << 24);
 
         // xorshift32 PRNG — deterministic, stable across runs.
         // Guard against seed=0: xorshift32 has 0 as a fixed point (produces all
@@ -295,9 +297,8 @@ internal static class SeedWorldCatalog
 
     /// <summary>
     /// Generates trail definitions for a given layout palette and town count.
-    /// HubAndSpoke: hub (slot 0) with spokes to all outer towns, outer towns form a ring
-    /// LinearChain: adjacent slots only (0-1, 1-2, 2-3, etc.)
-    /// Ring: towns form a circle, no hub
+    /// All layouts are designed with redundancy to support trail removal while maintaining connectivity.
+    /// Trails only meet at towns - no crossing trails between towns.
     /// </summary>
     private static IReadOnlyList<SlotTrailDefinition> GenerateTrailsForLayout(
         MapLayoutPalette layout,
@@ -306,9 +307,13 @@ internal static class SeedWorldCatalog
         return layout switch
         {
             MapLayoutPalette.HubAndSpoke => GenerateHubAndSpokeTrails(townCount),
-            MapLayoutPalette.LinearChain => GenerateLinearChainTrails(townCount),
-            MapLayoutPalette.Ring => GenerateRingTrails(townCount),
             MapLayoutPalette.DoubleLine => GenerateDoubleLineTrails(townCount),
+            MapLayoutPalette.XShaped => GenerateXShapedTrails(townCount),
+            MapLayoutPalette.Tree => GenerateTreeTrails(townCount),
+            MapLayoutPalette.Star => GenerateStarTrails(townCount),
+            MapLayoutPalette.Cluster => GenerateClusterTrails(townCount),
+            MapLayoutPalette.Mesh => GenerateMeshTrails(townCount),
+            MapLayoutPalette.Grid => GenerateGridTrails(townCount),
             _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
         };
     }
@@ -339,31 +344,40 @@ internal static class SeedWorldCatalog
         return trails;
     }
 
-    private static IReadOnlyList<SlotTrailDefinition> GenerateLinearChainTrails(int count)
+    private static IReadOnlyList<SlotTrailDefinition> GenerateXShapedTrails(int count)
     {
-        var trails = new List<SlotTrailDefinition>();
-        for (var i = 0; i < count - 1; i++)
-        {
-            trails.Add(new SlotTrailDefinition(
-                i, i + 1, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
-        }
-        return trails;
+        // TODO: Implement XShaped layout - four arms meeting at central town
+        throw new NotImplementedException("XShaped layout not yet implemented");
     }
 
-    private static IReadOnlyList<SlotTrailDefinition> GenerateRingTrails(int count)
+    private static IReadOnlyList<SlotTrailDefinition> GenerateTreeTrails(int count)
     {
-        var trails = new List<SlotTrailDefinition>();
-        for (var i = 0; i < count; i++)
-        {
-            var next = i == count - 1 ? 0 : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
-        }
-        return trails;
+        // TODO: Implement Tree layout - hierarchical structure with main trunk and branches
+        throw new NotImplementedException("Tree layout not yet implemented");
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateStarTrails(int count)
+    {
+        // TODO: Implement Star layout - central hub with many dead-end spokes
+        throw new NotImplementedException("Star layout not yet implemented");
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateClusterTrails(int count)
+    {
+        // TODO: Implement Cluster layout - multiple mini-hubs connected together
+        throw new NotImplementedException("Cluster layout not yet implemented");
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateMeshTrails(int count)
+    {
+        // TODO: Implement Mesh layout - fully connected network with lots of redundancy
+        throw new NotImplementedException("Mesh layout not yet implemented");
+    }
+
+    private static IReadOnlyList<SlotTrailDefinition> GenerateGridTrails(int count)
+    {
+        // TODO: Implement Grid layout - 2D grid structure with trails along grid lines
+        throw new NotImplementedException("Grid layout not yet implemented");
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateDoubleLineTrails(int count)

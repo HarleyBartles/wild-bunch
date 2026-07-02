@@ -16,9 +16,8 @@ public class MapLayoutScaleTests
     private static readonly MapLayoutPalette[] AllLayouts =
     [
         MapLayoutPalette.HubAndSpoke,
-        MapLayoutPalette.LinearChain,
-        MapLayoutPalette.Ring,
         MapLayoutPalette.DoubleLine
+        // Note: XShaped, Tree, Star, Cluster, Mesh, Grid are not yet implemented
     ];
 
     private static readonly int[] RepresentativeTownCounts = [5, 8, 10];

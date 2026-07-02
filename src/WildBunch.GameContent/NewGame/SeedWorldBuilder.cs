@@ -102,7 +102,7 @@ internal static class SeedWorldBuilder
                 var varianceY = (int)(((hash >> 16) % (varianceRange * 2 + 1)) - varianceRange);
 
                 // Layout-specific variance preferences
-                if (layout is MapLayoutPalette.LinearChain or MapLayoutPalette.DoubleLine)
+                if (layout is MapLayoutPalette.DoubleLine)
                 {
                     // Prefer Y variance for wavy patterns without crossings
                     varianceX /= 2;
@@ -374,9 +374,13 @@ internal static class SeedWorldBuilder
         return layout switch
         {
             MapLayoutPalette.HubAndSpoke => ApplyHubAndSpokeTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot),
-            MapLayoutPalette.Ring => ApplyRingTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot),
-            MapLayoutPalette.LinearChain => (trails, outlierSlot), // No removal - line breaks
             MapLayoutPalette.DoubleLine => ApplyDoubleLineTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot),
+            MapLayoutPalette.XShaped => (trails, outlierSlot), // TODO: Implement XShaped trail removal
+            MapLayoutPalette.Tree => (trails, outlierSlot), // TODO: Implement Tree trail removal
+            MapLayoutPalette.Star => (trails, outlierSlot), // TODO: Implement Star trail removal
+            MapLayoutPalette.Cluster => (trails, outlierSlot), // TODO: Implement Cluster trail removal
+            MapLayoutPalette.Mesh => (trails, outlierSlot), // TODO: Implement Mesh trail removal
+            MapLayoutPalette.Grid => (trails, outlierSlot), // TODO: Implement Grid trail removal
             _ => (trails, outlierSlot)
         };
     }
@@ -527,56 +531,6 @@ internal static class SeedWorldBuilder
         {
             throw new InvalidOperationException($"Outlier town slot {outlierSlot.Value} should have exactly one 6-day trail, found {outlier6DayTrails.Count}");
         }
-    }
-
-    /// <summary>
-    /// Applies Ring-specific trail removal by salt.
-    /// Ring: remove 1 trail (or replace with a link to another town to maintain connectivity).
-    /// </summary>
-    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyRingTrailRemoval(
-        IReadOnlyList<SeedWorldTrail> trails,
-        GameEntropy entropy,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        int townCount,
-        int? outlierSlot)
-    {
-        if (townCount < 3)
-            return (trails, outlierSlot); // Need at least 3 towns for meaningful removal
-
-        // Ring only removes 1 trail per entropy level
-        var trailsToRemove = entropy switch
-        {
-            GameEntropy.Classic => 1,
-            GameEntropy.Adventurous => 1,
-            GameEntropy.Wild => 1,
-            _ => 0
-        };
-
-        if (trailsToRemove == 0 || trails.Count <= 3)
-            return (trails, outlierSlot); // Keep at least 3 trails for connectivity
-
-        if (saltSource == null)
-            return (trails, outlierSlot);
-
-        var salt = saltSource.Salt;
-        var random = new Random(ComputeStableHash(source.SeedCode, entropy.ToString(), salt));
-
-        // Select random trail to remove (preserve outlier's single 6-day trail)
-        var trailsToRemoveList = SelectRandomTrails(trails.ToList(), trailsToRemove, random, outlierSlot, trails);
-        var removedIds = new HashSet<string>(trailsToRemoveList.Select(t => t.Id));
-        var result = trails.Where(t => !removedIds.Contains(t.Id)).ToList();
-
-        if (result.Count == trails.Count)
-            return (trails, outlierSlot); // No trails removed
-
-        if (VerifyConnectivity(townCount, result))
-        {
-            return (result, outlierSlot);
-        }
-
-        // If removal broke connectivity, return original trails
-        return (trails, outlierSlot);
     }
 
     /// <summary>

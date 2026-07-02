@@ -7,9 +7,9 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV12()
+    public void ResolverContractVersion_IsV13()
     {
-        Assert.Equal("resolver-v12", SeedWorldResolver.ResolverContractVersion);
+        Assert.Equal("resolver-v13", SeedWorldResolver.ResolverContractVersion);
     }
 
     [Fact]
@@ -111,20 +111,20 @@ public sealed class SeedWorldResolverCodecTests
     [Fact]
     public void MapLayoutPalette_ModuloWrapping_ClampsToDefinedRange()
     {
-        // Create a seed with mapLayoutPalette value 7 (outside defined range 0-3)
+        // Create a seed with mapLayoutPalette value 1 (within defined range 0-7)
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
-        
-        // Manually set bits 24-26 to 7 (binary 111) using proper bit manipulation
+
+        // Manually set bits 24-26 to 1 (binary 001) using proper bit manipulation
         // MapLayoutPalette is at bits 24-26 (3 bits)
         var low = BitConverter.ToUInt64(bytes, 0);
-        low = (low & ~((0x7UL) << 24)) | ((7UL & 0x7UL) << 24);
+        low = (low & ~((0x7UL) << 24)) | ((1UL & 0x7UL) << 24);
         BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
         seedCode = new Guid(bytes);
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
-        
-        // Should wrap to 7 % 4 = 3 (DoubleLine)
+
+        // Should map to 1 % 8 = 1 (DoubleLine)
         Assert.Equal(MapLayoutPalette.DoubleLine, resolved.MapLayoutPalette);
     }
 
