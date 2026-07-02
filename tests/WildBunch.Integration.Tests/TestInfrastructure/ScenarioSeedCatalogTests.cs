@@ -22,13 +22,13 @@ public sealed class ScenarioSeedCatalogTests
             GameDifficulty: GameDifficulty.Standard,
             GameEntropy: GameEntropy.Classic,
             ResolverContractVersion: SeedWorldResolver.ResolverContractVersion,
-            RequiredShapeSignature: "resolver-v11|DriftedFixture|unexpected-shape",
-            DescribeShapeSignature: static (_, _) => "resolver-v11|DriftedFixture|actual-shape",
+            RequiredShapeSignature: "resolver-v15|DriftedFixture|unexpected-shape",
+            DescribeShapeSignature: static (_, _) => "resolver-v15|DriftedFixture|actual-shape",
             AssertCreatedSessionContract: _ => { });
 
         var exception = Assert.Throws<XunitException>(() => fixture.AssertCachedFixtureContract());
 
-        Assert.Contains("Cached scenario seed 'DriftedFixture' no longer satisfies required shape 'resolver-v11|DriftedFixture|unexpected-shape'. Observed required-shape signature 'resolver-v11|DriftedFixture|actual-shape'.", exception.Message);
+        Assert.Contains("Cached scenario seed 'DriftedFixture' no longer satisfies required shape 'resolver-v15|DriftedFixture|unexpected-shape'. Observed required-shape signature 'resolver-v15|DriftedFixture|actual-shape'.", exception.Message);
         Assert.Contains("Regenerate this fixture through the boring scenario path", exception.Message);
     }
 }
