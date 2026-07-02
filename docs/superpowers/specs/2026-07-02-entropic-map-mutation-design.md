@@ -115,9 +115,58 @@
 5. Remove all complex budget accounting and outlier selection logic
 6. Test connectivity after each trail removal step
 
+## Implementation Details
+
+**Bit Allocation:**
+- Current: 24 bits used, 104 reserved
+- New: 25 bits used (add 1 bit for HasOutlierSlot at position 27)
+- MapLayoutPalette: 3 bits (8 layouts)
+- HasOutlierSlot: 1 bit (from reserved bits)
+
+**Outlier Activation Rules:**
+- Boring: Never activate outlier slot
+- Classic: Activate if HasOutlierSlot is true
+- Adventurous: Always activate if available
+- Wild: Always activate, layouts with multiple outlier slots can activate 2
+
+**Trail Distance Rules:**
+- Normal trails: 2-5 days (clamp any 6-day trails to 5)
+- Outlier trail: Exactly 6 days (guaranteed to be the longest)
+- 7+ days: Not used in this game
+
+**Outlier Connection Selection:**
+- Deterministic hash-based selection from all towns
+- Uses seed + entropy + salt for reproducibility
+- No layout-specific rules (universal approach)
+
+**Outlier Name Pool:**
+- For now: Use regular town name pool (next name after base towns)
+- Future: Separate curated list of 10-20 "remote-sounding" names
+- Future: Seam for themed outlier names (mining town, outlaw town, etc.)
+
+**Trail Removal:**
+- Random selection using seed/salt for determinism
+- Always verify connectivity after each removal
+- Maintain playability over all else
+- No budget complexity - simple count-based removal
+
+**Outlier Town Count:**
+- Seed encodes base town count (e.g., 8)
+- If outlier slot activated: total becomes base + 1 (e.g., 9)
+- Outlier uses next available slot index
+
+**Layout-Specific Removal Patterns:**
+- HubAndSpoke: Remove spokes while keeping hub connected
+- DoubleLine: Remove trails along lines, keep connectivity through endpoints
+- XShaped: Remove entire arms or partial arms, keep connectivity through center
+- Tree: Remove leaf branches, keep core trunk intact
+- Star: Remove spokes freely (natural outlier positions)
+- Cluster: Remove inter-cluster connections, keep intra-cluster connectivity
+- Mesh: Remove many trails while maintaining full connectivity
+- Grid: Remove trails in grid patterns, keep connectivity through grid paths
+
 ## Next Steps
 
-1. Get user approval on Option 1 approach
-2. Design new layout palette with mutation strategies
-3. Design new base layouts that support entropic variation
-4. Create implementation plan
+1. Get user approval on refined approach
+2. Create implementation plan (completed)
+3. Execute implementation plan
