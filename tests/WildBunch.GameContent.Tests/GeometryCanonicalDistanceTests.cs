@@ -128,6 +128,9 @@ public sealed class GeometryCanonicalDistanceTests
             }
         }
         Assert.True(coordinateMatches < Math.Min(towns1.Length, towns2.Length), "Expected some coordinate variance with different salts");
+
+        // Distance variance may not always occur if outlier trimming removes the same towns
+        // The key proof is coordinate variance, which drives distance changes
     }
 
     [Fact]
@@ -152,8 +155,13 @@ public sealed class GeometryCanonicalDistanceTests
         // We verify this by checking that non-Boring coordinates differ from Boring coordinates
         var boringTowns = boringSession.World.Towns.OrderBy(t => t.Id.Value).ToArray();
         var classicTowns = classicSession.World.Towns.OrderBy(t => t.Id.Value).ToArray();
+        var adventurousTowns = adventurousSession.World.Towns.OrderBy(t => t.Id.Value).ToArray();
+        var wildTowns = wildSession.World.Towns.OrderBy(t => t.Id.Value).ToArray();
         
         var classicMatches = 0;
+        var adventurousMatches = 0;
+        var wildMatches = 0;
+        
         for (var i = 0; i < Math.Min(boringTowns.Length, classicTowns.Length); i++)
         {
             if (boringTowns[i].MapX == classicTowns[i].MapX && boringTowns[i].MapY == classicTowns[i].MapY)
@@ -161,13 +169,32 @@ public sealed class GeometryCanonicalDistanceTests
                 classicMatches++;
             }
         }
+        for (var i = 0; i < Math.Min(boringTowns.Length, adventurousTowns.Length); i++)
+        {
+            if (boringTowns[i].MapX == adventurousTowns[i].MapX && boringTowns[i].MapY == adventurousTowns[i].MapY)
+            {
+                adventurousMatches++;
+            }
+        }
+        for (var i = 0; i < Math.Min(boringTowns.Length, wildTowns.Length); i++)
+        {
+            if (boringTowns[i].MapX == wildTowns[i].MapX && boringTowns[i].MapY == wildTowns[i].MapY)
+            {
+                wildMatches++;
+            }
+        }
         
-        // Classic should have variance from Boring
+        // All non-Boring modes should have variance from Boring
         Assert.True(classicMatches < Math.Min(boringTowns.Length, classicTowns.Length), "Classic should have variance from Boring");
+        Assert.True(adventurousMatches < Math.Min(boringTowns.Length, adventurousTowns.Length), "Adventurous should have variance from Boring");
+        Assert.True(wildMatches < Math.Min(boringTowns.Length, wildTowns.Length), "Wild should have variance from Boring");
+        
+        // Wild should have more variance than Classic (fewer matches with Boring)
+        Assert.True(wildMatches <= classicMatches, "Wild should have at least as much variance as Classic");
     }
 
     [Fact]
-    public void SessionWorld_IsLockedOnceCreated()
+    public void SessionWorld_IsLockedOnceCreated_InMemoryConsistency()
     {
         var seedCode = SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode());
         var factory = new SeededNewGameFactory(new TestFixedSaltSourceFactory());
@@ -194,6 +221,22 @@ public sealed class GeometryCanonicalDistanceTests
 
         Assert.Equal(initialTowns, recheckedTowns);
         Assert.Equal(initialTrails, recheckedTrails);
+    }
+
+    [Fact]
+    public void OutlierTrimming_PreservesTrailReferences()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var factory = new SeededNewGameFactory(new TestRuntimeSaltSourceFactory());
+
+        var wildSession = factory.Create("Wild", GameDifficulty.Standard, SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode), GameEntropy.Wild);
+
+        // All trail references should point to valid towns in the trimmed world
+        foreach (var trail in wildSession.World.Trails)
+        {
+            Assert.True(wildSession.World.TryGetTown(trail.FromTownId, out _), $"Trail {trail.Id} references missing FromTownId {trail.FromTownId}");
+            Assert.True(wildSession.World.TryGetTown(trail.ToTownId, out _), $"Trail {trail.Id} references missing ToTownId {trail.ToTownId}");
+        }
     }
 
     [Fact]
@@ -308,47 +351,25 @@ public sealed class GeometryCanonicalDistanceTests
 
         // Get the destination town for this trail
         var destinationTownId = trail.ToTownId;
-        var destinationTown = session.World.GetTown(destinationTownId);
-        var originTown = session.World.GetTown(trail.FromTownId);
+        var originTownId = trail.FromTownId;
 
-        // Create a minimal TravelPreview that reflects the locked trail distance
-        var travelPreview = new TravelPreview(
-            originTown.Id,
+        // Use the real TravelResolver path to get a preview (reads from locked World.Trails)
+        var travelResolver = new TravelResolver();
+        var previewResult = travelResolver.PreviewJourney(
+            session.World,
+            originTownId,
             destinationTownId,
-            originTown.Name,
-            destinationTown.Name,
-            new TravelRouteProfile(
-                trail.Id.Value,
-                trail.Risk,
-                trail.Terrain,
-                trail.WaterFeature,
-                lockedTrailDistance,
-                lockedTrailDistance, // mountedRideDayProgress
-                lockedTrailDistance, // footRideDayProgress
-                Array.Empty<string>()),
-            TravelMode.Mounted,
-            true, // mountedTravelAvailable
-            true, // waterSecure
-            lockedTrailDistance,
-            lockedTrailDistance,
-            (int)lockedTrailDistance,
-            (int)lockedTrailDistance,
-            (int)lockedTrailDistance,
-            0, // canteenChargesPerDay
-            0, // requiredCanteenCharges
-            10, // availableCanteenCharges
-            0, // canteenReserveCharges
-            0, // delayMarginDays
-            false, // delayRisk
-            0, // requiredFood
-            10, // availableFood
-            0, // requiredHorseFeed
-            3, // availableHorseFeed
-            session.Player.GetHorseState(), // horseState
-            Array.Empty<string>());
+            session.Player.Inventory,
+            session.TravelRules);
+
+        Assert.True(previewResult.Success);
+        Assert.NotNull(previewResult.Preview);
+
+        // The preview should use the locked trail distance
+        Assert.Equal(lockedTrailDistance, previewResult.Preview.RouteProfile.RideDayDistance);
 
         // Exercise the real travel command path through GameSession.StartJourney
-        var journeyResult = session.StartJourney(travelPreview);
+        var journeyResult = session.StartJourney(previewResult.Preview);
 
         // The journey should start successfully
         Assert.True(journeyResult.Success);
