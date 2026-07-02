@@ -29,100 +29,91 @@
 
 ## Clean Slate Approach
 
-### Option 1: Layout + Mutation Strategy Encoding
+### Option 1: Layout + Hidden Outlier Slot Encoding
 
-**Concept:** Encode both the base layout AND how it should mutate by entropy in the seed bits.
+**Concept:** Encode base layout + hidden outlier slot activation in seed bits. Outlier creation is independent of trail removal - it's a pre-positioned slot that gets activated by entropy.
 
 **Bit Allocation:**
-- Keep current 3 bits for base layout (8 possible layouts)
-- Add 2 bits for mutation strategy (4 strategies: Conservative, Moderate, Aggressive, Wild)
-- Total: 5 bits (still fits within current allocation with room to spare)
+- Keep current 3 bits for base layout (8 layouts)
+- Add 1 bit for "has outlier slot" (from 104 reserved bits)
+- Total: 4 bits (minimal expansion)
 
-**Mutation Strategies:**
-- **Conservative:** Boring = no changes, Classic = minor trail removal, Adventurous = moderate removal, Wild = aggressive removal
-- **Moderate:** Boring = no changes, Classic = moderate removal, Adventurous = aggressive removal, Wild = very aggressive removal
-- **Aggressive:** Boring = minor changes, Classic = moderate removal, Adventurous = aggressive removal, Wild = maximum removal
-- **Wild:** All entropy levels apply significant changes, scaling with entropy
+**Layout Redesign (8 layouts, no crossing trails):**
+- **HubAndSpoke:** Central hub (slot 0) with outer ring towns connected via spokes
+- **DoubleLine:** Two parallel lines of towns, connected at endpoints (no crossing trails)
+- **X-shaped:** Four arms meeting at central town (slot 0), each arm is a line of towns
+- **Tree:** Hierarchical structure - main trunk splits into branches at towns
+- **Star:** Central hub (slot 0) with dead-end spokes (natural outlier positions)
+- **Cluster:** Multiple mini-hubs (2-3 towns each) connected via inter-cluster trails
+- **Mesh:** Fully connected network - every town connected to every other town
+- **Grid:** 2D grid structure (3x3 max) - towns at grid intersections, trails along grid lines
 
-**Outlier Integration:**
-- Outlier creation is a natural consequence of trail removal, not a separate phase
-- If trail removal happens to create a dead-end with a 6-day trail, it's marked as outlier
-- No proactive outlier creation - outliers emerge from the mutation process
-- Mutation strategies can be tuned to make outliers more/less likely
+**Hidden Outlier Slot:**
+- Each layout has 1-2 pre-designated "outlier slots" at specific positions
+- Example: Star layout has slot 8 as a potential outlier 6 days from the hub
+- If "has outlier slot" is true AND entropy level is high enough, activate the slot
+- The outlier slot uses a town name from the pool (deterministically selected)
+- Outlier's single trail is pre-designed as 6 days to a strategic hub
 
-**Layout Redesign:**
-- Replace current 4 layouts with layouts that support better entropic variation
-- Consider layouts with more redundancy (more trails) to allow more removal options
-- Consider layouts with natural dead-ends that can become outliers
-- Examples: HubAndSpokeWithRing, Mesh, Tree, Star, etc.
+**Entropy Activation:**
+- Boring: Never activate outlier slot
+- Classic: Activate if "has outlier slot" is true
+- Adventurous: Always activate if available
+- Wild: Always activate, layouts with multiple outlier slots can activate 2
+
+**Trail Removal (Independent of Outliers):**
+- Simple trail removal based on entropy level (no budget complexity)
+- Remove trails up to entropy allowance, always verify connectivity
+- Layouts are designed with redundancy to support removal
+- Outlier's single trail is never removed (protected during removal phase)
+
+**Benefits:**
+- No trail removal complexity for outliers
+- Outlier creation is simple activation, not complex removal
+- Layouts can be designed without crossing trails constraint
+- Clean separation: layout variety and outlier creation are independent
+- Minimal bit expansion
 
 ### Option 2: Entropy-Driven Layout Mutation
-
-**Concept:** Base layout is just a starting topology. Entropy drives mutation through a unified process.
-
-**Unified Mutation Process:**
-1. Start with base layout from seed
-2. Apply entropy-based mutations in priority order:
-   - Remove trails (entropy level determines count)
-   - Add trails (at higher entropy to maintain connectivity)
-   - Modify trail properties (terrain, water, distance)
-   - Create outliers if natural opportunities arise
-3. Always verify connectivity after each mutation
-4. If connectivity breaks, rollback and try different mutation
-
-**Entropy Scaling:**
-- Boring: No mutations (base layout as-is)
-- Classic: 1-2 trail removals, minor property changes
-- Adventurous: 2-3 trail removals, moderate property changes, possible trail additions
-- Wild: 3-4 trail removals, major property changes, trail additions, outlier creation encouraged
-
-**Outlier Creation:**
-- During trail removal, prefer removing trails to create dead-ends
-- If a dead-end has a 6-day trail, mark it as outlier
-- Outliers are a side effect of the mutation process, not a separate feature
+*(Removed - Option 1 preferred)*
 
 ### Option 3: Layout Families with Entropy Variants
-
-**Concept:** Each layout has built-in entropy variants encoded in the catalog, not the seed.
-
-**Layout Families:**
-- HubAndSpoke: Has 4 variants (Boring, Classic, Adventurous, Wild) pre-defined in catalog
-- Ring: Has 4 variants pre-defined
-- Mesh: Has 4 variants pre-defined
-- etc.
-
-**Seed Encoding:**
-- 3 bits for layout family (8 families)
-- 0 bits for entropy variant (determined at runtime by entropy setting)
-
-**Catalog Lookup:**
-- Seed encodes: layout family
-- Runtime determines: entropy variant within that family
-- Catalog provides: 4 variants per family, each with appropriate trail patterns
-
-**Outlier Integration:**
-- Higher entropy variants within families are designed to include outliers
-- Catalog designers control when/how outliers appear
-- No runtime outlier creation logic - it's baked into the catalog
+*(Removed - Option 1 preferred)*
 
 ## Recommendation
 
-**Option 1 (Layout + Mutation Strategy Encoding)** provides the best balance:
+**Option 1 (Layout + Hidden Outlier Slot Encoding)** provides the best balance:
 
-- **Minimal seed bit expansion** (5 bits vs current 3 bits)
-- **Clear separation of concerns** (layout vs mutation strategy)
-- **Tunable entropy response** (different strategies for different play experiences)
-- **Natural outlier emergence** (outliers happen as a consequence of mutation)
-- **Layout flexibility** (can redesign layouts without changing mutation logic)
+- **Minimal seed bit expansion** (4 bits vs current 3 bits)
+- **Clean separation of concerns** (layout variety vs outlier creation)
+- **Simple outlier activation** (no trail removal complexity)
+- **Layout flexibility** (can redesign layouts without touching outlier logic)
+- **No crossing trails constraint** (all trails meet at towns only)
 - **Deterministic** (same seed + same entropy = same result)
 
+**Refined Layout Palette (8 layouts, 3 bits, no crossing trails):**
+1. HubAndSpoke - Central hub with outer ring towns connected via spokes
+2. DoubleLine - Two parallel lines of towns, connected at endpoints
+3. X-shaped - Four arms meeting at central town, each arm is a line of towns
+4. Tree - Hierarchical structure with main trunk and branches (covers Y-shaped)
+5. Star - Central hub with many dead-end spokes
+6. Cluster - Multiple mini-hubs (2-3 towns each) connected together
+7. Mesh - Fully connected network with lots of redundancy
+8. Grid - 2D grid structure (3x3 max) with trails along grid lines
+
+**Layout Design Constraints:**
+- All layouts must have built-in redundancy to support trail removal while maintaining connectivity
+- All layouts must have natural dead-end positions for outlier slots
+- Trails should only meet at towns - no crossing trails between towns
+- Layouts should support 5-10 town count range (current seed encoding)
+
 **Implementation Path:**
-1. Expand MapLayoutPalette from 3 bits to 5 bits (add MutationStrategy field)
-2. Redesign layouts to support better entropic variation
-3. Implement unified trail removal based on mutation strategy + entropy level
-4. Add outlier detection as post-processing (mark dead-ends with 6-day trails)
-5. Remove complex budget accounting and outlier selection logic
-6. Test connectivity after each mutation step
+1. Expand seed encoding by 1 bit for "has outlier slot"
+2. Redesign layouts to remove Ring/LinearChain, add X-shaped, Tree, Star, Cluster, Mesh, Grid
+3. Implement hidden outlier slot activation based on entropy level
+4. Implement simple trail removal based on entropy level (no budget complexity)
+5. Remove all complex budget accounting and outlier selection logic
+6. Test connectivity after each trail removal step
 
 ## Next Steps
 
