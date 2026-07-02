@@ -1,4 +1,5 @@
 using System.Linq;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
@@ -20,7 +21,11 @@ internal static class SeedWorldBuilder
     /// and slot-based topology.
     /// Future seam: DifficultyEnvelope may modify terrain/distance downstream.
     /// </summary>
-    public static World CreateWorld(SeedWorld seedWorld, GameSetupDeterministicSource source, GameEntropy entropy = GameEntropy.Boring)
+    public static World CreateWorld(
+        SeedWorld seedWorld,
+        GameSetupDeterministicSource source,
+        GameEntropy entropy = GameEntropy.Boring,
+        SaltSource? saltSource = null)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
@@ -38,7 +43,7 @@ internal static class SeedWorldBuilder
         var trails = SeedWorldCatalog.BuildTrails(seedWorld.WorldVariant, townNames, seedWorld.MapLayoutPalette);
 
         // Derive town coordinates from map layout geometry
-        var townCoordinates = DeriveTownCoordinates(townNames.Count, seedWorld.MapLayoutPalette);
+        var townCoordinates = DeriveTownCoordinates(townNames.Count, seedWorld.MapLayoutPalette, entropy, source, saltSource);
 
         // Derive canonical distances from geometry
         var trailsWithGeometryDistances = DeriveDistancesFromGeometry(trails, townCoordinates);
@@ -49,38 +54,101 @@ internal static class SeedWorldBuilder
             ? TrimOutlierTowns(townNames, trailsWithGeometryDistances, townCoordinates)
             : (townNames, trailsWithGeometryDistances);
 
+        // Filter town coordinates to match trimmed towns
+        var trimmedTownCoordinates = new Dictionary<int, (int X, int Y)>();
+        for (var i = 0; i < trimmedTownNames.Count; i++)
+        {
+            trimmedTownCoordinates[i] = townCoordinates[i];
+        }
+
         return SeedWorldCatalog.CreateWorld(
             seedWorld.WorldVariant,
             trimmedTownNames,
             seedWorld.ServicesPalette,
             seedWorld.ProsperityPalette,
-            trimmedTrails);
+            trimmedTrails,
+            trimmedTownCoordinates);
     }
 
     /// <summary>
     /// Derives map coordinates for each town slot based on the map layout palette.
+    /// Applies entropy-based coordinate variance for non-Boring modes.
     /// Returns a dictionary mapping slot index to (X, Y) coordinates.
     /// </summary>
-    private static Dictionary<int, (int X, int Y)> DeriveTownCoordinates(int townCount, MapLayoutPalette layout)
+    private static Dictionary<int, (int X, int Y)> DeriveTownCoordinates(
+        int townCount,
+        MapLayoutPalette layout,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource)
     {
         var coordinates = new Dictionary<int, (int, int)>();
         for (var i = 0; i < townCount; i++)
         {
-            coordinates[i] = SeedWorldMapLayout.GetCoordinatesForSlot(i, townCount, layout);
+            var baseCoords = SeedWorldMapLayout.GetCoordinatesForSlot(i, townCount, layout);
+            
+            // Apply entropy-based variance
+            if (entropy != GameEntropy.Boring && saltSource != null)
+            {
+                var varianceRange = entropy switch
+                {
+                    GameEntropy.Classic => 40,
+                    GameEntropy.Adventurous => 80,
+                    GameEntropy.Wild => 120,
+                    _ => 0
+                };
+                
+                // Use salt source for variance (runtime salt varies by playthrough)
+                var salt = saltSource.Salt;
+                var hash = ComputeStableHash(source.SeedCode, i, entropy.ToString(), salt);
+                var varianceX = (int)((hash % (varianceRange * 2 + 1)) - varianceRange);
+                var varianceY = (int)(((hash >> 16) % (varianceRange * 2 + 1)) - varianceRange);
+                
+                // Reduce variance by 4 to keep trails under 6 days
+                varianceX /= 4;
+                varianceY /= 4;
+                
+                // Layout-specific variance preferences
+                if (layout is MapLayoutPalette.LinearChain or MapLayoutPalette.DoubleLine)
+                {
+                    // Prefer Y variance for wavy patterns without crossings
+                    varianceX /= 2;
+                    varianceY *= 2;
+                }
+                
+                baseCoords = (baseCoords.X + varianceX, baseCoords.Y + varianceY);
+            }
+            
+            coordinates[i] = baseCoords;
         }
         return coordinates;
     }
 
     /// <summary>
+    /// Computes a stable deterministic hash for entropy variance.
+    /// Uses SHA256 over explicit inputs to ensure consistency across runs.
+    /// </summary>
+    private static int ComputeStableHash(string seedCode, int slot, string entropyMode, string salt)
+    {
+        var input = $"{seedCode}-{slot}-{entropyMode}-{salt}";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        var hashBytes = System.Security.Cryptography.SHA256.HashData(bytes);
+        return BitConverter.ToInt32(hashBytes, 0);
+    }
+
+    /// <summary>
     /// Derives canonical ride-day distances from the Euclidean geometry of town coordinates.
     /// Distance is calculated as the Euclidean distance between towns, scaled to ride-day units
-    /// (approximately 1 ride-day per 50 coordinate units), rounded to 1 decimal place.
+    /// (approximately 1 ride-day per 25 coordinate units), rounded to 1 decimal place.
+    /// Capped to 2-6 days.
     /// </summary>
     private static IReadOnlyList<SeedWorldTrail> DeriveDistancesFromGeometry(
         IReadOnlyList<SeedWorldTrail> trails,
         Dictionary<int, (int X, int Y)> townCoordinates)
     {
-        const double CoordinateScale = 50.0; // 1 ride-day per 50 coordinate units
+        const double CoordinateScale = 25.0; // 1 ride-day per 25 coordinate units
+        const decimal MinDays = 2m;
+        const decimal MaxDays = 6m;
 
         return trails.Select(trail =>
         {
@@ -99,8 +167,11 @@ internal static class SeedWorldBuilder
 
             // Scale to ride-day distance and round to 1 decimal place
             var rideDayDistance = Math.Round(coordinateDistance / CoordinateScale, 1);
+            
+            // Cap to 2-6 days
+            var cappedDistance = Math.Max(MinDays, Math.Min(MaxDays, (decimal)rideDayDistance));
 
-            return trail with { RideDayDistance = (decimal)rideDayDistance };
+            return trail with { RideDayDistance = cappedDistance };
         }).ToArray();
     }
 

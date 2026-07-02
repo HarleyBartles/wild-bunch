@@ -55,15 +55,19 @@ public static class SeedWorldResolver
     /// - v9: Expanded MapLayoutPalette from 2 bits to 3 bits (positions 24-26).
     ///       Supports HubAndSpoke, LinearChain, Ring, DoubleLine layouts. 27 bits used,
     ///       101 reserved.
+    /// - v10: Added modulo wrapping for prosperity and services palettes (8 palettes each).
+    ///       27 bits used, 101 reserved.
+    /// - v11: Capped town count at 10 via modulo wrapping (4-bit field 0-15 → 5-20, wrapped to 5-10).
+    ///       Bit layout unchanged from v10. 27 bits used, 101 reserved.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v9";
+    public const string ResolverContractVersion = "resolver-v11";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
     public const int MinTownCount = 5;
 
-    /// <summary>Maximum number of towns in a valid world. Offset-encoded in 4 bits (0-15 → 5-20).</summary>
-    public const int MaxTownCount = 20;
+    /// <summary>Maximum number of towns in a valid world. Offset-encoded in 4 bits (0-15 → 5-20), wrapped to 5-10 via modulo.</summary>
+    public const int MaxTownCount = 10;
 
     private const int TownCountOffset = 5;
 
@@ -126,8 +130,18 @@ public static class SeedWorldResolver
         // this naturally expands the modulo divisor.
         mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 4);
 
+        // 3-bit prosperityPalette produces 0-7, which maps to 8 palettes.
+        // Wrap within the current legal range using modulo.
+        prosperityPalette = (ProsperityPalette)((int)prosperityPalette % 8);
+
+        // 3-bit servicesPalette produces 0-7, which maps to 8 palettes.
+        // Wrap within the current legal range using modulo.
+        servicesPalette = (ServicesPalette)((int)servicesPalette % 8);
+
         // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
-        var townCount = townCountEncoded + TownCountOffset;
+        // Wrap to 5-10 via modulo for v11.
+        var townCount = (townCountEncoded + TownCountOffset) % (MaxTownCount + 1);
+        if (townCount < MinTownCount) townCount += (MaxTownCount + 1);
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,

@@ -416,14 +416,18 @@ internal static class SeedWorldCatalog
         IReadOnlyList<TownNameEntry> townNames,
         ServicesPalette servicesPalette,
         ProsperityPalette prosperityPalette,
-        IReadOnlyList<SeedWorldTrail> trails)
+        IReadOnlyList<SeedWorldTrail> trails,
+        Dictionary<int, (int X, int Y)>? townCoordinates = null)
     {
         var towns = townNames
             .Select((entry, index) =>
             {
                 var services = ServicesPalettes.Resolve(servicesPalette, index);
                 var prosperity = ProsperityPalettes.Resolve(prosperityPalette, index);
-                return new Town(new TownId(entry.Id), entry.Name, services, prosperity);
+                var (mapX, mapY) = townCoordinates != null && townCoordinates.TryGetValue(index, out var coords)
+                    ? coords
+                    : (0, 0);
+                return new Town(new TownId(entry.Id), entry.Name, services, prosperity, MapX: mapX, MapY: mapY);
             })
             .ToArray();
         var domainTrails = trails

@@ -29,10 +29,10 @@ seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy
 ## Seed-Derived Town Selection
 
 The seed deterministically derives the world map from a 40-entry town-name pool:
-- **Town count**: seed-derived, range 5-20 (minimum 5 for playability, maximum 20).
+- **Town count**: seed-derived, range 5-10 (minimum 5 for playability, maximum 10). The 4-bit field (0-15) is offset-encoded (0-15 → 5-20) and wrapped to 5-10 via modulo for v11.
 - **Town selection**: slot-based derivation via xorshift shuffle over the 40-entry name pool. No anchor towns — every town slot is seed-derived.
-- **Prosperity/services**: encoded as 3-bit palettes (8 patterns each) applied positionally to the selected towns. Telegraph is encoded separately. Sheriff, saloon, and noticeboard are always present.
-- **Trail graph**: slot-based topology guarantees connectivity for any town count in the 5-20 range. Terrain/water/distance come from the catalog indexed by world variant.
+- **Prosperity/services**: encoded as 3-bit palettes (8 patterns each) applied positionally to the selected towns, wrapped via modulo. Telegraph is encoded separately. Sheriff, saloon, and noticeboard are always present.
+- **Trail graph**: slot-based topology guarantees connectivity for any town count in the 5-10 range. Terrain/water/distance come from the catalog indexed by world variant.
 - `SeedWorld` holds `SelectedTownIds` and `Trails` (list of `SeedWorldTrail` with terrain/water/distance). The seed owns the default terrain and trail distances. Later difficulty can modify those values downstream of the seed codec.
 
 Design boundary:
