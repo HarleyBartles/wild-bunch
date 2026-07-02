@@ -21,7 +21,7 @@ public class MapLayoutScaleTests
         MapLayoutPalette.DoubleLine
     ];
 
-    private static readonly int[] RepresentativeTownCounts = [5, 8, 10, 15, 20];
+    private static readonly int[] RepresentativeTownCounts = [5, 8, 10];
 
     [Theory]
     [MemberData(nameof(GetLayoutAndTownCountCombinations))]

@@ -206,8 +206,8 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void TownCountRespectsMinAndMax()
     {
-        // Min 5, max 20 (offset-encoded in 4 bits: 0-15 → 5-20).
-        for (var count = 5; count <= 20; count++)
+        // Min 5, max 10 (offset-encoded in 4 bits: 0-15 → 5-20, wrapped to 5-10 via modulo).
+        for (var count = 5; count <= 10; count++)
         {
             var seedWorld = CreateSeedWorldWithCount(count);
             Assert.Equal(count, seedWorld.TownCount);
@@ -294,7 +294,7 @@ public sealed class SeedWorldBuilderTests
     public void CreateWorld_WildEntropy_TrimOutlierTowns_MaintainsConnectivity()
     {
         // Create a seed world with many towns to have potential outliers
-        var seedWorld = CreateSeedWorldWithCount(20);
+        var seedWorld = CreateSeedWorldWithCount(10);
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
 
         // Create worlds with different entropy levels
@@ -326,7 +326,7 @@ public sealed class SeedWorldBuilderTests
     public void CreateWorld_NonWildEntropy_DoesNotTrimOutlierTowns()
     {
         // Create a seed world with many towns
-        var seedWorld = CreateSeedWorldWithCount(20);
+        var seedWorld = CreateSeedWorldWithCount(10);
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
 
         // Test with Boring entropy
@@ -335,10 +335,10 @@ public sealed class SeedWorldBuilderTests
         var adventurousWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Adventurous);
 
         // Only Boring entropy should not trim towns - all towns should be present
-        Assert.Equal(20, boringWorld.Towns.Count);
+        Assert.Equal(10, boringWorld.Towns.Count);
         // Classic and Adventurous DO trim towns (they are entropic modes)
-        Assert.True(classicWorld.Towns.Count < 20);
-        Assert.True(adventurousWorld.Towns.Count < 20);
+        Assert.True(classicWorld.Towns.Count < 10);
+        Assert.True(adventurousWorld.Towns.Count < 10);
 
         // Trails should be the full graph only for Boring entropy
         Assert.True(boringWorld.Trails.Count > classicWorld.Trails.Count);
@@ -349,7 +349,7 @@ public sealed class SeedWorldBuilderTests
     public void CreateWorld_EntropicModes_TrimOutlierTowns_MaintainsConnectivity()
     {
         // Create a seed world with many towns to have potential outliers
-        var seedWorld = CreateSeedWorldWithCount(20);
+        var seedWorld = CreateSeedWorldWithCount(10);
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
 
         // Create worlds with different entropy levels
@@ -391,14 +391,14 @@ public sealed class SeedWorldBuilderTests
     public void CreateWorld_BoringMode_DoesNotTrimOutlierTowns()
     {
         // Create a seed world with many towns
-        var seedWorld = CreateSeedWorldWithCount(20);
+        var seedWorld = CreateSeedWorldWithCount(10);
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
 
         // Test with Boring entropy
         var boringWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Boring);
 
         // Boring entropy should not trim towns - all towns should be present
-        Assert.Equal(20, boringWorld.Towns.Count);
+        Assert.Equal(10, boringWorld.Towns.Count);
 
         // Trails should be the full graph for Boring entropy
         var expectedTrailCount = SeedWorldCatalog.BuildTrails(

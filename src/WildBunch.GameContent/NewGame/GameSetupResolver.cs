@@ -52,7 +52,7 @@ internal sealed class GameSetupResolver
 
         // 3. Build world from seed world. The seed owns the map; it does NOT
         //    choose the starting town. Wild entropy may trim outlier towns.
-        var world = SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy);
+        var world = SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource);
 
         // 4. Resolve starting town via the setup/policy seam. The player can
         //    start in any town that exists in the generated world. If no town
