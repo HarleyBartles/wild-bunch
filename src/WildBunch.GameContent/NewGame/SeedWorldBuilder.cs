@@ -43,8 +43,9 @@ internal static class SeedWorldBuilder
         // Derive canonical distances from geometry
         var trailsWithGeometryDistances = DeriveDistancesFromGeometry(trails, townCoordinates);
 
-        // Trim outlier towns for Wild entropy
-        var (trimmedTownNames, trimmedTrails) = entropy == GameEntropy.Wild
+        // Trim outlier towns for Classic, Adventurous, and Wild entropy
+        // Boring keeps full connectivity
+        var (trimmedTownNames, trimmedTrails) = entropy != GameEntropy.Boring
             ? TrimOutlierTowns(townNames, trailsWithGeometryDistances, townCoordinates)
             : (townNames, trailsWithGeometryDistances);
 
