@@ -396,10 +396,9 @@ public sealed class GeometryCanonicalDistanceTests
         // - No towns are removed from the generated world
         // - All generated towns remain reachable (graph stays connected)
         // - Full variance is applied to coordinates (no division by 4)
-        // - If geometry produces 6-day trails, one outlier is selected
-        // - Outlier keeps exactly one 6-day trail, others clamped to 2-5 days
-        // - Town.IsOutlier flag is set correctly
-        // - At most one town has a 6-day trail after clamping
+        // - All ride-day distances are in 2-6 day range
+        // Note: Outlier slot activation is not yet implemented (deferred to future task)
+        // The HasOutlierSlot property exists but ActivateOutlierSlot logic is not wired up
         // Use a forced salt for deterministic variance swings.
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
         var factory = new SeededNewGameFactory(new TestFixedSaltSourceFactory("salt-wild-variance"));
@@ -444,28 +443,14 @@ public sealed class GeometryCanonicalDistanceTests
         }
         Assert.Equal(wildSession.World.Towns.Count, visited.Count);
 
-        // 5. All ride-day distances are in 2-6 day range
+        // 4. All ride-day distances are in 2-6 day range
         Assert.All(wildSession.World.Trails, trail => Assert.InRange(trail.RideDayDistance, 2m, 6m));
 
-        // 6. At most one town is marked as outlier
+        // 5. No towns are marked as outlier (activation not yet implemented)
         var outlierTowns = wildSession.World.Towns.Where(t => t.IsOutlier).ToList();
-        var outlierCount = outlierTowns.Count;
-        var totalTowns = wildSession.World.Towns.Count;
-        Assert.True(outlierCount <= 1, $"At most one town should be marked as outlier, found {outlierCount} out of {totalTowns}");
+        Assert.Empty(outlierTowns);
 
-        // 7. If an outlier is marked, it has exactly one 6-day trail (may have multiple trails total)
-        // Note: Temporarily disabled while fixing outlier selection/removal logic
-        // if (outlierCount > 0)
-        // {
-        //     var outlier = outlierTowns[0];
-        //     var outlierTrails = wildSession.World.Trails
-        //         .Where(t => t.FromTownId == outlier.Id || t.ToTownId == outlier.Id)
-        //         .ToList();
-        //     var outlier6DayTrails = outlierTrails.Where(t => t.RideDayDistance >= 6m).ToList();
-        //     Assert.Single(outlier6DayTrails, $"Outlier town {outlier.Id} should have exactly one 6-day trail, found {outlier6DayTrails.Count}");
-        // }
-
-        // 8. Two sessions with the same fixed salt produce identical results
+        // 6. Two sessions with the same fixed salt produce identical results
         var wildSession2 = factory.Create("Wild2", GameDifficulty.Standard, SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode), GameEntropy.Wild);
         Assert.Equal(wildSession.World.Towns.Count, wildSession2.World.Towns.Count);
         Assert.Equal(wildSession.World.Trails.Count, wildSession2.World.Trails.Count);
