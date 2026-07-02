@@ -73,38 +73,109 @@ public static class SeedWorldMapLayout
 
     public static (int X, int Y) GetXShapedCoordinates(int slotIndex, int totalTowns)
     {
-        // TODO: Implement XShaped coordinates
-        throw new NotImplementedException("XShaped coordinates not yet implemented");
+        if (slotIndex == 0) return (CenterX, CenterY);
+
+        // Four arms: 1=N, 2=E, 3=S, 4=W
+        var armIndex = (slotIndex - 1) % 4;
+        var armStep = (slotIndex - 1) / 4;
+        var armLength = 180;
+        var stepSize = 60;
+
+        var angle = armIndex switch
+        {
+            0 => -Math.PI / 2,  // North
+            1 => 0,              // East
+            2 => Math.PI / 2,   // South
+            3 => Math.PI,       // West
+            _ => 0
+        };
+
+        var distance = armLength + (armStep * stepSize);
+        var x = (int)(CenterX + distance * Math.Cos(angle));
+        var y = (int)(CenterY + distance * Math.Sin(angle));
+        return (x, y);
     }
 
     public static (int X, int Y) GetTreeCoordinates(int slotIndex, int totalTowns)
     {
-        // TODO: Implement Tree coordinates
-        throw new NotImplementedException("Tree coordinates not yet implemented");
+        // Main trunk grows upward, branches extend sideways
+        if (slotIndex == 0) return (CenterX, CenterY + 150);
+
+        var trunkLength = Math.Min(4, totalTowns);
+        if (slotIndex < trunkLength)
+        {
+            // Main trunk towns
+            var y = CenterY + 150 - (slotIndex * 80);
+            return (CenterX, y);
+        }
+        else
+        {
+            // Branch towns
+            var branchIndex = slotIndex - trunkLength;
+            var trunkSlot = (branchIndex % (trunkLength - 1)) + 1;
+            var isLeft = branchIndex % 2 == 0;
+            var trunkY = CenterY + 150 - (trunkSlot * 80);
+            var xOffset = isLeft ? -100 : 100;
+            return (CenterX + xOffset, trunkY);
+        }
     }
 
     public static (int X, int Y) GetStarCoordinates(int slotIndex, int totalTowns)
     {
-        // TODO: Implement Star coordinates
-        throw new NotImplementedException("Star coordinates not yet implemented");
+        if (slotIndex == 0) return (CenterX, CenterY);
+
+        // Star pattern: evenly spaced around center
+        var angle = (slotIndex - 1) * (2.0 * Math.PI / Math.Max(1, totalTowns - 1));
+        var radius = 200;
+        var x = (int)(CenterX + radius * Math.Cos(angle));
+        var y = (int)(CenterY + radius * Math.Sin(angle));
+        return (x, y);
     }
 
     public static (int X, int Y) GetClusterCoordinates(int slotIndex, int totalTowns)
     {
-        // TODO: Implement Cluster coordinates
-        throw new NotImplementedException("Cluster coordinates not yet implemented");
+        // Three clusters arranged in a triangle
+        var clusterIndex = slotIndex % 3;
+        var clusterSize = (totalTowns + 2) / 3;
+        var positionInCluster = slotIndex / 3;
+
+        var clusterCenters = new (int X, int Y)[]
+        {
+            (CenterX - 150, CenterY - 100),
+            (CenterX + 150, CenterY - 100),
+            (CenterX, CenterY + 150)
+        };
+
+        var (cx, cy) = clusterCenters[clusterIndex];
+        var offset = positionInCluster * 50;
+        var x = cx + (clusterIndex == 0 ? offset : clusterIndex == 1 ? -offset : 0);
+        var y = cy + (clusterIndex == 2 ? offset : 0);
+
+        return (x, y);
     }
 
     public static (int X, int Y) GetMeshCoordinates(int slotIndex, int totalTowns)
     {
-        // TODO: Implement Mesh coordinates
-        throw new NotImplementedException("Mesh coordinates not yet implemented");
+        // Arrange towns in a circle for the fully connected mesh
+        var angle = slotIndex * (2.0 * Math.PI / Math.Max(1, totalTowns));
+        var radius = 180;
+        var x = (int)(CenterX + radius * Math.Cos(angle));
+        var y = (int)(CenterY + radius * Math.Sin(angle));
+        return (x, y);
     }
 
     public static (int X, int Y) GetGridCoordinates(int slotIndex, int totalTowns)
     {
-        // TODO: Implement Grid coordinates
-        throw new NotImplementedException("Grid coordinates not yet implemented");
+        // 3x3 grid layout
+        var col = slotIndex % 3;
+        var row = slotIndex / 3;
+        var spacing = 100;
+        var startX = CenterX - spacing;
+        var startY = CenterY - spacing;
+
+        var x = startX + col * spacing;
+        var y = startY + row * spacing;
+        return (x, y);
     }
 
     public static (int X, int Y) GetDoubleLineCoordinates(int slotIndex, int totalTowns)

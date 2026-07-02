@@ -346,75 +346,177 @@ internal static class SeedWorldCatalog
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateXShapedTrails(int count)
     {
-        // TODO: Implement XShaped layout - four arms meeting at central town
-        throw new NotImplementedException("XShaped layout not yet implemented");
+        var trails = new List<SlotTrailDefinition>();
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Central hub (slot 0) to four arms
+        var armCount = Math.Min(4, count - 1);
+        for (var i = 0; i < armCount; i++)
+        {
+            trails.Add(new SlotTrailDefinition(0, i + 1, TrailRisk.Low, canonical, variant));
+        }
+
+        // Arm extensions (if town count > 5)
+        for (var i = 0; i < armCount; i++)
+        {
+            var extensionSlot = i + 5;
+            if (extensionSlot < count)
+            {
+                trails.Add(new SlotTrailDefinition(i + 1, extensionSlot, TrailRisk.Moderate, canonical, variant));
+            }
+        }
+
+        return trails;
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateTreeTrails(int count)
     {
-        // TODO: Implement Tree layout - hierarchical structure with main trunk and branches
-        throw new NotImplementedException("Tree layout not yet implemented");
+        var trails = new List<SlotTrailDefinition>();
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Main trunk
+        var trunkLength = Math.Min(4, count);
+        for (var i = 0; i < trunkLength - 1; i++)
+        {
+            var risk = i < 2 ? TrailRisk.Low : TrailRisk.Moderate;
+            trails.Add(new SlotTrailDefinition(i, i + 1, risk, canonical, variant));
+        }
+
+        // Branches from trunk
+        for (var i = 1; i < trunkLength; i++)
+        {
+            var branchSlot = i + 3;
+            if (branchSlot < count)
+            {
+                trails.Add(new SlotTrailDefinition(i, branchSlot, TrailRisk.Moderate, canonical, variant));
+            }
+        }
+
+        return trails;
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateStarTrails(int count)
     {
-        // TODO: Implement Star layout - central hub with many dead-end spokes
-        throw new NotImplementedException("Star layout not yet implemented");
+        var trails = new List<SlotTrailDefinition>();
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Central hub (slot 0) to all other towns
+        for (var i = 1; i < count; i++)
+        {
+            trails.Add(new SlotTrailDefinition(0, i, TrailRisk.Low, canonical, variant));
+        }
+
+        return trails;
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateClusterTrails(int count)
     {
-        // TODO: Implement Cluster layout - multiple mini-hubs connected together
-        throw new NotImplementedException("Cluster layout not yet implemented");
+        var trails = new List<SlotTrailDefinition>();
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Mini-hub groups (0-1, 2-3, 4-5)
+        if (count >= 2) trails.Add(new SlotTrailDefinition(0, 1, TrailRisk.Low, canonical, variant));
+        if (count >= 4) trails.Add(new SlotTrailDefinition(2, 3, TrailRisk.Low, canonical, variant));
+        if (count >= 6) trails.Add(new SlotTrailDefinition(4, 5, TrailRisk.Low, canonical, variant));
+
+        // Inter-cluster connections
+        if (count >= 3) trails.Add(new SlotTrailDefinition(1, 2, TrailRisk.Moderate, canonical, variant));
+        if (count >= 5) trails.Add(new SlotTrailDefinition(3, 4, TrailRisk.Moderate, canonical, variant));
+        if (count >= 6) trails.Add(new SlotTrailDefinition(5, 0, TrailRisk.Moderate, canonical, variant));
+
+        // Additional towns connect to nearest cluster
+        for (var i = 6; i < count; i++)
+        {
+            var clusterSlot = (i % 3) * 2;
+            trails.Add(new SlotTrailDefinition(i, clusterSlot, TrailRisk.Moderate, canonical, variant));
+        }
+
+        return trails;
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateMeshTrails(int count)
     {
-        // TODO: Implement Mesh layout - fully connected network with lots of redundancy
-        throw new NotImplementedException("Mesh layout not yet implemented");
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Fully connected network - every town connected to every other town
+        return Enumerable.Range(0, count)
+            .SelectMany(i => Enumerable.Range(i + 1, count - i - 1)
+                .Select(j => new SlotTrailDefinition(i, j, TrailRisk.Low, canonical, variant)))
+            .ToArray();
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateGridTrails(int count)
     {
-        // TODO: Implement Grid layout - 2D grid structure with trails along grid lines
-        throw new NotImplementedException("Grid layout not yet implemented");
+        var trails = new List<SlotTrailDefinition>();
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // 3x3 grid: rows and columns
+        // Row 0: 0-1-2
+        if (count >= 2) trails.Add(new SlotTrailDefinition(0, 1, TrailRisk.Low, canonical, variant));
+        if (count >= 3) trails.Add(new SlotTrailDefinition(1, 2, TrailRisk.Low, canonical, variant));
+
+        // Row 1: 3-4-5
+        if (count >= 4) trails.Add(new SlotTrailDefinition(3, 4, TrailRisk.Low, canonical, variant));
+        if (count >= 5) trails.Add(new SlotTrailDefinition(4, 5, TrailRisk.Low, canonical, variant));
+
+        // Row 2: 6-7-8
+        if (count >= 7) trails.Add(new SlotTrailDefinition(6, 7, TrailRisk.Low, canonical, variant));
+        if (count >= 8) trails.Add(new SlotTrailDefinition(7, 8, TrailRisk.Low, canonical, variant));
+
+        // Columns
+        // Column 0: 0-3-6
+        if (count >= 4) trails.Add(new SlotTrailDefinition(0, 3, TrailRisk.Low, canonical, variant));
+        if (count >= 7) trails.Add(new SlotTrailDefinition(3, 6, TrailRisk.Low, canonical, variant));
+
+        // Column 1: 1-4-7
+        if (count >= 5) trails.Add(new SlotTrailDefinition(1, 4, TrailRisk.Low, canonical, variant));
+        if (count >= 8) trails.Add(new SlotTrailDefinition(4, 7, TrailRisk.Low, canonical, variant));
+
+        // Column 2: 2-5-8
+        if (count >= 6) trails.Add(new SlotTrailDefinition(2, 5, TrailRisk.Low, canonical, variant));
+        if (count >= 9) trails.Add(new SlotTrailDefinition(5, 8, TrailRisk.Low, canonical, variant));
+
+        return trails;
     }
 
     private static IReadOnlyList<SlotTrailDefinition> GenerateDoubleLineTrails(int count)
     {
         var trails = new List<SlotTrailDefinition>();
         var mid = count / 2;
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m);
+        var crossCanonical = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m);
+        var crossVariant = new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 4m);
 
-        // Two parallel lines: 0-1-2-...-mid and mid+1-mid+2-...-count-1
-        for (var i = 0; i < mid; i++)
+        // Line 1: 0-1-2-...-mid-1
+        for (var i = 0; i < mid - 1; i++)
         {
-            var next = i == mid - 1 ? mid : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+            trails.Add(new SlotTrailDefinition(i, i + 1, TrailRisk.Low, canonical, variant));
         }
 
-        for (var i = mid; i < count; i++)
+        // Line 2: mid-mid+1-...-count-1
+        for (var i = mid; i < count - 1; i++)
         {
-            var next = i == count - 1 ? mid : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+            trails.Add(new SlotTrailDefinition(i, i + 1, TrailRisk.Low, canonical, variant));
         }
 
-        // Cross connections between the two lines
-        for (var i = 0; i < mid; i++)
+        // Connections between lines (at endpoints only - no crossing trails)
+        if (mid > 0 && mid < count)
         {
-            var crossIndex = mid + i;
-            if (crossIndex < count)
-            {
-                trails.Add(new SlotTrailDefinition(
-                    i, crossIndex, TrailRisk.Moderate,
-                    new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m),
-                    new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 4m)));
-            }
+            // Connect end of line 1 to start of line 2
+            trails.Add(new SlotTrailDefinition(mid - 1, mid, TrailRisk.Moderate, crossCanonical, crossVariant));
+        }
+
+        if (count >= 2)
+        {
+            // Connect start of line 1 to end of line 2
+            trails.Add(new SlotTrailDefinition(0, count - 1, TrailRisk.Moderate, crossCanonical, crossVariant));
         }
 
         return trails;
