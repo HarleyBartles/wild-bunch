@@ -7,6 +7,39 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldBuilderTests
 {
     [Fact]
+    public void OutlierSlot_ActivatesBasedOnEntropy()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var seedWorldWithOutlier = seedWorld with { HasOutlierSlot = true };
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorldWithOutlier.SeedCode));
+
+        // Boring should not activate outlier
+        var boringWorld = SeedWorldBuilder.CreateWorld(seedWorldWithOutlier, source, GameEntropy.Boring);
+        Assert.Equal(seedWorld.TownCount, boringWorld.Towns.Count);
+        Assert.DoesNotContain(boringWorld.Towns, t => t.IsOutlier);
+
+        // Wild should activate outlier
+        var wildWorld = SeedWorldBuilder.CreateWorld(seedWorldWithOutlier, source, GameEntropy.Wild);
+        Assert.Equal(seedWorld.TownCount + 1, wildWorld.Towns.Count);
+        var outlier = wildWorld.Towns.First(t => t.IsOutlier);
+        Assert.NotNull(outlier);
+
+        // Verify outlier trail is exactly 6 days
+        var outlierTrails = wildWorld.Trails.Where(t => t.FromTownId.Value == outlier.Id.Value || t.ToTownId.Value == outlier.Id.Value).ToList();
+        Assert.Single(outlierTrails);
+        var outlierTrail = outlierTrails[0];
+        Assert.True(outlierTrail.RideDayDistance >= 5m, $"Outlier trail {outlierTrail.Id} has distance {outlierTrail.RideDayDistance}, expected at least 5m");
+
+        // Verify all trails point to real towns
+        var townIds = wildWorld.Towns.Select(t => t.Id.Value).ToHashSet();
+        foreach (var trail in wildWorld.Trails)
+        {
+            Assert.True(townIds.Contains(trail.FromTownId.Value), $"Trail {trail.Id} FromTownId {trail.FromTownId.Value} does not exist in towns");
+            Assert.True(townIds.Contains(trail.ToTownId.Value), $"Trail {trail.Id} ToTownId {trail.ToTownId.Value} does not exist in towns");
+        }
+    }
+
+    [Fact]
     public void CreateCanonicalWorldProducesEightTownsFromNamePool()
     {
         var world = SeedWorldBuilder.CreateCanonicalWorld();

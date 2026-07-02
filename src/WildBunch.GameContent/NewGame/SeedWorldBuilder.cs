@@ -35,9 +35,10 @@ internal static class SeedWorldBuilder
         var shouldActivateOutlier = seedWorld.HasOutlierSlot && entropy != GameEntropy.Boring;
         var finalTownCount = shouldActivateOutlier ? seedWorld.TownCount + 1 : seedWorld.TownCount;
 
+        // Derive town names for base count only (without outlier)
         var townNames = SeedWorldCatalog.DeriveTownNames(
             seedWorld.WorldVariant,
-            finalTownCount,
+            seedWorld.TownCount,
             seedWorld.AccusationIndex,
             seedWorld.DefaultCulpritIndex,
             seedWorld.CashBonus,
@@ -66,15 +67,25 @@ internal static class SeedWorldBuilder
         if (shouldActivateOutlier)
         {
             var outlierSlotIndex = seedWorld.TownCount; // Outlier is at the next slot
-            var (trailsWithOutlier, activatedSlot) = ActivateOutlierSlot(
+            var (trailsWithOutlier, activatedSlot, extendedTownNames, extendedCoordinates) = ActivateOutlierSlot(
                 trimmedTrails,
                 adjustedCoordinates,
+                townNames,
+                seedWorld.WorldVariant,
+                seedWorld.AccusationIndex,
+                seedWorld.DefaultCulpritIndex,
+                seedWorld.CashBonus,
+                seedWorld.ProsperityPalette,
+                seedWorld.ServicesPalette,
+                seedWorld.MapLayoutPalette,
                 source,
                 saltSource,
                 entropy,
                 outlierSlotIndex);
             trimmedTrails = trailsWithOutlier;
             outlierSlot = activatedSlot;
+            townNames = extendedTownNames;
+            adjustedCoordinates = extendedCoordinates;
         }
 
         return SeedWorldCatalog.CreateWorld(
@@ -574,11 +585,19 @@ internal static class SeedWorldBuilder
     /// <summary>
     /// Activates the hidden outlier slot by creating an outlier town and trail.
     /// The outlier is placed 6 days away from a deterministically selected target town.
-    /// Returns the updated trails list and the outlier slot index.
+    /// Returns the updated trails list, outlier slot index, extended town names, and extended coordinates.
     /// </summary>
-    private static (IReadOnlyList<SeedWorldTrail> Trails, int? OutlierSlot) ActivateOutlierSlot(
+    private static (IReadOnlyList<SeedWorldTrail> Trails, int? OutlierSlot, IReadOnlyList<TownNameEntry> TownNames, Dictionary<int, (int X, int Y)> Coordinates) ActivateOutlierSlot(
         IReadOnlyList<SeedWorldTrail> trails,
         Dictionary<int, (int X, int Y)> townCoordinates,
+        IReadOnlyList<TownNameEntry> townNames,
+        SeedWorldVariant variant,
+        int accusationIndex,
+        int defaultCulpritIndex,
+        int cashBonus,
+        ProsperityPalette prosperityPalette,
+        ServicesPalette servicesPalette,
+        MapLayoutPalette mapLayoutPalette,
         GameSetupDeterministicSource source,
         SaltSource? saltSource,
         GameEntropy entropy,
@@ -599,11 +618,16 @@ internal static class SeedWorldBuilder
 
         townCoordinates[outlierSlotIndex] = (outlierX, outlierY);
 
-        // Create outlier trail
-        var targetTownId = connectionTargetSlot.ToString();
-        var outlierTownId = outlierSlotIndex.ToString();
+        // Append outlier town name to existing list (don't re-derive to preserve existing town IDs)
+        var outlierTownName = SeedWorldCatalog.NamePool[outlierSlotIndex % SeedWorldCatalog.NamePool.Count];
+        var extendedTownNames = townNames.ToList();
+        extendedTownNames.Add(outlierTownName);
+
+        // Create outlier trail using actual derived TownId values from extended town names
+        var targetTownId = extendedTownNames[connectionTargetSlot].Id;
+        var outlierTownId = extendedTownNames[outlierSlotIndex].Id;
         var outlierTrail = new SeedWorldTrail(
-            $"trail-{connectionTargetSlot}-{outlierSlotIndex}",
+            $"outlier-trail-{connectionTargetSlot}-{outlierSlotIndex}",
             targetTownId,
             outlierTownId,
             TrailRisk.High,
@@ -612,7 +636,7 @@ internal static class SeedWorldBuilder
             6m); // Exactly 6 days
 
         var result = new List<SeedWorldTrail>(trails) { outlierTrail };
-        return (result, outlierSlotIndex);
+        return (result, outlierSlotIndex, extendedTownNames, townCoordinates);
     }
 
     /// <summary>
