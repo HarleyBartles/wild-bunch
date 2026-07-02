@@ -95,7 +95,10 @@ internal static class SeedWorldBuilder
             seedWorld.ProsperityPalette,
             trimmedTrails,
             adjustedCoordinates,
-            outlierSlot);
+            outlierSlot,
+            entropy,
+            saltSource,
+            seedWorld.SeedCode);
     }
 
     /// <summary>
@@ -252,12 +255,8 @@ internal static class SeedWorldBuilder
         {
             MapLayoutPalette.HubAndSpoke => ApplyHubAndSpokeTrailRemoval(trails, entropy, source, saltSource, townCount),
             MapLayoutPalette.DoubleLine => ApplyDoubleLineTrailRemoval(trails, entropy, source, saltSource, townCount),
-            MapLayoutPalette.XShaped => ApplyXShapedTrailRemoval(trails, entropy, source, saltSource, townCount),
             MapLayoutPalette.Tree => ApplyTreeTrailRemoval(trails, entropy, source, saltSource, townCount),
             MapLayoutPalette.Star => ApplyStarTrailRemoval(trails, entropy, source, saltSource, townCount),
-            MapLayoutPalette.Cluster => ApplyClusterTrailRemoval(trails, entropy, source, saltSource, townCount),
-            MapLayoutPalette.Mesh => ApplyMeshTrailRemoval(trails, entropy, source, saltSource, townCount),
-            MapLayoutPalette.Grid => ApplyGridTrailRemoval(trails, entropy, source, saltSource, townCount),
             _ => trails
         };
     }
@@ -359,20 +358,6 @@ internal static class SeedWorldBuilder
     }
 
     /// <summary>
-    /// Applies XShaped-specific trail removal.
-    /// Removes entire arms or partial arms, keeps connectivity through center.
-    /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> ApplyXShapedTrailRemoval(
-        IReadOnlyList<SeedWorldTrail> trails,
-        GameEntropy entropy,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        int townCount)
-    {
-        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
-    }
-
-    /// <summary>
     /// Applies Tree-specific trail removal.
     /// Removes leaf branches, keeps core trunk intact.
     /// </summary>
@@ -391,48 +376,6 @@ internal static class SeedWorldBuilder
     /// Removes spokes freely (natural outlier positions).
     /// </summary>
     private static IReadOnlyList<SeedWorldTrail> ApplyStarTrailRemoval(
-        IReadOnlyList<SeedWorldTrail> trails,
-        GameEntropy entropy,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        int townCount)
-    {
-        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
-    }
-
-    /// <summary>
-    /// Applies Cluster-specific trail removal.
-    /// Removes inter-cluster connections, keeps intra-cluster connectivity.
-    /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> ApplyClusterTrailRemoval(
-        IReadOnlyList<SeedWorldTrail> trails,
-        GameEntropy entropy,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        int townCount)
-    {
-        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
-    }
-
-    /// <summary>
-    /// Applies Mesh-specific trail removal.
-    /// Removes many trails while maintaining full connectivity.
-    /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> ApplyMeshTrailRemoval(
-        IReadOnlyList<SeedWorldTrail> trails,
-        GameEntropy entropy,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        int townCount)
-    {
-        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
-    }
-
-    /// <summary>
-    /// Applies Grid-specific trail removal.
-    /// Removes trails in grid patterns, keeps connectivity through grid paths.
-    /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> ApplyGridTrailRemoval(
         IReadOnlyList<SeedWorldTrail> trails,
         GameEntropy entropy,
         GameSetupDeterministicSource source,

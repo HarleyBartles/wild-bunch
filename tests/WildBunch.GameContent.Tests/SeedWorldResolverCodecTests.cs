@@ -7,9 +7,9 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV14()
+    public void ResolverContractVersion_IsV15()
     {
-        Assert.Equal("resolver-v14", SeedWorldResolver.ResolverContractVersion);
+        Assert.Equal("resolver-v15", SeedWorldResolver.ResolverContractVersion);
     }
 
     [Fact]
@@ -111,20 +111,20 @@ public sealed class SeedWorldResolverCodecTests
     [Fact]
     public void MapLayoutPalette_ModuloWrapping_ClampsToDefinedRange()
     {
-        // Create a seed with mapLayoutPalette value 1 (within defined range 0-7)
+        // Create a seed with mapLayoutPalette value 1 (within defined range 0-3)
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
 
-        // Manually set bits 24-26 to 1 (binary 001) using proper bit manipulation
-        // MapLayoutPalette is at bits 24-26 (3 bits)
+        // Manually set bits 24-25 to 1 (binary 01) using proper bit manipulation
+        // MapLayoutPalette is at bits 24-25 (2 bits)
         var low = BitConverter.ToUInt64(bytes, 0);
-        low = (low & ~((0x7UL) << 24)) | ((1UL & 0x7UL) << 24);
+        low = (low & ~((0x3UL) << 24)) | ((1UL & 0x3UL) << 24);
         BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
         seedCode = new Guid(bytes);
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
 
-        // Should map to 1 % 8 = 1 (DoubleLine)
+        // Should map to 1 % 4 = 1 (DoubleLine)
         Assert.Equal(MapLayoutPalette.DoubleLine, resolved.MapLayoutPalette);
     }
 
@@ -173,14 +173,14 @@ public sealed class SeedWorldResolverCodecTests
     }
 
     [Fact]
-    public void OutlierSlotType_BitPosition_Is27_28()
+    public void OutlierSlotType_BitPosition_Is26_27()
     {
-        // Create a seed with OutlierSlotType = 1 by setting bits 27-28
+        // Create a seed with OutlierSlotType = 1 by setting bits 26-27
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
 
         var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0x1UL << 27; // Set bit 27
+        low |= 0x1UL << 26; // Set bit 26
         BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
         seedCode = new Guid(bytes);
 

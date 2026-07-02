@@ -21,14 +21,14 @@ namespace WildBunch.GameContent.NewGame;
 ///   bits 14-17:  townCount (4, offset-encoded: 0-15 → 5-20 towns)
 ///   bits 18-20:  prosperityPaletteIndex (3, indexes 8 palettes)
 ///   bits 21-23:  servicesPaletteIndex (3, indexes 8 palettes)
-///   bits 24-26:  mapLayoutPalette (3, indexes layout palettes; 8 used)
-///   bits 27-28:  outlierSlotType (2, 0=no outlier, 1=simple outlier, 2-3 reserved)
-///   bits 29-63:  reserved (35)
+///   bits 24-25:  mapLayoutPalette (2, indexes 4 layouts: HubAndSpoke, DoubleLine, Tree, Star)
+///   bits 26-27:  outlierSlotType (2, 0=no outlier, 1=simple outlier, 2-3 reserved)
+///   bits 28-63:  reserved (36)
 ///
 /// Bytes 8-15 (high): reserved (64)
 /// </code>
 ///
-/// Total used: 29 bits. Reserved: 99 bits for future seed-owned fields
+/// Total used: 28 bits. Reserved: 100 bits for future seed-owned fields
 /// (warrants, etc.). Bandwidth scales with max selection (20),
 /// not catalog size — the name pool can grow to any size with zero bit cost.
 ///
@@ -67,8 +67,11 @@ public static class SeedWorldResolver
     ///       28 bits used, 100 reserved.
     /// - v14: Expanded outlier slot from 1 bit to 2 bits (positions 27-28). Supports outlier type encoding
     ///       (0=no outlier, 1=simple outlier, 2-3 reserved). 29 bits used, 99 reserved.
+    /// - v15: Reduced MapLayoutPalette from 8 layouts to 4 layouts (HubAndSpoke, DoubleLine, Tree, Star).
+    ///       Dropped XShaped, Cluster, Mesh, Grid. Changed mapLayoutPalette from 3 bits to 2 bits (positions 24-25).
+    ///       Moved outlierSlotType from bits 27-28 to bits 26-27. 28 bits used, 100 reserved.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v14";
+    public const string ResolverContractVersion = "resolver-v15";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
@@ -125,8 +128,8 @@ public static class SeedWorldResolver
         var townCountEncoded = (int)((low >> 14) & 0xFUL);
         var prosperityPalette = (ProsperityPalette)((low >> 18) & 0x7UL);
         var servicesPalette = (ServicesPalette)((low >> 21) & 0x7UL);
-        var mapLayoutPalette = (MapLayoutPalette)((low >> 24) & 0x7UL);
-        var outlierSlotType = (int)((low >> 27) & 0x3UL); // 2 bits for outlier type
+        var mapLayoutPalette = (MapLayoutPalette)((low >> 24) & 0x3UL);
+        var outlierSlotType = (int)((low >> 26) & 0x3UL); // 2 bits for outlier type
 
         // 4-bit suspect fields produce 0-15, but the current roster is 7 suspects (indices 0-6).
         // Clamp to the current legal range. When the roster grows, raise this clamp.
@@ -134,9 +137,9 @@ public static class SeedWorldResolver
         if (accusationIndex > 6) accusationIndex = 6;
         if (defaultCulpritIndex > 6) defaultCulpritIndex = 6;
 
-        // 3-bit mapLayoutPalette produces 0-7, which maps to 8 layouts.
+        // 2-bit mapLayoutPalette produces 0-3, which maps to 4 layouts.
         // Wrap within the current legal range using modulo.
-        mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 8);
+        mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 4);
 
         // 3-bit prosperityPalette produces 0-7, which maps to 8 palettes.
         // Wrap within the current legal range using modulo.
@@ -277,8 +280,8 @@ public static class SeedWorldResolver
         low |= (ulong)((seedWorld.TownCount - TownCountOffset) & 0xF) << 14;
         low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 18;
         low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 21;
-        low |= (ulong)((int)seedWorld.MapLayoutPalette & 0x7) << 24;
-        low |= (ulong)(seedWorld.OutlierSlotType & 0x3) << 27; // 2 bits for outlier type
+        low |= (ulong)((int)seedWorld.MapLayoutPalette & 0x3) << 24; // 2 bits for 4 layouts
+        low |= (ulong)(seedWorld.OutlierSlotType & 0x3) << 26; // 2 bits for outlier type
 
         ulong high = 0UL;
 

@@ -1,4 +1,6 @@
 using WildBunch.Domain.World;
+using WildBunch.Domain.Travel;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -13,17 +15,14 @@ public enum SeedWorldVariant
 /// Map layout palette defines how towns are positioned and connected.
 /// All layouts are designed with redundancy to support trail removal while maintaining connectivity.
 /// Trails only meet at towns - no crossing trails between towns.
+/// 2-bit encoding (4 layouts) with room for expansion to 8 layouts in future.
 /// </summary>
 public enum MapLayoutPalette
 {
     HubAndSpoke = 0,        // Central hub with outer ring towns connected via spokes
     DoubleLine = 1,          // Two parallel lines of towns, connected at endpoints
-    XShaped = 2,             // Four arms meeting at central town, each arm is a line of towns
-    Tree = 3,                // Hierarchical structure with main trunk and branches
-    Star = 4,                // Central hub with many dead-end spokes
-    Cluster = 5,             // Multiple mini-hubs (2-3 towns each) connected together
-    Mesh = 6,                // Fully connected network with lots of redundancy
-    Grid = 7                 // 2D grid structure (3x3 max) with trails along grid lines
+    Tree = 2,                // Hierarchical structure with main trunk and branches
+    Star = 3                 // Central hub with dead-end spokes (natural outlier positions)
 }
 
 internal sealed record SeedTrailVariant(
@@ -308,12 +307,8 @@ internal static class SeedWorldCatalog
         {
             MapLayoutPalette.HubAndSpoke => GenerateHubAndSpokeTrails(townCount),
             MapLayoutPalette.DoubleLine => GenerateDoubleLineTrails(townCount),
-            MapLayoutPalette.XShaped => GenerateXShapedTrails(townCount),
             MapLayoutPalette.Tree => GenerateTreeTrails(townCount),
             MapLayoutPalette.Star => GenerateStarTrails(townCount),
-            MapLayoutPalette.Cluster => GenerateClusterTrails(townCount),
-            MapLayoutPalette.Mesh => GenerateMeshTrails(townCount),
-            MapLayoutPalette.Grid => GenerateGridTrails(townCount),
             _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
         };
     }
@@ -339,32 +334,6 @@ internal static class SeedWorldCatalog
                 i, next, TrailRisk.Moderate,
                 new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
                 new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
-        }
-
-        return trails;
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateXShapedTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
-
-        // Central hub (slot 0) to four arms
-        var armCount = Math.Min(4, count - 1);
-        for (var i = 0; i < armCount; i++)
-        {
-            trails.Add(new SlotTrailDefinition(0, i + 1, TrailRisk.Low, canonical, variant));
-        }
-
-        // Arm extensions (if town count > 5)
-        for (var i = 0; i < armCount; i++)
-        {
-            var extensionSlot = i + 5;
-            if (extensionSlot < count)
-            {
-                trails.Add(new SlotTrailDefinition(i + 1, extensionSlot, TrailRisk.Moderate, canonical, variant));
-            }
         }
 
         return trails;
@@ -408,79 +377,6 @@ internal static class SeedWorldCatalog
         {
             trails.Add(new SlotTrailDefinition(0, i, TrailRisk.Low, canonical, variant));
         }
-
-        return trails;
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateClusterTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
-
-        // Mini-hub groups (0-1, 2-3, 4-5)
-        if (count >= 2) trails.Add(new SlotTrailDefinition(0, 1, TrailRisk.Low, canonical, variant));
-        if (count >= 4) trails.Add(new SlotTrailDefinition(2, 3, TrailRisk.Low, canonical, variant));
-        if (count >= 6) trails.Add(new SlotTrailDefinition(4, 5, TrailRisk.Low, canonical, variant));
-
-        // Inter-cluster connections
-        if (count >= 3) trails.Add(new SlotTrailDefinition(1, 2, TrailRisk.Moderate, canonical, variant));
-        if (count >= 5) trails.Add(new SlotTrailDefinition(3, 4, TrailRisk.Moderate, canonical, variant));
-        if (count >= 6) trails.Add(new SlotTrailDefinition(5, 0, TrailRisk.Moderate, canonical, variant));
-
-        // Additional towns connect to nearest cluster
-        for (var i = 6; i < count; i++)
-        {
-            var clusterSlot = (i % 3) * 2;
-            trails.Add(new SlotTrailDefinition(i, clusterSlot, TrailRisk.Moderate, canonical, variant));
-        }
-
-        return trails;
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateMeshTrails(int count)
-    {
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
-
-        // Fully connected network - every town connected to every other town
-        return Enumerable.Range(0, count)
-            .SelectMany(i => Enumerable.Range(i + 1, count - i - 1)
-                .Select(j => new SlotTrailDefinition(i, j, TrailRisk.Low, canonical, variant)))
-            .ToArray();
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateGridTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
-
-        // 3x3 grid: rows and columns
-        // Row 0: 0-1-2
-        if (count >= 2) trails.Add(new SlotTrailDefinition(0, 1, TrailRisk.Low, canonical, variant));
-        if (count >= 3) trails.Add(new SlotTrailDefinition(1, 2, TrailRisk.Low, canonical, variant));
-
-        // Row 1: 3-4-5
-        if (count >= 4) trails.Add(new SlotTrailDefinition(3, 4, TrailRisk.Low, canonical, variant));
-        if (count >= 5) trails.Add(new SlotTrailDefinition(4, 5, TrailRisk.Low, canonical, variant));
-
-        // Row 2: 6-7-8
-        if (count >= 7) trails.Add(new SlotTrailDefinition(6, 7, TrailRisk.Low, canonical, variant));
-        if (count >= 8) trails.Add(new SlotTrailDefinition(7, 8, TrailRisk.Low, canonical, variant));
-
-        // Columns
-        // Column 0: 0-3-6
-        if (count >= 4) trails.Add(new SlotTrailDefinition(0, 3, TrailRisk.Low, canonical, variant));
-        if (count >= 7) trails.Add(new SlotTrailDefinition(3, 6, TrailRisk.Low, canonical, variant));
-
-        // Column 1: 1-4-7
-        if (count >= 5) trails.Add(new SlotTrailDefinition(1, 4, TrailRisk.Low, canonical, variant));
-        if (count >= 8) trails.Add(new SlotTrailDefinition(4, 7, TrailRisk.Low, canonical, variant));
-
-        // Column 2: 2-5-8
-        if (count >= 6) trails.Add(new SlotTrailDefinition(2, 5, TrailRisk.Low, canonical, variant));
-        if (count >= 9) trails.Add(new SlotTrailDefinition(5, 8, TrailRisk.Low, canonical, variant));
 
         return trails;
     }
@@ -534,7 +430,10 @@ internal static class SeedWorldCatalog
         ProsperityPalette prosperityPalette,
         IReadOnlyList<SeedWorldTrail> trails,
         Dictionary<int, (int X, int Y)>? townCoordinates = null,
-        int? outlierSlot = null)
+        int? outlierSlot = null,
+        GameEntropy entropy = GameEntropy.Boring,
+        SaltSource? saltSource = null,
+        Guid? seedCode = null)
     {
         var towns = townNames
             .Select((entry, index) =>
@@ -544,6 +443,14 @@ internal static class SeedWorldCatalog
                 var (mapX, mapY) = townCoordinates != null && townCoordinates.TryGetValue(index, out var coords)
                     ? coords
                     : (0, 0);
+
+                // Apply rotation if seed code and entropy are provided
+                if (seedCode.HasValue && entropy != GameEntropy.Boring)
+                {
+                    var rotation = SeedWorldMapLayout.DeriveRotation(seedCode.Value, entropy, saltSource);
+                    (mapX, mapY) = SeedWorldMapLayout.RotateCoordinates(mapX, mapY, rotation);
+                }
+
                 var isOutlier = outlierSlot.HasValue && index == outlierSlot.Value;
                 return new Town(new TownId(entry.Id), entry.Name, services, prosperity, MapX: mapX, MapY: mapY, IsOutlier: isOutlier);
             })

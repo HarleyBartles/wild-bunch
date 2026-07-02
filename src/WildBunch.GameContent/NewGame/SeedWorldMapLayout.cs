@@ -1,4 +1,6 @@
 using WildBunch.Domain.World;
+using WildBunch.Domain.Travel;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -11,6 +13,57 @@ public static class SeedWorldMapLayout
     private const int CenterX = 400;
     private const int CenterY = 250;
     private const int RingRadius = 200;
+
+    /// <summary>
+    /// Derives a deterministic rotation (0-7, representing 0-315 degrees in 45-degree increments)
+    /// from the seed code, entropy, and salt. Same seed + same entropy = same rotation.
+    /// </summary>
+    public static int DeriveRotation(Guid seedCode, GameEntropy entropy, SaltSource? saltSource)
+    {
+        var salt = saltSource?.Salt ?? "default";
+        var hash = ComputeStableHash(seedCode.ToString("D"), entropy.ToString(), salt, "map-rotation");
+        return (int)(hash % 8); // 0-7 = 8 rotation axes
+    }
+
+    /// <summary>
+    /// Rotates coordinates around the center point by the specified number of 45-degree increments.
+    /// </summary>
+    public static (int X, int Y) RotateCoordinates(int x, int y, int rotation)
+    {
+        if (rotation == 0) return (x, y);
+
+        // Convert rotation to radians (each step is 45 degrees = PI/4)
+        var angle = rotation * (Math.PI / 4.0);
+
+        // Translate to origin
+        var dx = x - CenterX;
+        var dy = y - CenterY;
+
+        // Apply rotation matrix
+        var rotatedX = dx * Math.Cos(angle) - dy * Math.Sin(angle);
+        var rotatedY = dx * Math.Sin(angle) + dy * Math.Cos(angle);
+
+        // Translate back from origin
+        return ((int)(CenterX + rotatedX), (int)(CenterY + rotatedY));
+    }
+
+    /// <summary>
+    /// Computes a stable hash from the given inputs using xorshift32.
+    /// </summary>
+    private static uint ComputeStableHash(params string[] inputs)
+    {
+        var hash = 0u;
+        foreach (var input in inputs)
+        {
+            foreach (var c in input)
+            {
+                hash ^= (uint)c;
+                hash = hash * 0x1000193u;
+                hash ^= hash >> 16;
+            }
+        }
+        return hash;
+    }
 
     public static IReadOnlyList<SeedMapTown> GetMapTowns(World world, MapLayoutPalette layout)
     {
@@ -52,12 +105,8 @@ public static class SeedWorldMapLayout
         {
             MapLayoutPalette.HubAndSpoke => GetHubAndSpokeCoordinates(slotIndex, totalTowns),
             MapLayoutPalette.DoubleLine => GetDoubleLineCoordinates(slotIndex, totalTowns),
-            MapLayoutPalette.XShaped => GetXShapedCoordinates(slotIndex, totalTowns),
             MapLayoutPalette.Tree => GetTreeCoordinates(slotIndex, totalTowns),
             MapLayoutPalette.Star => GetStarCoordinates(slotIndex, totalTowns),
-            MapLayoutPalette.Cluster => GetClusterCoordinates(slotIndex, totalTowns),
-            MapLayoutPalette.Mesh => GetMeshCoordinates(slotIndex, totalTowns),
-            MapLayoutPalette.Grid => GetGridCoordinates(slotIndex, totalTowns),
             _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
         };
     }
@@ -68,31 +117,6 @@ public static class SeedWorldMapLayout
         var angle = (slotIndex - 1) * (2.0 * Math.PI / Math.Max(1, totalTowns - 1));
         var x = (int)(CenterX + RingRadius * Math.Cos(angle));
         var y = (int)(CenterY + RingRadius * Math.Sin(angle));
-        return (x, y);
-    }
-
-    public static (int X, int Y) GetXShapedCoordinates(int slotIndex, int totalTowns)
-    {
-        if (slotIndex == 0) return (CenterX, CenterY);
-
-        // Four arms: 1=N, 2=E, 3=S, 4=W
-        var armIndex = (slotIndex - 1) % 4;
-        var armStep = (slotIndex - 1) / 4;
-        var armLength = 180;
-        var stepSize = 60;
-
-        var angle = armIndex switch
-        {
-            0 => -Math.PI / 2,  // North
-            1 => 0,              // East
-            2 => Math.PI / 2,   // South
-            3 => Math.PI,       // West
-            _ => 0
-        };
-
-        var distance = armLength + (armStep * stepSize);
-        var x = (int)(CenterX + distance * Math.Cos(angle));
-        var y = (int)(CenterY + distance * Math.Sin(angle));
         return (x, y);
     }
 
@@ -129,52 +153,6 @@ public static class SeedWorldMapLayout
         var radius = 200;
         var x = (int)(CenterX + radius * Math.Cos(angle));
         var y = (int)(CenterY + radius * Math.Sin(angle));
-        return (x, y);
-    }
-
-    public static (int X, int Y) GetClusterCoordinates(int slotIndex, int totalTowns)
-    {
-        // Three clusters arranged in a triangle
-        var clusterIndex = slotIndex % 3;
-        var clusterSize = (totalTowns + 2) / 3;
-        var positionInCluster = slotIndex / 3;
-
-        var clusterCenters = new (int X, int Y)[]
-        {
-            (CenterX - 150, CenterY - 100),
-            (CenterX + 150, CenterY - 100),
-            (CenterX, CenterY + 150)
-        };
-
-        var (cx, cy) = clusterCenters[clusterIndex];
-        var offset = positionInCluster * 50;
-        var x = cx + (clusterIndex == 0 ? offset : clusterIndex == 1 ? -offset : 0);
-        var y = cy + (clusterIndex == 2 ? offset : 0);
-
-        return (x, y);
-    }
-
-    public static (int X, int Y) GetMeshCoordinates(int slotIndex, int totalTowns)
-    {
-        // Arrange towns in a circle for the fully connected mesh
-        var angle = slotIndex * (2.0 * Math.PI / Math.Max(1, totalTowns));
-        var radius = 180;
-        var x = (int)(CenterX + radius * Math.Cos(angle));
-        var y = (int)(CenterY + radius * Math.Sin(angle));
-        return (x, y);
-    }
-
-    public static (int X, int Y) GetGridCoordinates(int slotIndex, int totalTowns)
-    {
-        // 3x3 grid layout
-        var col = slotIndex % 3;
-        var row = slotIndex / 3;
-        var spacing = 100;
-        var startX = CenterX - spacing;
-        var startY = CenterY - spacing;
-
-        var x = startX + col * spacing;
-        var y = startY + row * spacing;
         return (x, y);
     }
 
