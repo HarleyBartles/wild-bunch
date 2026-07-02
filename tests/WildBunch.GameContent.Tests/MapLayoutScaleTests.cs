@@ -130,7 +130,7 @@ public class MapLayoutScaleTests
             dummyTownIds,
             dummyTownServices,
             dummyTrails,
-            HasOutlierSlot: false);
+            OutlierSlotType: 0);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
     }

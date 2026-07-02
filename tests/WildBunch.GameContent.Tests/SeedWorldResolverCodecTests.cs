@@ -7,9 +7,9 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV13()
+    public void ResolverContractVersion_IsV14()
     {
-        Assert.Equal("resolver-v13", SeedWorldResolver.ResolverContractVersion);
+        Assert.Equal("resolver-v14", SeedWorldResolver.ResolverContractVersion);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class SeedWorldResolverCodecTests
         Assert.Equal(original.ProsperityPalette, resolved.ProsperityPalette);
         Assert.Equal(original.ServicesPalette, resolved.ServicesPalette);
         Assert.Equal(original.MapLayoutPalette, resolved.MapLayoutPalette);
-        Assert.Equal(original.HasOutlierSlot, resolved.HasOutlierSlot);
+        Assert.Equal(original.OutlierSlotType, resolved.OutlierSlotType);
     }
 
     [Fact]
@@ -129,30 +129,30 @@ public sealed class SeedWorldResolverCodecTests
     }
 
     [Fact]
-    public void HasOutlierSlot_BitEncoding_RoundTrip()
+    public void OutlierSlotType_BitEncoding_RoundTrip()
     {
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
 
-        // Test with HasOutlierSlot = false
-        var withFalse = seedWorld with { HasOutlierSlot = false, TownCount = 5 };
-        var seedCodeFalse = SeedWorldResolver.CreateRepresentativeSeedCode(withFalse);
-        var resolvedFalse = SeedWorldResolver.Resolve(seedCodeFalse);
-        Assert.False(resolvedFalse.HasOutlierSlot);
+        // Test with OutlierSlotType = 0 (no outlier)
+        var withZero = seedWorld with { OutlierSlotType = 0, TownCount = 5 };
+        var seedCodeZero = SeedWorldResolver.CreateRepresentativeSeedCode(withZero);
+        var resolvedZero = SeedWorldResolver.Resolve(seedCodeZero);
+        Assert.Equal(0, resolvedZero.OutlierSlotType);
 
-        // Test with HasOutlierSlot = true (requires town count < MaxTownCount)
-        var withTrue = seedWorld with { HasOutlierSlot = true, TownCount = 5 };
-        var seedCodeTrue = SeedWorldResolver.CreateRepresentativeSeedCode(withTrue);
-        var resolvedTrue = SeedWorldResolver.Resolve(seedCodeTrue);
-        Assert.True(resolvedTrue.HasOutlierSlot);
+        // Test with OutlierSlotType = 1 (simple outlier, requires town count < MaxTownCount)
+        var withOne = seedWorld with { OutlierSlotType = 1, TownCount = 5 };
+        var seedCodeOne = SeedWorldResolver.CreateRepresentativeSeedCode(withOne);
+        var resolvedOne = SeedWorldResolver.Resolve(seedCodeOne);
+        Assert.Equal(1, resolvedOne.OutlierSlotType);
     }
 
     [Fact]
-    public void HasOutlierSlot_Validation_RejectsMaxTownCount()
+    public void OutlierSlotType_Validation_RejectsMaxTownCount()
     {
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
 
-        // HasOutlierSlot = true with MaxTownCount should fail validation
-        var invalid = seedWorld with { HasOutlierSlot = true, TownCount = SeedWorldResolver.MaxTownCount };
+        // OutlierSlotType > 0 with MaxTownCount should fail validation
+        var invalid = seedWorld with { OutlierSlotType = 1, TownCount = SeedWorldResolver.MaxTownCount };
         var validation = SeedWorldResolver.Validate(invalid);
 
         Assert.False(validation.Success);
@@ -160,18 +160,31 @@ public sealed class SeedWorldResolverCodecTests
     }
 
     [Fact]
-    public void HasOutlierSlot_BitPosition_Is27()
+    public void OutlierSlotType_Validation_RejectsInvalidRange()
     {
-        // Create a seed with HasOutlierSlot = true by setting bit 27
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+
+        // OutlierSlotType > 3 should fail validation
+        var invalid = seedWorld with { OutlierSlotType = 4 };
+        var validation = SeedWorldResolver.Validate(invalid);
+
+        Assert.False(validation.Success);
+        Assert.Contains("Outlier slot type must be 0-3", validation.ErrorMessage);
+    }
+
+    [Fact]
+    public void OutlierSlotType_BitPosition_Is27_28()
+    {
+        // Create a seed with OutlierSlotType = 1 by setting bits 27-28
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
 
         var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0x1UL << 27;
+        low |= 0x1UL << 27; // Set bit 27
         BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
         seedCode = new Guid(bytes);
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
-        Assert.True(resolved.HasOutlierSlot);
+        Assert.Equal(1, resolved.OutlierSlotType);
     }
 }

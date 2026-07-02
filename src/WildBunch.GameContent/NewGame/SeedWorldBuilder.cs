@@ -32,7 +32,7 @@ internal static class SeedWorldBuilder
         ArgumentNullException.ThrowIfNull(source);
 
         // Determine if outlier slot should be activated
-        var shouldActivateOutlier = seedWorld.HasOutlierSlot && entropy != GameEntropy.Boring;
+        var shouldActivateOutlier = seedWorld.OutlierSlotType > 0 && entropy != GameEntropy.Boring;
         var finalTownCount = shouldActivateOutlier ? seedWorld.TownCount + 1 : seedWorld.TownCount;
 
         // Derive town names for base count only (without outlier)

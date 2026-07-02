@@ -41,7 +41,7 @@ public sealed record SeedWorld(
     IReadOnlyList<string> SelectedTownIds,
     IReadOnlyDictionary<string, TownServices> TownServices,
     IReadOnlyList<SeedWorldTrail> Trails,
-    bool HasOutlierSlot)
+    int OutlierSlotType) // 0=no outlier, 1=simple outlier, 2-3 reserved
 {
     public string SeedCodeText => SeedCode.ToString("D");
 }

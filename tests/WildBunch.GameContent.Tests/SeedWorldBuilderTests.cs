@@ -10,7 +10,7 @@ public sealed class SeedWorldBuilderTests
     public void OutlierSlot_ActivatesBasedOnEntropy()
     {
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
-        var seedWorldWithOutlier = seedWorld with { HasOutlierSlot = true };
+        var seedWorldWithOutlier = seedWorld with { OutlierSlotType = 1 }; // Simple outlier
         var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorldWithOutlier.SeedCode));
 
         // Boring should not activate outlier
@@ -291,7 +291,7 @@ public sealed class SeedWorldBuilderTests
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails, HasOutlierSlot: false));
+            selectedTownIds, townServices, trails, OutlierSlotType: 0));
 
         return SeedWorldResolver.Resolve(seedCode);
     }
@@ -318,7 +318,7 @@ public sealed class SeedWorldBuilderTests
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails, HasOutlierSlot: false));
+            selectedTownIds, townServices, trails, OutlierSlotType: 0));
 
         return SeedWorldResolver.Resolve(seedCode);
     }
@@ -497,5 +497,5 @@ public sealed class SeedWorldBuilderTests
         => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 
     // Note: Outlier slot activation tests are deferred until ActivateOutlierSlot is implemented
-    // in SeedWorldBuilder. The HasOutlierSlot property exists but the activation logic is not yet wired up.
+    // in SeedWorldBuilder. The OutlierSlotType property exists but the activation logic is not yet wired up.
 }

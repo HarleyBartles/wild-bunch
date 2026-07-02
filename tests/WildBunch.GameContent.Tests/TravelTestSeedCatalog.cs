@@ -145,7 +145,7 @@ internal static class TravelTestSeedCatalog
             selectedTownIds,
             townServices,
             trails,
-            HasOutlierSlot: false);
+            OutlierSlotType: 0);
     }
 
     /// <summary>

@@ -398,7 +398,7 @@ public sealed class GeometryCanonicalDistanceTests
         // - Full variance is applied to coordinates (no division by 4)
         // - All ride-day distances are in 2-6 day range
         // Note: Outlier slot activation is not yet implemented (deferred to future task)
-        // The HasOutlierSlot property exists but ActivateOutlierSlot logic is not wired up
+        // The OutlierSlotType property exists but ActivateOutlierSlot logic is not wired up
         // Use a forced salt for deterministic variance swings.
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
         var factory = new SeededNewGameFactory(new TestFixedSaltSourceFactory("salt-wild-variance"));

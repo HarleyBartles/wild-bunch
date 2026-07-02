@@ -39,7 +39,7 @@ internal static class SeedWorldSeedCodeFactory
             selectedTownIds,
             townServices,
             trails,
-            HasOutlierSlot: false);
+            OutlierSlotType: 0);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(target);
     }
@@ -82,7 +82,7 @@ internal static class SeedWorldSeedCodeFactory
             selectedTownIds,
             townServices,
             trails,
-            HasOutlierSlot: false);
+            OutlierSlotType: 0);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(target);
     }
