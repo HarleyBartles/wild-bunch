@@ -32,7 +32,7 @@ internal static class SeedWorldBuilder
         ArgumentNullException.ThrowIfNull(source);
 
         // Determine if outlier slot should be activated
-        var shouldActivateOutlier = seedWorld.OutlierSlotType > 0 && entropy != GameEntropy.Boring;
+        var shouldActivateOutlier = seedWorld.OutlierSlotType == 1 && entropy != GameEntropy.Boring;
         var finalTownCount = shouldActivateOutlier ? seedWorld.TownCount + 1 : seedWorld.TownCount;
 
         // Derive town names for base count only (without outlier)
@@ -563,10 +563,10 @@ internal static class SeedWorldBuilder
 
         // Select an unused town name from the name pool
         var usedTownIds = townNames.Select(t => t.Id).ToHashSet();
-        var outlierTownName = SeedWorldCatalog.NamePool
+        var unusedNames = SeedWorldCatalog.NamePool
             .Where(t => !usedTownIds.Contains(t.Id))
-            .Skip((int)(ComputeStableHash(source.SeedCode, outlierSlotIndex, "outlier-name", salt) % SeedWorldCatalog.NamePool.Count))
-            .First();
+            .ToList();
+        var outlierTownName = unusedNames[(int)(ComputeStableHash(source.SeedCode, outlierSlotIndex, "outlier-name", salt) % unusedNames.Count)];
 
         // Append outlier town name to existing list
         var extendedTownNames = townNames.ToList();

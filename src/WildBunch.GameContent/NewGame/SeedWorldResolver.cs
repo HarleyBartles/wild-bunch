@@ -137,6 +137,10 @@ public static class SeedWorldResolver
         if (accusationIndex > 6) accusationIndex = 6;
         if (defaultCulpritIndex > 6) defaultCulpritIndex = 6;
 
+        // 2-bit OutlierSlotType produces 0-3, but only 0-1 are currently implemented.
+        // Clamp to the current legal range. Values 2-3 are reserved for future expansion.
+        if (outlierSlotType > 1) outlierSlotType = 1;
+
         // 3-bit mapLayoutPalette produces 0-7, but only 4 layouts are currently implemented.
         // Wrap within the current legal range using modulo.
         mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 4);
