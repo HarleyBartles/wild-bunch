@@ -86,6 +86,14 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - `create_tree` is not a repo-listing tool. If a tree/listing read route is unavailable, use `fetch_file`, `fetch`, `search`, `compare_commits`, issue readers, and commit/status readers instead.
 - Workers do not close GitHub issues; they only return source-backed closeout evidence and recommendations.
 
+## Devin Desktop Environment
+
+### Image Handling
+- When users paste images with Ctrl+V, agents can view and analyze them directly as part of the conversation context.
+- The `read` tool is for text files only and cannot read binary image files. Do not attempt to use `read` to view pasted images or image files on disk.
+- If a user pastes an image, simply describe and analyze what you see in the image. Do not ask the user to describe it or try to read it with the `read` tool.
+- Image viewing works through the IDE integration layer, not through file system tools.
+
 ## Validation
 - Run `dotnet build`.
 - Run `dotnet test`.
