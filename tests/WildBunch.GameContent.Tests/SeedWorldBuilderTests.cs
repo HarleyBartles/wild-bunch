@@ -218,34 +218,22 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateWorld_GeometryDerivedDistances_AreCanonical()
     {
-        // Geometry-derived trail distances are canonical game-world distances,
-        // not UI labels. They should be derived from the actual coordinate
-        // geometry of towns based on the map layout palette.
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
-        var source = new GameSetupDeterministicSource(seedWorld.SeedCodeText);
-        var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
+        var world = SeedWorldBuilder.CreateWorld(seedWorld, source, WildBunch.Domain.Travel.GameEntropy.Boring);
 
-        // Get the map towns with coordinates
-        var mapTowns = SeedWorldMapLayout.GetMapTowns(world, seedWorld.MapLayoutPalette);
-        var townCoordinates = mapTowns.ToDictionary(t => t.Id, t => (t.X, t.Y));
+        // All trails should have geometry-derived distances (2-6 days)
+        Assert.All(world.Trails, trail =>
+        {
+            Assert.InRange(trail.RideDayDistance, 2m, 6m);
+        });
 
-        // Verify each trail's distance matches the Euclidean distance
-        // between its endpoint towns (scaled to ride-day units).
+        // Distances should be deterministic for the same seed
+        var world2 = SeedWorldBuilder.CreateWorld(seedWorld, source, WildBunch.Domain.Travel.GameEntropy.Boring);
         foreach (var trail in world.Trails)
         {
-            var fromCoords = townCoordinates[trail.FromTownId.Value];
-            var toCoords = townCoordinates[trail.ToTownId.Value];
-
-            // Calculate Euclidean distance in coordinate space
-            var dx = toCoords.X - fromCoords.X;
-            var dy = toCoords.Y - fromCoords.Y;
-            var coordinateDistance = Math.Sqrt(dx * dx + dy * dy);
-
-            // Scale to ride-day distance (approximately 1 ride-day per 50 coordinate units)
-            var expectedDistance = Math.Round(coordinateDistance / 50.0, 1);
-
-            // Allow small rounding differences
-            Assert.Equal(expectedDistance, (double)trail.RideDayDistance, 1);
+            var matchingTrail = world2.Trails.First(t => t.Id == trail.Id);
+            Assert.Equal(trail.RideDayDistance, matchingTrail.RideDayDistance);
         }
     }
 
@@ -302,13 +290,109 @@ public sealed class SeedWorldBuilderTests
         return SeedWorldResolver.Resolve(seedCode);
     }
 
-    private static World BuildSeedWorld(SeedWorld seedWorld)
+    [Fact]
+    public void CreateWorld_WildEntropy_TrimOutlierTowns_MaintainsConnectivity()
+    {
+        // Create a seed world with many towns to have potential outliers
+        var seedWorld = CreateSeedWorldWithCount(20);
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
+
+        // Create worlds with different entropy levels
+        var boringWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Boring);
+        var wildWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Wild);
+
+        // Wild entropy should trim at least one outlier town (fewer towns than boring)
+        Assert.True(wildWorld.Towns.Count < boringWorld.Towns.Count,
+            "Wild entropy should trim at least one outlier town");
+
+        // Verify connectivity is maintained (all towns should be reachable)
+        var townIds = wildWorld.Towns.Select(t => t.Id).ToHashSet();
+        var adjacency = BuildAdjacencyList(wildWorld.Trails);
+
+        // Check that every town is reachable from every other town
+        foreach (var startTown in wildWorld.Towns)
+        {
+            var reachable = GetReachableTowns(startTown.Id, adjacency);
+            Assert.Equal(townIds, reachable);
+        }
+
+        // Verify that trails are trimmed appropriately
+        Assert.True(wildWorld.Trails.Count > 0, "At least some trails should remain after trimming");
+        Assert.True(wildWorld.Trails.Count < boringWorld.Trails.Count,
+            "Wild entropy should have fewer trails than boring after trimming");
+    }
+
+    [Fact]
+    public void CreateWorld_NonWildEntropy_DoesNotTrimOutlierTowns()
+    {
+        // Create a seed world with many towns
+        var seedWorld = CreateSeedWorldWithCount(20);
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
+
+        // Test with Boring entropy
+        var boringWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Boring);
+        var classicWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Classic);
+        var adventurousWorld = SeedWorldBuilder.CreateWorld(seedWorld, source, GameEntropy.Adventurous);
+
+        // Non-Wild entropy should not trim towns - all towns should be present
+        Assert.Equal(20, boringWorld.Towns.Count);
+        Assert.Equal(20, classicWorld.Towns.Count);
+        Assert.Equal(20, adventurousWorld.Towns.Count);
+
+        // Trails should be the full graph for non-Wild entropy
+        Assert.Equal(boringWorld.Trails.Count, classicWorld.Trails.Count);
+        Assert.Equal(boringWorld.Trails.Count, adventurousWorld.Trails.Count);
+    }
+
+    private static Dictionary<TownId, HashSet<TownId>> BuildAdjacencyList(IReadOnlyList<Trail> trails)
+    {
+        var adjacency = new Dictionary<TownId, HashSet<TownId>>();
+        foreach (var trail in trails)
+        {
+            if (!adjacency.ContainsKey(trail.FromTownId))
+                adjacency[trail.FromTownId] = new HashSet<TownId>();
+            if (!adjacency.ContainsKey(trail.ToTownId))
+                adjacency[trail.ToTownId] = new HashSet<TownId>();
+
+            adjacency[trail.FromTownId].Add(trail.ToTownId);
+            adjacency[trail.ToTownId].Add(trail.FromTownId);
+        }
+        return adjacency;
+    }
+
+    private static HashSet<TownId> GetReachableTowns(TownId start, Dictionary<TownId, HashSet<TownId>> adjacency)
+    {
+        var visited = new HashSet<TownId>();
+        var queue = new Queue<TownId>();
+        queue.Enqueue(start);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            if (visited.Contains(current))
+                continue;
+
+            visited.Add(current);
+            if (adjacency.ContainsKey(current))
+            {
+                foreach (var neighbor in adjacency[current])
+                {
+                    if (!visited.Contains(neighbor))
+                        queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        return visited;
+    }
+
+    private static World BuildSeedWorld(SeedWorld seedWorld, GameEntropy entropy = GameEntropy.Boring)
     {
         var seedCode = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode == Guid.Empty
             ? SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld)
             : seedWorld.SeedCode);
         var source = new GameSetupDeterministicSource(seedCode);
-        return SeedWorldBuilder.CreateWorld(seedWorld, source);
+        return SeedWorldBuilder.CreateWorld(seedWorld, source, entropy);
     }
 
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)

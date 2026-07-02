@@ -68,7 +68,7 @@ public sealed class GameSetupResolverTests
         var setup = BuildSetup(seedWorld, difficulty, entropy);
 
         // Starting town is the first town in the generated world (slot 0).
-        var expectedStartingTown = SeedWorldBuilder.CreateWorld(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText)).Towns.First().Id;
+        var expectedStartingTown = SeedWorldBuilder.CreateWorld(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText), GameEntropy.Classic).Towns.First().Id;
         Assert.Equal(expectedStartingTown, setup.StartingTownId);
         Assert.Equal(25m, setup.StartingWallet.Cash);
         Assert.Equal(7, setup.CaseFile.Suspects.Count);

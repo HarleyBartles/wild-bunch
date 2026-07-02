@@ -51,8 +51,8 @@ internal sealed class GameSetupResolver
         var source = new GameSetupDeterministicSource(seedCodeText);
 
         // 3. Build world from seed world. The seed owns the map; it does NOT
-        //    choose the starting town.
-        var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
+        //    choose the starting town. Wild entropy may trim outlier towns.
+        var world = SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy);
 
         // 3b. Apply entropy-salted trail distances. The seed owns baseline
         //     distances; entropy corrupts them downstream. Boring preserves

@@ -1,3 +1,5 @@
+using System.Linq;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
@@ -18,7 +20,7 @@ internal static class SeedWorldBuilder
     /// and slot-based topology.
     /// Future seam: DifficultyEnvelope may modify terrain/distance downstream.
     /// </summary>
-    public static World CreateWorld(SeedWorld seedWorld, GameSetupDeterministicSource source)
+    public static World CreateWorld(SeedWorld seedWorld, GameSetupDeterministicSource source, GameEntropy entropy = GameEntropy.Boring)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
@@ -41,12 +43,17 @@ internal static class SeedWorldBuilder
         // Derive canonical distances from geometry
         var trailsWithGeometryDistances = DeriveDistancesFromGeometry(trails, townCoordinates);
 
+        // Trim outlier towns for Wild entropy
+        var (trimmedTownNames, trimmedTrails) = entropy == GameEntropy.Wild
+            ? TrimOutlierTowns(townNames, trailsWithGeometryDistances, townCoordinates)
+            : (townNames, trailsWithGeometryDistances);
+
         return SeedWorldCatalog.CreateWorld(
             seedWorld.WorldVariant,
-            townNames,
+            trimmedTownNames,
             seedWorld.ServicesPalette,
             seedWorld.ProsperityPalette,
-            trailsWithGeometryDistances);
+            trimmedTrails);
     }
 
     /// <summary>
@@ -94,6 +101,127 @@ internal static class SeedWorldBuilder
 
             return trail with { RideDayDistance = (decimal)rideDayDistance };
         }).ToArray();
+    }
+
+    /// <summary>
+    /// Trims at most one outlier town from the world for Wild entropy.
+    /// An outlier is defined as a town with the fewest trail connections
+    /// (degree) in the trail graph. Trimming maintains connectivity by ensuring
+    /// the remaining towns form a connected graph.
+    /// </summary>
+    private static (IReadOnlyList<TownNameEntry> TrimmedTowns, IReadOnlyList<SeedWorldTrail> TrimmedTrails) TrimOutlierTowns(
+        IReadOnlyList<TownNameEntry> townNames,
+        IReadOnlyList<SeedWorldTrail> trails,
+        Dictionary<int, (int X, int Y)> townCoordinates)
+    {
+        // Build adjacency list to count town degrees (by index in townNames list)
+        var townDegree = new Dictionary<int, int>();
+        for (var i = 0; i < townNames.Count; i++)
+        {
+            townDegree[i] = 0;
+        }
+
+        foreach (var trail in trails)
+        {
+            var parts = trail.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+            if (fromSlot < townNames.Count) townDegree[fromSlot]++;
+            if (toSlot < townNames.Count) townDegree[toSlot]++;
+        }
+
+        // Find towns with the minimum degree (potential outliers)
+        var minDegree = townDegree.Values.Min();
+        var outlierIndices = townDegree
+            .Where(kvp => kvp.Value == minDegree)
+            .Select(kvp => kvp.Key)
+            .OrderBy(idx => idx)
+            .ToList();
+
+        // Only trim if we have enough towns to spare (more than 5)
+        if (townNames.Count <= 5)
+        {
+            return (townNames, trails);
+        }
+
+        // Try trimming each outlier and pick the first that maintains connectivity
+        foreach (var outlierIndex in outlierIndices)
+        {
+            var trimmedTownNames = townNames.Where((t, i) => i != outlierIndex).ToList();
+            var trimmedTrails = trails.Where(t =>
+            {
+                var parts = t.Id.Split('-');
+                var fromSlot = int.Parse(parts[1]);
+                var toSlot = int.Parse(parts[2]);
+                return fromSlot != outlierIndex && toSlot != outlierIndex;
+            }).ToList();
+
+            // Verify connectivity is maintained
+            if (VerifyConnectivity(trimmedTownNames.Count, trimmedTrails))
+            {
+                return (trimmedTownNames, trimmedTrails);
+            }
+        }
+
+        // If no outlier can be trimmed without breaking connectivity, return original
+        return (townNames, trails);
+    }
+
+    /// <summary>
+    /// Verifies that all towns in the trimmed world are reachable from each other.
+    /// Uses BFS to check graph connectivity.
+    /// </summary>
+    private static bool VerifyConnectivity(
+        int townCount,
+        IReadOnlyList<SeedWorldTrail> trails)
+    {
+        if (townCount == 0)
+            return true;
+
+        // Build adjacency list
+        var adjacency = new Dictionary<int, HashSet<int>>();
+        for (var i = 0; i < townCount; i++)
+        {
+            adjacency[i] = new HashSet<int>();
+        }
+
+        foreach (var trail in trails)
+        {
+            var parts = trail.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+            if (fromSlot < townCount && toSlot < townCount)
+            {
+                adjacency[fromSlot].Add(toSlot);
+                adjacency[toSlot].Add(fromSlot);
+            }
+        }
+
+        // BFS from the first town
+        var startSlot = 0;
+        var visited = new HashSet<int>();
+        var queue = new Queue<int>();
+        queue.Enqueue(startSlot);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            if (visited.Contains(current))
+                continue;
+
+            visited.Add(current);
+            if (adjacency.ContainsKey(current))
+            {
+                foreach (var neighbor in adjacency[current])
+                {
+                    if (!visited.Contains(neighbor))
+                        queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        // Check that all town slots were visited
+        return visited.Count == townCount;
     }
 
     /// <summary>
