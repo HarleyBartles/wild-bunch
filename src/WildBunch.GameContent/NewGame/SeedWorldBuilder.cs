@@ -50,15 +50,21 @@ internal static class SeedWorldBuilder
 
         // Trim outlier towns for Classic, Adventurous, and Wild entropy
         // Boring keeps full connectivity
-        var (trimmedTownNames, trimmedTrails) = entropy != GameEntropy.Boring
-            ? TrimOutlierTowns(townNames, trailsWithGeometryDistances, townCoordinates)
-            : (townNames, trailsWithGeometryDistances);
-
-        // Filter town coordinates to match trimmed towns
-        var trimmedTownCoordinates = new Dictionary<int, (int X, int Y)>();
-        for (var i = 0; i < trimmedTownNames.Count; i++)
+        Dictionary<int, (int X, int Y)> trimmedTownCoordinates;
+        IReadOnlyList<TownNameEntry> trimmedTownNames;
+        IReadOnlyList<SeedWorldTrail> trimmedTrails;
+        if (entropy != GameEntropy.Boring)
         {
-            trimmedTownCoordinates[i] = townCoordinates[i];
+            var (names, trimmedTrailList, coords) = TrimOutlierTowns(townNames, trailsWithGeometryDistances, townCoordinates);
+            trimmedTownNames = names;
+            trimmedTrails = trimmedTrailList;
+            trimmedTownCoordinates = coords;
+        }
+        else
+        {
+            trimmedTownNames = townNames;
+            trimmedTrails = trailsWithGeometryDistances;
+            trimmedTownCoordinates = townCoordinates;
         }
 
         return SeedWorldCatalog.CreateWorld(
@@ -176,12 +182,15 @@ internal static class SeedWorldBuilder
     }
 
     /// <summary>
-    /// Trims at most one outlier town from the world for Wild entropy.
+    /// Trims at most one outlier town from the world for non-Boring entropy.
     /// An outlier is defined as a town with the fewest trail connections
     /// (degree) in the trail graph. Trimming maintains connectivity by ensuring
     /// the remaining towns form a connected graph.
+    /// Returns the trimmed town names, trimmed trails, and a coordinate dictionary
+    /// keyed by the new compacted slot index with coordinates correctly mapped
+    /// from each surviving town's original slot index.
     /// </summary>
-    private static (IReadOnlyList<TownNameEntry> TrimmedTowns, IReadOnlyList<SeedWorldTrail> TrimmedTrails) TrimOutlierTowns(
+    private static (IReadOnlyList<TownNameEntry> TrimmedTowns, IReadOnlyList<SeedWorldTrail> TrimmedTrails, Dictionary<int, (int X, int Y)> TrimmedCoordinates) TrimOutlierTowns(
         IReadOnlyList<TownNameEntry> townNames,
         IReadOnlyList<SeedWorldTrail> trails,
         Dictionary<int, (int X, int Y)> townCoordinates)
@@ -213,7 +222,7 @@ internal static class SeedWorldBuilder
         // Only trim if we have enough towns to spare (more than 5)
         if (townNames.Count <= 5)
         {
-            return (townNames, trails);
+            return (townNames, trails, townCoordinates);
         }
 
         // Try trimming each outlier and pick the first that maintains connectivity
@@ -231,12 +240,25 @@ internal static class SeedWorldBuilder
             // Verify connectivity is maintained
             if (VerifyConnectivity(trimmedTownNames.Count, trimmedTrails))
             {
-                return (trimmedTownNames, trimmedTrails);
+                // Build correct coordinate mapping: each new compacted index
+                // must map to the original slot's coordinates, not just index i.
+                var trimmedCoordinates = new Dictionary<int, (int X, int Y)>();
+                var newIndex = 0;
+                for (var oldIndex = 0; oldIndex < townNames.Count; oldIndex++)
+                {
+                    if (oldIndex != outlierIndex)
+                    {
+                        trimmedCoordinates[newIndex] = townCoordinates[oldIndex];
+                        newIndex++;
+                    }
+                }
+
+                return (trimmedTownNames, trimmedTrails, trimmedCoordinates);
             }
         }
 
         // If no outlier can be trimmed without breaking connectivity, return original
-        return (townNames, trails);
+        return (townNames, trails, townCoordinates);
     }
 
     /// <summary>

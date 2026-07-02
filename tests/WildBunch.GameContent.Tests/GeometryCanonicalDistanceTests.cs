@@ -381,6 +381,73 @@ public sealed class GeometryCanonicalDistanceTests
         Assert.Equal(0, session.Journey.DaysTravelled);
     }
 
+    [Fact]
+    public void OutlierTrimming_MiddleSlotRemoval_PreservesCoordinateIdentity()
+    {
+        // This test catches the identity bug where trimming a middle town slot
+        // causes later towns to receive the wrong coordinates. The invariant:
+        // each trail's locked RideDayDistance must be consistent with the
+        // geometric distance between its endpoint town coordinates.
+        // If coordinates are misaligned after trimming, recomputing the
+        // geometric distance from town (MapX, MapY) will not match the locked
+        // trail distance.
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var factory = new SeededNewGameFactory(new TestFixedSaltSourceFactory("salt-trim-identity"));
+
+        // Create a Wild session (with trimming) using a fixed salt
+        var wildSession = factory.Create("Wild", GameDifficulty.Standard, SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode), GameEntropy.Wild);
+
+        // For every trail in the Wild session, verify that the locked
+        // RideDayDistance is geometrically consistent with the endpoint
+        // coordinates. This catches the coordinate-shift bug: if a middle
+        // slot was trimmed and coordinates were compacted incorrectly,
+        // the recomputed geometric distance will not match the locked distance.
+        const double CoordinateScale = 25.0;
+        foreach (var trail in wildSession.World.Trails)
+        {
+            Assert.True(wildSession.World.TryGetTown(trail.FromTownId, out var fromTown),
+                $"Trail {trail.Id} references missing FromTownId {trail.FromTownId}");
+            Assert.True(wildSession.World.TryGetTown(trail.ToTownId, out var toTown),
+                $"Trail {trail.Id} references missing ToTownId {trail.ToTownId}");
+
+            var dx = toTown.MapX - fromTown.MapX;
+            var dy = toTown.MapY - fromTown.MapY;
+            var geometricDistance = Math.Sqrt(dx * dx + dy * dy);
+            var recomputedRideDays = Math.Round(geometricDistance / CoordinateScale, 1);
+            var expectedDistance = Math.Max(2m, Math.Min(6m, (decimal)recomputedRideDays));
+
+            // The locked trail distance must match the geometric distance
+            // computed from the town coordinates. A mismatch proves the
+            // coordinate-to-town mapping was corrupted by trimming.
+            Assert.Equal(expectedDistance, trail.RideDayDistance);
+        }
+
+        // Additionally verify that two Wild sessions with the same fixed salt
+        // produce identical town coordinates and trail distances. This proves
+        // that trimming is deterministic and preserves coordinate identity
+        // across repeated sessions with the same inputs.
+        var wildSession2 = factory.Create("Wild2", GameDifficulty.Standard, SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode), GameEntropy.Wild);
+
+        Assert.Equal(wildSession.World.Towns.Count, wildSession2.World.Towns.Count);
+        var towns1 = wildSession.World.Towns.OrderBy(t => t.Id.Value).ToArray();
+        var towns2 = wildSession2.World.Towns.OrderBy(t => t.Id.Value).ToArray();
+        for (var i = 0; i < towns1.Length; i++)
+        {
+            Assert.Equal(towns1[i].Id.Value, towns2[i].Id.Value);
+            Assert.Equal(towns1[i].MapX, towns2[i].MapX);
+            Assert.Equal(towns1[i].MapY, towns2[i].MapY);
+        }
+
+        var trails1 = wildSession.World.Trails.OrderBy(t => t.Id.Value).ToArray();
+        var trails2 = wildSession2.World.Trails.OrderBy(t => t.Id.Value).ToArray();
+        Assert.Equal(trails1.Length, trails2.Length);
+        for (var i = 0; i < trails1.Length; i++)
+        {
+            Assert.Equal(trails1[i].Id.Value, trails2[i].Id.Value);
+            Assert.Equal(trails1[i].RideDayDistance, trails2[i].RideDayDistance);
+        }
+    }
+
     private sealed class TestFixedSaltSourceFactory : ISaltSourceFactory
     {
         private readonly string _salt;
