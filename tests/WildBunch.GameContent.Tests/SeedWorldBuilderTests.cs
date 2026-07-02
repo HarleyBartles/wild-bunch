@@ -1,6 +1,7 @@
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.GameContent.NewGame;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.GameContent.Tests;
 
@@ -37,6 +38,45 @@ public sealed class SeedWorldBuilderTests
         // Verify all trails point to real towns
         var townIdSet = wildWorld.Towns.Select(t => t.Id.Value).ToHashSet();
         foreach (var trail in wildWorld.Trails)
+        {
+            Assert.True(townIdSet.Contains(trail.FromTownId.Value), $"Trail {trail.Id} FromTownId {trail.FromTownId.Value} does not exist in towns");
+            Assert.True(townIdSet.Contains(trail.ToTownId.Value), $"Trail {trail.Id} ToTownId {trail.ToTownId.Value} does not exist in towns");
+        }
+    }
+
+    [Theory]
+    [InlineData("Classic", "salt-1")]
+    [InlineData("Classic", "salt-2")]
+    [InlineData("Adventurous", "salt-a")]
+    [InlineData("Adventurous", "salt-b")]
+    [InlineData("Wild", "salt-x")]
+    [InlineData("Wild", "salt-y")]
+    public void OutlierSlot_NeverThrowsAndProducesUniqueTownIdsAcrossMultipleSalts(string entropyMode, string salt)
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var seedWorldWithOutlier = seedWorld with { OutlierSlotType = 1 };
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorldWithOutlier.SeedCode));
+        var entropy = Enum.Parse<GameEntropy>(entropyMode);
+        var saltSource = new SaltSource(SaltSourceMode.Fixed, salt);
+
+        // This should never throw even with different salts that might produce negative hashes
+        var world = SeedWorldBuilder.CreateWorld(seedWorldWithOutlier, source, entropy, saltSource);
+
+        // Verify outlier was activated (non-Boring modes)
+        if (entropy != GameEntropy.Boring)
+        {
+            Assert.Equal(seedWorld.TownCount + 1, world.Towns.Count);
+            var outlier = world.Towns.First(t => t.IsOutlier);
+            Assert.NotNull(outlier);
+        }
+
+        // Verify all town IDs are unique
+        var townIds = world.Towns.Select(t => t.Id.Value).ToList();
+        Assert.True(townIds.Count == townIds.Distinct().Count(), "All town IDs must be unique");
+
+        // Verify all trails point to real towns
+        var townIdSet = world.Towns.Select(t => t.Id.Value).ToHashSet();
+        foreach (var trail in world.Trails)
         {
             Assert.True(townIdSet.Contains(trail.FromTownId.Value), $"Trail {trail.Id} FromTownId {trail.FromTownId.Value} does not exist in towns");
             Assert.True(townIdSet.Contains(trail.ToTownId.Value), $"Trail {trail.Id} ToTownId {trail.ToTownId.Value} does not exist in towns");

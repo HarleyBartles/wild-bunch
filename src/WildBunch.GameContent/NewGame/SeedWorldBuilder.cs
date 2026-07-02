@@ -188,6 +188,12 @@ internal static class SeedWorldBuilder
     }
 
     /// <summary>
+    /// Converts a signed hash to a guaranteed non-negative value for safe modulo indexing.
+    /// Uses Math.Abs to ensure the result is always >= 0.
+    /// </summary>
+    private static int NonNegativeHash(int hash) => Math.Abs(hash);
+
+    /// <summary>
     /// Derives ride-day distances from geometry in two passes:
     /// Pass 1: Derive raw distances from geometry, clamp all 6-day trails to 5 days,
     ///         apply layout-specific trail removal.
@@ -566,7 +572,7 @@ internal static class SeedWorldBuilder
         var unusedNames = SeedWorldCatalog.NamePool
             .Where(t => !usedTownIds.Contains(t.Id))
             .ToList();
-        var outlierTownName = unusedNames[(int)(ComputeStableHash(source.SeedCode, outlierSlotIndex, "outlier-name", salt) % unusedNames.Count)];
+        var outlierTownName = unusedNames[NonNegativeHash(ComputeStableHash(source.SeedCode, outlierSlotIndex, "outlier-name", salt)) % unusedNames.Count];
 
         // Append outlier town name to existing list
         var extendedTownNames = townNames.ToList();
