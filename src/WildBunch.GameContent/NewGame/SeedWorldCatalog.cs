@@ -448,7 +448,7 @@ internal static class SeedWorldCatalog
                 if (seedCode.HasValue && entropy != GameEntropy.Boring)
                 {
                     var rotation = SeedWorldMapLayout.DeriveRotation(seedCode.Value, entropy, saltSource);
-                    (mapX, mapY) = SeedWorldMapLayout.RotateCoordinates(mapX, mapY, rotation);
+                    (mapX, mapY) = SeedWorldMapLayout.RotateCoordinates(mapX, mapY, rotation, entropy);
                 }
 
                 var isOutlier = outlierSlot.HasValue && index == outlierSlot.Value;
