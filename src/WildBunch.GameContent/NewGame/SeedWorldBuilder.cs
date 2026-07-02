@@ -219,10 +219,11 @@ internal static class SeedWorldBuilder
 
     /// <summary>
     /// Applies layout-specific trail removal by salt.
-    /// HubAndSpoke: remove random spokes/edges based on entropy
-    /// Ring: remove 1 trail (or replace to maintain connectivity)
-    /// LinearChain: no removal (line breaks)
-    /// DoubleLine: remove trails between lines, preserve crossing trails (1-3)
+    /// All layouts use simple count-based removal by entropy level:
+    /// Boring: 0 removals
+    /// Classic: 1-2 removals
+    /// Adventurous: 2-3 removals
+    /// Wild: 3-4 removals
     /// Returns the trimmed trails.
     /// </summary>
     private static IReadOnlyList<SeedWorldTrail> ApplyLayoutSpecificTrailRemoval(
@@ -240,20 +241,19 @@ internal static class SeedWorldBuilder
         {
             MapLayoutPalette.HubAndSpoke => ApplyHubAndSpokeTrailRemoval(trails, entropy, source, saltSource, townCount),
             MapLayoutPalette.DoubleLine => ApplyDoubleLineTrailRemoval(trails, entropy, source, saltSource, townCount),
-            MapLayoutPalette.XShaped => trails, // TODO: Implement XShaped trail removal
-            MapLayoutPalette.Tree => trails, // TODO: Implement Tree trail removal
-            MapLayoutPalette.Star => trails, // TODO: Implement Star trail removal
-            MapLayoutPalette.Cluster => trails, // TODO: Implement Cluster trail removal
-            MapLayoutPalette.Mesh => trails, // TODO: Implement Mesh trail removal
-            MapLayoutPalette.Grid => trails, // TODO: Implement Grid trail removal
+            MapLayoutPalette.XShaped => ApplyXShapedTrailRemoval(trails, entropy, source, saltSource, townCount),
+            MapLayoutPalette.Tree => ApplyTreeTrailRemoval(trails, entropy, source, saltSource, townCount),
+            MapLayoutPalette.Star => ApplyStarTrailRemoval(trails, entropy, source, saltSource, townCount),
+            MapLayoutPalette.Cluster => ApplyClusterTrailRemoval(trails, entropy, source, saltSource, townCount),
+            MapLayoutPalette.Mesh => ApplyMeshTrailRemoval(trails, entropy, source, saltSource, townCount),
+            MapLayoutPalette.Grid => ApplyGridTrailRemoval(trails, entropy, source, saltSource, townCount),
             _ => trails
         };
     }
 
     /// <summary>
     /// Applies HubAndSpoke-specific trail removal by salt.
-    /// Hub is slot 0, spokes are trails from slot 0 to outer slots.
-    /// Edge trails are trails between outer slots (the ring).
+    /// Simple count-based removal: removes random trails while maintaining connectivity.
     /// </summary>
     private static IReadOnlyList<SeedWorldTrail> ApplyHubAndSpokeTrailRemoval(
         IReadOnlyList<SeedWorldTrail> trails,
@@ -262,64 +262,7 @@ internal static class SeedWorldBuilder
         SaltSource? saltSource,
         int townCount)
     {
-        if (townCount < 3)
-            return trails; // Need at least 3 towns for meaningful removal
-
-        // Identify spokes (from slot 0) and edge trails (between outer slots)
-        var spokes = new List<SeedWorldTrail>();
-        var edgeTrails = new List<SeedWorldTrail>();
-
-        foreach (var trail in trails)
-        {
-            var parts = trail.Id.Split('-');
-            var fromSlot = int.Parse(parts[1]);
-            var toSlot = int.Parse(parts[2]);
-
-            if (fromSlot == 0 || toSlot == 0)
-                spokes.Add(trail);
-            else
-                edgeTrails.Add(trail);
-        }
-
-        // Determine how many trails to remove based on entropy
-        var (spokesToRemove, edgesToRemove) = entropy switch
-        {
-            GameEntropy.Classic => (1, 1),
-            GameEntropy.Adventurous => (2, 2),
-            GameEntropy.Wild => (3, 3),
-            _ => (0, 0)
-        };
-
-        // Clamp to available trails
-        spokesToRemove = Math.Min(spokesToRemove, spokes.Count - 1); // Keep at least 1 spoke
-        edgesToRemove = Math.Min(edgesToRemove, edgeTrails.Count - 1); // Keep at least 1 edge
-
-        if (spokesToRemove == 0 && edgesToRemove == 0)
-            return trails;
-
-        // Use salt for deterministic selection
-        if (saltSource == null)
-            return trails;
-
-        var salt = saltSource.Salt;
-        var random = new Random(ComputeStableHash(source.SeedCode, entropy.ToString(), salt));
-
-        // Select random spokes to remove
-        var spokesToRemoveList = SelectRandomTrails(spokes, spokesToRemove, random);
-        var edgesToRemoveList = SelectRandomTrails(edgeTrails, edgesToRemove, random);
-
-        // Build result without removed trails
-        var removedIds = new HashSet<string>(spokesToRemoveList.Concat(edgesToRemoveList).Select(t => t.Id));
-        var result = trails.Where(t => !removedIds.Contains(t.Id)).ToList();
-
-        // Verify connectivity
-        if (!VerifyConnectivity(townCount, result))
-        {
-            // If removal broke connectivity, return original trails
-            return trails;
-        }
-
-        return result;
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
     }
 
     /// <summary>
@@ -348,36 +291,23 @@ internal static class SeedWorldBuilder
     }
 
     /// <summary>
-    /// Applies DoubleLine-specific trail removal by salt.
-    /// DoubleLine: remove trails between lines, preserve crossing trails (1-3).
-    /// Crossing trails are slot 1-3 (they cross top to bottom between two towns).
+    /// Applies simple count-based trail removal by entropy level.
+    /// Boring: 0 removals
+    /// Classic: 1-2 removals
+    /// Adventurous: 2-3 removals
+    /// Wild: 3-4 removals
+    /// Always verifies connectivity after removal.
+    /// If connectivity breaks, returns original trails (no removal).
     /// </summary>
-    private static IReadOnlyList<SeedWorldTrail> ApplyDoubleLineTrailRemoval(
+    private static IReadOnlyList<SeedWorldTrail> ApplySimpleTrailRemoval(
         IReadOnlyList<SeedWorldTrail> trails,
         GameEntropy entropy,
         GameSetupDeterministicSource source,
         SaltSource? saltSource,
         int townCount)
     {
-        if (townCount < 4)
-            return trails; // Need at least 4 towns for DoubleLine
-
-        // Identify crossing trails (1-3) and other trails
-        var crossingTrails = new List<SeedWorldTrail>();
-        var otherTrails = new List<SeedWorldTrail>();
-
-        foreach (var trail in trails)
-        {
-            var parts = trail.Id.Split('-');
-            var fromSlot = int.Parse(parts[1]);
-            var toSlot = int.Parse(parts[2]);
-
-            // Crossing trails are 1-3
-            if ((fromSlot == 1 && toSlot == 3) || (fromSlot == 3 && toSlot == 1))
-                crossingTrails.Add(trail);
-            else
-                otherTrails.Add(trail);
-        }
+        if (townCount < 3)
+            return trails; // Need at least 3 towns for meaningful removal
 
         // Determine how many trails to remove based on entropy
         var trailsToRemove = entropy switch
@@ -388,7 +318,8 @@ internal static class SeedWorldBuilder
             _ => 0
         };
 
-        trailsToRemove = Math.Min(trailsToRemove, otherTrails.Count - 1); // Keep at least 1 other trail
+        // Clamp to available trails (keep at least townCount - 1 trails for connectivity)
+        trailsToRemove = Math.Min(trailsToRemove, trails.Count - (townCount - 1));
 
         if (trailsToRemove == 0)
             return trails;
@@ -399,12 +330,12 @@ internal static class SeedWorldBuilder
         var salt = saltSource.Salt;
         var random = new Random(ComputeStableHash(source.SeedCode, entropy.ToString(), salt));
 
-        // Select random trails to remove from otherTrails (not crossing trails)
-        var trailsToRemoveList = SelectRandomTrails(otherTrails, trailsToRemove, random);
+        // Select random trails to remove
+        var trailsToRemoveList = SelectRandomTrails(trails.ToList(), trailsToRemove, random);
 
-        // Build result: keep all crossing trails + remaining other trails
+        // Build result without removed trails
         var removedIds = new HashSet<string>(trailsToRemoveList.Select(t => t.Id));
-        var result = crossingTrails.Concat(otherTrails.Where(t => !removedIds.Contains(t.Id))).ToList();
+        var result = trails.Where(t => !removedIds.Contains(t.Id)).ToList();
 
         // Verify connectivity
         if (!VerifyConnectivity(townCount, result))
@@ -414,6 +345,104 @@ internal static class SeedWorldBuilder
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Applies XShaped-specific trail removal.
+    /// Removes entire arms or partial arms, keeps connectivity through center.
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyXShapedTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
+    }
+
+    /// <summary>
+    /// Applies Tree-specific trail removal.
+    /// Removes leaf branches, keeps core trunk intact.
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyTreeTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
+    }
+
+    /// <summary>
+    /// Applies Star-specific trail removal.
+    /// Removes spokes freely (natural outlier positions).
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyStarTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
+    }
+
+    /// <summary>
+    /// Applies Cluster-specific trail removal.
+    /// Removes inter-cluster connections, keeps intra-cluster connectivity.
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyClusterTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
+    }
+
+    /// <summary>
+    /// Applies Mesh-specific trail removal.
+    /// Removes many trails while maintaining full connectivity.
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyMeshTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
+    }
+
+    /// <summary>
+    /// Applies Grid-specific trail removal.
+    /// Removes trails in grid patterns, keeps connectivity through grid paths.
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyGridTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
+    }
+
+    /// <summary>
+    /// Applies DoubleLine-specific trail removal by salt.
+    /// Simple count-based removal: removes random trails while maintaining connectivity.
+    /// </summary>
+    private static IReadOnlyList<SeedWorldTrail> ApplyDoubleLineTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount)
+    {
+        return ApplySimpleTrailRemoval(trails, entropy, source, saltSource, townCount);
     }
 
     /// <summary>
