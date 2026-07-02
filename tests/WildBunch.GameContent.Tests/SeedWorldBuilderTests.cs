@@ -215,6 +215,40 @@ public sealed class SeedWorldBuilderTests
         }
     }
 
+    [Fact]
+    public void CreateWorld_GeometryDerivedDistances_AreCanonical()
+    {
+        // Geometry-derived trail distances are canonical game-world distances,
+        // not UI labels. They should be derived from the actual coordinate
+        // geometry of towns based on the map layout palette.
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var source = new GameSetupDeterministicSource(seedWorld.SeedCodeText);
+        var world = SeedWorldBuilder.CreateWorld(seedWorld, source);
+
+        // Get the map towns with coordinates
+        var mapTowns = SeedWorldMapLayout.GetMapTowns(world, seedWorld.MapLayoutPalette);
+        var townCoordinates = mapTowns.ToDictionary(t => t.Id, t => (t.X, t.Y));
+
+        // Verify each trail's distance matches the Euclidean distance
+        // between its endpoint towns (scaled to ride-day units).
+        foreach (var trail in world.Trails)
+        {
+            var fromCoords = townCoordinates[trail.FromTownId.Value];
+            var toCoords = townCoordinates[trail.ToTownId.Value];
+
+            // Calculate Euclidean distance in coordinate space
+            var dx = toCoords.X - fromCoords.X;
+            var dy = toCoords.Y - fromCoords.Y;
+            var coordinateDistance = Math.Sqrt(dx * dx + dy * dy);
+
+            // Scale to ride-day distance (approximately 1 ride-day per 50 coordinate units)
+            var expectedDistance = Math.Round(coordinateDistance / 50.0, 1);
+
+            // Allow small rounding differences
+            Assert.Equal(expectedDistance, (double)trail.RideDayDistance, 1);
+        }
+    }
+
     private static SeedWorld CreateSeedWorldWithPalettes(ProsperityPalette prosperity, ServicesPalette services)
     {
         var variant = SeedWorldVariant.Canonical;

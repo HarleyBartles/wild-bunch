@@ -47,7 +47,7 @@ public static class SeedWorldMapLayout
             .ToArray();
     }
 
-    private static (int X, int Y) GetCoordinatesForSlot(int slotIndex, int totalTowns, MapLayoutPalette layout)
+    public static (int X, int Y) GetCoordinatesForSlot(int slotIndex, int totalTowns, MapLayoutPalette layout)
     {
         return layout switch
         {
@@ -59,7 +59,7 @@ public static class SeedWorldMapLayout
         };
     }
 
-    private static (int X, int Y) GetHubAndSpokeCoordinates(int slotIndex, int totalTowns)
+    public static (int X, int Y) GetHubAndSpokeCoordinates(int slotIndex, int totalTowns)
     {
         if (slotIndex == 0) return (CenterX, CenterY);
         var angle = (slotIndex - 1) * (2.0 * Math.PI / Math.Max(1, totalTowns - 1));
@@ -68,7 +68,7 @@ public static class SeedWorldMapLayout
         return (x, y);
     }
 
-    private static (int X, int Y) GetLinearChainCoordinates(int slotIndex, int totalTowns)
+    public static (int X, int Y) GetLinearChainCoordinates(int slotIndex, int totalTowns)
     {
         var spacing = 60;
         var startX = CenterX - ((totalTowns - 1) * spacing) / 2;
@@ -77,7 +77,7 @@ public static class SeedWorldMapLayout
         return (x, y);
     }
 
-    private static (int X, int Y) GetRingCoordinates(int slotIndex, int totalTowns)
+    public static (int X, int Y) GetRingCoordinates(int slotIndex, int totalTowns)
     {
         var angle = slotIndex * (2.0 * Math.PI / totalTowns);
         var x = (int)(CenterX + RingRadius * Math.Cos(angle));
@@ -85,7 +85,7 @@ public static class SeedWorldMapLayout
         return (x, y);
     }
 
-    private static (int X, int Y) GetDoubleLineCoordinates(int slotIndex, int totalTowns)
+    public static (int X, int Y) GetDoubleLineCoordinates(int slotIndex, int totalTowns)
     {
         var spacing = 60;
         var mid = totalTowns / 2;
