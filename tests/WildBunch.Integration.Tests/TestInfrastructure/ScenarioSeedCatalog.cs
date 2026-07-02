@@ -37,7 +37,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v11|CanonicalMountedStandard|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|preview=quartzsite:mounted:4/4",
+        RequiredShapeSignature: "resolver-v11|CanonicalMountedStandard|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=quartzsite:mounted:4/4",
         DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         PreviewDestinationTownId: "quartzsite",
@@ -49,7 +49,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v11|CanonicalPinecrossServices|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|services=hardpan|preview=quartzsite:mounted:4/4",
+        RequiredShapeSignature: "resolver-v11|CanonicalPinecrossServices|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|towns=8|services=hardpan|preview=quartzsite:mounted:4/4",
         DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
         AssertCreatedSessionContract: session =>
         {
@@ -67,7 +67,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v11|HighRiskFoeInterruptRoute|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|routes=boulderwash,brokenarrow,emberfall,holloway,openpass,quartzsite,rattleridge|preview=missing",
+        RequiredShapeSignature: "resolver-v11|HighRiskFoeInterruptRoute|entropy=Boring|start=hardpan|horse=healthy|saddle=present|wallet=25|items=8|towns=8|routes=boulderwash,brokenarrow,emberfall,holloway,openpass,quartzsite,rattleridge|preview=missing",
         DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session =>
         {
@@ -92,7 +92,7 @@ internal static class ScenarioSeedCatalog
         GameDifficulty: GameDifficulty.Easy,
         GameEntropy: GameEntropy.Boring,
         ResolverContractVersion: ResolverContractVersion,
-        RequiredShapeSignature: "resolver-v11|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|travel=mounted|preview=quartzsite:mounted:3/3",
+        RequiredShapeSignature: "resolver-v11|NoHorseLightEasy|entropy=Boring|difficulty=Easy|horse=healthy|saddle=present|health=1250|towns=8|travel=mounted|preview=quartzsite:mounted:3/3",
         DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {
@@ -269,8 +269,10 @@ internal static class ScenarioSeedCatalog
         RequireEqual(scenarioName, "start-game.currentTownId", "hardpan", session.Player.CurrentTownId);
         RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
         RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
-        RequireEqual(scenarioName, "start-game.world.towns", 8, session.World.Towns.Count);
-        RequireEqual(scenarioName, "start-game.world.trails", 14, session.World.Trails.Count);
+        // Codec v11: town count is now 5-10 (was 5-20)
+        Require(scenarioName, "start-game.world.towns", session.World.Towns.Count >= 5 && session.World.Towns.Count <= 10, $"expected town count 5-10, got {session.World.Towns.Count}");
+        // Trail count depends on town count and topology
+        Require(scenarioName, "start-game.world.trails", session.World.Trails.Count > 0, "expected at least one trail");
         RequireEqual(scenarioName, "start-game.caseFile.openingLead", "The culprit has a scar on the left cheek.", session.CaseFile.OpeningLead);
         RequireEqual(scenarioName, "start-game.caseFile.discoveredSuspects", 0, session.CaseFile.DiscoveredSuspects.Count);
         RequireEqual(scenarioName, "start-game.inventory.items.count", 8, session.Inventory.Items.Count);
@@ -333,6 +335,7 @@ internal static class ScenarioSeedCatalog
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
             $"items={session.Inventory.Items.Count}",
+            $"towns={session.World.Towns.Count}",
             $"preview={DescribeMountedPreview(preview)}");
 
     private static string DescribeCanonicalPinecrossServicesShape(GameSessionDto session, TravelPreviewResultDto? preview)
@@ -346,6 +349,7 @@ internal static class ScenarioSeedCatalog
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
             $"items={session.Inventory.Items.Count}",
+            $"towns={session.World.Towns.Count}",
             $"services={session.Player.CurrentTownId}",
             $"preview={DescribeMountedPreview(preview)}");
 
@@ -368,6 +372,7 @@ internal static class ScenarioSeedCatalog
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
             $"items={session.Inventory.Items.Count}",
+            $"towns={session.World.Towns.Count}",
             $"routes={string.Join(",", connectedTownIds)}",
             $"preview={DescribeMountedPreview(preview)}");
     }
@@ -382,6 +387,7 @@ internal static class ScenarioSeedCatalog
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"health={session.Player.Health}",
+            $"towns={session.World.Towns.Count}",
             $"travel={preview?.Preview?.TravelMode.ToString().ToLowerInvariant() ?? "missing"}",
             $"preview={DescribeMountedPreview(preview)}");
 
