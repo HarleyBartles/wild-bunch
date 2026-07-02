@@ -164,12 +164,12 @@ public sealed class SeedWorldResolverCodecTests
     {
         var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
 
-        // OutlierSlotType > 3 should fail validation
-        var invalid = seedWorld with { OutlierSlotType = 4 };
+        // OutlierSlotType > 1 should fail validation (2-3 are reserved)
+        var invalid = seedWorld with { OutlierSlotType = 2 };
         var validation = SeedWorldResolver.Validate(invalid);
 
         Assert.False(validation.Success);
-        Assert.Contains("Outlier slot type must be 0-3", validation.ErrorMessage);
+        Assert.Contains("Outlier slot type must be 0 (no outlier) or 1 (simple outlier)", validation.ErrorMessage);
     }
 
     [Fact]

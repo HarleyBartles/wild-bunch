@@ -231,9 +231,9 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Cannot have outlier slot when town count is at maximum.");
         }
 
-        if (seedWorld.OutlierSlotType < 0 || seedWorld.OutlierSlotType > 3)
+        if (seedWorld.OutlierSlotType is < 0 or > 1)
         {
-            return SeedWorldValidationResult.Failed("Outlier slot type must be 0-3.");
+            return SeedWorldValidationResult.Failed("Outlier slot type must be 0 (no outlier) or 1 (simple outlier). Values 2-3 are reserved for future expansion.");
         }
 
         return SeedWorldValidationResult.Ok();

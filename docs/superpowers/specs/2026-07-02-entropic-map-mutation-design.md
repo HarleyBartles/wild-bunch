@@ -11,7 +11,7 @@
 
 ## Current State Analysis
 
-**Seed Encoding (24 bits used, 104 reserved):**
+**Seed Encoding (29 bits used, 99 reserved):**
 - World variant: 2 bits (3 variants: Canonical, Frontier, Rail)
 - Town count: 4 bits (offset-encoded 5-20, wrapped to 5-10)
 - Accusation index: 4 bits
@@ -19,7 +19,8 @@
 - Cash bonus: 4 bits
 - Prosperity palette: 3 bits (8 patterns)
 - Services palette: 3 bits (8 patterns)
-- Map layout palette: 3 bits (currently 4 layouts: HubAndSpoke, LinearChain, Ring, DoubleLine)
+- Map layout palette: 3 bits (8 layouts: HubAndSpoke, DoubleLine, XShaped, Tree, Star, Cluster, Mesh, Grid)
+- Outlier slot type: 2 bits (0=no outlier, 1=simple outlier, 2-3=reserved)
 
 **Current Problem:**
 - Layout-specific trail removal is complex and tightly coupled to outlier creation
@@ -35,8 +36,9 @@
 
 **Bit Allocation:**
 - Keep current 3 bits for base layout (8 layouts)
-- Add 1 bit for "has outlier slot" (from 104 reserved bits)
-- Total: 4 bits (minimal expansion)
+- Add 2 bits for "outlier slot type" (from 99 reserved bits)
+- Total: 5 bits (minimal expansion with future-proofing)
+- Values: 0=no outlier, 1=simple outlier, 2-3=reserved for future expansion
 
 **Layout Redesign (8 layouts, no crossing trails):**
 - **HubAndSpoke:** Central hub (slot 0) with outer ring towns connected via spokes

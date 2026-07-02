@@ -618,8 +618,14 @@ internal static class SeedWorldBuilder
 
         townCoordinates[outlierSlotIndex] = (outlierX, outlierY);
 
-        // Append outlier town name to existing list (don't re-derive to preserve existing town IDs)
-        var outlierTownName = SeedWorldCatalog.NamePool[outlierSlotIndex % SeedWorldCatalog.NamePool.Count];
+        // Select an unused town name from the name pool
+        var usedTownIds = townNames.Select(t => t.Id).ToHashSet();
+        var outlierTownName = SeedWorldCatalog.NamePool
+            .Where(t => !usedTownIds.Contains(t.Id))
+            .Skip((int)(ComputeStableHash(source.SeedCode, outlierSlotIndex, "outlier-name", salt) % SeedWorldCatalog.NamePool.Count))
+            .First();
+
+        // Append outlier town name to existing list
         var extendedTownNames = townNames.ToList();
         extendedTownNames.Add(outlierTownName);
 

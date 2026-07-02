@@ -28,14 +28,18 @@ public sealed class SeedWorldBuilderTests
         var outlierTrails = wildWorld.Trails.Where(t => t.FromTownId.Value == outlier.Id.Value || t.ToTownId.Value == outlier.Id.Value).ToList();
         Assert.Single(outlierTrails);
         var outlierTrail = outlierTrails[0];
-        Assert.True(outlierTrail.RideDayDistance >= 5m, $"Outlier trail {outlierTrail.Id} has distance {outlierTrail.RideDayDistance}, expected at least 5m");
+        Assert.Equal(6m, outlierTrail.RideDayDistance);
+
+        // Verify all town IDs are unique
+        var townIds = wildWorld.Towns.Select(t => t.Id.Value).ToList();
+        Assert.True(townIds.Count == townIds.Distinct().Count(), "All town IDs must be unique");
 
         // Verify all trails point to real towns
-        var townIds = wildWorld.Towns.Select(t => t.Id.Value).ToHashSet();
+        var townIdSet = wildWorld.Towns.Select(t => t.Id.Value).ToHashSet();
         foreach (var trail in wildWorld.Trails)
         {
-            Assert.True(townIds.Contains(trail.FromTownId.Value), $"Trail {trail.Id} FromTownId {trail.FromTownId.Value} does not exist in towns");
-            Assert.True(townIds.Contains(trail.ToTownId.Value), $"Trail {trail.Id} ToTownId {trail.ToTownId.Value} does not exist in towns");
+            Assert.True(townIdSet.Contains(trail.FromTownId.Value), $"Trail {trail.Id} FromTownId {trail.FromTownId.Value} does not exist in towns");
+            Assert.True(townIdSet.Contains(trail.ToTownId.Value), $"Trail {trail.Id} ToTownId {trail.ToTownId.Value} does not exist in towns");
         }
     }
 

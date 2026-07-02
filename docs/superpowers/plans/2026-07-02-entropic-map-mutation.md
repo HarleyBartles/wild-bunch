@@ -10,7 +10,8 @@
 
 ## Global Constraints
 
-- Seed bit expansion: add 1 bit for "has outlier slot" (from 104 reserved bits)
+- Seed bit expansion: add 2 bits for "outlier slot type" (from 99 reserved bits)
+- Outlier slot type values: 0=no outlier, 1=simple outlier, 2-3=reserved for future expansion
 - Town count: seed-encoded base count + 1 if outlier slot activated
 - Trail distances: normal trails 2-5 days, outlier trail exactly 6 days
 - Connectivity: all towns must remain reachable after trail removal
@@ -23,8 +24,8 @@
 ## File Structure
 
 **Files to modify:**
-- `src/WildBunch.GameContent/NewGame/SeedWorld.cs` - Add HasOutlierSlot property
-- `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs` - Update seed encoding/decoding for outlier bit
+- `src/WildBunch.GameContent/NewGame/SeedWorld.cs` - Add OutlierSlotType property
+- `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs` - Update seed encoding/decoding for outlier type bits
 - `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` - Redesign layout palette and trail definitions
 - `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` - Simplify to remove complex outlier logic, add outlier slot activation
 - `tests/WildBunch.GameContent.Tests/SeedWorldBuilderTests.cs` - Update tests for new layouts and outlier behavior
@@ -101,16 +102,16 @@ git commit -m "feat: add HasOutlierSlot property to SeedWorld"
 
 ---
 
-### Task 2: Update Seed Encoding/Decoding for Outlier Bit
+### Task 2: Update Seed Encoding/Decoding for Outlier Type Bits
 
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs`
 
 **Interfaces:**
-- Consumes: SeedWorld with HasOutlierSlot property
-- Produces: Updated CreateRepresentativeSeedCode to encode outlier bit
+- Consumes: SeedWorld with OutlierSlotType property
+- Produces: Updated CreateRepresentativeSeedCode to encode outlier type bits
 
-- [x] **Step 1: Update CreateRepresentativeSeedCode to encode HasOutlierSlot bit**
+- [x] **Step 1: Update CreateRepresentativeSeedCode to encode OutlierSlotType bits**
 
 ```csharp
 public static Guid CreateRepresentativeSeedCode(SeedWorld seedWorld)
@@ -132,7 +133,7 @@ public static Guid CreateRepresentativeSeedCode(SeedWorld seedWorld)
     low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 18;
     low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 21;
     low |= (ulong)((int)seedWorld.MapLayoutPalette & 0x7) << 24;
-    low |= (ulong)(seedWorld.HasOutlierSlot ? 1u : 0u) << 27; // New bit at position 27
+    low |= (ulong)(seedWorld.OutlierSlotType & 0x3) << 27; // 2 bits for outlier type
 
     ulong high = 0UL;
 
@@ -143,7 +144,7 @@ public static Guid CreateRepresentativeSeedCode(SeedWorld seedWorld)
 }
 ```
 
-- [x] **Step 2: Update Resolve to decode HasOutlierSlot bit**
+- [x] **Step 2: Update Resolve to decode OutlierSlotType bits**
 
 ```csharp
 private static SeedWorld Resolve(Guid seedCode)
@@ -160,18 +161,18 @@ private static SeedWorld Resolve(Guid seedCode)
     var prosperityPalette = (ProsperityPalette)((low >> 18) & 0x7);
     var servicesPalette = (ServicesPalette)((low >> 21) & 0x7);
     var mapLayoutPalette = (MapLayoutPalette)((low >> 24) & 0x7);
-    var hasOutlierSlot = ((low >> 27) & 0x1) == 1; // New bit decoding
+    var outlierSlotType = (int)((low >> 27) & 0x3); // 2 bits for outlier type
 
     // ... rest of method
     return new SeedWorld(
         seedCode, variant, townCount, accusationIndex, defaultCulpritIndex,
         cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette,
-        hasOutlierSlot, // Add to constructor call
+        outlierSlotType, // Add to constructor call
         selectedTownIds, townServices, townProsperity, trails);
 }
 ```
 
-- [x] **Step 3: Update Validate to check HasOutlierSlot is within valid range**
+- [x] **Step 3: Update Validate to check OutlierSlotType is within valid range**
 
 ```csharp
 private static (bool Success, string? ErrorMessage) Validate(SeedWorld seedWorld)
@@ -181,9 +182,12 @@ private static (bool Success, string? ErrorMessage) Validate(SeedWorld seedWorld
     if (seedWorld.TownCount < MinTownCount || seedWorld.TownCount > MaxTownCount)
         return (false, $"Town count must be between {MinTownCount} and {MaxTownCount}, got {seedWorld.TownCount}");
 
-    // Add validation for HasOutlierSlot
-    if (seedWorld.HasOutlierSlot && seedWorld.TownCount >= MaxTownCount)
+    // Add validation for OutlierSlotType
+    if (seedWorld.OutlierSlotType > 0 && seedWorld.TownCount >= MaxTownCount)
         return (false, "Cannot have outlier slot when town count is at maximum");
+
+    if (seedWorld.OutlierSlotType is < 0 or > 1)
+        return (false, "Outlier slot type must be 0 (no outlier) or 1 (simple outlier). Values 2-3 are reserved for future expansion.");
 
     return (true, null);
 }
@@ -198,7 +202,7 @@ Expected: All seed resolver tests pass
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs
-git commit -m "feat: encode/decode HasOutlierSlot bit in seed codec"
+git commit -m "feat: encode/decode OutlierSlotType bits in seed codec"
 ```
 
 ---
