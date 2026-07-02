@@ -40,7 +40,8 @@ public sealed record SeedWorld(
     int CashBonus,
     IReadOnlyList<string> SelectedTownIds,
     IReadOnlyDictionary<string, TownServices> TownServices,
-    IReadOnlyList<SeedWorldTrail> Trails)
+    IReadOnlyList<SeedWorldTrail> Trails,
+    bool HasOutlierSlot)
 {
     public string SeedCodeText => SeedCode.ToString("D");
 }
