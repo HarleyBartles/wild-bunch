@@ -22,12 +22,13 @@ namespace WildBunch.GameContent.NewGame;
 ///   bits 18-20:  prosperityPaletteIndex (3, indexes 8 palettes)
 ///   bits 21-23:  servicesPaletteIndex (3, indexes 8 palettes)
 ///   bits 24-26:  mapLayoutPalette (3, indexes layout palettes; 4 used, 4 reserved)
-///   bits 27-63:  reserved (37)
+///   bit  27:     hasOutlierSlot (1, indicates presence of outlier town slot)
+///   bits 28-63:  reserved (36)
 ///
 /// Bytes 8-15 (high): reserved (64)
 /// </code>
 ///
-/// Total used: 27 bits. Reserved: 101 bits for future seed-owned fields
+/// Total used: 28 bits. Reserved: 100 bits for future seed-owned fields
 /// (warrants, etc.). Bandwidth scales with max selection (20),
 /// not catalog size — the name pool can grow to any size with zero bit cost.
 ///
@@ -59,8 +60,10 @@ public static class SeedWorldResolver
     ///       27 bits used, 101 reserved.
     /// - v11: Capped town count at 10 via modulo wrapping (4-bit field 0-15 → 5-20, wrapped to 5-10).
     ///       Bit layout unchanged from v10. 27 bits used, 101 reserved.
+    /// - v12: Added HasOutlierSlot bit (position 27). Indicates presence of outlier town slot.
+    ///       28 bits used, 100 reserved.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v11";
+    public const string ResolverContractVersion = "resolver-v12";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
@@ -118,6 +121,7 @@ public static class SeedWorldResolver
         var prosperityPalette = (ProsperityPalette)((low >> 18) & 0x7UL);
         var servicesPalette = (ServicesPalette)((low >> 21) & 0x7UL);
         var mapLayoutPalette = (MapLayoutPalette)((low >> 24) & 0x7UL);
+        var hasOutlierSlot = ((low >> 27) & 0x1UL) == 1UL;
 
         // 4-bit suspect fields produce 0-15, but the current roster is 7 suspects (indices 0-6).
         // Clamp to the current legal range. When the roster grows, raise this clamp.
@@ -166,7 +170,7 @@ public static class SeedWorldResolver
             selectedTownIds,
             townServices,
             trails,
-            HasOutlierSlot: false);
+            HasOutlierSlot: hasOutlierSlot);
     }
 
     internal static SeedWorldValidationResult Validate(SeedWorld seedWorld)
@@ -218,6 +222,11 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Cash bonus is outside the legal envelope.");
         }
 
+        if (seedWorld.HasOutlierSlot && seedWorld.TownCount >= MaxTownCount)
+        {
+            return SeedWorldValidationResult.Failed("Cannot have outlier slot when town count is at maximum.");
+        }
+
         return SeedWorldValidationResult.Ok();
     }
 
@@ -260,6 +269,7 @@ public static class SeedWorldResolver
         low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 18;
         low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 21;
         low |= (ulong)((int)seedWorld.MapLayoutPalette & 0x7) << 24;
+        low |= (ulong)(seedWorld.HasOutlierSlot ? 1u : 0u) << 27;
 
         ulong high = 0UL;
 

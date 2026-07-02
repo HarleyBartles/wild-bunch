@@ -7,9 +7,9 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV11()
+    public void ResolverContractVersion_IsV12()
     {
-        Assert.Equal("resolver-v11", SeedWorldResolver.ResolverContractVersion);
+        Assert.Equal("resolver-v12", SeedWorldResolver.ResolverContractVersion);
     }
 
     [Fact]
@@ -48,6 +48,7 @@ public sealed class SeedWorldResolverCodecTests
         Assert.Equal(original.ProsperityPalette, resolved.ProsperityPalette);
         Assert.Equal(original.ServicesPalette, resolved.ServicesPalette);
         Assert.Equal(original.MapLayoutPalette, resolved.MapLayoutPalette);
+        Assert.Equal(original.HasOutlierSlot, resolved.HasOutlierSlot);
     }
 
     [Fact]
@@ -125,5 +126,52 @@ public sealed class SeedWorldResolverCodecTests
         
         // Should wrap to 7 % 4 = 3 (DoubleLine)
         Assert.Equal(MapLayoutPalette.DoubleLine, resolved.MapLayoutPalette);
+    }
+
+    [Fact]
+    public void HasOutlierSlot_BitEncoding_RoundTrip()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+
+        // Test with HasOutlierSlot = false
+        var withFalse = seedWorld with { HasOutlierSlot = false, TownCount = 5 };
+        var seedCodeFalse = SeedWorldResolver.CreateRepresentativeSeedCode(withFalse);
+        var resolvedFalse = SeedWorldResolver.Resolve(seedCodeFalse);
+        Assert.False(resolvedFalse.HasOutlierSlot);
+
+        // Test with HasOutlierSlot = true (requires town count < MaxTownCount)
+        var withTrue = seedWorld with { HasOutlierSlot = true, TownCount = 5 };
+        var seedCodeTrue = SeedWorldResolver.CreateRepresentativeSeedCode(withTrue);
+        var resolvedTrue = SeedWorldResolver.Resolve(seedCodeTrue);
+        Assert.True(resolvedTrue.HasOutlierSlot);
+    }
+
+    [Fact]
+    public void HasOutlierSlot_Validation_RejectsMaxTownCount()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+
+        // HasOutlierSlot = true with MaxTownCount should fail validation
+        var invalid = seedWorld with { HasOutlierSlot = true, TownCount = SeedWorldResolver.MaxTownCount };
+        var validation = SeedWorldResolver.Validate(invalid);
+
+        Assert.False(validation.Success);
+        Assert.Contains("Cannot have outlier slot when town count is at maximum", validation.ErrorMessage);
+    }
+
+    [Fact]
+    public void HasOutlierSlot_BitPosition_Is27()
+    {
+        // Create a seed with HasOutlierSlot = true by setting bit 27
+        var bytes = new byte[16];
+        var seedCode = new Guid(bytes);
+
+        var low = BitConverter.ToUInt64(bytes, 0);
+        low |= 0x1UL << 27;
+        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
+        seedCode = new Guid(bytes);
+
+        var resolved = SeedWorldResolver.Resolve(seedCode);
+        Assert.True(resolved.HasOutlierSlot);
     }
 }
