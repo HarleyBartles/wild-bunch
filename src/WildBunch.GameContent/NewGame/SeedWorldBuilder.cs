@@ -318,14 +318,14 @@ internal static class SeedWorldBuilder
         if (entropy == GameEntropy.Boring)
             return (trails, outlierSlot);
 
-        // For now, implement HubAndSpoke trail removal
-        // Other layouts (Ring, LinearChain, DoubleLine) are TODO
-        if (layout == MapLayoutPalette.HubAndSpoke)
+        return layout switch
         {
-            return ApplyHubAndSpokeTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot);
-        }
-
-        return (trails, outlierSlot);
+            MapLayoutPalette.HubAndSpoke => ApplyHubAndSpokeTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot),
+            MapLayoutPalette.Ring => ApplyRingTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot),
+            MapLayoutPalette.LinearChain => (trails, outlierSlot), // No removal - line breaks
+            MapLayoutPalette.DoubleLine => ApplyDoubleLineTrailRemoval(trails, entropy, source, saltSource, townCount, outlierSlot),
+            _ => (trails, outlierSlot)
+        };
     }
 
     /// <summary>
@@ -458,6 +458,172 @@ internal static class SeedWorldBuilder
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Applies Ring-specific trail removal by salt.
+    /// Ring: remove 1 trail (or replace with a link to another town to maintain connectivity).
+    /// </summary>
+    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyRingTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount,
+        int? outlierSlot)
+    {
+        if (townCount < 3)
+            return (trails, outlierSlot); // Need at least 3 towns for meaningful removal
+
+        // Ring only removes 1 trail per entropy level
+        var trailsToRemove = entropy switch
+        {
+            GameEntropy.Classic => 1,
+            GameEntropy.Adventurous => 1,
+            GameEntropy.Wild => 1,
+            _ => 0
+        };
+
+        if (trailsToRemove == 0 || trails.Count <= 3)
+            return (trails, outlierSlot); // Keep at least 3 trails for connectivity
+
+        if (saltSource == null)
+            return (trails, outlierSlot);
+
+        var salt = saltSource.Salt;
+        var random = new Random(ComputeStableHash(source.SeedCode, entropy.ToString(), salt));
+
+        // Select random trail to remove
+        var trailToRemove = trails[random.Next(trails.Count)];
+
+        // Try removing the trail and check connectivity
+        var result = trails.Where(t => t.Id != trailToRemove.Id).ToList();
+
+        if (VerifyConnectivity(townCount, result))
+        {
+            return (result, outlierSlot);
+        }
+
+        // If removal broke connectivity, try replacing with a link to another town
+        // Find two towns that are not directly connected and add a trail between them
+        var parts = trailToRemove.Id.Split('-');
+        var fromSlot = int.Parse(parts[1]);
+        var toSlot = int.Parse(parts[2]);
+
+        // Find a town that can serve as a bridge
+        var bridgeSlot = -1;
+        for (var i = 0; i < townCount; i++)
+        {
+            if (i != fromSlot && i != toSlot)
+            {
+                bridgeSlot = i;
+                break;
+            }
+        }
+
+        if (bridgeSlot >= 0)
+        {
+            // Add trails: fromSlot -> bridgeSlot and bridgeSlot -> toSlot
+            var fromTownId = trails.First(t => t.Id.Contains($"-{fromSlot}-")).FromTownId;
+            var toTownId = trails.First(t => t.Id.Contains($"-{toSlot}-")).ToTownId;
+            var bridgeTownId = trails.First(t => t.Id.Contains($"-{bridgeSlot}-")).FromTownId;
+
+            var replacementTrails = new List<SeedWorldTrail>(result);
+            replacementTrails.Add(new SeedWorldTrail(
+                $"trail-{fromSlot}-{bridgeSlot}",
+                fromTownId,
+                bridgeTownId,
+                trailToRemove.Risk,
+                trailToRemove.Terrain,
+                trailToRemove.WaterFeature,
+                trailToRemove.RideDayDistance));
+            replacementTrails.Add(new SeedWorldTrail(
+                $"trail-{bridgeSlot}-{toSlot}",
+                bridgeTownId,
+                toTownId,
+                trailToRemove.Risk,
+                trailToRemove.Terrain,
+                trailToRemove.WaterFeature,
+                trailToRemove.RideDayDistance));
+
+            if (VerifyConnectivity(townCount, replacementTrails))
+            {
+                return (replacementTrails, outlierSlot);
+            }
+        }
+
+        // If replacement didn't work, return original trails
+        return (trails, outlierSlot);
+    }
+
+    /// <summary>
+    /// Applies DoubleLine-specific trail removal by salt.
+    /// DoubleLine: remove trails between lines, preserve crossing trails (1-3).
+    /// Crossing trails are slot 1-3 (they cross top to bottom between two towns).
+    /// </summary>
+    private static (IReadOnlyList<SeedWorldTrail> TrimmedTrails, int? OutlierSlot) ApplyDoubleLineTrailRemoval(
+        IReadOnlyList<SeedWorldTrail> trails,
+        GameEntropy entropy,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource,
+        int townCount,
+        int? outlierSlot)
+    {
+        if (townCount < 4)
+            return (trails, outlierSlot); // Need at least 4 towns for DoubleLine
+
+        // Identify crossing trails (1-3) and other trails
+        var crossingTrails = new List<SeedWorldTrail>();
+        var otherTrails = new List<SeedWorldTrail>();
+
+        foreach (var trail in trails)
+        {
+            var parts = trail.Id.Split('-');
+            var fromSlot = int.Parse(parts[1]);
+            var toSlot = int.Parse(parts[2]);
+
+            // Crossing trails are 1-3
+            if ((fromSlot == 1 && toSlot == 3) || (fromSlot == 3 && toSlot == 1))
+                crossingTrails.Add(trail);
+            else
+                otherTrails.Add(trail);
+        }
+
+        // Determine how many trails to remove based on entropy
+        var trailsToRemove = entropy switch
+        {
+            GameEntropy.Classic => 1,
+            GameEntropy.Adventurous => 2,
+            GameEntropy.Wild => 3,
+            _ => 0
+        };
+
+        trailsToRemove = Math.Min(trailsToRemove, otherTrails.Count - 1); // Keep at least 1 other trail
+
+        if (trailsToRemove == 0)
+            return (trails, outlierSlot);
+
+        if (saltSource == null)
+            return (trails, outlierSlot);
+
+        var salt = saltSource.Salt;
+        var random = new Random(ComputeStableHash(source.SeedCode, entropy.ToString(), salt));
+
+        // Select random trails to remove from otherTrails (not crossing trails)
+        var trailsToRemoveList = SelectRandomTrails(otherTrails, trailsToRemove, random, outlierSlot, trails);
+
+        // Build result: keep all crossing trails + remaining other trails
+        var removedIds = new HashSet<string>(trailsToRemoveList.Select(t => t.Id));
+        var result = crossingTrails.Concat(otherTrails.Where(t => !removedIds.Contains(t.Id))).ToList();
+
+        // Verify connectivity
+        if (!VerifyConnectivity(townCount, result))
+        {
+            // If removal broke connectivity, return original trails
+            return (trails, outlierSlot);
+        }
+
+        return (result, outlierSlot);
     }
 
     /// <summary>
