@@ -413,13 +413,13 @@ public sealed partial class GameSessionJsonSerializer
             => new(snapshot.HasForm, snapshot.WithForm, snapshot.WhoForm, snapshot.OpeningLeadForm);
     }
 
-    private sealed record SuspectIdentityFactSnapshot(FeatureLanguageSnapshot Language, bool IsPrimary)
+    private sealed record SuspectIdentityFactSnapshot(FeatureLanguageSnapshot? Language, bool IsPrimary)
     {
         public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
-            => new(FeatureLanguageSnapshot.FromDomain(fact.Language), fact.IsPrimary);
+            => new(fact.Language != null ? FeatureLanguageSnapshot.FromDomain(fact.Language) : null, fact.IsPrimary);
 
         public static SuspectIdentityFact ToDomain(SuspectIdentityFactSnapshot snapshot)
-            => new(FeatureLanguageSnapshot.ToDomain(snapshot.Language), snapshot.IsPrimary);
+            => new(snapshot.Language != null ? FeatureLanguageSnapshot.ToDomain(snapshot.Language) : FeatureLanguage.Raw("", "", ""), snapshot.IsPrimary);
     }
 
     private sealed record SuspectTraitsSnapshot(

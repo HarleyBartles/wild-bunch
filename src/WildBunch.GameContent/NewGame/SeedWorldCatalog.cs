@@ -8,7 +8,8 @@ public enum SeedWorldVariant
 {
     Canonical = 0,
     Frontier = 1,
-    Rail = 2
+    Rail = 2,
+    Outback = 3
 }
 
 /// <summary>
@@ -48,6 +49,7 @@ internal sealed record SlotTrailDefinition(
             SeedWorldVariant.Canonical => Canonical,
             SeedWorldVariant.Frontier => Variant,
             SeedWorldVariant.Rail => Variant,
+            SeedWorldVariant.Outback => Variant,
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Unsupported seed world variant.")
         };
 }
@@ -442,7 +444,7 @@ internal static class SeedWorldCatalog
                 var prosperity = ProsperityPalettes.Resolve(prosperityPalette, index);
                 var (mapX, mapY) = townCoordinates != null && townCoordinates.TryGetValue(index, out var coords)
                     ? coords
-                    : (0, 0);
+                    : SeedWorldMapLayout.GetCoordinatesForSlot(index, townNames.Count, MapLayoutPalette.HubAndSpoke);
 
                 // Apply rotation if seed code and entropy are provided
                 if (seedCode.HasValue && entropy != GameEntropy.Boring)
