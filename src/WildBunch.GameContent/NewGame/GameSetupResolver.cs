@@ -54,18 +54,11 @@ internal sealed class GameSetupResolver
         //    choose the starting town. Wild entropy may trim outlier towns.
         var world = SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy);
 
-        // 3b. Apply entropy-salted trail distances. The seed owns baseline
-        //     distances; entropy corrupts them downstream. Boring preserves
-        //     the seed defaults (±0). Classic/Adventurous/Wild apply a bounded
-        //     per-trail swing so the map doesn't look like a perfect geometric
-        //     shape while keeping the topology intact.
-        var saltedWorld = TrailDistanceSalter.Apply(world, entropy, mysteryTruth.SaltSource);
-
         // 4. Resolve starting town via the setup/policy seam. The player can
         //    start in any town that exists in the generated world. If no town
         //    is supplied, a safe non-seed-authored default is used.
         //    Future seam: difficulty may constrain eligibility.
-        var startingTownId = StartingTownPolicy.ResolveStartingTown(saltedWorld, playerChosenStartingTownId);
+        var startingTownId = StartingTownPolicy.ResolveStartingTown(world, playerChosenStartingTownId);
 
         // 5. Build case file using resolved culprit/accusation indices from
         //    MysteryTruthResolution — NOT raw seed world defaults.
@@ -73,12 +66,12 @@ internal sealed class GameSetupResolver
         var caseFile = isCanonical
             ? SeedCaseBuilder.CreateCanonicalCaseFile(
                 source,
-                saltedWorld,
+                world,
                 mysteryTruth.ResolvedCulpritIndex,
                 mysteryTruth.ResolvedAccusationIndex)
             : SeedCaseBuilder.CreateCaseFile(
                 source,
-                saltedWorld,
+                world,
                 mysteryTruth.ResolvedCulpritIndex,
                 mysteryTruth.ResolvedAccusationIndex);
 
@@ -100,7 +93,7 @@ internal sealed class GameSetupResolver
             seedWorld,
             difficulty.Difficulty,
             entropy.GameEntropy,
-            saltedWorld,
+            world,
             startingTownId,
             caseFile,
             startingWallet,

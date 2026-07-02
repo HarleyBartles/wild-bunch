@@ -5,6 +5,7 @@ using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent.Tests;
 
+[Obsolete("TrailDistanceSalter is no longer used in the setup pipeline - geometry-derived distances are now canonical")]
 public sealed class TrailDistanceSalterTests
 {
     [Fact]
