@@ -1,13 +1,9 @@
 ---
 name: wild-bunch-dotnet-architecture
-description: Use when apply Wild Bunch .NET architecture guardrails for C#/.NET repo
-  work involving domain ownership, GameSession Aggregate Root mutation paths, application
-  orchestration, infrastructure persistence, CQRS/read models, JSON snapshot state,
-  database-table pressure, or framework leakage. Use when designing, reviewing, dispatching,
-  or verifying Wild Bunch code changes that could move rules out of the domain, confuse
-  Aggregate Root boundaries with coordinators, normalize live session state too early,
-  overuse CQRS/event sourcing, or confuse static content/read models with runtime
-  aggregate state.
+description: Use when applying Wild Bunch .NET architecture guardrails for C#/.NET
+  repo work touching GameSession live-play flows, application orchestration, infrastructure
+  persistence, CQRS/read models, event-stream plus snapshot-cache state, database-table
+  pressure, or framework leakage.
 metadata:
   source-id: wild-bunch-dotnet-architecture
   source-path: sources/first_party/skills/wild-bunch-dotnet-architecture/SKILL.md
@@ -46,15 +42,27 @@ Use this skill for structure decisions in the Wild Bunch C#/.NET codebase. Prote
 - The domain owns rules and invariants.
 - `GameSession` is the live-play Aggregate Root.
 - External live-play commands mutate through `GameSession`.
+- `GameSession` live-play command flows are event-sourced for migrated flows: commands
+  produce typed domain events, apply them through `Apply`, and record uncommitted
+  events while the repository appends typed events and keeps JSON component snapshots
+  as cache.
+- `GameSession` owns `BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`,
+  and `ActionContextTracker`; child components receive narrow context and return
+  outcomes or events-to-produce.
 - Owned aggregate/component files under the root may own cohesive state, behavior, invariants, and lifecycle transitions when the DDD model calls for them.
 - Policy/coordinator/resolver extraction is not aggregate progress unless a DDD aggregate/component owns responsibility.
 - The application or use-case layer coordinates commands and queries but does not become the source of domain truth.
-- Infrastructure persists snapshots or read models and should not leak framework objects into the domain.
-- Persist runtime session state as strongly typed aggregate state suitable for JSON snapshots unless the issue explicitly says otherwise.
+- Infrastructure owns persistence envelopes and JSON component snapshot cache; do not
+  leak those details into the domain.
+- Persist runtime session state as an event stream plus component snapshot cache;
+  keep JSON snapshots as cache, not the conceptual source of history, unless the
+  issue explicitly says otherwise.
+- Do not introduce a separate event-store interface, broker, EventStoreDB, normalized
+  live-session table split, or full-system event-sourcing expansion unless the issue
+  explicitly scopes it.
 - Do not normalize live session runtime state into many database tables too early.
 - Static content, read models, projections, editor or admin needs, and cross-session data may justify tables later.
 - CQRS is allowed as a read/write separation tool, not a mandate to split everything.
-- Event-sourcing concepts may inform audit or replay thinking, but do not convert persistence to full event sourcing unless the issue scopes it.
 - Onion or clean architecture only matters when it protects domain rules from UI, database, or framework leakage.
 - Seeded setup and randomness require explicit seams. Avoid unseeded random calls and hidden world-start defaults in domain or application code.
 - Prefer deterministic seed plumbing and explicit setup objects when a task touches initial world state or variability controls.
