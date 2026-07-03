@@ -2,7 +2,13 @@
 
 Essential repo workflow routing skills. See root AGENTS.md for critical skills that must be invoked before relevant work.
 
-This catalog is not a complete list of specialist skills. When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas, first inspect the current repo source and canonical repo decisions, then use `/using-superpowers` or skill discovery to find and invoke the smallest relevant specialist skill.
+## Specialist Skill Discovery
+
+This catalog is not a complete list of specialist skills. When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas:
+
+1. First inspect the current repo source and canonical repo decisions
+2. Use `/using-superpowers` or skill discovery to find and invoke the smallest relevant specialist skill
+3. Do not treat this catalog as a complete list of specialist skills
 
 For architecture specifically, inspect the repo's canonical architecture decisions in `.agents/docs/architecture-guardrails.md` and current source, then discover the relevant architecture pattern skill around what you are actually changing. Doctrine routes agents to inspect and discover; it does not pre-enumerate generic specialist skills that will drift over time.
 
