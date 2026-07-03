@@ -59,7 +59,7 @@ internal sealed record SlotTrailDefinition(
 /// the seed derives which names go to which slots. Gameplay properties
 /// (services, prosperity, trails) are all slot-based and independent of names.
 /// </summary>
-internal sealed record TownNameEntry(string Id, string Name);
+public sealed record TownNameEntry(string Id, string Name);
 
 /// <summary>
 /// Catalog-defined prosperity palettes. Each palette is a fixed array of 10
