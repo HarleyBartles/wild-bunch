@@ -1,4 +1,6 @@
 using WildBunch.Domain.World;
+using WildBunch.Domain.Travel;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -6,22 +8,22 @@ public enum SeedWorldVariant
 {
     Canonical = 0,
     Frontier = 1,
-    Rail = 2
+    Rail = 2,
+    Outback = 3
 }
 
 /// <summary>
 /// Map layout palette defines how towns are positioned and connected.
-/// HubAndSpoke: central hub town with outer ring towns connected via spokes and ring
-/// LinearChain: towns connected in a line/chain
-/// Ring: towns connected in a circle with no hub
-/// DoubleLine: two parallel lines of towns with cross connections
+/// All layouts are designed with redundancy to support trail removal while maintaining connectivity.
+/// Trails only meet at towns - no crossing trails between towns.
+/// 2-bit encoding (4 layouts) with room for expansion to 8 layouts in future.
 /// </summary>
 public enum MapLayoutPalette
 {
-    HubAndSpoke = 0,
-    LinearChain = 1,
-    Ring = 2,
-    DoubleLine = 3
+    HubAndSpoke = 0,        // Central hub with outer ring towns connected via spokes
+    DoubleLine = 1,          // Two parallel lines of towns, connected at endpoints
+    Tree = 2,                // Hierarchical structure with main trunk and branches
+    Star = 3                 // Central hub with dead-end spokes (natural outlier positions)
 }
 
 internal sealed record SeedTrailVariant(
@@ -47,6 +49,7 @@ internal sealed record SlotTrailDefinition(
             SeedWorldVariant.Canonical => Canonical,
             SeedWorldVariant.Frontier => Variant,
             SeedWorldVariant.Rail => Variant,
+            SeedWorldVariant.Outback => Variant,
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Unsupported seed world variant.")
         };
 }
@@ -229,7 +232,7 @@ internal static class SeedWorldCatalog
             ((townCount & 0xF) << 14) |
             ((int)prosperityPalette & 0x7) << 18 |
             ((int)servicesPalette & 0x7) << 21 |
-            ((int)mapLayoutPalette & 0x3) << 24);
+            ((int)mapLayoutPalette & 0x7) << 24);
 
         // xorshift32 PRNG — deterministic, stable across runs.
         // Guard against seed=0: xorshift32 has 0 as a fixed point (produces all
@@ -295,9 +298,8 @@ internal static class SeedWorldCatalog
 
     /// <summary>
     /// Generates trail definitions for a given layout palette and town count.
-    /// HubAndSpoke: hub (slot 0) with spokes to all outer towns, outer towns form a ring
-    /// LinearChain: adjacent slots only (0-1, 1-2, 2-3, etc.)
-    /// Ring: towns form a circle, no hub
+    /// All layouts are designed with redundancy to support trail removal while maintaining connectivity.
+    /// Trails only meet at towns - no crossing trails between towns.
     /// </summary>
     private static IReadOnlyList<SlotTrailDefinition> GenerateTrailsForLayout(
         MapLayoutPalette layout,
@@ -306,9 +308,9 @@ internal static class SeedWorldCatalog
         return layout switch
         {
             MapLayoutPalette.HubAndSpoke => GenerateHubAndSpokeTrails(townCount),
-            MapLayoutPalette.LinearChain => GenerateLinearChainTrails(townCount),
-            MapLayoutPalette.Ring => GenerateRingTrails(townCount),
             MapLayoutPalette.DoubleLine => GenerateDoubleLineTrails(townCount),
+            MapLayoutPalette.Tree => GenerateTreeTrails(townCount),
+            MapLayoutPalette.Star => GenerateStarTrails(townCount),
             _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
         };
     }
@@ -339,30 +341,45 @@ internal static class SeedWorldCatalog
         return trails;
     }
 
-    private static IReadOnlyList<SlotTrailDefinition> GenerateLinearChainTrails(int count)
+    private static IReadOnlyList<SlotTrailDefinition> GenerateTreeTrails(int count)
     {
         var trails = new List<SlotTrailDefinition>();
-        for (var i = 0; i < count - 1; i++)
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Main trunk
+        var trunkLength = Math.Min(4, count);
+        for (var i = 0; i < trunkLength - 1; i++)
         {
-            trails.Add(new SlotTrailDefinition(
-                i, i + 1, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+            var risk = i < 2 ? TrailRisk.Low : TrailRisk.Moderate;
+            trails.Add(new SlotTrailDefinition(i, i + 1, risk, canonical, variant));
         }
+
+        // Branches from trunk
+        for (var i = 1; i < trunkLength; i++)
+        {
+            var branchSlot = i + 3;
+            if (branchSlot < count)
+            {
+                trails.Add(new SlotTrailDefinition(i, branchSlot, TrailRisk.Moderate, canonical, variant));
+            }
+        }
+
         return trails;
     }
 
-    private static IReadOnlyList<SlotTrailDefinition> GenerateRingTrails(int count)
+    private static IReadOnlyList<SlotTrailDefinition> GenerateStarTrails(int count)
     {
         var trails = new List<SlotTrailDefinition>();
-        for (var i = 0; i < count; i++)
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
+
+        // Central hub (slot 0) to all other towns
+        for (var i = 1; i < count; i++)
         {
-            var next = i == count - 1 ? 0 : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+            trails.Add(new SlotTrailDefinition(0, i, TrailRisk.Low, canonical, variant));
         }
+
         return trails;
     }
 
@@ -370,37 +387,34 @@ internal static class SeedWorldCatalog
     {
         var trails = new List<SlotTrailDefinition>();
         var mid = count / 2;
+        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m);
+        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m);
+        var crossCanonical = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m);
+        var crossVariant = new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 4m);
 
-        // Two parallel lines: 0-1-2-...-mid and mid+1-mid+2-...-count-1
-        for (var i = 0; i < mid; i++)
+        // Line 1: 0-1-2-...-mid-1
+        for (var i = 0; i < mid - 1; i++)
         {
-            var next = i == mid - 1 ? mid : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+            trails.Add(new SlotTrailDefinition(i, i + 1, TrailRisk.Low, canonical, variant));
         }
 
-        for (var i = mid; i < count; i++)
+        // Line 2: mid-mid+1-...-count-1
+        for (var i = mid; i < count - 1; i++)
         {
-            var next = i == count - 1 ? mid : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
+            trails.Add(new SlotTrailDefinition(i, i + 1, TrailRisk.Low, canonical, variant));
         }
 
-        // Cross connections between the two lines
-        for (var i = 0; i < mid; i++)
+        // Connections between lines (at endpoints only - no crossing trails)
+        if (mid > 0 && mid < count)
         {
-            var crossIndex = mid + i;
-            if (crossIndex < count)
-            {
-                trails.Add(new SlotTrailDefinition(
-                    i, crossIndex, TrailRisk.Moderate,
-                    new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m),
-                    new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 4m)));
-            }
+            // Connect end of line 1 to start of line 2
+            trails.Add(new SlotTrailDefinition(mid - 1, mid, TrailRisk.Moderate, crossCanonical, crossVariant));
+        }
+
+        if (count >= 2)
+        {
+            // Connect start of line 1 to end of line 2
+            trails.Add(new SlotTrailDefinition(0, count - 1, TrailRisk.Moderate, crossCanonical, crossVariant));
         }
 
         return trails;
@@ -416,14 +430,31 @@ internal static class SeedWorldCatalog
         IReadOnlyList<TownNameEntry> townNames,
         ServicesPalette servicesPalette,
         ProsperityPalette prosperityPalette,
-        IReadOnlyList<SeedWorldTrail> trails)
+        IReadOnlyList<SeedWorldTrail> trails,
+        Dictionary<int, (int X, int Y)>? townCoordinates = null,
+        int? outlierSlot = null,
+        GameEntropy entropy = GameEntropy.Boring,
+        SaltSource? saltSource = null,
+        Guid? seedCode = null)
     {
         var towns = townNames
             .Select((entry, index) =>
             {
                 var services = ServicesPalettes.Resolve(servicesPalette, index);
                 var prosperity = ProsperityPalettes.Resolve(prosperityPalette, index);
-                return new Town(new TownId(entry.Id), entry.Name, services, prosperity);
+                var (mapX, mapY) = townCoordinates != null && townCoordinates.TryGetValue(index, out var coords)
+                    ? coords
+                    : SeedWorldMapLayout.GetCoordinatesForSlot(index, townNames.Count, MapLayoutPalette.HubAndSpoke);
+
+                // Apply rotation if seed code and entropy are provided
+                if (seedCode.HasValue && entropy != GameEntropy.Boring)
+                {
+                    var rotation = SeedWorldMapLayout.DeriveRotation(seedCode.Value, entropy, saltSource);
+                    (mapX, mapY) = SeedWorldMapLayout.RotateCoordinates(mapX, mapY, rotation, entropy);
+                }
+
+                var isOutlier = outlierSlot.HasValue && index == outlierSlot.Value;
+                return new Town(new TownId(entry.Id), entry.Name, services, prosperity, MapX: mapX, MapY: mapY, IsOutlier: isOutlier);
             })
             .ToArray();
         var domainTrails = trails
@@ -461,6 +492,8 @@ internal static class SeedWorldCatalog
             townNames,
             ServicesPalette.HubTelegraph,
             ProsperityPalette.UniformProsperous,
-            trails);
+            trails,
+            townCoordinates: null,
+            outlierSlot: null);
     }
 }

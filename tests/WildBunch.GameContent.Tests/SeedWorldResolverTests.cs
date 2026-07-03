@@ -263,7 +263,7 @@ public sealed class SeedWorldResolverTests
         return SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, mapLayout,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails));
+            selectedTownIds, townServices, trails, OutlierSlotType: 0));
     }
 
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)

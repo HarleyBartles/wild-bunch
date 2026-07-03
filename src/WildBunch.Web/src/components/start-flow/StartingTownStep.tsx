@@ -16,6 +16,7 @@ export function StartingTownStep({ sessionId, selectedTownId, onSelectTown }: St
     queryFn: () => getStartingTownMap(sessionId),
     staleTime: Infinity,
     retry: false,
+    enabled: !!sessionId, // Don't fetch if sessionId is empty
   });
 
   const mapData = mapQuery.data ?? null;

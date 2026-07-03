@@ -74,6 +74,18 @@ If you read stale or misleading `AGENTS.md`, `INDEX.md`, or README content, repa
 - `GREEN` means PR-ready with validation and evidence, not direct-main landing.
 - Merge and landing verification are separate GPT or human steps after PR review and merge.
 
+## GREEN Checklist
+
+Before claiming work is complete or requesting review, verify:
+
+- [ ] Work pushed to branch
+- [ ] PR raised
+- [ ] PR body fresh (matches actual implementation, not stale plan)
+- [ ] Linear issue fresh (updated with current status if applicable)
+- [ ] CI passing (all relevant checks green)
+- [ ] Index mesh regenerated (if file structure changed)
+- [ ] Plan committed with all checkboxes checked (if implementation plan exists)
+
 ## Source of Truth
 - Current repo state is the source of truth.
 - Worker reports, issue comments, conversation summaries, and session notes are not proof.

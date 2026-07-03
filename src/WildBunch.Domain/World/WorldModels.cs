@@ -22,7 +22,10 @@ public sealed record Town(
     string Name,
     TownServices Services,
     TownProsperity Prosperity = TownProsperity.Prosperous,
-    TownSourceCatalog? SourceCatalog = null)
+    TownSourceCatalog? SourceCatalog = null,
+    int MapX = 0,
+    int MapY = 0,
+    bool IsOutlier = false)
 {
     public TownSourceCatalog Sources => SourceCatalog ?? TownSourceCatalog.Default;
 }
