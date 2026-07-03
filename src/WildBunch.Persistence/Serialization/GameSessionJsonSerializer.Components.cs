@@ -31,14 +31,14 @@ public sealed partial class GameSessionJsonSerializer
     public string SerializeWorld(World world)
     {
         ArgumentNullException.ThrowIfNull(world);
-        return JsonSerializer.Serialize(WorldSnapshot.FromDomain(world), Options);
+        return JsonSerializer.Serialize(global::WildBunch.Domain.World.WorldSnapshot.FromDomain(world), Options);
     }
 
     public World DeserializeWorld(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<WorldSnapshot>(json);
-        return WorldSnapshot.ToDomain(snapshot);
+        var snapshot = Deserialize<global::WildBunch.Domain.World.WorldSnapshot>(json);
+        return snapshot.ToDomain();
     }
 
     public string SerializeCaseFile(CaseFile caseFile)
@@ -190,57 +190,7 @@ public sealed partial class GameSessionJsonSerializer
             => new(snapshot.Kind, snapshot.Quantity, snapshot.HorseState, snapshot.CanteenState);
     }
 
-    private sealed record WorldSnapshot(IReadOnlyList<TownSnapshot> Towns, IReadOnlyList<TrailSnapshot> Trails)
-    {
-        public static WorldSnapshot FromDomain(World world)
-            => new(
-                world.Towns.Select(TownSnapshot.FromDomain).ToArray(),
-                world.Trails.Select(TrailSnapshot.FromDomain).ToArray());
 
-        public static World ToDomain(WorldSnapshot snapshot)
-            => new(
-                snapshot.Towns.Select(TownSnapshot.ToDomain),
-                snapshot.Trails.Select(TrailSnapshot.ToDomain));
-    }
-
-    private sealed record TownSnapshot(string Id, string Name, TownServices Services, int MapX, int MapY)
-    {
-        public static TownSnapshot FromDomain(Town town)
-            => new(town.Id.Value, town.Name, town.Services, town.MapX, town.MapY);
-
-        public static Town ToDomain(TownSnapshot snapshot)
-            => new(new TownId(snapshot.Id), snapshot.Name, snapshot.Services, MapX: snapshot.MapX, MapY: snapshot.MapY);
-    }
-
-    private sealed record TrailSnapshot(
-        string Id,
-        string FromTownId,
-        string ToTownId,
-        TrailRisk Risk,
-        TrailTerrain Terrain,
-        WaterFeature WaterFeature,
-        decimal RideDayDistance)
-    {
-        public static TrailSnapshot FromDomain(Trail trail)
-            => new(
-                trail.Id.Value,
-                trail.FromTownId.Value,
-                trail.ToTownId.Value,
-                trail.Risk,
-                trail.Terrain,
-                trail.WaterFeature,
-                trail.RideDayDistance);
-
-        public static Trail ToDomain(TrailSnapshot snapshot)
-            => new(
-                new TrailId(snapshot.Id),
-                new TownId(snapshot.FromTownId),
-                new TownId(snapshot.ToTownId),
-                snapshot.Risk,
-                snapshot.Terrain,
-                snapshot.WaterFeature,
-                snapshot.RideDayDistance);
-    }
 
     private sealed record CaseFileSnapshot(
         string? AccusationId,

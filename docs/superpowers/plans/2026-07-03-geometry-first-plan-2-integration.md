@@ -1,5 +1,11 @@
 # Geometry-First Map Generation - Plan 2: Wire & Integration
 
+> **⚠️ STALE - DO NOT EXECUTE**
+>
+> This plan was written before Plan 1b (Event Boundary) was updated. Plan 1b adds event-sourcing for world generation, which affects how the pipeline is integrated. This plan needs to be updated after Plan 1b is executed to account for the new event structure.
+>
+> Execute Plan 1b first, then reassess and update this plan before execution.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire `MapGenerator.Generate` into the game-setup pipeline, delete the stub `SeedWorldBuilder.CreateWorld`, and rewrite the geometry/trail tests that were stripped in Plan 0 to assert against the real pipeline's output.

@@ -16,7 +16,7 @@ public sealed partial class GameSessionJsonSerializer
         string? SeedCode,
         TownVisitStateSnapshot? CurrentTownVisit,
         PlayerSnapshot Player,
-        WorldSnapshot World,
+        global::WildBunch.Domain.World.WorldSnapshot World,
         CaseFileSnapshot CaseFile,
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
@@ -40,7 +40,7 @@ public sealed partial class GameSessionJsonSerializer
                 session.SeedCode,
                 TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
                 PlayerSnapshot.FromDomain(session.Player),
-                WorldSnapshot.FromDomain(session.World),
+                global::WildBunch.Domain.World.WorldSnapshot.FromDomain(session.World),
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
@@ -56,7 +56,7 @@ public sealed partial class GameSessionJsonSerializer
 
         public GameSession ToDomain()
         {
-            var world = WorldSnapshot.ToDomain(World);
+            var world = World.ToDomain();
             var caseFile = CaseFileSnapshot.ToDomain(CaseFile);
             var player = PlayerSnapshot.ToDomain(Player);
             var pursuitState = PursuitStateSnapshot.ToDomain(PursuitState);

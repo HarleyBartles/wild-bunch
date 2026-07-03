@@ -6,6 +6,12 @@
 
 **Architecture:** The current flow passes the `World` as a constructor argument to `GameSession` and stores it only in the JSON snapshot — it's not in the event stream, which violates the event-sourcing contract (ADR-0028). This plan adds a `WorldGenerated` event (carrying towns, trails, seed, salt, entropy) emitted during setup, and a `StartingTownSelected` event (carrying the chosen town ID) emitted before `GameStarted`. `Apply(WorldGenerated)` sets `World` from the event. `Apply(StartingTownSelected)` records the town choice. The snapshot continues to cache the world, but the event is now the source of truth — replay without a snapshot produces the same world.
 
+**Incremental Approach:** This plan is broken into phases to reduce risk. Each phase can be independently tested and committed. If a phase hits blockers, we can pause and reassess without losing progress.
+
+**Known Gap:** `caseFile` is not currently in any event. This will be addressed in the next plan (1c or revised Plan 2) to ensure nothing is outside the event stream. For this plan, we'll keep the existing `RehydrateFromEvents` signature that takes `caseFile` as a parameter.
+
+**Greenfield Context:** This is a greenfield project with no backward compatibility requirements. Database can be dropped/rebuilt as needed. No migration for existing sessions is required.
+
 **Tech Stack:** C#/.NET 10, xUnit 2.9.3, existing event-sourced GameSession aggregate
 
 ## Prerequisites
@@ -72,15 +78,20 @@ CompleteGameStartHandler
 - `src/WildBunch.Domain/Game/GameSessionEventReplay.cs` — add `WorldGenerated` and `StartingTownSelected` to `ApplyEvent` dispatch
 - `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs` — add `WorldGenerated` and `StartingTownSelected` to `ResolveEventType`
 - `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs` — fix `TownSnapshot` to persist `IsOutlier`; make `WorldSnapshot`/`TownSnapshot`/`TrailSnapshot` public for event use
-- `src/WildBunch.Persistence/Serialization/GameSessionRehydrator.cs` — verify world comes from event replay, not just snapshot
 - `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs` — pass `saltSource` to `StartSetup`
 - `src/WildBunch.Application/Games/Commands/CompleteGameStartHandler.cs` — call `SelectStartingTown` before `CompleteGameStart`
 - `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs` — expose `saltSource` from `ResolveWorld` for the setup handler
 - `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs` — update if signature changes
+- `tests/WildBunch.Domain.Tests/TestSessionFactory.cs` — update test factory signatures
+- `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs` — update event expectations
 
 ---
 
-## Task 1: Create Public World Snapshot Types + Fix IsOutlier
+## Phase 1: Foundation (Events + Snapshot Types)
+
+**Goal:** Create the event types and snapshot records needed for event-sourcing the world. This phase is low-risk and doesn't change any existing behavior.
+
+### Task 1: Create Public World Snapshot Types + Fix IsOutlier
 
 **Files:**
 - Create: `src/WildBunch.Domain/World/WorldSnapshot.cs`
@@ -174,7 +185,7 @@ Expected: PASS
 
 `git add -A; git commit -m "feat: public WorldSnapshot/TownSnapshot/TrailSnapshot in domain, fix IsOutlier and Prosperity persistence"`
 
-## Task 2: Create WorldGenerated Domain Event
+### Task 2: Create WorldGenerated Domain Event
 
 **Files:**
 - Create: `src/WildBunch.Domain/Events/WorldGenerated.cs`
@@ -218,7 +229,7 @@ Expected: PASS
 
 `git add -A; git commit -m "feat: add WorldGenerated domain event carrying world snapshot"`
 
-## Task 3: Create StartingTownSelected Domain Event
+### Task 3: Create StartingTownSelected Domain Event
 
 **Files:**
 - Create: `src/WildBunch.Domain/Events/StartingTownSelected.cs`
@@ -284,7 +295,15 @@ Expected: PASS — if any tests fail due to the enum value change, fix them inli
 
 `git add -A; git commit -m "feat: add StartingTownSelected domain event and StartFlowPhase.StartingTownSelected"`
 
-## Task 4: Update GameSession to Emit and Apply New Events
+**Phase 1 Complete:** Events and snapshot types are defined. No behavior changes yet. Build should pass.
+
+---
+
+## Phase 2: GameSession Changes (Emission + Apply)
+
+**Goal:** Update GameSession to emit the new events and apply them during replay. This is the core behavior change but is isolated to GameSession.
+
+### Task 4: Update GameSession to Emit and Apply New Events
 
 **Files:**
 - Modify: `src/WildBunch.Domain/Game/GameSession.cs`
@@ -499,13 +518,21 @@ nameof(StartingTownSelected) => typeof(StartingTownSelected),
 - [ ] **Step 7: Build**
 
 Run: `dotnet build`
-Expected: There will be compile errors in callers of `StartSetup` (missing `saltSource` param) and `CompleteGameStart` (extra `startingTownId` param). Fix these in Task 5.
+Expected: There will be compile errors in callers of `StartSetup` (missing `saltSource` param) and `CompleteGameStart` (extra `startingTownId` param). Fix these in Phase 3.
 
-- [ ] **Step 8: Commit (may not compile yet — Task 5 fixes the callers)**
+- [ ] **Step 8: Commit (may not compile yet — Phase 3 fixes the callers)**
 
-Do not commit yet. Proceed to Task 5.
+Do not commit yet. Proceed to Phase 3.
 
-## Task 5: Update Application Handlers and Factory
+**Phase 2 Complete:** GameSession emits and applies the new events. Build will fail due to caller signature changes. This is expected and will be fixed in Phase 3.
+
+---
+
+## Phase 3: Update Callers (Handlers + Factory)
+
+**Goal:** Update the application handlers and factory to use the new signatures. This is a mechanical change with clear before/after.
+
+### Task 5: Update Application Handlers and Factory
 
 **Files:**
 - Modify: `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs`
@@ -580,7 +607,57 @@ Expected: Some tests may fail if they call `StartSetup` or `CompleteGameStart` w
 
 `git add -A; git commit -m "feat: emit WorldGenerated and StartingTownSelected events in setup flow, fix callers"`
 
-## Task 6: Write Event Round-Trip Tests
+**Phase 3 Complete:** Application handlers and factory updated. Build should pass. Non-integration tests may fail due to test signature changes.
+
+---
+
+## Phase 4: Test Updates (Factories + Test Files)
+
+**Goal:** Update test factories and test files to use the new signatures. This is mechanical but touches many files.
+
+### Task 6: Update Test Factories and Test Files
+
+**Files:**
+- Modify: `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`
+- Modify: `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs`
+- Modify: Any other test files that call `StartSetup` with old signatures
+
+- [ ] **Step 1: Update TestSessionFactory**
+
+In `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`, update any calls to `StartSetup` to include `saltSource` parameter.
+
+- [ ] **Step 2: Update StartFlowEventSourcingTests**
+
+In `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs`:
+- Update `StartSetup_Produces_PlayerSetupCompleted_AsUncommitted` to expect TWO events: `PlayerSetupCompleted` and `WorldGenerated`
+- Add a new test `StartSetup_Produces_WorldGenerated_AsUncommitted`
+- Update `StartSetup_Sets_StartFlowPhase_ToSetupComplete` to still pass (phase should be SetupComplete after both events)
+- Add tests for `SelectStartingTown` method
+- Update `RehydrateFromEvents` tests to handle the new events
+
+- [ ] **Step 3: Search for other test files using StartSetup**
+
+Run: `grep -r "StartSetup" tests/ --include="*.cs"`
+Update any test files that call this method with the old signature.
+
+- [ ] **Step 4: Run non-integration tests**
+
+Run: `dotnet test tests/WildBunch.GameContent.Tests/; dotnet test tests/WildBunch.Domain.Tests/; dotnet test tests/WildBunch.Application.Tests/`
+Expected: PASS (after fixing signature mismatches)
+
+- [ ] **Step 5: Commit**
+
+`git add -A; git commit -m "test: update test factories and test files for new event signatures"`
+
+**Phase 4 Complete:** Test files updated. Non-integration tests should pass.
+
+---
+
+## Phase 5: Event Round-Trip Tests
+
+**Goal:** Write dedicated tests for the new events to ensure they serialize/deserialize correctly and reconstruct the world properly.
+
+### Task 7: Write Event Round-Trip Tests
 
 **Files:**
 - Create: `tests/WildBunch.Domain.Tests/WorldGeneratedEventTests.cs`
@@ -681,6 +758,80 @@ Expected: PASS
 
 `git add -A; git commit -m "test: add WorldGenerated and StartingTownSelected event round-trip tests"`
 
+**Phase 5 Complete:** Event round-trip tests written and passing.
+
+---
+
+## Phase 6: StartNew Rework (Optional - Can Be Deferred)
+
+**Goal:** Rework `StartNew` to emit the full event sequence. This is a test/setup method, not critical for production flow. Can be deferred to a follow-up if needed.
+
+### Task 8: Rework StartNew to Emit Full Event Sequence (Optional)
+
+**Files:**
+- Modify: `src/WildBunch.Domain/Game/GameSession.cs`
+
+**Interfaces:**
+- Produces: `StartNew` that emits the full event sequence (PlayerSetupCompleted → WorldGenerated → StartingTownSelected → GameStarted)
+
+**Rationale:** `StartNew` is used in production code (`SeededNewGameFactory.Create`) and currently only emits `GameStarted`. This is a leftover seam from when starting was one event. To ensure all sessions have the same event structure, `StartNew` must emit the full event sequence.
+
+**Note:** This task can be deferred if Phase 1-5 reveal issues. The production flow (`StartSetup` → handlers) is the critical path.
+
+- [ ] **Step 1: Rework StartNew to call StartSetup, SelectStartingTown, then CompleteGameStart**
+
+In `src/WildBunch.Domain/Game/GameSession.cs`, replace the current `StartNew` implementation:
+
+```csharp
+public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
+    => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard, seedCode: null, saltSource: null, gameEntropy: GameEntropy.Classic);
+
+public static GameSession StartNew(
+    string playerName,
+    DomainWorld world,
+    CaseFile caseFile,
+    TownId? startingTownId,
+    WildBunch.Domain.Economy.Wallet? wallet,
+    DomainInventory? inventory,
+    GameDifficulty gameDifficulty = GameDifficulty.Standard,
+    string? seedCode = null,
+    SaltSource? saltSource = null,
+    GameEntropy gameEntropy = GameEntropy.Classic)
+{
+    ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
+    ArgumentNullException.ThrowIfNull(world);
+    ArgumentNullException.ThrowIfNull(caseFile);
+
+    var resolvedSaltSource = saltSource ?? SaltSource.CreateRuntime();
+    var resolvedSeedCode = seedCode ?? SeedWorldResolver.CreateCanonicalSeedCode().ToString();
+    var resolvedTownId = startingTownId ?? world.Towns.First().Id;
+
+    // Use the full event sequence
+    var session = StartSetup(playerName, world, caseFile, gameDifficulty, gameEntropy, resolvedSeedCode, resolvedSaltSource);
+    session.MarkEventsCommitted();
+
+    session.SelectStartingTown(resolvedTownId);
+    session.MarkEventsCommitted();
+
+    session.CompleteGameStart(wallet, inventory);
+
+    return session;
+}
+```
+
+- [ ] **Step 2: Build**
+
+Run: `dotnet build`
+Expected: PASS
+
+- [ ] **Step 3: Commit**
+
+`git add -A; git commit -m "refactor: rework StartNew to emit full event sequence (PlayerSetupCompleted → WorldGenerated → StartingTownSelected → GameStarted)"`
+
+**Phase 6 Complete (if executed):** `StartNew` now emits the full event sequence. If deferred, this will be addressed in a follow-up plan.
+
+---
+
 ## Definition of Done
 
 - [ ] `WorldGenerated` event exists and carries `WorldSnapshot` (towns + trails with `IsOutlier` and `Prosperity`)
@@ -694,5 +845,12 @@ Expected: PASS
 - [ ] Event replay dispatcher handles both new events
 - [ ] Event serializer can serialize/deserialize both new events
 - [ ] `TownSnapshot` persists `IsOutlier` and `Prosperity`
+- [ ] Test factories and test files updated for new signatures
 - [ ] Non-integration tests pass
 - [ ] The world is reconstructable from the event stream alone (not just the snapshot cache)
+- [ ] (Optional) `StartNew` reworked to emit full event sequence
+
+## Deferred Work (Future Plans)
+
+- **Full `RehydrateFromEvents` signature change**: Deferred because `caseFile` is not currently in any event. Future work should add `caseFile` to `PlayerSetupCompleted` or create a new `CaseFileSetup` event, then remove the `world` and `caseFile` parameters from `RehydrateFromEvents`. This will be addressed in the next plan (1c or revised Plan 2) to ensure nothing is outside the event stream.
+- **StartNew rework**: If Phase 6 is deferred, this will be addressed in a follow-up plan.
