@@ -26,4 +26,4 @@ The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_me
 ## Testing Posture
 - New or updated real application behavior should normally include test coverage in the same slice.
 - If coverage is skipped, state the reason explicitly and keep the gap narrow and deliberate.
-- Debug-only or temporary prototype surfaces, including the current cockpit/debug shell, may use lighter-weight coverage while they remain debug-only.
+- Debug-only or temporary prototype surfaces may use lighter-weight coverage while they remain debug-only.
