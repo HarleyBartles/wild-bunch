@@ -50,7 +50,9 @@ public sealed class GetStartingTownMapHandlerTests
         var (handler, sessionId) = CreateHandlerWithSession();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
         var byId = result.Trails.ToDictionary(t => t.Id);
-        Assert.Equal(14, byId.Count);
+        // Geometry-first trail generation produces a minimum spanning tree for connectivity
+        // For 8 towns, this is 7 trails (n-1 edges for connectivity)
+        Assert.Equal(7, byId.Count);
         Assert.All(byId.Values, trail => Assert.True(trail.RideDayDistance > 0m));
     }
 
@@ -72,7 +74,9 @@ public sealed class GetStartingTownMapHandlerTests
     {
         var (handler, sessionId) = CreateHandlerWithSession();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
-        Assert.Equal(14, result.Trails.Count);
+        // Geometry-first trail generation produces a minimum spanning tree for connectivity
+        // For 8 towns, this is 7 trails (n-1 edges for connectivity)
+        Assert.Equal(7, result.Trails.Count);
     }
 
     [Fact]

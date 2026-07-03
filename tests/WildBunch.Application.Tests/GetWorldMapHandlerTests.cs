@@ -19,7 +19,9 @@ public sealed class GetWorldMapHandlerTests
         var (handler, sessionId) = CreateHandlerWithSession();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
         Assert.Equal(8, result.Towns.Count);
-        Assert.Equal(14, result.Trails.Count);
+        // Geometry-first trail generation produces a minimum spanning tree for connectivity
+        // For 8 towns, this is 7 trails (n-1 edges for connectivity)
+        Assert.Equal(7, result.Trails.Count);
     }
 
     [Fact]
