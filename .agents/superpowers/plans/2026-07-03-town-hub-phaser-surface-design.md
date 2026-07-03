@@ -1,0 +1,312 @@
+# Town Hub Phaser Surface Design
+
+## Overview
+Top-down town layout where players click on buildings to navigate. Each town has a unique building arrangement based on its available services, with layouts that persist across revisits. The surface uses Phaser for rendering while React manages state and backend integration.
+
+## Architecture
+
+### React Host Component
+**File**: `src/WildBunch.Web/src/components/town-hub/PhaserTownHubHost.tsx`
+
+Follows the existing `PhaserMapHost` pattern:
+- Manages Phaser game instance lifecycle (creation, updates, destruction)
+- Receives town layout data from backend via DTOs
+- Passes town data to Phaser scene via constructor
+- Handles interaction callbacks (building clicks, navigation requests)
+- Integrates with existing `useGameSession` hook for state management
+
+### Phaser Scene
+**File**: `src/WildBunch.Web/src/components/town-hub/TownHubScene.ts`
+
+Extends `Phaser.Scene`:
+- Renders top-down town layout with building sprites
+- Manages player character sprite and movement
+- Handles click interactions on buildings
+- Auto-walks character to clicked destinations
+- Visual feedback for available/unavailable buildings
+
+### Data Source
+**Backend Extension**: Extend `TownDto` and `TownDefinition` to include layout data:
+
+```csharp
+// Domain model
+public sealed class TownLayout
+{
+    public required IReadOnlyList<BuildingPlacement> Buildings { get; init; }
+    public required (int X, int Y) PlayerSpawnPosition { get; init; }
+}
+
+public sealed class BuildingPlacement
+{
+    public required string BuildingId { get; init; }
+    public required BuildingKind Kind { get; init; }
+    public required (int X, int Y) Position { get; init; }
+    public required int Rotation { get; init; } // 0, 90, 180, 270 degrees
+}
+
+public enum BuildingKind
+{
+    Store,
+    Sheriff,
+    Saloon,
+    Stable,
+    Doctor,
+    Telegraph,
+    Trailhead
+}
+```
+
+**DTO Extension**:
+```csharp
+public sealed record TownLayoutDto(
+    IReadOnlyList<BuildingPlacementDto> Buildings,
+    (int X, int Y) PlayerSpawnPosition);
+
+public sealed record BuildingPlacementDto(
+    string BuildingId,
+    BuildingKind Kind,
+    (int X, int Y) Position,
+    int Rotation);
+```
+
+## Scene Layout
+
+### Visual Style
+- **Perspective**: Top-down 2D view
+- **Aesthetic**: Western paper/ink style with sepia tones
+- **Background**: Parchment texture with dirt road rendering
+- **Buildings**: Paper/ink style building footprints with service-specific icons
+- **Character**: Simple paper/ink style character sprite
+
+### Building Rendering
+- **Available buildings**: Highlighted with warm sepia tones, interactive cursor
+- **Unavailable buildings**: Grayed out, non-interactive
+- **Current location**: Building with distinctive border/glow
+- **Building sprites**: Simple geometric shapes with icons (store = box, sheriff = star, saloon = drink glass, etc.)
+
+### Character Movement
+- **Spawn position**: Center of town or last known location
+- **Movement**: Straight-line interpolation to clicked building
+- **Speed**: Moderate walking pace (1-2 seconds for typical town distances)
+- **Pathfinding**: Simple direct path (no collision detection needed for open town layout)
+
+## Data Flow
+
+### Backend Data Generation
+1. **World Generation**: Extend `SeedWorldBuilder` to generate town layouts during world creation
+2. **Layout Algorithm**: Seeded random placement based on town services and map layout palette
+3. **Persistence**: Store layout data in `TownDefinition` as part of world generation
+4. **Consistency**: Same seed produces same layout for each town
+
+### React Integration
+1. **Load Phase**: React fetches town layout data via new endpoint `/api/games/{sessionId}/town-layout`
+2. **Render Phase**: React passes layout data to Phaser scene constructor
+3. **Update Phase**: React re-renders Phaser scene when town changes or layout updates
+4. **Interaction Phase**: Phaser scene calls React callbacks for building clicks
+
+### Backend Commands
+1. **Building Click**: React sends command to backend (e.g., `EnterStoreCommand`)
+2. **State Update**: Backend processes command, returns updated session state
+3. **Scene Update**: React updates Phaser scene with new state (e.g., building availability changes)
+
+## Domain Integration
+
+### TownAggregate Extension
+**File**: `src/WildBunch.Domain/Game/TownAggregate.cs`
+
+Add layout property:
+```csharp
+public TownLayout Layout { get; }
+```
+
+### Service Mapping
+- `TownServices.HasStore` → Store building
+- `TownServices.HasSheriff` → Sheriff building
+- `TownServices.HasSaloon` → Saloon building
+- `TownServices.HasStable` → Stable building
+- `TownServices.HasDoctor` → Doctor building (future)
+- `TownServices.HasTelegraph` → Telegraph building (future)
+- Trailhead always available → Trailhead building
+
+### Layout Generation Algorithm
+**File**: `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`
+
+Extend existing coordinate system:
+```csharp
+public static class TownLayoutGenerator
+{
+    public static TownLayout GenerateLayout(
+        TownServices services,
+        MapLayoutPalette mapLayout,
+        int townSlot,
+        int townCount,
+        GameSetupDeterministicSource source)
+    {
+        // Use seeded random to place buildings
+        // Ensure minimum spacing between buildings
+        // Place trailhead at town edge
+        // Cluster service buildings near center
+        // Return deterministic layout based on seed
+    }
+}
+```
+
+## Technical Decisions
+
+### Layout Generation Strategy
+- **Seeded Random**: Use existing `GameSetupDeterministicSource` for reproducible layouts
+- **Service-Based**: Only generate buildings for available services
+- **Positional Rules**: Trailhead at edge, services clustered, player spawn in center
+- **Consistency**: Same town always has same layout across visits
+
+### Asset Strategy (Phase 1)
+- **Procedural Generation**: Use Phaser graphics primitives (rectangles, circles, text)
+- **Building Sprites**: Simple colored rectangles with icon overlays
+- **Character Sprite**: Simple circle with directional indicator
+- **Background**: Solid color with simple line rendering for roads
+
+### Asset Strategy (Phase 2 - Deferred)
+- **Artist-Created Assets**: Detailed building sprites with western aesthetic
+- **Character Animation**: Walking animation frames
+- **Environmental Details**: Trees, rocks, terrain details
+- **Lighting Effects**: Atmospheric lighting for time of day
+
+### State Management
+- **React-Driven**: React manages all state, Phaser is pure renderer
+- **No Local State**: Phaser scenes don't maintain state, only render what React passes
+- **Callback Pattern**: Phaser scenes call React callbacks for interactions
+- **Reactivity**: React `useEffect` triggers Phaser scene updates when DTOs change
+
+### Performance Considerations
+- **Single Instance**: One Phaser game instance per town hub surface
+- **Cleanup**: Proper destruction of Phaser instance when leaving town
+- **Memory**: Reuse textures/sprites across towns where possible
+- **Rendering**: Simple 2D rendering, minimal performance impact
+
+## API Changes
+
+### New Endpoints
+```csharp
+// Get town layout for current town
+GET /api/games/{sessionId}/town-layout
+Response: TownLayoutDto
+
+// Enter building (delegates to existing commands)
+POST /api/games/{sessionId}/enter-store
+POST /api/games/{sessionId}/enter-sheriff
+POST /api/games/{sessionId}/enter-saloon
+POST /api/games/{sessionId}/enter-trailhead
+```
+
+### DTO Changes
+- Extend `TownDto` to include `TownLayoutDto`
+- Add `BuildingKind` enum to shared types
+- Add `BuildingPlacementDto` to shared types
+
+## Migration Strategy
+
+### Phase 1: Data Model
+1. Add `TownLayout` domain model and DTOs
+2. Extend `SeedWorldBuilder` to generate layouts
+3. Add layout generation algorithm
+4. Update snapshot format to include layouts
+5. **No Migration Needed**: Greenfield project, can drop and rebuild database
+
+### Phase 2: Backend Integration
+1. Add town layout endpoint
+2. Update `TownDto` mapping to include layout
+3. Add building entry commands (if not already existing)
+4. Update repository to persist layout data
+5. **No Migration Needed**: Greenfield project, can drop and rebuild database
+
+### Phase 3: Frontend Integration
+1. Create `PhaserTownHubHost` component
+2. Create `TownHubScene` Phaser scene
+3. Integrate with existing `GameFlowRouter`
+4. Replace React town hub cards with Phaser surface
+5. **No Migration Needed**: UI change, no data migration needed
+
+## Testing Strategy
+
+### Domain Tests
+- Test layout generation determinism (same seed = same layout)
+- Test service-to-building mapping
+- Test layout constraints (spacing, clustering rules)
+- Test edge cases (single building towns, maximum building towns)
+
+### Integration Tests
+- Test town layout endpoint returns valid data
+- Test layout persistence across session load/save
+- Test React-Phaser data flow
+- Test building click interactions
+
+### Frontend Tests
+- Test Phaser scene creation/destruction
+- Test building click callbacks
+- Test character movement
+- Test visual feedback (available/unavailable buildings)
+
+### Phaser Tests
+- Test scene rendering with different layouts
+- Test interaction zones (building click detection)
+- Test character movement interpolation
+- Test cleanup/memory management
+
+## Success Criteria
+
+### Functional Requirements
+- Players can click buildings to navigate
+- Each town has unique, consistent layout
+- Building availability reflected visually
+- Character walks to clicked destination
+- Layout persists across town revisits
+- Integration with existing game flow
+
+### Non-Functional Requirements
+- Performance: Scene renders in < 100ms
+- Memory: No memory leaks on scene destruction
+- Accessibility: Keyboard navigation support
+- Responsiveness: Works on different screen sizes
+- Maintainability: Clear separation of React/Phaser responsibilities
+
+## Open Questions
+
+1. **Asset Timing**: When to switch from procedural to artist-created assets?
+2. **Pathfinding**: Is simple straight-line movement sufficient, or need A* pathfinding?
+3. **Camera**: Fixed camera or zoom/pan support?
+4. **Animation**: Character walking animation priority?
+5. **Sound**: Sound effects for building entry/character movement?
+
+## Dependencies
+
+### Existing Code
+- `PhaserMapHost` pattern for React-Phaser integration
+- `SeedWorldBuilder` for coordinate derivation
+- `TownAggregate` for service mapping
+- `useGameSession` hook for state management
+- `GameFlowRouter` for navigation
+
+### New Code Required
+- `TownLayout` domain model and DTOs
+- `TownLayoutGenerator` for layout generation
+- `PhaserTownHubHost` React component
+- `TownHubScene` Phaser scene
+- Town layout API endpoint
+- Layout snapshot serialization
+
+## Risks and Mitigations
+
+### Risk: Layout Generation Complexity
+**Mitigation**: Start with simple grid-based layout, evolve to more sophisticated algorithm
+
+### Risk: Phaser Performance
+**Mitigation**: Use simple 2D rendering, test with maximum building count (20 buildings)
+
+### Risk: State Synchronization
+**Mitigation**: React-driven updates, no local Phaser state, clear callback pattern
+
+### Risk: Asset Pipeline
+**Mitigation**: Phase 1 procedural assets, defer artist assets until layout patterns are stable
+
+### Risk: Breaking Changes
+**Mitigation**: Gradual migration, backward compatibility for existing saves, thorough testing
