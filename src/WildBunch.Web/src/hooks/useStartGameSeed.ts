@@ -7,6 +7,8 @@ import {
   type GameSetupSeedState,
 } from "../ui/gameSetupSeedCodec";
 
+const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 interface UseStartGameSeedArgs {
   session: GameSessionDto | null;
   resetToken: number;
@@ -74,6 +76,12 @@ export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs):
     setDecodeError(null);
     setSeedDraft(value);
     setSeedDirty(true);
+
+    // Update seedState if the draft is a valid UUID
+    const normalized = value.trim().toLowerCase();
+    if (uuidPattern.test(normalized)) {
+      setSeedState({ seedCode: normalized });
+    }
   }
 
   function handleGameDifficultyChange(difficulty: GameDifficulty) {

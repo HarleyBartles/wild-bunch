@@ -225,6 +225,18 @@ describe("SetupHuntStep", () => {
     expect(onGameEntropyChange).toHaveBeenCalledWith(3);
   });
 
+  it("calls onSeedDraftChange when a custom seed is typed", async () => {
+    const user = userEvent.setup();
+    const onSeedDraftChange = vi.fn();
+    renderStep({ stateful: true, onSeedDraftChange });
+
+    const seedInput = screen.getByLabelText(/world seed/i);
+    await user.clear(seedInput);
+    await user.type(seedInput, "0320c0c4-0000-0000-0000-000000000000");
+
+    expect(onSeedDraftChange).toHaveBeenCalledWith("0320c0c4-0000-0000-0000-000000000000");
+  });
+
   it("renders difficulty options as Easy, Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
