@@ -12,8 +12,10 @@ public sealed class ScenarioSeedDescriptorTests
     [Fact]
     public void TypedDescriptorFormatsAReadableSemanticShape()
     {
+        const string codecVersion = "resolver-test";
+
         var descriptor = ScenarioSeedDescriptor.Create("CanonicalMountedStandard")
-            .WithCodecVersion(ScenarioSeedCodecVersion.Current)
+            .WithCodecVersion(new ScenarioSeedCodecVersion(codecVersion))
             .WithEntropy(GameEntropy.Boring)
             .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
             .WithHorse(HorseCondition.Healthy)
@@ -24,7 +26,7 @@ public sealed class ScenarioSeedDescriptorTests
             .WithPreview(ScenarioPreviewExpectation.Mounted(new TownId("quartzsite"), 5, 5));
 
         Assert.Equal(
-            "resolver-v15|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=quartzsite:mounted:5/5",
+            "resolver-test|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=quartzsite:mounted:5/5",
             descriptor.FormatRequiredShapeSignature());
     }
 }
