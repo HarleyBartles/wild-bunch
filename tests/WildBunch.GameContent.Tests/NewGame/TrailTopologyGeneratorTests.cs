@@ -19,9 +19,9 @@ public class TrailTopologyGeneratorTests
 
         var townNames = new[]
         {
-            new TownNameEntry("town-0", "Town 0"),
-            new TownNameEntry("town-1", "Town 1"),
-            new TownNameEntry("town-2", "Town 2")
+            new TownNameEntry(0, "town-0", "Town 0"),
+            new TownNameEntry(1, "town-1", "Town 1"),
+            new TownNameEntry(2, "town-2", "Town 2")
         };
 
         var source = new GameSetupDeterministicSource("00000000-0000-0000-0000-000000000001");
@@ -48,8 +48,8 @@ public class TrailTopologyGeneratorTests
 
         var townNames = new[]
         {
-            new TownNameEntry("town-0", "Town 0"),
-            new TownNameEntry("town-1", "Town 1")
+            new TownNameEntry(0, "town-0", "Town 0"),
+            new TownNameEntry(1, "town-1", "Town 1")
         };
 
         var source = new GameSetupDeterministicSource("00000000-0000-0000-0000-000000000001");
@@ -77,8 +77,8 @@ public class TrailTopologyGeneratorTests
 
         var townNames = new[]
         {
-            new TownNameEntry("town-0", "Town 0"),
-            new TownNameEntry("town-1", "Town 1")
+            new TownNameEntry(0, "town-0", "Town 0"),
+            new TownNameEntry(1, "town-1", "Town 1")
         };
 
         var source = new GameSetupDeterministicSource("00000000-0000-0000-0000-000000000001");

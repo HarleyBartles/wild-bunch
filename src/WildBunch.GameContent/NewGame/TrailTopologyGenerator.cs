@@ -21,20 +21,17 @@ public static class TrailTopologyGenerator
         // Step 1: Generate all candidate edges
         var candidates = TrailEdgeGenerator.GenerateCandidateEdges(townCoordinates);
 
-        // Step 2: Filter edges to remove crossings, parallel corridors, and redundant routes
-        var filtered = TrailEdgeFilter.FilterCrossingEdges(candidates, new List<TrailEdgeCandidate>(), townCoordinates);
-        filtered = TrailEdgeFilter.FilterParallelCorridors(filtered, new List<TrailEdgeCandidate>(), townCoordinates);
-        filtered = TrailEdgeFilter.FilterRedundantRoutes(filtered, new List<TrailEdgeCandidate>(), townCoordinates);
-
-        // Step 3: Select connected graph using deterministic entropy
+        // Step 2: Select connected graph using deterministic entropy with incremental edge-quality filtering
         var selected = TrailGraphSelector.SelectConnectedGraph(
-            filtered,
+            candidates,
+            townCoordinates,
+            townNames,
             townCoordinates.Count,
             entropy,
             saltSource,
             source);
 
-        // Step 4: Convert to SeedWorldTrail with ride-day distances
+        // Step 3: Convert to SeedWorldTrail with ride-day distances
         var trails = new List<SeedWorldTrail>();
         foreach (var edge in selected)
         {

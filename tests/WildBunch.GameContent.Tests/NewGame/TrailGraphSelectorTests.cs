@@ -16,11 +16,20 @@ public class TrailGraphSelectorTests
             [2] = (400, 50)
         };
 
+        var townNames = new List<TownNameEntry>
+        {
+            new(0, "town-0", "Town 0"),
+            new(1, "town-1", "Town 1"),
+            new(2, "town-2", "Town 2")
+        };
+
         var candidates = TrailEdgeGenerator.GenerateCandidateEdges(coordinates);
         var source = new GameSetupDeterministicSource("00000000-0000-0000-0000-000000000001");
         
         var selected = TrailGraphSelector.SelectConnectedGraph(
             candidates,
+            coordinates,
+            townNames,
             coordinates.Count,
             GameEntropy.Boring,
             null,
@@ -39,11 +48,20 @@ public class TrailGraphSelectorTests
             [2] = (400, 50)
         };
 
+        var townNames = new List<TownNameEntry>
+        {
+            new(0, "town-0", "Town 0"),
+            new(1, "town-1", "Town 1"),
+            new(2, "town-2", "Town 2")
+        };
+
         var candidates = TrailEdgeGenerator.GenerateCandidateEdges(coordinates);
         var source = new GameSetupDeterministicSource("00000000-0000-0000-0000-000000000001");
         
         var selected1 = TrailGraphSelector.SelectConnectedGraph(
             candidates,
+            coordinates,
+            townNames,
             coordinates.Count,
             GameEntropy.Boring,
             null,
@@ -51,6 +69,8 @@ public class TrailGraphSelectorTests
         
         var selected2 = TrailGraphSelector.SelectConnectedGraph(
             candidates,
+            coordinates,
+            townNames,
             coordinates.Count,
             GameEntropy.Boring,
             null,
