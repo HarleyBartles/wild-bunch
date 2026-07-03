@@ -1,6 +1,10 @@
 # Skills Catalog
 
-Complete inventory of repo skills with "use when" guidance. See root AGENTS.md for critical skills that must be invoked before relevant work.
+Essential repo workflow routing skills. See root AGENTS.md for critical skills that must be invoked before relevant work.
+
+This catalog is not a complete list of specialist skills. When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas, first inspect the current repo source and canonical repo decisions, then use `/using-superpowers` or skill discovery to find and invoke the smallest relevant specialist skill.
+
+For architecture specifically, inspect the repo's canonical architecture decisions in `.agents/docs/architecture-guardrails.md` and current source, then discover the relevant architecture pattern skill around what you are actually changing. Doctrine routes agents to inspect and discover; it does not pre-enumerate generic specialist skills that will drift over time.
 
 ## Workflow & Session Bootstrap
 
@@ -51,48 +55,11 @@ Complete inventory of repo skills with "use when" guidance. See root AGENTS.md f
 | `/wild-bunch-domain-modeling` | Use when applying Wild Bunch project-scoped domain guidance for DDD tactical modeling, GameSession boundaries, player wallet or inventory, clue or journal flows, hidden culprit truth, horse and saddle rules, water handling, or JourneyLoop and trail-day progression |
 | `/wild-bunch-browser-game` | Use when bridge Wild Bunch to browser-game implementation and QA when work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence, dev-server checks, screenshot QA, or installed browser verification tooling |
 
-## Architecture & Design
+## Architecture & Quality
 
 | Skill | Use When |
 |-------|----------|
 | `/architecture-superpowers` | Use when shaping architecture decisions and review packets that need a compositional gate over Superpowers instead of a new doctrine surface |
-| `/ddd` | Use when modeling a .NET domain with aggregates, aggregate roots, value objects, domain events, domain services, strongly-typed IDs, or repositories that persist aggregate roots |
-| `/clean-architecture` | Use when building or reviewing a layered .NET system that uses Domain, Application, Infrastructure, and Api projects, dependency inversion, use case handlers, domain entities with behavior, or infrastructure as a plugin |
-| `/cqrs-event-sourcing` | Use when building audit-required systems, implementing temporal queries, or designing high-scale applications with complex domain logic |
-| `/event-driven-architecture` | Use when designing distributed systems, microservices communication, or systems requiring eventual consistency and scalability |
-| `/vertical-slice` | Use when organizing a .NET application by feature rather than layer, working in a feature-folder codebase, or needing guidance on endpoint grouping and handler patterns for Mediator, Wolverine, or raw handler classes |
-| `/database-design-patterns` | Use when designing database schemas, optimizing query performance, or implementing data persistence layers at scale |
-
-## .NET Development
-
-| Skill | Use When |
-|-------|----------|
-| `/modern-csharp` | Use when writing new C# 14 code, reviewing existing code for modernization, or needing guidance on primary constructors, collection expressions, the field keyword, extension members, records, pattern matching, spans, or raw string literals |
-| `/ef-core` | Use when working with Entity Framework Core, DbContext configuration, migrations, interceptors, compiled queries, ExecuteUpdateAsync, ExecuteDeleteAsync, value converters, query optimization, or LINQ queries |
-| `/testing` | Use when writing .NET tests, setting up test infrastructure, reviewing test coverage, or needing guidance on xUnit, WebApplicationFactory, Testcontainers, snapshot testing, the AAA pattern, WireMock, or FakeTimeProvider |
-| `/test-driven-development` | Use when implementing any feature or bugfix, before writing implementation code |
-
-## Frontend & Browser Game
-
-| Skill | Use When |
-|-------|----------|
-| `/feature-sliced-design` | Use when the task involves organizing project structure with FSD layers, deciding where code belongs, placing static assets (images, icons, fonts, PDFs), grouping closely related slices, defining public APIs and import boundaries, resolving cross-imports or evaluating the @x pattern, deciding whether to create or remove an entity, evaluating whether the entities layer is needed at all, deciding whether logic should remain local or be extracted, migrating from FSD v2.0 or a non-FSD codebase, integrating FSD with frameworks (Next.js App Router and Pages Router, Nuxt, Vite, Astro), or implementing common patterns such as authentication, API handling, Redux, and TanStack Query (React Query) within FSD |
-| `/game-studio` | Use when the user needs stack selection and workflow planning across design, implementation, assets, and playtesting before moving to a specialist skill |
-| `/web-game-foundations` | Use when the user needs engine choice, simulation and render boundaries, input model, asset organization, or save/debug/performance strategy |
-| `/phaser-2d-game` | Use when the user wants a Phaser, TypeScript, and Vite stack for scenes, gameplay systems, cameras, sprite animation, and DOM-overlay HUD patterns |
-| `/three-webgl-game` | Use when the user wants imperative scene control in TypeScript or Vite with GLB assets, loaders, physics, and low-level WebGL debugging |
-| `/react-three-fiber-game` | Use when the user wants pmndrs-based scene composition, shared React state, and 3D HUD integration inside a React app |
-| `/game-ui-frontend` | Use when the user asks for HUDs, menus, overlays, responsive layouts, or visual direction that must protect the playfield |
-| `/game-playtest` | Use when the user asks for smoke tests, screenshot-based verification, browser automation, HUD or overlay review, or structured issue-finding in a browser game |
-| `/webapp-testing` | Use when verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs |
-| `/react-performance-optimization` | Use when optimizing slow React applications, reducing bundle size, or improving user experience with large datasets |
-
-## Asset Pipelines
-
-| Skill | Use When |
-|-------|----------|
-| `/sprite-pipeline` | Use when the user asks for full-strip generation from approved source frames, consistent anchor and scale normalization, or preview assets for browser-game animation |
-| `/web-3d-asset-pipeline` | Use when the user asks for GLB or glTF shipping work, including Blender cleanup and export, collision or LOD setup, compression, texture packaging, and runtime validation |
 
 ## Debugging & Code Review
 
@@ -114,14 +81,6 @@ Complete inventory of repo skills with "use when" guidance. See root AGENTS.md f
 |-------|----------|
 | `/writing-skills` | Use when creating new skills, editing existing skills, or verifying skills work before deployment |
 | `/base-doctrine` | Use when cross-runtime doctrine store for cross-project operating invariants not owned by a more specific skill. Use when work involves system-prompt limits, tool/source evidence honesty, durable doctrine routing, bounded skill/reference read loops, correction/trust posture, canonical agent asset source truth, or output artifact-shape authority such as reserved YAML, dispatch/session-buster confusion, worker-copy attention guards, and lower-skill format conflicts |
-
-## UI/UX
-
-| Skill | Use When |
-|-------|----------|
-| `/interaction-design` | Use when designing user interactions, workflows, or interface patterns |
-| `/ux-review` | Use when reviewing user experience, usability, or interface design |
-| `/accessibility-audit` | Use when auditing accessibility compliance, WCAG standards, or inclusive design |
 
 ## Utility
 

@@ -44,15 +44,14 @@
 - `/wild-bunch-domain-modeling` - Use when applying Wild Bunch project-scoped domain guidance for DDD tactical modeling, GameSession boundaries, player wallet or inventory, or travel rules
 - `/wild-bunch-browser-game` - Use when work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence, or dev-server checks
 
-### .NET Development
-- `/modern-csharp` - Use when writing new C# 14 code, reviewing existing code for modernization, or needing guidance on primary constructors, collection expressions, the field keyword, extension members, records, pattern matching, spans, or raw string literals
-- `/ef-core` - Use when working with Entity Framework Core, DbContext configuration, migrations, interceptors, compiled queries, ExecuteUpdateAsync, ExecuteDeleteAsync, value converters, query optimization, or LINQ queries
-- `/testing` - Use when writing .NET tests, setting up test infrastructure, reviewing test coverage, or needing guidance on xUnit, WebApplicationFactory, Testcontainers, snapshot testing, the AAA pattern, WireMock, or FakeTimeProvider
-
 ### Architecture Skills
-- `/ddd` - Use when modeling a .NET domain with aggregates, aggregate roots, value objects, domain events, domain services, strongly-typed IDs, or repositories that persist aggregate roots
-- `/clean-architecture` - Use when building or reviewing a layered .NET system that uses Domain, Application, Infrastructure, and Api projects, dependency inversion, use case handlers, domain entities with behavior, or infrastructure as a plugin
-- `/cqrs-event-sourcing` - Use when building audit-required systems, implementing temporal queries, or designing high-scale applications with complex domain logic
+- `/architecture-superpowers` - Use when shaping architecture decisions and review packets that need a compositional gate over Superpowers instead of a new doctrine surface
+
+## Specialist Skill Discovery
+When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas:
+1. First inspect the current repo source and canonical repo decisions
+2. Use `/using-superpowers` or skill discovery to find and invoke the smallest relevant specialist skill
+3. Do not treat the skills catalog as a complete list of specialist skills
 
 **For the complete skills inventory, see [`.agents/docs/skills-catalog.md`](.agents/docs/skills-catalog.md)**
 
