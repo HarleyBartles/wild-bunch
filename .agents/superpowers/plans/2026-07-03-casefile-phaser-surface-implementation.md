@@ -6,6 +6,12 @@
 
 **Architecture:** Extract existing CaseFile into CaseFileAggregate. React host component manages Phaser game instance following PhaserMapHost pattern. Backend adds auto-layout projection algorithm. React drives all domain state, manages player-drawn connections locally. Phaser is pure renderer.
 
+**Aggregate Normalization Decision:** CaseFileAggregate extraction is intentional future-proofing. The current GameSession-hosted shape is not broken today, but upcoming case-file surfaces will make it increasingly ugly. We are normalizing the aggregate boundary now in anticipation of those seams.
+
+**Scope:** CaseFileAggregate normalization, auto-layout algorithm, connection rendering. Future case-file features (richer theory-board play, advanced connection types) are out of scope.
+
+**Hidden-Truth Guard:** CaseFileAggregate must not leak hidden culprit truth through case-file DTOs, board projections, Phaser scene state, logs, snapshots, or tests. The board should render known/discovered/player-available case information only. If the aggregate internally needs truth to enforce rules, that is not the same as exposing it.
+
 **Tech Stack:** Phaser 3, React, TypeScript, C#/.NET, styled-components
 
 ## Global Constraints
@@ -1821,3 +1827,10 @@ git commit -m "test: add Case File integration tests"
 **5. Greenfield project:** No migration steps included - all database changes assume greenfield status.
 
 **6. Risk mitigation:** Incremental extraction, GameSession remains coordinator, comprehensive event replay testing, clear separation of domain vs player theory state.
+
+**7. Hidden-Truth Guard:** CaseFileAggregate must not leak hidden culprit truth through case-file DTOs, board projections, Phaser scene state, logs, snapshots, or tests. The board should render known/discovered/player-available case information only.
+
+**8. Preservation Requirements:**
+- Existing GameSession command route and current player-visible behavior must remain stable
+- Existing clue, journal, wanted-poster, and case-file flows must remain stable during CaseFileAggregate extraction
+- Phaser remains renderer/input adapter, with React/backend/domain owning truth

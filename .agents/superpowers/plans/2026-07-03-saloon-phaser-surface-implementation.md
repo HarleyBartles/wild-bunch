@@ -6,6 +6,10 @@
 
 **Architecture:** Extract saloon logic into new SaloonAggregate. React host component manages Phaser game instance following PhaserMapHost pattern. Backend extends SeedWorldBuilder to generate seeded saloon layouts. React drives all state, Phaser is pure renderer.
 
+**Aggregate Normalization Decision:** SaloonAggregate extraction is intentional future-proofing. The current GameSession-hosted shape is not broken today, but upcoming saloon surfaces will make it increasingly ugly. We are normalizing the aggregate boundary now in anticipation of those seams.
+
+**Scope:** SaloonAggregate normalization, event splitting, NPC interaction implementation. Future saloon features (poker, drinks, hot food, richer NPC interaction) are out of scope.
+
 **Tech Stack:** Phaser 3, React, TypeScript, C#/.NET, styled-components
 
 ## Global Constraints
@@ -1774,3 +1778,8 @@ git commit -m "test: add Saloon integration tests"
 **5. Greenfield project:** No migration steps included - all database changes assume greenfield status.
 
 **6. Risk mitigation:** Incremental extraction, GameSession remains coordinator during transition, comprehensive event replay testing.
+
+**7. Preservation requirements:**
+- Existing GameSession command route and current player-visible behavior must remain stable
+- Existing saloon investigation behavior (LookAroundSaloon, GatherLocalGossip) must remain stable during SaloonAggregate extraction
+- Phaser remains renderer/input adapter, with React/backend/domain owning truth
