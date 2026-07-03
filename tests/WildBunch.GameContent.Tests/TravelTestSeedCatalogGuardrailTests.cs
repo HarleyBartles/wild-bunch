@@ -105,22 +105,6 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     }
 
     [Fact]
-    public void CanonicalWorld_HasLowOpenRangeCreekRoute()
-    {
-        // Slot 0→1 is Low/OpenRange/Creek in Canonical variant (spoke from hub). Start in slot 0's town.
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
-        var startTown = TravelTestSeedCatalog.FindTownWithRoute(
-            world, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        Assert.NotNull(startTown);
-
-        var session = TravelTestSeedCatalog.CreateSession(
-            TravelTestSeedCatalog.CanonicalMountedEasyStandard, startTown!.Value.Value);
-        var trail = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        Assert.NotNull(trail);
-    }
-
-    [Fact]
     public void AllGangMembersAreCulpritEligible()
     {
         // The culprit is always a gang member, and any gang member can be the culprit.

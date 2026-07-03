@@ -7,9 +7,9 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV15()
+    public void ResolverContractVersion_IsV16()
     {
-        Assert.Equal("resolver-v15", SeedWorldResolver.ResolverContractVersion);
+        Assert.Equal("resolver-v16", SeedWorldResolver.ResolverContractVersion);
     }
 
     [Fact]
@@ -47,7 +47,8 @@ public sealed class SeedWorldResolverCodecTests
         Assert.Equal(original.CashBonus, resolved.CashBonus);
         Assert.Equal(original.ProsperityPalette, resolved.ProsperityPalette);
         Assert.Equal(original.ServicesPalette, resolved.ServicesPalette);
-        Assert.Equal(original.MapLayoutPalette, resolved.MapLayoutPalette);
+        Assert.Equal(original.ClusterCount, resolved.ClusterCount);
+        Assert.Equal(original.GraphDensity, resolved.GraphDensity);
         Assert.Equal(original.OutlierSlotType, resolved.OutlierSlotType);
     }
 
@@ -106,26 +107,6 @@ public sealed class SeedWorldResolverCodecTests
         
         // Should wrap to 7 % 8 = 7 (within range)
         Assert.Equal((ServicesPalette)7, resolved.ServicesPalette);
-    }
-
-    [Fact]
-    public void MapLayoutPalette_ModuloWrapping_ClampsToDefinedRange()
-    {
-        // Create a seed with mapLayoutPalette value 1 (within defined range 0-3)
-        var bytes = new byte[16];
-        var seedCode = new Guid(bytes);
-
-        // Manually set bits 24-26 to 1 (binary 001) using proper bit manipulation
-        // MapLayoutPalette is at bits 24-26 (3 bits)
-        var low = BitConverter.ToUInt64(bytes, 0);
-        low = (low & ~((0x7UL) << 24)) | ((1UL & 0x7UL) << 24);
-        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
-        seedCode = new Guid(bytes);
-
-        var resolved = SeedWorldResolver.Resolve(seedCode);
-
-        // Should map to 1 % 4 = 1 (DoubleLine)
-        Assert.Equal(MapLayoutPalette.DoubleLine, resolved.MapLayoutPalette);
     }
 
     [Fact]

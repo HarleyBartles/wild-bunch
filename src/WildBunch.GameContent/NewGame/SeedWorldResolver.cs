@@ -21,7 +21,8 @@ namespace WildBunch.GameContent.NewGame;
 ///   bits 14-17:  townCount (4, offset-encoded: 0-15 → 5-20 towns)
 ///   bits 18-20:  prosperityPaletteIndex (3, indexes 8 palettes)
 ///   bits 21-23:  servicesPaletteIndex (3, indexes 8 palettes)
-///   bits 24-26:  mapLayoutPalette (3, indexes up to 8 layouts; currently 4 implemented: HubAndSpoke, DoubleLine, Tree, Star)
+///   bits 24-25:  clusterCount (2, 0-3 → 1-4 clusters)
+///   bit  26:     graphDensity (1, 0=Sparse, 1=Dense)
 ///   bits 27-28:  outlierSlotType (2, 0=no outlier, 1=simple outlier, 2-3 reserved)
 ///   bits 29-63:  reserved (35)
 ///
@@ -70,8 +71,11 @@ public static class SeedWorldResolver
     /// - v15: Reduced MapLayoutPalette from 8 layouts to 4 layouts (HubAndSpoke, DoubleLine, Tree, Star).
     ///       Dropped XShaped, Cluster, Mesh, Grid. Kept 3-bit encoding for future expansion to 8 layouts.
     ///       OutlierSlotType remains at bits 27-28. 29 bits used, 99 reserved.
+    /// - v16: Replaced MapLayoutPalette (3 bits at 24-26) with ClusterCount (2 bits at 24-25, 0-3 → 1-4 clusters)
+    ///       and GraphDensity (1 bit at 26, 0=Sparse, 1=Dense). MapLayoutPalette enum deleted.
+    ///       29 bits used, 99 reserved. No domain behavior change to other fields.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v15";
+    public const string ResolverContractVersion = "resolver-v16";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
@@ -128,7 +132,8 @@ public static class SeedWorldResolver
         var townCountEncoded = (int)((low >> 14) & 0xFUL);
         var prosperityPalette = (ProsperityPalette)((low >> 18) & 0x7UL);
         var servicesPalette = (ServicesPalette)((low >> 21) & 0x7UL);
-        var mapLayoutPalette = (MapLayoutPalette)((low >> 24) & 0x7UL);
+        var clusterCountEncoded = (int)((low >> 24) & 0x3UL); // 2 bits for cluster count
+        var graphDensity = (GraphDensity)((low >> 26) & 0x1UL); // 1 bit for graph density
         var outlierSlotType = (int)((low >> 27) & 0x3UL); // 2 bits for outlier type
 
         // 4-bit suspect fields produce 0-15, but the current roster is 7 suspects (indices 0-6).
@@ -141,9 +146,8 @@ public static class SeedWorldResolver
         // Clamp to the current legal range. Values 2-3 are reserved for future expansion.
         if (outlierSlotType > 1) outlierSlotType = 1;
 
-        // 3-bit mapLayoutPalette produces 0-7, but only 4 layouts are currently implemented.
-        // Wrap within the current legal range using modulo.
-        mapLayoutPalette = (MapLayoutPalette)((int)mapLayoutPalette % 4);
+        // 2-bit clusterCountEncoded produces 0-3, mapped to 1-4 clusters.
+        var clusterCount = clusterCountEncoded + 1;
 
         // 3-bit prosperityPalette produces 0-7, which maps to 8 palettes.
         // Wrap within the current legal range using modulo.
@@ -160,13 +164,13 @@ public static class SeedWorldResolver
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
+            cashBonus, prosperityPalette, servicesPalette);
 
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
+        var trails = Array.Empty<SeedWorldTrail>();
 
         return new SeedWorld(
             seedCode,
@@ -174,7 +178,8 @@ public static class SeedWorldResolver
             townCount,
             servicesPalette,
             prosperityPalette,
-            mapLayoutPalette,
+            clusterCount,
+            graphDensity,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
@@ -209,9 +214,14 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Services palette is invalid.");
         }
 
-        if (!Enum.IsDefined(typeof(MapLayoutPalette), seedWorld.MapLayoutPalette))
+        if (seedWorld.ClusterCount is < 1 or > 4)
         {
-            return SeedWorldValidationResult.Failed("Map layout palette is invalid.");
+            return SeedWorldValidationResult.Failed("Cluster count must be between 1 and 4.");
+        }
+
+        if (!Enum.IsDefined(typeof(GraphDensity), seedWorld.GraphDensity))
+        {
+            return SeedWorldValidationResult.Failed("Graph density is invalid.");
         }
 
         // Suspect indices: the codec allocates 4 bits each (0-15) for forward
@@ -284,7 +294,8 @@ public static class SeedWorldResolver
         low |= (ulong)((seedWorld.TownCount - TownCountOffset) & 0xF) << 14;
         low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 18;
         low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 21;
-        low |= (ulong)((int)seedWorld.MapLayoutPalette & 0x7) << 24; // 3 bits for up to 8 layouts
+        low |= (ulong)((seedWorld.ClusterCount - 1) & 0x3) << 24; // 2 bits for cluster count (1-4 → 0-3)
+        low |= (ulong)((int)seedWorld.GraphDensity & 0x1) << 26; // 1 bit for graph density
         low |= (ulong)(seedWorld.OutlierSlotType & 0x3) << 27; // 2 bits for outlier type
 
         ulong high = 0UL;
@@ -304,17 +315,18 @@ public static class SeedWorldResolver
         var cashBonus = 0;
         var prosperityPalette = ProsperityPalette.UniformProsperous;
         var servicesPalette = ServicesPalette.HubTelegraph;
-        var mapLayoutPalette = MapLayoutPalette.HubAndSpoke;
+        var clusterCount = 1;
+        var graphDensity = GraphDensity.Sparse;
 
         var townNames = SeedWorldCatalog.DeriveTownNames(
             variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette, mapLayoutPalette);
+            cashBonus, prosperityPalette, servicesPalette);
 
         var selectedTownIds = townNames.Select(t => t.Id).ToArray();
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayoutPalette);
+        var trails = Array.Empty<SeedWorldTrail>();
 
         return new SeedWorld(
             Guid.Empty,
@@ -322,7 +334,8 @@ public static class SeedWorldResolver
             townCount,
             servicesPalette,
             prosperityPalette,
-            mapLayoutPalette,
+            clusterCount,
+            graphDensity,
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,

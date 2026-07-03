@@ -27,18 +27,9 @@ public sealed class GetStartingTownMapHandler
             throw new GameSessionNotFoundException(sessionId);
         }
 
-        // Derive the map layout palette from the session's seed code so the
-        // coordinate system matches the seed's topology. Falls back to
-        // HubAndSpoke if the seed code is missing (should not happen for
-        // sessions that have completed setup).
-        var layout = MapLayoutPalette.HubAndSpoke;
-        if (session.SeedCode is { } seedCodeText && Guid.TryParse(seedCodeText, out var seedGuid))
-        {
-            var seedWorld = SeedWorldResolver.Resolve(seedGuid);
-            layout = seedWorld.MapLayoutPalette;
-        }
-
-        var towns = SeedWorldMapLayout.GetMapTowns(session.World, layout)
+        // The world already carries the coordinates from the map generation pipeline.
+        // No layout palette lookup is needed.
+        var towns = SeedWorldMapLayout.GetMapTowns(session.World)
             .Select(town => new StartingTownMapTownDto(
                 town.Id,
                 town.Name,

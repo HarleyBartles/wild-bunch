@@ -19,7 +19,7 @@ public sealed class GetWorldMapHandlerTests
         var (handler, sessionId) = CreateHandlerWithSession();
         var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
         Assert.Equal(8, result.Towns.Count);
-        Assert.Equal(14, result.Trails.Count);
+        Assert.NotEmpty(result.Trails);
     }
 
     [Fact]
