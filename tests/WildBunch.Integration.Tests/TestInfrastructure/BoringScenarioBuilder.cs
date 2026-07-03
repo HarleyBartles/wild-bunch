@@ -14,24 +14,25 @@ internal static class BoringScenarioBuilder
         => new(
             ScenarioName: "MountedTravelReady",
             Fixture: ScenarioSeedCatalog.CanonicalMountedStandard,
-            PreviewDestinationTownId: "quartzsite");
+            PreviewDestinationTownId: null); // Will be set dynamically to a connected town
 
     public static BoringScenario NoHorseFootTravelReady()
         => new(
             ScenarioName: "NoHorseFootTravelReady",
             Fixture: ScenarioSeedCatalog.NoHorseLightEasy,
-            PreviewDestinationTownId: "quartzsite");
+            PreviewDestinationTownId: null); // Will be set dynamically to a connected town
 
     public static BoringScenario HighRiskFoeInterruptRoute()
         => new(
             ScenarioName: "HighRiskFoeInterruptRoute",
-            Fixture: ScenarioSeedCatalog.HighRiskFoeInterruptRoute);
+            Fixture: ScenarioSeedCatalog.HighRiskFoeInterruptRoute,
+            PreviewDestinationTownId: null); // Will be set dynamically to a connected town
 
     public static BoringScenario PinecrossServicesOrWantedPosterReady()
         => new(
             ScenarioName: "PinecrossServicesOrWantedPosterReady",
             Fixture: ScenarioSeedCatalog.CanonicalPinecrossServices,
-            PreviewDestinationTownId: "quartzsite");
+            PreviewDestinationTownId: null); // Will be set dynamically to a connected town
 }
 
 internal sealed record BoringScenario(
@@ -64,15 +65,33 @@ internal sealed record BoringScenario(
     {
         ArgumentNullException.ThrowIfNull(session);
 
+        TownId destinationTownId;
         if (PreviewDestinationTownId is null)
         {
-            throw new InvalidOperationException($"Scenario '{ScenarioName}' does not define a preview destination town.");
+            // Dynamically select a connected town
+            var connectedTownId = session.World.Trails
+                .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+                .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+                .Distinct()
+                .OrderBy(townId => townId.Value)
+                .FirstOrDefault();
+
+            if (connectedTownId == default)
+            {
+                throw new InvalidOperationException($"Scenario '{ScenarioName}' has no connected towns from {session.Player.CurrentTownId}.");
+            }
+
+            destinationTownId = connectedTownId;
+        }
+        else
+        {
+            destinationTownId = new TownId(PreviewDestinationTownId);
         }
 
         var previewResult = new TravelResolver().PreviewJourney(
             session.World,
             session.Player.CurrentTownId,
-            new TownId(PreviewDestinationTownId),
+            destinationTownId,
             session.Player.Inventory,
             session.TravelRules);
 
@@ -81,7 +100,7 @@ internal sealed record BoringScenario(
             previewResult.Message,
             previewResult.Preview is null ? null : TravelMapper.ToDto(previewResult.Preview, session.TravelRules));
 
-        Fixture.AssertTravelPreview(GameSessionMapper.ToDto(session), PreviewDestinationTownId, preview);
+        Fixture.AssertTravelPreview(GameSessionMapper.ToDto(session), destinationTownId.Value, preview);
         return preview;
     }
 }
