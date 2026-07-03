@@ -38,7 +38,8 @@ internal static class ScenarioSeedCatalog
         .WithWallet(25m)
         .WithItemCount(8)
         .WithTownCount(8)
-        .WithPreview(ScenarioPreviewExpectation.Mounted(new TownId("quartzsite"), 5, 5));
+        .WithConnectedTownCount(3)
+        .WithPreview(ScenarioPreviewExpectation.Missing());
 
     private static readonly ScenarioSeedDescriptor CanonicalPinecrossServicesDescriptor = ScenarioSeedDescriptor.Create("CanonicalPinecrossServices")
         .WithCodecVersion(ScenarioSeedCodecVersion.Current)
@@ -50,7 +51,8 @@ internal static class ScenarioSeedCatalog
         .WithItemCount(8)
         .WithTownCount(8)
         .WithServicesTown(new TownId("hardpan"))
-        .WithPreview(ScenarioPreviewExpectation.Mounted(new TownId("quartzsite"), 5, 5));
+        .WithConnectedTownCount(3)
+        .WithPreview(ScenarioPreviewExpectation.Missing());
 
     private static readonly ScenarioSeedDescriptor HighRiskFoeInterruptRouteDescriptor = ScenarioSeedDescriptor.Create("HighRiskFoeInterruptRoute")
         .WithCodecVersion(ScenarioSeedCodecVersion.Current)
@@ -61,19 +63,20 @@ internal static class ScenarioSeedCatalog
         .WithWallet(25m)
         .WithItemCount(8)
         .WithTownCount(8)
-        .WithConnectedTownIds(new TownId("boulderwash"), new TownId("brokenarrow"), new TownId("emberfall"), new TownId("holloway"), new TownId("openpass"), new TownId("quartzsite"), new TownId("rattleridge"))
+        .WithConnectedTownCount(3)
         .WithPreview(ScenarioPreviewExpectation.Missing());
 
     private static readonly ScenarioSeedDescriptor NoHorseLightEasyDescriptor = ScenarioSeedDescriptor.Create("NoHorseLightEasy")
         .WithCodecVersion(ScenarioSeedCodecVersion.Current)
         .WithEntropy(GameEntropy.Boring)
         .WithDifficulty(GameDifficulty.Easy)
+        .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
         .WithHorse(HorseCondition.Healthy)
         .WithSaddle(SaddleState.Present)
         .WithHealth(1250)
         .WithTownCount(8)
-        .WithTravelMode(TravelMode.Mounted)
-        .WithPreview(ScenarioPreviewExpectation.Mounted(new TownId("quartzsite"), 4, 4));
+        .WithConnectedTownCount(3)
+        .WithPreview(ScenarioPreviewExpectation.Missing());
 
     public static readonly ScenarioSeedFixture CanonicalMountedStandard = new(
         Name: "CanonicalMountedStandard",
@@ -391,7 +394,15 @@ internal static class ScenarioSeedCatalog
     }
 
     private static string DescribeCanonicalPinecrossServicesShape(GameSessionDto session, TravelPreviewResultDto? preview)
-        => string.Join(
+    {
+        var connectedTownIds = session.World.Trails
+            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .OrderBy(townId => townId)
+            .ToArray();
+
+        return string.Join(
             "|",
             ScenarioSeedCodecVersion.Current.Value,
             "CanonicalPinecrossServices",
@@ -402,8 +413,10 @@ internal static class ScenarioSeedCatalog
             $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
             $"items={session.Inventory.Items.Count}",
             $"towns={session.World.Towns.Count}",
+            $"connected={connectedTownIds.Length}",
             $"services={session.Player.CurrentTownId}",
             $"preview={(preview is null ? "missing" : DescribeMountedPreview(preview))}");
+    }
 
     private static string DescribeHighRiskFoeInterruptRouteShape(GameSessionDto session, TravelPreviewResultDto? preview)
     {
@@ -425,23 +438,33 @@ internal static class ScenarioSeedCatalog
             $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
             $"items={session.Inventory.Items.Count}",
             $"towns={session.World.Towns.Count}",
-            $"routes={(connectedTownIds.Length > 0 ? "connected" : "none")}",
-            $"preview={DescribeMountedPreview(preview)}");
+            $"connected={connectedTownIds.Length}",
+            $"preview={(preview is null ? "missing" : DescribeMountedPreview(preview))}");
     }
 
     private static string DescribeNoHorseLightEasyShape(GameSessionDto session, TravelPreviewResultDto? preview)
-        => string.Join(
+    {
+        var connectedTownIds = session.World.Trails
+            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .OrderBy(townId => townId)
+            .ToArray();
+
+        return string.Join(
             "|",
             ScenarioSeedCodecVersion.Current.Value,
             "NoHorseLightEasy",
             $"entropy={session.GameEntropy}",
             $"difficulty={session.GameDifficulty}",
+            "start=default-playable-start",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
             $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"health={session.Player.Health}",
             $"towns={session.World.Towns.Count}",
-            $"travel={preview?.Preview?.TravelMode.ToString().ToLowerInvariant() ?? "missing"}",
+            $"connected={connectedTownIds.Length}",
             $"preview={(preview is null ? "missing" : DescribeMountedPreview(preview))}");
+    }
 
     private static string DescribeHorseState(HorseTravelStateDto? horseState)
         => horseState is null ? "absent" : horseState.CanProvideMountedTravel ? "healthy" : "degraded";

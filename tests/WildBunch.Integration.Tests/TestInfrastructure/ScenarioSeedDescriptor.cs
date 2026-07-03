@@ -88,6 +88,8 @@ internal sealed record ScenarioSeedDescriptor
 
     public IReadOnlyList<TownId> RequiredConnectedTownIds { get; init; } = [];
 
+    public int? ConnectedTownCount { get; init; }
+
     public TownId? ServicesTownId { get; init; }
 
     public ScenarioPreviewExpectation? Preview { get; init; }
@@ -136,6 +138,9 @@ internal sealed record ScenarioSeedDescriptor
 
     public ScenarioSeedDescriptor WithConnectedTownIds(params TownId[] townIds)
         => this with { RequiredConnectedTownIds = townIds };
+
+    public ScenarioSeedDescriptor WithConnectedTownCount(int count)
+        => this with { ConnectedTownCount = count };
 
     public ScenarioSeedDescriptor WithServicesTown(TownId townId)
         => this with { ServicesTownId = townId };
@@ -198,6 +203,11 @@ internal sealed record ScenarioSeedDescriptor
         if (TownCount is not null)
         {
             parts.Add($"towns={TownCount.Value}");
+        }
+
+        if (ConnectedTownCount is not null)
+        {
+            parts.Add($"connected={ConnectedTownCount.Value}");
         }
 
         if (TravelMode is not null)
