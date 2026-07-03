@@ -256,7 +256,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
         var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
-        var saltSource = _serializer.DeserializeSaltSource(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.SaltSource));
+        var saltSourceJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.SaltSource);
+        var saltSource = saltSourceJson is null ? SaltSource.CreateRuntime() : _serializer.DeserializeSaltSource(saltSourceJson);
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
         var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey);

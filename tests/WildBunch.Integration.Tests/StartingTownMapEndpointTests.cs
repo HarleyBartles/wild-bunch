@@ -2,7 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Integration.Tests.TestInfrastructure;
+using WildBunch.GameContent.NewGame;
+using WildBunch.Api.Games;
 
 namespace WildBunch.Integration.Tests;
 
@@ -121,12 +124,19 @@ public sealed class StartingTownMapEndpointTests
 
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
-        var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
+        // Build a specific seed world descriptor for this test instead of relying on canonical seed
+        var seedCode = SeedWorldResolver.CreateCanonicalSeedCode();
+        var seedWorld = SeedWorldResolver.Resolve(seedCode);
+        
+        var request = new SetupGameRequest(
+            "Test Player",
+            GameDifficulty.Standard,
+            seedCode.ToString("D"),
+            GameEntropy.Boring);
 
         // The map endpoint is used during town selection, so we only need
         // a setup-phase session (not a fully-started game).
-        var response = await client.PostAsJsonAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
+        var response = await client.PostAsJsonAsync("/api/games/setup", request);
         var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(session);

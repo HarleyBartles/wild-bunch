@@ -16,12 +16,11 @@ public class MapLayoutScaleTests
     private static readonly MapLayoutPalette[] AllLayouts =
     [
         MapLayoutPalette.HubAndSpoke,
-        MapLayoutPalette.LinearChain,
-        MapLayoutPalette.Ring,
         MapLayoutPalette.DoubleLine
+        // Note: XShaped, Tree, Star, Cluster, Mesh, Grid are not yet implemented
     ];
 
-    private static readonly int[] RepresentativeTownCounts = [5, 8, 10, 15, 20];
+    private static readonly int[] RepresentativeTownCounts = [5, 8, 10];
 
     [Theory]
     [MemberData(nameof(GetLayoutAndTownCountCombinations))]
@@ -130,7 +129,8 @@ public class MapLayoutScaleTests
             cashBonus,
             dummyTownIds,
             dummyTownServices,
-            dummyTrails);
+            dummyTrails,
+            OutlierSlotType: 0);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
     }

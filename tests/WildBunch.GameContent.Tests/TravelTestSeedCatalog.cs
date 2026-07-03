@@ -144,7 +144,8 @@ internal static class TravelTestSeedCatalog
             cashBonus,
             selectedTownIds,
             townServices,
-            trails);
+            trails,
+            OutlierSlotType: 0);
     }
 
     /// <summary>
