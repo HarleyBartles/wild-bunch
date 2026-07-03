@@ -37,6 +37,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
     private int _version;
+    private TownId? _selectedStartingTownId;
 
     private GameSession(
         GameSessionId id,
@@ -140,7 +141,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public Player Player { get; private set; }
 
-    public DomainWorld World { get; }
+    public DomainWorld World { get; private set; } = null!;
 
     public CaseFile CaseFile { get; }
 
@@ -809,7 +810,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     /// <summary>
     /// Starts a new game session in the setup-complete phase (after player has completed initial setup).
-    /// This creates a session that has PlayerSetupCompleted applied but not yet GameStarted.
+    /// This creates a session that has PlayerSetupCompleted and WorldGenerated applied but not yet GameStarted.
     /// The session can be advanced to GameStarted by calling CompleteGameStart().
     /// </summary>
     public static GameSession StartSetup(
@@ -818,16 +819,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         CaseFile caseFile,
         GameDifficulty gameDifficulty,
         GameEntropy gameEntropy,
-        string seedCode)
+        string seedCode,
+        SaltSource saltSource)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(caseFile);
         ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
 
-        var resolvedSaltSource = SaltSource.CreateRuntime();
-
-        // Create the PlayerSetupCompleted event
         var setupEvent = new PlayerSetupCompleted
         {
             PlayerName = playerName,
@@ -836,10 +835,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SeedCode = seedCode
         };
 
-        // Create a placeholder session
+        var worldEvent = new WorldGenerated
+        {
+            SeedCode = seedCode,
+            SaltSource = saltSource,
+            GameEntropy = gameEntropy,
+            World = WorldSnapshot.FromDomain(world)
+        };
+
         var placeholderPlayer = new Player(
             playerName,
-            world.Towns.First().Id, // Temporary, will be set when GameStarted is emitted
+            world.Towns.First().Id,
             health: StartingHealthFor(gameDifficulty),
             WildBunch.Domain.Economy.Wallet.Starting(25m),
             DomainInventory.Empty());
@@ -854,39 +860,62 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             GameStatus.Active,
             journey: null,
             gameDifficulty,
-            resolvedSaltSource,
+            saltSource,
             gameEntropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
 
-        // Apply the setup event
         session.Apply(setupEvent);
         session._uncommittedEvents.Add(setupEvent);
+        session.Apply(worldEvent);
+        session._uncommittedEvents.Add(worldEvent);
 
         return session;
     }
 
     /// <summary>
-    /// Completes the game start by selecting a starting town and emitting GameStarted.
-    /// This transitions the session from SetupComplete/PrologueViewed to GameStarted.
+    /// Records the player's starting town choice. Emits StartingTownSelected.
+    /// Must be called after ViewPrologue and before CompleteGameStart.
+    /// </summary>
+    public void SelectStartingTown(TownId startingTownId)
+    {
+        ArgumentNullException.ThrowIfNull(startingTownId);
+
+        if (StartFlowPhase == StartFlowPhase.StartingTownSelected)
+            return; // Idempotent
+
+        if (StartFlowPhase != StartFlowPhase.PrologueViewed)
+            throw new InvalidOperationException("Cannot select starting town before viewing the prologue.");
+
+        var town = World.GetTown(startingTownId);
+
+        var e = new StartingTownSelected
+        {
+            StartingTownId = startingTownId
+        };
+
+        Apply(e);
+        _uncommittedEvents.Add(e);
+    }
+
+    /// <summary>
+    /// Completes the game start by emitting GameStarted.
+    /// This transitions the session from StartingTownSelected to GameStarted.
     /// The wallet and inventory come from the difficulty envelope (application layer concern).
     /// </summary>
     public void CompleteGameStart(
-        TownId startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet = null,
         DomainInventory? inventory = null)
     {
         if (StartFlowPhase == StartFlowPhase.GameStarted)
-        {
-            return; // Already started
-        }
+            return;
 
-        if (StartFlowPhase == StartFlowPhase.NotStarted)
-        {
-            throw new InvalidOperationException("Cannot complete game start before setup is complete.");
-        }
+        if (StartFlowPhase != StartFlowPhase.StartingTownSelected)
+            throw new InvalidOperationException("Cannot complete game start before selecting a starting town.");
 
+        var startingTownId = _selectedStartingTownId
+            ?? throw new InvalidOperationException("No starting town selected.");
         var startingTown = World.GetTown(startingTownId);
         var startingHealth = StartingHealthFor(GameDifficulty);
         var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
@@ -1100,6 +1129,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             health: Player.Health,
             Player.Wallet,
             Player.Inventory);
+        _version++;
+    }
+
+    private void Apply(WorldGenerated e)
+    {
+        World = e.World.ToDomain();
+        _version++;
+    }
+
+    private void Apply(StartingTownSelected e)
+    {
+        StartFlowPhase = StartFlowPhase.StartingTownSelected;
+        _selectedStartingTownId = e.StartingTownId;
         _version++;
     }
 

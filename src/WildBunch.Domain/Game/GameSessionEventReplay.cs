@@ -113,6 +113,12 @@ public sealed partial class GameSession
             case PlayerSetupCompleted psc:
                 session.Apply(psc);
                 break;
+            case WorldGenerated wg:
+                session.Apply(wg);
+                break;
+            case StartingTownSelected sts:
+                session.Apply(sts);
+                break;
             case PrologueViewed pv:
                 session.Apply(pv);
                 break;
