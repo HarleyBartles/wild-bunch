@@ -18,12 +18,12 @@ public class TrailEdgeFilterTests
         var candidates = TrailEdgeGenerator.GenerateCandidateEdges(coordinates);
         var accepted = new List<TrailEdgeCandidate>
         {
-            candidates.First(e => e.FromSlot == 0 && e.ToSlot == 3) // (0,0) to (10,0)
+            candidates.First(e => e.FromSlot == 0 && e.ToSlot == 1) // (0,0) to (10,10) diagonal
         };
 
         var filtered = TrailEdgeFilter.FilterCrossingEdges(candidates, accepted, coordinates);
-        
-        // Edge (0,10) to (10,0) should be removed as it crosses (0,0) to (10,0)
+
+        // Edge (0,10) to (10,0) should be removed as it crosses (0,0) to (10,10)
         var crossingEdge = filtered.FirstOrDefault(e => e.FromSlot == 2 && e.ToSlot == 3);
         Assert.Null(crossingEdge);
     }

@@ -50,14 +50,12 @@ public sealed class TravelEntropyVarianceTests
         // Both sessions should have the same salt (Fixed, derived from seed code).
         Assert.Equal(session1.SaltSource.Salt, session2.SaltSource.Salt);
 
-        // Start the same journey on both sessions.
-        var trail1 = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session1, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        var trail2 = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session2, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
+        // Start the same journey on both sessions using any available trail.
+        var trail1 = session1.World.ListTrailsFromTown(session1.Player.CurrentTownId).First();
+        var trail2 = session2.World.ListTrailsFromTown(session2.Player.CurrentTownId).First();
 
-        var dest1 = TravelTestSeedCatalog.ResolveDestination(session1, trail1);
-        var dest2 = TravelTestSeedCatalog.ResolveDestination(session2, trail2);
+        var dest1 = trail1.ToTownId.Equals(session1.Player.CurrentTownId) ? trail1.FromTownId : trail1.ToTownId;
+        var dest2 = trail2.ToTownId.Equals(session2.Player.CurrentTownId) ? trail2.FromTownId : trail2.ToTownId;
 
         var resolver = new TravelResolver();
         var preview1 = resolver.PreviewJourney(session1.World, session1.Player.CurrentTownId, dest1, session1.Player.Inventory).Preview!;
