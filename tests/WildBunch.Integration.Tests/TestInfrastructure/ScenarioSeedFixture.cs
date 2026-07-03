@@ -13,8 +13,7 @@ internal sealed record ScenarioSeedFixture(
     string SeedCode,
     GameDifficulty GameDifficulty,
     GameEntropy GameEntropy,
-    string ResolverContractVersion,
-    string RequiredShapeSignature,
+    ScenarioSeedDescriptor Contract,
     Func<GameSessionDto, TravelPreviewResultDto?, string> DescribeShapeSignature,
     Action<GameSessionDto> AssertCreatedSessionContract,
     string? PreviewDestinationTownId = null,
@@ -25,20 +24,21 @@ internal sealed record ScenarioSeedFixture(
     /// The default starting town for this fixture (slot-0 town of the seed-derived world).
     /// Used by the three-step setup helper when no explicit starting town is supplied.
     /// </summary>
-    public string DefaultStartingTownId => "hardpan";
+    public string DefaultStartingTownId => Contract.ExactStartingTownId?.Value ?? "hardpan";
     public void AssertCachedFixtureContract()
     {
-        if (!string.Equals(ResolverContractVersion, SeedWorldResolver.ResolverContractVersion, StringComparison.Ordinal))
+        if (!string.Equals(Contract.CodecVersion.Value, SeedWorldResolver.ResolverContractVersion, StringComparison.Ordinal))
         {
-            ThrowDrift($"Resolver contract version changed from '{ResolverContractVersion}' to '{SeedWorldResolver.ResolverContractVersion}'.");
+            ThrowDrift($"Resolver contract version changed from '{Contract.CodecVersion.Value}' to '{SeedWorldResolver.ResolverContractVersion}'.");
         }
 
         var session = CreateSession();
         var sessionDto = GameSessionMapper.ToDto(session);
         var preview = PreviewDestinationTownId is null ? null : CreatePreview(session, PreviewDestinationTownId);
         var actualShapeSignature = DescribeShapeSignature(sessionDto, preview);
+        var requiredShapeSignature = Contract.FormatRequiredShapeSignature();
 
-        if (!string.Equals(actualShapeSignature, RequiredShapeSignature, StringComparison.Ordinal))
+        if (!string.Equals(actualShapeSignature, requiredShapeSignature, StringComparison.Ordinal))
         {
             ThrowDrift($"Observed required-shape signature '{actualShapeSignature}'.");
         }
@@ -100,5 +100,5 @@ internal sealed record ScenarioSeedFixture(
 
     private void ThrowDrift(string detail)
         => throw new XunitException(
-            $"Cached scenario seed '{Name}' no longer satisfies required shape '{RequiredShapeSignature}'. {detail} Regenerate this fixture through the boring scenario path or intentionally update the fixture contract if the scenario requirement changed.");
+            $"Cached scenario seed '{Name}' no longer satisfies required shape '{Contract.FormatRequiredShapeSignature()}'. {detail} Regenerate this fixture through the boring scenario path or intentionally update the fixture contract if the scenario requirement changed.");
 }
