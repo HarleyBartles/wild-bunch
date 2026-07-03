@@ -21,13 +21,16 @@
 - `/inspecting-the-environment` - Use when about to take action and environment constraints could change the next step — discovers shell syntax, worktree state, repo state, path style, CLI availability, auth, connectors, mutation authority, and protected surfaces before proceeding
 - `/using-git-worktrees` - Use when starting feature work that needs isolation from current workspace or before executing implementation plans
 
+**Note**: `/inspecting-the-environment` is part of the trimmed `superpowers+` surface and should be kept explicit for environment-constraint discovery.
+
 ### Linear & GitHub Work
 - `/using-linear` - Use when working with the Linear connector surface, choosing the right tool call, or finding create/update tools exposed under `save_*` rather than `create_*` or `update_*`
-- `/linear-superpowers` - Use when shaping Linear issues, issue tracks, and worker packets so they name the smallest applicable Superpowers workflow skill
-- `/github-superpowers` - Use when shaping GitHub-facing work so it starts with @using-superpowers and selects the smallest applicable specialist workflow
+- `/linear-issue-shaping` - Use when Linear-backed issue, project, and document shaping: create or update worker-ready Linear issues, inspect Linear comments/attachments/state, prepare paste-ready worker handoffs when explicitly requested, and route GitHub PR proof after a PR exists
+- `/github-operations` - Use when verify GitHub repository evidence without taking over coding workflow routing. Use after a Linear/Codex task has a GitHub PR, branch, commit, review, merge, status, or file-state question; when checking publication proof, PR diff scope, mergeability, CI/status evidence, final main state, or GitHub-specific closure proof
+- `/repo-worker-base` - Use for fresh-main discipline, worktree isolation, branch and PR hygiene, validation evidence, or publication proof
 
 ### Anti-Slop & Quality
-- `/unslop-superpowers` - Use when shaping Linear issues, GitHub proof, worker returns, or closeout language needs repo-specific anti-slop controls
+- `/unslop-plus` - Use when apply domain-specific anti-slop profiles for common software development workflows, with thirteen portable profiles for writing, technical-writing, implementation-plans, code-review, worker-returns, debugging, frontend-react, frontend-ui, api-design, architecture, testing, security-review, and cleanup-custody
 - `/connector-safety` - Use when a connector or tool call is blocked, rejected, safety-filtered, permission-rejected, or when a planned action could be sensitive or destructive
 - `/verification-before-completion` - Use before claiming work is complete, fixed, or passing, before committing or creating PRs
 
@@ -44,8 +47,10 @@
 - `/wild-bunch-domain-modeling` - Use when applying Wild Bunch project-scoped domain guidance for DDD tactical modeling, GameSession boundaries, player wallet or inventory, or travel rules
 - `/wild-bunch-browser-game` - Use when work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence, or dev-server checks
 
+**Note**: For Linear/GitHub/architecture/anti-slop routing, use direct skills and repo-local doctrine instead of compositional middlemen. The retired `*-superpowers` compositional skills have been removed from the marketplace.
+
 ### Architecture Skills
-- `/architecture-superpowers` - Use when shaping architecture decisions and review packets that need a compositional gate over Superpowers instead of a new doctrine surface
+- For architecture work, inspect current source and canonical repo decisions, then use `/using-superpowers` or skill discovery to invoke the smallest relevant specialist skill
 
 ## Specialist Skill Discovery
 When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas:

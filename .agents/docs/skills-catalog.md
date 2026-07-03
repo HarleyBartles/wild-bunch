@@ -21,21 +21,20 @@ For architecture specifically, inspect the repo's canonical architecture decisio
 | `/inspecting-the-environment` | Use when about to take action and environment constraints could change the next step — discovers shell syntax, worktree state, repo state, path style, CLI availability, auth, connectors, mutation authority, and protected surfaces before proceeding |
 | `/using-git-worktrees` | Use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools or git worktree fallback |
 
+**Note**: `/inspecting-the-environment` is part of the trimmed `superpowers+` surface and should be kept explicit for environment-constraint discovery.
+
 ## Linear & GitHub Work
 
 | Skill | Use When |
 |-------|----------|
 | `/using-linear` | Use when working with the Linear connector surface, choosing the right tool call, or finding create/update tools exposed under `save_*` rather than `create_*` or `update_*` |
-| `/linear-superpowers` | Use when shaping Linear issues, issue tracks, and worker packets so they name the smallest applicable Superpowers workflow skill, explain why it applies, and name the evidence required to prove it was followed |
 | `/linear-issue-shaping` | Use when Linear-backed issue, project, and document shaping: create or update worker-ready Linear issues, inspect Linear comments/attachments/state, prepare paste-ready worker handoffs when explicitly requested, and route GitHub PR proof after a PR exists |
-| `/github-superpowers` | Use when shaping GitHub-facing work so it starts with @using-superpowers, selects the smallest applicable specialist workflow, and keeps GitHub proof, review routing, publication proof, and final main-state verification bound to github-operations |
 | `/github-operations` | Use when verify GitHub repository evidence without taking over coding workflow routing. Use after a Linear/Codex task has a GitHub PR, branch, commit, review, merge, status, or file-state question; when checking publication proof, PR diff scope, mergeability, CI/status evidence, final main state, or GitHub-specific closure proof |
 
 ## Anti-Slop & Quality
 
 | Skill | Use When |
 |-------|----------|
-| `/unslop-superpowers` | Use when shaping Linear issues, GitHub proof, worker returns, or closeout language needs repo-specific anti-slop controls, profile discovery or refresh, concrete evidence requirements, or a narrow direct-to-main unslop profile update |
 | `/unslop-plus` | Use when apply domain-specific anti-slop profiles for common software development workflows, with thirteen portable profiles for writing, technical-writing, implementation-plans, code-review, worker-returns, debugging, frontend-react, frontend-ui, api-design, architecture, testing, security-review, and cleanup-custody |
 | `/connector-safety` | Use when connector or tool call is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle, or when mutation work should follow discover -> read -> write -> verify or step back up the connector discovery chain |
 | `/verification-before-completion` | Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always |
@@ -61,11 +60,15 @@ For architecture specifically, inspect the repo's canonical architecture decisio
 | `/wild-bunch-domain-modeling` | Use when applying Wild Bunch project-scoped domain guidance for DDD tactical modeling, GameSession boundaries, player wallet or inventory, clue or journal flows, hidden culprit truth, horse and saddle rules, water handling, or JourneyLoop and trail-day progression |
 | `/wild-bunch-browser-game` | Use when bridge Wild Bunch to browser-game implementation and QA when work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence, dev-server checks, screenshot QA, or installed browser verification tooling |
 
+**Note**: For Linear/GitHub/architecture/anti-slop routing, use direct skills and repo-local doctrine instead of compositional middlemen:
+- Linear work routes through `/using-linear`, `/linear-issue-shaping`, and repo doctrine/source-truth guidance
+- GitHub/PR proof routes through `/github-operations`, `/repo-worker-base`, and Wild Bunch source-truth doctrine
+- Anti-slop work routes to relevant `.agents/unslop/` profiles and direct review/verification skills
+- Architecture work tells workers to inspect current source and canonical repo decisions, then use `/using-superpowers` or skill discovery to invoke the smallest relevant specialist skill
+
 ## Architecture & Quality
 
-| Skill | Use When |
-|-------|----------|
-| `/architecture-superpowers` | Use when shaping architecture decisions and review packets that need a compositional gate over Superpowers instead of a new doctrine surface |
+For architecture work, inspect current source and canonical repo decisions, then use `/using-superpowers` or skill discovery to invoke the smallest relevant specialist skill.
 
 ## Debugging & Code Review
 

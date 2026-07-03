@@ -9,7 +9,7 @@ metadata:
   source_path: sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/using-superpowers/SKILL.md
   content_mode: adapted
   adapted_author: Harley Bartles
-  adaptation_note: Added four Marketplace routing lines for Linear, GitHub, unslop, and environment inspection.
+  adaptation_note: Trimmed to core Superpowers plus environment inspection only.
 ---
 
 <SUBAGENT-STOP>
@@ -68,9 +68,6 @@ If your harness appears here, read its reference file for special instructions:
 
 ## Asset Marketplace Routing
 
-- Linear issue shaping and smallest-applicable workflow selection: use `linear-superpowers`.
-- GitHub-facing proof, PRs, branches, commits, and publication state: use `github-superpowers`.
-- Repo-specific anti-slop or profile work: use `unslop-superpowers`.
 - Environment inspection before action when constraints matter: use `inspecting-the-environment`.
 
 ## User Instructions
