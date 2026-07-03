@@ -3,7 +3,7 @@ using System.Text;
 
 namespace WildBunch.GameContent.NewGame;
 
-internal sealed class GameSetupDeterministicSource
+public sealed class GameSetupDeterministicSource
 {
     public GameSetupDeterministicSource(string seedCode)
     {
