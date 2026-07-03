@@ -567,5 +567,92 @@ public sealed class SeedWorldBuilderTests
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
         => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 
+    [Fact]
+    public void CreateWorld_UsesGeometryFirstTrailGeneration()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode));
+
+        var world = SeedWorldBuilder.CreateWorld(
+            seedWorld,
+            source,
+            GameEntropy.Boring,
+            null);
+
+        // Verify trails form a connected graph
+        Assert.True(IsConnected(world.Trails, world.Towns.Count));
+
+        // Verify ride-day labels are in normal range (no outlier in this case)
+        foreach (var trail in world.Trails)
+        {
+            Assert.InRange(trail.RideDayDistance, 2m, 5m);
+        }
+    }
+
+    [Fact]
+    public void CreateWorld_OutlierTownHasSixDayTrail()
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var seedWorldWithOutlier = seedWorld with { OutlierSlotType = 1 }; // Activate outlier
+        var source = new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(seedWorldWithOutlier.SeedCode));
+
+        var world = SeedWorldBuilder.CreateWorld(
+            seedWorldWithOutlier,
+            source,
+            GameEntropy.Classic, // Need entropy for outlier
+            new SaltSource(SaltSourceMode.Fixed, "test-salt"));
+
+        // Find the outlier town
+        var outlierTown = world.Towns.FirstOrDefault(t => t.IsOutlier);
+        Assert.NotNull(outlierTown);
+
+        // Verify outlier town has exactly one incident trail and it's 6 days
+        var outlierTrails = world.Trails.Where(t => t.Connects(outlierTown.Id)).ToList();
+        Assert.Single(outlierTrails);
+        Assert.Equal(6m, outlierTrails[0].RideDayDistance);
+    }
+
+    private bool IsConnected(IReadOnlyList<Trail> trails, int townCount)
+    {
+        if (townCount == 0) return true;
+        if (trails.Count == 0) return false;
+
+        var adjacency = new Dictionary<TownId, List<TownId>>();
+        foreach (var trail in trails)
+        {
+            if (!adjacency.ContainsKey(trail.FromTownId))
+                adjacency[trail.FromTownId] = new List<TownId>();
+            if (!adjacency.ContainsKey(trail.ToTownId))
+                adjacency[trail.ToTownId] = new List<TownId>();
+
+            adjacency[trail.FromTownId].Add(trail.ToTownId);
+            adjacency[trail.ToTownId].Add(trail.FromTownId);
+        }
+
+        var visited = new HashSet<TownId>();
+        var queue = new Queue<TownId>();
+        var startTown = trails.First().FromTownId;
+        queue.Enqueue(startTown);
+        visited.Add(startTown);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            if (adjacency.ContainsKey(current))
+            {
+                foreach (var neighbor in adjacency[current])
+                {
+                    if (!visited.Contains(neighbor))
+                    {
+                        visited.Add(neighbor);
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+        }
+
+        return visited.Count == townCount;
+    }
+
 
 }

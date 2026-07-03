@@ -34,53 +34,9 @@ public static class TrailTopologyGenerator
             saltSource,
             source);
 
-        // Step 4: Apply filtering iteratively as edges are added to prevent crossings with newly added edges
-        var finalEdges = new List<TrailEdgeCandidate>();
-        var remaining = selected.ToList();
-        
-        while (remaining.Count > 0)
-        {
-            var edge = remaining[0];
-            remaining.RemoveAt(0);
-            
-            // Check if this edge would cross or be parallel to any already-selected edge
-            var canAdd = true;
-            foreach (var existing in finalEdges)
-            {
-                var from1 = new Vector2(townCoordinates[edge.FromSlot].X, townCoordinates[edge.FromSlot].Y);
-                var to1 = new Vector2(townCoordinates[edge.ToSlot].X, townCoordinates[edge.ToSlot].Y);
-                var from2 = new Vector2(townCoordinates[existing.FromSlot].X, townCoordinates[existing.FromSlot].Y);
-                var to2 = new Vector2(townCoordinates[existing.ToSlot].X, townCoordinates[existing.ToSlot].Y);
-
-                // Skip if they share a town
-                if (edge.FromSlot == existing.FromSlot || edge.FromSlot == existing.ToSlot ||
-                    edge.ToSlot == existing.FromSlot || edge.ToSlot == existing.ToSlot)
-                {
-                    continue;
-                }
-
-                if (TrailGeometry.LinesIntersect(from1, to1, from2, to2))
-                {
-                    canAdd = false;
-                    break;
-                }
-
-                if (TrailGeometry.AreLinesParallel(from1, to1, from2, to2, threshold: 0.1))
-                {
-                    canAdd = false;
-                    break;
-                }
-            }
-
-            if (canAdd)
-            {
-                finalEdges.Add(edge);
-            }
-        }
-
-        // Step 5: Convert to SeedWorldTrail with ride-day distances
+        // Step 4: Convert to SeedWorldTrail with ride-day distances
         var trails = new List<SeedWorldTrail>();
-        foreach (var edge in finalEdges)
+        foreach (var edge in selected)
         {
             var rideDays = RideDayCalculator.CalculateRideDays(edge, CoordinateScale, outlierSlot);
             
