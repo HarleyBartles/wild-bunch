@@ -113,13 +113,23 @@ public sealed class GameApiJournalTests
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
 
+        // Get a connected town dynamically
+        var connectedTownIds = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .ToArray();
+
+        Assert.True(connectedTownIds.Length > 0, "Expected at least one connected town");
+        var destinationTownId = connectedTownIds.First();
+
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("quartzsite"));
+            new TravelRequest(destinationTownId));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
-        await AdvanceUntilTownAsync(client, createdSession.Id, "quartzsite");
+        await AdvanceUntilTownAsync(client, createdSession.Id, destinationTownId);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -128,7 +138,7 @@ public sealed class GameApiJournalTests
         var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
 
         Assert.NotNull(journal);
-        Assert.Equal("quartzsite", journal!.CurrentTown.Id);
+        Assert.Equal(destinationTownId, journal!.CurrentTown.Id);
         Assert.Equal(6, journal.Clock.Day);
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
@@ -159,9 +169,19 @@ public sealed class GameApiJournalTests
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
 
+        // Get a connected town dynamically
+        var connectedTownIds = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .ToArray();
+
+        Assert.True(connectedTownIds.Length > 0, "Expected at least one connected town");
+        var destinationTownId = connectedTownIds.First();
+
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("quartzsite"));
+            new TravelRequest(destinationTownId));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 

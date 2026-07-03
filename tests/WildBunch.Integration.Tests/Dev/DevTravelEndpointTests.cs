@@ -132,9 +132,19 @@ public sealed class DevTravelEndpointTests
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
+        // Get a connected town dynamically
+        var connectedTownIds = created.World.Trails
+            .Where(trail => trail.FromTownId == created.Player.CurrentTownId || trail.ToTownId == created.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == created.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .ToArray();
+
+        Assert.True(connectedTownIds.Length > 0, "Expected at least one connected town");
+        var destinationTownId = connectedTownIds.First();
+
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{created.Id}/travel",
-            new TravelRequest(scenario.PreviewDestinationTownId!));
+            new TravelRequest(destinationTownId));
         travelResponse.EnsureSuccessStatusCode();
         var turnResult = await travelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
         Assert.NotNull(turnResult);

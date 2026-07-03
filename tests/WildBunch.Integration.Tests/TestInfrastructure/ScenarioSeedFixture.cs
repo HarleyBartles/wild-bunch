@@ -57,9 +57,11 @@ internal sealed record ScenarioSeedFixture(
             return;
         }
 
+        // If PreviewDestinationTownId is null, we skip the preview validation
+        // This is used for geometry-first trail generation where the destination is selected dynamically
         if (PreviewDestinationTownId is null)
         {
-            ThrowDrift("The fixture declares a travel preview contract but does not define a preview destination town.");
+            return;
         }
 
         if (preview is null)

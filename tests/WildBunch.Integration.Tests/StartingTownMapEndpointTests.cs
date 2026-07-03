@@ -85,7 +85,9 @@ public sealed class StartingTownMapEndpointTests
         var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
 
         Assert.NotNull(map);
-        Assert.Equal(14, map.Trails.Count);
+        // Geometry-first trail generation produces a minimum spanning tree for connectivity
+        // For 8 towns, this is 7 trails (n-1 edges for connectivity)
+        Assert.Equal(7, map.Trails.Count);
         Assert.All(map!.Trails, trail =>
         {
             Assert.False(string.IsNullOrWhiteSpace(trail.Id));

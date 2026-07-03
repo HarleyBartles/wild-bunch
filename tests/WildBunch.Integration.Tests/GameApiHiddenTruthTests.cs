@@ -72,10 +72,20 @@ public sealed class GameApiHiddenTruthTests
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
+        // Get a connected town dynamically
+        var connectedTownIds = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .ToArray();
+
+        Assert.True(connectedTownIds.Length > 0, "Expected at least one connected town");
+        var destinationTownId = connectedTownIds.First();
+
         // Start travel so the journey is active
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest(scenario.PreviewDestinationTownId!));
+            new TravelRequest(destinationTownId));
         travelResponse.EnsureSuccessStatusCode();
 
         // The dev travel-context endpoint exposes journey internals + dev override state,
