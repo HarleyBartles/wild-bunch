@@ -5,6 +5,7 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.GameContent.Abstractions;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using SaltSource = WildBunch.Domain.Game.SaltSource;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -54,7 +55,7 @@ public sealed class SeededNewGameFactory : INewGameFactory
             resolvedSetup.SeedCodeText);
     }
 
-    public (World World, CaseFile CaseFile, string SeedCodeText) ResolveWorld(
+    public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
         string playerName,
         GameDifficulty gameDifficulty,
         string? setupSeedCode,
@@ -70,7 +71,7 @@ public sealed class SeededNewGameFactory : INewGameFactory
             entropy,
             playerChosenStartingTownId: null);
 
-        return (resolvedSetup.World, resolvedSetup.CaseFile, resolvedSetup.SeedCodeText);
+        return (resolvedSetup.World, resolvedSetup.CaseFile, resolvedSetup.SeedCodeText, resolvedSetup.SaltSource);
     }
 
     public (Wallet Wallet, DomainInventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)

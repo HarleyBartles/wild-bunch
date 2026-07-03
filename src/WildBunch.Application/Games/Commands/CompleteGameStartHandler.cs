@@ -6,6 +6,7 @@ using WildBunch.Application.Projections;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 using WildBunch.GameContent.Abstractions;
+using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Application.Games.Commands;
 
@@ -54,8 +55,9 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
             var (wallet, inventory) = _newGameFactory.ResolveStartingResources(session.GameDifficulty);
             var startingTownId = new TownId(command.StartingTownId);
 
+            session.SelectStartingTown(startingTownId);
+
             session.CompleteGameStart(
-                startingTownId,
                 wallet,
                 inventory);
 
