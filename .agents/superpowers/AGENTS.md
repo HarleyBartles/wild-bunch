@@ -12,13 +12,14 @@ When executing superpowers workflows, direct all tracked artifacts to the approp
 - **Status**: Tracked in git, committed with the plan
 
 ### Session Artifacts
-- **Location**: `.agents/superpowers/sdd/`
-- **Content**: Session-specific artifacts
+- **Location**: `.agents/superpowers/sdd/<plan-name>/`
+- **Content**: Session-specific artifacts organized by plan
   - Commit messages
   - PR updates
   - Progress tracking
   - Review diffs
   - Test output
+- **Organization**: Create a subfolder named after the plan (e.g., `2026-07-03-generate-trails-from-settled-town-geometry/`) and place all session artifacts for that plan inside it
 - **Status**: Tracked in git, committed with the session work
 
 ### Output (Binary/Evidence)
