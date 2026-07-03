@@ -48,12 +48,13 @@ public static class TrailGraphSelector
 
             if (connectingEdge != null)
             {
-                // Try to find a non-crossing edge if possible
+                // Try to find a non-crossing, non-parallel, non-redundant edge if possible
                 var alternativeEdge = remaining.FirstOrDefault(e =>
                     (connected.Contains(e.FromSlot) && !connected.Contains(e.ToSlot) ||
                      connected.Contains(e.ToSlot) && !connected.Contains(e.FromSlot)) &&
                     !WouldCrossExistingEdges(e, selected, townCoordinates) &&
-                    !WouldCreateParallelCorridor(e, selected, townCoordinates));
+                    !WouldCreateParallelCorridor(e, selected, townCoordinates) &&
+                    !WouldCreateRedundantRoute(e, selected, townCoordinates));
 
                 // Use the alternative if found, otherwise use the connecting edge
                 var edgeToAdd = alternativeEdge ?? connectingEdge;
@@ -93,7 +94,8 @@ public static class TrailGraphSelector
             var extraEdge = remaining[0];
             // Apply edge-quality filters to extra edges as well
             if (!WouldCrossExistingEdges(extraEdge, selected, townCoordinates) &&
-                !WouldCreateParallelCorridor(extraEdge, selected, townCoordinates))
+                !WouldCreateParallelCorridor(extraEdge, selected, townCoordinates) &&
+                !WouldCreateRedundantRoute(extraEdge, selected, townCoordinates))
             {
                 selected.Add(extraEdge);
             }
@@ -134,7 +136,7 @@ public static class TrailGraphSelector
         IReadOnlyList<TrailEdgeCandidate> accepted,
         Dictionary<int, (int X, int Y)> townCoordinates)
     {
-        return TrailEdgeFilter.AreRedundantRoutes(candidate, candidate, accepted);
+        return TrailEdgeFilter.AreRedundantRoutes(candidate, accepted);
     }
 
     private static int ComputeStableHash(string seedCode, string entropyMode, string salt)

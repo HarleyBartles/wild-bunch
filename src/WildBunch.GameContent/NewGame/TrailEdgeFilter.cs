@@ -95,12 +95,9 @@ public static class TrailEdgeFilter
     {
         return candidates.Where(candidate =>
         {
-            foreach (var acceptedEdge in accepted)
+            if (AreRedundantRoutes(candidate, accepted))
             {
-                if (AreRedundantRoutes(candidate, acceptedEdge, accepted))
-                {
-                    return false;
-                }
+                return false;
             }
             return true;
         }).ToList();
@@ -108,7 +105,6 @@ public static class TrailEdgeFilter
 
     public static bool AreRedundantRoutes(
         TrailEdgeCandidate candidate,
-        TrailEdgeCandidate acceptedEdge,
         IReadOnlyList<TrailEdgeCandidate> accepted)
     {
         // Check if there's already an indirect route between these towns
