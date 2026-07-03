@@ -212,6 +212,43 @@ public class TrailGraphSelectorTests
     }
 
     [Fact]
+    public void SelectConnectedGraph_RejectsRedundantExtraEdges()
+    {
+        // Create a triangle where extra edges would be redundant
+        var coordinates = new Dictionary<int, (int X, int Y)>
+        {
+            [0] = (400, 250),
+            [1] = (200, 100),
+            [2] = (600, 100)
+        };
+
+        var townNames = new List<TownNameEntry>
+        {
+            new(0, "town-0", "Town 0"),
+            new(1, "town-1", "Town 1"),
+            new(2, "town-2", "Town 2")
+        };
+
+        var candidates = TrailEdgeGenerator.GenerateCandidateEdges(coordinates);
+        var source = new GameSetupDeterministicSource("00000000-0000-0000-0000-000000000001");
+        
+        // Use Classic entropy which attempts 1 extra edge
+        var selected = TrailGraphSelector.SelectConnectedGraph(
+            candidates,
+            coordinates,
+            townNames,
+            coordinates.Count,
+            GameEntropy.Classic,
+            null,
+            source);
+
+        // Should still be exactly 2 edges (minimum spanning tree)
+        // The extra edge candidate (the third triangle edge) should be rejected as redundant
+        Assert.Equal(2, selected.Count);
+        Assert.True(IsConnected(selected, coordinates.Count));
+    }
+
+    [Fact]
     public void SelectConnectedGraph_FailsLoudlyWhenCannotConnectAllTowns()
     {
         // Create a scenario where connectivity is impossible
