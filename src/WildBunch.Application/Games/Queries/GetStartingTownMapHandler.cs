@@ -47,11 +47,11 @@ public sealed class GetStartingTownMapHandler
                 town.Y))
             .ToArray();
 
-        var trails = SeedWorldMapLayout.GetMapTrails(session.World)
+        var trails = session.World.Trails
             .Select(trail => new StartingTownMapTrailDto(
-                trail.Id,
-                trail.FromTownId,
-                trail.ToTownId,
+                trail.Id.Value,
+                trail.FromTownId.Value,
+                trail.ToTownId.Value,
                 trail.RideDayDistance))
             .ToArray();
 

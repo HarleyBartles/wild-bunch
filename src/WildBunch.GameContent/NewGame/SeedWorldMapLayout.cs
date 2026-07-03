@@ -114,23 +114,6 @@ public static class SeedWorldMapLayout
         return GetMapTowns(world, MapLayoutPalette.HubAndSpoke);
     }
 
-    public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails()
-    {
-        var world = SeedWorldCatalog.CreateCanonicalWorld();
-        return GetMapTrails(world);
-    }
-
-    public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails(World world)
-    {
-        return world.Trails
-            .Select(trail => new SeedMapTrailEdge(
-                trail.Id.Value,
-                trail.FromTownId.Value,
-                trail.ToTownId.Value,
-                trail.RideDayDistance))
-            .ToArray();
-    }
-
     public static (int X, int Y) GetCoordinatesForSlot(int slotIndex, int totalTowns, MapLayoutPalette layout)
     {
         return layout switch

@@ -308,7 +308,10 @@ public sealed class GeometryCanonicalDistanceTests
         var session = factory.Create("Test", GameDifficulty.Standard, SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode), GameEntropy.Boring);
 
         // Map trails should read from locked world trails
-        var mapTrails = SeedWorldMapLayout.GetMapTrails(session.World);
+        // GetMapTrails was removed - use session.World.Trails directly
+        var mapTrails = session.World.Trails
+            .Select(t => new SeedMapTrailEdge(t.Id.Value, t.FromTownId.Value, t.ToTownId.Value, t.RideDayDistance))
+            .ToArray();
         
         foreach (var mapTrail in mapTrails)
         {

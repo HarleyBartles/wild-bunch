@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using WildBunch.GameContent.NewGame;
 using WildBunch.Domain.World;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using Xunit;
 
 namespace WildBunch.GameContent.Tests;
@@ -44,7 +46,21 @@ public class MapLayoutScaleTests
             ServicesPalette.HubTelegraph,
             layout);
 
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, layout);
+        // Generate town coordinates
+        var townCoordinates = new Dictionary<int, (int X, int Y)>();
+        for (var i = 0; i < townNames.Count; i++)
+        {
+            townCoordinates[i] = SeedWorldMapLayout.GetCoordinatesForSlot(i, townNames.Count, layout);
+        }
+
+        // Generate trails using geometry-first approach
+        var trails = TrailTopologyGenerator.GenerateTrailTopology(
+            townCoordinates,
+            townNames,
+            GameEntropy.Boring,
+            null,
+            new GameSetupDeterministicSource(Guid.NewGuid().ToString("D")),
+            null);
 
         // Build adjacency list
         var adjacency = new Dictionary<string, HashSet<string>>();

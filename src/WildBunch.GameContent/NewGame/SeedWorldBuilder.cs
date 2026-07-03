@@ -13,7 +13,11 @@ internal static class SeedWorldBuilder
     /// Used by SeedWorldMapLayout for the start-screen map.
     /// </summary>
     public static World CreateCanonicalWorld()
-        => SeedWorldCatalog.CreateCanonicalWorld();
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var source = new GameSetupDeterministicSource(seedWorld.SeedCode.ToString("D"));
+        return CreateWorld(seedWorld, source, GameEntropy.Boring, null);
+    }
 
     /// <summary>
     /// Builds a World from a SeedWorld template. The seed world holds the

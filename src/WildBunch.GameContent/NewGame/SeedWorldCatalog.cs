@@ -1,6 +1,7 @@
 using WildBunch.Domain.World;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.Game;
+using System.Collections.Generic;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -24,34 +25,6 @@ public enum MapLayoutPalette
     DoubleLine = 1,          // Two parallel lines of towns, connected at endpoints
     Tree = 2,                // Hierarchical structure with main trunk and branches
     Star = 3                 // Central hub with dead-end spokes (natural outlier positions)
-}
-
-internal sealed record SeedTrailVariant(
-    TrailTerrain Terrain,
-    WaterFeature WaterFeature,
-    decimal RideDayDistance);
-
-/// <summary>
-/// A trail definition between two slot indices in the slot-based topology.
-/// Trails are included when both slot indices are less than the town count.
-/// Terrain/water/distance are indexed by world variant.
-/// </summary>
-internal sealed record SlotTrailDefinition(
-    int FromSlot,
-    int ToSlot,
-    TrailRisk Risk,
-    SeedTrailVariant Canonical,
-    SeedTrailVariant Variant)
-{
-    public SeedTrailVariant ForVariant(SeedWorldVariant variant)
-        => variant switch
-        {
-            SeedWorldVariant.Canonical => Canonical,
-            SeedWorldVariant.Frontier => Variant,
-            SeedWorldVariant.Rail => Variant,
-            SeedWorldVariant.Outback => Variant,
-            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, "Unsupported seed world variant.")
-        };
 }
 
 /// <summary>
@@ -265,162 +238,6 @@ internal static class SeedWorldCatalog
     }
 
     /// <summary>
-    /// Builds the trail graph for a world with the given town count, variant,
-    /// and map layout palette. Trails are included when both slot indices are
-    /// less than the town count. Slot indices are mapped to derived town IDs.
-    /// </summary>
-    public static IReadOnlyList<SeedWorldTrail> BuildTrails(
-        SeedWorldVariant variant,
-        IReadOnlyList<TownNameEntry> townNames,
-        MapLayoutPalette mapLayoutPalette)
-    {
-        var trails = new List<SeedWorldTrail>();
-        var count = townNames.Count;
-
-        foreach (var def in GenerateTrailsForLayout(mapLayoutPalette, count))
-        {
-            if (def.FromSlot < count && def.ToSlot < count)
-            {
-                var tv = def.ForVariant(variant);
-                trails.Add(new SeedWorldTrail(
-                    $"trail-{def.FromSlot}-{def.ToSlot}",
-                    townNames[def.FromSlot].Id,
-                    townNames[def.ToSlot].Id,
-                    def.Risk,
-                    tv.Terrain,
-                    tv.WaterFeature,
-                    tv.RideDayDistance));
-            }
-        }
-
-        return trails;
-    }
-
-    /// <summary>
-    /// Generates trail definitions for a given layout palette and town count.
-    /// All layouts are designed with redundancy to support trail removal while maintaining connectivity.
-    /// Trails only meet at towns - no crossing trails between towns.
-    /// </summary>
-    private static IReadOnlyList<SlotTrailDefinition> GenerateTrailsForLayout(
-        MapLayoutPalette layout,
-        int townCount)
-    {
-        return layout switch
-        {
-            MapLayoutPalette.HubAndSpoke => GenerateHubAndSpokeTrails(townCount),
-            MapLayoutPalette.DoubleLine => GenerateDoubleLineTrails(townCount),
-            MapLayoutPalette.Tree => GenerateTreeTrails(townCount),
-            MapLayoutPalette.Star => GenerateStarTrails(townCount),
-            _ => throw new ArgumentOutOfRangeException(nameof(layout), $"Unknown map layout palette: {layout}")
-        };
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateHubAndSpokeTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-
-        // Spokes: hub (slot 0) to each outer town
-        for (var i = 1; i < count; i++)
-        {
-            trails.Add(new SlotTrailDefinition(
-                0, i, TrailRisk.Low,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m)));
-        }
-
-        // Ring: outer towns connected in a circle
-        for (var i = 1; i < count; i++)
-        {
-            var next = i == count - 1 ? 1 : i + 1;
-            trails.Add(new SlotTrailDefinition(
-                i, next, TrailRisk.Moderate,
-                new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m),
-                new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m)));
-        }
-
-        return trails;
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateTreeTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
-
-        // Main trunk
-        var trunkLength = Math.Min(4, count);
-        for (var i = 0; i < trunkLength - 1; i++)
-        {
-            var risk = i < 2 ? TrailRisk.Low : TrailRisk.Moderate;
-            trails.Add(new SlotTrailDefinition(i, i + 1, risk, canonical, variant));
-        }
-
-        // Branches from trunk
-        for (var i = 1; i < trunkLength; i++)
-        {
-            var branchSlot = i + 3;
-            if (branchSlot < count)
-            {
-                trails.Add(new SlotTrailDefinition(i, branchSlot, TrailRisk.Moderate, canonical, variant));
-            }
-        }
-
-        return trails;
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateStarTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 4m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 4m);
-
-        // Central hub (slot 0) to all other towns
-        for (var i = 1; i < count; i++)
-        {
-            trails.Add(new SlotTrailDefinition(0, i, TrailRisk.Low, canonical, variant));
-        }
-
-        return trails;
-    }
-
-    private static IReadOnlyList<SlotTrailDefinition> GenerateDoubleLineTrails(int count)
-    {
-        var trails = new List<SlotTrailDefinition>();
-        var mid = count / 2;
-        var canonical = new SeedTrailVariant(TrailTerrain.OpenRange, WaterFeature.Creek, 3m);
-        var variant = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Creek, 3m);
-        var crossCanonical = new SeedTrailVariant(TrailTerrain.Hills, WaterFeature.Spring, 4m);
-        var crossVariant = new SeedTrailVariant(TrailTerrain.Badlands, WaterFeature.None, 4m);
-
-        // Line 1: 0-1-2-...-mid-1
-        for (var i = 0; i < mid - 1; i++)
-        {
-            trails.Add(new SlotTrailDefinition(i, i + 1, TrailRisk.Low, canonical, variant));
-        }
-
-        // Line 2: mid-mid+1-...-count-1
-        for (var i = mid; i < count - 1; i++)
-        {
-            trails.Add(new SlotTrailDefinition(i, i + 1, TrailRisk.Low, canonical, variant));
-        }
-
-        // Connections between lines (at endpoints only - no crossing trails)
-        if (mid > 0 && mid < count)
-        {
-            // Connect end of line 1 to start of line 2
-            trails.Add(new SlotTrailDefinition(mid - 1, mid, TrailRisk.Moderate, crossCanonical, crossVariant));
-        }
-
-        if (count >= 2)
-        {
-            // Connect start of line 1 to end of line 2
-            trails.Add(new SlotTrailDefinition(0, count - 1, TrailRisk.Moderate, crossCanonical, crossVariant));
-        }
-
-        return trails;
-    }
-
-    /// <summary>
     /// Builds a World from the seed-derived town names, services palette,
     /// prosperity palette, and trail graph. Prosperity and services are
     /// applied by slot position.
@@ -486,14 +303,30 @@ internal static class SeedWorldCatalog
             prosperityPalette: ProsperityPalette.UniformProsperous,
             servicesPalette: ServicesPalette.HubTelegraph,
             mapLayoutPalette: MapLayoutPalette.HubAndSpoke);
-        var trails = BuildTrails(SeedWorldVariant.Canonical, townNames, MapLayoutPalette.HubAndSpoke);
+        
+        // Generate town coordinates for canonical layout
+        var townCoordinates = new Dictionary<int, (int X, int Y)>();
+        for (var i = 0; i < townNames.Count; i++)
+        {
+            townCoordinates[i] = SeedWorldMapLayout.GetCoordinatesForSlot(i, townNames.Count, MapLayoutPalette.HubAndSpoke);
+        }
+        
+        // Generate trails using geometry-first approach
+        var trails = TrailTopologyGenerator.GenerateTrailTopology(
+            townCoordinates,
+            townNames,
+            GameEntropy.Boring,
+            null,
+            new GameSetupDeterministicSource(Guid.Empty.ToString("D")),
+            null);
+        
         return CreateWorld(
             SeedWorldVariant.Canonical,
             townNames,
             ServicesPalette.HubTelegraph,
             ProsperityPalette.UniformProsperous,
             trails,
-            townCoordinates: null,
+            townCoordinates,
             outlierSlot: null);
     }
 }
