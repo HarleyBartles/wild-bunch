@@ -76,13 +76,13 @@ public sealed record SuspectAliasSnapshot(string Name, string AliasKind)
         => new(Name, Enum.Parse<AliasKind>(AliasKind));
 }
 
-public sealed record SuspectIdentityFactSnapshot(string Raw, string ThirdPerson, string FirstPerson)
+public sealed record SuspectIdentityFactSnapshot(string Raw, string ThirdPerson, string FirstPerson, bool IsPrimary)
 {
     public static SuspectIdentityFactSnapshot FromDomain(SuspectIdentityFact fact)
-        => new(fact.Language.HasForm, fact.Language.WithForm, fact.Language.WhoForm);
+        => new(fact.Language.HasForm, fact.Language.WithForm, fact.Language.WhoForm, fact.IsPrimary);
 
     public SuspectIdentityFact ToDomain()
-        => new(FeatureLanguage.Raw(Raw, ThirdPerson, FirstPerson), true);
+        => new(FeatureLanguage.Raw(Raw, ThirdPerson, FirstPerson), IsPrimary);
 }
 
 public sealed record ClueSnapshot(
