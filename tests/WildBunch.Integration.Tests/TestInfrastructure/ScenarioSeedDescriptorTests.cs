@@ -1,0 +1,30 @@
+using WildBunch.Domain.Economy;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
+using WildBunch.GameContent.NewGame;
+
+namespace WildBunch.Integration.Tests.TestInfrastructure;
+
+public sealed class ScenarioSeedDescriptorTests
+{
+    [Fact]
+    public void TypedDescriptorFormatsAReadableSemanticShape()
+    {
+        var descriptor = ScenarioSeedDescriptor.Create("CanonicalMountedStandard")
+            .WithCodecVersion(ScenarioSeedCodecVersion.Current)
+            .WithEntropy(GameEntropy.Boring)
+            .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
+            .WithHorse(HorseCondition.Healthy)
+            .WithSaddle(SaddleState.Present)
+            .WithWallet(25m)
+            .WithItemCount(8)
+            .WithTownCount(8)
+            .WithPreview(ScenarioPreviewExpectation.Mounted(new TownId("quartzsite"), 5, 5));
+
+        Assert.Equal(
+            "resolver-v15|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=quartzsite:mounted:5/5",
+            descriptor.FormatRequiredShapeSignature());
+    }
+}
