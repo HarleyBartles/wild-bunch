@@ -9,6 +9,7 @@ using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
+using SaltSource = WildBunch.Domain.Game.SaltSource;
 
 namespace WildBunch.Domain.Tests.Events;
 
@@ -19,12 +20,23 @@ public class StartFlowEventSourcingTests
     {
         var session = CreateSetupSession();
 
-        var single = Assert.Single(session.UncommittedEvents);
-        var setupEvent = Assert.IsType<PlayerSetupCompleted>(single);
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        var setupEvent = Assert.IsType<PlayerSetupCompleted>(session.UncommittedEvents[0]);
         Assert.Equal("Ranger Vale", setupEvent.PlayerName);
         Assert.Equal(GameDifficulty.Standard, setupEvent.GameDifficulty);
         Assert.Equal(GameEntropy.Classic, setupEvent.GameEntropy);
         Assert.Equal("test-seed-12345", setupEvent.SeedCode);
+    }
+
+    [Fact]
+    public void StartSetup_Produces_WorldGenerated_AsUncommitted()
+    {
+        var session = CreateSetupSession();
+
+        Assert.Equal(2, session.UncommittedEvents.Count);
+        var worldEvent = Assert.IsType<WorldGenerated>(session.UncommittedEvents[1]);
+        Assert.Equal("test-seed-12345", worldEvent.SeedCode);
+        Assert.NotNull(worldEvent.World);
     }
 
     [Fact]
@@ -90,7 +102,9 @@ public class StartFlowEventSourcingTests
         session.MarkEventsCommitted();
         session.ViewPrologue("descriptor-1");
         session.MarkEventsCommitted();
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.MarkEventsCommitted();
+        session.CompleteGameStart();
         session.MarkEventsCommitted();
 
         Assert.Throws<InvalidOperationException>(() => session.ViewPrologue("descriptor-2"));
@@ -101,8 +115,12 @@ public class StartFlowEventSourcingTests
     {
         var session = CreateSetupSession();
         session.MarkEventsCommitted();
+        session.ViewPrologue("descriptor-1");
+        session.MarkEventsCommitted();
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.MarkEventsCommitted();
 
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.CompleteGameStart();
 
         var single = Assert.Single(session.UncommittedEvents);
         var gameStarted = Assert.IsType<GameStarted>(single);
@@ -115,10 +133,12 @@ public class StartFlowEventSourcingTests
     public void CompleteGameStart_WhenAlreadyStarted_DoesNothing()
     {
         var session = CreateSetupSession();
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.ViewPrologue("descriptor-1");
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart();
         session.MarkEventsCommitted();
 
-        session.CompleteGameStart(new TownId("redmesa"));
+        session.CompleteGameStart();
 
         Assert.Empty(session.UncommittedEvents);
     }
@@ -136,8 +156,9 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
@@ -153,8 +174,9 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         session.ViewPrologue("true-culprit");
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
@@ -169,10 +191,12 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         session.ViewPrologue("true-culprit");
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart();
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
@@ -187,8 +211,9 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
@@ -207,7 +232,8 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
-        return GameSession.StartSetup(playerName, world, caseFile, gameDifficulty, gameEntropy, seedCode);
+        var saltSource = SaltSource.CreateFixed("test-salt");
+        return GameSession.StartSetup(playerName, world, caseFile, gameDifficulty, gameEntropy, seedCode, saltSource);
     }
 
     private static DomainWorld CreateWorld()

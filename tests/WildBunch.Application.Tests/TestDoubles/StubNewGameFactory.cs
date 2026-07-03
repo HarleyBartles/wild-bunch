@@ -44,7 +44,7 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public GameSession CreatedSession => _sessionToReturn;
 
-    public (World World, CaseFile CaseFile, string SeedCodeText) ResolveWorld(
+    public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
         string playerName,
         GameDifficulty gameDifficulty,
         string? setupSeedCode,
@@ -54,7 +54,7 @@ public sealed class StubNewGameFactory : INewGameFactory
         RequestedGameDifficulties.Add(gameDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
         RequestedEntropies.Add(gameEntropy);
-        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000");
+        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000", _sessionToReturn.SaltSource);
     }
 
     public (Wallet Wallet, Inventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)
