@@ -143,7 +143,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public DomainWorld World { get; private set; } = null!;
 
-    public CaseFile CaseFile { get; }
+    public CaseFile CaseFile { get; private set; } = null!;
 
     public PursuitState PursuitState { get; }
 
@@ -871,6 +871,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         session.Apply(worldEvent);
         session._uncommittedEvents.Add(worldEvent);
 
+        var caseFileEvent = new CaseFileGenerated
+        {
+            CaseFile = CaseFileSnapshot.FromDomain(caseFile)
+        };
+
+        session.Apply(caseFileEvent);
+        session._uncommittedEvents.Add(caseFileEvent);
+
         return session;
     }
 
@@ -1135,6 +1143,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(WorldGenerated e)
     {
         World = e.World.ToDomain();
+        _version++;
+    }
+
+    private void Apply(CaseFileGenerated e)
+    {
+        CaseFile = e.CaseFile.ToDomain();
         _version++;
     }
 

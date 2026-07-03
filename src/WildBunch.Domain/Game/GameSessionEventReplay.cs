@@ -24,17 +24,14 @@ public sealed partial class GameSession
     /// </summary>
     /// <param name="id">The session id.</param>
     /// <param name="world">The world definition (external reference, not stored in events).</param>
-    /// <param name="caseFile">The case file template (external reference, not stored in events).</param>
     /// <param name="events">The typed domain events to replay.</param>
     /// <returns>A session whose migrated state matches what the command path would produce.</returns>
     public static GameSession RehydrateFromEvents(
         GameSessionId id,
         DomainWorld world,
-        CaseFile caseFile,
         IReadOnlyList<IDomainEvent> events)
     {
         ArgumentNullException.ThrowIfNull(world);
-        ArgumentNullException.ThrowIfNull(caseFile);
         ArgumentNullException.ThrowIfNull(events);
 
         if (events.Count == 0)
@@ -71,6 +68,13 @@ public sealed partial class GameSession
             health: startingHealth,
             Wallet.Starting(startingWallet),
             DomainInventory.Empty());
+
+        var caseFile = new CaseFile(
+            null,
+            Array.Empty<Suspect>(),
+            new SuspectId("placeholder"),
+            CaseOpeningLead.Create("placeholder"),
+            Array.Empty<Clue>());
 
         var session = new GameSession(
             id,
@@ -115,6 +119,9 @@ public sealed partial class GameSession
                 break;
             case WorldGenerated wg:
                 session.Apply(wg);
+                break;
+            case CaseFileGenerated cfg:
+                session.Apply(cfg);
                 break;
             case StartingTownSelected sts:
                 session.Apply(sts);
