@@ -223,7 +223,13 @@ public sealed class SaloonConfrontationAcceptanceTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart();
+        return session;
     }
 
     private static GameSession CreateCitizenSession()
@@ -242,6 +248,12 @@ public sealed class SaloonConfrontationAcceptanceTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, Wallet.Starting(4m), inventory: null);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart(Wallet.Starting(4m), inventory: null);
+        return session;
     }
 }

@@ -49,8 +49,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             .OrderBy(e => e.Sequence)
             .ToArrayAsync();
 
-        Assert.Single(storedEvents);
-        Assert.Equal("GameStarted", storedEvents[0].EventType);
+        Assert.Equal(6, storedEvents.Length);
+        Assert.Equal("PlayerSetupCompleted", storedEvents[0].EventType);
         Assert.Equal(1, storedEvents[0].Sequence);
     }
 
@@ -85,11 +85,11 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             .OrderBy(e => e.Sequence)
             .ToArrayAsync();
 
-        Assert.Equal(3, storedEvents.Length);
-        Assert.Equal("GameStarted", storedEvents[0].EventType);
-        Assert.Equal("TownActionContextEntered", storedEvents[1].EventType);
-        Assert.Equal("StoreItemPurchased", storedEvents[2].EventType);
-        Assert.Equal(3, storedEvents[2].Sequence);
+        Assert.Equal(8, storedEvents.Length);
+        Assert.Equal("PlayerSetupCompleted", storedEvents[0].EventType);
+        Assert.Equal("TownActionContextEntered", storedEvents[6].EventType);
+        Assert.Equal("StoreItemPurchased", storedEvents[7].EventType);
+        Assert.Equal(8, storedEvents[7].Sequence);
     }
 
     [Fact]
@@ -151,11 +151,11 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         var events = await repo.GetEventStreamAsync(session.Id);
 
-        Assert.Equal(3, events.Count);
-        Assert.IsType<GameStarted>(events[0]);
-        Assert.IsType<TownActionContextEntered>(events[1]);
-        Assert.IsType<StoreItemPurchased>(events[2]);
-        var purchase = (StoreItemPurchased)events[2];
+        Assert.Equal(8, events.Count);
+        Assert.IsType<PlayerSetupCompleted>(events[0]);
+        Assert.IsType<TownActionContextEntered>(events[6]);
+        Assert.IsType<StoreItemPurchased>(events[7]);
+        var purchase = (StoreItemPurchased)events[7];
         Assert.Equal(3, purchase.Quantity);
     }
 
@@ -181,8 +181,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         await repo.StoreAsync(loaded);
         await uow.CommitAsync();
 
-        // Get events after version 1 (the GameStarted)
-        var events = await repo.GetEventStreamAsync(session.Id, fromVersion: 1);
+        // Get events after version 6 (the start flow events)
+        var events = await repo.GetEventStreamAsync(session.Id, fromVersion: 6);
 
         Assert.Equal(2, events.Count);
         Assert.IsType<TownActionContextEntered>(events[0]);
@@ -206,7 +206,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
         var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
 
-        // 1. Create + store + commit (GameStarted)
+        // 1. Create + store + commit (start flow events)
         var session = CreateSession();
         await repo.StoreAsync(session);
         await uow.CommitAsync();
@@ -232,17 +232,17 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             .Where(e => e.StreamId == session.Id.Value)
             .OrderBy(e => e.Sequence)
             .ToArrayAsync();
-        Assert.Equal(3, storedEvents.Length);
-        Assert.Equal("GameStarted", storedEvents[0].EventType);
-        Assert.Equal("TownActionContextEntered", storedEvents[1].EventType);
-        Assert.Equal("InvestigationPerformed", storedEvents[2].EventType);
+        Assert.Equal(8, storedEvents.Length);
+        Assert.Equal("PlayerSetupCompleted", storedEvents[0].EventType);
+        Assert.Equal("TownActionContextEntered", storedEvents[6].EventType);
+        Assert.Equal("InvestigationPerformed", storedEvents[7].EventType);
 
         // 4. GetEventStreamAsync must deserialize all events without throwing
         var events = await repo.GetEventStreamAsync(session.Id);
-        Assert.Equal(3, events.Count);
-        Assert.IsType<GameStarted>(events[0]);
-        Assert.IsType<TownActionContextEntered>(events[1]);
-        var investigationEvent = Assert.IsType<InvestigationPerformed>(events[2]);
+        Assert.Equal(8, events.Count);
+        Assert.IsType<PlayerSetupCompleted>(events[0]);
+        Assert.IsType<TownActionContextEntered>(events[6]);
+        var investigationEvent = Assert.IsType<InvestigationPerformed>(events[7]);
         Assert.Equal(InvestigationSourceKind.LocalGossip, investigationEvent.SourceKind);
     }
 
@@ -255,7 +255,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
 
-        // 1. Create + store + commit (GameStarted)
+        // 1. Create + store + commit (start flow events)
         var session = CreateSessionWithWarrantedSaloonSuspect();
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
         await repo.StoreAsync(session);
@@ -275,10 +275,10 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         // 3. Verify the event stream deserializes correctly
         var events = await repo.GetEventStreamAsync(session.Id);
-        Assert.Equal(3, events.Count);
-        Assert.IsType<GameStarted>(events[0]);
-        Assert.IsType<TownActionContextEntered>(events[1]);
-        var spottedEvent = Assert.IsType<SaloonPersonOfInterestSpotted>(events[2]);
+        Assert.Equal(8, events.Count);
+        Assert.IsType<PlayerSetupCompleted>(events[0]);
+        Assert.IsType<TownActionContextEntered>(events[6]);
+        var spottedEvent = Assert.IsType<SaloonPersonOfInterestSpotted>(events[7]);
         Assert.Equal(InvestigationSourceKind.SaloonLookAround, spottedEvent.SourceKind);
     }
 
@@ -405,15 +405,15 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             var repo2 = scope2.ServiceProvider.GetRequiredService<IGameSessionRepository>();
             var uow2 = scope2.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
 
-            // Both load the session at version 1 (same StreamVersion in their own DbContexts).
+            // Both load the session at version 6 (same StreamVersion in their own DbContexts).
             var copy1 = await repo1.GetByIdAsync(sessionId);
             var copy2 = await repo2.GetByIdAsync(sessionId);
             Assert.NotNull(copy1);
             Assert.NotNull(copy2);
-            Assert.Equal(1, copy1!.Version);
-            Assert.Equal(1, copy2!.Version);
+            Assert.Equal(6, copy1!.Version);
+            Assert.Equal(6, copy2!.Version);
 
-            // Both produce a purchase event → both try to append at sequence 2.
+            // Both produce a purchase event → both try to append at sequence 7.
             var resolver = new TownStoreCatalogResolver();
             var offer1 = resolver.Resolve(copy1.World.GetTown(copy1.Player.CurrentTownId))
                 .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
@@ -457,8 +457,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         using var database = new PostgreSqlTestDatabase();
         var services = CreateServices(database.ConnectionString);
 
-        // Seed: create + commit (v1), then reload + purchase + commit (v2).
-        // After this, SnapshotVersion == StreamVersion == 2 in the DB.
+        // Seed: create + commit (v6), then reload + purchase + commit (v8).
+        // After this, SnapshotVersion == StreamVersion == 8 in the DB.
         GameSessionId sessionId;
         using (var seedScope = services.CreateScope())
         {
@@ -479,26 +479,26 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             await seedUow.CommitAsync();
         }
 
-        // Force a lagging snapshot: set SnapshotVersion back to 1 while
-        // StreamVersion stays at 2. This simulates a snapshot that was not
+        // Force a lagging snapshot: set SnapshotVersion back to 6 while
+        // StreamVersion stays at 8. This simulates a snapshot that was not
         // refreshed after the last event append.
         using (var adminScope = services.CreateScope())
         {
             var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
             var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
-            entity.SnapshotVersion = 1;
+            entity.SnapshotVersion = 6;
             await adminDb.SaveChangesAsync();
         }
 
-        // Load through the repository. The snapshot is at version 1, the stream
-        // is at version 3, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
-        // replayed. The loaded aggregate's Version must equal StreamVersion (3),
-        // not StreamVersion + 1 (4) which would be the bug.
+        // Load through the repository. The snapshot is at version 6, the stream
+        // is at version 8, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
+        // replayed. The loaded aggregate's Version must equal StreamVersion (8),
+        // not StreamVersion + 1 (9) which would be the bug.
         using var loadScope = services.CreateScope();
         var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
         var loaded2 = await loadRepo.GetByIdAsync(sessionId);
         Assert.NotNull(loaded2);
-        Assert.Equal(3, loaded2!.Version);
+        Assert.Equal(8, loaded2!.Version);
     }
 
     /// <summary>
@@ -515,10 +515,10 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         using var database = new PostgreSqlTestDatabase();
         var services = CreateServices(database.ConnectionString);
 
-        // Seed: create + commit (v1), then reload + purchase + commit (v2).
-        // After this, SnapshotVersion == StreamVersion == 3 in the DB.
-        // v1 produces GameStarted (1 log entry: opening).
-        // v2,v3 produce TownActionContextEntered + StoreItemPurchased (1 log entry: purchase).
+        // Seed: create + commit (v6), then reload + purchase + commit (v8).
+        // After this, SnapshotVersion == StreamVersion == 8 in the DB.
+        // The start flow produces 6 events but only GameStarted yields a log entry (opening).
+        // v7,v8 produce TownActionContextEntered + StoreItemPurchased (1 log entry: purchase).
         // Full-stream projection = 2 log entries.
         GameSessionId sessionId;
         using (var seedScope = services.CreateScope())
@@ -540,19 +540,19 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             await seedUow.CommitAsync();
         }
 
-        // Force a lagging snapshot: set SnapshotVersion back to 1 while
-        // StreamVersion stays at 3. This simulates a snapshot that was not
+        // Force a lagging snapshot: set SnapshotVersion back to 6 while
+        // StreamVersion stays at 8. This simulates a snapshot that was not
         // refreshed after the last event append.
         using (var adminScope = services.CreateScope())
         {
             var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
             var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
-            entity.SnapshotVersion = 1;
+            entity.SnapshotVersion = 6;
             await adminDb.SaveChangesAsync();
         }
 
-        // Load through the repository. The snapshot is at version 1, the stream
-        // is at version 3, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
+        // Load through the repository. The snapshot is at version 6, the stream
+        // is at version 8, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
         // replayed via ApplyCommittedEvents. The aggregate's LogEntries must
         // contain exactly 2 entries (opening + purchase), not 3 (which would
         // indicate the purchase entry was duplicated by full-stream projection
@@ -562,7 +562,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var loaded2 = await loadRepo.GetByIdAsync(sessionId);
         Assert.NotNull(loaded2);
 
-        // The full event stream has 3 events (GameStarted + TownActionContextEntered + StoreItemPurchased).
+        // The full event stream has 8 events (6 start flow + TownActionContextEntered + StoreItemPurchased).
         // The projector produces 2 log entries (opening + purchase).
         // The aggregate's LogEntries must match — no duplication from
         // snapshot-prefix projection + post-snapshot replay.
@@ -609,7 +609,13 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateSessionWithWarrantedSaloonSuspect()
@@ -651,8 +657,12 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Easy, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed(string.Empty));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory: null);
+        return session;
     }
 }

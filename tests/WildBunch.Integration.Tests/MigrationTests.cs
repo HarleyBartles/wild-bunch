@@ -129,6 +129,12 @@ public sealed class MigrationTests
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
-        return GameSession.StartNew("Ranger Vale", world, caseFile);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart();
+        return session;
     }
 }

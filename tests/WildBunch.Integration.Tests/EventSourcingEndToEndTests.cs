@@ -64,7 +64,13 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     [Fact]
@@ -80,20 +86,20 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
 
         // 1. Create session
         var session = CreateSession();
-        Assert.Single(session.UncommittedEvents);
-        Assert.IsType<GameStarted>(session.UncommittedEvents[0]);
+        Assert.Equal(6, session.UncommittedEvents.Count);
+        Assert.IsType<PlayerSetupCompleted>(session.UncommittedEvents[0]);
 
         // 2. Store + commit
         await repo.StoreAsync(session);
         await uow.CommitAsync();
         session.MarkEventsCommitted();
         Assert.Empty(session.UncommittedEvents);
-        Assert.Equal(1, session.Version);
+        Assert.Equal(6, session.Version);
 
         // 3. Reload from snapshot
         var reloaded = await repo.GetByIdAsync(session.Id);
         Assert.NotNull(reloaded);
-        Assert.Equal(1, reloaded!.Version);
+        Assert.Equal(6, reloaded!.Version);
         Assert.Equal("Ranger Vale", reloaded.Player.Name);
 
         // 4. Command: purchase
@@ -109,14 +115,14 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         await repo.StoreAsync(reloaded);
         await uow.CommitAsync();
         reloaded.MarkEventsCommitted();
-        Assert.Equal(3, reloaded.Version);
+        Assert.Equal(8, reloaded.Version);
 
         // 6. Replay from events
         var events = await repo.GetEventStreamAsync(session.Id);
-        Assert.Equal(3, events.Count);
-        Assert.IsType<GameStarted>(events[0]);
-        Assert.IsType<TownActionContextEntered>(events[1]);
-        Assert.IsType<StoreItemPurchased>(events[2]);
+        Assert.Equal(8, events.Count);
+        Assert.IsType<PlayerSetupCompleted>(events[0]);
+        Assert.IsType<TownActionContextEntered>(events[6]);
+        Assert.IsType<StoreItemPurchased>(events[7]);
 
         // 7. Project from events
         var hud = hudProjector.Project(events);
@@ -125,10 +131,10 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         Assert.Equal(4, hud.InventoryItems.Single(i => i.ItemKind == DomainItemKind.Food).Quantity); // 1 + 3 = 4
 
         var audit = auditProjector.Project(events);
-        Assert.Equal(3, audit.Entries.Count);
-        Assert.Equal("GameStarted", audit.Entries[0].EventType);
-        Assert.Equal("TownActionContextEntered", audit.Entries[1].EventType);
-        Assert.Equal("StoreItemPurchased", audit.Entries[2].EventType);
+        Assert.Equal(8, audit.Entries.Count);
+        Assert.Equal("PlayerSetupCompleted", audit.Entries[0].EventType);
+        Assert.Equal("TownActionContextEntered", audit.Entries[6].EventType);
+        Assert.Equal("StoreItemPurchased", audit.Entries[7].EventType);
     }
 
     [Fact]

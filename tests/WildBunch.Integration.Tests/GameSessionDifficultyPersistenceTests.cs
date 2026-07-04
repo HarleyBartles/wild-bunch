@@ -430,15 +430,18 @@ public sealed class GameSessionDifficultyPersistenceTests
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        return GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            pinecross.Id,
-            Wallet.Starting(25m),
-            inventory,
             GameDifficulty,
-            gameEntropy: entropy);
+            entropy,
+            "test-seed",
+            SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateTownVisitSession()
@@ -478,11 +481,17 @@ public sealed class GameSessionDifficultyPersistenceTests
                     context: "Telegraph lead")
             });
 
-        return GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            currentTown.Id,
+            GameDifficulty.Easy,
+            GameEntropy.Classic,
+            "test-seed",
+            SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart(
             Wallet.Starting(25m),
             new Inventory(new[]
             {
@@ -490,8 +499,8 @@ public sealed class GameSessionDifficultyPersistenceTests
                 new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
                 new InventoryItem(ItemKind.Horse, 1, new HorseTravelState(3, 2, 3)),
                 new InventoryItem(ItemKind.Saddle, 1)
-            }),
-            GameDifficulty.Easy);
+            }));
+        return session;
     }
 
     private static CaseFile CreateGangAwareCaseFile()
@@ -692,13 +701,17 @@ public sealed class GameSessionDifficultyPersistenceTests
             new InventoryItem(ItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            pinecross.Id,
-            Wallet.Starting(25m),
-            inventory,
-            GameDifficulty.Easy);
+            GameDifficulty.Easy,
+            GameEntropy.Classic,
+            "test-seed",
+            SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 }

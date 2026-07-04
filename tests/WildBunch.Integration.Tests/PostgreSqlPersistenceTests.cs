@@ -239,15 +239,17 @@ public sealed class PostgreSqlPersistenceTests
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            dustvale.Id,
-            Wallet.Starting(25m),
-            inventory,
             GameDifficulty.Easy,
-            saltSource: DeterministicSaltSource);
+            GameEntropy.Classic,
+            "test-seed",
+            DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
 
         var preview = CreatePostgreSqlLanePreview(session.Player.CurrentTownId, holloway.Id, "Dustvale", "Holloway");
         Assert.True(preview.Success);
