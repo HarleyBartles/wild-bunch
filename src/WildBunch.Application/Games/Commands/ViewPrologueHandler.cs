@@ -28,6 +28,9 @@ public sealed class ViewPrologueHandler : GameSessionCommandHandler
         _diaryProjector = diaryProjector;
     }
 
+    // Setup-flow handler: views prologue before GameStarted.
+    protected override bool RequiresGameStarted => false;
+
     public async Task<GameSessionDto> HandleAsync(ViewPrologueCommand command, GameSessionId sessionId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);

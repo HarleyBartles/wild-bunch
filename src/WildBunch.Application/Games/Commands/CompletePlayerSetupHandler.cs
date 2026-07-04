@@ -35,6 +35,9 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
         _diaryProjector = diaryProjector;
     }
 
+    // Setup-flow handler: creates the session, does not require GameStarted.
+    protected override bool RequiresGameStarted => false;
+
     public async Task<GameSessionDto> HandleAsync(CompletePlayerSetupCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);

@@ -8,6 +8,8 @@ builder.Services.AddWildBunchServices(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+
 app.Services.ApplyWildBunchMigrations();
 
 if (app.Environment.IsDevelopment())

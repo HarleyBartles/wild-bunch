@@ -23,7 +23,7 @@ This repo's architecture stack is DDD + CQRS + Event Sourcing. These patterns ar
 
 ### Aggregate Root Pattern (DDD)
 - `GameSession` is the sole entry point for gameplay mutations. External code never directly mutates child entities (`Player`, `TownVisitState`, `CaseFile`, etc.).
-- The aggregate root enforces all invariants. Invariant violations return `Failed` result objects (e.g., `StorePurchaseResult.Failed(message)`), not exceptions. This is the established pattern — see `IsArchived`, `IsJourneyModal`, and `IsSetupPhase` guards.
+- The aggregate root enforces all invariants. Invariant violations return `Failed` result objects (e.g., `StorePurchaseResult.Failed(message)`), not exceptions. This is the established pattern — see `IsArchived` and `IsJourneyModal` guards.
 - Child components (`BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, `ActionContextTracker`) receive narrow context records, return outcomes or events-to-produce, and do NOT reference `GameSession` or produce events directly.
 - Do not extract domain rules into services that mutate the aggregate from outside. The aggregate owns its rules.
 - Do not create placeholder state. Objects are created at the right time with real values. If a value is not yet known (e.g., starting town during setup), the field is nullable (`TownId?`) and set when the value becomes known (e.g., `Apply(GameStarted)`). Placeholder values that get silently replaced are an anti-pattern.
@@ -45,8 +45,11 @@ This repo's architecture stack is DDD + CQRS + Event Sourcing. These patterns ar
 
 ### Setup Phase and Nullable State
 - During setup phase (`StartFlowPhase < GameStarted`), the player has not chosen a starting town. `Player.CurrentTownId` is `null`. `_currentTown` is `null`. `CurrentTownVisit` is `null`.
-- Gameplay command methods check `IsSetupPhase` as the first invariant (before `IsArchived` and `IsJourneyModal`) and return `Failed(SetupPhaseBlockMessage)`.
-- `ArchivePlaythrough` is an exception — it is a lifecycle operation, not a gameplay command. It works during setup phase and records `null` for `LastTownId`/`LastTownName` in the `PlaythroughArchived` event. A player can archive and start over at any point after the event stream begins.
+- The setup-phase invariant is enforced centrally by `GameSessionCommandHandler.ExecuteWithRetryAsync`, not by individual gameplay domain methods. The base handler checks `session.IsSetupPhase` after loading and throws `SetupPhaseException` before the command lambda runs. `SetupPhaseException` is mapped to 409 Conflict by `WildBunchExceptionHandler`. New gameplay command handlers inherit the guard for free by default.
+- Setup-flow and lifecycle handlers opt out by overriding `protected override bool RequiresGameStarted => false;`. The four opt-out handlers are: `CompletePlayerSetupHandler`, `ViewPrologueHandler`, `CompleteGameStartHandler`, `ArchivePlaythroughHandler`.
+- `GameSession.IsSetupPhase` is a public property (the source of truth for the invariant). The application layer owns the throw; the domain owns the state.
+- Query handlers (e.g., `PreviewTravelHandler`) do not go through `ExecuteWithRetryAsync` and must check `session.IsSetupPhase` themselves, returning a failure DTO instead of throwing.
+- `ArchivePlaythrough` is a lifecycle operation, not a gameplay command. It works during setup phase and records `null` for `LastTownId`/`LastTownName` in the `PlaythroughArchived` event. A player can archive and start over at any point after the event stream begins.
 - Read models, projections, and DTOs that expose town-scoped fields use nullable types (`TownId?`, `string?`) and return `null` during setup phase.
 - Dev mappers (`SessionDevContextMapper`, `SaloonDevContextMapper`) return null town fields for setup-phase sessions.
 

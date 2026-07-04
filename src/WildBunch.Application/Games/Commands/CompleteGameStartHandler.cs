@@ -34,6 +34,9 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
         _diaryProjector = diaryProjector;
     }
 
+    // Setup-flow handler: transitions session from StartingTownSelected to GameStarted.
+    protected override bool RequiresGameStarted => false;
+
     public async Task<GameSessionDto> HandleAsync(CompleteGameStartCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);

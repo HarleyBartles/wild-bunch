@@ -79,4 +79,34 @@ internal static class ThreeStepGameSetup
         this HttpClient client,
         BoringScenario scenario)
         => await client.CreateStartedGameAsync(scenario.Fixture, "Ranger Vale");
+
+    /// <summary>
+    /// Creates a setup-only game session (step 1 only — no prologue, no start).
+    /// Used by tests that verify gameplay commands are blocked during the
+    /// setup phase (expecting 409 Conflict from SetupPhaseException).
+    /// </summary>
+    public static async Task<GameSessionDto> CreateSetupOnlyGameAsync(
+        this HttpClient client,
+        ScenarioSeedFixture fixture,
+        string playerName = "Ranger Vale")
+    {
+        var setupResponse = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest(
+            playerName,
+            fixture.GameDifficulty,
+            fixture.SeedCode,
+            fixture.GameEntropy));
+        setupResponse.EnsureSuccessStatusCode();
+        var setupSession = await setupResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        ArgumentNullException.ThrowIfNull(setupSession);
+        return setupSession!;
+    }
+
+    /// <summary>
+    /// Creates a setup-only game session using a <see cref="BoringScenario"/>.
+    /// </summary>
+    public static async Task<GameSessionDto> CreateSetupOnlyGameAsync(
+        this HttpClient client,
+        BoringScenario scenario,
+        string playerName = "Ranger Vale")
+        => await client.CreateSetupOnlyGameAsync(scenario.Fixture, playerName);
 }

@@ -25,7 +25,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
     private const string ArchivedBlockMessage = "This playthrough is archived.";
-    private const string SetupPhaseBlockMessage = "The game hasn't started yet. Complete setup first.";
     private const decimal CitizenDeclarationFine = 10m;
 
     private TownAggregate? _currentTown;
@@ -2267,11 +2266,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult CheckSheriffRecords()
     {
-        if (IsSetupPhase)
-        {
-            return CaseInvestigationResult.Failed(SetupPhaseBlockMessage);
-        }
-
         if (IsArchived)
         {
             return CaseInvestigationResult.Failed(ArchivedBlockMessage);
@@ -2451,7 +2445,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private bool IsArchived => Status == GameStatus.Archived;
 
-    private bool IsSetupPhase => StartFlowPhase < StartFlowPhase.GameStarted;
+    /// <summary>
+    /// True when the session has not yet reached GameStarted. Gameplay commands
+    /// are blocked while this is true. Exposed so the command-handler pipeline
+    /// can enforce the setup-phase invariant centrally without each gameplay
+    /// domain method repeating the guard. See ADR-0028 and the architecture
+    /// guardrails for the inversion pattern.
+    /// </summary>
+    public bool IsSetupPhase => StartFlowPhase < StartFlowPhase.GameStarted;
 
     private int SpendFirearmAmmo(int requestedBullets)
     {

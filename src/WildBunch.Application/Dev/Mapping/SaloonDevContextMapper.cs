@@ -12,7 +12,7 @@ public static class SaloonDevContextMapper
 
         // During setup phase (before GameStarted), saloon state is not available.
         // Return a minimal DTO with nulls for town-scoped fields.
-        if (session.StartFlowPhase < StartFlowPhase.GameStarted)
+        if (session.IsSetupPhase)
         {
             return new SaloonDevContextDto(
                 session.Id.Value,

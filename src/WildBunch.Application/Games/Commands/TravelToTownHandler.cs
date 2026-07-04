@@ -40,11 +40,6 @@ public sealed class TravelToTownHandler : GameSessionCommandHandler
         // See ADR-0028 and BUNCH-83 Phase 3 Task 4.
         var result = await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
-            if (session.StartFlowPhase < StartFlowPhase.GameStarted)
-            {
-                return GameTurnResultFactory.Create(false, "The game hasn't started yet.", session);
-            }
-
             var destinationTownId = new TownId(command.DestinationTownId);
             var previewResult = _travelResolver.PreviewJourney(
                 session.World,

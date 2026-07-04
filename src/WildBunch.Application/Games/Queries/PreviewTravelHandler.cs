@@ -26,7 +26,7 @@ public sealed class PreviewTravelHandler
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
 
-        if (session.StartFlowPhase < StartFlowPhase.GameStarted)
+        if (session.IsSetupPhase)
         {
             return new TravelPreviewResultDto(false, "The game hasn't started yet.", null);
         }

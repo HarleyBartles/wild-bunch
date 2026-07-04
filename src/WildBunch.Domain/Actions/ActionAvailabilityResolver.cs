@@ -9,7 +9,7 @@ public sealed class ActionAvailabilityResolver
     {
         ArgumentNullException.ThrowIfNull(session);
 
-        if (session.StartFlowPhase < StartFlowPhase.GameStarted)
+        if (session.IsSetupPhase)
         {
             return [];
         }

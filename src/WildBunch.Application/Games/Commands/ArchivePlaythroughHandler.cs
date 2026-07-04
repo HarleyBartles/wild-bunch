@@ -14,6 +14,9 @@ public sealed class ArchivePlaythroughHandler : GameSessionCommandHandler
     {
     }
 
+    // Lifecycle handler: archiving is valid in any phase, including setup.
+    protected override bool RequiresGameStarted => false;
+
     public async Task<ArchivePlaythroughResultDto> HandleAsync(
         ArchivePlaythroughCommand command,
         CancellationToken cancellationToken = default)
@@ -33,12 +36,12 @@ public sealed class ArchivePlaythroughHandler : GameSessionCommandHandler
             session.Id.Value,
             session.Status,
             session.Player.Name,
-            session.StartFlowPhase >= StartFlowPhase.GameStarted
-                ? session.CurrentTown.TownId.Value
-                : null,
-            session.StartFlowPhase >= StartFlowPhase.GameStarted
-                ? session.CurrentTown.TownName
-                : null,
+            session.IsSetupPhase
+                ? null
+                : session.CurrentTown.TownId.Value,
+            session.IsSetupPhase
+                ? null
+                : session.CurrentTown.TownName,
             session.Clock.Day,
             session.Clock.Turn.ToString());
 }

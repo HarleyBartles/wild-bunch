@@ -29,7 +29,7 @@ public static class GameSessionMapper
 
         // During setup phase (before GameStarted), the current town is not yet selected.
         // Saloon person-of-interest state is only available after the game starts.
-        var activeSaloonPoi = session.StartFlowPhase >= StartFlowPhase.GameStarted
+        var activeSaloonPoi = !session.IsSetupPhase
             ? ToActiveSaloonPersonOfInterestDto(
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
                 session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,

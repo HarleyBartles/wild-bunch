@@ -39,18 +39,13 @@ public sealed class PurchaseStoreItemHandler : GameSessionCommandHandler
 
         var result = await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
-            if (session.StartFlowPhase < StartFlowPhase.GameStarted)
-            {
-                return GameTurnResultFactory.Create(false, "The game hasn't started yet.", session);
-            }
-
             var townId = new TownId(command.TownId);
             if (!session.World.TryGetTown(townId, out var town))
             {
                 throw new TownNotFoundException(townId);
             }
 
-            if (session.Player.CurrentTownId!.Value != townId)
+            if (session.Player.CurrentTownId != townId)
             {
                 return new GameTurnResultDto(
                     false,

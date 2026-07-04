@@ -13,6 +13,7 @@ namespace WildBunch.Application.Games.Execution;
 /// applies the command, and returns the result. The base class wraps the
 /// execution with:
 /// - Correlation ID generation for event tracing
+/// - Setup-phase invariant enforcement for gameplay commands
 /// - Optimistic concurrency retry on ConcurrencyException
 /// - Event commit marking after successful store + commit
 /// </summary>
@@ -30,6 +31,15 @@ public abstract class GameSessionCommandHandler
         GameSessionRepository = gameSessionRepository;
         GameSessionUnitOfWork = gameSessionUnitOfWork;
     }
+
+    /// <summary>
+    /// When true (the default), the base pipeline throws <see cref="SetupPhaseException"/>
+    /// if a loaded session has not yet reached <see cref="StartFlowPhase.GameStarted"/>.
+    /// Gameplay command handlers inherit this guard for free. Setup-flow and lifecycle
+    /// handlers (CompletePlayerSetup, ViewPrologue, CompleteGameStart, ArchivePlaythrough)
+    /// override this to false. See the architecture guardrails for the inversion pattern.
+    /// </summary>
+    protected virtual bool RequiresGameStarted => true;
 
     /// <summary>
     /// Executes the command with optimistic concurrency retry.
@@ -50,6 +60,11 @@ public abstract class GameSessionCommandHandler
         for (var attempt = 0; attempt < MaxConcurrencyRetries; attempt++)
         {
             var session = await GameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+
+            if (RequiresGameStarted && session.IsSetupPhase)
+            {
+                throw new SetupPhaseException(session.Id);
+            }
 
             var result = await executeAsync(session, cancellationToken).ConfigureAwait(false);
 
@@ -74,3 +89,4 @@ public abstract class GameSessionCommandHandler
         throw lastConcurrencyException ?? new InvalidOperationException("Command failed after maximum retries.");
     }
 }
+
