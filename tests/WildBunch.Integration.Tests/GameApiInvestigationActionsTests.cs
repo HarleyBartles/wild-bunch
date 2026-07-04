@@ -74,7 +74,7 @@ public sealed class GameApiInvestigationActionsTests
         var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
 
         Assert.NotNull(telegraphResult);
-        // BUNCH-107: Hardpan (the starting town) has Telegraph service
+        // BUNCH-107: The starting town has Telegraph service
         // (HubTelegraph palette, slot 0). Following telegraph leads should
         // succeed and surface a new clue.
         Assert.True(telegraphResult!.Success);

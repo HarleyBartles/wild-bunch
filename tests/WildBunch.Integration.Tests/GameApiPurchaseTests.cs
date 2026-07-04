@@ -24,7 +24,7 @@ public sealed class GameApiPurchaseTests
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/hardpan/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -54,8 +54,14 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
+        // Pick a town that is not the current town to trigger the mismatch path.
+        var nonCurrentTownId = createdSession.World.Towns
+            .Where(town => town.Id != createdSession.Player.CurrentTownId)
+            .Select(town => town.Id)
+            .First();
+
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/quartzsite/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/{nonCurrentTownId}/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -65,7 +71,7 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(result);
         Assert.False(result!.Success);
         Assert.Equal("You must be in that town to buy there.", result.Message);
-        Assert.Equal("hardpan", result.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(createdSession.Player.CurrentTownId, result.CurrentSession.Player.CurrentTownId);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
     }
 
@@ -84,7 +90,7 @@ public sealed class GameApiPurchaseTests
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/hardpan/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.HorseFeed, 100));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -112,11 +118,11 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
-        // Hardpan is Prosperous — it has a general store, stable, and gunsmith.
+        // The starting town is Prosperous — it has a general store, stable, and gunsmith.
         // Revolver is sold by the gunsmith, not the stable. Requesting it from
         // the stable vendor triggers the "not available" path.
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession!.Id}/towns/hardpan/store/buy",
+            $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.Stable, WildBunch.Domain.Inventory.ItemKind.Revolver, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
