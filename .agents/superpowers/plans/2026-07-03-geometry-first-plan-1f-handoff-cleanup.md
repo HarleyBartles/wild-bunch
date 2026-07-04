@@ -178,6 +178,8 @@ Write the corrected table rows (replacing the six-row block):
 | `CompleteGameStart` | 915–948 | Acceptable — session lifecycle transition. |
 | `ViewPrologue` | 954–980 | Acceptable — session lifecycle transition. |
 | `ArchivePlaythrough` | 991–1052 | Acceptable — session lifecycle terminal transition. |
+```
+
 ---
 
 ## Task 3: Create tracked-items doc for TownStates parity gap
