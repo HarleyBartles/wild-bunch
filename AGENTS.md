@@ -10,6 +10,7 @@
 - Architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
 - **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
+- **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — inspect this folder before running ad-hoc commands for repo operations
 - Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
 
@@ -73,7 +74,7 @@ When work touches architecture, domain modeling, persistence, frontend, browser-
 Use these reference files when working in specific areas:
 
 - **[`.agents/docs/workflow-policy.md`](.agents/docs/workflow-policy.md)** - Use when managing git workflow, claiming completion, publishing PRs, or verifying issue-goal alignment
-- **[`.agents/docs/validation-policy.md`](.agents/docs/validation-policy.md)** - Use when running validation, debugging CI failures, or deciding test coverage scope
+- **[`.agents/docs/validation-policy.md`](.agents/docs/validation-policy.md)** - Use when running validation, debugging CI failures, or deciding test coverage scope. Documents the repo's five test kinds (unit, integration, game-content, API, brute-force) and when to use each.
 - **[`.agents/docs/artifact-policy.md`](.agents/docs/artifact-policy.md)** - Use when creating agent artifacts, managing screenshots/evidence, or working with unslop profiles
 - **[`.agents/docs/architecture-guardrails.md`](.agents/docs/architecture-guardrails.md)** - Use when making architecture decisions, touching GameSession, modifying persistence, or working with seed codecs
 - **[`.agents/docs/coding-discipline.md`](.agents/docs/coding-discipline.md)** - Use when writing code, deciding scope boundaries, or refactoring

@@ -27,3 +27,39 @@ The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_me
 - New or updated real application behavior should normally include test coverage in the same slice.
 - If coverage is skipped, state the reason explicitly and keep the gap narrow and deliberate.
 - Debug-only or temporary prototype surfaces may use lighter-weight coverage while they remain debug-only.
+
+## Test Kinds
+
+This repo uses five test kinds. Each has a distinct purpose and structure:
+
+- **Unit tests** (`WildBunch.Domain.Tests`, `WildBunch.Application.Tests`) —
+  isolated single-code-path tests with known inputs and expected outputs. Fast,
+  no external dependencies.
+- **Integration tests** (`WildBunch.Integration.Tests`) — full HTTP pipeline
+  tests via `WebApplicationFactory` with a real PostgreSQL database. Highest
+  value per test — covers routing, binding, validation, business logic, and
+  persistence in one shot.
+- **GameContent tests** (`WildBunch.GameContent.Tests`) — seed codec and
+  game-setup pipeline tests that verify deterministic world generation,
+  seed round-tripping, and the full `SeededNewGameFactory` pipeline.
+- **API tests** (`WildBunch.Api.Tests`) — API-specific contract tests.
+- **Brute-force tests** (within `WildBunch.GameContent.Tests`) — iterate over
+  thousands of seed/salt/parameter combinations in a single test method,
+  asserting per-combination invariants, statistical distribution fairness,
+  and anti-pattern absence. See the `testing` skill (`/testing`) for full
+  guidance on when and how to write brute-force tests.
+
+### When to add a brute-force test
+- When the system produces deterministic-but-varied output from seed/salt
+  combinations and you want to catch silent bias or rare anti-patterns
+- When you change a generator (map, encounter, item distribution, mystery
+  truth) and want to verify the output distribution remains healthy across
+  all valid parameter combinations
+- When you add a new parameter axis (entropy level, difficulty, variant) and
+  want to verify it actually produces measurably different output
+
+### When NOT to add a brute-force test
+- When testing a single code path with known inputs — use a unit test
+- When testing the HTTP pipeline — use an integration test
+- When the system is not deterministic — brute-force tests require
+  determinism (same seed + same salt = same output) to be meaningful

@@ -67,8 +67,8 @@ public sealed class SeedWorldResolverCodecTests
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
         
-        // Should wrap to (15 + 5) % 11 = 20 % 11 = 9
-        Assert.Equal(9, resolved.TownCount);
+        // Should wrap to 5 + ((15 + 5 - 5) % 6) = 5 + (15 % 6) = 5 + 3 = 8
+        Assert.Equal(8, resolved.TownCount);
     }
 
     [Fact]

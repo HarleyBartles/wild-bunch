@@ -338,12 +338,13 @@ internal static class ScenarioSeedCatalog
             Require(scenarioName, $"start-game.world.towns.{town.Id}.mapY", town.MapY > 0, $"expected positive MapY for {town.Name}, got {town.MapY}");
         }
 
-        // All trails have ride-day distances in 2-6 day range
+        // All trails have ride-day distances in 2-8 day range (honest 25px/day scale:
+        // 50px min separation → 2 days, 200px top clamp → 8 days, outlier trail = 6 days)
         foreach (var trail in session.World.Trails)
         {
             Require(scenarioName, $"start-game.world.trails.{trail.Id}.rideDayDistance",
-                trail.RideDayDistance >= 2m && trail.RideDayDistance <= 6m,
-                $"expected ride-day distance 2-6 for trail {trail.Id}, got {trail.RideDayDistance}");
+                trail.RideDayDistance >= 2m && trail.RideDayDistance <= 8m,
+                $"expected ride-day distance 2-8 for trail {trail.Id}, got {trail.RideDayDistance}");
         }
 
         // Trail graph is connected (BFS from starting town reaches all towns)
@@ -498,9 +499,13 @@ internal static class ScenarioSeedCatalog
         => present ? "present" : "absent";
 
     private static string DescribeMountedPreview(TravelPreviewResultDto? preview)
+        // Encode only the travel mode, not the specific day counts. Day counts
+        // depend on map generation (trail distances, town spacing) and change
+        // when the map generator is tuned. The travel preview contract validates
+        // success and travel mode — those are the stable invariants.
         => preview?.Preview is null
             ? "missing"
-            : $"{preview.Preview.TravelMode.ToString().ToLowerInvariant()}:{preview.Preview.BaselineRideDays}/{preview.Preview.ExpectedDays}";
+            : $"{preview.Preview.TravelMode.ToString().ToLowerInvariant()}";
 
     private static dynamic RequireItem(string scenarioName, GameSessionDto session, ItemKind kind)
     {

@@ -10,9 +10,15 @@ internal static class ClusterPlacementGenerator
     private const int Padding = 50;
     private const double MinClusterCenterSeparation = 150.0;
     private const int MaxClusterCenterRetries = 10;
-    private const double OutlierPlacementDistance = 150.0;
 
-    public static (Dictionary<int, (int X, int Y)> Towns, Dictionary<int, int> ClusterAssignments, int? OutlierSlot) Place(
+    // Minimum pixel distance between any two placed towns. This must be at least
+    // MinNormalRideDays * CoordinateScale (2 * 25 = 50) so that a 2-day trail is
+    // genuinely 50px+ on the map and the visual ratio between 2-day and 5-day
+    // trails is at least 2.5:1. Without this, towns packed within 20-40px of each
+    // other get clamped up to "2 days" but look visually identical to 1-day gaps.
+    private const double MinTownSeparation = 50.0;
+
+    public static (Dictionary<int, (int X, int Y)> Towns, Dictionary<int, int> ClusterAssignments) Place(
         SeedWorld seedWorld, GameSetupDeterministicSource source, GameEntropy entropy, SaltSource? saltSource)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
@@ -22,15 +28,7 @@ internal static class ClusterPlacementGenerator
         var clusterAssignments = AssignTownsToClusters(seedWorld.TownCount, seedWorld.ClusterCount, entropy, source, saltSource);
         var towns = PlaceTownsInClusters(seedWorld.TownCount, clusterCenters, clusterAssignments, entropy, source, saltSource);
 
-        int? outlierSlot = null;
-        if (seedWorld.OutlierSlotType == 1 && entropy != GameEntropy.Boring)
-        {
-            outlierSlot = seedWorld.TownCount;
-            towns[outlierSlot.Value] = PlaceOutlierTown(towns, source, saltSource, entropy);
-            clusterAssignments[outlierSlot.Value] = -1;
-        }
-
-        return (towns, clusterAssignments, outlierSlot);
+        return (towns, clusterAssignments);
     }
 
     private static List<(int X, int Y)> DeriveClusterCenters(int clusterCount, GameSetupDeterministicSource source)
@@ -139,11 +137,14 @@ internal static class ClusterPlacementGenerator
             }
             else
             {
+                // Minimum spread is 50px so that intra-cluster town pairs are at
+                // least MinTownSeparation apart from the cluster center, ensuring
+                // 2-day trails are visually distinct from longer trails.
                 var (minSpread, maxSpread) = entropy switch
                 {
-                    GameEntropy.Classic => (40, 80),
-                    GameEntropy.Adventurous => (40, 120),
-                    GameEntropy.Wild => (20, 160),
+                    GameEntropy.Classic => (50, 100),
+                    GameEntropy.Adventurous => (50, 140),
+                    GameEntropy.Wild => (50, 180),
                     _ => (60, 60)
                 };
 
@@ -165,24 +166,64 @@ internal static class ClusterPlacementGenerator
             towns[slot] = (ClampToBounds(center.X + xOffset, MapWidth), ClampToBounds(center.Y + yOffset, MapHeight));
         }
 
+        // Post-placement separation pass: push apart any town pairs that are closer
+        // than MinTownSeparation. This catches cases where clamping to map bounds
+        // or the Wild entropy 2x multiplier squeezed towns together.
+        EnforceMinTownSeparation(towns);
+
         return towns;
     }
 
-    private static (int X, int Y) PlaceOutlierTown(Dictionary<int, (int X, int Y)> existingTowns,
-        GameSetupDeterministicSource source, SaltSource? saltSource, GameEntropy entropy)
+    /// <summary>
+    /// Iteratively pushes apart any town pairs closer than MinTownSeparation.
+    /// Each pair is moved apart along the line connecting them, by half the
+    /// shortfall each. Positions are re-clamped to map bounds after each pass.
+    /// Repeats up to 10 times to resolve cascading overlaps.
+    /// </summary>
+    private static void EnforceMinTownSeparation(Dictionary<int, (int X, int Y)> towns)
     {
-        var nearest = existingTowns.Values.OrderBy(t =>
-        {
-            var dx = t.X - existingTowns[0].X;
-            var dy = t.Y - existingTowns[0].Y;
-            return Math.Sqrt(dx * dx + dy * dy);
-        }).First();
+        const int maxPasses = 10;
+        var slots = towns.Keys.OrderBy(s => s).ToArray();
 
-        var roll = source.Roll($"outlier-angle-{saltSource?.Salt ?? "default"}");
-        var angle = (roll % 360UL) * (Math.PI / 180.0);
-        var x = (int)(nearest.X + OutlierPlacementDistance * Math.Cos(angle));
-        var y = (int)(nearest.Y + OutlierPlacementDistance * Math.Sin(angle));
-        return (ClampToBounds(x, MapWidth), ClampToBounds(y, MapHeight));
+        for (var pass = 0; pass < maxPasses; pass++)
+        {
+            var moved = false;
+            for (var i = 0; i < slots.Length; i++)
+            {
+                for (var j = i + 1; j < slots.Length; j++)
+                {
+                    var a = towns[slots[i]];
+                    var b = towns[slots[j]];
+                    var dx = b.X - a.X;
+                    var dy = b.Y - a.Y;
+                    var dist = Math.Sqrt(dx * dx + dy * dy);
+
+                    if (dist >= MinTownSeparation) continue;
+
+                    // Push each town apart by half the shortfall along the connecting line.
+                    // If both towns are at the same position, nudge apart along the X axis.
+                    var shortfall = MinTownSeparation - dist;
+                    if (dist < 0.01)
+                    {
+                        var nudge = (int)(shortfall / 2);
+                        towns[slots[i]] = (ClampToBounds(a.X - nudge, MapWidth), a.Y);
+                        towns[slots[j]] = (ClampToBounds(b.X + nudge, MapWidth), b.Y);
+                    }
+                    else
+                    {
+                        var push = shortfall / 2 / dist;
+                        towns[slots[i]] = (
+                            ClampToBounds((int)(a.X - dx * push), MapWidth),
+                            ClampToBounds((int)(a.Y - dy * push), MapHeight));
+                        towns[slots[j]] = (
+                            ClampToBounds((int)(b.X + dx * push), MapWidth),
+                            ClampToBounds((int)(b.Y + dy * push), MapHeight));
+                    }
+                    moved = true;
+                }
+            }
+            if (!moved) break;
+        }
     }
 
     private static int ClampToBounds(int value, int max) => Math.Max(0, Math.Min(max, value));

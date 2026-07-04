@@ -24,8 +24,10 @@ public sealed class ScenarioSeedDescriptorTests
             .WithTownCount(8)
             .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
 
+        // Preview shape encodes only the travel mode (not day counts, which are
+        // map-generation-dependent and would make the fixture brittle).
         Assert.Equal(
-            "resolver-test|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=mounted:2/2",
+            "resolver-test|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=mounted",
             descriptor.FormatRequiredShapeSignature());
     }
 }

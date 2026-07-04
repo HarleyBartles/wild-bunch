@@ -23,6 +23,12 @@ internal static class TrailGraphGenerator
         accepted = ApplyRedundantCorridorFilter(accepted, towns);
         accepted = ApplyCloseParallelFilter(accepted, towns);
         accepted = RepairConnectivityIfNeeded(accepted, delaunayEdges, towns.Count);
+        // Ensure every town has at least 2 connections (no dead-end towns).
+        // The MST can produce linear chains where endpoint towns have degree 1,
+        // which makes for poor gameplay (the starting town may have only one
+        // travel destination). Add the shortest non-crossing Delaunay edge
+        // incident to each degree-1 town.
+        accepted = EnsureMinimumDegree(accepted, delaunayEdges, towns, towns.Count);
         return accepted;
     }
 
@@ -188,20 +194,77 @@ internal static class TrailGraphGenerator
     {
         while (true)
         {
-            var adjacency = BuildAdjacency(edges, townCount);
-            var unreachable = FindUnreachableTown(adjacency, townCount);
-            if (unreachable < 0) break;
+            var reachable = FindReachableTowns(edges, townCount);
+            if (reachable.Count == townCount) break;
 
-            var reconnect = delaunayEdges
-                .Where(e => !edges.Any(x => x.OrderedSlots == e.OrderedSlots))
-                .Where(e => e.FromSlot == unreachable || e.ToSlot == unreachable)
+            // Find all unreachable towns.
+            var unreachable = new HashSet<int>();
+            for (var i = 0; i < townCount; i++)
+            {
+                if (!reachable.Contains(i)) unreachable.Add(i);
+            }
+            if (unreachable.Count == 0) break;
+
+            // Search all Delaunay edges not already accepted for a bridging edge:
+            // one endpoint reachable, the other unreachable. This directly connects
+            // a disconnected component to the reachable set. Pick the shortest such
+            // edge to minimize visual clutter.
+            //
+            // If no bridging edge exists (e.g., all Delaunay edges between components
+            // were already accepted but later filtered out), fall back to any
+            // Delaunay edge incident to an unreachable town that isn't already
+            // accepted — this may connect two unreachable towns, requiring further
+            // repair passes to eventually bridge the gap.
+            var existingSlots = new HashSet<(int, int)>(edges.Select(e => e.OrderedSlots));
+
+            var bridging = delaunayEdges
+                .Where(e => !existingSlots.Contains(e.OrderedSlots))
+                .Where(e => reachable.Contains(e.FromSlot) && unreachable.Contains(e.ToSlot)
+                         || unreachable.Contains(e.FromSlot) && reachable.Contains(e.ToSlot))
                 .OrderBy(e => e.PixelDistance)
                 .FirstOrDefault();
 
-            if (reconnect == null) break;
-            edges.Add(reconnect);
+            if (bridging != null)
+            {
+                edges.Add(bridging);
+                continue;
+            }
+
+            // No bridging edge available — try any Delaunay edge between two
+            // unreachable towns that isn't already accepted.
+            var fallback = delaunayEdges
+                .Where(e => !existingSlots.Contains(e.OrderedSlots))
+                .Where(e => unreachable.Contains(e.FromSlot) && unreachable.Contains(e.ToSlot))
+                .OrderBy(e => e.PixelDistance)
+                .FirstOrDefault();
+
+            if (fallback != null)
+            {
+                edges.Add(fallback);
+                continue;
+            }
+
+            // No Delaunay edges can repair the graph — give up.
+            break;
         }
         return edges;
+    }
+
+    private static HashSet<int> FindReachableTowns(List<TrailEdge> edges, int townCount)
+    {
+        var adjacency = BuildAdjacency(edges, townCount);
+        var visited = new HashSet<int>();
+        var queue = new Queue<int>();
+        queue.Enqueue(0);
+        visited.Add(0);
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            if (!adjacency.ContainsKey(current)) continue;
+            foreach (var neighbor in adjacency[current])
+                if (visited.Add(neighbor)) queue.Enqueue(neighbor);
+        }
+        return visited;
     }
 
     private static Dictionary<int, HashSet<int>> BuildAdjacency(List<TrailEdge> edges, int townCount)
@@ -216,22 +279,51 @@ internal static class TrailGraphGenerator
         return adjacency;
     }
 
-    private static int FindUnreachableTown(Dictionary<int, HashSet<int>> adjacency, int townCount)
+    /// <summary>
+    /// Ensures every town has at least 2 connected trails (no dead-end towns).
+    /// The MST can produce linear chains where endpoint towns have degree 1,
+    /// which makes for poor gameplay — the starting town may have only one
+    /// travel destination. For each degree-1 town, adds the shortest Delaunay
+    /// edge (not already accepted) that connects it to another town.
+    /// </summary>
+    private static List<TrailEdge> EnsureMinimumDegree(
+        List<TrailEdge> edges, List<TrailEdge> delaunayEdges,
+        Dictionary<int, (int X, int Y)> towns, int townCount)
     {
-        var visited = new HashSet<int>();
-        var queue = new Queue<int>();
-        queue.Enqueue(0);
-        visited.Add(0);
-        while (queue.Count > 0)
+        var existingSlots = new HashSet<(int, int)>(edges.Select(e => e.OrderedSlots));
+
+        // Repeat until no degree-1 towns remain or no edges can be added.
+        for (var pass = 0; pass < townCount; pass++)
         {
-            var current = queue.Dequeue();
-            if (!adjacency.ContainsKey(current)) continue;
-            foreach (var neighbor in adjacency[current])
-                if (visited.Add(neighbor)) queue.Enqueue(neighbor);
+            var adjacency = BuildAdjacency(edges, townCount);
+            var degree1 = Enumerable.Range(0, townCount)
+                .Where(slot => adjacency[slot].Count < 2)
+                .OrderBy(slot => slot)
+                .ToList();
+
+            if (degree1.Count == 0) break;
+
+            var added = false;
+            foreach (var slot in degree1)
+            {
+                // Find the shortest Delaunay edge incident to this degree-1 town
+                // that isn't already accepted.
+                var candidate = delaunayEdges
+                    .Where(e => !existingSlots.Contains(e.OrderedSlots))
+                    .Where(e => e.FromSlot == slot || e.ToSlot == slot)
+                    .OrderBy(e => e.PixelDistance)
+                    .FirstOrDefault();
+
+                if (candidate != null)
+                {
+                    edges.Add(candidate);
+                    existingSlots.Add(candidate.OrderedSlots);
+                    added = true;
+                }
+            }
+            if (!added) break;
         }
-        for (var i = 0; i < townCount; i++)
-            if (!visited.Contains(i)) return i;
-        return -1;
+        return edges;
     }
 
     private static double PerpendicularDistance((int X, int Y) point, (int X, int Y) a, (int X, int Y) c)

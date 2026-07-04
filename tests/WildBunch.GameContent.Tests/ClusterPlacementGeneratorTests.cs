@@ -114,42 +114,17 @@ public sealed class ClusterPlacementGeneratorTests
     }
 
     [Fact]
-    public void Place_OutlierSlot_NonBoring_AddsOutlierTown()
+    public void Place_OutlierSlot_NonBoring_DoesNotAddOutlierTown()
     {
-        // TownCount=5 (below MaxTownCount=10) so OutlierSlotType=1 is valid.
+        // The outlier is now added additively by MapGenerator, not by ClusterPlacementGenerator.
+        // ClusterPlacementGenerator only places base towns; the outlier slot type in the seed
+        // is ignored here. Verify that only base towns are placed regardless of OutlierSlotType.
         var seed = NewSeedWorld(townCount: 5, clusterCount: 1, outlierSlotType: 1);
         var source = NewSource();
 
         var result = ClusterPlacementGenerator.Place(seed, source, GameEntropy.Wild, SaltSource.CreateFixed("salt"));
 
-        Assert.Equal(6, result.Towns.Count);
-        Assert.NotNull(result.OutlierSlot);
-        Assert.Equal(5, result.OutlierSlot!.Value);
-
-        // Outlier should be far from all other towns (>= 150px from its nearest neighbor).
-        var outlierCoords = result.Towns[result.OutlierSlot.Value];
-        var minDistance = result.Towns
-            .Where(kv => kv.Key != result.OutlierSlot.Value)
-            .Select(kv =>
-            {
-                var dx = kv.Value.X - outlierCoords.X;
-                var dy = kv.Value.Y - outlierCoords.Y;
-                return Math.Sqrt(dx * dx + dy * dy);
-            })
-            .Min();
-        Assert.True(minDistance >= 150.0, $"Outlier must be >=150px from nearest neighbor, was {minDistance}");
-    }
-
-    [Fact]
-    public void Place_OutlierSlot_Boring_DoesNotAddOutlierTown()
-    {
-        var seed = NewSeedWorld(townCount: 5, clusterCount: 1, outlierSlotType: 1);
-        var source = NewSource();
-
-        var result = ClusterPlacementGenerator.Place(seed, source, GameEntropy.Boring, SaltSource.CreateFixed("salt"));
-
         Assert.Equal(5, result.Towns.Count);
-        Assert.Null(result.OutlierSlot);
     }
 
     [Fact]

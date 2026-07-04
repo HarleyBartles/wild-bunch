@@ -159,8 +159,7 @@ public static class SeedWorldResolver
 
         // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
         // Wrap to 5-10 via modulo for v11.
-        var townCount = (townCountEncoded + TownCountOffset) % (MaxTownCount + 1);
-        if (townCount < MinTownCount) townCount += (MaxTownCount + 1);
+        var townCount = MinTownCount + ((townCountEncoded + TownCountOffset - MinTownCount) % (MaxTownCount - MinTownCount + 1));
 
         return new SeedWorld(
             seedCode,

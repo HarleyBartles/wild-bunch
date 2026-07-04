@@ -37,8 +37,8 @@ public sealed class GeometryPipelineTests
         // Non-empty trails (real MST graph, not stub linear chain)
         Assert.NotEmpty(session.World.Trails);
 
-        // All trails have ride-day distances in 2-6 day range
-        Assert.All(session.World.Trails, trail => Assert.InRange(trail.RideDayDistance, 2m, 6m));
+        // All trails have ride-day distances in 2-8 day range (honest 25px/day scale)
+        Assert.All(session.World.Trails, trail => Assert.InRange(trail.RideDayDistance, 2m, 8m));
 
         // All trail endpoints reference towns in the world
         var townIds = session.World.Towns.Select(t => t.Id).ToHashSet();

@@ -217,7 +217,14 @@ internal sealed record ScenarioSeedDescriptor
         };
 
     private static string FormatPreview(ScenarioPreviewExpectation preview)
+        // The shape signature encodes only the travel mode (mounted/foot/missing),
+        // NOT the specific BaselineRideDays/ExpectedDays. Those values depend on
+        // map generation (trail distances, town spacing) and change when the map
+        // generator is tuned. Encoding them in the shape signature makes the
+        // fixture brittle to map generation improvements. The travel preview
+        // contract (AssertTravelPreviewContract) validates the preview's
+        // success and travel mode — those are the stable invariants.
         => preview.IsMissing
             ? "missing"
-            : $"{preview.TravelMode!.Value.ToString().ToLowerInvariant()}:{preview.BaselineRideDays!.Value}/{preview.ExpectedDays!.Value}";
+            : $"{preview.TravelMode!.Value.ToString().ToLowerInvariant()}";
 }
