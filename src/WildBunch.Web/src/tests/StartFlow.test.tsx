@@ -77,7 +77,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
-    startFlowPhase: 3,
+    startFlowPhase: 4,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
@@ -168,7 +168,7 @@ function primeMocks() {
   });
   mockedSetupGame.mockResolvedValue(createSession({ startFlowPhase: 1 }));
   mockedMarkPrologueViewed.mockResolvedValue(createSession({ startFlowPhase: 2 }));
-  mockedStartGameWithTown.mockResolvedValue(createSession({ startFlowPhase: 3 }));
+  mockedStartGameWithTown.mockResolvedValue(createSession({ startFlowPhase: 4 }));
   mockedGetPrologue.mockResolvedValue({
     heading: "The story so far",
     body: "A culprit is on the run. The trail is fresh, but it won't stay that way for long.",

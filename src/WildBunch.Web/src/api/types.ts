@@ -1,12 +1,13 @@
 export type GameStatus = 0 | 1 | 2 | 3;
 export type GameDifficulty = 0 | 1 | 2 | 3;
 export type GameEntropy = 0 | 1 | 2 | 3;
-export type StartFlowPhase = 0 | 1 | 2 | 3;
+export type StartFlowPhase = 0 | 1 | 2 | 3 | 4;
 export const StartFlowPhase = {
   NotStarted: 0,
   SetupComplete: 1,
   PrologueViewed: 2,
-  GameStarted: 3,
+  StartingTownSelected: 3,
+  GameStarted: 4,
 } as const;
 export type JourneyStatus = 0 | 1 | 2 | 3;
 export const JourneyStatus = {

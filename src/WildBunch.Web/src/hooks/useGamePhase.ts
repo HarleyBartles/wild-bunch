@@ -55,7 +55,8 @@ export function useGamePhase(): GamePhaseState {
           isArrivalPending: false,
         };
       }
-      if (session.startFlowPhase === StartFlowPhase.PrologueViewed) {
+      if (session.startFlowPhase === StartFlowPhase.PrologueViewed ||
+          session.startFlowPhase === StartFlowPhase.StartingTownSelected) {
         return {
           phase: "town-selection" as const,
           hasSession: true,

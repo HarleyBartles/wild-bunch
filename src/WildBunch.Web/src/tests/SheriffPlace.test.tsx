@@ -61,7 +61,7 @@ function createSession(): GameSessionDto {
     status: 0,
     gameDifficulty: 0,
     gameEntropy: 1,
-    startFlowPhase: 3,
+    startFlowPhase: 4,
     player: {
       name: "Ruth",
       currentTownId: "t-town",
