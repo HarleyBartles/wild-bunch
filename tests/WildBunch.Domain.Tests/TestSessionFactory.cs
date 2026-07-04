@@ -21,11 +21,10 @@ namespace WildBunch.Domain.Tests;
 public static class TestSessionFactory
 {
     /// <summary>
-    /// Creates a fully-started game session using the canonical start flow
-    /// (StartSetup → ViewPrologue → SelectStartingTown → CompleteGameStart).
-    /// This replaces the legacy convenience factory (deleted in Plan 1e) with the same
-    /// event-sourced flow used by production handlers, ensuring all test
-    /// sessions are fully rehydratable from their event stream.
+    /// Starts a game through the canonical flow (StartSetup -> ViewPrologue -> SelectStartingTown -> CompleteGameStart).
+    /// Defaults to GameDifficulty.Easy for historical reasons (the original CreateDefault used Easy).
+    /// Callers that need production-default behavior must pass GameDifficulty.Standard explicitly.
+    /// Note: CanonicalStartFlow.StartGame in GameContent.Tests and Integration.Tests defaults to Standard.
     /// </summary>
     internal static GameSession StartGameCanonical(
         string playerName,
