@@ -353,6 +353,252 @@ public class GameSessionEventSourcingTests
         Assert.DoesNotContain(rehydrated.CaseFile.PublicClues, c => c.Id.Equals(revealedClueId));
     }
 
+    [Fact]
+    public void CanonicalStart_FullRoundTrip_Rehydrates_CompleteState_FromEvents()
+    {
+        // Create a session with a FULLY-populated CaseFile (all 14 fields non-empty)
+        // through the canonical flow, WITHOUT committing so the real event stream
+        // (6 setup events) can be collected. This is the definitive proof that the
+        // event stream alone reconstructs complete state — including the original
+        // PublicClues data-loss gap fixed in Plan 1d.
+        var session = CreateSessionWithFullCaseFile();
+
+        // Perform an operation to prove post-start events also survive replay
+        var resolver = new TownStoreCatalogResolver();
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+        session.Purchase(offer, 1);
+
+        // Collect ALL events (6 setup + operation events)
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        // Rehydrate from events alone — no external world/caseFile references
+        // beyond the world placeholder. The placeholder must contain the starting
+        // town (the constructor resolves it before WorldGenerated overwrites the
+        // world), but it is intentionally different from the session's world so we
+        // can prove Apply(WorldGenerated) restores the real world from the stream.
+        var placeholderWorld = new DomainWorld(
+            new[]
+            {
+                new Town(new TownId("current"), "PLACEHOLDER Town", TownServices.None),
+                new Town(new TownId("connected"), "PLACEHOLDER Connected", TownServices.None)
+            },
+            new[] { new Trail(new TrailId("trail-1"), new TownId("current"), new TownId("connected"), TrailRisk.Low) });
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id,
+            placeholderWorld,
+            events);
+
+        // Prove the world was reconstructed from the WorldGenerated event, not the placeholder
+        Assert.NotEqual("PLACEHOLDER Town", rehydrated.World.GetTown(session.Player.CurrentTownId).Name);
+        Assert.Equal(session.World.GetTown(session.Player.CurrentTownId).Name,
+            rehydrated.World.GetTown(session.Player.CurrentTownId).Name);
+
+        // Prove full session state reconstruction
+        Assert.Equal(session.Id, rehydrated.Id);
+        Assert.Equal(session.Player.Name, rehydrated.Player.Name);
+        Assert.Equal(session.Player.CurrentTownId, rehydrated.Player.CurrentTownId);
+        Assert.Equal(session.Player.Health, rehydrated.Player.Health);
+        Assert.Equal(session.Player.Wallet.Cash, rehydrated.Player.Wallet.Cash);
+        Assert.Equal(session.GameDifficulty, rehydrated.GameDifficulty);
+        Assert.Equal(session.GameEntropy, rehydrated.GameEntropy);
+        Assert.Equal(session.SeedCode, rehydrated.SeedCode);
+        Assert.Equal(session.Version, rehydrated.Version);
+        Assert.Equal(StartFlowPhase.GameStarted, rehydrated.StartFlowPhase);
+
+        // Prove ALL 14 CaseFile fields are reconstructed from CaseFileGenerated event
+        // (not from external references). Each field is populated with a non-empty
+        // value in the source session so a count of 0 == 0 cannot hide a data loss.
+
+        // 1. Suspects
+        Assert.Equal(session.CaseFile.Suspects.Count, rehydrated.CaseFile.Suspects.Count);
+        Assert.Equal(session.CaseFile.Suspects.Select(s => s.Id.Value).ToArray(),
+            rehydrated.CaseFile.Suspects.Select(s => s.Id.Value).ToArray());
+
+        // 2. TrueCulpritId
+        Assert.Equal(session.CaseFile.TrueCulpritId, rehydrated.CaseFile.TrueCulpritId);
+
+        // 3. OpeningLead
+        Assert.Equal(session.CaseFile.OpeningLead, rehydrated.CaseFile.OpeningLead);
+
+        // 4. KnownClues
+        Assert.Equal(session.CaseFile.KnownClues.Count, rehydrated.CaseFile.KnownClues.Count);
+        Assert.Equal(session.CaseFile.KnownClues.Select(c => c.Id.Value).ToArray(),
+            rehydrated.CaseFile.KnownClues.Select(c => c.Id.Value).ToArray());
+
+        // 5. PublicClues (the original data-loss gap)
+        Assert.Equal(session.CaseFile.PublicClues.Count, rehydrated.CaseFile.PublicClues.Count);
+        Assert.Equal(session.CaseFile.PublicClues[0].Id, rehydrated.CaseFile.PublicClues[0].Id);
+        Assert.Equal(session.CaseFile.PublicClues[0].Description, rehydrated.CaseFile.PublicClues[0].Description);
+
+        // 6. Accusation
+        Assert.Equal(session.CaseFile.Accusation, rehydrated.CaseFile.Accusation);
+
+        // 7. DiscoveredSuspectIds
+        Assert.Equal(session.CaseFile.DiscoveredSuspectIds.Count, rehydrated.CaseFile.DiscoveredSuspectIds.Count);
+        Assert.Equal(session.CaseFile.DiscoveredSuspectIds.Select(s => s.Value).ToArray(),
+            rehydrated.CaseFile.DiscoveredSuspectIds.Select(s => s.Value).ToArray());
+
+        // 8. KillerReleaseThreshold
+        Assert.Equal(session.CaseFile.KillerReleaseThreshold, rehydrated.CaseFile.KillerReleaseThreshold);
+
+        // 9. KillerReleaseProgress
+        Assert.Equal(session.CaseFile.KillerReleaseProgress, rehydrated.CaseFile.KillerReleaseProgress);
+
+        // 10. KnownWarrants
+        Assert.Equal(session.CaseFile.KnownWarrants.Count, rehydrated.CaseFile.KnownWarrants.Count);
+        Assert.Equal(session.CaseFile.KnownWarrants.Select(w => w.Id.Value).ToArray(),
+            rehydrated.CaseFile.KnownWarrants.Select(w => w.Id.Value).ToArray());
+
+        // 11. PublicWarrants
+        Assert.Equal(session.CaseFile.PublicWarrants.Count, rehydrated.CaseFile.PublicWarrants.Count);
+        Assert.Equal(session.CaseFile.PublicWarrants.Select(w => w.Id.Value).ToArray(),
+            rehydrated.CaseFile.PublicWarrants.Select(w => w.Id.Value).ToArray());
+
+        // 12. SuspectTurfAssignments
+        Assert.Equal(session.CaseFile.SuspectTurfAssignments.Count, rehydrated.CaseFile.SuspectTurfAssignments.Count);
+        Assert.Equal(
+            session.CaseFile.SuspectTurfAssignments.Select(a => (a.SuspectId.Value, a.TurfTownId.Value)).ToArray(),
+            rehydrated.CaseFile.SuspectTurfAssignments.Select(a => (a.SuspectId.Value, a.TurfTownId.Value)).ToArray());
+
+        // 13. WantedSuspectConfrontations
+        Assert.Equal(session.CaseFile.WantedSuspectConfrontations.Count, rehydrated.CaseFile.WantedSuspectConfrontations.Count);
+        Assert.Equal(
+            session.CaseFile.WantedSuspectConfrontations.Select(c => (c.SuspectId.Value, c.Outcome)).ToArray(),
+            rehydrated.CaseFile.WantedSuspectConfrontations.Select(c => (c.SuspectId.Value, c.Outcome)).ToArray());
+
+        // 14. SheriffTurnInSettlements
+        Assert.Equal(session.CaseFile.SheriffTurnInSettlements.Count, rehydrated.CaseFile.SheriffTurnInSettlements.Count);
+        Assert.Equal(
+            session.CaseFile.SheriffTurnInSettlements.Select(s => (s.SuspectId.Value, s.BountyAmount)).ToArray(),
+            rehydrated.CaseFile.SheriffTurnInSettlements.Select(s => (s.SuspectId.Value, s.BountyAmount)).ToArray());
+
+        // Prove operation events survived replay (post-start mutation)
+        Assert.Equal(session.Player.Inventory.GetQuantity(DomainItemKind.Food),
+            rehydrated.Player.Inventory.GetQuantity(DomainItemKind.Food));
+
+        Assert.Empty(rehydrated.UncommittedEvents);
+    }
+
+    /// <summary>
+    /// Creates a session through the canonical start flow with a CaseFile that populates
+    /// ALL 14 fields with non-empty values, WITHOUT calling MarkEventsCommitted so the
+    /// real event stream (6 setup events) remains in <see cref="GameSession.UncommittedEvents"/>.
+    /// Used by the full round-trip proof test.
+    /// </summary>
+    private static GameSession CreateSessionWithFullCaseFile()
+    {
+        var town = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
+        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var world = new DomainWorld(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
+
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline",
+                SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+
+        var knownClue = new Clue(
+            new ClueId("clue-known-1"),
+            ClueKind.Alias,
+            "A known alias: Grey Jay.",
+            new[] { new SuspectId("suspect-1") },
+            InvestigationTargetKind.Suspected,
+            InvestigationSourceKind.LocalGossip,
+            source: "test source",
+            context: "test context");
+
+        var publicClue = new Clue(
+            new ClueId("clue-public-1"),
+            ClueKind.Alias,
+            "A dusty boot print.",
+            new[] { new SuspectId("suspect-1") },
+            InvestigationTargetKind.Suspected,
+            InvestigationSourceKind.LocalGossip,
+            source: "test source",
+            context: "test context");
+
+        var warrantTerms = new WarrantTerms(
+            WarrantDisposition.DeadOrAlive,
+            2500m,
+            new[] { "Red Wren" },
+            new[] { "Pale scar across the left cheek" },
+            "Dodge City Marshal",
+            InvestigationTargetKind.GangMember,
+            new[] { OutlawGangIds.WildBunch },
+            OutlawGangIds.WildBunch,
+            InvestigationSourceKind.SheriffWarrants);
+
+        var knownWarrant = new Warrant(
+            new WarrantId("warrant-known-1"),
+            "Ira Flint",
+            warrantTerms,
+            "Wanted for a Wild Bunch robbery.");
+
+        var publicWarrant = new Warrant(
+            new WarrantId("warrant-public-1"),
+            "Mira Cline",
+            warrantTerms,
+            "Wanted for stagecoach robbery.");
+
+        var caseFile = new CaseFile(
+            accusation: new SuspectId("suspect-2"),
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
+            knownClues: new[] { knownClue },
+            discoveredSuspectIds: new[] { new SuspectId("suspect-1") },
+            publicClues: new[] { publicClue },
+            killerReleaseThreshold: 3,
+            killerReleaseProgress: 1,
+            knownWarrants: new[] { knownWarrant },
+            publicWarrants: new[] { publicWarrant },
+            suspectTurfAssignments: new[] { new SuspectTurfAssignment(new SuspectId("suspect-1"), town.Id) },
+            wantedSuspectConfrontations: new[]
+            {
+                new WantedSuspectConfrontationState(
+                    new SuspectId("suspect-1"),
+                    "Ira Flint",
+                    WarrantDisposition.DeadOrAlive,
+                    WantedSuspectConfrontationOutcome.Surrendered,
+                    IsAlive: true,
+                    IsSecured: true,
+                    Day: 1,
+                    Turn: 2)
+            },
+            sheriffTurnInSettlements: new[]
+            {
+                new SheriffTurnInSettlementState(
+                    new SuspectId("suspect-1"),
+                    "Ira Flint",
+                    WarrantDisposition.DeadOrAlive,
+                    IsAlive: true,
+                    BountyAmount: 2500m,
+                    Day: 1,
+                    Turn: 3)
+            });
+
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 4),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1)
+        });
+
+        // Use the internal canonical factory (no MarkEventsCommitted) so the 6 setup
+        // events remain in UncommittedEvents for the round-trip proof.
+        return TestSessionFactory.StartGameCanonical(
+            "Ranger Vale", world, caseFile, town.Id,
+            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
+            SaltSource.CreateFixed(string.Empty));
+    }
+
     private sealed record UnknownTestEvent : IDomainEvent;
 
     private static GameSession CreateSession(
