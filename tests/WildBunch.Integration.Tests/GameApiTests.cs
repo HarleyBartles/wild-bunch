@@ -251,7 +251,7 @@ public sealed class GameApiTests
     }
 
     [Fact]
-    public async Task PostGamesWithSubmittedSeedCodeExposesTheRedMesaToDryForkRoute()
+    public async Task PostGamesWithSubmittedSeedCodeExposesMultiTownTravelRoute()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
@@ -309,7 +309,7 @@ public sealed class GameApiTests
 
         var secondPreviewResult = await secondPreviewResponse.Content.ReadFromJsonAsync<TravelPreviewResultDto>();
         Assert.NotNull(secondPreviewResult);
-        scenario.Fixture.AssertDryFootRoute(createdSession!, secondDestination, secondPreviewResult!);
+        scenario.Fixture.AssertSecondLegRoute(createdSession!, secondDestination, secondPreviewResult!);
 
         var onFootTravelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
@@ -320,7 +320,7 @@ public sealed class GameApiTests
         var onFootTurn = await onFootTravelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
         Assert.NotNull(onFootTurn);
-        scenario.Fixture.AssertDryFootRoute(createdSession!, secondDestination, onFootTurn!, secondPreviewResult!);
+        scenario.Fixture.AssertSecondLegRoute(createdSession!, secondDestination, onFootTurn!, secondPreviewResult!);
     }
 
     [Fact]

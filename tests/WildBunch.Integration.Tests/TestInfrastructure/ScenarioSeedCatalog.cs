@@ -186,10 +186,10 @@ internal static class ScenarioSeedCatalog
         AssertStartingTownStoreAvailability(storeOffers!, session.Player.CurrentTownId);
     }
 
-    // BUNCH-107 transitional: AssertDryFootRoute renamed to AssertDryRoute transitively.
+    // BUNCH-107 transitional: AssertSecondLegRoute renamed to AssertDryRoute transitively.
     // The route to dryfork is now mounted (transitional horse default).
     // BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
-    public static void AssertDryFootRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, TravelPreviewResultDto preview)
+    public static void AssertSecondLegRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, TravelPreviewResultDto preview)
     {
         RequireEqual("NoHorseLightEasy", "scenario.name", "NoHorseLightEasy", fixture.Name);
 
@@ -202,7 +202,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual("NoHorseLightEasy", "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
     }
 
-    public static void AssertDryFootRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, GameTurnResultDto turn, TravelPreviewResultDto preview)
+    public static void AssertSecondLegRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, GameTurnResultDto turn, TravelPreviewResultDto preview)
     {
         RequireEqual("NoHorseLightEasy", "scenario.name", "NoHorseLightEasy", fixture.Name);
 
@@ -217,7 +217,7 @@ internal static class ScenarioSeedCatalog
     public static void AssertHighRiskFoeInterruptRoute(
         this ScenarioSeedFixture fixture,
         GameSessionDto session,
-        GameTurnResultDto dryForkTravel,
+        GameTurnResultDto secondLegTravel,
         GameTurnResultDto blockedAdvance,
         GameTurnResultDto resolved,
         GameTurnResultDto resumeAdvance)
@@ -227,16 +227,16 @@ internal static class ScenarioSeedCatalog
         fixture.AssertCreatedSession(session);
 
         // Discover the destination town dynamically from the journey (no hardcoded town names)
-        var destinationTownId = dryForkTravel.CurrentSession.Journey?.DestinationTownId
+        var destinationTownId = secondLegTravel.CurrentSession.Journey?.DestinationTownId
             ?? throw new XunitException("HighRiskFoeInterruptRoute: expected the journey to have a destination town.");
         var destinationTown = session.World.Towns.FirstOrDefault(t => t.Id == destinationTownId)
             ?? throw new XunitException($"HighRiskFoeInterruptRoute: destination town '{destinationTownId}' not found in world.");
         var destinationTownName = destinationTown.Name;
 
-        Require("HighRiskFoeInterruptRoute", "travel-turn.success", dryForkTravel.Success, "expected the journey to start successfully.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.journeyStatus", JourneyStatus.Active, dryForkTravel.JourneyStatus);
-        Require("HighRiskFoeInterruptRoute", "travel-turn.noEncounter", dryForkTravel.Journey is null || dryForkTravel.Journey.PendingEncounter is null, "expected no pending encounter on journey start.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.daysTravelled", 0, dryForkTravel.CurrentSession.Journey?.DaysTravelled);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.success", secondLegTravel.Success, "expected the journey to start successfully.");
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.journeyStatus", JourneyStatus.Active, secondLegTravel.JourneyStatus);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.noEncounter", secondLegTravel.Journey is null || secondLegTravel.Journey.PendingEncounter is null, "expected no pending encounter on journey start.");
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.daysTravelled", 0, secondLegTravel.CurrentSession.Journey?.DaysTravelled);
 
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.success", !blockedAdvance.Success, "expected the first advance to interrupt due to encounter.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.journeyStatus", JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
@@ -244,7 +244,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.kind", "npc", blockedAdvance.Journey!.PendingEncounter!.Kind);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choices", 3, blockedAdvance.Journey.PendingEncounter.Choices.Count);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choiceIds", "run,fight,bribe", string.Join(",", blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id)));
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.day", dryForkTravel.CurrentSession.Clock.Day + 1, blockedAdvance.CurrentSession.Clock.Day);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.day", secondLegTravel.CurrentSession.Clock.Day + 1, blockedAdvance.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.turn", 0, blockedAdvance.CurrentSession.Clock.Turn);
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.travelDiary", blockedAdvance.TravelDiary is not null && blockedAdvance.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted first day.");
 
@@ -262,7 +262,7 @@ internal static class ScenarioSeedCatalog
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.pendingEncounter", resolved.CurrentSession.Journey is not null && resolved.CurrentSession.Journey.PendingEncounter is null, "expected the pending encounter to clear after resolution.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resolved.clock.day", blockedAdvance.CurrentSession.Clock.Day, resolved.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resolved.clock.turn", 0, resolved.CurrentSession.Clock.Turn);
-        Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.logEntries", resolved.CurrentSession.LogEntries.Count > dryForkTravel.CurrentSession.LogEntries.Count, "expected the resolution to add durable log state.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.logEntries", resolved.CurrentSession.LogEntries.Count > secondLegTravel.CurrentSession.LogEntries.Count, "expected the resolution to add durable log state.");
 
         Require("HighRiskFoeInterruptRoute", "travel-turn.resume.journeyRemains", resumeAdvance.CurrentSession.Journey is not null, "expected the journey to remain after resuming.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.currentTownId", destinationTownId, resumeAdvance.CurrentSession.Player.CurrentTownId);
