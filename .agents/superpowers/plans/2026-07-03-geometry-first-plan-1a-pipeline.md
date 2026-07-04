@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 1a: Core Pipeline
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement the geometry-first procedural map generation pipeline — clustered town placement, Delaunay+MST trail graph generation, geometry-derived terrain/distance assignment, outlier guarantee, and the `MapGenerator` orchestrator.
 
@@ -61,21 +61,21 @@ Tests:
 **Interfaces:**
 - Produces: `TrailEdge(int FromSlot, int ToSlot, double PixelDistance)` with `OrderedSlots` property. Used by Tasks 2-6.
 
-- [ ] **Step 1: Add Delaunator NuGet package**
+- [x] **Step 1: Add Delaunator NuGet package**
 
 Run: `dotnet add src/WildBunch.GameContent/WildBunch.GameContent.csproj package Delaunator --version 1.0.11`
 Expected: package added successfully.
 
-- [ ] **Step 2: Create TrailEdge record**
+- [x] **Step 2: Create TrailEdge record**
 
 Create `src/WildBunch.GameContent/NewGame/TrailEdge.cs` from `pipeline-production.md` Section 1.
 
-- [ ] **Step 3: Build to verify**
+- [x] **Step 3: Build to verify**
 
 Run: `dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 `git add -A; git commit -m "feat: add Delaunator NuGet package and TrailEdge internal record"`
 
@@ -89,25 +89,25 @@ Expected: PASS
 - Consumes: `SeedWorld` (TownCount, ClusterCount, WorldVariant, OutlierSlotType), `GameEntropy`, `SaltSource`, `GameSetupDeterministicSource`
 - Produces: `ClusterPlacementGenerator.Place(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)` returning `(Dictionary<int, (int X, int Y)> Towns, Dictionary<int, int> ClusterAssignments, int? OutlierSlot)`. Used by Task 6.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/WildBunch.GameContent.Tests/ClusterPlacementGeneratorTests.cs` from `pipeline-tests.md` Section 2.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "ClusterPlacementGeneratorTests"`
 Expected: FAIL (class doesn't exist)
 
-- [ ] **Step 3: Implement ClusterPlacementGenerator**
+- [x] **Step 3: Implement ClusterPlacementGenerator**
 
 Create `src/WildBunch.GameContent/NewGame/ClusterPlacementGenerator.cs` from `pipeline-production.md` Section 2.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "ClusterPlacementGeneratorTests"`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "feat: implement ClusterPlacementGenerator for clustered town placement"`
 
@@ -121,25 +121,25 @@ Expected: PASS
 - Consumes: `TrailEdge` from Task 1, `SeedWorld` (GraphDensity, TownCount), `GameEntropy`, `SaltSource`, `GameSetupDeterministicSource`, `ClusterPlacementGenerator.Place(...)` output from Task 2
 - Produces: `TrailGraphGenerator.Generate(SeedWorld, Dictionary<int, (int, int)>, Dictionary<int, int>, GameSetupDeterministicSource, GameEntropy, SaltSource?)` returning `IReadOnlyList<TrailEdge>`. Uses `Delaunator` NuGet via `using DelaunatorSharp;`. The package's `IPoint` interface requires `int Index`, `double X`, `double Y`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/WildBunch.GameContent.Tests/TrailGraphGeneratorTests.cs` from `pipeline-tests.md` Section 3.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "TrailGraphGeneratorTests"`
 Expected: FAIL (class doesn't exist)
 
-- [ ] **Step 3: Implement TrailGraphGenerator**
+- [x] **Step 3: Implement TrailGraphGenerator**
 
 Create `src/WildBunch.GameContent/NewGame/TrailGraphGenerator.cs` from `pipeline-production.md` Section 3.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "TrailGraphGeneratorTests"`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "feat: implement TrailGraphGenerator with Delaunay + MST + filters"`
 
@@ -153,25 +153,25 @@ Expected: PASS
 - Consumes: `TrailEdge` from Task 1, `SeedWorld` (WorldVariant), `SeedWorldTrail` (existing), domain enums `TrailTerrain`, `WaterFeature`, `TrailRisk` from `WildBunch.Domain.World`
 - Produces: `TerrainAssigner.Assign(IReadOnlyList<TrailEdge>, Dictionary<int, (int, int)>, Dictionary<int, int>, SeedWorldVariant, IReadOnlyList<string>, int?)` returning `IReadOnlyList<SeedWorldTrail>`. Used by Task 6.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/WildBunch.GameContent.Tests/TerrainAssignerTests.cs` from `pipeline-tests.md` Section 4.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "TerrainAssignerTests"`
 Expected: FAIL (class doesn't exist)
 
-- [ ] **Step 3: Implement TerrainAssigner**
+- [x] **Step 3: Implement TerrainAssigner**
 
 Create `src/WildBunch.GameContent/NewGame/TerrainAssigner.cs` from `pipeline-production.md` Section 4.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "TerrainAssignerTests"`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "feat: implement TerrainAssigner for geometry-derived terrain/distance"`
 
@@ -185,25 +185,25 @@ Expected: PASS
 - Consumes: `TrailEdge` from Task 1, `SeedWorldTrail` (existing), `Dictionary<int, (int, int)>` from `ClusterPlacementGenerator.Place(...)` output (Task 2), `IReadOnlyList<TrailEdge>` from `TrailGraphGenerator.Generate(...)` output (Task 3), `IReadOnlyList<SeedWorldTrail>` from `TerrainAssigner.Assign(...)` output (Task 4)
 - Produces: `OutlierGuarantee.Enforce(IReadOnlyList<SeedWorldTrail>, Dictionary<int, (int, int)>, int?, IReadOnlyList<string>)` returning `(IReadOnlyList<SeedWorldTrail> Trails, Dictionary<int, (int X, int Y)> Towns)`. Used by Task 6.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/WildBunch.GameContent.Tests/OutlierGuaranteeTests.cs` from `pipeline-tests.md` Section 5.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "OutlierGuaranteeTests"`
 Expected: FAIL (class doesn't exist)
 
-- [ ] **Step 3: Implement OutlierGuarantee**
+- [x] **Step 3: Implement OutlierGuarantee**
 
 Create `src/WildBunch.GameContent/NewGame/OutlierGuarantee.cs` from `pipeline-production.md` Section 5.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "OutlierGuaranteeTests"`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "feat: implement OutlierGuarantee for outlier trail invariant"`
 
@@ -217,42 +217,42 @@ Expected: PASS
 - Consumes: `ClusterPlacementGenerator` (Task 2), `TrailGraphGenerator` (Task 3), `TerrainAssigner` (Task 4), `OutlierGuarantee` (Task 5), `SeedWorldCatalog.DeriveTownNames` (existing), `SeedWorldCatalog.CreateWorld` (existing), `SeedWorld` (existing), `GameEntropy`, `SaltSource`, `GameSetupDeterministicSource` (existing)
 - Produces: `MapGenerator.Generate(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)` returning `World`. Signature mirrors `SeedWorldBuilder.CreateWorld` so it is a drop-in replacement. Not wired into `GameSetupResolver` yet — that's Plan 2.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/WildBunch.GameContent.Tests/MapGeneratorTests.cs` from `pipeline-tests.md` Section 6.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "MapGeneratorTests"`
 Expected: FAIL (class doesn't exist)
 
-- [ ] **Step 3: Implement MapGenerator**
+- [x] **Step 3: Implement MapGenerator**
 
 Create `src/WildBunch.GameContent/NewGame/MapGenerator.cs` from `pipeline-production.md` Section 6.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "MapGeneratorTests"`
 Expected: PASS
 
-- [ ] **Step 5: Run the full GameContent test suite to verify no regressions**
+- [x] **Step 5: Run the full GameContent test suite to verify no regressions**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/`
 Expected: PASS — all existing tests still pass (stub `CreateWorld` is still in place, `MapGenerator` is not wired yet)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 `git add -A; git commit -m "feat: implement MapGenerator orchestrator for geometry-first pipeline"`
 
 ## Definition of Done
 
-- [ ] Delaunator NuGet package added to WildBunch.GameContent
-- [ ] TrailEdge record compiles
-- [ ] ClusterPlacementGenerator: deterministic for same seed, varied by salt, respects bounds and cluster separation
-- [ ] TrailGraphGenerator: connected, planar (no crossings), respects density settings, filters work
-- [ ] TerrainAssigner: distances match pixel geometry, terrain varies by cluster relationship and variant
-- [ ] OutlierGuarantee: exactly one 6-day incident trail, coordinate adjustment works
-- [ ] MapGenerator: full pipeline integration, Boring determinism, connectivity, planarity
-- [ ] All new tests pass
-- [ ] All new production code compiles without errors
-- [ ] Existing tests still pass (stub `CreateWorld` is still in place)
+- [x] Delaunator NuGet package added to WildBunch.GameContent
+- [x] TrailEdge record compiles
+- [x] ClusterPlacementGenerator: deterministic for same seed, varied by salt, respects bounds and cluster separation
+- [x] TrailGraphGenerator: connected, planar (no crossings), respects density settings, filters work
+- [x] TerrainAssigner: distances match pixel geometry, terrain varies by cluster relationship and variant
+- [x] OutlierGuarantee: exactly one 6-day incident trail, coordinate adjustment works
+- [x] MapGenerator: full pipeline integration, Boring determinism, connectivity, planarity
+- [x] All new tests pass
+- [x] All new production code compiles without errors
+- [x] Existing tests still pass (stub `CreateWorld` is still in place)

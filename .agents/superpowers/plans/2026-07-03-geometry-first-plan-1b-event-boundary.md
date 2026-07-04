@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 1b: Event Boundary
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make the generated world event-derived instead of snapshot-only. Add `WorldGenerated` and `StartingTownSelected` domain events to the event stream so the world can be reconstructed by replaying events, not just from the JSON snapshot cache. Fix `TownSnapshot` to persist `IsOutlier`.
 
@@ -102,7 +102,7 @@ CompleteGameStartHandler
 
 The persistence layer currently has these as `private sealed record` inside the serializer class. They need to be public so the `WorldGenerated` event can carry them. Move them to the domain project and update the serializer to use the public types.
 
-- [ ] **Step 1: Create public snapshot records in the domain**
+- [x] **Step 1: Create public snapshot records in the domain**
 
 Create `src/WildBunch.Domain/World/WorldSnapshot.cs`:
 
@@ -159,7 +159,7 @@ public sealed record TrailSnapshot(
 
 Note: `TownSnapshot` now includes `Prosperity` and `IsOutlier` — the persistence layer was missing both. `IsOutlier` is critical for the outlier guarantee. `Prosperity` was also missing (it defaults to `Prosperous` on reload, which is wrong for non-uniform palettes).
 
-- [ ] **Step 2: Update persistence serializer to use public types**
+- [x] **Step 2: Update persistence serializer to use public types**
 
 In `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`:
 - Delete the private `WorldSnapshot`, `TownSnapshot`, `TrailSnapshot` records
@@ -171,17 +171,17 @@ In `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components
 - Replace `TrailSnapshot.ToDomain(snapshot)` calls with `snapshot.ToDomain()`
 - Add `using WildBunch.Domain.World;` if not already present (the file already has this using)
 
-- [ ] **Step 3: Build to verify**
+- [x] **Step 3: Build to verify**
 
 Run: `dotnet build`
 Expected: PASS
 
-- [ ] **Step 4: Run existing tests to verify no regressions**
+- [x] **Step 4: Run existing tests to verify no regressions**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/; dotnet test tests/WildBunch.Domain.Tests/`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "feat: public WorldSnapshot/TownSnapshot/TrailSnapshot in domain, fix IsOutlier and Prosperity persistence"`
 
@@ -193,7 +193,7 @@ Expected: PASS
 **Interfaces:**
 - Produces: `WorldGenerated` event record carrying `SeedCode`, `SaltSource`, `GameEntropy`, `WorldSnapshot`. Used by Tasks 3-5.
 
-- [ ] **Step 1: Create the event**
+- [x] **Step 1: Create the event**
 
 Create `src/WildBunch.Domain/Events/WorldGenerated.cs`:
 
@@ -220,12 +220,12 @@ public sealed record WorldGenerated : IDomainEvent
 }
 ```
 
-- [ ] **Step 2: Build to verify**
+- [x] **Step 2: Build to verify**
 
 Run: `dotnet build`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 `git add -A; git commit -m "feat: add WorldGenerated domain event carrying world snapshot"`
 
@@ -238,7 +238,7 @@ Expected: PASS
 **Interfaces:**
 - Produces: `StartingTownSelected` event carrying `StartingTownId`. Used by Tasks 4-5.
 
-- [ ] **Step 1: Create the event**
+- [x] **Step 1: Create the event**
 
 Create `src/WildBunch.Domain/Events/StartingTownSelected.cs`:
 
@@ -259,7 +259,7 @@ public sealed record StartingTownSelected : IDomainEvent
 }
 ```
 
-- [ ] **Step 2: Add StartingTownSelected phase to StartFlowPhase enum**
+- [x] **Step 2: Add StartingTownSelected phase to StartFlowPhase enum**
 
 In `src/WildBunch.Domain/Game/StartFlowPhase.cs`, add a new phase between `PrologueViewed` and `GameStarted`:
 
@@ -281,17 +281,17 @@ public enum StartFlowPhase
 }
 ```
 
-- [ ] **Step 3: Build to verify**
+- [x] **Step 3: Build to verify**
 
 Run: `dotnet build`
 Expected: PASS — note: existing code that checks `StartFlowPhase.GameStarted` still works because the enum value changed from 3 to 4, but no code uses the numeric value directly (all comparisons use the named enum members).
 
-- [ ] **Step 4: Run existing tests to check for enum value breakage**
+- [x] **Step 4: Run existing tests to check for enum value breakage**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: PASS — if any tests fail due to the enum value change, fix them inline (they should use named members, not numeric values).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "feat: add StartingTownSelected domain event and StartFlowPhase.StartingTownSelected"`
 
@@ -313,7 +313,7 @@ Expected: PASS — if any tests fail due to the enum value change, fix them inli
 - Consumes: `WorldGenerated` from Task 2, `StartingTownSelected` from Task 3
 - Produces: `GameSession.StartSetup` that emits `WorldGenerated`, `GameSession.SelectStartingTown` method, modified `GameSession.CompleteGameStart` that no longer takes `startingTownId`
 
-- [ ] **Step 1: Update StartSetup to emit WorldGenerated**
+- [x] **Step 1: Update StartSetup to emit WorldGenerated**
 
 In `src/WildBunch.Domain/Game/GameSession.cs`, modify the `StartSetup` method to accept a `SaltSource` parameter and emit `WorldGenerated` after `PlayerSetupCompleted`:
 
@@ -395,7 +395,7 @@ private void Apply(WorldGenerated e)
 }
 ```
 
-- [ ] **Step 2: Add Apply(WorldGenerated) and Apply(StartingTownSelected) methods**
+- [x] **Step 2: Add Apply(WorldGenerated) and Apply(StartingTownSelected) methods**
 
 In `GameSession.cs`, add:
 
@@ -413,7 +413,7 @@ private void Apply(StartingTownSelected e)
 }
 ```
 
-- [ ] **Step 3: Add SelectStartingTown method**
+- [x] **Step 3: Add SelectStartingTown method**
 
 In `GameSession.cs`, add a new method that emits `StartingTownSelected`:
 
@@ -444,7 +444,7 @@ public void SelectStartingTown(TownId startingTownId)
 }
 ```
 
-- [ ] **Step 4: Modify CompleteGameStart to not take startingTownId**
+- [x] **Step 4: Modify CompleteGameStart to not take startingTownId**
 
 The current `CompleteGameStart(TownId startingTownId, Wallet?, Inventory?)` should become `CompleteGameStart(Wallet?, Inventory?)` — it reads the starting town from the `StartingTownSelected` event (stored in a field). Add a field to track the selected town:
 
@@ -493,7 +493,7 @@ public void CompleteGameStart(
 
 Also update the `StartNew` shortcut method to call `SelectStartingTown` then `CompleteGameStart` instead of the old flow.
 
-- [ ] **Step 5: Update ApplyEvent dispatcher**
+- [x] **Step 5: Update ApplyEvent dispatcher**
 
 In `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`, add cases for the new events:
 
@@ -506,7 +506,7 @@ case StartingTownSelected sts:
     break;
 ```
 
-- [ ] **Step 6: Update event serialization**
+- [x] **Step 6: Update event serialization**
 
 In `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs`, add to `ResolveEventType`:
 
@@ -515,12 +515,12 @@ nameof(WorldGenerated) => typeof(WorldGenerated),
 nameof(StartingTownSelected) => typeof(StartingTownSelected),
 ```
 
-- [ ] **Step 7: Build**
+- [x] **Step 7: Build**
 
 Run: `dotnet build`
 Expected: There will be compile errors in callers of `StartSetup` (missing `saltSource` param) and `CompleteGameStart` (extra `startingTownId` param). Fix these in Phase 3.
 
-- [ ] **Step 8: Commit (may not compile yet — Phase 3 fixes the callers)**
+- [x] **Step 8: Commit (may not compile yet — Phase 3 fixes the callers)**
 
 Do not commit yet. Proceed to Phase 3.
 
@@ -539,7 +539,7 @@ Do not commit yet. Proceed to Phase 3.
 - Modify: `src/WildBunch.Application/Games/Commands/CompleteGameStartHandler.cs`
 - Modify: `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`
 
-- [ ] **Step 1: Update SeededNewGameFactory.ResolveWorld to expose saltSource**
+- [x] **Step 1: Update SeededNewGameFactory.ResolveWorld to expose saltSource**
 
 The `ResolveWorld` method needs to return the `SaltSource` so the setup handler can pass it to `StartSetup`. Change the return type:
 
@@ -561,7 +561,7 @@ public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSour
 }
 ```
 
-- [ ] **Step 2: Update CompletePlayerSetupHandler**
+- [x] **Step 2: Update CompletePlayerSetupHandler**
 
 In `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs`, update the `ResolveWorld` call and `StartSetup` call:
 
@@ -579,7 +579,7 @@ var newSession = GameSession.StartSetup(
     saltSource);
 ```
 
-- [ ] **Step 3: Update CompleteGameStartHandler**
+- [x] **Step 3: Update CompleteGameStartHandler**
 
 In `src/WildBunch.Application/Games/Commands/CompleteGameStartHandler.cs`, add `SelectStartingTown` before `CompleteGameStart`:
 
@@ -593,17 +593,17 @@ var (wallet, inventory) = _newGameFactory.ResolveStartingResources(session.GameD
 session.CompleteGameStart(wallet, inventory);
 ```
 
-- [ ] **Step 4: Build**
+- [x] **Step 4: Build**
 
 Run: `dotnet build`
 Expected: PASS — all compile errors resolved
 
-- [ ] **Step 5: Run non-integration tests**
+- [x] **Step 5: Run non-integration tests**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/; dotnet test tests/WildBunch.Domain.Tests/; dotnet test tests/WildBunch.Application.Tests/`
 Expected: Some tests may fail if they call `StartSetup` or `CompleteGameStart` with the old signatures. Fix them inline.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 `git add -A; git commit -m "feat: emit WorldGenerated and StartingTownSelected events in setup flow, fix callers"`
 
@@ -622,11 +622,11 @@ Expected: Some tests may fail if they call `StartSetup` or `CompleteGameStart` w
 - Modify: `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs`
 - Modify: Any other test files that call `StartSetup` with old signatures
 
-- [ ] **Step 1: Update TestSessionFactory**
+- [x] **Step 1: Update TestSessionFactory**
 
 In `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`, update any calls to `StartSetup` to include `saltSource` parameter.
 
-- [ ] **Step 2: Update StartFlowEventSourcingTests**
+- [x] **Step 2: Update StartFlowEventSourcingTests**
 
 In `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs`:
 - Update `StartSetup_Produces_PlayerSetupCompleted_AsUncommitted` to expect TWO events: `PlayerSetupCompleted` and `WorldGenerated`
@@ -635,17 +635,17 @@ In `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs`:
 - Add tests for `SelectStartingTown` method
 - Update `RehydrateFromEvents` tests to handle the new events
 
-- [ ] **Step 3: Search for other test files using StartSetup**
+- [x] **Step 3: Search for other test files using StartSetup**
 
 Run: `grep -r "StartSetup" tests/ --include="*.cs"`
 Update any test files that call this method with the old signature.
 
-- [ ] **Step 4: Run non-integration tests**
+- [x] **Step 4: Run non-integration tests**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/; dotnet test tests/WildBunch.Domain.Tests/; dotnet test tests/WildBunch.Application.Tests/`
 Expected: PASS (after fixing signature mismatches)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "test: update test factories and test files for new event signatures"`
 
@@ -663,7 +663,7 @@ Expected: PASS (after fixing signature mismatches)
 - Create: `tests/WildBunch.Domain.Tests/WorldGeneratedEventTests.cs`
 - Create: `tests/WildBunch.Domain.Tests/StartingTownSelectedEventTests.cs`
 
-- [ ] **Step 1: Write WorldGenerated event tests**
+- [x] **Step 1: Write WorldGenerated event tests**
 
 Create `tests/WildBunch.Domain.Tests/WorldGeneratedEventTests.cs`:
 
@@ -721,7 +721,7 @@ public sealed class WorldGeneratedEventTests
 }
 ```
 
-- [ ] **Step 2: Write StartingTownSelected event tests**
+- [x] **Step 2: Write StartingTownSelected event tests**
 
 Create `tests/WildBunch.Domain.Tests/StartingTownSelectedEventTests.cs`:
 
@@ -744,17 +744,17 @@ public sealed class StartingTownSelectedEventTests
 }
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/ --filter "WorldGeneratedEventTests|StartingTownSelectedEventTests"`
 Expected: PASS
 
-- [ ] **Step 4: Run full non-integration test suite**
+- [x] **Step 4: Run full non-integration test suite**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/; dotnet test tests/WildBunch.Domain.Tests/; dotnet test tests/WildBunch.Application.Tests/`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git add -A; git commit -m "test: add WorldGenerated and StartingTownSelected event round-trip tests"`
 
@@ -778,7 +778,7 @@ Expected: PASS
 
 **Note:** This task can be deferred if Phase 1-5 reveal issues. The production flow (`StartSetup` → handlers) is the critical path.
 
-- [ ] **Step 1: Rework StartNew to call StartSetup, SelectStartingTown, then CompleteGameStart**
+- [x] **Step 1: Rework StartNew to call StartSetup, SelectStartingTown, then CompleteGameStart**
 
 In `src/WildBunch.Domain/Game/GameSession.cs`, replace the current `StartNew` implementation:
 
@@ -819,12 +819,12 @@ public static GameSession StartNew(
 }
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `dotnet build`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 `git add -A; git commit -m "refactor: rework StartNew to emit full event sequence (PlayerSetupCompleted → WorldGenerated → StartingTownSelected → GameStarted)"`
 
@@ -834,21 +834,21 @@ Expected: PASS
 
 ## Definition of Done
 
-- [ ] `WorldGenerated` event exists and carries `WorldSnapshot` (towns + trails with `IsOutlier` and `Prosperity`)
-- [ ] `StartingTownSelected` event exists and carries `TownId`
-- [ ] `StartFlowPhase` has `StartingTownSelected` phase between `PrologueViewed` and `GameStarted`
-- [ ] `GameSession.StartSetup` emits both `PlayerSetupCompleted` and `WorldGenerated`
-- [ ] `Apply(WorldGenerated)` sets `World` from the event payload
-- [ ] `Apply(StartingTownSelected)` records the town choice and transitions to `StartingTownSelected` phase
-- [ ] `CompleteGameStart` no longer takes `startingTownId` — it reads from the `StartingTownSelected` event
-- [ ] `SelectStartingTown` method exists and emits `StartingTownSelected`
-- [ ] Event replay dispatcher handles both new events
-- [ ] Event serializer can serialize/deserialize both new events
-- [ ] `TownSnapshot` persists `IsOutlier` and `Prosperity`
-- [ ] Test factories and test files updated for new signatures
-- [ ] Non-integration tests pass
-- [ ] The world is reconstructable from the event stream alone (not just the snapshot cache)
-- [ ] (Optional) `StartNew` reworked to emit full event sequence
+- [x] `WorldGenerated` event exists and carries `WorldSnapshot` (towns + trails with `IsOutlier` and `Prosperity`)
+- [x] `StartingTownSelected` event exists and carries `TownId`
+- [x] `StartFlowPhase` has `StartingTownSelected` phase between `PrologueViewed` and `GameStarted`
+- [x] `GameSession.StartSetup` emits both `PlayerSetupCompleted` and `WorldGenerated`
+- [x] `Apply(WorldGenerated)` sets `World` from the event payload
+- [x] `Apply(StartingTownSelected)` records the town choice and transitions to `StartingTownSelected` phase
+- [x] `CompleteGameStart` no longer takes `startingTownId` — it reads from the `StartingTownSelected` event
+- [x] `SelectStartingTown` method exists and emits `StartingTownSelected`
+- [x] Event replay dispatcher handles both new events
+- [x] Event serializer can serialize/deserialize both new events
+- [x] `TownSnapshot` persists `IsOutlier` and `Prosperity`
+- [x] Test factories and test files updated for new signatures
+- [x] Non-integration tests pass
+- [x] The world is reconstructable from the event stream alone (not just the snapshot cache)
+- [x] (Optional) `StartNew` reworked to emit full event sequence
 
 ## Deferred Work (Future Plans)
 

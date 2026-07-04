@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 1c: CaseFile Event Boundary
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make the generated caseFile event-derived instead of snapshot-only. Add `CaseFileGenerated` domain event to the event stream so the caseFile can be reconstructed by replaying events, not just from the JSON snapshot cache. This completes the event-sourcing contract by ensuring all domain state is in the event stream.
 
@@ -90,7 +90,7 @@ The snapshot record should carry all caseFile state needed for reconstruction:
 - OpeningLead
 - Clues (list of clue snapshots)
 
-- [ ] **Step 1: Create public snapshot record in the domain**
+- [x] **Step 1: Create public snapshot record in the domain**
 
 Create `src/WildBunch.Domain/Cases/CaseFileSnapshot.cs`:
 
@@ -295,7 +295,7 @@ public sealed record ClueDirectionAnchorSnapshot(string Label, string? Movement,
 **Interfaces:**
 - Produces: `CaseFileGenerated` domain event carrying the caseFile snapshot.
 
-- [ ] **Step 1: Create the domain event**
+- [x] **Step 1: Create the domain event**
 
 Create `src/WildBunch.Domain/Events/CaseFileGenerated.cs`:
 
@@ -338,11 +338,11 @@ public sealed record CaseFileGenerated : IDomainEvent
 - Modifies: `GameSession.StartSetup` to emit `CaseFileGenerated` event.
 - Modifies: `GameSession.CaseFile` property to be mutable (currently readonly).
 
-- [ ] **Step 1: Make CaseFile property mutable**
+- [x] **Step 1: Make CaseFile property mutable**
 
 Change `public CaseFile CaseFile { get; }` to `public CaseFile CaseFile { get; private set; } = null!;`
 
-- [ ] **Step 2: Emit CaseFileGenerated event in StartSetup**
+- [x] **Step 2: Emit CaseFileGenerated event in StartSetup**
 
 After emitting `WorldGenerated`, emit `CaseFileGenerated`:
 
@@ -370,7 +370,7 @@ session._uncommittedEvents.Add(caseFileEvent);
 **Interfaces:**
 - Modifies: GameSession to have `Apply(CaseFileGenerated)` method.
 
-- [ ] **Step 1: Add Apply method**
+- [x] **Step 1: Add Apply method**
 
 ```csharp
 private void Apply(CaseFileGenerated e)
@@ -394,7 +394,7 @@ private void Apply(CaseFileGenerated e)
 - Modifies: `RehydrateFromEvents` signature to remove `caseFile` parameter.
 - Modifies: placeholder construction to use empty caseFile.
 
-- [ ] **Step 1: Remove caseFile parameter from RehydrateFromEvents**
+- [x] **Step 1: Remove caseFile parameter from RehydrateFromEvents**
 
 Change signature from:
 ```csharp
@@ -413,7 +413,7 @@ public static GameSession RehydrateFromEvents(
     IReadOnlyList<IDomainEvent> events)
 ```
 
-- [ ] **Step 2: Update placeholder construction to use empty caseFile**
+- [x] **Step 2: Update placeholder construction to use empty caseFile**
 
 Construct an empty caseFile for the placeholder:
 ```csharp
@@ -438,7 +438,7 @@ var caseFile = new CaseFile(
 **Interfaces:**
 - Modifies: `ApplyEvent` switch to handle `CaseFileGenerated`.
 
-- [ ] **Step 1: Add case to ApplyEvent switch**
+- [x] **Step 1: Add case to ApplyEvent switch**
 
 ```csharp
 case CaseFileGenerated cfg:
@@ -465,7 +465,7 @@ case CaseFileGenerated cfg:
 
 **Note:** No changes needed here - the handler already passes caseFile to StartSetup. The change is internal to StartSetup (emitting the event).
 
-- [ ] **Step 1: Verify no changes needed**
+- [x] **Step 1: Verify no changes needed**
 
 Confirm that `CompletePlayerSetupHandler` already passes caseFile to `StartSetup`.
 
@@ -485,7 +485,7 @@ Confirm that `CompletePlayerSetupHandler` already passes caseFile to `StartSetup
 
 **Note:** No changes needed here - the factory already returns caseFile.
 
-- [ ] **Step 1: Verify no changes needed**
+- [x] **Step 1: Verify no changes needed**
 
 Confirm that `ResolveWorld` already returns caseFile.
 
@@ -507,15 +507,15 @@ Confirm that `ResolveWorld` already returns caseFile.
 - Modifies: Tests to expect `CaseFileGenerated` event.
 - Modifies: Tests to remove caseFile from `RehydrateFromEvents` calls.
 
-- [ ] **Step 1: Update StartSetup_Produces_PlayerSetupCompleted_AsUncommitted**
+- [x] **Step 1: Update StartSetup_Produces_PlayerSetupCompleted_AsUncommitted**
 
 Change from expecting 2 events to 3 events, add assertion for `CaseFileGenerated`.
 
-- [ ] **Step 2: Add test for StartSetup_Produces_CaseFileGenerated_AsUncommitted**
+- [x] **Step 2: Add test for StartSetup_Produces_CaseFileGenerated_AsUncommitted**
 
 Verify that `CaseFileGenerated` is emitted and carries the correct snapshot.
 
-- [ ] **Step 3: Update all RehydrateFromEvents calls**
+- [x] **Step 3: Update all RehydrateFromEvents calls**
 
 Remove caseFile parameter from all `RehydrateFromEvents` calls in tests.
 
@@ -533,7 +533,7 @@ Remove caseFile parameter from all `RehydrateFromEvents` calls in tests.
 **Interfaces:**
 - Modifies: Factory to remove caseFile from `RehydrateFromEvents` calls.
 
-- [ ] **Step 1: Update RehydrateFromEvents calls**
+- [x] **Step 1: Update RehydrateFromEvents calls**
 
 Remove caseFile parameter from all `RehydrateFromEvents` calls.
 
@@ -553,7 +553,7 @@ Remove caseFile parameter from all `RehydrateFromEvents` calls.
 
 **Note:** No changes needed here - the stub already returns caseFile.
 
-- [ ] **Step 1: Verify no changes needed**
+- [x] **Step 1: Verify no changes needed**
 
 Confirm that `ResolveWorld` already returns caseFile.
 
@@ -574,7 +574,7 @@ Confirm that `ResolveWorld` already returns caseFile.
 **Interfaces:**
 - Produces: Tests for event round-trip.
 
-- [ ] **Step 1: Create test file**
+- [x] **Step 1: Create test file**
 
 Create `tests/WildBunch.Domain.Tests/CaseFileGeneratedEventTests.cs` with tests:
 - `CaseFileGenerated_CarriesCaseFileSnapshotThatReconstructsToIdenticalCaseFile`
@@ -599,7 +599,7 @@ Create `tests/WildBunch.Domain.Tests/CaseFileGeneratedEventTests.cs` with tests:
 **Interfaces:**
 - Modifies: `ResolveEventType` to handle `CaseFileGenerated`.
 
-- [ ] **Step 1: Add case to ResolveEventType**
+- [x] **Step 1: Add case to ResolveEventType**
 
 ```csharp
 nameof(CaseFileGenerated) => typeof(CaseFileGenerated),
@@ -612,14 +612,14 @@ nameof(CaseFileGenerated) => typeof(CaseFileGenerated),
 
 ## Completion Criteria
 
-- [ ] All phases complete
-- [ ] Build passes for all projects
-- [ ] All tests pass (GameContent, Domain, Application)
-- [ ] Event round-trip tests pass
-- [ ] No caseFile parameter in `RehydrateFromEvents` signature
-- [ ] `CaseFileGenerated` event is emitted during `StartSetup`
-- [ ] `Apply(CaseFileGenerated)` sets CaseFile from event
-- [ ] Event stream is self-contained (no external references needed for replay)
+- [x] All phases complete
+- [x] Build passes for all projects
+- [x] All tests pass (GameContent, Domain, Application)
+- [x] Event round-trip tests pass
+- [x] No caseFile parameter in `RehydrateFromEvents` signature
+- [x] `CaseFileGenerated` event is emitted during `StartSetup`
+- [x] `Apply(CaseFileGenerated)` sets CaseFile from event
+- [x] Event stream is self-contained (no external references needed for replay)
 
 ## Post-Plan State
 

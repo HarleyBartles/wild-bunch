@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 2: Wire & Integration
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Wire `MapGenerator.Generate` into the game-setup pipeline, delete the stub `SeedWorldBuilder.CreateWorld`, add an integration-level smoke test through the full pipeline, and clean up unused helpers.
 
@@ -41,7 +41,7 @@
 
 **Changes:**
 
-- [ ] **Step 1: Swap the call in GameSetupResolver.cs**
+- [x] **Step 1: Swap the call in GameSetupResolver.cs**
 
 In `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`, line 55, replace:
 ```csharp
@@ -52,7 +52,7 @@ with:
 var world = MapGenerator.Generate(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource);
 ```
 
-- [ ] **Step 2: Fix GameSetupResolverTests.cs:71**
+- [x] **Step 2: Fix GameSetupResolverTests.cs:71**
 
 In `tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs`, line 71, replace:
 ```csharp
@@ -65,11 +65,11 @@ var expectedStartingTown = MapGenerator.Generate(seedWorld, new GameSetupDetermi
 
 Note: `MapGenerator.Generate` has no default for `saltSource` (unlike `CreateWorld` which defaulted it to null), so `null` must be passed explicitly as the 4th arg.
 
-- [ ] **Step 3: Delete the stub CreateWorld method in SeedWorldBuilder.cs**
+- [x] **Step 3: Delete the stub CreateWorld method in SeedWorldBuilder.cs**
 
 In `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`, delete the `CreateWorld` method (lines 18-56, including the XML doc comment starting at line 18). Keep all other members: `CreateCanonicalWorld`, `NonNegativeModulo`, `ComputeStableHash` overloads (Task 3 deletes the unused ones), `IsCanonicalSeedWorld`.
 
-- [ ] **Step 4: Build and run affected tests**
+- [x] **Step 4: Build and run affected tests**
 
 ```bash
 dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj
@@ -77,14 +77,14 @@ dotnet test tests/WildBunch.GameContent.Tests/ --filter "GameSetupResolverTests|
 ```
 Expected: PASS -- all tests pass with `MapGenerator.Generate` wired in. The `MapGeneratorTests` already call `MapGenerator.Generate` directly so they are unaffected. The `GameSetupResolverTests` and `SeededNewGameFactoryTests` now exercise the real pipeline through `GameSetupResolver`.
 
-- [ ] **Step 5: Run Application.Tests (they exercise the full pipeline)**
+- [x] **Step 5: Run Application.Tests (they exercise the full pipeline)**
 
 ```bash
 dotnet test tests/WildBunch.Application.Tests/ --filter "GetStartingTownMapHandlerTests|GetWorldMapHandlerTests"
 ```
 Expected: PASS -- these tests already assert `Assert.NotEmpty` on trails and positive ride-day distances. They now exercise the real pipeline automatically.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/GameSetupResolver.cs src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs
@@ -100,7 +100,7 @@ git commit -m "feat: wire MapGenerator into GameSetupResolver, delete stub Creat
 
 **No other test files need changes.** The Application.Tests and Integration.Tests already assert `NotEmpty` trails and will automatically exercise the real pipeline after Task 1. `SeedWorldBuilderTests` and `SeedWorldResolverTests` don't call `CreateWorld` and don't need changes.
 
-- [ ] **Step 1: Create GeometryPipelineTests.cs**
+- [x] **Step 1: Create GeometryPipelineTests.cs**
 
 Create `tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs` with 2 integration-level tests that go through the full `SeededNewGameFactory` path (not calling `MapGenerator.Generate` directly):
 
@@ -183,7 +183,7 @@ public sealed class GeometryPipelineTests
 
 Note: The `CreateSessionThroughFullPipeline` helper follows the same pattern as `GetStartingTownMapHandlerTests.CreateTestSession` and `GetWorldMapHandlerTests.CreateTestSession` -- it goes through `SeededNewGameFactory.ResolveWorld` -> `GameSetupResolver` -> `MapGenerator.Generate`. The `TestFixedSaltSourceFactory` is the same pattern used in those test files.
 
-- [ ] **Step 2: Build and run the new tests**
+- [x] **Step 2: Build and run the new tests**
 
 ```bash
 dotnet build tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj
@@ -191,14 +191,14 @@ dotnet test tests/WildBunch.GameContent.Tests/ --filter "GeometryPipelineTests"
 ```
 Expected: PASS -- both tests pass.
 
-- [ ] **Step 3: Run the full GameContent.Tests suite to verify no regressions**
+- [x] **Step 3: Run the full GameContent.Tests suite to verify no regressions**
 
 ```bash
 dotnet test tests/WildBunch.GameContent.Tests/
 ```
 Expected: PASS -- 141+2 = 143 passed (139 existing + 2 new + 2 from MapGeneratorTests if not already counted), 0 failed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs
@@ -210,14 +210,14 @@ git commit -m "test: add integration-level pipeline smoke test through SeededNew
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` (delete unused `ComputeStableHash` overloads)
 
-- [ ] **Step 1: Confirm MapLayoutPalette is gone (confirmation only)**
+- [x] **Step 1: Confirm MapLayoutPalette is gone (confirmation only)**
 
 ```bash
 rg -n "MapLayoutPalette" src/ tests/
 ```
 Expected: zero matches in code. Historical doc comments in `SeedWorldResolver.cs` (lines 55-75) describing the v8-v16 codec evolution are expected and should NOT be changed.
 
-- [ ] **Step 2: Delete unused ComputeStableHash overloads**
+- [x] **Step 2: Delete unused ComputeStableHash overloads**
 
 In `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`, delete the 3 private `ComputeStableHash` overloads at lines 62, 74, and 86. These have no call sites anywhere in `src/` or `tests/` (verified by grep). Keep all other members.
 
@@ -227,42 +227,42 @@ rg -n "ComputeStableHash" src/ tests/
 ```
 Expected: only the 3 definitions in `SeedWorldBuilder.cs`, zero call sites.
 
-- [ ] **Step 3: Build the full solution**
+- [x] **Step 3: Build the full solution**
 
 ```bash
 dotnet build
 ```
 Expected: 0 errors, 0 warnings.
 
-- [ ] **Step 4: Run Domain.Tests**
+- [x] **Step 4: Run Domain.Tests**
 
 ```bash
 dotnet test tests/WildBunch.Domain.Tests/
 ```
 Expected: 526 passed, 0 failed, 1 skipped (TownStates parity-gap test).
 
-- [ ] **Step 5: Run Application.Tests**
+- [x] **Step 5: Run Application.Tests**
 
 ```bash
 dotnet test tests/WildBunch.Application.Tests/
 ```
 Expected: 204 passed, 0 failed.
 
-- [ ] **Step 6: Run GameContent.Tests**
+- [x] **Step 6: Run GameContent.Tests**
 
 ```bash
 dotnet test tests/WildBunch.GameContent.Tests/
 ```
 Expected: 143 passed, 0 failed (139 existing + 2 new GeometryPipelineTests + 2 existing MapGeneratorTests... verify exact count at execution time).
 
-- [ ] **Step 7: Verify no stale references remain**
+- [x] **Step 7: Verify no stale references remain**
 
 ```bash
 rg -n "SeedWorldBuilder\.CreateWorld" src/ tests/
 ```
 Expected: zero matches (the stub is deleted, all call sites use `MapGenerator.Generate`).
 
-- [ ] **Step 8: Commit (if any cleanup changes were made)**
+- [x] **Step 8: Commit (if any cleanup changes were made)**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
@@ -271,13 +271,13 @@ git commit -m "chore: delete unused ComputeStableHash overloads"
 
 ## Definition of Done
 
-- [ ] Prerequisites confirmed: Plans 0-1f complete, `MapGenerator.Generate` exists, `SeedWorldBuilder.CreateWorld` stub exists
-- [ ] `GameSetupResolver` calls `MapGenerator.Generate` instead of `SeedWorldBuilder.CreateWorld`
-- [ ] `GameSetupResolverTests.cs:71` uses `MapGenerator.Generate` (not the deleted stub)
-- [ ] `SeedWorldBuilder.CreateWorld` stub is deleted; kept members remain
-- [ ] `GeometryPipelineTests.cs` exists with 2 integration-level tests through the full pipeline
-- [ ] `MapLayoutPalette` references confirmed absent (already deleted in Plan 0)
-- [ ] Unused `ComputeStableHash` overloads deleted
-- [ ] Full solution builds with 0 errors, 0 warnings
-- [ ] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (143) all pass
-- [ ] Zero `SeedWorldBuilder.CreateWorld` references remain in `src/` or `tests/`
+- [x] Prerequisites confirmed: Plans 0-1f complete, `MapGenerator.Generate` exists, `SeedWorldBuilder.CreateWorld` stub exists
+- [x] `GameSetupResolver` calls `MapGenerator.Generate` instead of `SeedWorldBuilder.CreateWorld`
+- [x] `GameSetupResolverTests.cs:71` uses `MapGenerator.Generate` (not the deleted stub)
+- [x] `SeedWorldBuilder.CreateWorld` stub is deleted; kept members remain
+- [x] `GeometryPipelineTests.cs` exists with 2 integration-level tests through the full pipeline
+- [x] `MapLayoutPalette` references confirmed absent (already deleted in Plan 0)
+- [x] Unused `ComputeStableHash` overloads deleted
+- [x] Full solution builds with 0 errors, 0 warnings
+- [x] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (143) all pass
+- [x] Zero `SeedWorldBuilder.CreateWorld` references remain in `src/` or `tests/`

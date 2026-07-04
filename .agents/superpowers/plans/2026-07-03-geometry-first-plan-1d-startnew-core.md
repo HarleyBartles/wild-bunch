@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 1d: Remove StartNew — Core (Snapshot Fix + Factory Rewrite)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Eliminate the split-brain game-start flows by (1) adding `PublicClues` to the domain `CaseFileSnapshot` so `CaseFileGenerated` events carry the complete case file, and (2) rewriting all test helper factories (`TestSessionFactory`, `TravelTestFactory`, `StubNewGameFactory`) to use the canonical start flow (`StartSetup` → `ViewPrologue` → `SelectStartingTown` → `CompleteGameStart`) instead of `GameSession.StartNew`. This plan covers the core factories and directly-affected event-sourcing tests. Plan 1e handles the remaining 66 direct-test call sites, deletes `StartNew`, and adds the final round-trip proof.
 
@@ -113,7 +113,7 @@ CaseFileSnapshot.ToDomain()
 **Interfaces:**
 - Produces: `CaseFileSnapshot` record now has `PublicClues` parameter; `FromDomain` captures `caseFile.PublicClues`; `ToDomain` passes `publicClues` to `CaseFile` constructor
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add a test to `tests/WildBunch.Domain.Tests/CaseFileGeneratedEventTests.cs` that verifies `PublicClues` survive the round-trip through `CaseFileSnapshot`:
 
@@ -154,12 +154,12 @@ public void CaseFileSnapshot_RoundTrip_Preserves_PublicClues()
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/CaseFileGeneratedEventTests.cs --filter "CaseFileSnapshot_RoundTrip_Preserves_PublicClues"`
 Expected: FAIL — `Assert.Single()` fails because `restored.PublicClues` is empty (snapshot doesn't carry PublicClues yet)
 
-- [ ] **Step 3: Add PublicClues to CaseFileSnapshot record**
+- [x] **Step 3: Add PublicClues to CaseFileSnapshot record**
 
 In `src/WildBunch.Domain/Cases/CaseFileSnapshot.cs`, update the record signature and both conversion methods:
 
@@ -190,17 +190,17 @@ public sealed record CaseFileSnapshot(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/CaseFileGeneratedEventTests.cs --filter "CaseFileSnapshot_RoundTrip_Preserves_PublicClues"`
 Expected: PASS
 
-- [ ] **Step 5: Run full Domain.Tests to check for breakage from the new constructor parameter**
+- [x] **Step 5: Run full Domain.Tests to check for breakage from the new constructor parameter**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/ --filter "CaseFileGenerated"`
 Expected: All `CaseFileGeneratedEventTests` pass. If any other tests break because they construct `CaseFileSnapshot` directly (without using `FromDomain`), fix them by adding the `PublicClues` argument.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Cases/CaseFileSnapshot.cs tests/WildBunch.Domain.Tests/CaseFileGeneratedEventTests.cs
@@ -229,7 +229,7 @@ it in FromDomain, and reconstructs it in ToDomain."
 **Interfaces:**
 - Produces: `TestSessionFactory.StartGameCanonical(...)` — private static helper that runs the 4-step canonical start flow and returns a fully-started session with `StartFlowPhase = GameStarted`
 
-- [ ] **Step 1: Add the StartGameCanonical helper method**
+- [x] **Step 1: Add the StartGameCanonical helper method**
 
 Add this private static method to `TestSessionFactory` in `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`, immediately after the class opening brace (before `CreateDefault`):
 
@@ -273,12 +273,12 @@ private static GameSession StartGameCanonical(
 }
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `dotnet build tests/WildBunch.Domain.Tests/`
 Expected: Build succeeds (the helper is not called yet, but must compile)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/TestSessionFactory.cs
@@ -313,7 +313,7 @@ session.MarkEventsCommitted();
 
 The only difference is `GameSession.StartNew(` → `StartGameCanonical(`. The parameters are the same. The `MarkEventsCommitted()` call stays — it clears the 6 setup events so tests start with a clean event list.
 
-- [ ] **Step 1: Migrate CreateDefault (line 61)**
+- [x] **Step 1: Migrate CreateDefault (line 61)**
 
 Replace:
 ```csharp
@@ -328,7 +328,7 @@ var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
     SaltSource.CreateFixed(string.Empty));
 ```
 
-- [ ] **Step 2: Migrate CreateWithConfrontableSaloonSuspect (line 102)**
+- [x] **Step 2: Migrate CreateWithConfrontableSaloonSuspect (line 102)**
 
 Replace:
 ```csharp
@@ -343,44 +343,44 @@ var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
     SaltSource.CreateFixed(string.Empty));
 ```
 
-- [ ] **Step 3: Migrate CreateWithKillerReleaseGateOpen (line 146)**
+- [x] **Step 3: Migrate CreateWithKillerReleaseGateOpen (line 146)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 4: Migrate CreateWithNoConfrontableSaloonSuspect (line 174)**
+- [x] **Step 4: Migrate CreateWithNoConfrontableSaloonSuspect (line 174)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 5: Migrate CreateWithNoSaloon (line 220)**
+- [x] **Step 5: Migrate CreateWithNoSaloon (line 220)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 6: Migrate CreateWithWarrantedSuspect (line 269)**
+- [x] **Step 6: Migrate CreateWithWarrantedSuspect (line 269)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 7: Migrate CreateWithIneligibleWarrantedSuspect (line 320)**
+- [x] **Step 7: Migrate CreateWithIneligibleWarrantedSuspect (line 320)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 8: Migrate CreateWithArmedCorrectDeclarationSetup (line 418)**
+- [x] **Step 8: Migrate CreateWithArmedCorrectDeclarationSetup (line 418)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 9: Migrate CreateWithPublicClue (line 477)**
+- [x] **Step 9: Migrate CreateWithPublicClue (line 477)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 10: Migrate CreateWithPublicWarrantAndClue (line 571)**
+- [x] **Step 10: Migrate CreateWithPublicWarrantAndClue (line 571)**
 
 Same pattern: `GameSession.StartNew(` → `StartGameCanonical(`
 
-- [ ] **Step 11: Run Domain.Tests to verify factory migration**
+- [x] **Step 11: Run Domain.Tests to verify factory migration**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/ --filter "TestSessionFactory|BountySaloon|InvestigationEventSourcing|SaloonPersonOfInterest|WantedSuspect|SheriffTurnIn|PublicClue|SpentSource|PublicWarrant"`
 Expected: All tests that use `TestSessionFactory` methods pass. The sessions now produce 6 setup events (cleared by `MarkEventsCommitted`) instead of 1, but since all factory methods call `MarkEventsCommitted()` after creation, downstream tests see no difference in `UncommittedEvents`.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/TestSessionFactory.cs
@@ -406,7 +406,7 @@ to TestSessionFactory automatically gets the canonical flow."
 - Modify: `tests/WildBunch.Domain.Tests/TestSessionFactory.cs` — change `private static` to `internal static` on `StartGameCanonical`
 - Modify: `tests/WildBunch.Domain.Tests/TravelTestFactory.cs` — migrate 3 `StartNew` calls
 
-- [ ] **Step 1: Make StartGameCanonical internal**
+- [x] **Step 1: Make StartGameCanonical internal**
 
 In `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`, change:
 ```csharp
@@ -417,7 +417,7 @@ To:
 internal static GameSession StartGameCanonical(
 ```
 
-- [ ] **Step 2: Migrate TravelTestFactory.RecaptureGameStartedForReplay (line 71)**
+- [x] **Step 2: Migrate TravelTestFactory.RecaptureGameStartedForReplay (line 71)**
 
 This method currently re-runs `StartNew` to capture the `GameStarted` event for replay tests. After migration, the session already produces the full event stream through the canonical flow. Replace the entire method:
 
@@ -442,7 +442,7 @@ internal static GameStarted RecaptureGameStartedForReplay(GameSession session)
 
 Note: `UncommittedEvents` now has 6 events (PlayerSetupCompleted, WorldGenerated, CaseFileGenerated, PrologueViewed, StartingTownSelected, GameStarted). We use `OfType<GameStarted>().Single()` instead of `.Single()` to extract just the `GameStarted` event.
 
-- [ ] **Step 3: Migrate TravelTestFactory.CreateHighRiskJourney (line 118)**
+- [x] **Step 3: Migrate TravelTestFactory.CreateHighRiskJourney (line 118)**
 
 Replace:
 ```csharp
@@ -459,7 +459,7 @@ var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFi
     SaltSource.CreateFixed(string.Empty));
 ```
 
-- [ ] **Step 4: Migrate TravelTestFactory.CreateSixDayQuietJourney (line 165)**
+- [x] **Step 4: Migrate TravelTestFactory.CreateSixDayQuietJourney (line 165)**
 
 Replace:
 ```csharp
@@ -476,12 +476,12 @@ var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFi
     SaltSource.CreateFixed(string.Empty));
 ```
 
-- [ ] **Step 5: Run travel tests to verify**
+- [x] **Step 5: Run travel tests to verify**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/ --filter "TravelTestFactory|TravelResolver|TravelDayPlan|TravelRules|AdvanceTravel"`
 Expected: All travel tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/TestSessionFactory.cs tests/WildBunch.Domain.Tests/TravelTestFactory.cs
@@ -506,7 +506,7 @@ events, not 1."
 **Files:**
 - Modify: `tests/WildBunch.Application.Tests/TestDoubles/StubNewGameFactory.cs`
 
-- [ ] **Step 1: Migrate CreateSession (line 109)**
+- [x] **Step 1: Migrate CreateSession (line 109)**
 
 Replace:
 ```csharp
@@ -531,7 +531,7 @@ return StartGameCanonical(
     saltSource: SaltSource.CreateFixed("application-tests"));
 ```
 
-- [ ] **Step 2: Add private StartGameCanonical helper to StubNewGameFactory**
+- [x] **Step 2: Add private StartGameCanonical helper to StubNewGameFactory**
 
 Add this private static method to `StubNewGameFactory`:
 
@@ -568,12 +568,12 @@ private static GameSession StartGameCanonical(
 }
 ```
 
-- [ ] **Step 3: Run Application.Tests to verify**
+- [x] **Step 3: Run Application.Tests to verify**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/ --filter "StubNewGameFactory"`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/WildBunch.Application.Tests/TestDoubles/StubNewGameFactory.cs
@@ -597,7 +597,7 @@ Domain.Tests, so the helper is duplicated locally."
 
 **Context:** The canonical flow produces 6 events (PlayerSetupCompleted, WorldGenerated, CaseFileGenerated, PrologueViewed, StartingTownSelected, GameStarted) and sets version to 6. The old `StartNew` produced 1 event and version 1. Tests that assert on initial event count or version must be updated. Tests that call `MarkEventsCommitted()` before asserting on operation events are unaffected.
 
-- [ ] **Step 1: Update CreateSession helper (line 370-382)**
+- [x] **Step 1: Update CreateSession helper (line 370-382)**
 
 Replace the `CreateSession` helper:
 ```csharp
@@ -638,7 +638,7 @@ private static GameSession CreateSession(
 }
 ```
 
-- [ ] **Step 2: Update StartNew_Produces_GameStarted_Event_As_Uncommitted (line 18)**
+- [x] **Step 2: Update StartNew_Produces_GameStarted_Event_As_Uncommitted (line 18)**
 
 Rename and update this test. The canonical flow produces 6 events, not 1. Replace:
 ```csharp
@@ -674,7 +674,7 @@ public void CanonicalStart_Produces_GameStarted_Event_As_Uncommitted()
 }
 ```
 
-- [ ] **Step 3: Update StartNew_WithSeedCode_Produces_GameStarted_Event_WithSeedCode (line 33)**
+- [x] **Step 3: Update StartNew_WithSeedCode_Produces_GameStarted_Event_WithSeedCode (line 33)**
 
 This test creates a session directly with a seed code. Migrate to canonical flow. Replace the entire test:
 ```csharp
@@ -697,7 +697,7 @@ public void CanonicalStart_WithSeedCode_Produces_GameStarted_Event_WithSeedCode(
 }
 ```
 
-- [ ] **Step 4: Update RehydrateFromEvents_Restores_SeedCode_From_GameStarted_Event (line 57)**
+- [x] **Step 4: Update RehydrateFromEvents_Restores_SeedCode_From_GameStarted_Event (line 57)**
 
 Migrate the `StartNew` call to canonical flow. Replace the session creation:
 ```csharp
@@ -723,7 +723,7 @@ session.SelectStartingTown(new TownId("pinecross"));
 session.CompleteGameStart();
 ```
 
-- [ ] **Step 5: Update StartNew_Increments_Version_To_One (line 115)**
+- [x] **Step 5: Update StartNew_Increments_Version_To_One (line 115)**
 
 The canonical flow produces version 6, not 1. Rename and update:
 ```csharp
@@ -735,12 +735,12 @@ public void CanonicalStart_Increments_Version_To_Six()
 }
 ```
 
-- [ ] **Step 6: Run GameSessionEventSourcingTests to verify**
+- [x] **Step 6: Run GameSessionEventSourcingTests to verify**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs`
 Expected: All tests pass. Tests that call `MarkEventsCommitted()` before asserting on operation events (Purchase, etc.) are unaffected because the 6 setup events are cleared.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs
@@ -757,17 +757,17 @@ before asserting on operation events are unaffected."
 
 ## Verification
 
-- [ ] **Final verification: Run full Domain.Tests suite**
+- [x] **Final verification: Run full Domain.Tests suite**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: All tests pass. Any failures should be in tests that call `StartNew` directly (not through factories) — those are handled in Plan 1e.
 
-- [ ] **Final verification: Run Application.Tests suite**
+- [x] **Final verification: Run Application.Tests suite**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/`
 Expected: All tests pass. Any failures should be in tests that call `StartNew` directly — those are handled in Plan 1e.
 
-- [ ] **Final verification: Confirm no StartNew calls remain in factories**
+- [x] **Final verification: Confirm no StartNew calls remain in factories**
 
 Run: `rg "StartNew" tests/WildBunch.Domain.Tests/TestSessionFactory.cs tests/WildBunch.Domain.Tests/TravelTestFactory.cs tests/WildBunch.Application.Tests/TestDoubles/StubNewGameFactory.cs`
 Expected: No matches (all factory calls migrated to canonical flow)

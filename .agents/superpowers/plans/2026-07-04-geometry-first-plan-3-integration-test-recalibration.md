@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 3: Integration Test Recalibration
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Recalibrate the integration test scenario fixtures and all topology-dependent tests to work with the real MapGenerator output (Delaunay+MST graph), eliminating ALL hardcoded town name assertions. Tests discover towns dynamically from the session's world and assert on graph properties (connectivity, positive coordinates, 2-6 day distances) — not on game content that may change tomorrow.
 
@@ -841,17 +841,17 @@ public void TypedDescriptorFormatsAReadableSemanticShape()
 }
 ```
 
-- [ ] Implement all changes in ScenarioSeedDescriptor.cs (Step 1)
-- [ ] Implement changes in ScenarioSeedFixture.cs (Step 2)
-- [ ] Implement changes in ScenarioSeedCatalog.cs (Steps 3-8)
-- [ ] Implement changes in BoringScenarioBuilder.cs (Step 9)
-- [ ] Implement changes in BoringScenarioBuilderTests.cs (Step 10)
-- [ ] Implement changes in ScenarioSeedDescriptorTests.cs (Step 11)
-- [ ] Build: `dotnet build tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj`
-- [ ] Expected: PASS (0 errors)
-- [ ] Run fixture tests: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --filter "BoringScenarioBuilderTests|ScenarioSeedCatalogTests|ScenarioSeedDescriptorTests" --no-build`
-- [ ] Expected: PASS
-- [ ] Commit: `git commit -m "test: redesign scenario fixtures to be content-agnostic, no town names"`
+- [x] Implement all changes in ScenarioSeedDescriptor.cs (Step 1)
+- [x] Implement changes in ScenarioSeedFixture.cs (Step 2)
+- [x] Implement changes in ScenarioSeedCatalog.cs (Steps 3-8)
+- [x] Implement changes in BoringScenarioBuilder.cs (Step 9)
+- [x] Implement changes in BoringScenarioBuilderTests.cs (Step 10)
+- [x] Implement changes in ScenarioSeedDescriptorTests.cs (Step 11)
+- [x] Build: `dotnet build tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj`
+- [x] Expected: PASS (0 errors)
+- [x] Run fixture tests: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --filter "BoringScenarioBuilderTests|ScenarioSeedCatalogTests|ScenarioSeedDescriptorTests" --no-build`
+- [x] Expected: PASS
+- [x] Commit: `git commit -m "test: redesign scenario fixtures to be content-agnostic, no town names"`
 
 ### Task 2: Make GameApiTests Travel Tests Topology-Agnostic
 
@@ -885,12 +885,12 @@ The full replacement code for this test is large. The key changes:
 - Final advance completes the journey, arriving at `destinationTownId`
 - Diary narration check uses `destinationTownName` instead of "Quartzsite"
 
-- [ ] Implement changes in GameApiTests.cs
-- [ ] Build: `dotnet build tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj`
-- [ ] Expected: PASS
-- [ ] Run: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --filter "GameApiTests" --no-build`
-- [ ] Expected: PASS -- all 7 GameApiTests pass
-- [ ] Commit: `git commit -m "test: make GameApiTests travel tests topology-agnostic"`
+- [x] Implement changes in GameApiTests.cs
+- [x] Build: `dotnet build tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj`
+- [x] Expected: PASS
+- [x] Run: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --filter "GameApiTests" --no-build`
+- [x] Expected: PASS -- all 7 GameApiTests pass
+- [x] Commit: `git commit -m "test: make GameApiTests travel tests topology-agnostic"`
 
 ### Task 3: Remove Town Names from All Remaining Integration Tests
 
@@ -963,43 +963,43 @@ For each match:
 
 The `SeedCanonicalSessionAsync` method may reference specific town names. Update to use dynamic discovery.
 
-- [ ] Update StartingTownMapEndpointTests.cs (Step 1)
-- [ ] Search and update all remaining files (Step 2)
-- [ ] Update AcceptanceTestHarness.cs (Step 3)
-- [ ] Build: `dotnet build tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj`
-- [ ] Expected: PASS
-- [ ] Run affected tests: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build`
-- [ ] Expected: As many tests as possible pass — some may still fail and be fixed in Task 4
-- [ ] Commit: `git commit -m "test: remove all hardcoded town names from integration tests"`
+- [x] Update StartingTownMapEndpointTests.cs (Step 1)
+- [x] Search and update all remaining files (Step 2)
+- [x] Update AcceptanceTestHarness.cs (Step 3)
+- [x] Build: `dotnet build tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj`
+- [x] Expected: PASS
+- [x] Run affected tests: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build`
+- [x] Expected: As many tests as possible pass — some may still fail and be fixed in Task 4
+- [x] Commit: `git commit -m "test: remove all hardcoded town names from integration tests"`
 
 ### Task 4: Run Full Integration Suite and Fix Remaining Failures
 
 **Files:**
 - Modify: (whatever files have remaining failures)
 
-- [ ] Run full integration suite: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build`
-- [ ] Expected: All tests pass (0 failed, 0 skipped)
-- [ ] If any tests fail, investigate and fix them
-- [ ] Re-run until all pass
-- [ ] Run Domain.Tests: `dotnet test tests/WildBunch.Domain.Tests/ --no-build`
-- [ ] Expected: 526 passed, 1 skipped
-- [ ] Run Application.Tests: `dotnet test tests/WildBunch.Application.Tests/ --no-build`
-- [ ] Expected: 204 passed
-- [ ] Run GameContent.Tests: `dotnet test tests/WildBunch.GameContent.Tests/ --no-build`
-- [ ] Expected: 141 passed
-- [ ] Commit any remaining fixes: `git commit -m "test: fix remaining integration test failures"`
-- [ ] Final full-suite run: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build`
-- [ ] Expected: All tests pass
-- [ ] Verify zero town name references remain: `rg -n "hardpan|quartzsite|emberfall|boulderwash|openpass|holloway|rattleridge|brokenarrow" tests/WildBunch.Integration.Tests/ --glob "*.cs"`
-- [ ] Expected: zero matches (excluding direct-creation tests that use their own fixture data)
+- [x] Run full integration suite: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build`
+- [x] Expected: All tests pass (0 failed, 0 skipped)
+- [x] If any tests fail, investigate and fix them
+- [x] Re-run until all pass
+- [x] Run Domain.Tests: `dotnet test tests/WildBunch.Domain.Tests/ --no-build`
+- [x] Expected: 526 passed, 1 skipped
+- [x] Run Application.Tests: `dotnet test tests/WildBunch.Application.Tests/ --no-build`
+- [x] Expected: 204 passed
+- [x] Run GameContent.Tests: `dotnet test tests/WildBunch.GameContent.Tests/ --no-build`
+- [x] Expected: 141 passed
+- [x] Commit any remaining fixes: `git commit -m "test: fix remaining integration test failures"`
+- [x] Final full-suite run: `.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests --no-build`
+- [x] Expected: All tests pass
+- [x] Verify zero town name references remain: `rg -n "hardpan|quartzsite|emberfall|boulderwash|openpass|holloway|rattleridge|brokenarrow" tests/WildBunch.Integration.Tests/ --glob "*.cs"`
+- [x] Expected: zero matches (excluding direct-creation tests that use their own fixture data)
 
 ## Definition of Done
 
-- [ ] All 4 scenario fixtures are content-agnostic (no town names in descriptors, shape signatures, or assertions)
-- [ ] Graph-property assertions added (connectivity, positive coordinates, 2-6 day distances)
-- [ ] Travel preview destinations discovered dynamically (not hardcoded)
-- [ ] GameApiTests travel tests are topology-agnostic
-- [ ] Zero hardcoded town name assertions in integration tests (excluding direct-creation fixture data)
-- [ ] Full integration suite passes (0 failed)
-- [ ] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (141) all pass
-- [ ] No regression in any test suite
+- [x] All 4 scenario fixtures are content-agnostic (no town names in descriptors, shape signatures, or assertions)
+- [x] Graph-property assertions added (connectivity, positive coordinates, 2-6 day distances)
+- [x] Travel preview destinations discovered dynamically (not hardcoded)
+- [x] GameApiTests travel tests are topology-agnostic
+- [x] Zero hardcoded town name assertions in integration tests (excluding direct-creation fixture data)
+- [x] Full integration suite passes (0 failed)
+- [x] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (141) all pass
+- [x] No regression in any test suite

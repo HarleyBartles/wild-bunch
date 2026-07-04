@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 0: Clean Slate
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Strip the entire authored-topology map system from a fresh `origin/main` branch, bump the codec to v16 with `ClusterCount`/`GraphDensity`, and bridge to a stub that produces a minimal linear trail chain so unrelated travel tests stay green. The result is a clean, compiling, fully-tested baseline that Plans 1-2 build on.
 
@@ -188,39 +188,39 @@ Every test that calls `SeedWorldBuilder.CreateWorld` or asserts trail counts/coo
 
 This is one atomic task — all changes must land together for the build to compile and tests to pass.
 
-- [ ] Create `GraphDensity.cs` enum
-- [ ] Update `SeedWorld.cs` record: replace `MapLayoutPalette` with `ClusterCount` + `GraphDensity`
-- [ ] Update `SeedWorldResolver.cs`: version, decode, encode, validate, canonical shape, DeriveTownNames call, BuildTrails call, constructor call
-- [ ] Update `SeedWorldCatalog.cs`: delete enum + records + trail methods, update DeriveTownNames/BuildTrails/CreateCanonicalWorld/CreateWorld
-- [ ] Update `SeedWorldBuilder.cs`: stub CreateWorld with linear trail chain, delete helpers, update IsCanonicalSeedWorld
-- [ ] Update `SeedWorldMapLayout.cs`: delete layout methods, update GetMapTowns overloads
-- [ ] Update `GetStartingTownMapHandler.cs`: remove MapLayoutPalette block
-- [ ] Delete `MapLayoutScaleTests.cs`
-- [ ] Delete `GeometryCanonicalDistanceTests.cs`
-- [ ] Update `SeedWorldBuilderTests.cs`: delete old-pipeline tests, delete dead helpers
-- [ ] Update `SeedWorldResolverTests.cs`: delete trail-count assertions, delete helper, fix validation test, fix bit-position test
-- [ ] Update `SeedWorldResolverCodecTests.cs`: delete MapLayoutPalette test, update RoundTrip test, add v16 tests
-- [ ] Update `SeedWorldSeedCodeFactory.cs`: replace MapLayoutPalette with ClusterCount/GraphDensity
-- [ ] Update `TravelTestSeedCatalog.cs`: replace MapLayoutPalette with ClusterCount/GraphDensity
-- [ ] Update `GetStartingTownMapHandlerTests.cs`: replace 14-trail assertions with NotEmpty
-- [ ] Update `GetWorldMapHandlerTests.cs`: replace 14-trail assertion with NotEmpty
-- [ ] Update `StartingTownMapEndpointTests.cs`: delete 14-trail assertion
-- [ ] Update `GameSetupResolverTests.cs`: replace SeedWorldBuilder.CreateWorld call
-- [ ] Update `TravelTestSeedCatalogGuardrailTests.cs`: delete CanonicalWorld_HasLowOpenRangeCreekRoute
-- [ ] Update integration test scenarios in `ScenarioSeedCatalog.cs`: delete assertions that hardcode specific town name connectivity
-- [ ] Build: `dotnet build`
-- [ ] Expected: PASS — zero errors
-- [ ] Run tests: `dotnet test`
-- [ ] Expected: PASS — all remaining tests pass (some tests deleted, some assertions loosened)
-- [ ] Commit: `git add -A; git commit -m "feat: strip authored-topology map system, bump codec to v16 with ClusterCount + GraphDensity, bridge to linear trail stub"`
+- [x] Create `GraphDensity.cs` enum
+- [x] Update `SeedWorld.cs` record: replace `MapLayoutPalette` with `ClusterCount` + `GraphDensity`
+- [x] Update `SeedWorldResolver.cs`: version, decode, encode, validate, canonical shape, DeriveTownNames call, BuildTrails call, constructor call
+- [x] Update `SeedWorldCatalog.cs`: delete enum + records + trail methods, update DeriveTownNames/BuildTrails/CreateCanonicalWorld/CreateWorld
+- [x] Update `SeedWorldBuilder.cs`: stub CreateWorld with linear trail chain, delete helpers, update IsCanonicalSeedWorld
+- [x] Update `SeedWorldMapLayout.cs`: delete layout methods, update GetMapTowns overloads
+- [x] Update `GetStartingTownMapHandler.cs`: remove MapLayoutPalette block
+- [x] Delete `MapLayoutScaleTests.cs`
+- [x] Delete `GeometryCanonicalDistanceTests.cs`
+- [x] Update `SeedWorldBuilderTests.cs`: delete old-pipeline tests, delete dead helpers
+- [x] Update `SeedWorldResolverTests.cs`: delete trail-count assertions, delete helper, fix validation test, fix bit-position test
+- [x] Update `SeedWorldResolverCodecTests.cs`: delete MapLayoutPalette test, update RoundTrip test, add v16 tests
+- [x] Update `SeedWorldSeedCodeFactory.cs`: replace MapLayoutPalette with ClusterCount/GraphDensity
+- [x] Update `TravelTestSeedCatalog.cs`: replace MapLayoutPalette with ClusterCount/GraphDensity
+- [x] Update `GetStartingTownMapHandlerTests.cs`: replace 14-trail assertions with NotEmpty
+- [x] Update `GetWorldMapHandlerTests.cs`: replace 14-trail assertion with NotEmpty
+- [x] Update `StartingTownMapEndpointTests.cs`: delete 14-trail assertion
+- [x] Update `GameSetupResolverTests.cs`: replace SeedWorldBuilder.CreateWorld call
+- [x] Update `TravelTestSeedCatalogGuardrailTests.cs`: delete CanonicalWorld_HasLowOpenRangeCreekRoute
+- [x] Update integration test scenarios in `ScenarioSeedCatalog.cs`: delete assertions that hardcode specific town name connectivity
+- [x] Build: `dotnet build`
+- [x] Expected: PASS — zero errors
+- [x] Run tests: `dotnet test`
+- [x] Expected: PASS — all remaining tests pass (some tests deleted, some assertions loosened)
+- [x] Commit: `git add -A; git commit -m "feat: strip authored-topology map system, bump codec to v16 with ClusterCount + GraphDensity, bridge to linear trail stub"`
 
 ## Definition of Done
 
-- [ ] Codec version is `resolver-v16`
-- [ ] `SeedWorld` has `ClusterCount` (int) and `GraphDensity` (enum) instead of `MapLayoutPalette`
-- [ ] `MapLayoutPalette` enum is deleted; zero references remain in `src/` or `tests/`
-- [ ] `BuildTrails` returns empty; `CreateWorld` stub produces a linear trail chain
-- [ ] `SeedWorldMapLayout` has no layout coordinate methods or rotation methods
-- [ ] Full solution builds with zero errors
-- [ ] All remaining tests pass (travel tests that go through SeededNewGameFactory still find routes)
-- [ ] No test hardcodes specific town names from the old authored topology
+- [x] Codec version is `resolver-v16`
+- [x] `SeedWorld` has `ClusterCount` (int) and `GraphDensity` (enum) instead of `MapLayoutPalette`
+- [x] `MapLayoutPalette` enum is deleted; zero references remain in `src/` or `tests/`
+- [x] `BuildTrails` returns empty; `CreateWorld` stub produces a linear trail chain
+- [x] `SeedWorldMapLayout` has no layout coordinate methods or rotation methods
+- [x] Full solution builds with zero errors
+- [x] All remaining tests pass (travel tests that go through SeededNewGameFactory still find routes)
+- [x] No test hardcodes specific town names from the old authored topology

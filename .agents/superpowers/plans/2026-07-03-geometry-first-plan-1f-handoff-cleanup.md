@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 1f: Clean Handoff (Doc Freshness + Test Hygiene + Plan 2 Refresh)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Clear the deck for Plan 2 by fixing every issue flagged in the Plan 1e senior "clean handoff" review — stale ADRs and architecture docs referencing the deleted `StartNew`/`StartNewGameHandler`, a 4th duplicated canonical-flow copy, misleading `TravelTestFactory` method names, the invisible `GameDifficulty.Easy` default mismatch, a durable doc for the `TownStates` parity gap — and then refreshing Plan 2 so it is execution-ready against the current codebase.
 
@@ -70,7 +70,7 @@ These are the exact findings from the Plan 1e senior "clean handoff" review:
 - ADR-0028: exactly 2 references — line 15 (changelog prose) and line 169 (step description)
 - ADR-0034: exactly 11 references — lines 9, 49, 67, 104, 105, 110, 115, 123, 131, 143, 147
 
-- [ ] **Step 1: Fix ADR-0002** — `docs/adr/ADR-0002-gamesession-is-the-command-aggregate-root.md`
+- [x] **Step 1: Fix ADR-0002** — `docs/adr/ADR-0002-gamesession-is-the-command-aggregate-root.md`
 
 This file has exactly 1 reference (verified by grep). Line 99:
 ```
@@ -83,7 +83,7 @@ Replace with:
 
 No other `StartNew` or `StartNewGameHandler` references exist in this file. Do not modify any other content.
 
-- [ ] **Step 2: Fix ADR-0028** — `docs/adr/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`
+- [x] **Step 2: Fix ADR-0028** — `docs/adr/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`
 
 This file has exactly 2 references (verified by grep):
 
@@ -107,7 +107,7 @@ Replace `refactored `StartNew` and `Purchase`` with `refactored `StartSetup`/`Co
 
 No other `StartNew` references exist in this file.
 
-- [ ] **Step 3: Fix ADR-0034** — `docs/adr/ADR-0034-playthrough-archive-lifecycle-and-one-active-playthrough-invariant.md`
+- [x] **Step 3: Fix ADR-0034** — `docs/adr/ADR-0034-playthrough-archive-lifecycle-and-one-active-playthrough-invariant.md`
 
 This file has exactly 11 references to `StartNewGameHandler` (verified by grep). Replace ALL of them with `CompletePlayerSetupHandler` using a global replace. The references are at lines 9, 49, 67, 104, 105, 110, 115, 123, 131, 143, 147.
 
@@ -121,7 +121,7 @@ The global replace will have changed `StartNewGameHandler` to `CompletePlayerSet
 ```
 Verify this is correct — the file exists at that path.
 
-- [ ] **Step 4: Verify no stale references remain**
+- [x] **Step 4: Verify no stale references remain**
 
 Run:
 ```bash
@@ -129,7 +129,7 @@ rg -n "StartNewGameHandler|GameSession\.StartNew" docs/adr/
 ```
 Expected: zero matches. If any remain, fix them before committing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/adr/ADR-0002-gamesession-is-the-command-aggregate-root.md docs/adr/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md docs/adr/ADR-0034-playthrough-archive-lifecycle-and-one-active-playthrough-invariant.md
@@ -162,7 +162,7 @@ The audit currently lists (lines 44-49):
 | `ArchivePlaythrough` | 1031–1053 | Acceptable — session lifecycle terminal transition. |
 ```
 
-- [ ] **Step 1: Delete the two StartNew rows, add SelectStartingTown, and update line numbers**
+- [x] **Step 1: Delete the two StartNew rows, add SelectStartingTown, and update line numbers**
 
 Replace the six-row block (audit lines 44-49) with the corrected five-row block below. The line numbers below were verified at commit `60fbf78` (Plan 1e head). If the plan is being executed from a different commit, re-verify by running:
 ```bash
@@ -196,7 +196,7 @@ The skipped test `NonFirstStartingTown_TownStates_Parity_Between_Live_And_Rehydr
 
 **Decision for this plan:** Plan 1f does NOT fix the parity gap. It documents it as accepted-for-now and assigns ownership to a future plan. The fix likely involves not creating a `TownVisitState` entry for the placeholder town in `StartSetup`, or clearing it when `Apply(GameStarted)` updates `_currentTown`. That is a production behavior change and belongs in a dedicated plan, not a cleanup plan.
 
-- [ ] **Step 1: Create the tracked-items doc**
+- [x] **Step 1: Create the tracked-items doc**
 
 Create `.agents/docs/tracked-items.md` with this content:
 
@@ -222,14 +222,14 @@ Open items that are documented in the codebase (skipped tests, comments) but not
 **History:** Discovered during Plan 1e Task 4 (Domain.Tests migration). The `Apply(GameStarted)` `_currentTown` fix in Plan 1e improved the situation (the rehydrated session now correctly sets `_currentTown`) but did not address the phantom `TownStates` entry.
 ```
 
-- [ ] **Step 2: Verify the doc is well-formed**
+- [x] **Step 2: Verify the doc is well-formed**
 
 ```bash
 rg -n "TownStates" .agents/docs/tracked-items.md
 ```
 Expected: multiple matches confirming the doc content.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .agents/docs/tracked-items.md
@@ -278,7 +278,7 @@ private static GameSession StartGameCanonical(
 - Consumes: `CanonicalStartFlow.StartGame(SeededNewGameFactory, string, GameDifficulty, string?, GameEntropy, string?)` -- the shared helper
 - Produces: a single canonical-flow helper per test project, with documented defaults
 
-- [ ] **Step 1: Replace all 22 call sites by pattern**
+- [x] **Step 1: Replace all 22 call sites by pattern**
 
 There are exactly 22 call sites of the private `StartGameCanonical` in `SeededNewGameFactoryTests.cs` (verified by grep at Plan 1e head). They fall into 4 patterns. Replace each pattern as shown:
 
@@ -329,11 +329,11 @@ CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, nu
 
 **Summary of all 22 replacements:** Replace `StartGameCanonical(` -> `CanonicalStartFlow.StartGame(` everywhere, then add the missing required args (`GameDifficulty.Standard`, `null`, `GameEntropy.Classic`) at the 13 call sites that relied on defaults (Patterns A, B, D). The 9 call sites in Pattern C already pass all args and only need the rename.
 
-- [ ] **Step 2: Delete the private StartGameCanonical method**
+- [x] **Step 2: Delete the private StartGameCanonical method**
 
 Delete the private `StartGameCanonical` method (lines 364-395, including the XML doc comment starting at line 364) from `SeededNewGameFactoryTests.cs`.
 
-- [ ] **Step 3: Build and run the GameContent.Tests suite**
+- [x] **Step 3: Build and run the GameContent.Tests suite**
 
 ```bash
 dotnet build tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj
@@ -341,7 +341,7 @@ dotnet test tests/WildBunch.GameContent.Tests/ --filter "SeededNewGameFactoryTes
 ```
 Expected: PASS -- all `SeededNewGameFactoryTests` pass with `CanonicalStartFlow.StartGame`.
 
-- [ ] **Step 4: Add the GameDifficulty.Easy default comment to TestSessionFactory**
+- [x] **Step 4: Add the GameDifficulty.Easy default comment to TestSessionFactory**
 
 In `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`, the `StartGameCanonical` method is at line 30. It has an existing XML doc comment (the `<summary>` block above it). Replace the existing `<summary>` block with:
 
@@ -356,7 +356,7 @@ In `tests/WildBunch.Domain.Tests/TestSessionFactory.cs`, the `StartGameCanonical
 
 This is a comment-only change -- no behavior change.
 
-- [ ] **Step 5: Build and run Domain.Tests**
+- [x] **Step 5: Build and run Domain.Tests**
 
 ```bash
 dotnet build tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj
@@ -364,7 +364,7 @@ dotnet test tests/WildBunch.Domain.Tests/ --filter "TestSessionFactory"
 ```
 Expected: PASS (comment-only change, no behavior change).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs tests/WildBunch.Domain.Tests/TestSessionFactory.cs
@@ -388,13 +388,13 @@ git commit -m "refactor: consolidate 4th canonical-flow copy, document GameDiffi
 - The variables were already renamed from `gameStarted` to `setupEvents` in Plan 1e Task 2, but the method names were not.
 - Callers: `JournalLogProjectorEquivalenceTests.cs` (lines 21, 72), `TravelReplayEqualityTests.cs` (lines 20, 43, 65)
 
-- [ ] **Step 1: Rename the two methods in TravelTestFactory.cs**
+- [x] **Step 1: Rename the two methods in TravelTestFactory.cs**
 
 In `tests/WildBunch.Domain.Tests/TravelTestFactory.cs`:
 - Line 44: `CreateEasyShortJourneyWithGameStarted` -> `CreateEasyShortJourneyWithSetupEvents`
 - Line 56: `CreateSixDayQuietJourneyWithGameStarted` -> `CreateSixDayQuietJourneyWithSetupEvents`
 
-- [ ] **Step 2: Update all callers**
+- [x] **Step 2: Update all callers**
 
 Run to find all call sites:
 ```bash
@@ -405,14 +405,14 @@ Update each call site to use the new method name. The known callers are:
 - `tests/WildBunch.Domain.Tests/JournalLogProjectorEquivalenceTests.cs` -- lines 21, 72
 - `tests/WildBunch.Domain.Tests/TravelReplayEqualityTests.cs` -- lines 20, 43, 65
 
-- [ ] **Step 3: Verify no stale names remain**
+- [x] **Step 3: Verify no stale names remain**
 
 ```bash
 rg -n "WithGameStarted" tests/
 ```
 Expected: zero matches.
 
-- [ ] **Step 4: Build and run the affected tests**
+- [x] **Step 4: Build and run the affected tests**
 
 ```bash
 dotnet build tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj
@@ -420,7 +420,7 @@ dotnet test tests/WildBunch.Domain.Tests/ --filter "JournalLogProjectorEquivalen
 ```
 Expected: PASS -- all tests pass with the renamed methods.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/TravelTestFactory.cs tests/WildBunch.Domain.Tests/JournalLogProjectorEquivalenceTests.cs tests/WildBunch.Domain.Tests/TravelReplayEqualityTests.cs
@@ -443,11 +443,11 @@ git commit -m "refactor: rename TravelTestFactory methods from WithGameStarted t
 - `GameSetupResolver.cs:55` calls `SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource)`.
 - No tests currently assert `Assert.Empty` on trails (the Plan 2 claim about `Assert.Empty` trail assertions is stale -- verify at execution time).
 
-- [ ] **Step 1: Remove the stale banner**
+- [x] **Step 1: Remove the stale banner**
 
 Delete lines 3-7 of Plan 2 (the `STALE - DO NOT EXECUTE` block and the "Execute Plan 1b first" note).
 
-- [ ] **Step 2: Update the prerequisites section**
+- [x] **Step 2: Update the prerequisites section**
 
 Replace the existing prerequisites (lines 17-20) with:
 ```markdown
@@ -458,13 +458,13 @@ Replace the existing prerequisites (lines 17-20) with:
 - Plan 1f (Clean Handoff) must be complete -- ADRs and decomposition audit are fresh, tracked-items doc exists.
 ```
 
-- [ ] **Step 3: Verify Task 1 accuracy (wire MapGenerator)**
+- [x] **Step 3: Verify Task 1 accuracy (wire MapGenerator)**
 
 Read `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs:55` and confirm it still calls `SeedWorldBuilder.CreateWorld(...)`. Read `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` and confirm `CreateWorld` is still a stub (line 23) and `CreateCanonicalWorld` (line 15) still exists.
 
 If the call site or method names have changed, update Plan 2 Task 1's "Changes" section with the actual current names. The core action remains: replace `SeedWorldBuilder.CreateWorld(...)` with `MapGenerator.Generate(...)` in `GameSetupResolver`, then delete the stub `CreateWorld` method. If the names are unchanged, no edit to Task 1 is needed.
 
-- [ ] **Step 4: Verify Task 2 accuracy (rewrite geometry tests)**
+- [x] **Step 4: Verify Task 2 accuracy (rewrite geometry tests)**
 
 Search for any tests that currently assert on trails being empty:
 ```bash
@@ -487,7 +487,7 @@ rg -l "GetStartingTownMap|GetWorldMap|StartingTownMapEndpoint" tests/
 ```
 If a renamed file is found, update Plan 2 Task 2's file list. If no equivalent is found, remove the file from the list and add a note: "File `<name>` does not exist and no renamed equivalent was found. This test may have been deleted or consolidated."
 
-- [ ] **Step 5: Verify Task 3 accuracy (final cleanup)**
+- [x] **Step 5: Verify Task 3 accuracy (final cleanup)**
 
 Check whether `MapLayoutPalette` references still exist (they should not -- Plan 0 deleted them):
 ```bash
@@ -501,22 +501,22 @@ rg -n "ComputeStableHash" src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
 ```
 Update Plan 2 Task 3 with the actual finding. If the overloads have been removed, note that the step is a confirmation only.
 
-- [ ] **Step 6: Update the Definition of Done**
+- [x] **Step 6: Update the Definition of Done**
 
 Update Plan 2's Definition of Done to reflect that `MapLayoutPalette` is already deleted (mark as confirmed-done) and add a prerequisite confirmation item:
 ```markdown
 ## Definition of Done
 
-- [ ] Prerequisites confirmed: Plans 0-1f complete, `MapGenerator.Generate` exists, `SeedWorldBuilder.CreateWorld` stub exists
-- [ ] `GameSetupResolver` calls `MapGenerator.Generate` instead of `SeedWorldBuilder.CreateWorld`
-- [ ] `SeedWorldBuilder.CreateWorld` stub is deleted; kept members remain
-- [ ] Geometry/trail tests assert real pipeline behavior (not placeholder)
-- [ ] `MapLayoutPalette` references confirmed absent (already deleted in Plan 0)
-- [ ] Full solution builds with zero related warnings
-- [ ] Full test suite passes (Domain + Application + GameContent + Integration if Docker available)
+- [x] Prerequisites confirmed: Plans 0-1f complete, `MapGenerator.Generate` exists, `SeedWorldBuilder.CreateWorld` stub exists
+- [x] `GameSetupResolver` calls `MapGenerator.Generate` instead of `SeedWorldBuilder.CreateWorld`
+- [x] `SeedWorldBuilder.CreateWorld` stub is deleted; kept members remain
+- [x] Geometry/trail tests assert real pipeline behavior (not placeholder)
+- [x] `MapLayoutPalette` references confirmed absent (already deleted in Plan 0)
+- [x] Full solution builds with zero related warnings
+- [x] Full test suite passes (Domain + Application + GameContent + Integration if Docker available)
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .agents/superpowers/plans/2026-07-03-geometry-first-plan-2-integration.md
@@ -529,63 +529,63 @@ git commit -m "docs: refresh Plan 2 for execution against post-1e codebase"
 
 **Goal:** Confirm that all Tasks 1-6 produced a clean build and passing tests. No new code changes in this task -- it is a verification gate only.
 
-- [ ] **Step 1: Build the full solution**
+- [x] **Step 1: Build the full solution**
 
 ```bash
 dotnet build
 ```
 Expected: PASS -- 0 errors, 0 warnings.
 
-- [ ] **Step 2: Run Domain.Tests**
+- [x] **Step 2: Run Domain.Tests**
 
 ```bash
 dotnet test tests/WildBunch.Domain.Tests/
 ```
 Expected: PASS -- 526 passed, 0 failed, 1 skipped (the `TownStates` parity-gap test).
 
-- [ ] **Step 3: Run Application.Tests**
+- [x] **Step 3: Run Application.Tests**
 
 ```bash
 dotnet test tests/WildBunch.Application.Tests/
 ```
 Expected: PASS -- 204 passed, 0 failed.
 
-- [ ] **Step 4: Run GameContent.Tests**
+- [x] **Step 4: Run GameContent.Tests**
 
 ```bash
 dotnet test tests/WildBunch.GameContent.Tests/
 ```
 Expected: PASS -- 139 passed, 0 failed.
 
-- [ ] **Step 5: Verify no stale StartNew references remain anywhere**
+- [x] **Step 5: Verify no stale StartNew references remain anywhere**
 
 ```bash
 rg -n "StartNewGameHandler|GameSession\.StartNew" docs/ .agents/docs/ src/ tests/
 ```
 Expected: zero matches in `docs/`, `.agents/docs/`, `src/`. Test files may still reference `StartGameCanonical` (the helper method) -- that is expected and correct.
 
-- [ ] **Step 6: Verify no stale WithGameStarted method names remain**
+- [x] **Step 6: Verify no stale WithGameStarted method names remain**
 
 ```bash
 rg -n "WithGameStarted" tests/
 ```
 Expected: zero matches.
 
-- [ ] **Step 7: Verify the tracked-items doc exists**
+- [x] **Step 7: Verify the tracked-items doc exists**
 
 ```bash
 ls .agents/docs/tracked-items.md
 ```
 Expected: file exists.
 
-- [ ] **Step 8: Verify Plan 2 is no longer marked stale**
+- [x] **Step 8: Verify Plan 2 is no longer marked stale**
 
 ```bash
 rg -n "STALE" .agents/superpowers/plans/2026-07-03-geometry-first-plan-2-integration.md
 ```
 Expected: zero matches.
 
-- [ ] **Step 9: No commit needed (verification-only task)**
+- [x] **Step 9: No commit needed (verification-only task)**
 
 If any verification step fails, fix the issue in the relevant task and re-run. Do not commit a fix as part of Task 7 -- go back to the task that introduced the problem.
 
@@ -593,14 +593,14 @@ If any verification step fails, fix the issue in the relevant task and re-run. D
 
 ## Definition of Done
 
-- [ ] ADR-0002, ADR-0028, ADR-0034 have zero `StartNewGameHandler` or `StartNew` references
-- [ ] `game-session-decomposition-audit.md` has zero `StartNew` references and correct line numbers
-- [ ] `.agents/docs/tracked-items.md` exists and documents the `TownStates` parity gap with ownership assignment
-- [ ] `SeededNewGameFactoryTests.cs` has no private `StartGameCanonical` -- uses `CanonicalStartFlow.StartGame` instead
-- [ ] `TestSessionFactory.StartGameCanonical` has a comment documenting the `GameDifficulty.Easy` default
-- [ ] `TravelTestFactory` methods are renamed from `*WithGameStarted` to `*WithSetupEvents`
-- [ ] Plan 2 is refreshed: stale banner removed, prerequisites updated, tasks verified against current code
-- [ ] Full solution builds with 0 errors, 0 warnings
-- [ ] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (139) all pass
-- [ ] No `StartNewGameHandler` or `GameSession.StartNew` references in `docs/`, `.agents/docs/`, `src/`
-- [ ] No `WithGameStarted` method names in `tests/`
+- [x] ADR-0002, ADR-0028, ADR-0034 have zero `StartNewGameHandler` or `StartNew` references
+- [x] `game-session-decomposition-audit.md` has zero `StartNew` references and correct line numbers
+- [x] `.agents/docs/tracked-items.md` exists and documents the `TownStates` parity gap with ownership assignment
+- [x] `SeededNewGameFactoryTests.cs` has no private `StartGameCanonical` -- uses `CanonicalStartFlow.StartGame` instead
+- [x] `TestSessionFactory.StartGameCanonical` has a comment documenting the `GameDifficulty.Easy` default
+- [x] `TravelTestFactory` methods are renamed from `*WithGameStarted` to `*WithSetupEvents`
+- [x] Plan 2 is refreshed: stale banner removed, prerequisites updated, tasks verified against current code
+- [x] Full solution builds with 0 errors, 0 warnings
+- [x] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (139) all pass
+- [x] No `StartNewGameHandler` or `GameSession.StartNew` references in `docs/`, `.agents/docs/`, `src/`
+- [x] No `WithGameStarted` method names in `tests/`
