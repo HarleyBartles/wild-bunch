@@ -41,12 +41,11 @@ All five child components conform to the lawful child boundary:
 | Member | Line range | Notes |
 | --- | --- | --- |
 | `GameSession(...)` constructor | 42–89 | Acceptable orchestration — owns session-level construction and child-component wiring. |
-| `StartSetup` (static) | 816–874 | Acceptable — session lifecycle entry point. |
-| `CompleteGameStart` | 876–912 | Acceptable — session lifecycle transition. |
-| `StartNew(string, ...)` (static) | 914 | Acceptable — delegates to the overload. |
-| `StartNew(string, world, caseFile, ...)` (static) | 917–992 | Acceptable — session lifecycle entry point. |
-| `ViewPrologue` | 994–1020 | Acceptable — session lifecycle transition. |
-| `ArchivePlaythrough` | 1031–1053 | Acceptable — session lifecycle terminal transition. |
+| `StartSetup` (static) | 816–883 | Acceptable — session lifecycle entry point. |
+| `SelectStartingTown` | 889–908 | Acceptable — session lifecycle transition. |
+| `CompleteGameStart` | 915–948 | Acceptable — session lifecycle transition. |
+| `ViewPrologue` | 954–980 | Acceptable — session lifecycle transition. |
+| `ArchivePlaythrough` | 991–1052 | Acceptable — session lifecycle terminal transition. |
 | `Status` | 133 | Read-only state. |
 | `StartFlowPhase` | 140 | Read-only state. |
 | `RehydrateFromEvents` (static, partial) | `GameSessionEventReplay.cs:30–100` | Acceptable — event-sourcing rehydration factory. |
