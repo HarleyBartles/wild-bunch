@@ -425,7 +425,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                 new InventoryItem(ItemKind.RevolverAmmo, 2)
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: inventory);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: inventory, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateUnarmedWantedSession()
@@ -472,7 +472,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateSession()
@@ -519,7 +519,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateCitizenSession(Wallet? wallet = null)
@@ -538,7 +538,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet ?? Wallet.Starting(25m), inventory: null);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, wallet ?? Wallet.Starting(25m), inventory: null, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateSessionWithoutKnownWarrants()
@@ -570,7 +570,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateSessionWithPublicDescriptor()
@@ -602,6 +602,6 @@ public sealed class GameSessionSaloonPersonOfInterestTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 }
