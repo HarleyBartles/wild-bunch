@@ -79,6 +79,41 @@ public sealed class CaseFileGeneratedEventTests
         Assert.Equal("A pale scar cuts across the left cheek.", reconstructed.OpeningLead.Description);
     }
 
+    [Fact]
+    public void CaseFileSnapshot_RoundTrip_Preserves_PublicClues()
+    {
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
+                SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
+        };
+        var publicClue = new Clue(
+            new ClueId("clue-public-1"),
+            ClueKind.Alias,
+            "A dusty boot print.",
+            new[] { new SuspectId("suspect-1") },
+            InvestigationTargetKind.Suspected,
+            InvestigationSourceKind.LocalGossip,
+            source: "test source",
+            context: "test context");
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the trail."),
+            knownClues: Array.Empty<Clue>(),
+            publicClues: new[] { publicClue });
+
+        var snapshot = CaseFileSnapshot.FromDomain(caseFile);
+        var restored = snapshot.ToDomain();
+
+        Assert.Single(restored.PublicClues);
+        Assert.Equal(publicClue.Id, restored.PublicClues[0].Id);
+        Assert.Equal(publicClue.Description, restored.PublicClues[0].Description);
+        Assert.Empty(restored.KnownClues);
+    }
+
     /// <summary>
     /// Builds a baseline caseFile with suspects (profiles, aliases, identity facts),
     /// a true culprit, an opening lead, and known clues — exercising the full snapshot

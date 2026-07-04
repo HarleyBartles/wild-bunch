@@ -10,14 +10,16 @@ public sealed record CaseFileSnapshot(
     IReadOnlyList<SuspectSnapshot> Suspects,
     string TrueCulpritId,
     CaseOpeningLead OpeningLead,
-    IReadOnlyList<ClueSnapshot> Clues)
+    IReadOnlyList<ClueSnapshot> Clues,
+    IReadOnlyList<ClueSnapshot> PublicClues)
 {
     public static CaseFileSnapshot FromDomain(CaseFile caseFile)
         => new(
             caseFile.Suspects.Select<Suspect, SuspectSnapshot>(SuspectSnapshot.FromDomain).ToArray(),
             caseFile.TrueCulpritId.Value,
             caseFile.OpeningLead,
-            caseFile.KnownClues.Select<Clue, ClueSnapshot>(ClueSnapshot.FromDomain).ToArray());
+            caseFile.KnownClues.Select<Clue, ClueSnapshot>(ClueSnapshot.FromDomain).ToArray(),
+            caseFile.PublicClues.Select<Clue, ClueSnapshot>(ClueSnapshot.FromDomain).ToArray());
 
     public CaseFile ToDomain()
         => new(
@@ -25,7 +27,8 @@ public sealed record CaseFileSnapshot(
             suspects: Suspects.Select<SuspectSnapshot, Suspect>(s => s.ToDomain()).ToArray(),
             trueCulpritId: new SuspectId(TrueCulpritId),
             openingLead: OpeningLead,
-            knownClues: Clues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray());
+            knownClues: Clues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray(),
+            publicClues: PublicClues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray());
 }
 
 public sealed record SuspectSnapshot(
