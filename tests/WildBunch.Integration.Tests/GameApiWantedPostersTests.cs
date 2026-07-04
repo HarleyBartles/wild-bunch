@@ -17,12 +17,12 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         // BUNCH-107: Force a fixed salt so the wanted-poster resolver uses
         // boring-mode selection (deterministic). With Classic entropy, the salt
@@ -139,12 +139,12 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         // Force a fixed salt for deterministic warrant selection.
         await client.PostAsJsonAsync(

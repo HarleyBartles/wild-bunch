@@ -40,7 +40,7 @@ internal static class ScenarioSeedCatalog
         .WithTownCount(8)
         .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
 
-    private static readonly ScenarioSeedDescriptor CanonicalPinecrossServicesDescriptor = ScenarioSeedDescriptor.Create("CanonicalPinecrossServices")
+    private static readonly ScenarioSeedDescriptor CanonicalStartingTownServicesDescriptor = ScenarioSeedDescriptor.Create("CanonicalStartingTownServices")
         .WithCodecVersion(ScenarioSeedCodecVersion.Current)
         .WithEntropy(GameEntropy.Boring)
         .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
@@ -85,21 +85,21 @@ internal static class ScenarioSeedCatalog
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedStandard", session, destinationTownId, preview));
 
-    public static readonly ScenarioSeedFixture CanonicalPinecrossServices = new(
-        Name: "CanonicalPinecrossServices",
+    public static readonly ScenarioSeedFixture CanonicalStartingTownServices = new(
+        Name: "CanonicalStartingTownServices",
         SeedCode: CanonicalMountedStandard.SeedCode,
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
-        Contract: CanonicalPinecrossServicesDescriptor,
-        DescribeShapeSignature: DescribeCanonicalPinecrossServicesShape,
+        Contract: CanonicalStartingTownServicesDescriptor,
+        DescribeShapeSignature: DescribeCanonicalStartingTownServicesShape,
         AssertCreatedSessionContract: session =>
         {
-            AssertCanonicalMountedStartState("CanonicalPinecrossServices", session);
+            AssertCanonicalMountedStartState("CanonicalStartingTownServices", session);
 
-            RequireEqual("CanonicalPinecrossServices", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalPinecrossServices", session, ItemKind.Food).Quantity);
-            RequireEqual("CanonicalPinecrossServices", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalPinecrossServices", session, ItemKind.HorseFeed).Quantity);
+            RequireEqual("CanonicalStartingTownServices", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalStartingTownServices", session, ItemKind.Food).Quantity);
+            RequireEqual("CanonicalStartingTownServices", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalStartingTownServices", session, ItemKind.HorseFeed).Quantity);
         },
-        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalPinecrossServices", session, destinationTownId, preview));
+        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalStartingTownServices", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture HighRiskFoeInterruptRoute = new(
         Name: "HighRiskFoeInterruptRoute",
@@ -151,7 +151,7 @@ internal static class ScenarioSeedCatalog
         new[]
         {
             CanonicalMountedStandard,
-            CanonicalPinecrossServices,
+            CanonicalStartingTownServices,
             HighRiskFoeInterruptRoute,
             NoHorseLightEasy
         };
@@ -164,26 +164,26 @@ internal static class ScenarioSeedCatalog
         }
     }
 
-    public static async Task AssertPinecrossServices(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
+    public static async Task AssertStartingTownServices(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
     {
-        RequireEqual("CanonicalPinecrossServices", "scenario.name", "CanonicalPinecrossServices", fixture.Name);
+        RequireEqual("CanonicalStartingTownServices", "scenario.name", "CanonicalStartingTownServices", fixture.Name);
 
         fixture.AssertCreatedSession(session);
-        AssertPinecrossConnectedTownAssumptions(session);
+        AssertStartingTownConnectedTownAssumptions(session);
 
         var actionsResponse = await client.GetAsync($"/api/games/{gameId}/actions");
-        RequireEqual("CanonicalPinecrossServices", "actions.statusCode", HttpStatusCode.OK, actionsResponse.StatusCode);
+        RequireEqual("CanonicalStartingTownServices", "actions.statusCode", HttpStatusCode.OK, actionsResponse.StatusCode);
 
         var actions = await actionsResponse.Content.ReadFromJsonAsync<AvailableActionDto[]>();
-        Require("CanonicalPinecrossServices", "actions.payload", actions is not null, "expected available actions to deserialize.");
-        AssertPinecrossActionAvailability(actions!);
+        Require("CanonicalStartingTownServices", "actions.payload", actions is not null, "expected available actions to deserialize.");
+        AssertStartingTownActionAvailability(actions!);
 
         var storeOffersResponse = await client.GetAsync($"/api/games/{gameId}/towns/{session.Player.CurrentTownId}/store-offers");
-        RequireEqual("CanonicalPinecrossServices", "store-offers.statusCode", HttpStatusCode.OK, storeOffersResponse.StatusCode);
+        RequireEqual("CanonicalStartingTownServices", "store-offers.statusCode", HttpStatusCode.OK, storeOffersResponse.StatusCode);
 
         var storeOffers = await storeOffersResponse.Content.ReadFromJsonAsync<TownStoreOffersDto>();
-        Require("CanonicalPinecrossServices", "store-offers.payload", storeOffers is not null, "expected town store offers to deserialize.");
-        AssertPinecrossStoreAvailability(storeOffers!, session.Player.CurrentTownId);
+        Require("CanonicalStartingTownServices", "store-offers.payload", storeOffers is not null, "expected town store offers to deserialize.");
+        AssertStartingTownStoreAvailability(storeOffers!, session.Player.CurrentTownId);
     }
 
     // BUNCH-107 transitional: AssertDryFootRoute renamed to AssertDryRoute transitively.
@@ -392,7 +392,7 @@ internal static class ScenarioSeedCatalog
         RequireEqual(scenarioName, "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
     }
 
-    private static void AssertPinecrossConnectedTownAssumptions(GameSessionDto session)
+    private static void AssertStartingTownConnectedTownAssumptions(GameSessionDto session)
     {
         var connectedTownIds = session.World.Trails
             .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
@@ -400,29 +400,29 @@ internal static class ScenarioSeedCatalog
             .Distinct()
             .ToArray();
 
-        Require("CanonicalPinecrossServices", "start-game.connectedTownIds.count",
+        Require("CanonicalStartingTownServices", "start-game.connectedTownIds.count",
             connectedTownIds.Length >= 2,
             $"expected at least 2 connected towns from {session.Player.CurrentTownId}, got {connectedTownIds.Length}");
     }
 
-    private static void AssertPinecrossActionAvailability(AvailableActionDto[] actions)
+    private static void AssertStartingTownActionAvailability(AvailableActionDto[] actions)
     {
-        Require("CanonicalPinecrossServices", "actions.travel", actions.Any(action => action.Kind == AvailableActionKind.Travel), "expected Travel to be available.");
-        Require("CanonicalPinecrossServices", "actions.viewMap", actions.Any(action => action.Kind == AvailableActionKind.ViewMap), "expected ViewMap to be available.");
-        Require("CanonicalPinecrossServices", "actions.viewJournal", actions.Any(action => action.Kind == AvailableActionKind.ViewJournal), "expected ViewJournal to be available.");
-        Require("CanonicalPinecrossServices", "actions.buySupplies", actions.Any(action => action.Kind == AvailableActionKind.BuySupplies), "expected BuySupplies to be available.");
-        Require("CanonicalPinecrossServices", "actions.readWantedPosters", actions.Any(action => action.Kind == AvailableActionKind.ReadWantedPosters), "expected ReadWantedPosters to be available.");
-        Require("CanonicalPinecrossServices", "actions.inspectNoticeBoard", actions.Any(action => action.Kind == AvailableActionKind.InspectNoticeBoard), "expected InspectNoticeBoard to be available.");
-        Require("CanonicalPinecrossServices", "actions.checkLocalRecords", actions.Any(action => action.Kind == AvailableActionKind.CheckSheriffRecords), "expected CheckSheriffRecords to be available.");
-        Require("CanonicalPinecrossServices", "actions.gatherLocalGossip", actions.Any(action => action.Kind == AvailableActionKind.GatherLocalGossip), "expected GatherLocalGossip to be available.");
+        Require("CanonicalStartingTownServices", "actions.travel", actions.Any(action => action.Kind == AvailableActionKind.Travel), "expected Travel to be available.");
+        Require("CanonicalStartingTownServices", "actions.viewMap", actions.Any(action => action.Kind == AvailableActionKind.ViewMap), "expected ViewMap to be available.");
+        Require("CanonicalStartingTownServices", "actions.viewJournal", actions.Any(action => action.Kind == AvailableActionKind.ViewJournal), "expected ViewJournal to be available.");
+        Require("CanonicalStartingTownServices", "actions.buySupplies", actions.Any(action => action.Kind == AvailableActionKind.BuySupplies), "expected BuySupplies to be available.");
+        Require("CanonicalStartingTownServices", "actions.readWantedPosters", actions.Any(action => action.Kind == AvailableActionKind.ReadWantedPosters), "expected ReadWantedPosters to be available.");
+        Require("CanonicalStartingTownServices", "actions.inspectNoticeBoard", actions.Any(action => action.Kind == AvailableActionKind.InspectNoticeBoard), "expected InspectNoticeBoard to be available.");
+        Require("CanonicalStartingTownServices", "actions.checkLocalRecords", actions.Any(action => action.Kind == AvailableActionKind.CheckSheriffRecords), "expected CheckSheriffRecords to be available.");
+        Require("CanonicalStartingTownServices", "actions.gatherLocalGossip", actions.Any(action => action.Kind == AvailableActionKind.GatherLocalGossip), "expected GatherLocalGossip to be available.");
     }
 
-    private static void AssertPinecrossStoreAvailability(TownStoreOffersDto storeOffers, string currentTownId)
+    private static void AssertStartingTownStoreAvailability(TownStoreOffersDto storeOffers, string currentTownId)
     {
-        RequireEqual("CanonicalPinecrossServices", "store-offers.available", true, storeOffers.Available);
-        RequireEqual("CanonicalPinecrossServices", "store-offers.townId", currentTownId, storeOffers.TownId);
-        Require("CanonicalPinecrossServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected the starting town to expose a general store.");
-        Require("CanonicalPinecrossServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected the starting town to expose a stable.");
+        RequireEqual("CanonicalStartingTownServices", "store-offers.available", true, storeOffers.Available);
+        RequireEqual("CanonicalStartingTownServices", "store-offers.townId", currentTownId, storeOffers.TownId);
+        Require("CanonicalStartingTownServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected the starting town to expose a general store.");
+        Require("CanonicalStartingTownServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected the starting town to expose a stable.");
     }
 
     private static string DescribeCanonicalMountedShape(GameSessionDto session, TravelPreviewResultDto? preview)
@@ -439,11 +439,11 @@ internal static class ScenarioSeedCatalog
             $"towns={session.World.Towns.Count}",
             $"preview={DescribeMountedPreview(preview)}");
 
-    private static string DescribeCanonicalPinecrossServicesShape(GameSessionDto session, TravelPreviewResultDto? preview)
+    private static string DescribeCanonicalStartingTownServicesShape(GameSessionDto session, TravelPreviewResultDto? preview)
         => string.Join(
             "|",
             ScenarioSeedCodecVersion.Current.Value,
-            "CanonicalPinecrossServices",
+            "CanonicalStartingTownServices",
             $"entropy={session.GameEntropy}",
             "start=default-playable-start",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",

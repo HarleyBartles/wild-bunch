@@ -193,7 +193,7 @@ public sealed class DevSaloonEndpointTests
 
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
