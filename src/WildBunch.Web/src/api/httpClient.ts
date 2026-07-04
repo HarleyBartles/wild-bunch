@@ -49,6 +49,10 @@ function extractErrorMessage(body: unknown) {
     return problem.title;
   }
 
+  if (typeof problem.error === "string" && problem.error.trim()) {
+    return problem.error;
+  }
+
   const errors = problem.errors;
   if (errors && typeof errors === "object") {
     for (const value of Object.values(errors as Record<string, unknown>)) {

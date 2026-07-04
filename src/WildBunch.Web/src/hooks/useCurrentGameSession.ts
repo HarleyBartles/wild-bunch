@@ -1,9 +1,10 @@
 import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type {
-  GameSessionDto,
-  GameTurnResultDto,
-  SetupGameRequest,
+import {
+  GameStatus,
+  type GameSessionDto,
+  type GameTurnResultDto,
+  type SetupGameRequest,
 } from "../api/types";
 import {
   actionIsCheckLocalRecords,
@@ -46,6 +47,23 @@ export function useCurrentGameSession() {
     const posters = sessionQuery.data?.wantedPosters;
     setWantedPosters(posters ?? []);
   }, [sessionQuery.data?.wantedPosters, setWantedPosters]);
+
+  // Detect archived sessions and clear local state so the player returns to
+  // the setup screen. A session can be archived by the player (Start Over) or
+  // by the backend (superseded by a new playthrough). Without this, the
+  // frontend keeps showing the archived session as playable, and the archive
+  // endpoint returns 409 on repeated attempts.
+  useEffect(() => {
+    if (sessionQuery.data?.status === GameStatus.Archived) {
+      window.localStorage.removeItem(storageKey);
+      state.setStoredGameId(null);
+      state.setWantedPosters([]);
+      state.setDeclaredWantedIdentityHandle("");
+      queryClient.removeQueries({ queryKey: ["session", gameId] });
+      queryClient.removeQueries({ queryKey: ["actions", gameId] });
+      queryClient.removeQueries({ queryKey: ["journal", gameId] });
+    }
+  }, [sessionQuery.data?.status, gameId, queryClient, state]);
 
   const {
     setupGameMutation,

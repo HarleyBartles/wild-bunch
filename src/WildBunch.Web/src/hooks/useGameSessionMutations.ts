@@ -108,7 +108,25 @@ export function useGameSessionMutations({
       setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to archive the playthrough.");
+      // If the session is already archived (409 Conflict), clear local state
+      // and return to setup instead of stranding the player on a dead session.
+      const message = exception instanceof Error ? exception.message : "";
+      if (message.includes("already archived") || message.includes("409")) {
+        const archivedGameId = gameId;
+        window.localStorage.removeItem(storageKey);
+        setStoredGameId(null);
+        setWantedPosters([]);
+        setDeclaredWantedIdentityHandle("");
+        setError("");
+        if (archivedGameId) {
+          queryClient.removeQueries({ queryKey: ["session", archivedGameId] });
+          queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
+          queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
+        }
+        setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
+      } else {
+        setError(message || "Unable to archive the playthrough.");
+      }
     },
   });
 

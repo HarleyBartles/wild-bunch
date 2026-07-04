@@ -1,4 +1,10 @@
 export type GameStatus = 0 | 1 | 2 | 3;
+export const GameStatus = {
+  Active: 0,
+  Completed: 1,
+  Failed: 2,
+  Archived: 3,
+} as const;
 export type GameDifficulty = 0 | 1 | 2 | 3;
 export type GameEntropy = 0 | 1 | 2 | 3;
 export type StartFlowPhase = 0 | 1 | 2 | 3 | 4;
