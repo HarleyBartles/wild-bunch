@@ -90,10 +90,11 @@ internal static class TerrainAssigner
             // 85% Low risk, 15% Moderate (some trails are rougher than others)
             var risk = (roll % 100UL) < 85 ? TrailRisk.Low : TrailRisk.Moderate;
             // 70% Creek (well-watered interior), 20% Spring, 10% None
-            var water = (roll / 100UL % 10UL) switch
+            // Use a different slice of the roll than terrain/risk for independence.
+            var water = (roll / 100UL % 100UL) switch
             {
-                < 7 => WaterFeature.Creek,
-                < 9 => WaterFeature.Spring,
+                < 70 => WaterFeature.Creek,
+                < 90 => WaterFeature.Spring,
                 _ => WaterFeature.None
             };
             return (terrain, water, risk, rideDays);
@@ -118,9 +119,10 @@ internal static class TerrainAssigner
                 _ => TrailRisk.High
             };
             // 60% None (drier crossing), 25% Spring, 15% Creek
-            var water = (roll / 100UL % 10UL) switch
+            // Use a different slice of the roll than terrain/risk for independence.
+            var water = (roll / 100UL % 100UL) switch
             {
-                < 6 => WaterFeature.None,
+                < 60 => WaterFeature.None,
                 < 85 => WaterFeature.Spring,
                 _ => WaterFeature.Creek
             };
@@ -144,7 +146,8 @@ internal static class TerrainAssigner
             _ => TrailRisk.Low
         };
         // 85% None (dry mountain pass), 10% Spring, 5% River
-        var longWater = (roll / 100UL % 10UL) switch
+        // Use a different slice of the roll than terrain/risk for independence.
+        var longWater = (roll / 100UL % 100UL) switch
         {
             < 85 => WaterFeature.None,
             < 95 => WaterFeature.Spring,

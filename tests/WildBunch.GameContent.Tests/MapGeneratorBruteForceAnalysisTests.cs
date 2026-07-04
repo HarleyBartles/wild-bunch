@@ -145,6 +145,30 @@ public sealed class MapGeneratorBruteForceAnalysisTests
     }
 
     [Fact]
+    public void BruteForce_WaterDiversity_AllTypesAppear()
+    {
+        // Every water feature type should appear with reasonable frequency.
+        // None and Creek are common (intra-cluster defaults); Spring appears
+        // as variety in all categories; River is rare (only long inter-cluster
+        // trails, ~5% of that category) so it gets a lower floor.
+        var data = Data;
+        var total = data.WaterCounts.Values.Sum();
+        Assert.True(total > 0, "No water feature data collected.");
+
+        foreach (WaterFeature water in Enum.GetValues<WaterFeature>())
+        {
+            var count = data.WaterCounts.GetValueOrDefault(water);
+            var pct = 100.0 * count / total;
+            // River is the rarest (only ~5% of long inter-cluster trails, which
+            // are themselves a subset of all trails) — use a 1% floor.
+            var minPct = water == WaterFeature.River ? 1.0 : 5.0;
+            Assert.True(pct >= minPct,
+                $"WaterFeature {water} appears {count}/{total} ({pct:F1}%), expected >= {minPct}%. " +
+                $"Distribution: {FormatWaterDistribution(data.WaterCounts, total)}");
+        }
+    }
+
+    [Fact]
     public void BruteForce_VariantInfluence_ProducesDifferentTerrainDistributions()
     {
         // Different SeedWorldVariant values should produce measurably different
@@ -307,6 +331,10 @@ public sealed class MapGeneratorBruteForceAnalysisTests
         => string.Join(", ", Enum.GetValues<TrailRisk>().Select(r =>
             $"{r}={counts.GetValueOrDefault(r)}({100.0 * counts.GetValueOrDefault(r) / Math.Max(1, total):F1}%)"));
 
+    private static string FormatWaterDistribution(Dictionary<WaterFeature, int> counts, int total)
+        => string.Join(", ", Enum.GetValues<WaterFeature>().Select(w =>
+            $"{w}={counts.GetValueOrDefault(w)}({100.0 * counts.GetValueOrDefault(w) / Math.Max(1, total):F1}%)"));
+
     private static Dictionary<TrailTerrain, double> NormalizeTerrain(Dictionary<TrailTerrain, int> counts)
     {
         var total = (double)counts.Values.Sum();
@@ -361,9 +389,10 @@ internal static class BruteForceDataCollector
         // Map coverage
         public List<double> BoundingBoxAreas = new();
 
-        // Terrain and risk diversity
+        // Terrain, risk, and water diversity
         public Dictionary<TrailTerrain, int> TerrainCounts = new();
         public Dictionary<TrailRisk, int> RiskCounts = new();
+        public Dictionary<WaterFeature, int> WaterCounts = new();
 
         // Variant influence: terrain distribution per variant
         public Dictionary<SeedWorldVariant, Dictionary<TrailTerrain, int>> TerrainByVariant = new();
@@ -500,6 +529,7 @@ internal static class BruteForceDataCollector
                                         // Terrain and risk diversity
                                         data.TerrainCounts[trail.Terrain] = data.TerrainCounts.GetValueOrDefault(trail.Terrain) + 1;
                                         data.RiskCounts[trail.Risk] = data.RiskCounts.GetValueOrDefault(trail.Risk) + 1;
+                                        data.WaterCounts[trail.WaterFeature] = data.WaterCounts.GetValueOrDefault(trail.WaterFeature) + 1;
 
                                         // Per-variant terrain
                                         if (!data.TerrainByVariant.TryGetValue(variant, out var variantTerrain))
