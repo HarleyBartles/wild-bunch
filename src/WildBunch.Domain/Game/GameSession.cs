@@ -1095,6 +1095,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(WorldGenerated e)
     {
         World = e.World.ToDomain();
+        SaltSource = e.SaltSource;
+        GameEntropy = e.GameEntropy;
         _version++;
     }
 

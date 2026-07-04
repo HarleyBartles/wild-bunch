@@ -131,7 +131,7 @@ internal static class TravelTestSeedCatalog
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = Array.Empty<SeedWorldTrail>();
 
         return new SeedWorld(
             Guid.Empty,

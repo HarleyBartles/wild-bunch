@@ -195,6 +195,97 @@ public sealed class MapGeneratorTests
         Assert.Equal(8, world.Towns.Count);
     }
 
+    [Fact]
+    public void Generate_OutlierSlot_NeverProducesDuplicateTownIds()
+    {
+        // Regression: MapGenerator previously called DeriveTownNames(townCount: 1, ...)
+        // for the outlier name, which uses a different seed/shuffle than the main call
+        // and could pick a name already in the main list. The fix derives the full
+        // shuffled pool from the outlier seed and picks the first name not in the main set.
+        //
+        // This test brute-forces all valid parameter combinations through the fix logic
+        // to prove the outlier name is always unique.
+        var variants = Enum.GetValues<SeedWorldVariant>();
+        var prosperityPalettes = Enum.GetValues<ProsperityPalette>();
+        var servicesPalettes = Enum.GetValues<ServicesPalette>();
+        var failures = new List<string>();
+
+        for (var v = 0; v < variants.Length; v++)
+        {
+            for (var pp = 0; pp < prosperityPalettes.Length; pp++)
+            {
+                for (var sp = 0; sp < servicesPalettes.Length; sp++)
+                {
+                    for (var townCount = 5; townCount <= 9; townCount++)
+                    {
+                        for (var ai = 0; ai <= 6; ai++)
+                        {
+                            for (var di = 0; di <= 6; di++)
+                            {
+                                for (var cb = 0; cb <= 8; cb++)
+                                {
+                                    var mainNames = SeedWorldCatalog.DeriveTownNames(
+                                        variants[v], townCount, ai, di, cb,
+                                        prosperityPalettes[pp],
+                                        servicesPalettes[sp]);
+                                    var existingIds = new HashSet<string>(mainNames.Select(t => t.Id));
+
+                                    // Replicate the fix: derive the full outlier pool and pick
+                                    // the first name not in the main set.
+                                    var outlierPool = SeedWorldCatalog.DeriveTownNames(
+                                        variants[v],
+                                        townCount: SeedWorldCatalog.NamePool.Count,
+                                        accusationIndex: 0,
+                                        defaultCulpritIndex: 0,
+                                        cashBonus: 0,
+                                        prosperityPalette: prosperityPalettes[pp],
+                                        servicesPalette: servicesPalettes[sp]);
+
+                                    var outlierName = outlierPool.FirstOrDefault(
+                                        entry => !existingIds.Contains(entry.Id));
+
+                                    if (outlierName is null)
+                                    {
+                                        failures.Add(
+                                            $"variant={variants[v]}, townCount={townCount}, " +
+                                            $"accusationIndex={ai}, defaultCulpritIndex={di}, " +
+                                            $"cashBonus={cb}, prosperity={prosperityPalettes[pp]}, " +
+                                            $"services={servicesPalettes[sp]}: " +
+                                            "no unique outlier name available");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.True(failures.Count == 0,
+            $"Outlier uniqueness failures ({failures.Count}).\n" +
+            "First 5:\n" + string.Join("\n", failures.Take(5)));
+    }
+
+    [Theory]
+    [InlineData(5, 1, "salt-a")]
+    [InlineData(5, 1, "salt-b")]
+    [InlineData(6, 1, "salt-c")]
+    [InlineData(7, 1, "salt-d")]
+    [InlineData(8, 1, "salt-e")]
+    [InlineData(9, 1, "salt-f")]
+    public void Generate_OutlierSlot_AllTownsHaveUniqueIds(int townCount, int outlierSlotType, string salt)
+    {
+        // End-to-end regression: MapGenerator.Generate must produce unique town IDs
+        // when an outlier is materialized, across various town counts and salts.
+        var seed = NewSeedWorld(townCount: townCount, clusterCount: 1, outlierSlotType: outlierSlotType);
+        var source = NewSource();
+
+        var world = MapGenerator.Generate(seed, source, GameEntropy.Wild, SaltSource.CreateFixed(salt));
+
+        var townIds = world.Towns.Select(t => t.Id.Value).ToArray();
+        Assert.Equal(townIds.Length, townIds.Distinct().Count());
+    }
+
     private static bool SegmentsIntersect((int MapX, int MapY) p1, (int MapX, int MapY) p2, (int MapX, int MapY) p3, (int MapX, int MapY) p4)
     {
         var d1 = Sign(p3, p4, p1);

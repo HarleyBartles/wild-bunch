@@ -234,6 +234,49 @@ public class StartFlowEventSourcingTests
         Assert.Equal("Ranger Vale", rehydrated.Player.Name);
     }
 
+    [Fact]
+    public void RehydrateFromEvents_WithSetupOnly_RestoresSaltSourceFromWorldGeneratedEvent()
+    {
+        // Regression: RehydrateFromEvents fell back to SaltSource.CreateRuntime()
+        // for setup-phase sessions (no GameStarted event), even though WorldGenerated
+        // carries the original salt. This caused CompleteGameStart() to write a
+        // fresh runtime salt to GameStarted instead of the original salt.
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("regression-salt-abc");
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
+
+        Assert.Equal(saltSource, rehydrated.SaltSource);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_WithSetupOnly_ThenCompleteGameStart_PreservesOriginalSalt()
+    {
+        // End-to-end regression: a rehydrated setup-phase session that goes through
+        // CompleteGameStart must write the original salt to GameStarted, not a
+        // runtime salt. This is the exact bug path: load → rehydrate → CompleteGameStart.
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("regression-salt-xyz");
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
+        rehydrated.ViewPrologue("true-culprit");
+        rehydrated.SelectStartingTown(new TownId("pinecross"));
+        rehydrated.CompleteGameStart();
+
+        var gameStarted = rehydrated.UncommittedEvents.OfType<GameStarted>().Single();
+        Assert.Equal(saltSource, gameStarted.SaltSource);
+    }
+
     private static GameSession CreateSetupSession(
         string playerName = "Ranger Vale",
         GameDifficulty gameDifficulty = GameDifficulty.Standard,

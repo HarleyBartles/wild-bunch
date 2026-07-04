@@ -23,20 +23,26 @@ internal static class MapGenerator
 
         var placement = ClusterPlacementGenerator.Place(seedWorld, source, entropy, saltSource);
 
-        // If an outlier was added, we need to add an extra town name for it
+        // If an outlier was added, we need to add an extra town name for it.
+        // Derive the full shuffled pool from the outlier seed and pick the first
+        // name not already in the main town names. This guarantees uniqueness —
+        // the previous approach called DeriveTownNames(townCount: 1, ...) which
+        // uses a different seed/shuffle and could pick a name already in the main list.
         if (placement.OutlierSlot.HasValue)
         {
             var outlierIndex = placement.OutlierSlot.Value;
-            var extraName = SeedWorldCatalog.DeriveTownNames(
+            var existingIds = new HashSet<string>(townNames.Select(t => t.Id));
+            var outlierPool = SeedWorldCatalog.DeriveTownNames(
                 seedWorld.WorldVariant,
-                townCount: 1,
+                townCount: SeedWorldCatalog.NamePool.Count,
                 accusationIndex: 0,
                 defaultCulpritIndex: 0,
                 cashBonus: 0,
                 prosperityPalette: seedWorld.ProsperityPalette,
                 servicesPalette: seedWorld.ServicesPalette);
+            var outlierName = outlierPool.First(entry => !existingIds.Contains(entry.Id));
             var townNamesList = townNames.ToList();
-            townNamesList.Add(extraName[0]);
+            townNamesList.Add(outlierName);
             townNames = townNamesList;
         }
 

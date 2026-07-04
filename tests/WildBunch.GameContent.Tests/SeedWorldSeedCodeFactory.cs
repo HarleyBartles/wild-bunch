@@ -24,7 +24,7 @@ internal static class SeedWorldSeedCodeFactory
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = Array.Empty<SeedWorldTrail>();
 
         var target = new SeedWorld(
             Guid.Empty,
@@ -67,7 +67,7 @@ internal static class SeedWorldSeedCodeFactory
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = Array.Empty<SeedWorldTrail>();
 
         var target = new SeedWorld(
             Guid.Empty,

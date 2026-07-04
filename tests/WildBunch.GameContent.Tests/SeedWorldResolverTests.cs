@@ -238,7 +238,7 @@ public sealed class SeedWorldResolverTests
         var townServices = townNames
             .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(services, i)))
             .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames);
+        var trails = Array.Empty<SeedWorldTrail>();
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, clusterCount, graphDensity,

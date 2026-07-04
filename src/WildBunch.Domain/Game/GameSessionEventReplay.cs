@@ -53,14 +53,24 @@ public sealed partial class GameSession
                 "Event stream must contain a PlayerSetupCompleted or GameStarted event.", nameof(events));
         }
 
-        // Use GameStarted if available (it has the starting town), otherwise use PlayerSetupCompleted
+        // Use GameStarted if available (it has the starting town), otherwise use PlayerSetupCompleted.
+        // For setup-phase sessions (no GameStarted), the salt source comes from the WorldGenerated
+        // event — not a runtime fallback. Apply(WorldGenerated) will also restore it during replay,
+        // but the constructor needs the correct value upfront so CompleteGameStart() reads the right
+        // salt before any Apply runs.
+        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
+
         var playerName = gameStarted?.PlayerName ?? setupCompleted!.PlayerName;
         var startingTownId = gameStarted?.StartingTownId ?? world.Towns.First().Id;
         var startingHealth = gameStarted?.StartingHealth ?? 100; // Placeholder for setup-phase sessions
         var startingWallet = gameStarted?.StartingWallet ?? 25m;
         var gameDifficulty = gameStarted?.GameDifficulty ?? setupCompleted!.GameDifficulty;
-        var saltSource = gameStarted?.SaltSource ?? SaltSource.CreateRuntime();
-        var gameEntropy = gameStarted?.GameEntropy ?? setupCompleted!.GameEntropy;
+        var saltSource = gameStarted?.SaltSource
+            ?? worldGenerated?.SaltSource
+            ?? SaltSource.CreateRuntime();
+        var gameEntropy = gameStarted?.GameEntropy
+            ?? worldGenerated?.GameEntropy
+            ?? setupCompleted!.GameEntropy;
 
         var placeholderPlayer = new Player(
             playerName,
