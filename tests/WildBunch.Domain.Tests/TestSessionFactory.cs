@@ -649,8 +649,6 @@ public static class TestSessionFactory
     {
         ArgumentNullException.ThrowIfNull(session);
 
-        // Reconstruct the baseline CaseFile with the same suspects, true culprit, opening lead,
-        // and public clues/warrants — but with empty known clues/warrants (pre-investigation state).
         var originalCase = session.CaseFile;
         return new CaseFile(
             accusation: null,
@@ -660,7 +658,13 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             discoveredSuspectIds: originalCase.DiscoveredSuspectIds,
             publicClues: ReconstructPublicClues(originalCase),
-            publicWarrants: ReconstructPublicWarrants(originalCase));
+            killerReleaseThreshold: originalCase.KillerReleaseThreshold,
+            killerReleaseProgress: originalCase.KillerReleaseProgress,
+            knownWarrants: Array.Empty<Warrant>(),
+            publicWarrants: ReconstructPublicWarrants(originalCase),
+            suspectTurfAssignments: originalCase.SuspectTurfAssignments,
+            wantedSuspectConfrontations: originalCase.WantedSuspectConfrontations,
+            sheriffTurnInSettlements: originalCase.SheriffTurnInSettlements);
     }
 
     private static IEnumerable<Clue> ReconstructPublicClues(CaseFile originalCase)
