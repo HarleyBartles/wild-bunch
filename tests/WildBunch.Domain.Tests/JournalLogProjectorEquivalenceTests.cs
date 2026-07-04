@@ -18,7 +18,7 @@ public sealed class JournalLogProjectorEquivalenceTests
     [Fact]
     public void FullJourneyCycle_ProjectedLogMatchesCommandPathLogEntriesExactly()
     {
-        var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+        var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
         session.StartJourney(preview);
         TravelJourneyStepResult result;
         do
@@ -69,7 +69,7 @@ public sealed class JournalLogProjectorEquivalenceTests
     [Fact]
     public void Purchase_ProjectedLogMatchesCommandPathLogEntriesExactly()
     {
-        var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+        var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
 
         var resolver = new TownStoreCatalogResolver();
         var town = session.World.GetTown(session.Player.CurrentTownId);

@@ -41,7 +41,7 @@ internal static class TravelTestFactory
     /// before it is committed. Used by replay-equality tests that need the full event stream.
     /// </summary>
     internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateEasyShortJourneyWithGameStarted()
+        CreateEasyShortJourneyWithSetupEvents()
     {
         var (session, preview) = CreateEasyShortJourney();
         var setupEvents = RecaptureSetupEventsForReplay(session);
@@ -53,7 +53,7 @@ internal static class TravelTestFactory
     /// before it is committed. Used by replay-equality tests that need the full event stream.
     /// </summary>
     internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateSixDayQuietJourneyWithGameStarted()
+        CreateSixDayQuietJourneyWithSetupEvents()
     {
         var (session, preview) = CreateSixDayQuietJourney();
         var setupEvents = RecaptureSetupEventsForReplay(session);

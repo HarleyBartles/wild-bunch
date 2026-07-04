@@ -17,7 +17,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_JourneyStarted_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
+            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
         var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
@@ -40,7 +40,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_AdvanceJourneyDay_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
+            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
         commandSession.AdvanceJourneyDay();
         var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
@@ -62,7 +62,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+            TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
 
         // Force quiet days through the dev-travel override seam so the journey
