@@ -21,6 +21,44 @@ namespace WildBunch.Domain.Tests;
 public static class TestSessionFactory
 {
     /// <summary>
+    /// Creates a fully-started game session using the canonical start flow
+    /// (StartSetup → ViewPrologue → SelectStartingTown → CompleteGameStart).
+    /// This replaces the legacy StartNew convenience factory with the same
+    /// event-sourced flow used by production handlers, ensuring all test
+    /// sessions are fully rehydratable from their event stream.
+    /// </summary>
+    private static GameSession StartGameCanonical(
+        string playerName,
+        DomainWorld world,
+        CaseFile caseFile,
+        TownId startingTownId,
+        Wallet? wallet = null,
+        DomainInventory? inventory = null,
+        GameDifficulty gameDifficulty = GameDifficulty.Easy,
+        SaltSource? saltSource = null,
+        GameEntropy gameEntropy = GameEntropy.Classic,
+        string? seedCode = null)
+    {
+        var resolvedSaltSource = saltSource ?? SaltSource.CreateFixed(string.Empty);
+        var resolvedSeedCode = seedCode ?? "test-seed";
+
+        var session = GameSession.StartSetup(
+            playerName,
+            world,
+            caseFile,
+            gameDifficulty,
+            gameEntropy,
+            resolvedSeedCode,
+            resolvedSaltSource);
+
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(startingTownId);
+        session.CompleteGameStart(wallet, inventory);
+
+        return session;
+    }
+
+    /// <summary>
     /// Creates a default session in the starting town with no journey active and no
     /// investigation sources spent. Used by clock/turn correction and event-sourcing
     /// tests that need a clean baseline session with CurrentActionContext = None.
