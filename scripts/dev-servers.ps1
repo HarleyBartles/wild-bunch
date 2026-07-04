@@ -123,7 +123,7 @@ function Get-ProcessCommandLine {
 
 function Test-PortOwnedByWorktree {
     param([Parameter(Mandatory)][int]$Port)
-    $pids = Get-PortListenerPids -Port $Port
+    $pids = @(Get-PortListenerPids -Port $Port)
     foreach ($procPid in $pids) {
         $cmdLine = Get-ProcessCommandLine -ProcessId $procPid
         if ($cmdLine -and ($cmdLine -like "*$WorktreeRoot*")) {
@@ -289,8 +289,8 @@ function Invoke-Ensure {
     $ports = Resolve-ServerPorts
 
     if ($ports.Reused) {
-        $apiPids = Get-PortListenerPids -Port $ports.ApiPort
-        $vitePids = Get-PortListenerPids -Port $ports.VitePort
+        $apiPids = @(Get-PortListenerPids -Port $ports.ApiPort)
+        $vitePids = @(Get-PortListenerPids -Port $ports.VitePort)
         $apiPid = if ($apiPids.Count -gt 0) { $apiPids[0] } else { 0 }
         $vitePid = if ($vitePids.Count -gt 0) { $vitePids[0] } else { 0 }
         $apiUrl = "http://localhost:$($ports.ApiPort)"
