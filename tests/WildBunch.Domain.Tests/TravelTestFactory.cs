@@ -83,14 +83,6 @@ internal static class TravelTestFactory
     }
 
     /// <summary>
-    /// Recaptures the full setup event stream for a session. Legacy alias for
-    /// <see cref="RecaptureSetupEventsForReplay"/> kept for callers that have not yet
-    /// been updated to the new name.
-    /// </summary>
-    internal static IReadOnlyList<IDomainEvent> RecaptureGameStartedForReplay(GameSession session)
-        => RecaptureSetupEventsForReplay(session);
-
-    /// <summary>
     /// Creates a session with a high-risk journey designed to trigger encounters.
     /// Uses TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, distance 6m.
     /// Inventory: 3 Food, 1 Canteen (full 2), 1 Horse (Healthy), 1 Saddle, 1 Knife.

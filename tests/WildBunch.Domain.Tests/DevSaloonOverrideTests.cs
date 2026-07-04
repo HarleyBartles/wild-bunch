@@ -292,8 +292,8 @@ public sealed class DevSaloonOverrideTests
         session.MarkEventsCommitted();
 
         // Rehydrate from the full event stream: Forced -> Consumed -> SaloonPersonOfInterestSpotted
-        var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
-        var events = gameStarted.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
+        var events = setupEvents.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 

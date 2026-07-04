@@ -97,7 +97,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
-        var setupEvents = TravelTestFactory.RecaptureGameStartedForReplay(commandSession);
+        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(commandSession);
         commandSession.StartJourney(preview);
 
         // Force a foe encounter through the dev-travel override seam instead of

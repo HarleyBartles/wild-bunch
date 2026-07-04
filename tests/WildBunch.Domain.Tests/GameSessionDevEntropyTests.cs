@@ -67,12 +67,12 @@ public sealed class GameSessionDevEntropyTests
         // BEFORE forcing entropy, so the replay stream has a GameStarted
         // with the original entropy (Classic) followed by DevEntropyChanged.
         var session = TestSessionFactory.CreateDefault();
-        var originalGameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
+        var originalSetupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
 
         session.SetDevEntropy(GameEntropy.Wild);
         session.MarkEventsCommitted();
 
-        var events = originalGameStarted
+        var events = originalSetupEvents
             .Concat(session.CommittedEvents.OfType<IDomainEvent>())
             .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(

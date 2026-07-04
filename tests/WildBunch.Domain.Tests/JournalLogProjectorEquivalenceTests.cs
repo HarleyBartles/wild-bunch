@@ -41,9 +41,9 @@ public sealed class JournalLogProjectorEquivalenceTests
     public void ResolveJourneyEncounter_ProjectedLogMatchesCommandPathLogEntriesExactly()
     {
         var (session, preview) = TravelTestFactory.CreateHighRiskJourney();
-        // Capture GameStarted BEFORE any travel commands — RecaptureGameStartedForReplay
+        // Capture setup events BEFORE any travel commands — RecaptureSetupEventsForReplay
         // reads session.Player.CurrentTownId, which changes after arrival.
-        var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
+        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
         session.StartJourney(preview);
 
         TravelJourneyStepResult step;
@@ -55,7 +55,7 @@ public sealed class JournalLogProjectorEquivalenceTests
 
         var resolved = session.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
         Assert.True(resolved.Success);
-        var events = gameStarted.Concat(session.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(session.UncommittedEvents).ToList();
 
         var projected = new JournalLogProjector().Project(events);
 
