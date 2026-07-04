@@ -1,7 +1,4 @@
-using System.Linq;
-using System.Security.Cryptography;
 using WildBunch.Domain.Game;
-using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
@@ -14,42 +11,6 @@ internal static class SeedWorldBuilder
     /// </summary>
     public static World CreateCanonicalWorld()
         => SeedWorldCatalog.CreateCanonicalWorld();
-
-    /// <summary>
-    /// Computes a stable deterministic hash for entropy variance.
-    /// Uses SHA256 over explicit inputs to ensure consistency across runs.
-    /// </summary>
-    private static int ComputeStableHash(string seedCode, int slot, string entropyMode, string salt)
-    {
-        var input = $"{seedCode}-{slot}-{entropyMode}-{salt}";
-        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hashBytes = SHA256.HashData(bytes);
-        return BitConverter.ToInt32(hashBytes, 0);
-    }
-
-    /// <summary>
-    /// Computes a stable deterministic hash for entropy variance with string slot identifier.
-    /// Uses SHA256 over explicit inputs to ensure consistency across runs.
-    /// </summary>
-    private static int ComputeStableHash(string seedCode, string slotIdentifier, string entropyMode, string salt)
-    {
-        var input = $"{seedCode}-{slotIdentifier}-{entropyMode}-{salt}";
-        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hashBytes = SHA256.HashData(bytes);
-        return BitConverter.ToInt32(hashBytes, 0);
-    }
-
-    /// <summary>
-    /// Computes a stable deterministic hash for trail removal (no slot).
-    /// Uses SHA256 over explicit inputs to ensure consistency across runs.
-    /// </summary>
-    private static int ComputeStableHash(string seedCode, string entropyMode, string salt)
-    {
-        var input = $"{seedCode}-{entropyMode}-{salt}";
-        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hashBytes = SHA256.HashData(bytes);
-        return BitConverter.ToInt32(hashBytes, 0);
-    }
 
     /// <summary>
     /// Converts a signed hash to a guaranteed non-negative value for safe modulo indexing.
