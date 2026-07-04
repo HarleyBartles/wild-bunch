@@ -207,7 +207,10 @@ public sealed class ResolveJourneyEncounterHandlerTests
             new InventoryItem(ItemKind.RevolverAmmo, 2)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(wallet ?? Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);

@@ -4,6 +4,7 @@ using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
@@ -172,6 +173,10 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
 
-        return GameSession.StartNew(playerName, world, caseFile, pinecross.Id);
+        var session = GameSession.StartSetup(playerName, world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart();
+        return session;
     }
 }

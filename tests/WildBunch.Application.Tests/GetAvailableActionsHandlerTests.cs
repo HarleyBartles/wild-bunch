@@ -4,6 +4,7 @@ using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
@@ -78,6 +79,10 @@ public sealed class GetAvailableActionsHandlerTests
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart();
+        return session;
     }
 }

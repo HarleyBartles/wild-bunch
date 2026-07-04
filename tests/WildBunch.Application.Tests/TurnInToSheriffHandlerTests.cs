@@ -98,7 +98,10 @@ public sealed class TurnInToSheriffHandlerTests
                     "Wanted for cattle theft.")
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart();
         session.EnterActionContext(TownActionContext.Saloon);
         session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(new SuspectId("suspect-1"));
         session.ResolveWantedSuspectConfrontation(new SuspectId("suspect-1"), WantedSuspectConfrontationChoice.Surrendered);

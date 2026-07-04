@@ -2,6 +2,7 @@ using WildBunch.Application.Dev.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using Town = WildBunch.Domain.World.Town;
 using TownId = WildBunch.Domain.World.TownId;
@@ -203,10 +204,10 @@ public sealed class GetSaloonDevContextHandlerTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            WildBunch.Domain.Economy.Wallet.Starting(25m), inventory: null,
-            WildBunch.Domain.Travel.GameDifficulty.Easy,
-            WildBunch.Domain.Game.SaltSource.CreateFixed(string.Empty));
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Easy, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed(string.Empty));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(town.Id);
+        session.CompleteGameStart(WildBunch.Domain.Economy.Wallet.Starting(25m), inventory: null);
         session.MarkEventsCommitted();
         return session;
     }

@@ -40,9 +40,9 @@ public sealed class GetSessionDevContextHandlerTests
         Assert.Equal(session.CurrentTown.TownName, result.CurrentTownName);
         Assert.Equal(session.CurrentActionContext.ToString(), result.CurrentActionContext);
         Assert.False(result.HasActiveJourney);
-        // Seed code is honestly reported as not retained
-        Assert.False(result.SeedCodeRetained);
-        Assert.Null(result.SeedCodeText);
+        // Seed code is retained from the canonical start flow
+        Assert.True(result.SeedCodeRetained);
+        Assert.Equal("test-seed", result.SeedCodeText);
         // Travel rules facts are derived from the session's TravelRulesProfile
         Assert.NotNull(result.TravelRules);
         Assert.Equal(session.TravelRules.CanteenCapacity, result.TravelRules!.CanteenCapacity);
@@ -131,9 +131,10 @@ public sealed class GetSessionDevContextHandlerTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Easy, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed(string.Empty));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(town.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory: null);
         session.MarkEventsCommitted();
         return session;
     }

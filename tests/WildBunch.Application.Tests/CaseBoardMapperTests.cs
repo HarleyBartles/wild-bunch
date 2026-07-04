@@ -361,6 +361,10 @@ public sealed class CaseBoardMapperTests
                 new InventoryItem(ItemKind.RevolverAmmo, 2)
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: inventory);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart(wallet: null, inventory: inventory);
+        return session;
     }
 }

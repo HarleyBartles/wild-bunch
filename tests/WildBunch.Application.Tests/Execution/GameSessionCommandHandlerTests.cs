@@ -137,7 +137,11 @@ public sealed class GameSessionCommandHandlerTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private sealed class TestCommandHandler : GameSessionCommandHandler

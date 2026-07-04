@@ -117,7 +117,11 @@ public sealed class TravelToTownHandlerTests
                 new DomainInventoryItem(DomainItemKind.Canteen, 1)
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 }
 
