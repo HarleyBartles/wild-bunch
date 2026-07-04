@@ -38,7 +38,9 @@ public sealed partial class GameSessionJsonSerializer
                 session.GameEntropy,
                 SaltSourceSnapshot.FromDomain(session.SaltSource),
                 session.SeedCode,
-                TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
+                session.TownVisitStateOrNull is { } townVisit
+                    ? TownVisitStateSnapshot.FromDomain(townVisit)
+                    : null,
                 PlayerSnapshot.FromDomain(session.Player),
                 global::WildBunch.Domain.World.WorldSnapshot.FromDomain(session.World),
                 CaseFileSnapshot.FromDomain(session.CaseFile),
@@ -62,7 +64,7 @@ public sealed partial class GameSessionJsonSerializer
             var pursuitState = PursuitStateSnapshot.ToDomain(PursuitState);
             var clock = GameClockSnapshot.ToDomain(Clock);
             var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey.ToDomain());
-            var townVisit = CurrentTownVisit?.ToDomain() ?? new TownVisitState(player.CurrentTownId);
+            var townVisit = CurrentTownVisit?.ToDomain();
             var session = GameSessionRehydrator.Create(
                 new GameSessionId(Id),
                 player,
