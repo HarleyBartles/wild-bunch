@@ -35,6 +35,7 @@ public sealed partial class GameSessionJsonSerializer
     {
         nameof(PlayerSetupCompleted) => typeof(PlayerSetupCompleted),
         nameof(WorldGenerated) => typeof(WorldGenerated),
+        nameof(CaseFileGenerated) => typeof(CaseFileGenerated),
         nameof(StartingTownSelected) => typeof(StartingTownSelected),
         nameof(PrologueViewed) => typeof(PrologueViewed),
         nameof(GameStarted) => typeof(GameStarted),
