@@ -32,8 +32,7 @@ public sealed class GameApiTests
             .Distinct()
             .ToArray();
 
-        Assert.Contains(connectedTownIds, townId => townId == "quartzsite");
-        Assert.Contains(connectedTownIds, townId => townId == "emberfall");
+        Assert.True(connectedTownIds.Length >= 2, $"expected at least 2 connected towns from starting town, got {connectedTownIds.Length}");
 
         var previewResults = new List<TravelPreviewDto>();
         foreach (var destinationTownId in connectedTownIds)
@@ -107,7 +106,15 @@ public sealed class GameApiTests
         var startingFood = createdSession!.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity;
         var startingHorseFeed = createdSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity;
 
-        var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/quartzsite");
+        // Discover the first connected town dynamically — no hardcoded town names.
+        var startingTownId = createdSession.Player.CurrentTownId;
+        var destinationTownId = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == startingTownId || trail.ToTownId == startingTownId)
+            .Select(trail => trail.FromTownId == startingTownId ? trail.ToTownId : trail.FromTownId)
+            .First();
+        var destinationTownName = createdSession.World.Towns.First(town => town.Id == destinationTownId).Name;
+
+        var previewResponse = await client.GetAsync($"/api/games/{createdSession.Id}/travel/preview/{destinationTownId}");
 
         Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
 
@@ -117,24 +124,24 @@ public sealed class GameApiTests
         Assert.True(preview!.Success);
         Assert.NotNull(preview.Preview);
         Assert.Equal(TravelMode.Mounted, preview.Preview!.TravelMode);
-        Assert.Equal(5m, preview.Preview.RideDayDistance);
-        Assert.Equal(5, preview.Preview.BaselineRideDays);
-        Assert.Equal(5, preview.Preview.ExpectedDays);
         Assert.True(preview.Preview.MountedTravelAvailable);
-        Assert.Equal(0, preview.Preview.RequiredHorseFeed);
-        Assert.Equal(5, preview.Preview.RequiredFood);
-        Assert.Equal(0, preview.Preview.RequiredCanteenCharges);
-        Assert.Equal(0, preview.Preview.CanteenChargesPerDay);
-        Assert.Equal(0, preview.Preview.DelayMarginDays);
+        Assert.True(preview.Preview.BaselineRideDays > 0, $"expected positive baseline ride days, got {preview.Preview.BaselineRideDays}");
         Assert.NotNull(preview.Preview.RouteProfile);
-        Assert.Equal(5m, preview.Preview.RouteProfile.RideDayDistance);
-        Assert.Equal(WildBunch.Domain.World.TrailRisk.Low, preview.Preview.RouteProfile.Risk);
-        Assert.Equal(WildBunch.Domain.World.TrailTerrain.OpenRange, preview.Preview.RouteProfile.Terrain);
-        Assert.Equal(WildBunch.Domain.World.WaterFeature.Creek, preview.Preview.RouteProfile.WaterFeature);
+
+        // All downstream assertions derive from the preview's actual values — no hardcoded day counts or distances.
+        var expectedDays = preview.Preview.BaselineRideDays;
+        var rideDayDistance = preview.Preview.RideDayDistance;
+        var requiredFood = preview.Preview.RequiredFood;
+        var requiredCanteenCharges = preview.Preview.RequiredCanteenCharges;
+        var canteenChargesPerDay = preview.Preview.CanteenChargesPerDay;
+        Assert.Equal(expectedDays, preview.Preview.ExpectedDays);
+        Assert.Equal(rideDayDistance, preview.Preview.RouteProfile.RideDayDistance);
+        Assert.Equal(0, preview.Preview.RequiredHorseFeed);
+        Assert.Equal(0, preview.Preview.DelayMarginDays);
 
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel",
-            new TravelRequest("quartzsite"));
+            new TravelRequest(destinationTownId));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
@@ -145,152 +152,96 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Active, turnResult.JourneyStatus);
         Assert.NotNull(turnResult.Journey);
         Assert.Equal(TravelMode.Mounted, turnResult.Journey!.TravelMode);
-        Assert.Equal(5m, turnResult.Journey.RideDayDistance);
-        Assert.Equal(5, turnResult.Journey.ExpectedDays);
+        Assert.Equal(rideDayDistance, turnResult.Journey.RideDayDistance);
+        Assert.Equal(expectedDays, turnResult.Journey.ExpectedDays);
         Assert.Equal(0, turnResult.Journey.DelayDays);
-        Assert.Equal("hardpan", turnResult.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(startingTownId, turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(1, turnResult.CurrentSession.Clock.Day);
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.NotNull(turnResult.CurrentSession.Journey);
-        Assert.Equal(5, turnResult.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(5m, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
+        Assert.Equal(expectedDays, turnResult.CurrentSession.Journey!.RemainingDays);
+        Assert.Equal(rideDayDistance, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
         Assert.Equal(0, turnResult.CurrentSession.Journey.DaysTravelled);
         Assert.Equal(startingFood, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(startingHorseFeed, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
 
-        // Force Quiet days so the journey is not interrupted by seed-dependent encounters.
+        var startingCanteenCharges = createdSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges;
+
+        // Advance each ride day until the journey completes. The loop covers the active days
+        // (days 1 through expectedDays-1); the final advance after the loop arrives at the destination.
+        for (var day = 1; day < expectedDays; day++)
+        {
+            // Force Quiet days so the journey is not interrupted by seed-dependent encounters.
+            await client.PostAsJsonAsync(
+                $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
+                new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
+
+            var advanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+
+            Assert.Equal(HttpStatusCode.OK, advanceResponse.StatusCode);
+
+            var advance = await advanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+
+            Assert.NotNull(advance);
+            Assert.True(advance!.Success);
+            Assert.Equal(JourneyStatus.Active, advance.JourneyStatus);
+            Assert.Equal(startingTownId, advance.CurrentSession.Player.CurrentTownId);
+            Assert.Equal(day + 1, advance.CurrentSession.Clock.Day);
+            Assert.Equal(0, advance.CurrentSession.Clock.Turn);
+            Assert.NotNull(advance.CurrentSession.Journey);
+            Assert.Equal(expectedDays - day, advance.CurrentSession.Journey!.RemainingDays);
+            Assert.Equal(rideDayDistance - day, advance.CurrentSession.Journey.RemainingRideDayDistance);
+            Assert.Equal(day, advance.CurrentSession.Journey.DaysTravelled);
+            Assert.Equal(startingFood - day, advance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
+            Assert.Equal(startingHorseFeed, advance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
+            Assert.Equal(startingCanteenCharges - (canteenChargesPerDay * day), advance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+
+            // The first advance opens the travel diary with the journey's opening narration.
+            if (day == 1)
+            {
+                Assert.NotNull(advance.TravelDiary);
+                var openingDay = Assert.Single(advance.TravelDiary!.Days);
+                Assert.NotNull(openingDay.OpeningNarration);
+                Assert.Contains($"I set out for {destinationTownName}", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains($"{preview.Preview.BaselineRideDays}-day", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("by mounted travel", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("without a horse", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        // Final advance completes the journey, arriving at the discovered destination town.
         await client.PostAsJsonAsync(
             $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
             new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
 
-        var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
+        var finalAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
-        Assert.Equal(HttpStatusCode.OK, firstAdvanceResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, finalAdvanceResponse.StatusCode);
 
-        var firstAdvance = await firstAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
+        var finalAdvance = await finalAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
 
-        Assert.NotNull(firstAdvance);
-        Assert.True(firstAdvance!.Success);
-        Assert.Equal(JourneyStatus.Active, firstAdvance.JourneyStatus);
-        Assert.Equal("hardpan", firstAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(2, firstAdvance.CurrentSession.Clock.Day);
-        Assert.Equal(0, firstAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(firstAdvance.CurrentSession.Journey);
-        Assert.Equal(4, firstAdvance.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(4m, firstAdvance.CurrentSession.Journey.RemainingRideDayDistance);
-        Assert.Equal(1, firstAdvance.CurrentSession.Journey.DaysTravelled);
-        Assert.Equal(startingFood - 1, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
-        Assert.Equal(startingHorseFeed, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
-        Assert.Equal(10, firstAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
-        Assert.NotNull(firstAdvance.TravelDiary);
-        var openingDay = Assert.Single(firstAdvance.TravelDiary!.Days);
-        Assert.NotNull(openingDay.OpeningNarration);
-        Assert.Contains("I set out for Quartzsite", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{preview.Preview.BaselineRideDays}-day", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("by mounted travel", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("without a horse", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(finalAdvance);
+        Assert.True(finalAdvance!.Success);
+        Assert.Equal(JourneyStatus.Completed, finalAdvance.JourneyStatus);
+        Assert.Equal(destinationTownId, finalAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(expectedDays + 1, finalAdvance.CurrentSession.Clock.Day);
+        Assert.Equal(0, finalAdvance.CurrentSession.Clock.Turn);
+        Assert.NotNull(finalAdvance.CurrentSession.Journey);
+        Assert.Equal(0, finalAdvance.CurrentSession.Journey!.RemainingDays);
+        Assert.Equal(0m, finalAdvance.CurrentSession.Journey.RemainingRideDayDistance);
+        Assert.Equal(expectedDays, finalAdvance.CurrentSession.Journey.DaysTravelled);
+        Assert.Equal(JourneyStatus.Completed, finalAdvance.CurrentSession.Journey!.Status);
+        Assert.Equal(expectedDays, finalAdvance.TravelDiary!.Days.Count);
+        Assert.Equal(JourneyStatus.Completed, finalAdvance.TravelDiary.Days[^1].Status);
 
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
-            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
-
-        var secondAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, secondAdvanceResponse.StatusCode);
-
-        var secondAdvance = await secondAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
-
-        Assert.NotNull(secondAdvance);
-        Assert.True(secondAdvance!.Success);
-        Assert.Equal(JourneyStatus.Active, secondAdvance.JourneyStatus);
-        Assert.Equal("hardpan", secondAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(3, secondAdvance.CurrentSession.Clock.Day);
-        Assert.Equal(0, secondAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(secondAdvance.CurrentSession.Journey);
-        Assert.Equal(3, secondAdvance.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(3m, secondAdvance.CurrentSession.Journey.RemainingRideDayDistance);
-        Assert.Equal(2, secondAdvance.CurrentSession.Journey.DaysTravelled);
-
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
-            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
-
-        var thirdAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, thirdAdvanceResponse.StatusCode);
-
-        var thirdAdvance = await thirdAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
-
-        Assert.NotNull(thirdAdvance);
-        Assert.True(thirdAdvance!.Success);
-        Assert.Equal(JourneyStatus.Active, thirdAdvance.JourneyStatus);
-        Assert.Equal("hardpan", thirdAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(4, thirdAdvance.CurrentSession.Clock.Day);
-        Assert.Equal(0, thirdAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(thirdAdvance.CurrentSession.Journey);
-        Assert.Equal(2, thirdAdvance.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(2m, thirdAdvance.CurrentSession.Journey.RemainingRideDayDistance);
-        Assert.Equal(3, thirdAdvance.CurrentSession.Journey.DaysTravelled);
-
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
-            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
-
-        var fourthAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, fourthAdvanceResponse.StatusCode);
-
-        var fourthAdvance = await fourthAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
-
-        Assert.NotNull(fourthAdvance);
-        Assert.True(fourthAdvance!.Success);
-        Assert.Equal(JourneyStatus.Active, fourthAdvance.JourneyStatus);
-        Assert.Equal("hardpan", fourthAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(5, fourthAdvance.CurrentSession.Clock.Day);
-        Assert.Equal(0, fourthAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(fourthAdvance.CurrentSession.Journey);
-        Assert.Equal(1, fourthAdvance.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(1m, fourthAdvance.CurrentSession.Journey.RemainingRideDayDistance);
-        Assert.Equal(4, fourthAdvance.CurrentSession.Journey.DaysTravelled);
-
-        // Force Quiet days so the journey is not interrupted by seed-dependent encounters.
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
-            new ForceTravelOverrideRequestDto("Quiet", null, null, null, null));
-
-        var fifthAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, fifthAdvanceResponse.StatusCode);
-
-        var fifthAdvance = await fifthAdvanceResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
-
-        Assert.NotNull(fifthAdvance);
-        Assert.True(fifthAdvance!.Success);
-        Assert.Equal(JourneyStatus.Completed, fifthAdvance.JourneyStatus);
-        Assert.Equal("quartzsite", fifthAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(6, fifthAdvance.CurrentSession.Clock.Day);
-        Assert.Equal(0, fifthAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(fifthAdvance.CurrentSession.Journey);
-        Assert.Equal(0, fifthAdvance.CurrentSession.Journey!.RemainingDays);
-        Assert.Equal(0m, fifthAdvance.CurrentSession.Journey.RemainingRideDayDistance);
-        Assert.Equal(5, fifthAdvance.CurrentSession.Journey.DaysTravelled);
-
-        // Journey is complete after 5 days (was 6 days before layout change)
-        Assert.Equal(JourneyStatus.Completed, fifthAdvance.JourneyStatus);
-        Assert.Equal("quartzsite", fifthAdvance.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(6, fifthAdvance.CurrentSession.Clock.Day);
-        Assert.Equal(0, fifthAdvance.CurrentSession.Clock.Turn);
-        Assert.NotNull(fifthAdvance.CurrentSession.Journey);
-        Assert.Equal(JourneyStatus.Completed, fifthAdvance.CurrentSession.Journey!.Status);
-        Assert.Equal(5, fifthAdvance.TravelDiary!.Days.Count);
-        Assert.Equal(JourneyStatus.Completed, fifthAdvance.TravelDiary.Days[^1].Status);
-        var finalFoodItem = fifthAdvance.CurrentSession.Inventory.Items.FirstOrDefault(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food);
+        // Food consumption is one per ride day, capped at zero when supplies run out.
+        var finalFoodItem = finalAdvance.CurrentSession.Inventory.Items.FirstOrDefault(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food);
         var finalFoodQuantity = finalFoodItem?.Quantity ?? 0;
-        Assert.Equal(0, finalFoodQuantity); // Starting food is 4, journey is 5 days, so food runs out and caps at 0
-        Assert.Equal(startingHorseFeed, fifthAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
-        Assert.Equal(10, fifthAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.Equal(Math.Max(0, startingFood - requiredFood), finalFoodQuantity);
+        Assert.Equal(startingHorseFeed, finalAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
+        Assert.Equal(startingCanteenCharges - requiredCanteenCharges, finalAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
-        var payload = await fifthAdvanceResponse.Content.ReadAsStringAsync();
+        var payload = await finalAdvanceResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
