@@ -163,7 +163,6 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         var fromEvents = GameSession.RehydrateFromEvents(
             session.Id,
             fromSnapshot!.World,
-            fromSnapshot.CaseFile,
             events);
 
         // State equality proof

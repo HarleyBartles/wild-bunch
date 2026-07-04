@@ -295,7 +295,7 @@ public sealed class DevSaloonOverrideTests
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
         var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         // Critical replay-safety proof: override is null after replay
         Assert.Null(rehydrated.PendingDevSaloonOverride);

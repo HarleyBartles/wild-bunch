@@ -23,7 +23,6 @@ public sealed class TravelReplayEqualityTests
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.NotNull(replayed.Journey);
@@ -48,7 +47,6 @@ public sealed class TravelReplayEqualityTests
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.Equal(commandSession.Player.Health, replayed.Player.Health);
@@ -81,7 +79,6 @@ public sealed class TravelReplayEqualityTests
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
@@ -115,7 +112,6 @@ public sealed class TravelReplayEqualityTests
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.Equal(commandSession.Player.Health, replayed.Player.Health);

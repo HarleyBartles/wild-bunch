@@ -82,7 +82,7 @@ public sealed class GameSessionDevDifficultyTests
             .Concat(session.CommittedEvents.OfType<IDomainEvent>())
             .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         // The GameStarted event carries Easy, but the DevDifficultyForced
         // event must override it to Challenging during replay.

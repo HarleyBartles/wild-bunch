@@ -76,7 +76,7 @@ public sealed class GameSessionDevEntropyTests
             .Concat(session.CommittedEvents.OfType<IDomainEvent>())
             .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         // The GameStarted event carries Classic, but the DevEntropyChanged
         // event must override it to Wild during replay.

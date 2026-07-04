@@ -78,7 +78,6 @@ public class GameSessionEventSourcingTests
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id,
             world,
-            caseFile,
             events);
 
         Assert.Equal(seedCode, rehydrated.SeedCode);
@@ -88,7 +87,6 @@ public class GameSessionEventSourcingTests
     public void RehydrateFromEvents_WithOldGameStarted_Handles_Null_SeedCode()
     {
         var world = CreateWorld();
-        var caseFile = CreateCaseFile();
 
         // Simulate an old GameStarted event without SeedCode
         var oldGameStarted = new GameStarted
@@ -108,7 +106,6 @@ public class GameSessionEventSourcingTests
         var rehydrated = GameSession.RehydrateFromEvents(
             GameSessionId.New(),
             world,
-            caseFile,
             new[] { oldGameStarted });
 
         Assert.Null(rehydrated.SeedCode);
@@ -186,7 +183,6 @@ public class GameSessionEventSourcingTests
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id,
             session.World,
-            session.CaseFile,
             events);
 
         Assert.Equal(session.Id, rehydrated.Id);
@@ -215,7 +211,6 @@ public class GameSessionEventSourcingTests
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id,
             session.World,
-            session.CaseFile,
             events);
 
         Assert.Equal(session.Player.Wallet.Cash, rehydrated.Player.Wallet.Cash);
@@ -243,7 +238,6 @@ public class GameSessionEventSourcingTests
         var rehydrated = GameSession.RehydrateFromEvents(
             commandSession.Id,
             commandSession.World,
-            commandSession.CaseFile,
             events);
 
         // State equality proof
@@ -257,12 +251,10 @@ public class GameSessionEventSourcingTests
     public void RehydrateFromEvents_Throws_On_Empty_Event_Stream()
     {
         var world = CreateWorld();
-        var caseFile = CreateCaseFile();
         Assert.Throws<ArgumentException>(() =>
             GameSession.RehydrateFromEvents(
                 GameSessionId.New(),
                 world,
-                caseFile,
                 Array.Empty<IDomainEvent>()));
     }
 
@@ -270,7 +262,6 @@ public class GameSessionEventSourcingTests
     public void RehydrateFromEvents_Throws_When_First_Event_Is_Not_GameStarted()
     {
         var world = CreateWorld();
-        var caseFile = CreateCaseFile();
         var events = new IDomainEvent[]
         {
             new StoreItemPurchased
@@ -288,7 +279,6 @@ public class GameSessionEventSourcingTests
             GameSession.RehydrateFromEvents(
                 GameSessionId.New(),
                 world,
-                caseFile,
                 events));
     }
 
@@ -317,7 +307,6 @@ public class GameSessionEventSourcingTests
             GameSession.RehydrateFromEvents(
                 GameSessionId.New(),
                 CreateWorld(),
-                CreateCaseFile(),
                 events));
     }
 
@@ -327,7 +316,8 @@ public class GameSessionEventSourcingTests
         // Create a session with a public clue. The factory calls MarkEventsCommitted(),
         // so we need to get the GameStarted event by creating a fresh session for events.
         // Approach: create the session, perform the investigation, collect ALL events
-        // (GameStarted + InvestigationPerformed) by creating a parallel session for events.
+        // (GameStarted + CaseFileGenerated + InvestigationPerformed) by creating a
+        // parallel session for events.
         var session = TestSessionFactory.CreateWithPublicClue(
             InvestigationSourceKind.LocalGossip, "A dusty boot print.");
 
@@ -336,8 +326,11 @@ public class GameSessionEventSourcingTests
         var investigationEvents = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        // Build the full event stream: GameStarted + InvestigationPerformed
-        // We reconstruct the GameStarted event from the session's initial state
+        // Build the full event stream: GameStarted + CaseFileGenerated + InvestigationPerformed.
+        // We reconstruct the GameStarted event from the session's initial state.
+        // The CaseFileGenerated event carries the case file snapshot (including the
+        // now-known clue) so the case file can be reconstructed during replay without
+        // being passed in externally.
         var gameStartedEvent = new GameStarted
         {
             PlayerName = session.Player.Name,
@@ -350,17 +343,18 @@ public class GameSessionEventSourcingTests
             SaltSource = session.SaltSource,
             GameEntropy = session.GameEntropy
         };
-        var allEvents = new List<IDomainEvent> { gameStartedEvent };
+        var caseFileEvent = new CaseFileGenerated
+        {
+            CaseFile = CaseFileSnapshot.FromDomain(session.CaseFile)
+        };
+        var allEvents = new List<IDomainEvent> { gameStartedEvent, caseFileEvent };
         allEvents.AddRange(investigationEvents);
 
-        // Create a FRESH baseline CaseFile with the same public clue (not yet revealed)
-        var freshBaselineCaseFile = TestSessionFactory.CreateBaselineCaseFileFor(session);
-
-        // Replay from events into the FRESH baseline
+        // Replay from events — the CaseFile is now reconstructed from the
+        // CaseFileGenerated event in the stream, not passed in externally.
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id,
             session.World,
-            freshBaselineCaseFile,
             allEvents);
 
         // The replayed session must have discovered the clue from the event

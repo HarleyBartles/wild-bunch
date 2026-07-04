@@ -101,7 +101,7 @@ public sealed class BountySaloonEventSourcingTests
         var turnAfterCommand = session.Clock.Turn;
 
         var replayed = GameSession.RehydrateFromEvents(
-            session.Id, session.World, TestSessionFactory.CreateBaselineCaseFileFor(session),
+            session.Id, session.World,
             events);
 
         Assert.Equal(activePoiIdAfterCommand, replayed.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);

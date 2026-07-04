@@ -99,7 +99,6 @@ public sealed class GameSessionArchiveTests
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id,
             session.World,
-            CreateCaseFile(),
             session.CommittedEvents);
 
         Assert.Equal(GameStatus.Archived, rehydrated.Status);

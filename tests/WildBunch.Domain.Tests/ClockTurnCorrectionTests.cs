@@ -100,7 +100,7 @@ public sealed class ClockTurnCorrectionTests
         var turnAfterCommands = session.Clock.Turn;
 
         var replayed = GameSession.RehydrateFromEvents(
-            session.Id, session.World, TestSessionFactory.CreateBaselineCaseFileFor(session),
+            session.Id, session.World,
             events);
 
         Assert.Equal(contextAfterCommands, replayed.CurrentActionContext);

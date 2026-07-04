@@ -20,7 +20,7 @@ public class StartFlowEventSourcingTests
     {
         var session = CreateSetupSession();
 
-        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.Equal(3, session.UncommittedEvents.Count);
         var setupEvent = Assert.IsType<PlayerSetupCompleted>(session.UncommittedEvents[0]);
         Assert.Equal("Ranger Vale", setupEvent.PlayerName);
         Assert.Equal(GameDifficulty.Standard, setupEvent.GameDifficulty);
@@ -33,10 +33,20 @@ public class StartFlowEventSourcingTests
     {
         var session = CreateSetupSession();
 
-        Assert.Equal(2, session.UncommittedEvents.Count);
+        Assert.Equal(3, session.UncommittedEvents.Count);
         var worldEvent = Assert.IsType<WorldGenerated>(session.UncommittedEvents[1]);
         Assert.Equal("test-seed-12345", worldEvent.SeedCode);
         Assert.NotNull(worldEvent.World);
+    }
+
+    [Fact]
+    public void StartSetup_Produces_CaseFileGenerated_AsUncommitted()
+    {
+        var session = CreateSetupSession();
+
+        Assert.Equal(3, session.UncommittedEvents.Count);
+        var caseFileEvent = Assert.IsType<CaseFileGenerated>(session.UncommittedEvents[2]);
+        Assert.NotNull(caseFileEvent.CaseFile);
     }
 
     [Fact]
@@ -162,7 +172,7 @@ public class StartFlowEventSourcingTests
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.Equal(StartFlowPhase.SetupComplete, rehydrated.StartFlowPhase);
         Assert.Equal("test-seed-12345", rehydrated.SeedCode);
@@ -181,7 +191,7 @@ public class StartFlowEventSourcingTests
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.Equal(StartFlowPhase.PrologueViewed, rehydrated.StartFlowPhase);
     }
@@ -200,7 +210,7 @@ public class StartFlowEventSourcingTests
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.Equal(StartFlowPhase.GameStarted, rehydrated.StartFlowPhase);
         Assert.Equal(new TownId("pinecross"), rehydrated.Player.CurrentTownId);
@@ -218,7 +228,7 @@ public class StartFlowEventSourcingTests
         session.MarkEventsCommitted();
 
         // This should not throw even though there is no GameStarted event
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.NotNull(rehydrated);
         Assert.Equal("Ranger Vale", rehydrated.Player.Name);

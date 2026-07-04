@@ -340,7 +340,6 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var fromEvents = GameSession.RehydrateFromEvents(
             session.Id,
             fromSnapshot!.World,
-            fromSnapshot.CaseFile,
             events);
 
         // State equality proof

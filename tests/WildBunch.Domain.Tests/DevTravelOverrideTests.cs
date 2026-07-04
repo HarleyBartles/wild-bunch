@@ -135,7 +135,7 @@ public sealed class DevTravelOverrideTests
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
         var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         Assert.NotNull(rehydrated.PendingDevTravelOverride);
         Assert.Equal(TravelDayEncounterCategory.Foe, rehydrated.PendingDevTravelOverride!.ForcedCategory);
@@ -155,7 +155,7 @@ public sealed class DevTravelOverrideTests
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
         var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         // Critical replay-safety proof: override is null after replay
         Assert.Null(rehydrated.PendingDevTravelOverride);
@@ -171,7 +171,7 @@ public sealed class DevTravelOverrideTests
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
         var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         Assert.Null(rehydrated.PendingDevTravelOverride);
     }
