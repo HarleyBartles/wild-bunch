@@ -79,8 +79,12 @@ internal sealed record ScenarioSeedFixture(
 
     private GameSession CreateSession()
     {
-        return new SeededNewGameFactory(new DeterministicSaltSourceFactory())
-            .Create("Fixture Validator", GameDifficulty, setupSeedCode: SeedCode, gameEntropy: GameEntropy);
+        return CanonicalStartFlow.StartGame(
+            new SeededNewGameFactory(new DeterministicSaltSourceFactory()),
+            "Fixture Validator",
+            GameDifficulty,
+            SeedCode,
+            GameEntropy);
     }
 
     private static TravelPreviewResultDto CreatePreview(GameSession session, string destinationTownId)

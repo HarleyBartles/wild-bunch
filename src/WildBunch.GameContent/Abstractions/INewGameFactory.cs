@@ -11,13 +11,6 @@ namespace WildBunch.GameContent.Abstractions;
 
 public interface INewGameFactory
 {
-    GameSession Create(
-        string playerName,
-        GameDifficulty gameDifficulty = GameDifficulty.Standard,
-        string? setupSeedCode = null,
-        GameEntropy gameEntropy = GameEntropy.Classic,
-        string? startingTownId = null);
-
     /// <summary>
     /// Resolves the world and case file from the seed code without creating a game session.
     /// Used by the start flow to create a setup-phase session that knows the world

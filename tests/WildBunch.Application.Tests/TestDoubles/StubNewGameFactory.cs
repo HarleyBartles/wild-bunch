@@ -25,23 +25,6 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<GameEntropy> RequestedEntropies { get; } = [];
 
-    public List<string?> RequestedStartingTownIds { get; } = [];
-
-    public GameSession Create(
-        string playerName,
-        GameDifficulty GameDifficulty = GameDifficulty.Standard,
-        string? setupSeedCode = null,
-        GameEntropy entropy = GameEntropy.Classic,
-        string? startingTownId = null)
-    {
-        RequestedPlayerNames.Add(playerName);
-        RequestedGameDifficulties.Add(GameDifficulty);
-        RequestedSetupSeedCodes.Add(setupSeedCode);
-        RequestedEntropies.Add(entropy);
-        RequestedStartingTownIds.Add(startingTownId);
-        return _sessionToReturn;
-    }
-
     public GameSession CreatedSession => _sessionToReturn;
 
     public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(

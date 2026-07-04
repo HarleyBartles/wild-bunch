@@ -169,7 +169,8 @@ internal static class TravelTestSeedCatalog
     {
         var seedCode = ResolveSeedCode(entry);
         var factory = new SeededNewGameFactory(new FixedSaltSourceFactory());
-        return factory.Create(
+        return CanonicalStartFlow.StartGame(
+            factory,
             playerName,
             entry.GameDifficulty,
             seedCode,
@@ -185,7 +186,8 @@ internal static class TravelTestSeedCatalog
     {
         var seedCode = ResolveSeedCode(entry);
         var factory = new SeededNewGameFactory();
-        return factory.Create(
+        return CanonicalStartFlow.StartGame(
+            factory,
             playerName,
             entry.GameDifficulty,
             seedCode,
@@ -200,7 +202,8 @@ internal static class TravelTestSeedCatalog
     {
         var seedCode = ResolveSeedCode(entry);
         var factory = new SeededNewGameFactory(new FixedSaltSourceFactory());
-        return factory.Create(
+        return CanonicalStartFlow.StartGame(
+            factory,
             playerName,
             entry.GameDifficulty,
             seedCode,
