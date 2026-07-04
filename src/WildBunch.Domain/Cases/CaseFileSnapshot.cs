@@ -11,7 +11,16 @@ public sealed record CaseFileSnapshot(
     string TrueCulpritId,
     CaseOpeningLead OpeningLead,
     IReadOnlyList<ClueSnapshot> Clues,
-    IReadOnlyList<ClueSnapshot> PublicClues)
+    IReadOnlyList<ClueSnapshot> PublicClues,
+    string? AccusationId,
+    IReadOnlyList<string> DiscoveredSuspectIds,
+    int KillerReleaseThreshold,
+    int KillerReleaseProgress,
+    IReadOnlyList<WarrantSnapshot> KnownWarrants,
+    IReadOnlyList<WarrantSnapshot> PublicWarrants,
+    IReadOnlyList<SuspectTurfAssignmentSnapshot> SuspectTurfAssignments,
+    IReadOnlyList<WantedSuspectConfrontationSnapshot> WantedSuspectConfrontations,
+    IReadOnlyList<SheriffTurnInSettlementSnapshot> SheriffTurnInSettlements)
 {
     public static CaseFileSnapshot FromDomain(CaseFile caseFile)
         => new(
@@ -19,16 +28,33 @@ public sealed record CaseFileSnapshot(
             caseFile.TrueCulpritId.Value,
             caseFile.OpeningLead,
             caseFile.KnownClues.Select<Clue, ClueSnapshot>(ClueSnapshot.FromDomain).ToArray(),
-            caseFile.PublicClues.Select<Clue, ClueSnapshot>(ClueSnapshot.FromDomain).ToArray());
+            caseFile.PublicClues.Select<Clue, ClueSnapshot>(ClueSnapshot.FromDomain).ToArray(),
+            caseFile.Accusation?.Value,
+            caseFile.DiscoveredSuspectIds.Select(s => s.Value).ToArray(),
+            caseFile.KillerReleaseThreshold,
+            caseFile.KillerReleaseProgress,
+            caseFile.KnownWarrants.Select<Warrant, WarrantSnapshot>(WarrantSnapshot.FromDomain).ToArray(),
+            caseFile.PublicWarrants.Select<Warrant, WarrantSnapshot>(WarrantSnapshot.FromDomain).ToArray(),
+            caseFile.SuspectTurfAssignments.Select<SuspectTurfAssignment, SuspectTurfAssignmentSnapshot>(SuspectTurfAssignmentSnapshot.FromDomain).ToArray(),
+            caseFile.WantedSuspectConfrontations.Select<WantedSuspectConfrontationState, WantedSuspectConfrontationSnapshot>(WantedSuspectConfrontationSnapshot.FromDomain).ToArray(),
+            caseFile.SheriffTurnInSettlements.Select<SheriffTurnInSettlementState, SheriffTurnInSettlementSnapshot>(SheriffTurnInSettlementSnapshot.FromDomain).ToArray());
 
     public CaseFile ToDomain()
         => new(
-            accusation: null,
+            accusation: AccusationId is null ? null : new SuspectId(AccusationId),
             suspects: Suspects.Select<SuspectSnapshot, Suspect>(s => s.ToDomain()).ToArray(),
             trueCulpritId: new SuspectId(TrueCulpritId),
             openingLead: OpeningLead,
             knownClues: Clues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray(),
-            publicClues: PublicClues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray());
+            discoveredSuspectIds: DiscoveredSuspectIds.Select(id => new SuspectId(id)),
+            publicClues: PublicClues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray(),
+            killerReleaseThreshold: KillerReleaseThreshold,
+            killerReleaseProgress: KillerReleaseProgress,
+            knownWarrants: KnownWarrants.Select<WarrantSnapshot, Warrant>(w => w.ToDomain()),
+            publicWarrants: PublicWarrants.Select<WarrantSnapshot, Warrant>(w => w.ToDomain()),
+            suspectTurfAssignments: SuspectTurfAssignments.Select<SuspectTurfAssignmentSnapshot, SuspectTurfAssignment>(s => s.ToDomain()),
+            wantedSuspectConfrontations: WantedSuspectConfrontations.Select<WantedSuspectConfrontationSnapshot, WantedSuspectConfrontationState>(w => w.ToDomain()),
+            sheriffTurnInSettlements: SheriffTurnInSettlements.Select<SheriffTurnInSettlementSnapshot, SheriffTurnInSettlementState>(s => s.ToDomain()));
 }
 
 public sealed record SuspectSnapshot(
@@ -184,4 +210,133 @@ public sealed record ClueDirectionAnchorSnapshot(string Label, string? Movement,
 
     public ClueDirectionAnchor ToDomain()
         => new(Label, Movement, DestinationTownId is null ? null : new TownId(DestinationTownId), Route);
+}
+
+public sealed record WarrantSnapshot(
+    string Id,
+    string TargetName,
+    WarrantTermsSnapshot Terms,
+    string Summary)
+{
+    public static WarrantSnapshot FromDomain(Warrant warrant)
+        => new(
+            warrant.Id.Value,
+            warrant.TargetName,
+            WarrantTermsSnapshot.FromDomain(warrant.Terms),
+            warrant.Summary);
+
+    public Warrant ToDomain()
+        => new(
+            new WarrantId(Id),
+            TargetName,
+            Terms.ToDomain(),
+            Summary);
+}
+
+public sealed record WarrantTermsSnapshot(
+    WarrantDisposition Disposition,
+    decimal BountyAmount,
+    IReadOnlyList<string> KnownAliases,
+    IReadOnlyList<string> KnownFeatures,
+    string IssuingSource,
+    InvestigationTargetKind TargetKind,
+    IReadOnlyList<OutlawGangId> GangAffiliations,
+    OutlawGangId? AdvancesGangPressureFor,
+    InvestigationSourceKind? SourceKind)
+{
+    public static WarrantTermsSnapshot FromDomain(WarrantTerms terms)
+        => new(
+            terms.Disposition,
+            terms.BountyAmount,
+            terms.KnownAliases.ToArray(),
+            terms.KnownFeatures.ToArray(),
+            terms.IssuingSource,
+            terms.TargetKind,
+            terms.GangAffiliations.ToArray(),
+            terms.AdvancesGangPressureFor,
+            terms.SourceKind);
+
+    public WarrantTerms ToDomain()
+        => new(
+            Disposition,
+            BountyAmount,
+            KnownAliases,
+            KnownFeatures,
+            IssuingSource,
+            TargetKind,
+            GangAffiliations,
+            AdvancesGangPressureFor,
+            SourceKind);
+}
+
+public sealed record SuspectTurfAssignmentSnapshot(string SuspectId, string TurfTownId)
+{
+    public static SuspectTurfAssignmentSnapshot FromDomain(SuspectTurfAssignment assignment)
+        => new(assignment.SuspectId.Value, assignment.TurfTownId.Value);
+
+    public SuspectTurfAssignment ToDomain()
+        => new(new SuspectId(SuspectId), new TownId(TurfTownId));
+}
+
+public sealed record WantedSuspectConfrontationSnapshot(
+    string SuspectId,
+    string TargetName,
+    WarrantDisposition Disposition,
+    WantedSuspectConfrontationOutcome Outcome,
+    bool IsAlive,
+    bool IsSecured,
+    int Day,
+    int Turn)
+{
+    public static WantedSuspectConfrontationSnapshot FromDomain(WantedSuspectConfrontationState state)
+        => new(
+            state.SuspectId.Value,
+            state.TargetName,
+            state.Disposition,
+            state.Outcome,
+            state.IsAlive,
+            state.IsSecured,
+            state.Day,
+            state.Turn);
+
+    public WantedSuspectConfrontationState ToDomain()
+        => new(
+            new SuspectId(SuspectId),
+            TargetName,
+            Disposition,
+            Outcome,
+            IsAlive,
+            IsSecured,
+            Day,
+            Turn);
+}
+
+public sealed record SheriffTurnInSettlementSnapshot(
+    string SuspectId,
+    string TargetName,
+    WarrantDisposition Disposition,
+    bool IsAlive,
+    decimal BountyAmount,
+    int Day,
+    int Turn)
+{
+    public static SheriffTurnInSettlementSnapshot FromDomain(SheriffTurnInSettlementState state)
+        => new(
+            state.SuspectId.Value,
+            state.TargetName,
+            state.Disposition,
+            state.IsAlive,
+            state.BountyAmount,
+            state.Day,
+            state.Turn);
+
+    public SheriffTurnInSettlementState ToDomain()
+        => new(
+            new SuspectId(SuspectId),
+            TargetName,
+            Disposition,
+            IsAlive,
+            BountyAmount,
+            Day,
+            Turn);
 }

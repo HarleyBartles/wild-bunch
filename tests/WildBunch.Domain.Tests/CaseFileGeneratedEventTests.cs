@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
+using TownId = WildBunch.Domain.World.TownId;
 using Xunit;
 
 namespace WildBunch.Domain.Tests;
@@ -112,6 +113,131 @@ public sealed class CaseFileGeneratedEventTests
         Assert.Equal(publicClue.Id, restored.PublicClues[0].Id);
         Assert.Equal(publicClue.Description, restored.PublicClues[0].Description);
         Assert.Empty(restored.KnownClues);
+    }
+
+    [Fact]
+    public void CaseFileSnapshot_RoundTrip_Preserves_KnownWarrants()
+    {
+        var warrant = new Warrant(
+            new WarrantId("warrant-1"),
+            "Mira Cline",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                2500m,
+                new[] { "Red Wren" },
+                new[] { "Raven-feather pin" },
+                "Dodge City Marshal",
+                InvestigationTargetKind.TrueCulprit,
+                Array.Empty<OutlawGangId>(),
+                null),
+            "Wanted for a stage robbery.");
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[] { new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge) },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the trail."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[] { warrant });
+
+        var snapshot = CaseFileSnapshot.FromDomain(caseFile);
+        var restored = snapshot.ToDomain();
+
+        Assert.Single(restored.KnownWarrants);
+        Assert.Equal(warrant.Id, restored.KnownWarrants[0].Id);
+        Assert.Equal(warrant.TargetName, restored.KnownWarrants[0].TargetName);
+        Assert.Equal(warrant.Terms.BountyAmount, restored.KnownWarrants[0].Terms.BountyAmount);
+        Assert.Equal(warrant.Terms.Disposition, restored.KnownWarrants[0].Terms.Disposition);
+    }
+
+    [Fact]
+    public void CaseFileSnapshot_RoundTrip_Preserves_KillerReleaseGate()
+    {
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[] { new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge) },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the trail."),
+            knownClues: Array.Empty<Clue>(),
+            killerReleaseThreshold: 3,
+            killerReleaseProgress: 2);
+
+        var snapshot = CaseFileSnapshot.FromDomain(caseFile);
+        var restored = snapshot.ToDomain();
+
+        Assert.Equal(3, restored.KillerReleaseThreshold);
+        Assert.Equal(2, restored.KillerReleaseProgress);
+    }
+
+    [Fact]
+    public void CaseFileSnapshot_RoundTrip_Preserves_PublicWarrants()
+    {
+        var warrant = new Warrant(
+            new WarrantId("warrant-pub-1"),
+            "Mira Cline",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                2500m,
+                new[] { "Red Wren" },
+                new[] { "Raven-feather pin" },
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                new[] { OutlawGangIds.WildBunch },
+                OutlawGangIds.WildBunch,
+                InvestigationSourceKind.SheriffWarrants),
+            "Wanted for a Wild Bunch robbery.");
+
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[] { new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge) },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the trail."),
+            knownClues: Array.Empty<Clue>(),
+            publicWarrants: new[] { warrant });
+
+        var snapshot = CaseFileSnapshot.FromDomain(caseFile);
+        var restored = snapshot.ToDomain();
+
+        Assert.Single(restored.PublicWarrants);
+        Assert.Equal(warrant.Id, restored.PublicWarrants[0].Id);
+    }
+
+    [Fact]
+    public void CaseFileSnapshot_RoundTrip_Preserves_SuspectTurfAssignments()
+    {
+        var turf = new SuspectTurfAssignment(new SuspectId("suspect-1"), new TownId("pinecross"));
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[] { new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge) },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the trail."),
+            knownClues: Array.Empty<Clue>(),
+            suspectTurfAssignments: new[] { turf });
+
+        var snapshot = CaseFileSnapshot.FromDomain(caseFile);
+        var restored = snapshot.ToDomain();
+
+        Assert.Single(restored.SuspectTurfAssignments);
+        Assert.Equal(turf.SuspectId, restored.SuspectTurfAssignments[0].SuspectId);
+        Assert.Equal(turf.TurfTownId, restored.SuspectTurfAssignments[0].TurfTownId);
+    }
+
+    [Fact]
+    public void CaseFileSnapshot_RoundTrip_Preserves_DiscoveredSuspectIds()
+    {
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[] { new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge) },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the trail."),
+            knownClues: Array.Empty<Clue>(),
+            discoveredSuspectIds: new[] { new SuspectId("suspect-1") });
+
+        var snapshot = CaseFileSnapshot.FromDomain(caseFile);
+        var restored = snapshot.ToDomain();
+
+        Assert.Single(restored.DiscoveredSuspectIds);
+        Assert.Equal(new SuspectId("suspect-1"), restored.DiscoveredSuspectIds[0]);
     }
 
     /// <summary>
