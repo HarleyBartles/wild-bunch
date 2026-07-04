@@ -424,7 +424,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
             // Both stage BEFORE either commits. Both pass the stage-time check
             // because neither DbContext has seen the other's commit yet — the DB
-            // still has StreamVersion=1 for both queries inside StoreAsync.
+            // still has StreamVersion=6 for both queries inside StoreAsync.
             await repo1.StoreAsync(copy1);
             await repo2.StoreAsync(copy2);
 
@@ -433,7 +433,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             copy1.MarkEventsCommitted();
 
             // Second request's commit fails at the unique index on (StreamId, Sequence)
-            // because sequence 2 already exists. The UoW must translate this
+            // because sequence 7 already exists. The UoW must translate this
             // DbUpdateException to ConcurrencyException so the handler can retry.
             var thrown = await Assert.ThrowsAsync<ConcurrencyException>(() => uow2.CommitAsync());
             Assert.Contains("Concurrency conflict", thrown.Message, StringComparison.Ordinal);

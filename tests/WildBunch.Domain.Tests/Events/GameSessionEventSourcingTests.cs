@@ -481,6 +481,56 @@ public class GameSessionEventSourcingTests
         Assert.Empty(rehydrated.UncommittedEvents);
     }
 
+    [Fact(Skip = "Known parity gap: StartSetup creates phantom firstTown entry in TownStates when starting town differs")]
+    public void NonFirstStartingTown_TownStates_Parity_Between_Live_And_Rehydrated()
+    {
+        // Documents a pre-existing event-sourcing parity gap: when the starting town
+        // differs from world.Towns.First(), the live session's TownVisitState
+        // constructor creates a phantom entry for world.Towns.First() at visitNumber 1
+        // (because the constructor is called with the placeholder world's first town
+        // before WorldGenerated overwrites it), and Apply(GameStarted) then adds the
+        // actual starting town at visitNumber 1. The rehydrated session only has the
+        // actual starting town at visitNumber 1. The round-trip proof test does not
+        // catch this because it uses the first town as the starting town.
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var resolvedInventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 1),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1)
+        });
+
+        // Use the SECOND town (redmesa) as the starting town — not world.Towns.First()
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic,
+            "test-seed", SaltSource.CreateFixed("test-salt"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(new TownId("redmesa"));
+        session.CompleteGameStart(Wallet.Starting(25m), resolvedInventory);
+
+        // Collect all events (6 setup events)
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        // Rehydrate from events alone
+        var rehydrated = GameSession.RehydrateFromEvents(
+            session.Id,
+            world,
+            events);
+
+        // Assert TownStates parity — this will FAIL because the live session has a
+        // phantom firstTown entry (pinecross@1) in addition to the actual starting
+        // town (redmesa@1), while the rehydrated session only has redmesa@1.
+        Assert.Equal(session.CurrentTownVisit.TownStates.Count, rehydrated.CurrentTownVisit.TownStates.Count);
+
+        // Assert the same town IDs appear with the same visit numbers
+        var liveTownStates = session.CurrentTownVisit.TownStates
+            .Select(s => (s.TownId.Value, s.VisitNumber)).OrderBy(x => x.Value).ToArray();
+        var rehydratedTownStates = rehydrated.CurrentTownVisit.TownStates
+            .Select(s => (s.TownId.Value, s.VisitNumber)).OrderBy(x => x.Value).ToArray();
+        Assert.Equal(liveTownStates, rehydratedTownStates);
+    }
+
     /// <summary>
     /// Creates a session through the canonical start flow with a CaseFile that populates
     /// ALL 14 fields with non-empty values, WITHOUT calling MarkEventsCommitted so the

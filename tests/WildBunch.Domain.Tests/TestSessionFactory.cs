@@ -23,7 +23,7 @@ public static class TestSessionFactory
     /// <summary>
     /// Creates a fully-started game session using the canonical start flow
     /// (StartSetup → ViewPrologue → SelectStartingTown → CompleteGameStart).
-    /// This replaces the legacy StartNew convenience factory with the same
+    /// This replaces the legacy convenience factory (deleted in Plan 1e) with the same
     /// event-sourced flow used by production handlers, ensuring all test
     /// sessions are fully rehydratable from their event stream.
     /// </summary>
