@@ -27,7 +27,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private const string ArchivedBlockMessage = "This playthrough is archived.";
     private const decimal CitizenDeclarationFine = 10m;
 
-    private readonly TownAggregate _currentTown;
+    private TownAggregate? _currentTown;
     private readonly BountyLoop _bountyLoop;
     private readonly JourneyLoop _journeyLoop;
     private readonly ActionContextTracker _actionContextTracker = new();
@@ -66,13 +66,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = gameEntropy;
         SaltSource = saltSource;
         SeedCode = null; // Set by Apply(GameStarted) during event replay
-        _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
-        if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
+        // During setup phase (StartSetup, RehydrateFromEvents), currentTownVisit is null
+        // and the player's CurrentTownId is a placeholder. Defer TownAggregate creation
+        // until Apply(GameStarted) when the real starting town is known. For snapshot-based
+        // loads, currentTownVisit is non-null and we create _currentTown immediately.
+        if (currentTownVisit is not null)
         {
-            _currentTown.EnterTown(World.GetTown(player.CurrentTownId));
+            _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit);
+            if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
+            {
+                _currentTown.EnterTown(World.GetTown(player.CurrentTownId));
+            }
+            _currentTown.PrimeCurrentTown();
         }
-
-        _currentTown.PrimeCurrentTown();
 
         // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
         // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
@@ -159,9 +165,18 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public string? SeedCode { get; private set; }
 
-    public TownAggregate CurrentTown => _currentTown;
+    public TownAggregate CurrentTown => _currentTown
+        ?? throw new InvalidOperationException("No town has been selected yet. The current town is only available after GameStarted.");
 
-    public TownVisitState CurrentTownVisit => _currentTown.VisitState;
+    public TownVisitState CurrentTownVisit => _currentTown?.VisitState
+        ?? throw new InvalidOperationException("No town has been selected yet. The current town visit is only available after GameStarted.");
+
+    /// <summary>
+    /// Null-safe accessor for the town visit state. Returns null during the setup phase
+    /// (before GameStarted). Used by the persistence layer to avoid snapshotting a
+    /// phantom town visit state for setup-phase sessions.
+    /// </summary>
+    internal TownVisitState? TownVisitStateOrNull => _currentTown?.VisitState;
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(GameDifficulty);
 
@@ -1040,11 +1055,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = e.GameEntropy;
         SeedCode = e.SeedCode;
         StartFlowPhase = StartFlowPhase.GameStarted;
-        // The StartSetup placeholder uses the first town as the current town.
-        // When the actual starting town differs (selected via SelectStartingTown),
-        // update _currentTown to match. During rehydration the constructor already
-        // sets _currentTown from the GameStarted event, so this is a no-op there.
-        if (!_currentTown.TownId.Equals(e.StartingTownId))
+        // Create _currentTown now that the real starting town is known.
+        // During setup phase (StartSetup, RehydrateFromEvents), _currentTown was
+        // left null because the player hadn't selected a town yet. For snapshot-based
+        // loads, _currentTown was already created by the constructor.
+        if (_currentTown is null)
+        {
+            _currentTown = new TownAggregate(World.GetTown(e.StartingTownId), new TownVisitState(e.StartingTownId));
+            _currentTown.PrimeCurrentTown();
+        }
+        else if (!_currentTown.TownId.Equals(e.StartingTownId))
         {
             _currentTown.EnterTown(World.GetTown(e.StartingTownId));
         }

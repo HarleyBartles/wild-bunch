@@ -481,17 +481,15 @@ public class GameSessionEventSourcingTests
         Assert.Empty(rehydrated.UncommittedEvents);
     }
 
-    [Fact(Skip = "Known parity gap: StartSetup creates phantom firstTown entry in TownStates when starting town differs")]
+    [Fact]
     public void NonFirstStartingTown_TownStates_Parity_Between_Live_And_Rehydrated()
     {
-        // Documents a pre-existing event-sourcing parity gap: when the starting town
-        // differs from world.Towns.First(), the live session's TownVisitState
-        // constructor creates a phantom entry for world.Towns.First() at visitNumber 1
-        // (because the constructor is called with the placeholder world's first town
-        // before WorldGenerated overwrites it), and Apply(GameStarted) then adds the
-        // actual starting town at visitNumber 1. The rehydrated session only has the
-        // actual starting town at visitNumber 1. The round-trip proof test does not
-        // catch this because it uses the first town as the starting town.
+        // When the starting town differs from world.Towns.First(), the live session
+        // must not have a phantom entry for the placeholder town in TownStates.
+        // Apply(GameStarted) calls ReplacePlaceholderTown which removes the placeholder
+        // entry and enters the actual starting town at visitNumber 1. The rehydrated
+        // session's constructor sets _currentTown directly from the GameStarted event,
+        // so it also has only the actual starting town. Both must match.
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
         var resolvedInventory = new DomainInventory(new[]

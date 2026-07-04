@@ -112,7 +112,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         UpsertComponent(entity.Id, GameSessionComponentNames.PursuitState, _serializer.SerializePursuitState(session.PursuitState), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.Setup, _serializer.SerializeSetup(session.GameEntropy), now);
         UpsertComponent(entity.Id, GameSessionComponentNames.SaltSource, _serializer.SerializeSaltSource(session.SaltSource), now);
-        UpsertComponent(entity.Id, GameSessionComponentNames.TownVisitState, _serializer.SerializeTownVisitState(session.CurrentTownVisit), now);
+        if (session.TownVisitStateOrNull is { } townVisitState)
+        {
+            UpsertComponent(entity.Id, GameSessionComponentNames.TownVisitState, _serializer.SerializeTownVisitState(townVisitState), now);
+        }
+        else
+        {
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.TownVisitState, cancellationToken).ConfigureAwait(false);
+        }
         UpsertComponent(entity.Id, GameSessionComponentNames.CurrentActionContext, _serializer.SerializeCurrentActionContext(session.CurrentActionContext, session.CurrentActionContextTownId), now);
 
         var devOverrideJson = _serializer.SerializePendingDevTravelOverride(session.PendingDevTravelOverride);
