@@ -1,6 +1,6 @@
 # Geometry-First Map Generation - Plan 1e: Remove StartNew — Cleanup (Test Migration + Deletion + Round-Trip Proof)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Complete the removal of `GameSession.StartNew` by migrating all remaining 65 direct test call sites to the canonical start flow, cleaning up the legacy `RecaptureGameStartedForReplay` alias and stale variable names, fixing `CreateBaselineCaseFileFor` to carry non-investigation case file state, deleting `StartNew` and `SeededNewGameFactory.Create`, and adding the definitive round-trip proof that a session created through the canonical flow can be fully rehydrated from its event stream alone — including ALL 14 `CaseFile` fields.
 
@@ -90,7 +90,7 @@ var session = TestSessionFactory.StartGameCanonical(
 **Files:**
 - No modifications yet — this task produces a report.
 
-- [ ] **Step 1: Grep for all remaining StartNew calls in test files**
+- [x] **Step 1: Grep for all remaining StartNew calls in test files**
 
 Run:
 ```bash
@@ -98,7 +98,7 @@ rg -l "GameSession\.StartNew" tests/ --type cs
 ```
 Capture the file list. These are the 65 files that need migration.
 
-- [ ] **Step 2: Run the full Domain.Tests suite and capture failures**
+- [x] **Step 2: Run the full Domain.Tests suite and capture failures**
 
 Run:
 ```bash
@@ -106,14 +106,14 @@ dotnet test tests/WildBunch.Domain.Tests/ 2>&1 | tee plan-1e-domain-failures.txt
 ```
 Capture: test name, file, line, assertion message. Filter to failures caused by the canonical flow change (event count, version, event index, rehydration). Ignore unrelated failures.
 
-- [ ] **Step 3: Run the full Application.Tests suite and capture failures**
+- [x] **Step 3: Run the full Application.Tests suite and capture failures**
 
 Run:
 ```bash
 dotnet test tests/WildBunch.Application.Tests/ 2>&1 | tee plan-1e-application-failures.txt
 ```
 
-- [ ] **Step 4: Run the full Integration.Tests suite and capture failures (if Docker available)**
+- [x] **Step 4: Run the full Integration.Tests suite and capture failures (if Docker available)**
 
 Run:
 ```bash
@@ -121,7 +121,7 @@ dotnet test tests/WildBunch.Integration.Tests/ 2>&1 | tee plan-1e-integration-fa
 ```
 If Testcontainers/Docker is not available, note this and skip. Integration tests will be verified in the final phase.
 
-- [ ] **Step 5: Produce the enumerated migration list**
+- [x] **Step 5: Produce the enumerated migration list**
 
 From the grep results and test failures, create a checklist. For each file, record:
 - File path
@@ -131,7 +131,7 @@ From the grep results and test failures, create a checklist. For each file, reco
 
 Write the checklist to `.agents/superpowers/sdd/2026-07-03-geometry-first-plan-1e-startnew-cleanup/discovery-report.md`.
 
-- [ ] **Step 6: Commit the discovery report**
+- [x] **Step 6: Commit the discovery report**
 
 ```bash
 git add .agents/superpowers/sdd/2026-07-03-geometry-first-plan-1e-startnew-cleanup/discovery-report.md
@@ -156,7 +156,7 @@ git commit -m "docs: Plan 1e discovery report — enumerate remaining StartNew c
 
 **Context:** Plan 1d renamed the method body to `RecaptureSetupEventsForReplay` but kept `RecaptureGameStartedForReplay` as a forwarding alias. All 8 external callers still use the old name. Variables named `gameStarted` / `originalGameStarted` now hold `IReadOnlyList<IDomainEvent>` (6 events), not a single `GameStarted`. One stale comment in `JournalLogProjectorEquivalenceTests.cs:44` says "Capture GameStarted BEFORE any travel commands" — should reference setup events.
 
-- [ ] **Step 1: Rename all callers from RecaptureGameStartedForReplay to RecaptureSetupEventsForReplay**
+- [x] **Step 1: Rename all callers from RecaptureGameStartedForReplay to RecaptureSetupEventsForReplay**
 
 In each of the 6 files listed above, replace `RecaptureGameStartedForReplay` with `RecaptureSetupEventsForReplay`. There are 8 call sites total:
 - `DevSaloonOverrideTests.cs` — 1 call
@@ -165,18 +165,18 @@ In each of the 6 files listed above, replace `RecaptureGameStartedForReplay` wit
 - `GameSessionDevEntropyTests.cs` — 1 call
 - `JournalLogProjectorEquivalenceTests.cs` — 3 calls (including the one with the stale comment)
 
-- [ ] **Step 2: Rename variables from gameStarted to setupEvents**
+- [x] **Step 2: Rename variables from gameStarted to setupEvents**
 
 In each file, rename variables that hold the result of `RecaptureSetupEventsForReplay`:
 - `var gameStarted = ...` → `var setupEvents = ...`
 - `var originalGameStarted = ...` → `var originalSetupEvents = ...`
 - Update all references to the renamed variable within the same method
 
-- [ ] **Step 3: Fix stale comment in JournalLogProjectorEquivalenceTests.cs**
+- [x] **Step 3: Fix stale comment in JournalLogProjectorEquivalenceTests.cs**
 
 Find the comment that says "Capture GameStarted BEFORE any travel commands" and update it to "Capture setup events BEFORE any travel commands".
 
-- [ ] **Step 4: Delete the legacy alias from TravelTestFactory.cs**
+- [x] **Step 4: Delete the legacy alias from TravelTestFactory.cs**
 
 Delete the `RecaptureGameStartedForReplay` method (the forwarding alias):
 ```csharp
@@ -184,12 +184,12 @@ internal static IReadOnlyList<IDomainEvent> RecaptureGameStartedForReplay(GameSe
     => RecaptureSetupEventsForReplay(session);
 ```
 
-- [ ] **Step 5: Run Domain.Tests to verify**
+- [x] **Step 5: Run Domain.Tests to verify**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: All 525 tests pass. No behavioral change — pure rename.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/
@@ -209,7 +209,7 @@ Deleted the legacy alias."
 
 **Context:** `CreateBaselineCaseFileFor` reconstructs a baseline case file for replay tests. It currently carries over `Suspects`, `TrueCulpritId`, `OpeningLead`, `DiscoveredSuspectIds`, `PublicClues`, `PublicWarrants` but drops `killerReleaseThreshold`, `killerReleaseProgress`, `suspectTurfAssignments`, `wantedSuspectConfrontations`, `sheriffTurnInSettlements`, and `KnownWarrants` (sets them to empty/0/2). This is a latent replay bug — if a session created via `CreateWithKillerReleaseGateOpen` (threshold=2, progress=2) is replayed, the rehydrated session would have progress=0.
 
-- [ ] **Step 1: Update CreateBaselineCaseFileFor to carry over all fields**
+- [x] **Step 1: Update CreateBaselineCaseFileFor to carry over all fields**
 
 In `TestSessionFactory.cs`, update the `CreateBaselineCaseFileFor` method to carry over the missing fields from `originalCase`:
 
@@ -239,12 +239,12 @@ public static CaseFile CreateBaselineCaseFileFor(GameSession session)
 
 Note: `knownClues` and `knownWarrants` are set to empty because the baseline represents pre-investigation state. The other fields (killer release gate, turf assignments, confrontations, settlements) are setup-time state, not investigation-discovered state, so they should be preserved.
 
-- [ ] **Step 2: Run Domain.Tests to verify**
+- [x] **Step 2: Run Domain.Tests to verify**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: All 525 tests pass. The replay tests that use `CreateBaselineCaseFileFor` now preserve non-investigation state.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/TestSessionFactory.cs
@@ -292,11 +292,11 @@ fields after replay, but the round-trip proof test will."
 
 **Pattern for each file:** Replace `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. Add `using static WildBunch.Domain.Tests.TestSessionFactory;` if not already present, or use the fully qualified `TestSessionFactory.StartGameCanonical(...)`.
 
-- [ ] **Step 1: Migrate all single-call-site files**
+- [x] **Step 1: Migrate all single-call-site files**
 
 For each file listed above, replace `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. Check each call site for assertion updates (see Step 2).
 
-- [ ] **Step 2: Check for assertion updates**
+- [x] **Step 2: Check for assertion updates**
 
 For each migrated file, check if the test asserts on:
 - `UncommittedEvents.Count` right after creation (without `MarkEventsCommitted()`) → update to 6
@@ -305,12 +305,12 @@ For each migrated file, check if the test asserts on:
 
 If the test calls `MarkEventsCommitted()` before any assertions on events/version, no assertion update is needed.
 
-- [ ] **Step 3: Run Domain.Tests to verify**
+- [x] **Step 3: Run Domain.Tests to verify**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: All migrated tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/
@@ -332,28 +332,28 @@ MarkEventsCommitted()."
 
 **Pattern:** Same as Task 4 — replace `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. For files with many call sites, use find-and-replace within the file. Check each call site for assertion updates.
 
-- [ ] **Step 1: Migrate TravelResolverTests.cs (17 calls)**
+- [x] **Step 1: Migrate TravelResolverTests.cs (17 calls)**
 
 Replace all 17 `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. Check lines 397, 416, 454, 457, 1012, 1025, 1050, 1084, 1105, 1131, 1155, 1179, 1203, 1227, 1251, 1287, 1322 for assertion updates.
 
-- [ ] **Step 2: Migrate TravelDayPlanGeneratorTests.cs (6 calls)**
+- [x] **Step 2: Migrate TravelDayPlanGeneratorTests.cs (6 calls)**
 
 Replace all 6 `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. Check lines 457, 501, 539, 567, 595, 623 for assertion updates.
 
-- [ ] **Step 3: Migrate GameSessionInvestigationActionsTests.cs (7 calls)**
+- [x] **Step 3: Migrate GameSessionInvestigationActionsTests.cs (7 calls)**
 
 Replace all 7 `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. Check lines 347, 446, 504, 570, 644, 710, 762 for assertion updates.
 
-- [ ] **Step 4: Migrate GameSessionSaloonPersonOfInterestTests.cs (6 calls)**
+- [x] **Step 4: Migrate GameSessionSaloonPersonOfInterestTests.cs (6 calls)**
 
 Replace all 6 `GameSession.StartNew(` with `TestSessionFactory.StartGameCanonical(`. Check lines 428, 475, 522, 541, 573, 605 for assertion updates.
 
-- [ ] **Step 5: Run Domain.Tests to verify**
+- [x] **Step 5: Run Domain.Tests to verify**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: All tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/
@@ -422,20 +422,20 @@ session.CompleteGameStart(wallet, inventory);
 
 Many of these test files have a private helper method that creates the session. If so, only the helper needs changing. Check each file for a `CreateSession` or similar private method.
 
-- [ ] **Step 1: Migrate all Application.Tests files**
+- [x] **Step 1: Migrate all Application.Tests files**
 
 For each file listed above, replace `GameSession.StartNew(...)` with the inlined 4-step canonical flow. If the file has a private `CreateSession` helper, change only the helper.
 
-- [ ] **Step 2: Check for assertion updates**
+- [x] **Step 2: Check for assertion updates**
 
 Same rules as Task 4: update event count (6), version (6), or event index assertions if the test doesn't call `MarkEventsCommitted()` first.
 
-- [ ] **Step 3: Run Application.Tests to verify**
+- [x] **Step 3: Run Application.Tests to verify**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/`
 Expected: All tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/WildBunch.Application.Tests/
@@ -459,20 +459,20 @@ the inlined 4-step canonical flow. Updated assertions where needed."
 
 **Pattern:** Same as Task 6 — inline the 4-step canonical flow. These tests require Docker/Testcontainers.
 
-- [ ] **Step 1: Migrate all Integration.Tests files**
+- [x] **Step 1: Migrate all Integration.Tests files**
 
 For each file listed above, replace `GameSession.StartNew(...)` with the inlined 4-step canonical flow.
 
-- [ ] **Step 2: Check for assertion updates**
+- [x] **Step 2: Check for assertion updates**
 
 Same rules as Tasks 4 and 6.
 
-- [ ] **Step 3: Run Integration.Tests to verify (if Docker available)**
+- [x] **Step 3: Run Integration.Tests to verify (if Docker available)**
 
 Run: `dotnet test tests/WildBunch.Integration.Tests/`
 Expected: All tests pass. If Docker is not available, note this and skip — these will be verified in the final phase.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/WildBunch.Integration.Tests/
@@ -498,7 +498,7 @@ Updated assertions where needed."
 
 **Context:** `INewGameFactory.Create` is not called by any production handler. Production uses `ResolveWorld` and `ResolveStartingResources`. The `Create` method was only used by tests, which now use the canonical flow directly. `SeededNewGameFactory.Create` calls `GameSession.StartNew` — deleting it first prevents a compile break when `StartNew` is deleted in Task 9.
 
-- [ ] **Step 1: Remove Create from INewGameFactory interface**
+- [x] **Step 1: Remove Create from INewGameFactory interface**
 
 In `src/WildBunch.GameContent/Abstractions/INewGameFactory.cs`, delete the `Create` method declaration:
 ```csharp
@@ -512,15 +512,15 @@ GameSession Create(
 
 Keep `ResolveWorld` and `ResolveStartingResources`.
 
-- [ ] **Step 2: Delete Create from SeededNewGameFactory**
+- [x] **Step 2: Delete Create from SeededNewGameFactory**
 
 In `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`, delete the `Create` method (lines 28-56).
 
-- [ ] **Step 3: Delete Create from StubNewGameFactory**
+- [x] **Step 3: Delete Create from StubNewGameFactory**
 
 In `tests/WildBunch.Application.Tests/TestDoubles/StubNewGameFactory.cs`, delete the `Create` method and its tracking lists (`RequestedPlayerNames`, `RequestedGameDifficulties`, etc.) if they're only used by `Create`. Check for callers of these tracking lists first — if any test asserts on them, those assertions need updating.
 
-- [ ] **Step 4: Check for remaining INewGameFactory.Create callers**
+- [x] **Step 4: Check for remaining INewGameFactory.Create callers**
 
 Run:
 ```bash
@@ -528,12 +528,12 @@ rg "\.Create\(" tests/ src/ --type cs | rg -i "newgame|newGameFactory|seededNewG
 ```
 Expected: No matches. If any remain (e.g. `SeededNewGameFactoryTests.cs`), migrate them to use `ResolveWorld` + canonical flow, or delete the test if it was specifically testing `Create`.
 
-- [ ] **Step 5: Build and run tests**
+- [x] **Step 5: Build and run tests**
 
 Run: `dotnet build && dotnet test tests/WildBunch.Domain.Tests/ tests/WildBunch.Application.Tests/`
 Expected: Build succeeds, all tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/Abstractions/INewGameFactory.cs src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs tests/WildBunch.Application.Tests/TestDoubles/StubNewGameFactory.cs
@@ -552,7 +552,7 @@ Create from the interface, SeededNewGameFactory, and StubNewGameFactory."
 
 **Context:** All 65 test call sites have been migrated. `SeededNewGameFactory.Create` (the only production caller) was deleted in Task 8. `StartNew` is now dead code.
 
-- [ ] **Step 1: Verify no remaining StartNew calls exist in code**
+- [x] **Step 1: Verify no remaining StartNew calls exist in code**
 
 Run:
 ```bash
@@ -560,7 +560,7 @@ rg "GameSession\.StartNew" src/ tests/ --type cs
 ```
 Expected: No matches. All call sites should be migrated by Tasks 4-7. If any remain, migrate them before proceeding.
 
-- [ ] **Step 2: Delete both StartNew overloads from GameSession.cs**
+- [x] **Step 2: Delete both StartNew overloads from GameSession.cs**
 
 In `src/WildBunch.Domain/Game/GameSession.cs`, delete both `StartNew` overloads and their XML doc comments. The methods to delete are:
 
@@ -584,12 +584,12 @@ public static GameSession StartNew(
 }
 ```
 
-- [ ] **Step 3: Build to verify no compile errors**
+- [x] **Step 3: Build to verify no compile errors**
 
 Run: `dotnet build src/WildBunch.Domain/`
 Expected: Build succeeds (no code references `StartNew` anymore)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/WildBunch.Domain/Game/GameSession.cs
@@ -615,7 +615,7 @@ flow emits 6 events and is fully event-sourced."
 
 **Context:** Plan 1d's original round-trip proof only checked `PublicClues`. Plan 1d completed `CaseFileSnapshot` with all 14 fields. This test proves ALL fields survive round-trip. It also verifies that `CreateBaselineCaseFileFor` (fixed in Task 3) preserves non-investigation state during replay.
 
-- [ ] **Step 1: Write the round-trip proof test**
+- [x] **Step 1: Write the round-trip proof test**
 
 Add this test to `GameSessionEventSourcingTests.cs`:
 
@@ -703,12 +703,12 @@ public void CanonicalStart_FullRoundTrip_Rehydrates_CompleteState_FromEvents()
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it passes**
+- [x] **Step 2: Run the test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs --filter "CanonicalStart_FullRoundTrip"`
 Expected: PASS — full state reconstructed from events alone, including all 14 CaseFile fields.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs
@@ -729,7 +729,7 @@ fixed in Plan 1d and proves the fix is complete."
 
 ## Verification
 
-- [ ] **Final verification: No StartNew references remain anywhere**
+- [x] **Final verification: No StartNew references remain anywhere**
 
 Run:
 ```bash
@@ -737,7 +737,7 @@ rg "StartNew" src/ tests/ --type cs
 ```
 Expected: No matches in any `.cs` file. (Plan/documentation `.md` files may still reference it historically — that's fine.)
 
-- [ ] **Final verification: No RecaptureGameStartedForReplay references remain**
+- [x] **Final verification: No RecaptureGameStartedForReplay references remain**
 
 Run:
 ```bash
@@ -745,7 +745,7 @@ rg "RecaptureGameStartedForReplay" tests/ --type cs
 ```
 Expected: No matches. The legacy alias was deleted in Task 2.
 
-- [ ] **Final verification: No INewGameFactory.Create references remain**
+- [x] **Final verification: No INewGameFactory.Create references remain**
 
 Run:
 ```bash
@@ -753,27 +753,27 @@ rg "\.Create\(" tests/ src/ --type cs | rg -i "newgame|newGameFactory|seededNewG
 ```
 Expected: No matches.
 
-- [ ] **Final verification: Full Domain.Tests suite passes**
+- [x] **Final verification: Full Domain.Tests suite passes**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/`
 Expected: All tests pass.
 
-- [ ] **Final verification: Full Application.Tests suite passes**
+- [x] **Final verification: Full Application.Tests suite passes**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/`
 Expected: All tests pass.
 
-- [ ] **Final verification: Full Integration.Tests suite passes (if Docker available)**
+- [x] **Final verification: Full Integration.Tests suite passes (if Docker available)**
 
 Run: `dotnet test tests/WildBunch.Integration.Tests/`
 Expected: All tests pass.
 
-- [ ] **Final verification: Full GameContent.Tests suite passes**
+- [x] **Final verification: Full GameContent.Tests suite passes**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/`
 Expected: All tests pass. (SeededNewGameFactoryTests may need updates if they tested `Create` — those should have been migrated in Task 8.)
 
-- [ ] **Final verification: Build the entire solution**
+- [x] **Final verification: Build the entire solution**
 
 Run: `dotnet build`
 Expected: Build succeeds with no errors or warnings related to `StartNew` or `INewGameFactory.Create`.

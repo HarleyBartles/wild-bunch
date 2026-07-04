@@ -9,8 +9,8 @@ When executing superpowers workflows, direct all tracked artifacts to the approp
 ### Plans
 - **Location**: `.agents/superpowers/plans/`
 - **Content**: Implementation plans with structured breakdowns
-- **Status**: Tracked in git, committed with the execution pr
-- **Note**: Plans are created and committed as part of the execution process. On execution completion, all checkboxes should be marked as complete.
+- **Status**: Tracked in git, committed with the execution PR
+- **Note**: Plans are created and committed as part of the execution process. When execution completes, mark all plan checkboxes (`- [ ]`) as done (`- [x]`) only after verifying that the associated plan item was actually delivered in the final PR — do not mark items complete based on intent or in-progress work.
 
 ### Session Artifacts
 - **Location**: `.agents/superpowers/sdd/<plan-name>/`
