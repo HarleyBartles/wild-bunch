@@ -13,12 +13,6 @@ internal static class SeedWorldBuilder
         => SeedWorldCatalog.CreateCanonicalWorld();
 
     /// <summary>
-    /// Converts a signed hash to a guaranteed non-negative value for safe modulo indexing.
-    /// Safe for all int values including int.MinValue by using long arithmetic.
-    /// </summary>
-    internal static int NonNegativeModulo(int value, int modulo) => (int)(((long)value - int.MinValue) % modulo);
-
-    /// <summary>
     /// Checks whether the seed world is the canonical shape (8 towns,
     /// Canonical variant, HubTelegraph services, UniformProsperous prosperity,
     /// specific case fields).

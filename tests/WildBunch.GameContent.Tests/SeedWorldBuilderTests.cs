@@ -8,33 +8,6 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldBuilderTests
 {
     [Fact]
-    public void NonNegativeModulo_SafeForIntMinValue()
-    {
-        // Test the edge case of int.MinValue which would overflow Math.Abs
-        var result = SeedWorldBuilder.NonNegativeModulo(int.MinValue, 10);
-        Assert.InRange(result, 0, 9); // Should be a valid index 0-9
-    }
-
-    [Fact]
-    public void NonNegativeModulo_SafeForNegativeValues()
-    {
-        // Test various negative values
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(-1, 10), 0, 9);
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(-100, 10), 0, 9);
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(-1000, 10), 0, 9);
-    }
-
-    [Fact]
-    public void NonNegativeModulo_SafeForPositiveValues()
-    {
-        // Test various positive values
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(0, 10), 0, 9);
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(1, 10), 0, 9);
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(100, 10), 0, 9);
-        Assert.InRange(SeedWorldBuilder.NonNegativeModulo(1000, 10), 0, 9);
-    }
-
-    [Fact]
     public void CreateCanonicalWorldAppliesUniformProsperousPalette()
     {
         var world = SeedWorldBuilder.CreateCanonicalWorld();
