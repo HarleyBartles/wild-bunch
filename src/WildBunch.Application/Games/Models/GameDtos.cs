@@ -93,7 +93,9 @@ public sealed record WorldDto(
 public sealed record TownDto(
     string Id,
     string Name,
-    TownServices Services);
+    TownServices Services,
+    int MapX = 0,
+    int MapY = 0);
 
 public sealed record TrailDto(
     string Id,
