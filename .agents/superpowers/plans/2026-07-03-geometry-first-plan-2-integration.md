@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Wire `MapGenerator.Generate` into the game-setup pipeline, delete the stub `SeedWorldBuilder.CreateWorld`, and rewrite the geometry/trail tests that were stripped in Plan 0 to assert against the real pipeline's output.
+**Goal:** Wire `MapGenerator.Generate` into the game-setup pipeline, delete the stub `SeedWorldBuilder.CreateWorld`, add an integration-level smoke test through the full pipeline, and clean up unused helpers.
 
-**Architecture:** Three tasks. Task 1 swaps the orchestrator call and deletes the stub. Task 2 rewrites the tests that were deleted or gutted in Plan 0 — now they assert real pipeline behavior (MST edge counts, 2-5 day distances, outlier at 6 days, planarity, connectivity, salt variance). Task 3 is final verification.
+**Architecture:** Three tasks. Task 1 swaps the orchestrator call, fixes the one test that calls the stub directly, and deletes the stub. Task 2 creates a minimal integration smoke test through `SeededNewGameFactory` (the existing `MapGeneratorTests.cs` already covers unit-level pipeline assertions; the existing Application.Tests already assert `NotEmpty` trails through the full pipeline). Task 3 deletes unused `ComputeStableHash` overloads and runs final verification.
 
 **Tech Stack:** C#/.NET 10, xUnit 2.9.3
 
@@ -14,6 +14,22 @@
 - Plans 1a-1e must be complete -- `MapGenerator.Generate` exists, `StartNew` is deleted, canonical start flow is in place, `CaseFileSnapshot` carries all 14 fields.
 - Plan 1f (Clean Handoff) must be complete -- ADRs and decomposition audit are fresh, tracked-items doc exists.
 
+## Verified codebase state (Plan 1f head)
+
+- `GameSetupResolver.cs:55` calls `SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource)` -- this is the single production call site to swap.
+- `SeedWorldBuilder.CreateWorld` signature: `(SeedWorld, GameSetupDeterministicSource, GameEntropy = Boring, SaltSource? = null)` -- has defaults for last 2 params.
+- `MapGenerator.Generate` signature: `(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)` -- NO defaults for last 2 params. All 4 args must be passed explicitly.
+- `GameSetupResolverTests.cs:71` calls `SeedWorldBuilder.CreateWorld(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText), GameEntropy.Classic)` directly -- passes 3 args, relies on `saltSource = null` default. This is the ONE test that will break when `CreateWorld` is deleted. Fix: replace with `MapGenerator.Generate(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText), GameEntropy.Classic, null)`.
+- `MapGeneratorTests.cs` already exists with 10 tests covering: Boring determinism, non-Boring determinism, connected graph, planar graph, 2-6 day distance range, outlier 6-day single incident trail, Boring no outlier, town count placement, cluster count assignment. These are unit-level tests calling `MapGenerator.Generate` directly.
+- `GetStartingTownMapHandlerTests.cs` already asserts `Assert.NotEmpty` on trails, positive ride-day distances, and town connectivity -- goes through `SeededNewGameFactory.ResolveWorld` -> `GameSetupResolver` -> (currently stub) `CreateWorld`. Will automatically exercise the real pipeline after Task 1.
+- `GetWorldMapHandlerTests.cs` already asserts `Assert.NotEmpty(result.Trails)`.
+- `StartingTownMapEndpointTests.cs` already asserts `Assert.NotEmpty(map.Trails)` and positive ride-day distances. (Integration test -- requires Docker/Testcontainers, cannot verify locally.)
+- `SeedWorldResolverTests.cs:179` already asserts `Assert.Equal(8, resolved.TownCount)` and `Assert.Equal(8, resolved.SelectedTownIds.Count)`.
+- `SeedWorldBuilderTests.cs` tests `NonNegativeModulo`, `CreateCanonicalWorld` (prosperity/telegraph), `StartingTownPolicy`, `TownCount` -- none call `CreateWorld`, none need changes.
+- Zero `Assert.Empty` trail assertions exist in `tests/` (verified by grep).
+- `SeedWorldBuilder.ComputeStableHash` has 3 private overloads (lines 62, 74, 86) with no call sites -- unused, to be deleted in Task 3.
+- `MapLayoutPalette` enum already deleted in Plan 0. Zero code references; only historical doc comments in `SeedWorldResolver.cs`.
+
 ## Tasks
 
 ### Task 1: Wire MapGenerator Into GameSetupResolver
@@ -21,94 +37,247 @@
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`
 - Modify: `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`
+- Modify: `tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs`
 
 **Changes:**
-- In `GameSetupResolver.cs`: find the `SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource)` call and replace it with `MapGenerator.Generate(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource)`
-- In `SeedWorldBuilder.cs`: delete the stub `CreateWorld` method. Keep: `CreateCanonicalWorld`, `NonNegativeModulo`, `ComputeStableHash` overloads, `IsCanonicalSeedWorld` (with `ClusterCount`/`GraphDensity` comparisons)
 
-- [ ] Implement changes
-- [ ] Build: `dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj`
-- [ ] Expected: PASS
-- [ ] Run tests: `dotnet test tests/WildBunch.GameContent.Tests/ --filter "GameSetupResolverTests|SeededNewGameFactoryTests|SeedWorldBuilderTests"`
-- [ ] Expected: Some tests may fail — `SeedWorldBuilderTests` tests that called `CreateWorld` were deleted in Plan 0, but `GameSetupResolverTests` may reference the stub. If `GameSetupResolverTests` calls `SeedWorldBuilder.CreateWorld` directly, update it to call `MapGenerator.Generate` or `SeedWorldBuilder.CreateCanonicalWorld()` as appropriate. Fix any remaining compile errors inline.
-- [ ] Commit: `git commit -m "feat: wire MapGenerator into GameSetupResolver, delete stub CreateWorld"`
+- [ ] **Step 1: Swap the call in GameSetupResolver.cs**
 
-### Task 2: Rewrite Geometry and Trail Tests for Real Pipeline
-
-> **Note (verified at Plan 1e head):** As of Plan 1e head, no tests assert `Assert.Empty` on trails (search `rg -n "Assert\.Empty\(.*[Tt]rails" tests/` returns zero matches). The `Assert.Empty` → `Assert.NotEmpty` changes listed below for `GetStartingTownMapHandlerTests.cs`, `GetWorldMapHandlerTests.cs`, and `StartingTownMapEndpointTests.cs` may not be needed. Verify at execution time and skip any that do not apply. The three named test files all exist; `GeometryPipelineTests.cs` is a Create target (does not yet exist).
-
-**Files:**
-- Create: `tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs` — replaces the deleted `GeometryCanonicalDistanceTests.cs`
-- Modify: `tests/WildBunch.GameContent.Tests/SeedWorldBuilderTests.cs` — add back tests that assert real pipeline behavior via `MapGenerator.Generate`
-- Modify: `tests/WildBunch.GameContent.Tests/SeedWorldResolverTests.cs` — add trail-count assertion that works with the real pipeline (MST of 8 towns = 7 edges)
-- Modify: `tests/WildBunch.Application.Tests/GetStartingTownMapHandlerTests.cs` — replace `Assert.Empty` trail assertions with `Assert.NotEmpty` and connectivity checks
-- Modify: `tests/WildBunch.Application.Tests/GetWorldMapHandlerTests.cs` — replace `Assert.Empty` trail assertion with `Assert.NotEmpty`
-- Modify: `tests/WildBunch.Integration.Tests/StartingTownMapEndpointTests.cs` — replace `Assert.Empty` trail assertion with `Assert.NotEmpty`
-
-**New test file: `GeometryPipelineTests.cs`**
-
-This replaces the deleted `GeometryCanonicalDistanceTests.cs`. Tests go through `SeededNewGameFactory` → `GameSetupResolver` → `MapGenerator.Generate` (the real pipeline). Key tests:
-
+In `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`, line 55, replace:
 ```csharp
-// All trails have ride-day distances in 2-6 day range
-Assert.All(session.World.Trails, trail => Assert.InRange(trail.RideDayDistance, 2m, 6m));
-
-// All towns have non-zero coordinates (clustered placement, not placeholder)
-Assert.All(session.World.Towns, town => { Assert.True(town.MapX > 0); Assert.True(town.MapY > 0); });
-
-// Boring mode: same seed produces identical coordinates
-// Non-Boring mode: different salts produce different coordinates
-// Trail graph is connected (BFS from first town reaches all)
-// Trail graph is planar (no crossing edges)
-// Outlier slot: non-Boring produces single 6-day incident trail
+var world = SeedWorldBuilder.CreateWorld(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource);
+```
+with:
+```csharp
+var world = MapGenerator.Generate(seedWorld, source, entropy.GameEntropy, mysteryTruth.SaltSource);
 ```
 
-Write these tests following the patterns from `pipeline-tests.md` Section 6 (MapGeneratorTests), but going through the full `SeededNewGameFactory` path instead of calling `MapGenerator.Generate` directly.
+- [ ] **Step 2: Fix GameSetupResolverTests.cs:71**
 
-- [ ] Create `GeometryPipelineTests.cs` with integration-level tests
-- [ ] Update `SeedWorldBuilderTests.cs`: add `CreateCanonicalWorld_HasConnectedTrails` test (canonical world now has real trails from `CreateCanonicalWorld` → `CreateWorld` with placeholder coordinates, but trails come from `MapGenerator` only when called through `GameSetupResolver`). Note: `CreateCanonicalWorld` calls `SeedWorldCatalog.CreateCanonicalWorld` which calls `BuildTrails` (stub → empty). So `CreateCanonicalWorld` still produces 0 trails. Tests asserting trails on `CreateCanonicalWorld` should assert `Assert.Empty` or be skipped. Tests asserting trails should go through `MapGenerator.Generate` or `SeededNewGameFactory`.
-- [ ] Update `SeedWorldResolverTests.cs`: the `CanonicalSeedWorldHasEightTowns` test was deleted in Plan 0. Add it back but assert `Assert.Empty(seedWorld.Trails)` (the SeedWorld's Trails field is empty because `BuildTrails` is a stub — trails are generated at game setup time, not at seed resolution time).
-- [ ] Update `GetStartingTownMapHandlerTests.cs`: replace `Assert.Empty(byId)` and `Assert.Empty(result.Trails)` with `Assert.NotEmpty` (the handler reads from the session's world, which now has real trails from `MapGenerator`)
-- [ ] Update `GetWorldMapHandlerTests.cs`: replace `Assert.Empty(result.Trails)` with `Assert.NotEmpty`
-- [ ] Update `StartingTownMapEndpointTests.cs`: replace `Assert.Empty(map.Trails)` with `Assert.NotEmpty`
-- [ ] Run full test suite: `dotnet test`
-- [ ] Expected: PASS — all tests pass with the real pipeline
-- [ ] Commit: `git commit -m "test: rewrite geometry and trail tests for real pipeline"`
+In `tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs`, line 71, replace:
+```csharp
+var expectedStartingTown = SeedWorldBuilder.CreateWorld(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText), GameEntropy.Classic).Towns.First().Id;
+```
+with:
+```csharp
+var expectedStartingTown = MapGenerator.Generate(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText), GameEntropy.Classic, null).Towns.First().Id;
+```
+
+Note: `MapGenerator.Generate` has no default for `saltSource` (unlike `CreateWorld` which defaulted it to null), so `null` must be passed explicitly as the 4th arg.
+
+- [ ] **Step 3: Delete the stub CreateWorld method in SeedWorldBuilder.cs**
+
+In `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`, delete the `CreateWorld` method (lines 18-56, including the XML doc comment starting at line 18). Keep all other members: `CreateCanonicalWorld`, `NonNegativeModulo`, `ComputeStableHash` overloads (Task 3 deletes the unused ones), `IsCanonicalSeedWorld`.
+
+- [ ] **Step 4: Build and run affected tests**
+
+```bash
+dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj
+dotnet test tests/WildBunch.GameContent.Tests/ --filter "GameSetupResolverTests|SeededNewGameFactoryTests|SeedWorldBuilderTests|MapGeneratorTests"
+```
+Expected: PASS -- all tests pass with `MapGenerator.Generate` wired in. The `MapGeneratorTests` already call `MapGenerator.Generate` directly so they are unaffected. The `GameSetupResolverTests` and `SeededNewGameFactoryTests` now exercise the real pipeline through `GameSetupResolver`.
+
+- [ ] **Step 5: Run Application.Tests (they exercise the full pipeline)**
+
+```bash
+dotnet test tests/WildBunch.Application.Tests/ --filter "GetStartingTownMapHandlerTests|GetWorldMapHandlerTests"
+```
+Expected: PASS -- these tests already assert `Assert.NotEmpty` on trails and positive ride-day distances. They now exercise the real pipeline automatically.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/WildBunch.GameContent/NewGame/GameSetupResolver.cs src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs
+git commit -m "feat: wire MapGenerator into GameSetupResolver, delete stub CreateWorld"
+```
+
+### Task 2: Add integration-level pipeline smoke test
+
+**Context:** `MapGeneratorTests.cs` already has 10 unit-level tests covering pipeline output (determinism, connectivity, planarity, distance range, outlier, town count, cluster count). The existing Application.Tests (`GetStartingTownMapHandlerTests`, `GetWorldMapHandlerTests`) already assert `NotEmpty` trails through the full `SeededNewGameFactory` path. The only missing coverage is a GameContent.Tests-level integration test that verifies the full `SeededNewGameFactory` -> `GameSetupResolver` -> `MapGenerator.Generate` path produces a world with real (non-stub) trails.
+
+**Files:**
+- Create: `tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs`
+
+**No other test files need changes.** The Application.Tests and Integration.Tests already assert `NotEmpty` trails and will automatically exercise the real pipeline after Task 1. `SeedWorldBuilderTests` and `SeedWorldResolverTests` don't call `CreateWorld` and don't need changes.
+
+- [ ] **Step 1: Create GeometryPipelineTests.cs**
+
+Create `tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs` with 2 integration-level tests that go through the full `SeededNewGameFactory` path (not calling `MapGenerator.Generate` directly):
+
+```csharp
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
+using WildBunch.GameContent.NewGame;
+
+namespace WildBunch.GameContent.Tests;
+
+public sealed class GeometryPipelineTests
+{
+    private static GameSession CreateSessionThroughFullPipeline(GameEntropy entropy = GameEntropy.Boring)
+    {
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
+        var factory = new SeededNewGameFactory(new TestFixedSaltSourceFactory());
+        var (world, caseFile, seedCodeText, saltSource) = factory.ResolveWorld(
+            "Test Player", difficulty.Difficulty, seedWorld.SeedCode.ToString("D"), entropy);
+        var session = GameSession.StartSetup(
+            "Test Player", world, caseFile, difficulty.Difficulty, entropy, seedCodeText, saltSource);
+        return session;
+    }
+
+    [Fact]
+    public void FullPipeline_ProducesWorldWithRealTrailsAndCoordinates()
+    {
+        var session = CreateSessionThroughFullPipeline();
+
+        // 8 towns from canonical seed
+        Assert.Equal(8, session.World.Towns.Count);
+
+        // All towns have positive coordinates (clustered placement, not placeholder zeros)
+        Assert.All(session.World.Towns, town =>
+        {
+            Assert.True(town.MapX > 0, $"Town {town.Name} has non-positive MapX: {town.MapX}");
+            Assert.True(town.MapY > 0, $"Town {town.Name} has non-positive MapY: {town.MapY}");
+        });
+
+        // Non-empty trails (real MST graph, not stub linear chain)
+        Assert.NotEmpty(session.World.Trails);
+
+        // All trails have ride-day distances in 2-6 day range
+        Assert.All(session.World.Trails, trail => Assert.InRange(trail.RideDayDistance, 2m, 6m));
+
+        // All trail endpoints reference towns in the world
+        var townIds = session.World.Towns.Select(t => t.Id).ToHashSet();
+        Assert.All(session.World.Trails, trail =>
+        {
+            Assert.Contains(trail.FromTownId, townIds);
+            Assert.Contains(trail.ToTownId, townIds);
+        });
+    }
+
+    [Fact]
+    public void FullPipeline_BoringMode_SameSeedProducesSameWorld()
+    {
+        var sessionA = CreateSessionThroughFullPipeline(GameEntropy.Boring);
+        var sessionB = CreateSessionThroughFullPipeline(GameEntropy.Boring);
+
+        var townsA = sessionA.World.Towns.ToArray();
+        var townsB = sessionB.World.Towns.ToArray();
+
+        Assert.Equal(townsA.Length, townsB.Length);
+        for (var i = 0; i < townsA.Length; i++)
+        {
+            Assert.Equal(townsA[i].MapX, townsB[i].MapX);
+            Assert.Equal(townsA[i].MapY, townsB[i].MapY);
+        }
+        Assert.Equal(sessionA.World.Trails.Count, sessionB.World.Trails.Count);
+    }
+
+    private sealed class TestFixedSaltSourceFactory : ISaltSourceFactory
+    {
+        public SaltSource Create(string? setupSeedCode, GameDifficulty gameDifficulty)
+            => SaltSource.CreateFixed("test-fixed-salt");
+    }
+}
+```
+
+Note: The `CreateSessionThroughFullPipeline` helper follows the same pattern as `GetStartingTownMapHandlerTests.CreateTestSession` and `GetWorldMapHandlerTests.CreateTestSession` -- it goes through `SeededNewGameFactory.ResolveWorld` -> `GameSetupResolver` -> `MapGenerator.Generate`. The `TestFixedSaltSourceFactory` is the same pattern used in those test files.
+
+- [ ] **Step 2: Build and run the new tests**
+
+```bash
+dotnet build tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj
+dotnet test tests/WildBunch.GameContent.Tests/ --filter "GeometryPipelineTests"
+```
+Expected: PASS -- both tests pass.
+
+- [ ] **Step 3: Run the full GameContent.Tests suite to verify no regressions**
+
+```bash
+dotnet test tests/WildBunch.GameContent.Tests/
+```
+Expected: PASS -- 141+2 = 143 passed (139 existing + 2 new + 2 from MapGeneratorTests if not already counted), 0 failed.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs
+git commit -m "test: add integration-level pipeline smoke test through SeededNewGameFactory"
+```
 
 ### Task 3: Final Verification and Cleanup
 
-> **Note (verified at Plan 1e head):** `MapLayoutPalette` enum is already deleted in Plan 0. Zero references remain in `src/` or `tests/` code — the only remaining mentions are historical codec-version doc comments in `SeedWorldResolver.cs` (lines 55-75) describing the v8-v16 codec evolution. The `MapLayoutPalette` cleanup step below is a confirmation only.
->
-> `SeedWorldBuilder.ComputeStableHash` still has 3 private overloads (lines 62, 74, 86) in `SeedWorldBuilder.cs` with no call sites anywhere in `src/` or `tests/` (they are unused private methods). The cleanup step below remains valid: delete the unused overloads.
+**Files:**
+- Modify: `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` (delete unused `ComputeStableHash` overloads)
 
-- [ ] Verify no remaining `MapLayoutPalette` references: search `src/` and `tests/` — expect zero matches (confirmation only; enum already deleted in Plan 0)
-- [ ] Check whether `SeedWorldBuilder.ComputeStableHash` overloads are still called: search `src/` and `tests/` for `SeedWorldBuilder.ComputeStableHash`. As of Plan 1e head, 3 private overloads exist in `SeedWorldBuilder.cs` with no call sites. Delete the unused overloads.
-- [ ] Build the full solution: `dotnet build`
-- [ ] Expected: zero warnings related to `MapLayoutPalette`, unused code, or deleted members
-- [ ] Run the full test suite: `dotnet test`
-- [ ] Expected: all tests pass across all test projects
-- [ ] Commit (if any cleanup changes were made): `git commit -m "chore: final cleanup of unused helpers"`
-- [ ] Verify Definition of Done against the spec (`docs/superpowers/specs/2026-07-03-geometry-first-procedural-map-generation-design.md`):
-  - [ ] `MapLayoutPalette` enum deleted, `ClusterCount` + `GraphDensity` added to `SeedWorld`
-  - [ ] Codec v16 encodes/decodes the new fields, round-trip tests pass
-  - [ ] `ClusterPlacementGenerator` produces seed-derived, entropy-varied town coordinates
-  - [ ] `TrailGraphGenerator` produces planar, connected trail graphs from settled coordinates using Delaunay + MST
-  - [ ] Redundant-corridor and close-parallel filters work
-  - [ ] `TerrainAssigner` derives terrain/water/risk from edge geometry + variant
-  - [ ] Distances derived from final edge geometry (no catalog lookup, no coordinate adjustment)
-  - [ ] Normal trails are 2-5 days; outlier trails are exactly 6 days with one incident edge
-  - [ ] Boring mode is deterministic for the same seed
-  - [ ] Entropic modes vary with salt while preserving seed-owned structure
-  - [ ] `SeedWorldCatalog.BuildTrails`, `SeedWorldMapLayout` layout methods, and `SeedWorldBuilder` distance/adjustment methods deleted
-  - [ ] All existing tests updated or replaced; no pre-existing failures carried forward
-  - [ ] CI passes
+- [ ] **Step 1: Confirm MapLayoutPalette is gone (confirmation only)**
+
+```bash
+rg -n "MapLayoutPalette" src/ tests/
+```
+Expected: zero matches in code. Historical doc comments in `SeedWorldResolver.cs` (lines 55-75) describing the v8-v16 codec evolution are expected and should NOT be changed.
+
+- [ ] **Step 2: Delete unused ComputeStableHash overloads**
+
+In `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`, delete the 3 private `ComputeStableHash` overloads at lines 62, 74, and 86. These have no call sites anywhere in `src/` or `tests/` (verified by grep). Keep all other members.
+
+Verify no call sites before deleting:
+```bash
+rg -n "ComputeStableHash" src/ tests/
+```
+Expected: only the 3 definitions in `SeedWorldBuilder.cs`, zero call sites.
+
+- [ ] **Step 3: Build the full solution**
+
+```bash
+dotnet build
+```
+Expected: 0 errors, 0 warnings.
+
+- [ ] **Step 4: Run Domain.Tests**
+
+```bash
+dotnet test tests/WildBunch.Domain.Tests/
+```
+Expected: 526 passed, 0 failed, 1 skipped (TownStates parity-gap test).
+
+- [ ] **Step 5: Run Application.Tests**
+
+```bash
+dotnet test tests/WildBunch.Application.Tests/
+```
+Expected: 204 passed, 0 failed.
+
+- [ ] **Step 6: Run GameContent.Tests**
+
+```bash
+dotnet test tests/WildBunch.GameContent.Tests/
+```
+Expected: 143 passed, 0 failed (139 existing + 2 new GeometryPipelineTests + 2 existing MapGeneratorTests... verify exact count at execution time).
+
+- [ ] **Step 7: Verify no stale references remain**
+
+```bash
+rg -n "SeedWorldBuilder\.CreateWorld" src/ tests/
+```
+Expected: zero matches (the stub is deleted, all call sites use `MapGenerator.Generate`).
+
+- [ ] **Step 8: Commit (if any cleanup changes were made)**
+
+```bash
+git add src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
+git commit -m "chore: delete unused ComputeStableHash overloads"
+```
 
 ## Definition of Done
 
 - [ ] Prerequisites confirmed: Plans 0-1f complete, `MapGenerator.Generate` exists, `SeedWorldBuilder.CreateWorld` stub exists
 - [ ] `GameSetupResolver` calls `MapGenerator.Generate` instead of `SeedWorldBuilder.CreateWorld`
+- [ ] `GameSetupResolverTests.cs:71` uses `MapGenerator.Generate` (not the deleted stub)
 - [ ] `SeedWorldBuilder.CreateWorld` stub is deleted; kept members remain
-- [ ] Geometry/trail tests assert real pipeline behavior (not placeholder)
+- [ ] `GeometryPipelineTests.cs` exists with 2 integration-level tests through the full pipeline
 - [ ] `MapLayoutPalette` references confirmed absent (already deleted in Plan 0)
-- [ ] Full solution builds with zero related warnings
-- [ ] Full test suite passes (Domain + Application + GameContent + Integration if Docker available)
+- [ ] Unused `ComputeStableHash` overloads deleted
+- [ ] Full solution builds with 0 errors, 0 warnings
+- [ ] Domain.Tests (526+1skip), Application.Tests (204), GameContent.Tests (143) all pass
+- [ ] Zero `SeedWorldBuilder.CreateWorld` references remain in `src/` or `tests/`
