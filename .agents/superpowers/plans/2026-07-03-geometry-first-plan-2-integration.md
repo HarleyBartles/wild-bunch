@@ -1,11 +1,5 @@
 # Geometry-First Map Generation - Plan 2: Wire & Integration
 
-> **⚠️ STALE - DO NOT EXECUTE**
->
-> This plan was written before Plan 1b (Event Boundary) was updated. Plan 1b adds event-sourcing for world generation, which affects how the pipeline is integrated. This plan needs to be updated after Plan 1b is executed to account for the new event structure.
->
-> Execute Plan 1b first, then reassess and update this plan before execution.
-
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire `MapGenerator.Generate` into the game-setup pipeline, delete the stub `SeedWorldBuilder.CreateWorld`, and rewrite the geometry/trail tests that were stripped in Plan 0 to assert against the real pipeline's output.
@@ -17,7 +11,8 @@
 ## Prerequisites
 
 - Plan 0 (Clean Slate) must be complete.
-- Plan 1 (Core Pipeline) must be complete — `MapGenerator.Generate` must exist and pass its unit tests.
+- Plans 1a-1e must be complete -- `MapGenerator.Generate` exists, `StartNew` is deleted, canonical start flow is in place, `CaseFileSnapshot` carries all 14 fields.
+- Plan 1f (Clean Handoff) must be complete -- ADRs and decomposition audit are fresh, tracked-items doc exists.
 
 ## Tasks
 
@@ -39,6 +34,8 @@
 - [ ] Commit: `git commit -m "feat: wire MapGenerator into GameSetupResolver, delete stub CreateWorld"`
 
 ### Task 2: Rewrite Geometry and Trail Tests for Real Pipeline
+
+> **Note (verified at Plan 1e head):** As of Plan 1e head, no tests assert `Assert.Empty` on trails (search `rg -n "Assert\.Empty\(.*[Tt]rails" tests/` returns zero matches). The `Assert.Empty` → `Assert.NotEmpty` changes listed below for `GetStartingTownMapHandlerTests.cs`, `GetWorldMapHandlerTests.cs`, and `StartingTownMapEndpointTests.cs` may not be needed. Verify at execution time and skip any that do not apply. The three named test files all exist; `GeometryPipelineTests.cs` is a Create target (does not yet exist).
 
 **Files:**
 - Create: `tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs` — replaces the deleted `GeometryCanonicalDistanceTests.cs`
@@ -80,8 +77,12 @@ Write these tests following the patterns from `pipeline-tests.md` Section 6 (Map
 
 ### Task 3: Final Verification and Cleanup
 
-- [ ] Verify no remaining `MapLayoutPalette` references: search `src/` and `tests/` — expect zero matches
-- [ ] Check whether `SeedWorldBuilder.ComputeStableHash` overloads are still called: search `src/` and `tests/` for `SeedWorldBuilder.ComputeStableHash`. If no matches outside `SeedWorldBuilder.cs` itself, delete the unused overloads.
+> **Note (verified at Plan 1e head):** `MapLayoutPalette` enum is already deleted in Plan 0. Zero references remain in `src/` or `tests/` code — the only remaining mentions are historical codec-version doc comments in `SeedWorldResolver.cs` (lines 55-75) describing the v8-v16 codec evolution. The `MapLayoutPalette` cleanup step below is a confirmation only.
+>
+> `SeedWorldBuilder.ComputeStableHash` still has 3 private overloads (lines 62, 74, 86) in `SeedWorldBuilder.cs` with no call sites anywhere in `src/` or `tests/` (they are unused private methods). The cleanup step below remains valid: delete the unused overloads.
+
+- [ ] Verify no remaining `MapLayoutPalette` references: search `src/` and `tests/` — expect zero matches (confirmation only; enum already deleted in Plan 0)
+- [ ] Check whether `SeedWorldBuilder.ComputeStableHash` overloads are still called: search `src/` and `tests/` for `SeedWorldBuilder.ComputeStableHash`. As of Plan 1e head, 3 private overloads exist in `SeedWorldBuilder.cs` with no call sites. Delete the unused overloads.
 - [ ] Build the full solution: `dotnet build`
 - [ ] Expected: zero warnings related to `MapLayoutPalette`, unused code, or deleted members
 - [ ] Run the full test suite: `dotnet test`
@@ -104,9 +105,10 @@ Write these tests following the patterns from `pipeline-tests.md` Section 6 (Map
 
 ## Definition of Done
 
+- [ ] Prerequisites confirmed: Plans 0-1f complete, `MapGenerator.Generate` exists, `SeedWorldBuilder.CreateWorld` stub exists
 - [ ] `GameSetupResolver` calls `MapGenerator.Generate` instead of `SeedWorldBuilder.CreateWorld`
 - [ ] `SeedWorldBuilder.CreateWorld` stub is deleted; kept members remain
 - [ ] Geometry/trail tests assert real pipeline behavior (not placeholder)
-- [ ] No `MapLayoutPalette` references remain in `src/` or `tests/`
+- [ ] `MapLayoutPalette` references confirmed absent (already deleted in Plan 0)
 - [ ] Full solution builds with zero related warnings
-- [ ] Full test suite passes
+- [ ] Full test suite passes (Domain + Application + GameContent + Integration if Docker available)
