@@ -289,7 +289,13 @@ export interface TrailBeatSlotDto {
   message: string | null;
 }
 
-export type TrailBeatSlotType = "Quiet" | "Minor" | "Eventful" | "Interrupting";
+export type TrailBeatSlotType = 0 | 1 | 2 | 3;
+export const TrailBeatSlotType = {
+  Quiet: 0,
+  Minor: 1,
+  Eventful: 2,
+  Interrupting: 3,
+} as const;
 
 export interface TravelDiaryDto {
   days: TravelDiaryDayDto[];

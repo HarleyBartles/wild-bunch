@@ -1,5 +1,5 @@
 import type { TravelDiaryDayDto } from "../../api/types";
-import { JourneyStatus } from "../../api/types";
+import { JourneyStatus, TrailBeatSlotType } from "../../api/types";
 import { formatHorseTravelState, formatJourneyStatus, formatTravelMode } from "../../ui/formatters";
 import { formatBeatSlotLabel } from "../../ui/beatFormatters";
 import styled from "styled-components";
@@ -54,7 +54,7 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
         {day.beatSlots && day.beatSlots.length > 0 && (
           <BeatSlotList>
             {day.beatSlots.map((slot) => (
-              <BeatSlotItem key={slot.slotIndex} data-slot-type={slot.slotType.toLowerCase()}>
+              <BeatSlotItem key={slot.slotIndex} data-slot-type={beatSlotTypeCssName(slot.slotType)}>
                 {formatBeatSlotLabel(slot.slotType)}
               </BeatSlotItem>
             ))}
@@ -113,6 +113,21 @@ function renderDayMeta(day: TravelDiaryDayDto) {
   }
 
   return pieces.join(" | ");
+}
+
+function beatSlotTypeCssName(slotType: TrailBeatSlotType): string {
+  switch (slotType) {
+    case TrailBeatSlotType.Quiet:
+      return "quiet";
+    case TrailBeatSlotType.Minor:
+      return "minor";
+    case TrailBeatSlotType.Eventful:
+      return "eventful";
+    case TrailBeatSlotType.Interrupting:
+      return "interrupting";
+    default:
+      return String(slotType);
+  }
 }
 
 const DiaryDayCard = styled.article`

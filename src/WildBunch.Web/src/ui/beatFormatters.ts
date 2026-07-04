@@ -1,4 +1,4 @@
-import type { GameClockDto, ClueTimeAnchorDto, TrailBeatSlotDto, TrailBeatSlotType } from "../api/types";
+import { TrailBeatSlotType, type GameClockDto, type ClueTimeAnchorDto, type TrailBeatSlotDto } from "../api/types";
 
 export function formatClockBeat(clock: GameClockDto): string {
   return clock.beatLabel || `Day ${clock.day}, ${clock.timeOfDay}`;
@@ -37,16 +37,16 @@ export function formatInvestigationNotice(beatNarration: string | null, message:
 
 export function formatBeatSlotLabel(slotType: TrailBeatSlotType): string {
   switch (slotType) {
-    case "Quiet":
+    case TrailBeatSlotType.Quiet:
       return "Quiet stretch";
-    case "Minor":
+    case TrailBeatSlotType.Minor:
       return "Minor event";
-    case "Eventful":
+    case TrailBeatSlotType.Eventful:
       return "Eventful stretch";
-    case "Interrupting":
+    case TrailBeatSlotType.Interrupting:
       return "Interrupted";
     default:
-      return slotType;
+      return String(slotType);
   }
 }
 

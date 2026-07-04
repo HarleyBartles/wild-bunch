@@ -7,7 +7,7 @@ import {
   formatBeatSlotLabel,
   formatBeatSlots,
 } from "../ui/beatFormatters";
-import type { GameClockDto, ClueTimeAnchorDto, TrailBeatSlotDto } from "../api/types";
+import { TrailBeatSlotType, type GameClockDto, type ClueTimeAnchorDto, type TrailBeatSlotDto } from "../api/types";
 
 describe("formatClockBeat", () => {
   it("uses beatLabel when available", () => {
@@ -65,18 +65,18 @@ describe("formatInvestigationNotice", () => {
 
 describe("formatBeatSlotLabel", () => {
   it("formats each slot type", () => {
-    expect(formatBeatSlotLabel("Quiet")).toBe("Quiet stretch");
-    expect(formatBeatSlotLabel("Minor")).toBe("Minor event");
-    expect(formatBeatSlotLabel("Eventful")).toBe("Eventful stretch");
-    expect(formatBeatSlotLabel("Interrupting")).toBe("Interrupted");
+    expect(formatBeatSlotLabel(TrailBeatSlotType.Quiet)).toBe("Quiet stretch");
+    expect(formatBeatSlotLabel(TrailBeatSlotType.Minor)).toBe("Minor event");
+    expect(formatBeatSlotLabel(TrailBeatSlotType.Eventful)).toBe("Eventful stretch");
+    expect(formatBeatSlotLabel(TrailBeatSlotType.Interrupting)).toBe("Interrupted");
   });
 });
 
 describe("formatBeatSlots", () => {
   it("formats slots with titles", () => {
     const slots: TrailBeatSlotDto[] = [
-      { slotIndex: 0, slotType: "Minor", label: "Minor", title: "A lucky find", message: "You find supplies." },
-      { slotIndex: 1, slotType: "Quiet", label: "Quiet", title: null, message: null },
+      { slotIndex: 0, slotType: TrailBeatSlotType.Minor, label: "Minor", title: "A lucky find", message: "You find supplies." },
+      { slotIndex: 1, slotType: TrailBeatSlotType.Quiet, label: "Quiet", title: null, message: null },
     ];
     const result = formatBeatSlots(slots);
     expect(result).toEqual(["Minor event: A lucky find", "Quiet stretch"]);
