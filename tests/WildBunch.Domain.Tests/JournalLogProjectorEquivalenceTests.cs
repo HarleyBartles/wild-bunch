@@ -18,7 +18,7 @@ public sealed class JournalLogProjectorEquivalenceTests
     [Fact]
     public void FullJourneyCycle_ProjectedLogMatchesCommandPathLogEntriesExactly()
     {
-        var (session, preview, gameStarted) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+        var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
         session.StartJourney(preview);
         TravelJourneyStepResult result;
         do
@@ -27,7 +27,7 @@ public sealed class JournalLogProjectorEquivalenceTests
         } while (result.Status == JourneyStatus.Active && result.Success);
         session.AcknowledgeJourneyArrival();
 
-        var events = gameStarted.Concat(session.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(session.UncommittedEvents).ToList();
 
         var projected = new JournalLogProjector().Project(events);
 
@@ -69,7 +69,7 @@ public sealed class JournalLogProjectorEquivalenceTests
     [Fact]
     public void Purchase_ProjectedLogMatchesCommandPathLogEntriesExactly()
     {
-        var (session, preview, gameStarted) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+        var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
 
         var resolver = new TownStoreCatalogResolver();
         var town = session.World.GetTown(session.Player.CurrentTownId);
@@ -78,7 +78,7 @@ public sealed class JournalLogProjectorEquivalenceTests
 
         session.Purchase(offer, 2);
 
-        var events = gameStarted.Concat(session.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(session.UncommittedEvents).ToList();
         var projected = new JournalLogProjector().Project(events);
 
         // Characterization: the projected log should contain the opening and purchase entries.
