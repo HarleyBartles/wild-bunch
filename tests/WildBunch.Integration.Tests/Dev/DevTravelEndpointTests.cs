@@ -132,9 +132,11 @@ public sealed class DevTravelEndpointTests
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
+        // Discover destination dynamically — no hardcoded town names
+        var destinationTownId = scenario.DiscoverFirstConnectedTownId(created);
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{created.Id}/travel",
-            new TravelRequest(scenario.PreviewDestinationTownId!));
+            new TravelRequest(destinationTownId));
         travelResponse.EnsureSuccessStatusCode();
         var turnResult = await travelResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
         Assert.NotNull(turnResult);

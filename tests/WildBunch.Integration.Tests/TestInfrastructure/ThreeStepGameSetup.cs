@@ -39,8 +39,9 @@ internal static class ThreeStepGameSetup
             $"/api/games/{setupSession!.Id}/prologue-viewed", content: null);
         prologueResponse.EnsureSuccessStatusCode();
 
-        // Step 3: start with town
-        var townId = startingTownId ?? fixture.DefaultStartingTownId;
+        // Step 3: start with town — use the starting town resolved during setup
+        // (discovered dynamically from the session, not hardcoded in the fixture)
+        var townId = startingTownId ?? setupSession.Player.CurrentTownId;
         var startResponse = await client.PostAsJsonAsync(
             $"/api/games/{setupSession.Id}/start",
             new StartGameWithTownRequest(townId));

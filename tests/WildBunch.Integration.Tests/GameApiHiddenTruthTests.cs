@@ -72,10 +72,11 @@ public sealed class GameApiHiddenTruthTests
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
-        // Start travel so the journey is active
+        // Start travel so the journey is active — discover destination dynamically
+        var destinationTownId = scenario.DiscoverFirstConnectedTownId(createdSession);
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest(scenario.PreviewDestinationTownId!));
+            new TravelRequest(destinationTownId));
         travelResponse.EnsureSuccessStatusCode();
 
         // The dev travel-context endpoint exposes journey internals + dev override state,
