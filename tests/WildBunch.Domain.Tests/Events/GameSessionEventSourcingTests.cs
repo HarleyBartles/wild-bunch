@@ -15,11 +15,10 @@ namespace WildBunch.Domain.Tests.Events;
 public class GameSessionEventSourcingTests
 {
     [Fact]
-    public void StartNew_Produces_GameStarted_Event_As_Uncommitted()
+    public void CanonicalStart_Produces_GameStarted_Event_As_Uncommitted()
     {
         var session = CreateSession();
-        var single = Assert.Single(session.UncommittedEvents);
-        var gameStarted = Assert.IsType<GameStarted>(single);
+        var gameStarted = session.UncommittedEvents.OfType<GameStarted>().Single();
         Assert.Equal("Ranger Vale", gameStarted.PlayerName);
         Assert.Equal(new TownId("pinecross"), gameStarted.StartingTownId);
         Assert.Equal("Pinecross", gameStarted.StartingTownName);
@@ -30,26 +29,20 @@ public class GameSessionEventSourcingTests
     }
 
     [Fact]
-    public void StartNew_WithSeedCode_Produces_GameStarted_Event_WithSeedCode()
+    public void CanonicalStart_WithSeedCode_Produces_GameStarted_Event_WithSeedCode()
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
         var seedCode = "test-seed-code-12345";
 
-        var session = GameSession.StartNew(
-            "Ranger Vale",
-            world,
-            caseFile,
-            new TownId("pinecross"),
-            wallet: null,
-            inventory: null,
-            GameDifficulty.Standard,
-            SaltSource.CreateRuntime(),
-            GameEntropy.Classic,
-            seedCode);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic,
+            seedCode, SaltSource.CreateRuntime());
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart();
 
-        var single = Assert.Single(session.UncommittedEvents);
-        var gameStarted = Assert.IsType<GameStarted>(single);
+        var gameStarted = session.UncommittedEvents.OfType<GameStarted>().Single();
         Assert.Equal(seedCode, gameStarted.SeedCode);
     }
 
@@ -60,17 +53,12 @@ public class GameSessionEventSourcingTests
         var caseFile = CreateCaseFile();
         var seedCode = "test-seed-code-67890";
 
-        var session = GameSession.StartNew(
-            "Ranger Vale",
-            world,
-            caseFile,
-            new TownId("pinecross"),
-            wallet: null,
-            inventory: null,
-            GameDifficulty.Standard,
-            SaltSource.CreateRuntime(),
-            GameEntropy.Classic,
-            seedCode);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic,
+            seedCode, SaltSource.CreateRuntime());
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart();
 
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
@@ -112,10 +100,10 @@ public class GameSessionEventSourcingTests
     }
 
     [Fact]
-    public void StartNew_Increments_Version_To_One()
+    public void CanonicalStart_Increments_Version_To_Six()
     {
         var session = CreateSession();
-        Assert.Equal(1, session.Version);
+        Assert.Equal(6, session.Version);
     }
 
     [Fact]
@@ -378,7 +366,13 @@ public class GameSessionEventSourcingTests
             new DomainInventoryItem(DomainItemKind.Food, 1),
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
-        return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), wallet ?? Wallet.Starting(25m), resolvedInventory);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic,
+            "test-seed", SaltSource.CreateFixed("test-salt"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart(wallet ?? Wallet.Starting(25m), resolvedInventory);
+        return session;
     }
 
     private static DomainWorld CreateWorld()
