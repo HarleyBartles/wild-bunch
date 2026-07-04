@@ -25,6 +25,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 {
     private const string JourneyModalBlockMessage = "Finish the current journey before taking that action.";
     private const string ArchivedBlockMessage = "This playthrough is archived.";
+    private const string SetupPhaseBlockMessage = "The game hasn't started yet. Complete setup first.";
     private const decimal CitizenDeclarationFine = 10m;
 
     private TownAggregate? _currentTown;
@@ -1388,6 +1389,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private void RefreshTownVisit(TownId townId)
     {
+        if (_currentTown is null)
+        {
+            throw new InvalidOperationException("Cannot refresh town visit before the game has started.");
+        }
+
         var currentTown = World.GetTown(townId);
         _currentTown.EnterTown(currentTown);
         // The action context is scoped to the current town. When the town changes
@@ -2261,6 +2267,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult CheckSheriffRecords()
     {
+        if (IsSetupPhase)
+        {
+            return CaseInvestigationResult.Failed(SetupPhaseBlockMessage);
+        }
+
         if (IsArchived)
         {
             return CaseInvestigationResult.Failed(ArchivedBlockMessage);
@@ -2439,6 +2450,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => Journey is not null;
 
     private bool IsArchived => Status == GameStatus.Archived;
+
+    private bool IsSetupPhase => StartFlowPhase < StartFlowPhase.GameStarted;
 
     private int SpendFirearmAmmo(int requestedBullets)
     {
