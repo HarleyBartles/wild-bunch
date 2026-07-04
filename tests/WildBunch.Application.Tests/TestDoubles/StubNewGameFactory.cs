@@ -106,7 +106,7 @@ public sealed class StubNewGameFactory : INewGameFactory
             new InventoryItem(ItemKind.RevolverAmmo, 4)
         });
 
-        return GameSession.StartNew(
+        return StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -114,5 +114,36 @@ public sealed class StubNewGameFactory : INewGameFactory
             Wallet.Starting(25m),
             inventory,
             saltSource: SaltSource.CreateFixed("application-tests"));
+    }
+
+    private static GameSession StartGameCanonical(
+        string playerName,
+        World world,
+        CaseFile caseFile,
+        TownId startingTownId,
+        Wallet? wallet = null,
+        Inventory? inventory = null,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
+        SaltSource? saltSource = null,
+        GameEntropy gameEntropy = GameEntropy.Classic,
+        string? seedCode = null)
+    {
+        var resolvedSaltSource = saltSource ?? SaltSource.CreateFixed("application-tests");
+        var resolvedSeedCode = seedCode ?? "stub-seed";
+
+        var session = GameSession.StartSetup(
+            playerName,
+            world,
+            caseFile,
+            gameDifficulty,
+            gameEntropy,
+            resolvedSeedCode,
+            resolvedSaltSource);
+
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(startingTownId);
+        session.CompleteGameStart(wallet, inventory);
+
+        return session;
     }
 }
