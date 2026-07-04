@@ -29,9 +29,11 @@ internal static class GameSessionReadStoreLoader
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
         var entropy = entropyJson is null ? GameEntropy.Classic : serializer.DeserializeSetup(entropyJson);
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
-        var townVisitState = townVisitStateJson is null
-            ? new TownVisitState(player.CurrentTownId)
-            : serializer.DeserializeTownVisitState(townVisitStateJson);
+        var townVisitState = player.CurrentTownId is not null
+            ? (townVisitStateJson is null
+                ? new TownVisitState(player.CurrentTownId.Value)
+                : serializer.DeserializeTownVisitState(townVisitStateJson))
+            : null;
 
         return new GameSessionReadModel(
             store.Envelope.Id,
@@ -90,7 +92,9 @@ internal static class GameSessionReadStoreLoader
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
         var entropy = entropyJson is null ? GameEntropy.Classic : serializer.DeserializeSetup(entropyJson);
         var caseFile = serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile));
-        var currentTown = world.GetTown(player.CurrentTownId);
+        var currentTown = player.CurrentTownId is not null
+            ? world.GetTown(player.CurrentTownId.Value)
+            : null;
         var clock = serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
         var logEntries = ApplySlice(new JournalLogProjector().Project(store.AllEvents), skip, take);
 
@@ -99,8 +103,8 @@ internal static class GameSessionReadStoreLoader
             Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
             clock.Day,
             clock.Turn,
-            currentTown.Id,
-            currentTown.Name,
+            currentTown?.Id,
+            currentTown?.Name,
             caseFile.Accusation is null ? null : caseFile.Accusation.Value.Value,
             caseFile.OpeningLead.Description,
             caseFile.KillerReleaseState,

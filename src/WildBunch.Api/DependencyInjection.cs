@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.Json;
 using WildBunch.Api.Dev;
+using WildBunch.Api.Exceptions;
 using WildBunch.Api.Games;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Dev.Commands;
@@ -21,6 +22,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddWildBunchServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddProblemDetails();
+        services.AddExceptionHandler<WildBunchExceptionHandler>();
         services.AddCors(options =>
         {
             options.AddPolicy("ViteDevClient", policy =>

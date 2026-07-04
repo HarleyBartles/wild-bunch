@@ -79,13 +79,14 @@ public sealed class GameSessionWantedSuspectPresenceTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
             pinecross.Id,
             Wallet.Starting(25m),
             inventory,
+            GameDifficulty.Standard,
             saltSource: DeterministicSaltSource);
     }
 }

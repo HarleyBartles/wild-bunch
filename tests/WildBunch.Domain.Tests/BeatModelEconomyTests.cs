@@ -104,7 +104,7 @@ public class BeatModelEconomyTests
     {
         var session = CreateSessionWithStore();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 1); // enters Store
@@ -135,6 +135,6 @@ public class BeatModelEconomyTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard);
     }
 }

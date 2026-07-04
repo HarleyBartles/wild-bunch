@@ -15,13 +15,13 @@ public sealed class GameApiInvestigationActionsTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         var noticeBoardResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/notice-board/inspect", content: null);
 
@@ -74,7 +74,7 @@ public sealed class GameApiInvestigationActionsTests
         var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
 
         Assert.NotNull(telegraphResult);
-        // BUNCH-107: Hardpan (the starting town) has Telegraph service
+        // BUNCH-107: The starting town has Telegraph service
         // (HubTelegraph palette, slot 0). Following telegraph leads should
         // succeed and surface a new clue.
         Assert.True(telegraphResult!.Success);

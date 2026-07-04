@@ -1,7 +1,6 @@
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
-using WildBunch.Domain.World;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.Integration.Tests.TestInfrastructure;
@@ -33,8 +32,6 @@ internal enum SaddleState
 
 internal sealed record ScenarioPreviewExpectation
 {
-    public TownId? DestinationTownId { get; init; }
-
     public TravelMode? TravelMode { get; init; }
 
     public int? BaselineRideDays { get; init; }
@@ -43,17 +40,15 @@ internal sealed record ScenarioPreviewExpectation
 
     public static ScenarioPreviewExpectation Missing() => new();
 
-    public static ScenarioPreviewExpectation Mounted(TownId destinationTownId, int baselineRideDays, int expectedDays)
+    public static ScenarioPreviewExpectation Mounted(int baselineRideDays, int expectedDays)
         => new()
         {
-            DestinationTownId = destinationTownId,
             TravelMode = global::WildBunch.Domain.Travel.TravelMode.Mounted,
             BaselineRideDays = baselineRideDays,
             ExpectedDays = expectedDays
         };
 
-    public bool IsMissing => DestinationTownId is null
-        && TravelMode is null
+    public bool IsMissing => TravelMode is null
         && BaselineRideDays is null
         && ExpectedDays is null;
 }
@@ -70,8 +65,6 @@ internal sealed record ScenarioSeedDescriptor
 
     public ScenarioStartingTownRole? StartingTownRole { get; init; }
 
-    public TownId? ExactStartingTownId { get; init; }
-
     public HorseCondition? HorseCondition { get; init; }
 
     public SaddleState? SaddleState { get; init; }
@@ -86,9 +79,9 @@ internal sealed record ScenarioSeedDescriptor
 
     public TravelMode? TravelMode { get; init; }
 
-    public IReadOnlyList<TownId> RequiredConnectedTownIds { get; init; } = [];
+    public int? RequiredConnectedTownCount { get; init; }
 
-    public TownId? ServicesTownId { get; init; }
+    public bool? ServicesOnStartingTown { get; init; }
 
     public ScenarioPreviewExpectation? Preview { get; init; }
 
@@ -108,10 +101,7 @@ internal sealed record ScenarioSeedDescriptor
         => this with { Difficulty = difficulty };
 
     public ScenarioSeedDescriptor WithStartingTownRole(ScenarioStartingTownRole role)
-        => this with { StartingTownRole = role, ExactStartingTownId = null };
-
-    public ScenarioSeedDescriptor WithExactStartingTown(TownId townId)
-        => this with { ExactStartingTownId = townId, StartingTownRole = null };
+        => this with { StartingTownRole = role };
 
     public ScenarioSeedDescriptor WithHorse(HorseCondition horseCondition)
         => this with { HorseCondition = horseCondition };
@@ -134,11 +124,11 @@ internal sealed record ScenarioSeedDescriptor
     public ScenarioSeedDescriptor WithTravelMode(TravelMode travelMode)
         => this with { TravelMode = travelMode };
 
-    public ScenarioSeedDescriptor WithConnectedTownIds(params TownId[] townIds)
-        => this with { RequiredConnectedTownIds = townIds };
+    public ScenarioSeedDescriptor WithConnectedTownCount(int count)
+        => this with { RequiredConnectedTownCount = count };
 
-    public ScenarioSeedDescriptor WithServicesTown(TownId townId)
-        => this with { ServicesTownId = townId };
+    public ScenarioSeedDescriptor WithServicesOnStartingTown()
+        => this with { ServicesOnStartingTown = true };
 
     public ScenarioSeedDescriptor WithPreview(ScenarioPreviewExpectation preview)
         => this with { Preview = preview };
@@ -164,10 +154,6 @@ internal sealed record ScenarioSeedDescriptor
         if (StartingTownRole is not null)
         {
             parts.Add($"start={FormatStartingTownRole(StartingTownRole.Value)}");
-        }
-        else if (ExactStartingTownId is not null)
-        {
-            parts.Add($"start={ExactStartingTownId.Value.Value}");
         }
 
         if (HorseCondition is not null)
@@ -205,14 +191,14 @@ internal sealed record ScenarioSeedDescriptor
             parts.Add($"travel={TravelMode.Value.ToString().ToLowerInvariant()}");
         }
 
-        if (RequiredConnectedTownIds.Count > 0)
+        if (RequiredConnectedTownCount is not null)
         {
-            parts.Add($"routes={string.Join(",", RequiredConnectedTownIds.Select(townId => townId.Value))}");
+            parts.Add($"routes=count={RequiredConnectedTownCount.Value}");
         }
 
-        if (ServicesTownId is not null)
+        if (ServicesOnStartingTown is true)
         {
-            parts.Add($"services={ServicesTownId.Value.Value}");
+            parts.Add("services=starting-town");
         }
 
         if (Preview is not null)
@@ -231,7 +217,14 @@ internal sealed record ScenarioSeedDescriptor
         };
 
     private static string FormatPreview(ScenarioPreviewExpectation preview)
+        // The shape signature encodes only the travel mode (mounted/foot/missing),
+        // NOT the specific BaselineRideDays/ExpectedDays. Those values depend on
+        // map generation (trail distances, town spacing) and change when the map
+        // generator is tuned. Encoding them in the shape signature makes the
+        // fixture brittle to map generation improvements. The travel preview
+        // contract (AssertTravelPreviewContract) validates the preview's
+        // success and travel mode — those are the stable invariants.
         => preview.IsMissing
             ? "missing"
-            : $"{preview.DestinationTownId!.Value.Value}:{preview.TravelMode!.Value.ToString().ToLowerInvariant()}:{preview.BaselineRideDays!.Value}/{preview.ExpectedDays!.Value}";
+            : $"{preview.TravelMode!.Value.ToString().ToLowerInvariant()}";
 }

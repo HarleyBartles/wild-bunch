@@ -60,8 +60,8 @@ public sealed class TravelEntropyVarianceTests
         var dest2 = TravelTestSeedCatalog.ResolveDestination(session2, trail2);
 
         var resolver = new TravelResolver();
-        var preview1 = resolver.PreviewJourney(session1.World, session1.Player.CurrentTownId, dest1, session1.Player.Inventory).Preview!;
-        var preview2 = resolver.PreviewJourney(session2.World, session2.Player.CurrentTownId, dest2, session2.Player.Inventory).Preview!;
+        var preview1 = resolver.PreviewJourney(session1.World, session1.Player.CurrentTownId!.Value, dest1, session1.Player.Inventory).Preview!;
+        var preview2 = resolver.PreviewJourney(session2.World, session2.Player.CurrentTownId!.Value, dest2, session2.Player.Inventory).Preview!;
 
         session1.StartJourney(preview1);
         session2.StartJourney(preview2);

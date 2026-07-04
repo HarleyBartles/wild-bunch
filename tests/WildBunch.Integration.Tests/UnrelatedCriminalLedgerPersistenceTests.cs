@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
@@ -140,6 +141,12 @@ public sealed class UnrelatedCriminalLedgerPersistenceTests
             knownWarrants: knownWarrants,
             publicWarrants: publicWarrants);
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart();
+        return session;
     }
 }

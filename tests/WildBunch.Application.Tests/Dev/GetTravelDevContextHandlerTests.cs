@@ -81,14 +81,15 @@ public sealed class GetTravelDevContextHandlerTests
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id,
-            Wallet.Starting(25m), inventory, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Easy, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed(string.Empty));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
         session.MarkEventsCommitted();
 
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(
-            session.World, session.Player.CurrentTownId, dryfork.Id,
+            session.World, session.Player.CurrentTownId!.Value, dryfork.Id,
             session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         session.MarkEventsCommitted();

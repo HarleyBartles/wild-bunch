@@ -24,8 +24,13 @@ public enum StartFlowPhase
     PrologueViewed = 2,
 
     /// <summary>
+    /// Player has selected a starting town. StartingTownSelected event has been emitted.
+    /// </summary>
+    StartingTownSelected = 3,
+
+    /// <summary>
     /// Player has selected a starting town and the game has started.
     /// GameStarted event has been emitted.
     /// </summary>
-    GameStarted = 3
+    GameStarted = 4
 }

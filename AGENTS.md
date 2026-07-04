@@ -8,6 +8,9 @@
 
 ## Required Working Knowledge
 - Architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
+- **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
+- **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
+- **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — inspect this folder before running ad-hoc commands for repo operations
 - Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
 
@@ -49,8 +52,15 @@
 
 **Note**: For Linear/GitHub/architecture/anti-slop routing, use direct skills and repo-local doctrine instead of compositional middlemen. The retired `*-superpowers` compositional skills have been removed from the marketplace.
 
-### Architecture Skills
-- For architecture work, inspect current source and canonical repo decisions, then use `/using-superpowers` or skill discovery to invoke the smallest relevant specialist skill
+### Architecture Skills (must invoke before touching domain, persistence, or command/query handlers)
+- `/ddd` - DDD tactical patterns: aggregates, value objects, domain events, strongly-typed IDs. The aggregate root enforces invariants and returns Result objects for failures.
+- `/cqrs-event-sourcing` - CQRS and Event Sourcing patterns: command/query separation, events as source of truth, projections for reads.
+- `/event-driven-architecture` - Event-driven architecture patterns for domain events and projections.
+- `/clean-architecture` - Layered .NET system structure: Domain, Application, Infrastructure, Api projects, dependency inversion.
+- `/wild-bunch-dotnet-architecture` - Wild Bunch-specific .NET architecture guardrails: GameSession as aggregate root, event-sourced command flows, JSON snapshot cache, persistence boundaries.
+- `/wild-bunch-domain-modeling` - Wild Bunch domain modeling: GameSession boundaries, player wallet/inventory, travel rules, clue/journal flows, hidden culprit truth.
+- `/ef-core` - Entity Framework Core patterns when persistence work touches DbContext, migrations, or queries.
+- For architecture work, inspect current source and canonical repo decisions, then invoke the smallest relevant specialist skill above. **Do not hand-roll non-DDD, non-CQRS, or non-event-sourced solutions. The skills and ADRs are the authority, not the repo's current code.**
 
 ## Specialist Skill Discovery
 When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas:
@@ -64,7 +74,7 @@ When work touches architecture, domain modeling, persistence, frontend, browser-
 Use these reference files when working in specific areas:
 
 - **[`.agents/docs/workflow-policy.md`](.agents/docs/workflow-policy.md)** - Use when managing git workflow, claiming completion, publishing PRs, or verifying issue-goal alignment
-- **[`.agents/docs/validation-policy.md`](.agents/docs/validation-policy.md)** - Use when running validation, debugging CI failures, or deciding test coverage scope
+- **[`.agents/docs/validation-policy.md`](.agents/docs/validation-policy.md)** - Use when running validation, debugging CI failures, or deciding test coverage scope. Documents the repo's five test kinds (unit, integration, game-content, API, brute-force) and when to use each.
 - **[`.agents/docs/artifact-policy.md`](.agents/docs/artifact-policy.md)** - Use when creating agent artifacts, managing screenshots/evidence, or working with unslop profiles
 - **[`.agents/docs/architecture-guardrails.md`](.agents/docs/architecture-guardrails.md)** - Use when making architecture decisions, touching GameSession, modifying persistence, or working with seed codecs
 - **[`.agents/docs/coding-discipline.md`](.agents/docs/coding-discipline.md)** - Use when writing code, deciding scope boundaries, or refactoring

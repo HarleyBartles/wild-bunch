@@ -27,7 +27,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private const string ArchivedBlockMessage = "This playthrough is archived.";
     private const decimal CitizenDeclarationFine = 10m;
 
-    private readonly TownAggregate _currentTown;
+    private TownAggregate? _currentTown;
     private readonly BountyLoop _bountyLoop;
     private readonly JourneyLoop _journeyLoop;
     private readonly ActionContextTracker _actionContextTracker = new();
@@ -37,6 +37,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private readonly List<IDomainEvent> _uncommittedEvents = [];
     private readonly List<IDomainEvent> _committedEvents = [];
     private int _version;
+    private TownId? _selectedStartingTownId;
 
     private GameSession(
         GameSessionId id,
@@ -65,13 +66,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = gameEntropy;
         SaltSource = saltSource;
         SeedCode = null; // Set by Apply(GameStarted) during event replay
-        _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit ?? new TownVisitState(player.CurrentTownId));
-        if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
+        // During setup phase (StartSetup, RehydrateFromEvents), currentTownVisit is null
+        // and the player's CurrentTownId is null. Defer TownAggregate creation
+        // until Apply(GameStarted) when the real starting town is known. For snapshot-based
+        // loads, currentTownVisit is non-null and we create _currentTown immediately.
+        if (currentTownVisit is not null && player.CurrentTownId is not null)
         {
-            _currentTown.EnterTown(World.GetTown(player.CurrentTownId));
+            _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId.Value), currentTownVisit);
+            if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
+            {
+                _currentTown.EnterTown(World.GetTown(player.CurrentTownId.Value));
+            }
+            _currentTown.PrimeCurrentTown();
         }
-
-        _currentTown.PrimeCurrentTown();
 
         // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
         // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
@@ -140,9 +147,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public Player Player { get; private set; }
 
-    public DomainWorld World { get; }
+    public DomainWorld World { get; private set; } = null!;
 
-    public CaseFile CaseFile { get; }
+    public CaseFile CaseFile { get; private set; } = null!;
 
     public PursuitState PursuitState { get; }
 
@@ -158,9 +165,18 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public string? SeedCode { get; private set; }
 
-    public TownAggregate CurrentTown => _currentTown;
+    public TownAggregate CurrentTown => _currentTown
+        ?? throw new InvalidOperationException("No town has been selected yet. The current town is only available after GameStarted.");
 
-    public TownVisitState CurrentTownVisit => _currentTown.VisitState;
+    public TownVisitState CurrentTownVisit => _currentTown?.VisitState
+        ?? throw new InvalidOperationException("No town has been selected yet. The current town visit is only available after GameStarted.");
+
+    /// <summary>
+    /// Null-safe accessor for the town visit state. Returns null during the setup phase
+    /// (before GameStarted). Used by the persistence layer to avoid snapshotting a
+    /// phantom town visit state for setup-phase sessions.
+    /// </summary>
+    internal TownVisitState? TownVisitStateOrNull => _currentTown?.VisitState;
 
     public TravelRulesProfile TravelRules => TravelRulesProfile.For(GameDifficulty);
 
@@ -809,7 +825,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     /// <summary>
     /// Starts a new game session in the setup-complete phase (after player has completed initial setup).
-    /// This creates a session that has PlayerSetupCompleted applied but not yet GameStarted.
+    /// This creates a session that has PlayerSetupCompleted and WorldGenerated applied but not yet GameStarted.
     /// The session can be advanced to GameStarted by calling CompleteGameStart().
     /// </summary>
     public static GameSession StartSetup(
@@ -818,16 +834,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         CaseFile caseFile,
         GameDifficulty gameDifficulty,
         GameEntropy gameEntropy,
-        string seedCode)
+        string seedCode,
+        SaltSource saltSource)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(caseFile);
         ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
 
-        var resolvedSaltSource = SaltSource.CreateRuntime();
-
-        // Create the PlayerSetupCompleted event
         var setupEvent = new PlayerSetupCompleted
         {
             PlayerName = playerName,
@@ -836,10 +850,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SeedCode = seedCode
         };
 
-        // Create a placeholder session
+        var worldEvent = new WorldGenerated
+        {
+            SeedCode = seedCode,
+            SaltSource = saltSource,
+            GameEntropy = gameEntropy,
+            World = WorldSnapshot.FromDomain(world)
+        };
+
         var placeholderPlayer = new Player(
             playerName,
-            world.Towns.First().Id, // Temporary, will be set when GameStarted is emitted
+            currentTownId: null,
             health: StartingHealthFor(gameDifficulty),
             WildBunch.Domain.Economy.Wallet.Starting(25m),
             DomainInventory.Empty());
@@ -854,39 +875,70 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             GameStatus.Active,
             journey: null,
             gameDifficulty,
-            resolvedSaltSource,
+            saltSource,
             gameEntropy,
             currentTownVisit: null,
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
 
-        // Apply the setup event
         session.Apply(setupEvent);
         session._uncommittedEvents.Add(setupEvent);
+        session.Apply(worldEvent);
+        session._uncommittedEvents.Add(worldEvent);
+
+        var caseFileEvent = new CaseFileGenerated
+        {
+            CaseFile = CaseFileSnapshot.FromDomain(caseFile)
+        };
+
+        session.Apply(caseFileEvent);
+        session._uncommittedEvents.Add(caseFileEvent);
 
         return session;
     }
 
     /// <summary>
-    /// Completes the game start by selecting a starting town and emitting GameStarted.
-    /// This transitions the session from SetupComplete/PrologueViewed to GameStarted.
+    /// Records the player's starting town choice. Emits StartingTownSelected.
+    /// Must be called after ViewPrologue and before CompleteGameStart.
+    /// </summary>
+    public void SelectStartingTown(TownId startingTownId)
+    {
+        ArgumentNullException.ThrowIfNull(startingTownId);
+
+        if (StartFlowPhase == StartFlowPhase.StartingTownSelected)
+            return; // Idempotent
+
+        if (StartFlowPhase != StartFlowPhase.PrologueViewed)
+            throw new InvalidOperationException("Cannot select starting town before viewing the prologue.");
+
+        var town = World.GetTown(startingTownId);
+
+        var e = new StartingTownSelected
+        {
+            StartingTownId = startingTownId
+        };
+
+        Apply(e);
+        _uncommittedEvents.Add(e);
+    }
+
+    /// <summary>
+    /// Completes the game start by emitting GameStarted.
+    /// This transitions the session from StartingTownSelected to GameStarted.
     /// The wallet and inventory come from the difficulty envelope (application layer concern).
     /// </summary>
     public void CompleteGameStart(
-        TownId startingTownId,
         WildBunch.Domain.Economy.Wallet? wallet = null,
         DomainInventory? inventory = null)
     {
         if (StartFlowPhase == StartFlowPhase.GameStarted)
-        {
-            return; // Already started
-        }
+            return;
 
-        if (StartFlowPhase == StartFlowPhase.NotStarted)
-        {
-            throw new InvalidOperationException("Cannot complete game start before setup is complete.");
-        }
+        if (StartFlowPhase != StartFlowPhase.StartingTownSelected)
+            throw new InvalidOperationException("Cannot complete game start before selecting a starting town.");
 
+        var startingTownId = _selectedStartingTownId
+            ?? throw new InvalidOperationException("No starting town selected.");
         var startingTown = World.GetTown(startingTownId);
         var startingHealth = StartingHealthFor(GameDifficulty);
         var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
@@ -908,82 +960,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         Apply(e);
         _uncommittedEvents.Add(e);
-    }
-
-    public static GameSession StartNew(string playerName, DomainWorld world, CaseFile caseFile, TownId? startingTownId = null)
-        => StartNew(playerName, world, caseFile, startingTownId, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard, seedCode: null);
-
-    public static GameSession StartNew(
-        string playerName,
-        DomainWorld world,
-        CaseFile caseFile,
-        TownId? startingTownId,
-        WildBunch.Domain.Economy.Wallet? wallet,
-        DomainInventory? inventory,
-        GameDifficulty gameDifficulty = GameDifficulty.Standard,
-        SaltSource? saltSource = null,
-        GameEntropy gameEntropy = GameEntropy.Classic,
-        string? seedCode = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(playerName);
-        ArgumentNullException.ThrowIfNull(world);
-        ArgumentNullException.ThrowIfNull(caseFile);
-
-        var resolvedTownId = startingTownId ?? world.Towns.First().Id;
-        var startingTown = world.GetTown(resolvedTownId);
-        var resolvedSaltSource = saltSource ?? SaltSource.CreateRuntime();
-        var resolvedWallet = wallet ?? WildBunch.Domain.Economy.Wallet.Starting(25m);
-        var resolvedInventory = inventory ?? DomainInventory.Empty();
-        var startingHealth = StartingHealthFor(gameDifficulty);
-
-        // Build the typed domain event from the resolved starting values.
-        var e = new GameStarted
-        {
-            PlayerName = playerName,
-            StartingTownId = startingTown.Id,
-            StartingTownName = startingTown.Name,
-            StartingHealth = startingHealth,
-            StartingWallet = resolvedWallet.Cash,
-            StartingInventoryItems = resolvedInventory.Items.ToArray(),
-            GameDifficulty = gameDifficulty,
-            SaltSource = resolvedSaltSource,
-            GameEntropy = gameEntropy,
-            SeedCode = seedCode
-        };
-
-        // Construct a placeholder session (like RehydrateFromEvents).
-        // Apply(GameStarted) is the single mutation path — it sets Player,
-        // Status, GameDifficulty, SaltSource, and GameEntropy from the event.
-        // The constructor only sets world/caseFile/clock/pursuit references that
-        // are external inputs, not event-derived state.
-        var placeholderPlayer = new Player(
-            playerName,
-            startingTown.Id,
-            health: startingHealth,
-            resolvedWallet,
-            resolvedInventory);
-
-        var session = new GameSession(
-            GameSessionId.New(),
-            placeholderPlayer,
-            world,
-            caseFile,
-            new PursuitState(),
-            new GameClock(),
-            GameStatus.Active,
-            journey: null,
-            gameDifficulty,
-            resolvedSaltSource,
-            gameEntropy,
-            currentTownVisit: null,
-            Array.Empty<TravelJourneySnapshot>(),
-            Array.Empty<WantedSuspectPresenceEntry>());
-
-        // Apply the event through the single mutation path (same as replay).
-        session.Apply(e);
-        session._uncommittedEvents.Add(e);
-
-        return session;
     }
 
     /// <summary>
@@ -1041,8 +1017,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             ArchivedAtUtc = archivedAtUtc ?? DateTime.UtcNow,
             ArchiveReason = archiveReason,
             PlayerName = Player.Name,
-            LastTownId = CurrentTown.TownId,
-            LastTownName = CurrentTown.TownName,
+            LastTownId = IsSetupPhase ? null : CurrentTown.TownId,
+            LastTownName = IsSetupPhase ? null : CurrentTown.TownName,
             Day = Clock.Day,
             Turn = Clock.Turn.ToString(),
             StatusBeforeArchive = Status
@@ -1079,6 +1055,19 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = e.GameEntropy;
         SeedCode = e.SeedCode;
         StartFlowPhase = StartFlowPhase.GameStarted;
+        // Create _currentTown now that the real starting town is known.
+        // During setup phase (StartSetup, RehydrateFromEvents), _currentTown was
+        // left null because the player hadn't selected a town yet. For snapshot-based
+        // loads, _currentTown was already created by the constructor.
+        if (_currentTown is null)
+        {
+            _currentTown = new TownAggregate(World.GetTown(e.StartingTownId), new TownVisitState(e.StartingTownId));
+            _currentTown.PrimeCurrentTown();
+        }
+        else if (!_currentTown.TownId.Equals(e.StartingTownId))
+        {
+            _currentTown.EnterTown(World.GetTown(e.StartingTownId));
+        }
         _version++;
     }
 
@@ -1096,10 +1085,31 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = e.GameEntropy;
         Player = new Player(
             e.PlayerName,
-            Player.CurrentTownId,
+            currentTownId: null,
             health: Player.Health,
             Player.Wallet,
             Player.Inventory);
+        _version++;
+    }
+
+    private void Apply(WorldGenerated e)
+    {
+        World = e.World.ToDomain();
+        SaltSource = e.SaltSource;
+        GameEntropy = e.GameEntropy;
+        _version++;
+    }
+
+    private void Apply(CaseFileGenerated e)
+    {
+        CaseFile = e.CaseFile.ToDomain();
+        _version++;
+    }
+
+    private void Apply(StartingTownSelected e)
+    {
+        StartFlowPhase = StartFlowPhase.StartingTownSelected;
+        _selectedStartingTownId = e.StartingTownId;
         _version++;
     }
 
@@ -1380,6 +1390,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private void RefreshTownVisit(TownId townId)
     {
+        if (_currentTown is null)
+        {
+            throw new InvalidOperationException("Cannot refresh town visit before the game has started.");
+        }
+
         var currentTown = World.GetTown(townId);
         _currentTown.EnterTown(currentTown);
         // The action context is scoped to the current town. When the town changes
@@ -2431,6 +2446,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => Journey is not null;
 
     private bool IsArchived => Status == GameStatus.Archived;
+
+    /// <summary>
+    /// True when the session has not yet reached GameStarted. Gameplay commands
+    /// are blocked while this is true. Exposed so the command-handler pipeline
+    /// can enforce the setup-phase invariant centrally without each gameplay
+    /// domain method repeating the guard. See ADR-0028 and the architecture
+    /// guardrails for the inversion pattern.
+    /// </summary>
+    public bool IsSetupPhase => StartFlowPhase < StartFlowPhase.GameStarted;
 
     private int SpendFirearmAmmo(int requestedBullets)
     {

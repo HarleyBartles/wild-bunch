@@ -30,7 +30,7 @@ public sealed class GameSessionDtoProjectionFieldsTests
             session.Player.Name,
             session.Player.Health,
             session.Player.Wallet.Cash,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             "Dustvale",
             Array.Empty<HudInventoryItem>());
 
@@ -38,7 +38,7 @@ public sealed class GameSessionDtoProjectionFieldsTests
             session.Id.Value,
             session.Clock.Day,
             session.Clock.Turn,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             "Dustvale",
             Array.Empty<DiaryEntry>());
 

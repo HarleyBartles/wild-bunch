@@ -21,7 +21,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
         Assert.Equal(8, resolved.TownCount);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.GetSelectedTownIds().Count);
     }
 
     [Fact]
@@ -102,22 +102,6 @@ public sealed class TravelTestSeedCatalogGuardrailTests
         var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedStandard);
         var firstTown = session.World.Towns.First().Id;
         Assert.Equal(firstTown, session.Player.CurrentTownId);
-    }
-
-    [Fact]
-    public void CanonicalWorld_HasLowOpenRangeCreekRoute()
-    {
-        // Slot 0→1 is Low/OpenRange/Creek in Canonical variant (spoke from hub). Start in slot 0's town.
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
-        var startTown = TravelTestSeedCatalog.FindTownWithRoute(
-            world, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        Assert.NotNull(startTown);
-
-        var session = TravelTestSeedCatalog.CreateSession(
-            TravelTestSeedCatalog.CanonicalMountedEasyStandard, startTown!.Value.Value);
-        var trail = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        Assert.NotNull(trail);
     }
 
     [Fact]

@@ -12,8 +12,9 @@ namespace WildBunch.GameContent.NewGame;
 /// Composed by <see cref="GameSetupResolver"/> from:
 /// seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy
 /// -> MysteryTruthResolution -> ResolvedGameSetup.
-/// <see cref="GameSession.StartNew"/> consumes these facts without
-/// reinterpreting the seed during live play.
+/// The canonical start flow (StartSetup → ViewPrologue → SelectStartingTown
+/// → CompleteGameStart) consumes these facts without reinterpreting the seed
+/// during live play.
 /// </summary>
 internal sealed record ResolvedGameSetup(
     SeedWorld SeedWorld,

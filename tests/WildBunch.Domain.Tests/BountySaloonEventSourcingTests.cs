@@ -90,18 +90,18 @@ public sealed class BountySaloonEventSourcingTests
     [Fact]
     public void Replay_SaloonPersonOfInterestSpotted_ReconstructsActivePersonOfInterest()
     {
-        // Build the session inline to capture the GameStarted event before MarkEventsCommitted.
-        var session = CreateConfrontableSaloonSessionWithUncommittedGameStarted(out var gameStarted);
+        // Build the session inline to capture the setup events before MarkEventsCommitted.
+        var session = CreateConfrontableSaloonSessionWithUncommittedGameStarted(out var setupEvents);
         session.MarkEventsCommitted();
 
         session.LookAroundSaloon();
-        var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(session.UncommittedEvents).ToList();
         var activePoiIdAfterCommand = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
         var contextAfterCommand = session.CurrentActionContext;
         var turnAfterCommand = session.Clock.Turn;
 
         var replayed = GameSession.RehydrateFromEvents(
-            session.Id, session.World, TestSessionFactory.CreateBaselineCaseFileFor(session),
+            session.Id, session.World,
             events);
 
         Assert.Equal(activePoiIdAfterCommand, replayed.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
@@ -109,7 +109,7 @@ public sealed class BountySaloonEventSourcingTests
         Assert.Equal(turnAfterCommand, replayed.Clock.Turn);
     }
 
-    private static GameSession CreateConfrontableSaloonSessionWithUncommittedGameStarted(out GameStarted gameStarted)
+    private static GameSession CreateConfrontableSaloonSessionWithUncommittedGameStarted(out IReadOnlyList<IDomainEvent> setupEvents)
     {
         var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
@@ -138,10 +138,10 @@ public sealed class BountySaloonEventSourcingTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
-        gameStarted = Assert.IsType<GameStarted>(session.UncommittedEvents.Single());
+        setupEvents = session.UncommittedEvents.ToList();
         return session;
     }
 

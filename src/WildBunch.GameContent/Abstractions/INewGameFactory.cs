@@ -5,24 +5,18 @@ using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
+using SaltSource = WildBunch.Domain.Game.SaltSource;
 
 namespace WildBunch.GameContent.Abstractions;
 
 public interface INewGameFactory
 {
-    GameSession Create(
-        string playerName,
-        GameDifficulty gameDifficulty = GameDifficulty.Standard,
-        string? setupSeedCode = null,
-        GameEntropy gameEntropy = GameEntropy.Classic,
-        string? startingTownId = null);
-
     /// <summary>
     /// Resolves the world and case file from the seed code without creating a game session.
     /// Used by the start flow to create a setup-phase session that knows the world
     /// before the player selects a starting town.
     /// </summary>
-    (World World, CaseFile CaseFile, string SeedCodeText) ResolveWorld(
+    (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
         string playerName,
         GameDifficulty gameDifficulty,
         string? setupSeedCode,

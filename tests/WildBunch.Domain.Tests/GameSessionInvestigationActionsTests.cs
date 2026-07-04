@@ -344,7 +344,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "Wanted for a Wild Bunch robbery.")
             });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -443,7 +443,7 @@ public sealed class GameSessionInvestigationActionsTests
             },
             publicWarrants: publicWarrants);
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateExpandedSession()
@@ -501,7 +501,7 @@ public sealed class GameSessionInvestigationActionsTests
                         })),
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateRefreshableSession()
@@ -567,7 +567,7 @@ public sealed class GameSessionInvestigationActionsTests
                         })),
             });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -641,7 +641,7 @@ public sealed class GameSessionInvestigationActionsTests
                         })),
             });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -707,7 +707,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "Wanted for stagecoach robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateColorOnlyGossipSession()
@@ -759,7 +759,7 @@ public sealed class GameSessionInvestigationActionsTests
                         })),
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static void TravelToTown(GameSession session, TownId destinationTownId)
@@ -767,7 +767,7 @@ public sealed class GameSessionInvestigationActionsTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 destinationTownId,
                 session.Player.Inventory)
             .Preview!;
@@ -788,7 +788,7 @@ public sealed class GameSessionInvestigationActionsTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("connected"),
                 session.Player.Inventory)
             .Preview!;

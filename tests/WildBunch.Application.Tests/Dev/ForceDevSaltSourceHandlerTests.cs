@@ -136,9 +136,10 @@ public sealed class ForceDevSaltSourceHandlerTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Easy, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed(string.Empty));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(town.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory: null);
         session.MarkEventsCommitted();
         return session;
     }

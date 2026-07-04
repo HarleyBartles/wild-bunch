@@ -84,6 +84,10 @@ public sealed class ConfrontSaloonWantedSuspectHandlerTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart();
+        return session;
     }
 }

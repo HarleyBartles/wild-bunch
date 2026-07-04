@@ -36,8 +36,7 @@ public sealed class GameApiJournalTests
         Assert.Equal(createdSession.Status, journal.Status);
         Assert.Equal(createdSession.Clock.Day, journal.Clock.Day);
         Assert.Equal(createdSession.Clock.Turn, journal.Clock.Turn);
-        Assert.Equal("hardpan", journal.CurrentTown.Id);
-        Assert.Equal("Hardpan", journal.CurrentTown.Name);
+        Assert.Equal(createdSession.Player.CurrentTownId, journal.CurrentTown.Id);
         Assert.Equal("Find the culprit before the law closes in.", journal.CaseFile.CaseSummary);
         Assert.Equal("The culprit has a scar on the left cheek.", journal.CaseFile.OpeningLead);
         Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
@@ -74,16 +73,16 @@ public sealed class GameApiJournalTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
-        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         var buyResponse = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession.Id}/towns/hardpan/store/buy",
+            $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
         var buyResult = await buyResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
         Assert.NotNull(buyResult);
@@ -113,13 +112,19 @@ public sealed class GameApiJournalTests
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
 
+        // Discover a connected town dynamically — no hardcoded town names.
+        var destinationTownId = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .First();
+
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("quartzsite"));
+            new TravelRequest(destinationTownId));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
-        await AdvanceUntilTownAsync(client, createdSession.Id, "quartzsite");
+        await AdvanceUntilTownAsync(client, createdSession.Id, destinationTownId);
 
         var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
 
@@ -128,8 +133,7 @@ public sealed class GameApiJournalTests
         var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
 
         Assert.NotNull(journal);
-        Assert.Equal("quartzsite", journal!.CurrentTown.Id);
-        Assert.Equal(6, journal.Clock.Day);
+        Assert.Equal(destinationTownId, journal!.CurrentTown.Id);
         Assert.Equal(0, journal.Clock.Turn);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.Travel);
         Assert.Equal("The culprit has a scar on the left cheek.", journal.CaseFile.OpeningLead);
@@ -159,9 +163,15 @@ public sealed class GameApiJournalTests
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
 
+        // Discover a connected town dynamically — no hardcoded town names.
+        var destinationTownId = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .First();
+
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("quartzsite"));
+            new TravelRequest(destinationTownId));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 

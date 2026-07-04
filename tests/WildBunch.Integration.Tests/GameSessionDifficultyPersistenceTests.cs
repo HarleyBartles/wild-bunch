@@ -50,7 +50,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         var serializer = new GameSessionJsonSerializer();
         var session = CreateJourneyHistorySession();
-        var preview = CreateJourneyPreview(session.Player.CurrentTownId, new TownId("openpass"), "Pinecross", "Open Pass");
+        var preview = CreateJourneyPreview(session.Player.CurrentTownId!.Value, new TownId("openpass"), "Pinecross", "Open Pass");
 
         session.StartJourney(preview);
         session.Journey!.MarkCompleted();
@@ -301,7 +301,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded!.Player.CurrentTownId);
         Assert.True(reloaded.CurrentTownVisit.TryGetTownState(new TownId("current"), out var currentTownState));
         Assert.True(reloaded.CurrentTownVisit.TryGetTownState(new TownId("connected"), out var connectedTownState));
         Assert.Equal(2, currentTownState!.VisitNumber);
@@ -356,7 +356,7 @@ public sealed class GameSessionDifficultyPersistenceTests
 
         var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
 
-        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
         Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(reloaded.CaseFile.KnownClues);
@@ -376,7 +376,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var json = serializer.Serialize(session);
         var reloaded = serializer.Deserialize(json);
 
-        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
         Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(reloaded.CaseFile.KnownClues);
@@ -401,7 +401,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded!.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
         Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(reloaded.CaseFile.KnownClues);
@@ -430,15 +430,18 @@ public sealed class GameSessionDifficultyPersistenceTests
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        return GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            pinecross.Id,
-            Wallet.Starting(25m),
-            inventory,
             GameDifficulty,
-            gameEntropy: entropy);
+            entropy,
+            "test-seed",
+            SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateTownVisitSession()
@@ -478,11 +481,17 @@ public sealed class GameSessionDifficultyPersistenceTests
                     context: "Telegraph lead")
             });
 
-        return GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            currentTown.Id,
+            GameDifficulty.Easy,
+            GameEntropy.Classic,
+            "test-seed",
+            SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart(
             Wallet.Starting(25m),
             new Inventory(new[]
             {
@@ -490,8 +499,8 @@ public sealed class GameSessionDifficultyPersistenceTests
                 new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
                 new InventoryItem(ItemKind.Horse, 1, new HorseTravelState(3, 2, 3)),
                 new InventoryItem(ItemKind.Saddle, 1)
-            }),
-            GameDifficulty.Easy);
+            }));
+        return session;
     }
 
     private static CaseFile CreateGangAwareCaseFile()
@@ -692,13 +701,17 @@ public sealed class GameSessionDifficultyPersistenceTests
             new InventoryItem(ItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            pinecross.Id,
-            Wallet.Starting(25m),
-            inventory,
-            GameDifficulty.Easy);
+            GameDifficulty.Easy,
+            GameEntropy.Classic,
+            "test-seed",
+            SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 }

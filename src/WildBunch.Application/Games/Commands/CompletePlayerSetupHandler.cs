@@ -35,6 +35,9 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
         _diaryProjector = diaryProjector;
     }
 
+    // Setup-flow handler: creates the session, does not require GameStarted.
+    protected override bool RequiresGameStarted => false;
+
     public async Task<GameSessionDto> HandleAsync(CompletePlayerSetupCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -52,7 +55,7 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
         }
 
         // 2. Resolve the world and case file from the seed code (without starting the game).
-        var (world, caseFile, seedCodeText) = _newGameFactory.ResolveWorld(
+        var (world, caseFile, seedCodeText, saltSource) = _newGameFactory.ResolveWorld(
             command.PlayerName, command.GameDifficulty, command.SeedCode, command.GameEntropy);
 
         // 3. Create the session in setup-complete phase.
@@ -62,7 +65,8 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
             caseFile,
             command.GameDifficulty,
             command.GameEntropy,
-            seedCodeText);
+            seedCodeText,
+            saltSource);
 
         await GameSessionRepository.StoreAsync(
             newSession, correlationId, cancellationToken).ConfigureAwait(false);

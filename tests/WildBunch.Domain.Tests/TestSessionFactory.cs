@@ -21,6 +21,43 @@ namespace WildBunch.Domain.Tests;
 public static class TestSessionFactory
 {
     /// <summary>
+    /// Starts a game through the canonical flow (StartSetup -> ViewPrologue -> SelectStartingTown -> CompleteGameStart).
+    /// Defaults to GameDifficulty.Easy for historical reasons (the original CreateDefault used Easy).
+    /// Callers that need production-default behavior must pass GameDifficulty.Standard explicitly.
+    /// Note: CanonicalStartFlow.StartGame in GameContent.Tests and Integration.Tests defaults to Standard.
+    /// </summary>
+    internal static GameSession StartGameCanonical(
+        string playerName,
+        DomainWorld world,
+        CaseFile caseFile,
+        TownId startingTownId,
+        Wallet? wallet = null,
+        DomainInventory? inventory = null,
+        GameDifficulty gameDifficulty = GameDifficulty.Easy,
+        SaltSource? saltSource = null,
+        GameEntropy gameEntropy = GameEntropy.Classic,
+        string? seedCode = null)
+    {
+        var resolvedSaltSource = saltSource ?? SaltSource.CreateFixed(string.Empty);
+        var resolvedSeedCode = seedCode ?? "test-seed";
+
+        var session = GameSession.StartSetup(
+            playerName,
+            world,
+            caseFile,
+            gameDifficulty,
+            gameEntropy,
+            resolvedSeedCode,
+            resolvedSaltSource);
+
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(startingTownId);
+        session.CompleteGameStart(wallet, inventory);
+
+        return session;
+    }
+
+    /// <summary>
     /// Creates a default session in the starting town with no journey active and no
     /// investigation sources spent. Used by clock/turn correction and event-sourcing
     /// tests that need a clean baseline session with CurrentActionContext = None.
@@ -58,7 +95,7 @@ public static class TestSessionFactory
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -99,7 +136,7 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -143,7 +180,7 @@ public static class TestSessionFactory
             killerReleaseProgress: 2,
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -171,7 +208,7 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -217,7 +254,7 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -266,7 +303,7 @@ public static class TestSessionFactory
                     "Wanted for a stage robbery.")
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -317,7 +354,7 @@ public static class TestSessionFactory
                     "Wanted for a stage robbery.")
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(
@@ -415,7 +452,7 @@ public static class TestSessionFactory
                 new InventoryItem(ItemKind.RevolverAmmo, 2)
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
@@ -474,7 +511,7 @@ public static class TestSessionFactory
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -568,7 +605,7 @@ public static class TestSessionFactory
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -592,7 +629,7 @@ public static class TestSessionFactory
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("connected"),
                 session.Player.Inventory)
             .Preview!;
@@ -611,8 +648,6 @@ public static class TestSessionFactory
     {
         ArgumentNullException.ThrowIfNull(session);
 
-        // Reconstruct the baseline CaseFile with the same suspects, true culprit, opening lead,
-        // and public clues/warrants — but with empty known clues/warrants (pre-investigation state).
         var originalCase = session.CaseFile;
         return new CaseFile(
             accusation: null,
@@ -622,7 +657,13 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             discoveredSuspectIds: originalCase.DiscoveredSuspectIds,
             publicClues: ReconstructPublicClues(originalCase),
-            publicWarrants: ReconstructPublicWarrants(originalCase));
+            killerReleaseThreshold: originalCase.KillerReleaseThreshold,
+            killerReleaseProgress: originalCase.KillerReleaseProgress,
+            knownWarrants: Array.Empty<Warrant>(),
+            publicWarrants: ReconstructPublicWarrants(originalCase),
+            suspectTurfAssignments: originalCase.SuspectTurfAssignments,
+            wantedSuspectConfrontations: originalCase.WantedSuspectConfrontations,
+            sheriffTurnInSettlements: originalCase.SheriffTurnInSettlements);
     }
 
     private static IEnumerable<Clue> ReconstructPublicClues(CaseFile originalCase)

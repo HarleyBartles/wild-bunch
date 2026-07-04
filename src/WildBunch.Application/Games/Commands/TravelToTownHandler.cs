@@ -43,7 +43,7 @@ public sealed class TravelToTownHandler : GameSessionCommandHandler
             var destinationTownId = new TownId(command.DestinationTownId);
             var previewResult = _travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 destinationTownId,
                 session.Player.Inventory,
                 session.TravelRules);

@@ -6,6 +6,7 @@ using WildBunch.Application.Projections;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 using WildBunch.GameContent.Abstractions;
+using TownId = WildBunch.Domain.World.TownId;
 
 namespace WildBunch.Application.Games.Commands;
 
@@ -33,11 +34,14 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
         _diaryProjector = diaryProjector;
     }
 
+    // Setup-flow handler: transitions session from StartingTownSelected to GameStarted.
+    protected override bool RequiresGameStarted => false;
+
     public async Task<GameSessionDto> HandleAsync(CompleteGameStartCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return await ExecuteWithRetryAsync(command.SessionId, async (session, ct) =>
+        var dto = await ExecuteWithRetryAsync(command.SessionId, async (session, ct) =>
         {
             if (session.StartFlowPhase == StartFlowPhase.GameStarted)
             {
@@ -54,18 +58,26 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
             var (wallet, inventory) = _newGameFactory.ResolveStartingResources(session.GameDifficulty);
             var startingTownId = new TownId(command.StartingTownId);
 
+            session.SelectStartingTown(startingTownId);
+
             session.CompleteGameStart(
-                startingTownId,
                 wallet,
                 inventory);
 
-            var dto = GameSessionMapper.ToDto(session);
-            var events = await GameSessionRepository.GetEventStreamAsync(
-                session.Id, 0, ct).ConfigureAwait(false);
-            var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
-            var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
-
-            return dto with { HudProjection = hud, DiaryProjection = diary };
+            return GameSessionMapper.ToDto(session);
         }, cancellationToken).ConfigureAwait(false);
+
+        // Project from the event stream AFTER the base pipeline has stored and
+        // committed the new events (StartingTownSelected + GameStarted).
+        // Fetching inside the lambda would project from a stream that does not
+        // yet include GameStarted, so the HUD would be missing player name,
+        // wallet, inventory, current town, and health.
+        // See TravelToTownHandler for the same pattern.
+        var events = await GameSessionRepository.GetEventStreamAsync(
+            command.SessionId, 0, cancellationToken).ConfigureAwait(false);
+        var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
+        var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
+
+        return dto with { HudProjection = hud, DiaryProjection = diary };
     }
 }

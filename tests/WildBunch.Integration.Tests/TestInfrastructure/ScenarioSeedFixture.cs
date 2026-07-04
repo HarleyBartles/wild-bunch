@@ -16,15 +16,9 @@ internal sealed record ScenarioSeedFixture(
     ScenarioSeedDescriptor Contract,
     Func<GameSessionDto, TravelPreviewResultDto?, string> DescribeShapeSignature,
     Action<GameSessionDto> AssertCreatedSessionContract,
-    string? PreviewDestinationTownId = null,
     Action<GameSessionDto, string, TravelPreviewResultDto>? AssertTravelPreviewContract = null,
     Action<GameSessionDto, string, TravelPreviewResultDto, GameTurnResultDto>? AssertTravelTurnContract = null)
 {
-    /// <summary>
-    /// The default starting town for this fixture (slot-0 town of the seed-derived world).
-    /// Used by the three-step setup helper when no explicit starting town is supplied.
-    /// </summary>
-    public string DefaultStartingTownId => Contract.ExactStartingTownId?.Value ?? "hardpan";
     public void AssertCachedFixtureContract()
     {
         if (!string.Equals(Contract.CodecVersion.Value, SeedWorldResolver.ResolverContractVersion, StringComparison.Ordinal))
@@ -34,7 +28,16 @@ internal sealed record ScenarioSeedFixture(
 
         var session = CreateSession();
         var sessionDto = GameSessionMapper.ToDto(session);
-        var preview = PreviewDestinationTownId is null ? null : CreatePreview(session, PreviewDestinationTownId);
+
+        // Discover preview destination dynamically (first connected town from starting town)
+        TravelPreviewResultDto? preview = null;
+        TownId? previewDestination = null;
+        if (AssertTravelPreviewContract is not null)
+        {
+            previewDestination = DiscoverFirstConnectedTown(session);
+            preview = CreatePreview(session, previewDestination.Value.Value);
+        }
+
         var actualShapeSignature = DescribeShapeSignature(sessionDto, preview);
         var requiredShapeSignature = Contract.FormatRequiredShapeSignature();
 
@@ -57,19 +60,14 @@ internal sealed record ScenarioSeedFixture(
             return;
         }
 
-        if (PreviewDestinationTownId is null)
-        {
-            ThrowDrift("The fixture declares a travel preview contract but does not define a preview destination town.");
-        }
-
         if (preview is null)
         {
-            ThrowDrift($"Expected a travel preview for '{PreviewDestinationTownId}' but none was produced.");
+            ThrowDrift("Expected a travel preview but none was produced.");
         }
 
         try
         {
-            AssertTravelPreviewContract(sessionDto, PreviewDestinationTownId!, preview!);
+            AssertTravelPreviewContract(sessionDto, previewDestination!.Value.Value, preview!);
         }
         catch (Exception ex)
         {
@@ -77,17 +75,36 @@ internal sealed record ScenarioSeedFixture(
         }
     }
 
+    private TownId DiscoverFirstConnectedTown(GameSession session)
+    {
+        var connectedTownId = session.World.Trails
+            .Where(t => t.FromTownId == session.Player.CurrentTownId || t.ToTownId == session.Player.CurrentTownId)
+            .Select(t => t.FromTownId == session.Player.CurrentTownId ? t.ToTownId : t.FromTownId)
+            .FirstOrDefault();
+
+        if (connectedTownId.Value is null)
+        {
+            throw new XunitException($"Fixture '{Name}': no connected town found from starting town '{session.Player.CurrentTownId}' for travel preview.");
+        }
+
+        return connectedTownId;
+    }
+
     private GameSession CreateSession()
     {
-        return new SeededNewGameFactory(new DeterministicSaltSourceFactory())
-            .Create("Fixture Validator", GameDifficulty, setupSeedCode: SeedCode, gameEntropy: GameEntropy);
+        return CanonicalStartFlow.StartGame(
+            new SeededNewGameFactory(new DeterministicSaltSourceFactory()),
+            "Fixture Validator",
+            GameDifficulty,
+            SeedCode,
+            GameEntropy);
     }
 
     private static TravelPreviewResultDto CreatePreview(GameSession session, string destinationTownId)
     {
         var previewResult = new TravelResolver().PreviewJourney(
             session.World,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             new TownId(destinationTownId),
             session.Player.Inventory,
             session.TravelRules);

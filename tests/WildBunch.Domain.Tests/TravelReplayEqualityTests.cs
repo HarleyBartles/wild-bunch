@@ -16,14 +16,13 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_JourneyStarted_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
-            TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
+        var (commandSession, preview, setupEvents) =
+            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.NotNull(replayed.Journey);
@@ -40,15 +39,14 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_AdvanceJourneyDay_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
-            TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
+        var (commandSession, preview, setupEvents) =
+            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
         commandSession.AdvanceJourneyDay();
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.Equal(commandSession.Player.Health, replayed.Player.Health);
@@ -63,8 +61,8 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
-            TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
+        var (commandSession, preview, setupEvents) =
+            TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
 
         // Force quiet days through the dev-travel override seam so the journey
@@ -77,11 +75,10 @@ public sealed class TravelReplayEqualityTests
         } while (result.Status == JourneyStatus.Active && result.Success);
         commandSession.AcknowledgeJourneyArrival();
 
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
@@ -100,7 +97,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
-        var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(commandSession);
+        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(commandSession);
         commandSession.StartJourney(preview);
 
         // Force a foe encounter through the dev-travel override seam instead of
@@ -111,11 +108,10 @@ public sealed class TravelReplayEqualityTests
 
         var resolved = commandSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
         Assert.True(resolved.Success);
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(commandSession),
             events);
 
         Assert.Equal(commandSession.Player.Health, replayed.Player.Health);

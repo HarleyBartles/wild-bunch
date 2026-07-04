@@ -21,8 +21,12 @@ public static class SessionDevContextMapper
                 session.Clock.Day,
                 session.Clock.Turn,
                 session.Clock.TimeOfDay.ToString()),
-            CurrentTownId: session.CurrentTown.TownId.Value,
-            CurrentTownName: session.CurrentTown.TownName,
+            CurrentTownId: session.IsSetupPhase
+                ? null
+                : session.CurrentTown.TownId.Value,
+            CurrentTownName: session.IsSetupPhase
+                ? null
+                : session.CurrentTown.TownName,
             CurrentActionContext: session.CurrentActionContext.ToString(),
             HasActiveJourney: session.Journey is not null,
             SeedCodeRetained: session.SeedCode is not null,

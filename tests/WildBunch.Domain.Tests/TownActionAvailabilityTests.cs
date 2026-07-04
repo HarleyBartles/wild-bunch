@@ -45,7 +45,7 @@ public sealed class TownActionAvailabilityTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();

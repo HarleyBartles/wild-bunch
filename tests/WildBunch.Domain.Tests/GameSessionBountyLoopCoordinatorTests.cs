@@ -70,6 +70,6 @@ public sealed class GameSessionBountyLoopCoordinatorTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 }

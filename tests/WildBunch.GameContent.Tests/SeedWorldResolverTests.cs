@@ -17,8 +17,9 @@ public sealed class SeedWorldResolverTests
         Assert.Equal(seedWorld.TownCount, resolved.TownCount);
         Assert.Equal(seedWorld.ServicesPalette, resolved.ServicesPalette);
         Assert.Equal(seedWorld.ProsperityPalette, resolved.ProsperityPalette);
-        Assert.Equal(seedWorld.MapLayoutPalette, resolved.MapLayoutPalette);
-        Assert.Equal(seedWorld.SelectedTownIds, resolved.SelectedTownIds);
+        Assert.Equal(seedWorld.ClusterCount, resolved.ClusterCount);
+        Assert.Equal(seedWorld.GraphDensity, resolved.GraphDensity);
+        Assert.Equal(seedWorld.GetSelectedTownIds(), resolved.GetSelectedTownIds());
         Assert.Equal(seedWorld.AccusationIndex, resolved.AccusationIndex);
         Assert.Equal(seedWorld.DefaultCulpritIndex, resolved.DefaultCulpritIndex);
         Assert.Equal(seedWorld.CashBonus, resolved.CashBonus);
@@ -36,7 +37,7 @@ public sealed class SeedWorldResolverTests
 
         Assert.Equal(seedWorldA.WorldVariant, seedWorldB.WorldVariant);
         Assert.Equal(seedWorldA.TownCount, seedWorldB.TownCount);
-        Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
+        Assert.Equal(seedWorldA.GetSelectedTownIds(), seedWorldB.GetSelectedTownIds());
         Assert.Equal(seedWorldA.AccusationIndex, seedWorldB.AccusationIndex);
         Assert.Equal(seedWorldA.DefaultCulpritIndex, seedWorldB.DefaultCulpritIndex);
         Assert.Equal(seedWorldA.CashBonus, seedWorldB.CashBonus);
@@ -66,7 +67,8 @@ public sealed class SeedWorldResolverTests
         var invalidTownCount = valid with { TownCount = 99 };
         var invalidProsperity = valid with { ProsperityPalette = (ProsperityPalette)99 };
         var invalidServices = valid with { ServicesPalette = (ServicesPalette)99 };
-        var invalidLayout = valid with { MapLayoutPalette = (MapLayoutPalette)99 };
+        var invalidClusterCount = valid with { ClusterCount = 99 };
+        var invalidGraphDensity = valid with { GraphDensity = (GraphDensity)99 };
 
         Assert.False(SeedWorldResolver.Validate(invalidAccusation).Success);
         Assert.False(SeedWorldResolver.Validate(invalidCulprit).Success);
@@ -74,7 +76,8 @@ public sealed class SeedWorldResolverTests
         Assert.False(SeedWorldResolver.Validate(invalidTownCount).Success);
         Assert.False(SeedWorldResolver.Validate(invalidProsperity).Success);
         Assert.False(SeedWorldResolver.Validate(invalidServices).Success);
-        Assert.False(SeedWorldResolver.Validate(invalidLayout).Success);
+        Assert.False(SeedWorldResolver.Validate(invalidClusterCount).Success);
+        Assert.False(SeedWorldResolver.Validate(invalidGraphDensity).Success);
     }
 
     [Fact]
@@ -174,22 +177,7 @@ public sealed class SeedWorldResolverTests
         var seed = SeedWorldResolver.CreateCanonicalSeedCode();
         var resolved = SeedWorldResolver.Resolve(seed);
         Assert.Equal(8, resolved.TownCount);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
-    }
-
-    [Fact]
-    public void DifferentTownCountsProduceDifferentTrailCounts()
-    {
-        var fiveTown = CreateSeedWorldWithCount(5);
-        var tenTown = CreateSeedWorldWithCount(10);
-
-        Assert.Equal(5, SeedWorldResolver.Resolve(fiveTown).SelectedTownIds.Count);
-        Assert.Equal(10, SeedWorldResolver.Resolve(tenTown).SelectedTownIds.Count);
-
-        // More towns → more trails (slot topology adds trails per slot).
-        Assert.True(
-            SeedWorldResolver.Resolve(tenTown).Trails.Count >
-            SeedWorldResolver.Resolve(fiveTown).Trails.Count);
+        Assert.Equal(8, resolved.GetSelectedTownIds().Count);
     }
 
     [Fact]
@@ -200,8 +188,8 @@ public sealed class SeedWorldResolverTests
         var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
         var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
 
-        var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).SelectedTownIds.OrderBy(id => id));
-        var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).SelectedTownIds.OrderBy(id => id));
+        var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
+        var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
 
         Assert.NotEqual(namesA, namesB);
     }
@@ -212,17 +200,7 @@ public sealed class SeedWorldResolverTests
         var seed = SeedWorldResolver.CreateCanonicalSeedCode();
         var seedWorldA = SeedWorldResolver.Resolve(seed);
         var seedWorldB = SeedWorldResolver.Resolve(seed);
-        Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
-        Assert.Equal(seedWorldA.Trails.Count, seedWorldB.Trails.Count);
-    }
-
-    [Fact]
-    public void CanonicalSeedWorldHasEightTowns()
-    {
-        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
-        Assert.Equal(8, seedWorld.TownCount);
-        Assert.Equal(8, seedWorld.SelectedTownIds.Count);
-        Assert.Equal(14, seedWorld.Trails.Count);
+        Assert.Equal(seedWorldA.GetSelectedTownIds(), seedWorldB.GetSelectedTownIds());
     }
 
     [Fact]
@@ -249,21 +227,13 @@ public sealed class SeedWorldResolverTests
         var cashBonus = 0;
         var prosperity = ProsperityPalette.UniformProsperous;
         var services = ServicesPalette.HubTelegraph;
-        var mapLayout = MapLayoutPalette.HubAndSpoke;
-
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperity, services, mapLayout);
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(services, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = SeedWorldCatalog.BuildTrails(variant, townNames, mapLayout);
+        var clusterCount = 1;
+        var graphDensity = GraphDensity.Sparse;
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
-            Guid.Empty, variant, townCount, services, prosperity, mapLayout,
+            Guid.Empty, variant, townCount, services, prosperity, clusterCount, graphDensity,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails, OutlierSlotType: 0));
+            OutlierSlotType: 0));
     }
 
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)

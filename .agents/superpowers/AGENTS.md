@@ -9,17 +9,19 @@ When executing superpowers workflows, direct all tracked artifacts to the approp
 ### Plans
 - **Location**: `.agents/superpowers/plans/`
 - **Content**: Implementation plans with structured breakdowns
-- **Status**: Tracked in git, committed with the plan
+- **Status**: Tracked in git, committed with the execution PR
+- **Note**: Plans are created and committed as part of the execution process. When execution completes, mark all plan checkboxes (`- [ ]`) as done (`- [x]`) only after verifying that the associated plan item was actually delivered in the final PR — do not mark items complete based on intent or in-progress work.
 
 ### Session Artifacts
-- **Location**: `.agents/superpowers/sdd/`
-- **Content**: Session-specific artifacts
-  - Commit messages
-  - PR updates
-  - Progress tracking
+- **Location**: `.agents/superpowers/sdd/<plan-name>/`
+- **Content**: Session-specific artifacts for a specific plan
+  - Task briefs
+  - Task reports
   - Review diffs
-  - Test output
+  - Fix reports
+  - Progress tracking
 - **Status**: Tracked in git, committed with the session work
+- **Convention**: Create a subdirectory under `sdd/` named after the plan being followed (e.g., `2026-07-03-geometry-first-plan-1c-casefile-event-boundary/`). All session artifacts for that plan go in that directory. Historical artifacts from previous sessions should be moved to `sdd/historical/`.
 
 ### Output (Binary/Evidence)
 - **Location**: `.agents/superpowers/output/`

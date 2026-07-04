@@ -37,47 +37,49 @@ internal static class TravelTestFactory
     }
 
     /// <summary>
-    /// Creates an EasyShortJourney session and captures the <see cref="GameStarted"/> event
+    /// Creates an EasyShortJourney session and captures the full setup event stream
     /// before it is committed. Used by replay-equality tests that need the full event stream.
     /// </summary>
-    internal static (GameSession session, TravelPreview preview, GameStarted gameStarted)
-        CreateEasyShortJourneyWithGameStarted()
+    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
+        CreateEasyShortJourneyWithSetupEvents()
     {
         var (session, preview) = CreateEasyShortJourney();
-        var gameStarted = RecaptureGameStartedForReplay(session);
-        return (session, preview, gameStarted);
+        var setupEvents = RecaptureSetupEventsForReplay(session);
+        return (session, preview, setupEvents);
     }
 
     /// <summary>
-    /// Creates a SixDayQuietJourney session and captures the <see cref="GameStarted"/> event
+    /// Creates a SixDayQuietJourney session and captures the full setup event stream
     /// before it is committed. Used by replay-equality tests that need the full event stream.
     /// </summary>
-    internal static (GameSession session, TravelPreview preview, GameStarted gameStarted)
-        CreateSixDayQuietJourneyWithGameStarted()
+    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
+        CreateSixDayQuietJourneyWithSetupEvents()
     {
         var (session, preview) = CreateSixDayQuietJourney();
-        var gameStarted = RecaptureGameStartedForReplay(session);
-        return (session, preview, gameStarted);
+        var setupEvents = RecaptureSetupEventsForReplay(session);
+        return (session, preview, setupEvents);
     }
 
     /// <summary>
-    /// Recaptures the <see cref="GameStarted"/> event for a session by re-running
-    /// <see cref="GameSession.StartNew"/> with the same world/case-file/inventory seed.
-    /// The factory sessions already commit GameStarted, so replay tests must prepend it
-    /// to the event stream manually.
+    /// Recaptures the full setup event stream for a session by re-running the canonical
+    /// start flow (<see cref="TestSessionFactory.StartGameCanonical"/>) with the same
+    /// world/case-file/inventory seed. The factory sessions already commit their setup
+    /// events, so replay tests must prepend this stream to the journey event stream
+    /// manually. Returns all 6 canonical setup events so the replayed session starts at
+    /// the same version as the command session.
     /// </summary>
-    internal static GameStarted RecaptureGameStartedForReplay(GameSession session)
+    internal static IReadOnlyList<IDomainEvent> RecaptureSetupEventsForReplay(GameSession session)
     {
-        var seed = GameSession.StartNew(
+        var seed = TestSessionFactory.StartGameCanonical(
             session.Player.Name,
             session.World,
             TestSessionFactory.CreateBaselineCaseFileFor(session),
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             session.Player.Wallet,
             session.Player.Inventory,
             session.GameDifficulty,
             session.SaltSource);
-        return Assert.IsType<GameStarted>(seed.UncommittedEvents.Single());
+        return seed.UncommittedEvents;
     }
 
     /// <summary>
@@ -115,7 +117,7 @@ internal static class TravelTestFactory
             trueCulpritId: new SuspectId("suspect-1"),
             knownClues: Array.Empty<Clue>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile,
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile,
             pinecross.Id, Wallet.Starting(25m), inventory,
             GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
@@ -162,7 +164,7 @@ internal static class TravelTestFactory
             trueCulpritId: new SuspectId("suspect-1"),
             knownClues: Array.Empty<Clue>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile,
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile,
             origin.Id, Wallet.Starting(25m), inventory,
             GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
@@ -182,7 +184,7 @@ internal static class TravelTestFactory
         var resolver = new TravelResolver();
         var result = resolver.PreviewJourney(
             session.World,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             destinationId,
             session.Player.Inventory,
             session.TravelRules);

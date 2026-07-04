@@ -2,7 +2,6 @@ using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
-using WildBunch.Domain.World;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.Integration.Tests.TestInfrastructure;
@@ -23,10 +22,12 @@ public sealed class ScenarioSeedDescriptorTests
             .WithWallet(25m)
             .WithItemCount(8)
             .WithTownCount(8)
-            .WithPreview(ScenarioPreviewExpectation.Mounted(new TownId("quartzsite"), 5, 5));
+            .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
 
+        // Preview shape encodes only the travel mode (not day counts, which are
+        // map-generation-dependent and would make the fixture brittle).
         Assert.Equal(
-            "resolver-test|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=quartzsite:mounted:5/5",
+            "resolver-test|CanonicalMountedStandard|entropy=Boring|start=default-playable-start|horse=healthy|saddle=present|wallet=25|items=8|towns=8|preview=mounted",
             descriptor.FormatRequiredShapeSignature());
     }
 }

@@ -38,7 +38,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded);
         Assert.Equal(session.Id, reloaded!.Id);
         Assert.Equal(session.Player.Name, reloaded.Player.Name);
-        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.Player.Wallet.Cash, reloaded.Player.Wallet.Cash);
         Assert.Equal(session.Player.Inventory.Items.Count, reloaded.Player.Inventory.Items.Count);
         Assert.Equal(session.Player.Inventory.GetHorseState(), reloaded.Player.Inventory.GetHorseState());
@@ -67,7 +67,7 @@ public sealed class EfGameSessionRepositoryTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        // Seed code is restored from the GameStarted event via event replay
+        // Seed code is restored from the start flow events via event replay
         Assert.Equal(seedCode, reloaded!.SeedCode);
     }
 
@@ -138,7 +138,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("holloway"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("holloway"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -180,7 +180,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryfork"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("dryfork"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -236,7 +236,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryfork"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("dryfork"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -276,7 +276,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("silvercreek"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("silvercreek"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -307,7 +307,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("openpass"), loaded.Player.Inventory, loaded.TravelRules);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("openpass"), loaded.Player.Inventory, loaded.TravelRules);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -337,7 +337,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryridge"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("dryridge"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -369,7 +369,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("midway"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("midway"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -399,7 +399,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var firstPreview = CreateJourneyPreview(loaded!.Player.CurrentTownId, new TownId("openpass"), "Pinecross", "Open Pass");
+        var firstPreview = CreateJourneyPreview(loaded!.Player.CurrentTownId!.Value, new TownId("openpass"), "Pinecross", "Open Pass");
         loaded.StartJourney(firstPreview);
         Assert.Equal(1, loaded.Journey!.JourneySequence);
 
@@ -423,7 +423,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(1, reloaded.CompletedJourneyHistory[0].JourneySequence);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Completed, reloaded.CompletedJourneyHistory[0].Status);
 
-        var secondPreview = CreateJourneyPreview(reloaded.Player.CurrentTownId, new TownId("dryfork"), "Open Pass", "Dry Fork");
+        var secondPreview = CreateJourneyPreview(reloaded.Player.CurrentTownId!.Value, new TownId("dryfork"), "Open Pass", "Dry Fork");
         reloaded.StartJourney(secondPreview);
         Assert.Equal(2, reloaded.Journey!.JourneySequence);
 
@@ -450,7 +450,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = travelResolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("holloway"), loaded.Player.Inventory);
+        var preview = travelResolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("holloway"), loaded.Player.Inventory);
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
@@ -466,7 +466,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(sessionRead);
         Assert.Equal(loaded!.Status, sessionRead!.Status);
         Assert.Equal(loaded.GameDifficulty, sessionRead.GameDifficulty);
-        Assert.Equal(loaded.Player.CurrentTownId, sessionRead.Player.CurrentTownId);
+        Assert.Equal(loaded.Player.CurrentTownId!.Value, sessionRead.Player.CurrentTownId);
         Assert.Equal(loaded.Player.Wallet.Cash, sessionRead.Player.Wallet.Cash);
         Assert.NotNull(sessionRead.Journey);
         Assert.Equal(loaded.Journey!.Status, sessionRead.Journey!.Status);
@@ -548,17 +548,17 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew(
+        var session = GameSession.StartSetup(
             "Ranger Vale",
             world,
             caseFile,
-            dustvale.Id,
-            WildBunch.Domain.Economy.Wallet.Starting(25m),
-            inventory,
             GameDifficulty.Standard,
-            saltSource ?? DeterministicSaltSource,
             gameEntropy,
-            seedCode);
+            seedCode,
+            saltSource ?? DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(WildBunch.Domain.Economy.Wallet.Starting(25m), inventory);
         session.MarkEventsCommitted();
         return session;
     }
@@ -610,7 +610,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 4)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateLuckySession()
@@ -650,7 +656,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateEasySession()
@@ -680,14 +692,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Saddle, 1)
         });
 
-        return GameSession.StartNew(
-            "Ranger Vale",
-            world,
-            caseFile,
-            dustvale.Id,
-            Wallet.Starting(25m),
-            inventory,
-            GameDifficulty.Easy, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Easy, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateDryTravelSession()
@@ -718,7 +729,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, dustvale.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateHorseLossFallbackSession()
@@ -742,7 +759,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Challenging, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Challenging, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static GameSession CreateJourneyHistorySession()
@@ -768,7 +791,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Easy, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
@@ -820,7 +849,13 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Easy, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private static CaseFile CreateCaseFile()
@@ -858,6 +893,49 @@ public sealed class EfGameSessionRepositoryTests
             new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
+    }
+
+    /// <summary>
+    /// Regression: DeriveStartFlowPhase previously did not check for
+    /// StartingTownSelected. A session whose latest event was StartingTownSelected
+    /// would reload as PrologueViewed instead of StartingTownSelected.
+    /// In production, SelectStartingTown and CompleteGameStart are always called
+    /// in the same command (CompleteGameStartHandler), so StartingTownSelected
+    /// is always followed by GameStarted in the same transaction. This test
+    /// persists the intermediate state directly to verify DeriveStartFlowPhase
+    /// handles it correctly if the flow is ever split.
+    /// </summary>
+    [Fact]
+    public async Task SaveAndLoad_WithStartingTownSelectedOnly_RestoresCorrectStartFlowPhase()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
+        var world = new WildBunch.Domain.World.World(
+            new[] { dustvale, silvercreek },
+            new[] { new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low) });
+        var caseFile = CreateCaseFile();
+
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        // Do NOT call CompleteGameStart — persist with StartingTownSelected as latest event.
+
+        await PersistAsync(repository, unitOfWork, session);
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(StartFlowPhase.StartingTownSelected, reloaded!.StartFlowPhase);
     }
 }

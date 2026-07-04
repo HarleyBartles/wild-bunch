@@ -168,7 +168,7 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static GameSession CreateSessionWithoutKnownWarrants()
@@ -193,6 +193,6 @@ public sealed class GameSessionSaloonWantedSuspectLoopTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);
     }
 }

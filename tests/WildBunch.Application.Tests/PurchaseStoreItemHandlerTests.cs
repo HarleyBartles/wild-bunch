@@ -193,11 +193,15 @@ public sealed class PurchaseStoreItemHandlerTests
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(new[]
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), new DomainInventory(new[]
         {
             new DomainInventoryItem(DomainItemKind.Food, 1),
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         }));
+        return session;
     }
 
     private static void StartJourney(GameSession session)
@@ -205,7 +209,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("redmesa"),
                 session.Player.Inventory)
             .Preview!;

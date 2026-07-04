@@ -17,12 +17,12 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         // BUNCH-107: Force a fixed salt so the wanted-poster resolver uses
         // boring-mode selection (deterministic). With Classic entropy, the salt
@@ -139,25 +139,31 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertPinecrossServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
         // Force a fixed salt for deterministic warrant selection.
         await client.PostAsJsonAsync(
             $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
             new LockRngRequestDto(Salt: "test-salt-fixed"));
 
+        // Discover a connected town dynamically — no hardcoded town names.
+        var destinationTownId = createdSession.World.Trails
+            .Where(trail => trail.FromTownId == createdSession.Player.CurrentTownId || trail.ToTownId == createdSession.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == createdSession.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .First();
+
         var travelResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/travel",
-            new TravelRequest("quartzsite"));
+            new TravelRequest(destinationTownId));
 
         Assert.Equal(HttpStatusCode.OK, travelResponse.StatusCode);
 
-        // Advance until the journey completes and the player arrives in quartzsite.
+        // Advance until the journey completes and the player arrives at the destination.
         // Force Quiet days so the journey is not interrupted by encounters.
         string? arrivedTownId = null;
         for (var step = 0; step < 12; step++)
@@ -173,14 +179,14 @@ public sealed class GameApiWantedPostersTests
             Assert.NotNull(advanceResult);
 
             if (advanceResult!.JourneyStatus == WildBunch.Domain.Travel.JourneyStatus.Completed
-                && advanceResult.CurrentSession.Player.CurrentTownId == "quartzsite")
+                && advanceResult.CurrentSession.Player.CurrentTownId == destinationTownId)
             {
                 arrivedTownId = advanceResult.CurrentSession.Player.CurrentTownId;
                 break;
             }
         }
 
-        Assert.Equal("quartzsite", arrivedTownId);
+        Assert.Equal(destinationTownId, arrivedTownId);
 
         // Acknowledge the journey arrival to exit journey modal and enable town actions.
         var acknowledgeResponse = await client.PostAsync(
@@ -195,7 +201,7 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(result);
         Assert.True(result!.Success);
-        Assert.Equal("quartzsite", result.CurrentJournal.CurrentTown.Id);
+        Assert.Equal(destinationTownId, result.CurrentJournal.CurrentTown.Id);
         Assert.True(result.CurrentJournal.LogEntries.Count >= 4);
 
         var payload = await response.Content.ReadAsStringAsync();

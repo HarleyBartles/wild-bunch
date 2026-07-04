@@ -96,7 +96,7 @@ Live. The domain and command flow already route through `GameSession`.
 - `src/WildBunch.Domain/Cases/CaseFile.cs`
 - `src/WildBunch.Domain/Travel/TravelJourney.cs`
 - `src/WildBunch.Domain/Travel/TravelModels.cs`
-- `src/WildBunch.Application/Games/Commands/StartNewGameHandler.cs`
+- `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs`
 - `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`
 - `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs`
 - `tests/WildBunch.Domain.Tests/CaseFileTests.cs`

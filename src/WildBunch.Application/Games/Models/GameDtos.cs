@@ -44,7 +44,7 @@ public sealed record ActiveSaloonWantedSuspectDto(
 
 public sealed record PlayerDto(
     string Name,
-    string CurrentTownId,
+    string? CurrentTownId,
     int Health);
 
 public sealed record InventoryDto(
@@ -93,7 +93,9 @@ public sealed record WorldDto(
 public sealed record TownDto(
     string Id,
     string Name,
-    TownServices Services);
+    TownServices Services,
+    int MapX = 0,
+    int MapY = 0);
 
 public sealed record TrailDto(
     string Id,

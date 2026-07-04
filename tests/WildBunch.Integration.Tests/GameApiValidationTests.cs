@@ -93,7 +93,7 @@ public sealed class GameApiValidationTests
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession.Id}/towns/pinecross/store/buy",
+            $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
             new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -111,7 +111,7 @@ public sealed class GameApiValidationTests
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
         var response = await client.PostAsJsonAsync(
-            $"/api/games/{createdSession.Id}/towns/pinecross/store/buy",
+            $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
             new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 0));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -183,7 +183,7 @@ public sealed class GameApiValidationTests
         Assert.NotNull(turnResult);
         Assert.False(turnResult!.Success);
         Assert.Equal("Destination town could not be found.", turnResult.Message);
-        Assert.Equal("hardpan", turnResult.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(createdSession.Player.CurrentTownId, turnResult.CurrentSession.Player.CurrentTownId);
         Assert.Equal(0, turnResult.CurrentSession.Clock.Turn);
         Assert.Equal(0, turnResult.CurrentSession.PursuitState.Heat);
     }

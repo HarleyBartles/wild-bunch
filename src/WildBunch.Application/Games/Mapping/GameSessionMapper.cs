@@ -27,6 +27,16 @@ public static class GameSessionMapper
         // AllEvents = committed (from load) + uncommitted (from current command).
         var logEntries = GameSessionLogProjection.Project(session);
 
+        // During setup phase (before GameStarted), the current town is not yet selected.
+        // Saloon person-of-interest state is only available after the game starts.
+        var activeSaloonPoi = !session.IsSetupPhase
+            ? ToActiveSaloonPersonOfInterestDto(
+                session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
+                session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
+                session.CaseFile)
+            : null;
+
         return ToDto(
             session.Id.Value,
             session.Status,
@@ -41,11 +51,7 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, session.TravelRules),
             session.TravelDiaryDays,
             logEntries,
-            ToActiveSaloonPersonOfInterestDto(
-                session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId,
-                session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
-                session.CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
-                session.CaseFile),
+            activeSaloonPoi,
             null,
             null);
     }
@@ -68,11 +74,13 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.GameDifficulty)),
             session.TravelDiaryDays,
             session.LogEntries,
-            ToActiveSaloonPersonOfInterestDto(
-                session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
-                session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
-                session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
-                session.CaseFile),
+            session.StartFlowPhase >= StartFlowPhase.GameStarted && session.TownVisitState is not null
+                ? ToActiveSaloonPersonOfInterestDto(
+                    session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
+                    session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                    session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
+                    session.CaseFile)
+                : null,
             null,
             null);
     }
@@ -117,7 +125,7 @@ public static class GameSessionMapper
     private static PlayerDto ToDto(DomainPlayer player)
         => new(
             player.Name,
-            player.CurrentTownId.Value,
+            player.CurrentTownId?.Value,
             player.Health);
 
     private static WorldDto ToDto(DomainWorld world)
@@ -129,7 +137,9 @@ public static class GameSessionMapper
         => new(
             town.Id.Value,
             town.Name,
-            town.Services);
+            town.Services,
+            town.MapX,
+            town.MapY);
 
     private static TrailDto ToDto(DomainTrail trail)
         => new(

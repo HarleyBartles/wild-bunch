@@ -122,7 +122,11 @@ public sealed class CheckSheriffRecordsHandlerTests
                         }))
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart();
+        return session;
     }
 
     private static void StartJourney(GameSession session)
@@ -130,7 +134,7 @@ public sealed class CheckSheriffRecordsHandlerTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("connected"),
                 session.Player.Inventory)
             .Preview!;

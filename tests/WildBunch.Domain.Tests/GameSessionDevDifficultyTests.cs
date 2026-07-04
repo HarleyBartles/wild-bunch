@@ -73,16 +73,16 @@ public sealed class GameSessionDevDifficultyTests
         // changes the rehydrated difficulty — if the case were missing, the
         // rehydrated session would stay at Easy.
         var session = TestSessionFactory.CreateDefault();
-        var originalGameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
+        var originalSetupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
 
         session.ForceDevDifficulty(GameDifficulty.Challenging);
         session.MarkEventsCommitted();
 
-        var events = new[] { originalGameStarted }
+        var events = originalSetupEvents
             .Concat(session.CommittedEvents.OfType<IDomainEvent>())
             .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id, session.World, session.CaseFile, events);
+            session.Id, session.World, events);
 
         // The GameStarted event carries Easy, but the DevDifficultyForced
         // event must override it to Challenging during replay.

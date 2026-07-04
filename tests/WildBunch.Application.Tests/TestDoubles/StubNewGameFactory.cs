@@ -25,26 +25,9 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<GameEntropy> RequestedEntropies { get; } = [];
 
-    public List<string?> RequestedStartingTownIds { get; } = [];
-
-    public GameSession Create(
-        string playerName,
-        GameDifficulty GameDifficulty = GameDifficulty.Standard,
-        string? setupSeedCode = null,
-        GameEntropy entropy = GameEntropy.Classic,
-        string? startingTownId = null)
-    {
-        RequestedPlayerNames.Add(playerName);
-        RequestedGameDifficulties.Add(GameDifficulty);
-        RequestedSetupSeedCodes.Add(setupSeedCode);
-        RequestedEntropies.Add(entropy);
-        RequestedStartingTownIds.Add(startingTownId);
-        return _sessionToReturn;
-    }
-
     public GameSession CreatedSession => _sessionToReturn;
 
-    public (World World, CaseFile CaseFile, string SeedCodeText) ResolveWorld(
+    public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
         string playerName,
         GameDifficulty gameDifficulty,
         string? setupSeedCode,
@@ -54,7 +37,7 @@ public sealed class StubNewGameFactory : INewGameFactory
         RequestedGameDifficulties.Add(gameDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
         RequestedEntropies.Add(gameEntropy);
-        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000");
+        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000", _sessionToReturn.SaltSource);
     }
 
     public (Wallet Wallet, Inventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)
@@ -106,7 +89,7 @@ public sealed class StubNewGameFactory : INewGameFactory
             new InventoryItem(ItemKind.RevolverAmmo, 4)
         });
 
-        return GameSession.StartNew(
+        return StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -114,5 +97,36 @@ public sealed class StubNewGameFactory : INewGameFactory
             Wallet.Starting(25m),
             inventory,
             saltSource: SaltSource.CreateFixed("application-tests"));
+    }
+
+    private static GameSession StartGameCanonical(
+        string playerName,
+        World world,
+        CaseFile caseFile,
+        TownId startingTownId,
+        Wallet? wallet = null,
+        Inventory? inventory = null,
+        GameDifficulty gameDifficulty = GameDifficulty.Standard,
+        SaltSource? saltSource = null,
+        GameEntropy gameEntropy = GameEntropy.Classic,
+        string? seedCode = null)
+    {
+        var resolvedSaltSource = saltSource ?? SaltSource.CreateFixed("application-tests");
+        var resolvedSeedCode = seedCode ?? "stub-seed";
+
+        var session = GameSession.StartSetup(
+            playerName,
+            world,
+            caseFile,
+            gameDifficulty,
+            gameEntropy,
+            resolvedSeedCode,
+            resolvedSaltSource);
+
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(startingTownId);
+        session.CompleteGameStart(wallet, inventory);
+
+        return session;
     }
 }

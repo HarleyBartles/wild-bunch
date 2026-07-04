@@ -10,6 +10,23 @@ public static class SaloonDevContextMapper
     {
         ArgumentNullException.ThrowIfNull(session);
 
+        // During setup phase (before GameStarted), saloon state is not available.
+        // Return a minimal DTO with nulls for town-scoped fields.
+        if (session.IsSetupPhase)
+        {
+            return new SaloonDevContextDto(
+                session.Id.Value,
+                CurrentActionContext: session.CurrentActionContext.ToString(),
+                CurrentTownId: null,
+                CurrentTownName: null,
+                SourceSpent: false,
+                ActiveSaloonPoi: null,
+                PendingDevOverride: null,
+                HiddenTruth: null,
+                CitizenInfo: null,
+                Suspects: []);
+        }
+
         var devOverride = session.PendingDevSaloonOverride;
         var trueCulprit = session.CaseFile.Suspects.FirstOrDefault(s => s.Id == session.CaseFile.TrueCulpritId);
         var sourceSpent = session.CurrentTownVisit.IsSpent(InvestigationSourceKind.SaloonLookAround);

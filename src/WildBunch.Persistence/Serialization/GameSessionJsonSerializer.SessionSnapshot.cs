@@ -16,7 +16,7 @@ public sealed partial class GameSessionJsonSerializer
         string? SeedCode,
         TownVisitStateSnapshot? CurrentTownVisit,
         PlayerSnapshot Player,
-        WorldSnapshot World,
+        global::WildBunch.Domain.World.WorldSnapshot World,
         CaseFileSnapshot CaseFile,
         PursuitStateSnapshot PursuitState,
         GameClockSnapshot Clock,
@@ -38,9 +38,11 @@ public sealed partial class GameSessionJsonSerializer
                 session.GameEntropy,
                 SaltSourceSnapshot.FromDomain(session.SaltSource),
                 session.SeedCode,
-                TownVisitStateSnapshot.FromDomain(session.CurrentTownVisit),
+                session.TownVisitStateOrNull is { } townVisit
+                    ? TownVisitStateSnapshot.FromDomain(townVisit)
+                    : null,
                 PlayerSnapshot.FromDomain(session.Player),
-                WorldSnapshot.FromDomain(session.World),
+                global::WildBunch.Domain.World.WorldSnapshot.FromDomain(session.World),
                 CaseFileSnapshot.FromDomain(session.CaseFile),
                 PursuitStateSnapshot.FromDomain(session.PursuitState),
                 GameClockSnapshot.FromDomain(session.Clock),
@@ -56,13 +58,13 @@ public sealed partial class GameSessionJsonSerializer
 
         public GameSession ToDomain()
         {
-            var world = WorldSnapshot.ToDomain(World);
+            var world = World.ToDomain();
             var caseFile = CaseFileSnapshot.ToDomain(CaseFile);
             var player = PlayerSnapshot.ToDomain(Player);
             var pursuitState = PursuitStateSnapshot.ToDomain(PursuitState);
             var clock = GameClockSnapshot.ToDomain(Clock);
             var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey.ToDomain());
-            var townVisit = CurrentTownVisit?.ToDomain() ?? new TownVisitState(player.CurrentTownId);
+            var townVisit = CurrentTownVisit?.ToDomain();
             var session = GameSessionRehydrator.Create(
                 new GameSessionId(Id),
                 player,

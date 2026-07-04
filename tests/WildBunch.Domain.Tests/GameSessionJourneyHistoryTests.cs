@@ -26,7 +26,7 @@ public sealed class GameSessionJourneyHistoryTests
     {
         var session = CreateSession();
         var firstPreview = CreateJourneyPreview(
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             new TownId("openpass"),
             "Pinecross",
             "Open Pass");
@@ -49,7 +49,7 @@ public sealed class GameSessionJourneyHistoryTests
         Assert.Equal("openpass", session.CompletedJourneyHistory[0].DestinationTownId.Value);
 
         var secondPreview = CreateJourneyPreview(
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             new TownId("dryfork"),
             "Open Pass",
             "Dry Fork");
@@ -84,7 +84,7 @@ public sealed class GameSessionJourneyHistoryTests
             new InventoryItem(ItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,

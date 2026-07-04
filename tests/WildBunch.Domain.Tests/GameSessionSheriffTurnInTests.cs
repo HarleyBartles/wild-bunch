@@ -244,6 +244,6 @@ public sealed class GameSessionSheriffTurnInTests
                     "Wanted for cattle theft.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);
     }
 }

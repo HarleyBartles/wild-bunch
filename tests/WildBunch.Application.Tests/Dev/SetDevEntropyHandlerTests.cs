@@ -71,9 +71,10 @@ public sealed class SetDevEntropyHandlerTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Standard,
-            SaltSource.CreateFixed(string.Empty), entropy);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, entropy, "test-seed", SaltSource.CreateFixed(string.Empty));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(town.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory: null);
         session.MarkEventsCommitted();
         return session;
     }

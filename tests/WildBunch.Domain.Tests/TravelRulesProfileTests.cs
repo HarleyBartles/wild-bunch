@@ -72,13 +72,13 @@ public sealed class TravelRulesProfileTests
                 new DomainTrail(new DomainTrailId("trail-easy"), new DomainTownId("pinecross"), new DomainTownId("holloway"), DomainTrailRisk.Low, DomainTrailTerrain.OpenRange, DomainWaterFeature.None, 5m)
             });
         var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, new DomainTownId("pinecross"), Wallet.Starting(25m), inventory, GameDifficulty.Easy);
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, new DomainTownId("pinecross"), Wallet.Starting(25m), inventory, GameDifficulty.Easy);
 
         Assert.False(horseState.CanProvideMountedTravel);
         Assert.True(horseState.CanProvideMountedTravelFor(easyProfile));
 
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new DomainTownId("holloway"), session.Player.Inventory, session.TravelRules);
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new DomainTownId("holloway"), session.Player.Inventory, session.TravelRules);
 
         Assert.True(preview.Success);
         Assert.NotNull(preview.Preview);

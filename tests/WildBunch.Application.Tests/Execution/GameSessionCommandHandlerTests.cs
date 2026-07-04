@@ -32,7 +32,7 @@ public sealed class GameSessionCommandHandlerTests
             async (s, ct) =>
             {
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId))
+                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
                 await Task.Yield();
@@ -83,7 +83,7 @@ public sealed class GameSessionCommandHandlerTests
             {
                 // Produce an event so StoreAsync is called
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId))
+                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
                 await Task.Yield();
@@ -110,7 +110,7 @@ public sealed class GameSessionCommandHandlerTests
             {
                 // Produce an event so StoreAsync is called
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId))
+                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
                 await Task.Yield();
@@ -137,7 +137,11 @@ public sealed class GameSessionCommandHandlerTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
     }
 
     private sealed class TestCommandHandler : GameSessionCommandHandler

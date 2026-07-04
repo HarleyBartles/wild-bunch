@@ -31,7 +31,6 @@ public sealed class BoringScenarioBuilderTests
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
         Assert.Equal(TravelMode.Mounted, previewValue.TravelMode);
         Assert.True(previewValue.MountedTravelAvailable);
-        Assert.Equal("quartzsite", previewValue.DestinationTownId);
     }
 
     [Fact]
@@ -62,7 +61,6 @@ public sealed class BoringScenarioBuilderTests
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
         Assert.Equal(TravelMode.Mounted, previewValue.TravelMode);
         Assert.True(previewValue.MountedTravelAvailable);
-        Assert.Equal("quartzsite", previewValue.DestinationTownId);
     }
 
     [Fact]
@@ -82,14 +80,21 @@ public sealed class BoringScenarioBuilderTests
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
-        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "hardpan" && trail.ToTownId.Value == "quartzsite");
-        Assert.Contains(session.World.Trails, trail => trail.FromTownId.Value == "hardpan" && trail.ToTownId.Value == "emberfall");
+
+        // Assert graph properties, not specific town names
+        var connectedCount = session.World.Trails
+            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
+            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
+            .Distinct()
+            .Count();
+
+        Assert.True(connectedCount >= 2, $"expected at least 2 connected towns from starting town, got {connectedCount}");
     }
 
     [Fact]
-    public void PinecrossServicesOrWantedPosterReadyKeepsThePublicServiceSurfaceReady()
+    public void StartingTownServicesOrWantedPosterReadyKeepsThePublicServiceSurfaceReady()
     {
-        var scenario = BoringScenarioBuilder.PinecrossServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
 
         scenario.AssertReady();
 

@@ -9,6 +9,7 @@ using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
+using SaltSource = WildBunch.Domain.Game.SaltSource;
 
 namespace WildBunch.Domain.Tests.Events;
 
@@ -19,12 +20,33 @@ public class StartFlowEventSourcingTests
     {
         var session = CreateSetupSession();
 
-        var single = Assert.Single(session.UncommittedEvents);
-        var setupEvent = Assert.IsType<PlayerSetupCompleted>(single);
+        Assert.Equal(3, session.UncommittedEvents.Count);
+        var setupEvent = Assert.IsType<PlayerSetupCompleted>(session.UncommittedEvents[0]);
         Assert.Equal("Ranger Vale", setupEvent.PlayerName);
         Assert.Equal(GameDifficulty.Standard, setupEvent.GameDifficulty);
         Assert.Equal(GameEntropy.Classic, setupEvent.GameEntropy);
         Assert.Equal("test-seed-12345", setupEvent.SeedCode);
+    }
+
+    [Fact]
+    public void StartSetup_Produces_WorldGenerated_AsUncommitted()
+    {
+        var session = CreateSetupSession();
+
+        Assert.Equal(3, session.UncommittedEvents.Count);
+        var worldEvent = Assert.IsType<WorldGenerated>(session.UncommittedEvents[1]);
+        Assert.Equal("test-seed-12345", worldEvent.SeedCode);
+        Assert.NotNull(worldEvent.World);
+    }
+
+    [Fact]
+    public void StartSetup_Produces_CaseFileGenerated_AsUncommitted()
+    {
+        var session = CreateSetupSession();
+
+        Assert.Equal(3, session.UncommittedEvents.Count);
+        var caseFileEvent = Assert.IsType<CaseFileGenerated>(session.UncommittedEvents[2]);
+        Assert.NotNull(caseFileEvent.CaseFile);
     }
 
     [Fact]
@@ -90,7 +112,9 @@ public class StartFlowEventSourcingTests
         session.MarkEventsCommitted();
         session.ViewPrologue("descriptor-1");
         session.MarkEventsCommitted();
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.MarkEventsCommitted();
+        session.CompleteGameStart();
         session.MarkEventsCommitted();
 
         Assert.Throws<InvalidOperationException>(() => session.ViewPrologue("descriptor-2"));
@@ -101,8 +125,12 @@ public class StartFlowEventSourcingTests
     {
         var session = CreateSetupSession();
         session.MarkEventsCommitted();
+        session.ViewPrologue("descriptor-1");
+        session.MarkEventsCommitted();
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.MarkEventsCommitted();
 
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.CompleteGameStart();
 
         var single = Assert.Single(session.UncommittedEvents);
         var gameStarted = Assert.IsType<GameStarted>(single);
@@ -115,10 +143,12 @@ public class StartFlowEventSourcingTests
     public void CompleteGameStart_WhenAlreadyStarted_DoesNothing()
     {
         var session = CreateSetupSession();
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.ViewPrologue("descriptor-1");
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart();
         session.MarkEventsCommitted();
 
-        session.CompleteGameStart(new TownId("redmesa"));
+        session.CompleteGameStart();
 
         Assert.Empty(session.UncommittedEvents);
     }
@@ -136,12 +166,13 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.Equal(StartFlowPhase.SetupComplete, rehydrated.StartFlowPhase);
         Assert.Equal("test-seed-12345", rehydrated.SeedCode);
@@ -153,13 +184,14 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         session.ViewPrologue("true-culprit");
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.Equal(StartFlowPhase.PrologueViewed, rehydrated.StartFlowPhase);
     }
@@ -169,14 +201,16 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         session.ViewPrologue("true-culprit");
-        session.CompleteGameStart(new TownId("pinecross"));
+        session.SelectStartingTown(new TownId("pinecross"));
+        session.CompleteGameStart();
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.Equal(StartFlowPhase.GameStarted, rehydrated.StartFlowPhase);
         Assert.Equal(new TownId("pinecross"), rehydrated.Player.CurrentTownId);
@@ -187,16 +221,60 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("test-salt");
         var session = GameSession.StartSetup(
-            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345");
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
         var events = session.UncommittedEvents.ToList();
         session.MarkEventsCommitted();
 
         // This should not throw even though there is no GameStarted event
-        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, caseFile, events);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
 
         Assert.NotNull(rehydrated);
         Assert.Equal("Ranger Vale", rehydrated.Player.Name);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_WithSetupOnly_RestoresSaltSourceFromWorldGeneratedEvent()
+    {
+        // Regression: RehydrateFromEvents fell back to SaltSource.CreateRuntime()
+        // for setup-phase sessions (no GameStarted event), even though WorldGenerated
+        // carries the original salt. This caused CompleteGameStart() to write a
+        // fresh runtime salt to GameStarted instead of the original salt.
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("regression-salt-abc");
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
+
+        Assert.Equal(saltSource, rehydrated.SaltSource);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_WithSetupOnly_ThenCompleteGameStart_PreservesOriginalSalt()
+    {
+        // End-to-end regression: a rehydrated setup-phase session that goes through
+        // CompleteGameStart must write the original salt to GameStarted, not a
+        // runtime salt. This is the exact bug path: load → rehydrate → CompleteGameStart.
+        var world = CreateWorld();
+        var caseFile = CreateCaseFile();
+        var saltSource = SaltSource.CreateFixed("regression-salt-xyz");
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed-12345", saltSource);
+        var events = session.UncommittedEvents.ToList();
+        session.MarkEventsCommitted();
+
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, world, events);
+        rehydrated.ViewPrologue("true-culprit");
+        rehydrated.SelectStartingTown(new TownId("pinecross"));
+        rehydrated.CompleteGameStart();
+
+        var gameStarted = rehydrated.UncommittedEvents.OfType<GameStarted>().Single();
+        Assert.Equal(saltSource, gameStarted.SaltSource);
     }
 
     private static GameSession CreateSetupSession(
@@ -207,7 +285,8 @@ public class StartFlowEventSourcingTests
     {
         var world = CreateWorld();
         var caseFile = CreateCaseFile();
-        return GameSession.StartSetup(playerName, world, caseFile, gameDifficulty, gameEntropy, seedCode);
+        var saltSource = SaltSource.CreateFixed("test-salt");
+        return GameSession.StartSetup(playerName, world, caseFile, gameDifficulty, gameEntropy, seedCode, saltSource);
     }
 
     private static DomainWorld CreateWorld()

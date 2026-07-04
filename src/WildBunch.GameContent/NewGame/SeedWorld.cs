@@ -5,14 +5,18 @@ namespace WildBunch.GameContent.NewGame;
 /// <summary>
 /// Seed-owned deterministic world/map layer decoded from the UUID seed code.
 /// Owns generated world facts: world variant, town count, services palette,
-/// prosperity palette, map layout palette, trail graph with baseline terrain/water/distance,
+/// prosperity palette, cluster count, graph density,
 /// accusation/default culprit candidates, and seed-derived cash bonus.
 ///
 /// The seed encodes only: variant, townCount, servicesPalette,
-/// prosperityPalette, mapLayoutPalette, accusationIndex, defaultCulpritIndex, cashBonus.
-/// Town names are derived from the encoded fields via a deterministic
-/// shuffle of the name pool — they are flavor, not encoded state. This
-/// means the catalog can grow to any size without increasing UUID bandwidth.
+/// prosperityPalette, clusterCount, graphDensity, accusationIndex, defaultCulpritIndex, cashBonus.
+/// Town names, selected town IDs, and per-town services are derived from the
+/// encoded fields via a deterministic shuffle of the name pool — they are
+/// flavor, not encoded state. This means the catalog can grow to any size
+/// without increasing UUID bandwidth.
+///
+/// Trails are NOT seed-owned. MapGenerator generates the trail graph at game
+/// setup time from the geometric placement, not from the seed codec.
 ///
 /// Does NOT own selected difficulty, selected entropy, final starting town,
 /// final horse/saddle/loadout, final health, or final resolved mystery truth
@@ -21,9 +25,10 @@ namespace WildBunch.GameContent.NewGame;
 /// Design boundary:
 /// - Starting town is NOT seed-owned. StartingTownPolicy validates the
 ///   player's start choice against the generated world.
-/// - SeedWorld owns the candidate/generated map: how many towns, what
+/// - SeedWorld owns the candidate/generated map shape: how many towns, what
 ///   services each slot has (via palette), what prosperity each slot has
-///   (via palette), the map layout (via palette), and the trail graph between slots.
+///   (via palette), the cluster structure (via ClusterCount), the graph
+///   density (via GraphDensity).
 /// - Same seed + same difficulty should produce the same resolved map.
 /// - Difficulty may later influence map pressure/layout realization
 ///   downstream of the seed codec, not by hiding difficulty inside the seed.
@@ -34,16 +39,25 @@ public sealed record SeedWorld(
     int TownCount,
     ServicesPalette ServicesPalette,
     ProsperityPalette ProsperityPalette,
-    MapLayoutPalette MapLayoutPalette,
+    int ClusterCount,
+    GraphDensity GraphDensity,
     int AccusationIndex,
     int DefaultCulpritIndex,
     int CashBonus,
-    IReadOnlyList<string> SelectedTownIds,
-    IReadOnlyDictionary<string, TownServices> TownServices,
-    IReadOnlyList<SeedWorldTrail> Trails,
     int OutlierSlotType) // 0=no outlier, 1=simple outlier, 2-3 reserved
 {
     public string SeedCodeText => SeedCode.ToString("D");
+
+    /// <summary>
+    /// Derives the selected town IDs for this seed world by running the
+    /// deterministic name shuffle. This is a derived view, not encoded state.
+    /// </summary>
+    public IReadOnlyList<string> GetSelectedTownIds()
+        => SeedWorldCatalog.DeriveTownNames(
+            WorldVariant, TownCount, AccusationIndex, DefaultCulpritIndex,
+            CashBonus, ProsperityPalette, ServicesPalette)
+            .Select(t => t.Id)
+            .ToArray();
 }
 
 internal sealed record SeedWorldValidationResult(
