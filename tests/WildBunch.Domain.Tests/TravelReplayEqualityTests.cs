@@ -16,10 +16,10 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_JourneyStarted_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
+        var (commandSession, preview, setupEvents) =
             TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
         commandSession.StartJourney(preview);
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -39,11 +39,11 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_AdvanceJourneyDay_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
+        var (commandSession, preview, setupEvents) =
             TravelTestFactory.CreateEasyShortJourneyWithGameStarted();
         commandSession.StartJourney(preview);
         commandSession.AdvanceJourneyDay();
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -61,7 +61,7 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, gameStarted) =
+        var (commandSession, preview, setupEvents) =
             TravelTestFactory.CreateSixDayQuietJourneyWithGameStarted();
         commandSession.StartJourney(preview);
 
@@ -75,7 +75,7 @@ public sealed class TravelReplayEqualityTests
         } while (result.Status == JourneyStatus.Active && result.Success);
         commandSession.AcknowledgeJourneyArrival();
 
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -97,7 +97,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
-        var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(commandSession);
+        var setupEvents = TravelTestFactory.RecaptureGameStartedForReplay(commandSession);
         commandSession.StartJourney(preview);
 
         // Force a foe encounter through the dev-travel override seam instead of
@@ -108,7 +108,7 @@ public sealed class TravelReplayEqualityTests
 
         var resolved = commandSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
         Assert.True(resolved.Success);
-        var events = new[] { gameStarted }.Concat(commandSession.UncommittedEvents).ToList();
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,

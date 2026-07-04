@@ -27,7 +27,7 @@ public static class TestSessionFactory
     /// event-sourced flow used by production handlers, ensuring all test
     /// sessions are fully rehydratable from their event stream.
     /// </summary>
-    private static GameSession StartGameCanonical(
+    internal static GameSession StartGameCanonical(
         string playerName,
         DomainWorld world,
         CaseFile caseFile,
@@ -96,7 +96,7 @@ public static class TestSessionFactory
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -137,7 +137,7 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -181,7 +181,7 @@ public static class TestSessionFactory
             killerReleaseProgress: 2,
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -209,7 +209,7 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -255,7 +255,7 @@ public static class TestSessionFactory
             knownClues: Array.Empty<Clue>(),
             knownWarrants: Array.Empty<Warrant>());
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -304,7 +304,7 @@ public static class TestSessionFactory
                     "Wanted for a stage robbery.")
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -355,7 +355,7 @@ public static class TestSessionFactory
                     "Wanted for a stage robbery.")
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(
@@ -453,7 +453,7 @@ public static class TestSessionFactory
                 new InventoryItem(ItemKind.RevolverAmmo, 2)
             });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
@@ -512,7 +512,7 @@ public static class TestSessionFactory
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
@@ -606,7 +606,7 @@ public static class TestSessionFactory
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();

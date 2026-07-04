@@ -27,7 +27,7 @@ public sealed class JournalLogProjectorEquivalenceTests
         } while (result.Status == JourneyStatus.Active && result.Success);
         session.AcknowledgeJourneyArrival();
 
-        var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
+        var events = gameStarted.Concat(session.UncommittedEvents).ToList();
 
         var projected = new JournalLogProjector().Project(events);
 
@@ -55,7 +55,7 @@ public sealed class JournalLogProjectorEquivalenceTests
 
         var resolved = session.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
         Assert.True(resolved.Success);
-        var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
+        var events = gameStarted.Concat(session.UncommittedEvents).ToList();
 
         var projected = new JournalLogProjector().Project(events);
 
@@ -78,7 +78,7 @@ public sealed class JournalLogProjectorEquivalenceTests
 
         session.Purchase(offer, 2);
 
-        var events = new[] { gameStarted }.Concat(session.UncommittedEvents).ToList();
+        var events = gameStarted.Concat(session.UncommittedEvents).ToList();
         var projected = new JournalLogProjector().Project(events);
 
         // Characterization: the projected log should contain the opening and purchase entries.

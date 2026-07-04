@@ -72,7 +72,7 @@ public sealed class GameSessionDevEntropyTests
         session.SetDevEntropy(GameEntropy.Wild);
         session.MarkEventsCommitted();
 
-        var events = new[] { originalGameStarted }
+        var events = originalGameStarted
             .Concat(session.CommittedEvents.OfType<IDomainEvent>())
             .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(

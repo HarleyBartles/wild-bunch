@@ -133,7 +133,7 @@ public sealed class DevTravelOverrideTests
         session.MarkEventsCommitted();
 
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
-        var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = gameStarted.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
@@ -153,7 +153,7 @@ public sealed class DevTravelOverrideTests
 
         // Rehydrate from the full event stream: Forced -> Consumed -> TravelDayAdvanced
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
-        var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = gameStarted.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
@@ -169,7 +169,7 @@ public sealed class DevTravelOverrideTests
         session.MarkEventsCommitted();
 
         var gameStarted = TravelTestFactory.RecaptureGameStartedForReplay(session);
-        var events = new[] { gameStarted }.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = gameStarted.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 

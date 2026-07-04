@@ -78,7 +78,7 @@ public sealed class GameSessionDevDifficultyTests
         session.ForceDevDifficulty(GameDifficulty.Challenging);
         session.MarkEventsCommitted();
 
-        var events = new[] { originalGameStarted }
+        var events = originalGameStarted
             .Concat(session.CommittedEvents.OfType<IDomainEvent>())
             .ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
