@@ -16,46 +16,6 @@ internal static class SeedWorldBuilder
         => SeedWorldCatalog.CreateCanonicalWorld();
 
     /// <summary>
-    /// Stub: builds a World with a minimal linear trail chain (0→1→2→...→N-1).
-    /// The real pipeline (MapGenerator) replaces this in Plan 2.
-    /// First trail is Low/OpenRange/Creek/4m to keep travel tests green.
-    /// </summary>
-    public static World CreateWorld(
-        SeedWorld seedWorld,
-        GameSetupDeterministicSource source,
-        GameEntropy entropy = GameEntropy.Boring,
-        SaltSource? saltSource = null)
-    {
-        ArgumentNullException.ThrowIfNull(seedWorld);
-        ArgumentNullException.ThrowIfNull(source);
-
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            seedWorld.WorldVariant, seedWorld.TownCount,
-            seedWorld.AccusationIndex, seedWorld.DefaultCulpritIndex,
-            seedWorld.CashBonus, seedWorld.ProsperityPalette, seedWorld.ServicesPalette);
-
-        var trails = new List<SeedWorldTrail>();
-        for (var i = 1; i < townNames.Count; i++)
-        {
-            var water = i == 1 ? WaterFeature.Creek : WaterFeature.None;
-            var distance = i == 1 ? 5m : 4m;
-            trails.Add(new SeedWorldTrail(
-                $"trail-0-{i}",
-                townNames[0].Id,
-                townNames[i].Id,
-                TrailRisk.Low,
-                TrailTerrain.OpenRange,
-                water,
-                distance));
-        }
-
-        return SeedWorldCatalog.CreateWorld(
-            seedWorld.WorldVariant, townNames, seedWorld.ServicesPalette,
-            seedWorld.ProsperityPalette, trails,
-            townCoordinates: null, outlierSlot: null,
-            entropy, saltSource, seedWorld.SeedCode);
-    }
-    /// <summary>
     /// Computes a stable deterministic hash for entropy variance.
     /// Uses SHA256 over explicit inputs to ensure consistency across runs.
     /// </summary>
