@@ -1116,6 +1116,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = e.GameEntropy;
         SeedCode = e.SeedCode;
         StartFlowPhase = StartFlowPhase.GameStarted;
+        // The StartSetup placeholder uses the first town as the current town.
+        // When the actual starting town differs (selected via SelectStartingTown),
+        // update _currentTown to match. During rehydration the constructor already
+        // sets _currentTown from the GameStarted event, so this is a no-op there.
+        if (!_currentTown.TownId.Equals(e.StartingTownId))
+        {
+            _currentTown.EnterTown(World.GetTown(e.StartingTownId));
+        }
         _version++;
     }
 

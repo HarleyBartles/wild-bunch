@@ -87,14 +87,14 @@ public sealed class ClockTurnCorrectionTests
     [Fact]
     public void Replay_TownActionContextEntered_ReconstructsContextAndClock()
     {
-        // Build a session and capture the GameStarted event before it is marked committed.
-        var session = CreateDefaultSessionWithUncommittedGameStarted(out var gameStarted);
+        // Build a session and capture the setup events before it is marked committed.
+        var session = CreateDefaultSessionWithUncommittedGameStarted(out var setupEvents);
         session.MarkEventsCommitted();
 
         session.EnterActionContext(TownActionContext.Saloon);
         session.EnterActionContext(TownActionContext.SheriffOffice);
         var contextEvents = session.UncommittedEvents.ToList();
-        var events = new[] { gameStarted }.Concat(contextEvents).ToList();
+        var events = setupEvents.Concat(contextEvents).ToList();
         var contextAfterCommands = session.CurrentActionContext;
         var dayAfterCommands = session.Clock.Day;
         var turnAfterCommands = session.Clock.Turn;
@@ -110,9 +110,9 @@ public sealed class ClockTurnCorrectionTests
 
     /// <summary>
     /// Creates a default session but returns it BEFORE MarkEventsCommitted so the caller
-    /// can capture the GameStarted event for replay-stream construction.
+    /// can capture the setup events for replay-stream construction.
     /// </summary>
-    private static GameSession CreateDefaultSessionWithUncommittedGameStarted(out GameStarted gameStarted)
+    private static GameSession CreateDefaultSessionWithUncommittedGameStarted(out IReadOnlyList<IDomainEvent> setupEvents)
     {
         var town = new Town(new TownId("current"), "Current Town",
             TownServices.Telegraph);
@@ -145,10 +145,10 @@ public sealed class ClockTurnCorrectionTests
             new InventoryItem(ItemKind.Saddle, 1)
         });
 
-        var session = GameSession.StartNew("Ranger Vale", world, caseFile, town.Id,
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
-        gameStarted = Assert.IsType<GameStarted>(session.UncommittedEvents.Single());
+        setupEvents = session.UncommittedEvents.ToList();
         return session;
     }
 

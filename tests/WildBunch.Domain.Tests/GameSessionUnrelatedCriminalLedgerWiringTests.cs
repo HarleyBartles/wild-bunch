@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
@@ -168,7 +169,7 @@ public sealed class GameSessionUnrelatedCriminalLedgerWiringTests
             new[] { pinecross },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, pinecross.Id, TrailRisk.Low) });
 
-        var reloaded = GameSession.StartNew("Ranger Vale", world, caseFileAfterTurnIn, pinecross.Id);
+        var reloaded = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFileAfterTurnIn, pinecross.Id, gameDifficulty: GameDifficulty.Standard);
 
         Assert.Equal(1, reloaded.UnrelatedCriminalLedger.GangMembersAvailable);
         Assert.Equal(1, reloaded.UnrelatedCriminalLedger.ActiveCriminalCount);
@@ -230,6 +231,6 @@ public sealed class GameSessionUnrelatedCriminalLedgerWiringTests
             knownWarrants: knownWarrants,
             publicWarrants: publicWarrants);
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);
     }
 }

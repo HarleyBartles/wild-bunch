@@ -2,6 +2,7 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
@@ -109,6 +110,6 @@ public sealed class JournalResolverTests
             openingLead: CaseOpeningLead.Create("A rider with a pale scar across the left cheek."),
             knownClues: clues);
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);
     }
 }

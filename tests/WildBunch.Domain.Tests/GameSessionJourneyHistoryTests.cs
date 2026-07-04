@@ -84,7 +84,7 @@ public sealed class GameSessionJourneyHistoryTests
             new InventoryItem(ItemKind.Knife, 1)
         });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,

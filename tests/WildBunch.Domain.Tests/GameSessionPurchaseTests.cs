@@ -172,7 +172,7 @@ public sealed class GameSessionPurchaseTests
                     new DomainInventoryItem(DomainItemKind.Canteen, 1)
                 }));
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), resolvedInventory);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), resolvedInventory, GameDifficulty.Standard);
     }
 
     private static void StartJourney(GameSession session)

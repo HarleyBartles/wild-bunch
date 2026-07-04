@@ -310,7 +310,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
                     "Wanted for a stage robbery.")
             });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);
     }
 
     private static void StartJourney(GameSession session)

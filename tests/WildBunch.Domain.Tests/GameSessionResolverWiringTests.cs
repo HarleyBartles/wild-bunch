@@ -128,7 +128,7 @@ public sealed class GameSessionResolverWiringTests
                 publicClues: Array.Empty<Clue>(),
                 publicWarrants: publicWarrants);
 
-            return GameSession.StartNew(
+            return TestSessionFactory.StartGameCanonical(
                 "Ranger Vale",
                 world,
                 caseFile,
@@ -185,7 +185,7 @@ public sealed class GameSessionResolverWiringTests
             publicClues: Array.Empty<Clue>(),
             publicWarrants: publicWarrants);
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -241,7 +241,7 @@ public sealed class GameSessionResolverWiringTests
             publicClues: Array.Empty<Clue>(),
             publicWarrants: publicWarrants);
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,
@@ -301,7 +301,7 @@ public sealed class GameSessionResolverWiringTests
                         }))
             });
 
-        return GameSession.StartNew(
+        return TestSessionFactory.StartGameCanonical(
             "Ranger Vale",
             world,
             caseFile,

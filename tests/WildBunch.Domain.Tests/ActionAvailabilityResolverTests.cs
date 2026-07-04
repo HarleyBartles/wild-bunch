@@ -154,7 +154,7 @@ public sealed class ActionAvailabilityResolverTests
         };
 
         var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
-        return GameSession.StartNew("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: null, saltSource: DeterministicSaltSource);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, wallet: null, inventory: null, gameDifficulty: GameDifficulty.Standard, saltSource: DeterministicSaltSource);
     }
 
     private static GameSession CreateHighRiskSession()
@@ -185,6 +185,6 @@ public sealed class ActionAvailabilityResolverTests
             new WildBunch.Domain.Inventory.InventoryItem(WildBunch.Domain.Inventory.ItemKind.RevolverAmmo, 2)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, WildBunch.Domain.Economy.Wallet.Starting(25m), inventory, saltSource: DeterministicSaltSource);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, WildBunch.Domain.Economy.Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
     }
 }

@@ -72,6 +72,6 @@ public sealed class PurchaseBeatCostTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
 
-        return GameSession.StartNew("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard);
     }
 }

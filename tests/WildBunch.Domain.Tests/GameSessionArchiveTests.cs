@@ -31,7 +31,7 @@ public sealed class GameSessionArchiveTests
 
         session.ArchivePlaythrough("start-over");
 
-        // StartNew emits GameStarted; archive appends PlaythroughArchived.
+        // Canonical start flow emits setup events; archive appends PlaythroughArchived.
         var archived = session.UncommittedEvents.OfType<PlaythroughArchived>().Single();
         Assert.Equal("start-over", archived.ArchiveReason);
     }
@@ -207,7 +207,7 @@ public sealed class GameSessionArchiveTests
             new DomainInventoryItem(DomainItemKind.Food, 1),
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         });
-        return GameSession.StartNew("Ranger Vale", world, caseFile, new TownId("pinecross"), wallet ?? Wallet.Starting(25m), resolvedInventory);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, new TownId("pinecross"), wallet ?? Wallet.Starting(25m), resolvedInventory, GameDifficulty.Standard);
     }
 
     private static DomainWorld CreateWorld()
