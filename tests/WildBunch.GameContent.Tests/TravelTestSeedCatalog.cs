@@ -124,15 +124,6 @@ internal static class TravelTestSeedCatalog
         var clusterCount = 1;
         var graphDensity = GraphDensity.Sparse;
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = Array.Empty<SeedWorldTrail>();
-
         return new SeedWorld(
             Guid.Empty,
             variant,
@@ -144,9 +135,6 @@ internal static class TravelTestSeedCatalog
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            selectedTownIds,
-            townServices,
-            trails,
             OutlierSlotType: 0);
     }
 

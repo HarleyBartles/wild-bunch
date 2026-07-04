@@ -40,8 +40,8 @@ public sealed class SeedWorldBuilderTests
         var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
         var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
 
-        var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).SelectedTownIds.OrderBy(id => id));
-        var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).SelectedTownIds.OrderBy(id => id));
+        var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
+        var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
 
         Assert.NotEqual(namesA, namesB);
     }
@@ -84,7 +84,7 @@ public sealed class SeedWorldBuilderTests
             var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
             var resolved = SeedWorldResolver.Resolve(seedCode);
             Assert.Equal(count, resolved.TownCount);
-            Assert.Equal(count, resolved.SelectedTownIds.Count);
+            Assert.Equal(count, resolved.GetSelectedTownIds().Count);
         }
     }
 

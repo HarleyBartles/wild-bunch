@@ -162,16 +162,6 @@ public static class SeedWorldResolver
         var townCount = (townCountEncoded + TownCountOffset) % (MaxTownCount + 1);
         if (townCount < MinTownCount) townCount += (MaxTownCount + 1);
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
-
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = Array.Empty<SeedWorldTrail>();
-
         return new SeedWorld(
             seedCode,
             variant,
@@ -183,9 +173,6 @@ public static class SeedWorldResolver
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            selectedTownIds,
-            townServices,
-            trails,
             OutlierSlotType: outlierSlotType);
     }
 
@@ -318,16 +305,6 @@ public static class SeedWorldResolver
         var clusterCount = 1;
         var graphDensity = GraphDensity.Sparse;
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
-
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = Array.Empty<SeedWorldTrail>();
-
         return new SeedWorld(
             Guid.Empty,
             variant,
@@ -339,9 +316,6 @@ public static class SeedWorldResolver
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            selectedTownIds,
-            townServices,
-            trails,
             OutlierSlotType: 0);
     }
 

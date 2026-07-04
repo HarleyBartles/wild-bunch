@@ -21,7 +21,7 @@ public sealed class TravelTestSeedCatalogGuardrailTests
 
         Assert.Equal(SeedWorldVariant.Canonical, resolved.WorldVariant);
         Assert.Equal(8, resolved.TownCount);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.GetSelectedTownIds().Count);
     }
 
     [Fact]

@@ -30,7 +30,6 @@ internal static class MapGenerator
         // uses a different seed/shuffle and could pick a name already in the main list.
         if (placement.OutlierSlot.HasValue)
         {
-            var outlierIndex = placement.OutlierSlot.Value;
             var existingIds = new HashSet<string>(townNames.Select(t => t.Id));
             var outlierPool = SeedWorldCatalog.DeriveTownNames(
                 seedWorld.WorldVariant,

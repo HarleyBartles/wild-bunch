@@ -19,7 +19,7 @@ public sealed class SeedWorldResolverTests
         Assert.Equal(seedWorld.ProsperityPalette, resolved.ProsperityPalette);
         Assert.Equal(seedWorld.ClusterCount, resolved.ClusterCount);
         Assert.Equal(seedWorld.GraphDensity, resolved.GraphDensity);
-        Assert.Equal(seedWorld.SelectedTownIds, resolved.SelectedTownIds);
+        Assert.Equal(seedWorld.GetSelectedTownIds(), resolved.GetSelectedTownIds());
         Assert.Equal(seedWorld.AccusationIndex, resolved.AccusationIndex);
         Assert.Equal(seedWorld.DefaultCulpritIndex, resolved.DefaultCulpritIndex);
         Assert.Equal(seedWorld.CashBonus, resolved.CashBonus);
@@ -37,7 +37,7 @@ public sealed class SeedWorldResolverTests
 
         Assert.Equal(seedWorldA.WorldVariant, seedWorldB.WorldVariant);
         Assert.Equal(seedWorldA.TownCount, seedWorldB.TownCount);
-        Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
+        Assert.Equal(seedWorldA.GetSelectedTownIds(), seedWorldB.GetSelectedTownIds());
         Assert.Equal(seedWorldA.AccusationIndex, seedWorldB.AccusationIndex);
         Assert.Equal(seedWorldA.DefaultCulpritIndex, seedWorldB.DefaultCulpritIndex);
         Assert.Equal(seedWorldA.CashBonus, seedWorldB.CashBonus);
@@ -177,7 +177,7 @@ public sealed class SeedWorldResolverTests
         var seed = SeedWorldResolver.CreateCanonicalSeedCode();
         var resolved = SeedWorldResolver.Resolve(seed);
         Assert.Equal(8, resolved.TownCount);
-        Assert.Equal(8, resolved.SelectedTownIds.Count);
+        Assert.Equal(8, resolved.GetSelectedTownIds().Count);
     }
 
     [Fact]
@@ -188,8 +188,8 @@ public sealed class SeedWorldResolverTests
         var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
         var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
 
-        var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).SelectedTownIds.OrderBy(id => id));
-        var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).SelectedTownIds.OrderBy(id => id));
+        var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
+        var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
 
         Assert.NotEqual(namesA, namesB);
     }
@@ -200,8 +200,7 @@ public sealed class SeedWorldResolverTests
         var seed = SeedWorldResolver.CreateCanonicalSeedCode();
         var seedWorldA = SeedWorldResolver.Resolve(seed);
         var seedWorldB = SeedWorldResolver.Resolve(seed);
-        Assert.Equal(seedWorldA.SelectedTownIds, seedWorldB.SelectedTownIds);
-        Assert.Equal(seedWorldA.Trails.Count, seedWorldB.Trails.Count);
+        Assert.Equal(seedWorldA.GetSelectedTownIds(), seedWorldB.GetSelectedTownIds());
     }
 
     [Fact]
@@ -231,19 +230,10 @@ public sealed class SeedWorldResolverTests
         var clusterCount = 1;
         var graphDensity = GraphDensity.Sparse;
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperity, services);
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(services, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = Array.Empty<SeedWorldTrail>();
-
         return SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
             Guid.Empty, variant, townCount, services, prosperity, clusterCount, graphDensity,
             accusationIndex, defaultCulpritIndex, cashBonus,
-            selectedTownIds, townServices, trails, OutlierSlotType: 0));
+            OutlierSlotType: 0));
     }
 
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)

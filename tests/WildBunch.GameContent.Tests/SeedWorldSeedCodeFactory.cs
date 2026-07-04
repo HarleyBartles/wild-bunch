@@ -17,15 +17,6 @@ internal static class SeedWorldSeedCodeFactory
         var servicesPalette = ServicesPalette.HubTelegraph;
         var clusterCount = 1; var graphDensity = GraphDensity.Sparse;
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = Array.Empty<SeedWorldTrail>();
-
         var target = new SeedWorld(
             Guid.Empty,
             variant,
@@ -36,9 +27,6 @@ internal static class SeedWorldSeedCodeFactory
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            selectedTownIds,
-            townServices,
-            trails,
             OutlierSlotType: 0);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(target);
@@ -60,15 +48,6 @@ internal static class SeedWorldSeedCodeFactory
         var townCount = 8;
         var clusterCount = 1; var graphDensity = GraphDensity.Sparse;
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
-            variant, townCount, accusationIndex, defaultCulpritIndex,
-            cashBonus, prosperityPalette, servicesPalette);
-        var selectedTownIds = townNames.Select(t => t.Id).ToArray();
-        var townServices = townNames
-            .Select((t, i) => (t.Id, Services: ServicesPalettes.Resolve(servicesPalette, i)))
-            .ToDictionary(x => x.Id, x => x.Services);
-        var trails = Array.Empty<SeedWorldTrail>();
-
         var target = new SeedWorld(
             Guid.Empty,
             variant,
@@ -79,9 +58,6 @@ internal static class SeedWorldSeedCodeFactory
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            selectedTownIds,
-            townServices,
-            trails,
             OutlierSlotType: 0);
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(target);

@@ -23,12 +23,6 @@ public static class SeedWorldMapLayout
         return GetMapTowns(world);
     }
 
-    public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails()
-    {
-        var world = SeedWorldCatalog.CreateCanonicalWorld();
-        return GetMapTrails(world);
-    }
-
     public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails(World world)
     {
         return world.Trails
