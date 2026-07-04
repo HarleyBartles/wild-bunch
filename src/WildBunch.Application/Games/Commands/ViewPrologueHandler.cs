@@ -35,7 +35,7 @@ public sealed class ViewPrologueHandler : GameSessionCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
+        var dto = await ExecuteWithRetryAsync(sessionId, async (session, ct) =>
         {
             // Resolve the true culprit descriptor for the prologue reveal.
             var trueCulpritDescriptor = PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(
@@ -43,13 +43,18 @@ public sealed class ViewPrologueHandler : GameSessionCommandHandler
 
             session.ViewPrologue(trueCulpritDescriptor);
 
-            var dto = GameSessionMapper.ToDto(session);
-            var events = await GameSessionRepository.GetEventStreamAsync(
-                session.Id, 0, ct).ConfigureAwait(false);
-            var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
-            var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
-
-            return dto with { HudProjection = hud, DiaryProjection = diary };
+            return GameSessionMapper.ToDto(session);
         }, cancellationToken).ConfigureAwait(false);
+
+        // Project from the event stream AFTER the base pipeline has stored and
+        // committed the new events. Fetching inside the lambda would project
+        // from a stream that does not yet include the just-emitted event.
+        // See TravelToTownHandler for the same pattern.
+        var events = await GameSessionRepository.GetEventStreamAsync(
+            sessionId, 0, cancellationToken).ConfigureAwait(false);
+        var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
+        var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
+
+        return dto with { HudProjection = hud, DiaryProjection = diary };
     }
 }

@@ -465,17 +465,20 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     private static StartFlowPhase DeriveStartFlowPhase(IReadOnlyList<IDomainEvent> events)
     {
         var hasGameStarted = false;
+        var hasStartingTownSelected = false;
         var hasPrologueViewed = false;
         var hasSetupCompleted = false;
 
         foreach (var e in events)
         {
             if (e is GameStarted) hasGameStarted = true;
+            else if (e is StartingTownSelected) hasStartingTownSelected = true;
             else if (e is PrologueViewed) hasPrologueViewed = true;
             else if (e is PlayerSetupCompleted) hasSetupCompleted = true;
         }
 
         if (hasGameStarted) return StartFlowPhase.GameStarted;
+        if (hasStartingTownSelected) return StartFlowPhase.StartingTownSelected;
         if (hasPrologueViewed) return StartFlowPhase.PrologueViewed;
         if (hasSetupCompleted) return StartFlowPhase.SetupComplete;
         return StartFlowPhase.NotStarted;

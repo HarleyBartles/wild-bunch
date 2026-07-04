@@ -901,4 +901,41 @@ public sealed class EfGameSessionRepositoryTests
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
         return session;
     }
+
+    /// <summary>
+    /// Regression: DeriveStartFlowPhase previously did not check for
+    /// StartingTownSelected. A session whose latest event was StartingTownSelected
+    /// would reload as PrologueViewed instead of StartingTownSelected.
+    /// In production, SelectStartingTown and CompleteGameStart are always called
+    /// in the same command (CompleteGameStartHandler), so StartingTownSelected
+    /// is always followed by GameStarted in the same transaction. This test
+    /// persists the intermediate state directly to verify DeriveStartFlowPhase
+    /// handles it correctly if the flow is ever split.
+    /// </summary>
+    [Fact]
+    public async Task SaveAndLoad_WithStartingTownSelectedOnly_RestoresCorrectStartFlowPhase()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
+        var world = new WildBunch.Domain.World.World(
+            new[] { dustvale, silvercreek },
+            new[] { new Trail(new TrailId("trail-1"), dustvale.Id, silvercreek.Id, TrailRisk.Low) });
+        var caseFile = CreateCaseFile();
+
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile,
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(dustvale.Id);
+        // Do NOT call CompleteGameStart — persist with StartingTownSelected as latest event.
+
+        await PersistAsync(repository, unitOfWork, session);
+
+        var reloaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(StartFlowPhase.StartingTownSelected, reloaded!.StartFlowPhase);
+    }
 }
