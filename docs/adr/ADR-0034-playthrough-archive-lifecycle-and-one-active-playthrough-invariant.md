@@ -6,7 +6,7 @@
 
 ## Dated Status History
 
-- 2026-06-27 - live: BUNCH-102 introduces player-facing start-over. `GameStatus.Archived` and the `PlaythroughArchived` event are implemented. The one-active-playthrough invariant is enforced in `StartNewGameHandler`, which archives all pre-existing `Active` sessions in the same UoW transaction as the new session create. Archived sessions remain persisted and queryable by id with `Archived` status; they are not deleted.
+- 2026-06-27 - live: BUNCH-102 introduces player-facing start-over. `GameStatus.Archived` and the `PlaythroughArchived` event are implemented. The one-active-playthrough invariant is enforced in `CompletePlayerSetupHandler`, which archives all pre-existing `Active` sessions in the same UoW transaction as the new session create. Archived sessions remain persisted and queryable by id with `Archived` status; they are not deleted.
 
 ## Decision Type
 
@@ -46,7 +46,7 @@ Introduce a playthrough archive lifecycle:
 - `PlaythroughArchived` is a typed domain event carrying the archive reason, the player's last position (town, day, turn), and the status before archive.
 - `GameSession.ArchivePlaythrough(reason)` is the command method: it validates the session is not already archived, constructs the event, and applies it through `ProduceEvent` (the single command-produces-event-then-applies path from ADR-0028).
 - `Apply(PlaythroughArchived)` sets `Status = GameStatus.Archived`. The last-position snapshot on the event is decision data, not re-applied to live state (archive is terminal for play).
-- The one-active-playthrough invariant is enforced at the application/persistence level in `StartNewGameHandler`: before creating a new session, it loads all `Active` sessions via `GetByStatusAsync(GameStatus.Active)`, archives each with reason `superseded-by-new-playthrough`, stages all archive appends and the new session create on the same `DbContext` under one correlation id, and commits in a single UoW transaction.
+- The one-active-playthrough invariant is enforced at the application/persistence level in `CompletePlayerSetupHandler`: before creating a new session, it loads all `Active` sessions via `GetByStatusAsync(GameStatus.Active)`, archives each with reason `superseded-by-new-playthrough`, stages all archive appends and the new session create on the same `DbContext` under one correlation id, and commits in a single UoW transaction.
 
 ## Detailed Decision Breakdown
 
@@ -64,7 +64,7 @@ Introduce a playthrough archive lifecycle:
 
 4. **`Apply(PlaythroughArchived)` replay path.** Sets `Status = GameStatus.Archived` and increments `_version`. The last-position snapshot fields on the event are not re-applied to live state — archive is terminal for play, so the snapshot exists for audit/projection consumption, not for rehydrating a playable session. Replay reconstructs the same `Archived` status as the command path.
 
-5. **One-active-playthrough invariant enforcement.** `StartNewGameHandler.HandleAsync` enforces the invariant:
+5. **One-active-playthrough invariant enforcement.** `CompletePlayerSetupHandler.HandleAsync` enforces the invariant:
    - Generates one correlation id for the entire archive-old + create-new flow.
    - Loads all `Active` sessions via `IGameSessionRepository.GetByStatusAsync(GameStatus.Active)`.
    - Archives each via `ArchivePlaythrough("superseded-by-new-playthrough")` and stages the append via `StoreAsync` on the same `DbContext`.
@@ -101,18 +101,18 @@ Introduce a playthrough archive lifecycle:
 
 ## Accepted Tradeoffs
 
-- `StartNewGameHandler` does more work (load + archive all active sessions) than a plain create. The cost is bounded by the number of active sessions, which the invariant keeps at most one in steady state.
-- The invariant is enforced at the application layer, not by a DB constraint. A path that creates an `Active` session outside `StartNewGameHandler` could violate it. Mitigation: session creation flows through the established command handler route (ADR-0002), and `GetByStatusAsync` makes violations inspectable.
+- `CompletePlayerSetupHandler` does more work (load + archive all active sessions) than a plain create. The cost is bounded by the number of active sessions, which the invariant keeps at most one in steady state.
+- The invariant is enforced at the application layer, not by a DB constraint. A path that creates an `Active` session outside `CompletePlayerSetupHandler` could violate it. Mitigation: session creation flows through the established command handler route (ADR-0002), and `GetByStatusAsync` makes violations inspectable.
 - Archived sessions accumulate in the store over time. This is acceptable for a greenfield repo with dev database drop/recreate available; a future cleanup/retention policy is a separate decision.
 
 ## Risks
 
-- A future session-creation path that bypasses `StartNewGameHandler` could create a second `Active` session. Mitigation: ADR-0002 keeps `GameSession` as the single command root and creation flows through handlers; the invariant is documented here and enforced in the canonical handler.
+- A future session-creation path that bypasses `CompletePlayerSetupHandler` could create a second `Active` session. Mitigation: ADR-0002 keeps `GameSession` as the single command root and creation flows through handlers; the invariant is documented here and enforced in the canonical handler.
 - If `GetByStatusAsync` ever returns stale reads under isolation anomalies, two concurrent start-over calls could each archive the other's session. Mitigation: the single UoW transaction and optimistic concurrency (ADR-0028 §7) bound this; the archive append uses the same concurrency check as every other command.
 
 ## Consequences for Future Work
 
-- New session-creation paths must archive pre-existing `Active` sessions in the same transaction or delegate to `StartNewGameHandler` to preserve the invariant.
+- New session-creation paths must archive pre-existing `Active` sessions in the same transaction or delegate to `CompletePlayerSetupHandler` to preserve the invariant.
 - Read paths that list "current playthrough" should filter on `GameStatus.Active`, not assume a single session exists unconditionally.
 - A future "resume archived playthrough" or "view past playthroughs" surface can load archived sessions by id or by `GetByStatusAsync(GameStatus.Archived)` without new schema.
 - A future retention/cleanup policy for archived sessions is a separate decision; this ADR only establishes that archive is not deletion.
@@ -120,7 +120,7 @@ Introduce a playthrough archive lifecycle:
 
 ## Implementation Status or Plan
 
-Live. `GameStatus.Archived` (value `3`), `PlaythroughArchived` event, `GameSession.ArchivePlaythrough`, `Apply(PlaythroughArchived)`, `StartNewGameHandler` invariant enforcement, and persistence deserializer registration are all implemented and tested (BUNCH-102).
+Live. `GameStatus.Archived` (value `3`), `PlaythroughArchived` event, `GameSession.ArchivePlaythrough`, `Apply(PlaythroughArchived)`, `CompletePlayerSetupHandler` invariant enforcement, and persistence deserializer registration are all implemented and tested (BUNCH-102).
 
 ## Related Stable Source Surfaces
 
@@ -128,7 +128,7 @@ Live. `GameStatus.Archived` (value `3`), `PlaythroughArchived` event, `GameSessi
 - `src/WildBunch.Domain/Events/PlaythroughArchived.cs`
 - `src/WildBunch.Domain/Game/GameSession.cs` (`ArchivePlaythrough`, `Apply(PlaythroughArchived)`)
 - `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`
-- `src/WildBunch.Application/Games/Commands/StartNewGameHandler.cs`
+- `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs`
 - `src/WildBunch.Application/Abstractions/IGameSessionRepository.cs` (`GetByStatusAsync`)
 - `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`
 - `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs`
@@ -140,11 +140,11 @@ Live. `GameStatus.Archived` (value `3`), `PlaythroughArchived` event, `GameSessi
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-`GameStatus.cs` defines `Archived = 3`. `PlaythroughArchived.cs` is a sealed record event carrying archive reason, last-position snapshot, and `StatusBeforeArchive`. `GameSession.ArchivePlaythrough` produces the event through `ProduceEvent`; `Apply(PlaythroughArchived)` sets `Status = Archived`. `StartNewGameHandler.HandleAsync` archives all pre-existing `Active` sessions and creates the new session in one correlation id and one UoW commit. The event is registered in the persistence deserializer. Integration and domain tests cover the one-active-playthrough invariant and the archive lifecycle (BUNCH-102).
+`GameStatus.cs` defines `Archived = 3`. `PlaythroughArchived.cs` is a sealed record event carrying archive reason, last-position snapshot, and `StatusBeforeArchive`. `GameSession.ArchivePlaythrough` produces the event through `ProduceEvent`; `Apply(PlaythroughArchived)` sets `Status = Archived`. `CompletePlayerSetupHandler.HandleAsync` archives all pre-existing `Active` sessions and creates the new session in one correlation id and one UoW commit. The event is registered in the persistence deserializer. Integration and domain tests cover the one-active-playthrough invariant and the archive lifecycle (BUNCH-102).
 
 ## Review Triggers
 
-- When a second session-creation path is introduced that does not delegate to `StartNewGameHandler`.
+- When a second session-creation path is introduced that does not delegate to `CompletePlayerSetupHandler`.
 - When a "resume archived playthrough" feature is proposed (archive-is-terminal would need revisiting).
 - When a retention/cleanup policy for archived sessions is needed.
 - When a projection needs to surface archived playthroughs to the player.
