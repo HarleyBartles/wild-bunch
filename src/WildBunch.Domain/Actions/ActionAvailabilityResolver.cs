@@ -9,7 +9,12 @@ public sealed class ActionAvailabilityResolver
     {
         ArgumentNullException.ThrowIfNull(session);
 
-        var currentTown = session.World.GetTown(session.Player.CurrentTownId);
+        if (session.StartFlowPhase < StartFlowPhase.GameStarted)
+        {
+            return [];
+        }
+
+        var currentTown = session.World.GetTown(session.Player.CurrentTownId!.Value);
         var availableActions = new List<AvailableAction>
         {
             new(AvailableActionKind.Travel, "Travel"),

@@ -17,7 +17,9 @@ public static class JournalMapper
             snapshot.SessionId,
             snapshot.Status,
             new GameClockDto(snapshot.Day, snapshot.Turn, ((TimeOfDay)snapshot.Turn).ToString(), BeatLabelRenderer.Render((TimeOfDay)snapshot.Turn, snapshot.Day)),
-            new JournalTownDto(snapshot.CurrentTownId.Value, snapshot.CurrentTownName),
+            snapshot.CurrentTownId is not null
+                ? new JournalTownDto(snapshot.CurrentTownId.Value.Value, snapshot.CurrentTownName!)
+                : null,
             new JournalCaseFileDto(
                 snapshot.OpeningLead,
                 CaseReadMapper.ToDto(snapshot.KillerReleaseState),

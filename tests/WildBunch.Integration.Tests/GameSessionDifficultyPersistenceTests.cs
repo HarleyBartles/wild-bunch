@@ -50,7 +50,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         var serializer = new GameSessionJsonSerializer();
         var session = CreateJourneyHistorySession();
-        var preview = CreateJourneyPreview(session.Player.CurrentTownId, new TownId("openpass"), "Pinecross", "Open Pass");
+        var preview = CreateJourneyPreview(session.Player.CurrentTownId!.Value, new TownId("openpass"), "Pinecross", "Open Pass");
 
         session.StartJourney(preview);
         session.Journey!.MarkCompleted();
@@ -301,7 +301,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded!.Player.CurrentTownId);
         Assert.True(reloaded.CurrentTownVisit.TryGetTownState(new TownId("current"), out var currentTownState));
         Assert.True(reloaded.CurrentTownVisit.TryGetTownState(new TownId("connected"), out var connectedTownState));
         Assert.Equal(2, currentTownState!.VisitNumber);
@@ -356,7 +356,7 @@ public sealed class GameSessionDifficultyPersistenceTests
 
         var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
 
-        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
         Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(reloaded.CaseFile.KnownClues);
@@ -376,7 +376,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var json = serializer.Serialize(session);
         var reloaded = serializer.Deserialize(json);
 
-        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
         Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(reloaded.CaseFile.KnownClues);
@@ -401,7 +401,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
-        Assert.Equal(session.Player.CurrentTownId, reloaded!.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded!.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
         Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
         Assert.Single(reloaded.CaseFile.KnownClues);

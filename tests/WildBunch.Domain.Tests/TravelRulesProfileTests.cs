@@ -78,7 +78,7 @@ public sealed class TravelRulesProfileTests
         Assert.True(horseState.CanProvideMountedTravelFor(easyProfile));
 
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new DomainTownId("holloway"), session.Player.Inventory, session.TravelRules);
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new DomainTownId("holloway"), session.Player.Inventory, session.TravelRules);
 
         Assert.True(preview.Success);
         Assert.NotNull(preview.Preview);

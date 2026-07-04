@@ -133,7 +133,7 @@ public sealed partial class GameSessionJsonSerializer
 
     private sealed record PlayerSnapshot(
         string Name,
-        string CurrentTownId,
+        string? CurrentTownId,
         int Health,
         WalletSnapshot? Wallet,
         InventorySnapshot? Inventory)
@@ -141,7 +141,7 @@ public sealed partial class GameSessionJsonSerializer
         public static PlayerSnapshot FromDomain(Player player)
             => new(
                 player.Name,
-                player.CurrentTownId.Value,
+                player.CurrentTownId?.Value,
                 player.Health,
                 WalletSnapshot.FromDomain(player.Wallet),
                 InventorySnapshot.FromDomain(player.Inventory));
@@ -149,7 +149,7 @@ public sealed partial class GameSessionJsonSerializer
         public static Player ToDomain(PlayerSnapshot snapshot)
             => new(
                 snapshot.Name,
-                new TownId(snapshot.CurrentTownId),
+                snapshot.CurrentTownId is null ? null : new TownId(snapshot.CurrentTownId),
                 snapshot.Health,
                 WalletSnapshot.ToDomain(snapshot.Wallet),
                 InventorySnapshot.ToDomain(snapshot.Inventory));

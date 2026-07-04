@@ -38,7 +38,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded);
         Assert.Equal(session.Id, reloaded!.Id);
         Assert.Equal(session.Player.Name, reloaded.Player.Name);
-        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.Player.Wallet.Cash, reloaded.Player.Wallet.Cash);
         Assert.Equal(session.Player.Inventory.Items.Count, reloaded.Player.Inventory.Items.Count);
         Assert.Equal(session.Player.Inventory.GetHorseState(), reloaded.Player.Inventory.GetHorseState());
@@ -138,7 +138,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("holloway"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("holloway"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -180,7 +180,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryfork"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("dryfork"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -236,7 +236,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryfork"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("dryfork"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -276,7 +276,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("silvercreek"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("silvercreek"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -307,7 +307,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("openpass"), loaded.Player.Inventory, loaded.TravelRules);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("openpass"), loaded.Player.Inventory, loaded.TravelRules);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -337,7 +337,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("dryridge"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("dryridge"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -369,7 +369,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("midway"), loaded.Player.Inventory);
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("midway"), loaded.Player.Inventory);
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
@@ -399,7 +399,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var firstPreview = CreateJourneyPreview(loaded!.Player.CurrentTownId, new TownId("openpass"), "Pinecross", "Open Pass");
+        var firstPreview = CreateJourneyPreview(loaded!.Player.CurrentTownId!.Value, new TownId("openpass"), "Pinecross", "Open Pass");
         loaded.StartJourney(firstPreview);
         Assert.Equal(1, loaded.Journey!.JourneySequence);
 
@@ -423,7 +423,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(1, reloaded.CompletedJourneyHistory[0].JourneySequence);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Completed, reloaded.CompletedJourneyHistory[0].Status);
 
-        var secondPreview = CreateJourneyPreview(reloaded.Player.CurrentTownId, new TownId("dryfork"), "Open Pass", "Dry Fork");
+        var secondPreview = CreateJourneyPreview(reloaded.Player.CurrentTownId!.Value, new TownId("dryfork"), "Open Pass", "Dry Fork");
         reloaded.StartJourney(secondPreview);
         Assert.Equal(2, reloaded.Journey!.JourneySequence);
 
@@ -450,7 +450,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(loaded);
 
-        var preview = travelResolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId, new TownId("holloway"), loaded.Player.Inventory);
+        var preview = travelResolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("holloway"), loaded.Player.Inventory);
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
@@ -466,7 +466,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(sessionRead);
         Assert.Equal(loaded!.Status, sessionRead!.Status);
         Assert.Equal(loaded.GameDifficulty, sessionRead.GameDifficulty);
-        Assert.Equal(loaded.Player.CurrentTownId, sessionRead.Player.CurrentTownId);
+        Assert.Equal(loaded.Player.CurrentTownId!.Value, sessionRead.Player.CurrentTownId);
         Assert.Equal(loaded.Player.Wallet.Cash, sessionRead.Player.Wallet.Cash);
         Assert.NotNull(sessionRead.Journey);
         Assert.Equal(loaded.Journey!.Status, sessionRead.Journey!.Status);

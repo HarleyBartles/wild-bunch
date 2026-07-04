@@ -104,7 +104,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
 
         // 4. Command: purchase
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(reloaded.World.GetTown(reloaded.Player.CurrentTownId))
+        var offer = resolver.Resolve(reloaded.World.GetTown(reloaded.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         reloaded.Purchase(offer, 3);
         Assert.Equal(2, reloaded.UncommittedEvents.Count);
@@ -155,7 +155,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         // Reload and purchase
         var reloaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(reloaded!.World.GetTown(reloaded.Player.CurrentTownId))
+        var offer = resolver.Resolve(reloaded!.World.GetTown(reloaded.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         reloaded.Purchase(offer, 2);
         await repo.StoreAsync(reloaded);
@@ -199,14 +199,14 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
 
         // First purchase succeeds
         var resolver = new TownStoreCatalogResolver();
-        var offer1 = resolver.Resolve(copy1!.World.GetTown(copy1.Player.CurrentTownId))
+        var offer1 = resolver.Resolve(copy1!.World.GetTown(copy1.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         copy1.Purchase(offer1, 1);
         await repo.StoreAsync(copy1);
         await uow.CommitAsync();
 
         // Second purchase should fail with ConcurrencyException
-        var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId))
+        var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         copy2.Purchase(offer2, 1);
 

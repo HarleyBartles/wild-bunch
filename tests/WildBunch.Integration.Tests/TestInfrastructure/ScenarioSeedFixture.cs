@@ -104,7 +104,7 @@ internal sealed record ScenarioSeedFixture(
     {
         var previewResult = new TravelResolver().PreviewJourney(
             session.World,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             new TownId(destinationTownId),
             session.Player.Inventory,
             session.TravelRules);

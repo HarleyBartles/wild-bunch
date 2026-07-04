@@ -96,7 +96,7 @@ internal sealed record BoringScenario(
 
         var previewResult = new TravelResolver().PreviewJourney(
             session.World,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             connectedTownId,
             session.Player.Inventory,
             session.TravelRules);

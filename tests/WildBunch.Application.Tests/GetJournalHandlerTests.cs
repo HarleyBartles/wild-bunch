@@ -32,7 +32,7 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.Status, result.Status);
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
-        Assert.Equal(session.Player.CurrentTownId.Value, result.CurrentTown.Id);
+        Assert.Equal(session.Player.CurrentTownId!.Value.Value, result.CurrentTown.Id);
         Assert.Equal("Pinecross", result.CurrentTown.Name);
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
@@ -94,13 +94,13 @@ public sealed class GetJournalHandlerTests
         session.ProduceEvent(new InvestigationPerformed
         {
             SourceKind = InvestigationSourceKind.LocalRecords,
-            TownId = session.Player.CurrentTownId,
+            TownId = session.Player.CurrentTownId!.Value,
             Message = "Second entry"
         });
         session.ProduceEvent(new InvestigationPerformed
         {
             SourceKind = InvestigationSourceKind.LocalRecords,
-            TownId = session.Player.CurrentTownId,
+            TownId = session.Player.CurrentTownId!.Value,
             Message = "Third entry"
         });
         repository.Seed(session);

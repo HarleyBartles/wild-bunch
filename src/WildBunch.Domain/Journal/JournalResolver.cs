@@ -14,15 +14,17 @@ public sealed class JournalResolver
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(logEntries);
 
-        var currentTown = session.World.GetTown(session.Player.CurrentTownId);
+        var currentTown = session.Player.CurrentTownId is not null
+            ? session.World.GetTown(session.Player.CurrentTownId.Value)
+            : null;
 
         return new JournalSnapshot(
             session.Id.Value,
             session.Status,
             session.Clock.Day,
             session.Clock.Turn,
-            currentTown.Id,
-            currentTown.Name,
+            currentTown?.Id,
+            currentTown?.Name,
             session.CaseFile.Accusation.HasValue ? session.CaseFile.Accusation.Value.Value : null,
             session.CaseFile.OpeningLead.Description,
             session.CaseFile.KillerReleaseState,

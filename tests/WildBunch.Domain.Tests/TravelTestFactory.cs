@@ -74,7 +74,7 @@ internal static class TravelTestFactory
             session.Player.Name,
             session.World,
             TestSessionFactory.CreateBaselineCaseFileFor(session),
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             session.Player.Wallet,
             session.Player.Inventory,
             session.GameDifficulty,
@@ -184,7 +184,7 @@ internal static class TravelTestFactory
         var resolver = new TravelResolver();
         var result = resolver.PreviewJourney(
             session.World,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             destinationId,
             session.Player.Inventory,
             session.TravelRules);

@@ -104,7 +104,7 @@ public class BeatModelEconomyTests
     {
         var session = CreateSessionWithStore();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 1); // enters Store

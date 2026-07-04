@@ -113,7 +113,7 @@ public class GameSessionEventSourcingTests
         session.MarkEventsCommitted();
 
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 3);
@@ -138,7 +138,7 @@ public class GameSessionEventSourcingTests
         session.MarkEventsCommitted();
 
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 2);
@@ -189,7 +189,7 @@ public class GameSessionEventSourcingTests
     {
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 3);
@@ -213,9 +213,9 @@ public class GameSessionEventSourcingTests
         // The core Event Sourcing proof: replay produces the same state as the command path
         var commandSession = CreateSession();
         var resolver = new TownStoreCatalogResolver();
-        var foodOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId))
+        var foodOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
-        var canteenOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId))
+        var canteenOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Canteen);
 
         commandSession.Purchase(foodOffer, 2);
@@ -322,8 +322,8 @@ public class GameSessionEventSourcingTests
         var gameStartedEvent = new GameStarted
         {
             PlayerName = session.Player.Name,
-            StartingTownId = session.Player.CurrentTownId,
-            StartingTownName = session.World.GetTown(session.Player.CurrentTownId).Name,
+            StartingTownId = session.Player.CurrentTownId!.Value,
+            StartingTownName = session.World.GetTown(session.Player.CurrentTownId!.Value).Name,
             StartingHealth = session.Player.Health,
             StartingWallet = 25m,
             StartingInventoryItems = Array.Empty<InventoryItem>(),
@@ -365,7 +365,7 @@ public class GameSessionEventSourcingTests
 
         // Perform an operation to prove post-start events also survive replay
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         session.Purchase(offer, 1);
 
@@ -391,9 +391,9 @@ public class GameSessionEventSourcingTests
             events);
 
         // Prove the world was reconstructed from the WorldGenerated event, not the placeholder
-        Assert.NotEqual("PLACEHOLDER Town", rehydrated.World.GetTown(session.Player.CurrentTownId).Name);
-        Assert.Equal(session.World.GetTown(session.Player.CurrentTownId).Name,
-            rehydrated.World.GetTown(session.Player.CurrentTownId).Name);
+        Assert.NotEqual("PLACEHOLDER Town", rehydrated.World.GetTown(session.Player.CurrentTownId!.Value).Name);
+        Assert.Equal(session.World.GetTown(session.Player.CurrentTownId!.Value).Name,
+            rehydrated.World.GetTown(session.Player.CurrentTownId!.Value).Name);
 
         // Prove full session state reconstruction
         Assert.Equal(session.Id, rehydrated.Id);

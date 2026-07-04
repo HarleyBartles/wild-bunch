@@ -44,7 +44,7 @@ public sealed record ActiveSaloonWantedSuspectDto(
 
 public sealed record PlayerDto(
     string Name,
-    string CurrentTownId,
+    string? CurrentTownId,
     int Health);
 
 public sealed record InventoryDto(

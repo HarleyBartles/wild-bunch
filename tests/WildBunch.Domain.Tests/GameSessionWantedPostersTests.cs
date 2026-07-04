@@ -222,7 +222,7 @@ public sealed class GameSessionWantedPostersTests
         var destinationTownId = new TownId("connected");
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 destinationTownId,
                 session.Player.Inventory)
             .Preview!;

@@ -19,7 +19,7 @@ public sealed class PurchaseBeatCostTests
     {
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
 
         var turnBefore = session.Clock.Turn;
@@ -36,7 +36,7 @@ public sealed class PurchaseBeatCostTests
     {
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
 
         // First purchase enters Store context

@@ -33,8 +33,12 @@ public sealed class ArchivePlaythroughHandler : GameSessionCommandHandler
             session.Id.Value,
             session.Status,
             session.Player.Name,
-            session.CurrentTown.TownId.Value,
-            session.CurrentTown.TownName,
+            session.StartFlowPhase >= StartFlowPhase.GameStarted
+                ? session.CurrentTown.TownId.Value
+                : null,
+            session.StartFlowPhase >= StartFlowPhase.GameStarted
+                ? session.CurrentTown.TownName
+                : null,
             session.Clock.Day,
             session.Clock.Turn.ToString());
 }

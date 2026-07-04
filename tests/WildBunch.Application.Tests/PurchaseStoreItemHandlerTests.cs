@@ -209,7 +209,7 @@ public sealed class PurchaseStoreItemHandlerTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("redmesa"),
                 session.Player.Inventory)
             .Preview!;

@@ -73,7 +73,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var loaded = await repo.GetByIdAsync(session.Id);
         Assert.NotNull(loaded);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 2);
 
@@ -112,7 +112,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         // First copy purchases
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(copy1!.World.GetTown(copy1.Player.CurrentTownId))
+        var offer = resolver.Resolve(copy1!.World.GetTown(copy1.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         copy1.Purchase(offer, 1);
         await repo.StoreAsync(copy1);
@@ -120,7 +120,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         copy1.MarkEventsCommitted();
 
         // Second copy tries to purchase — should get ConcurrencyException
-        var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId))
+        var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         copy2.Purchase(offer2, 1);
 
@@ -143,7 +143,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         var loaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 3);
         await repo.StoreAsync(loaded);
@@ -175,7 +175,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         var loaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 1);
         await repo.StoreAsync(loaded);
@@ -326,7 +326,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         var loaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+        var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 3);
         await repo.StoreAsync(loaded);
@@ -415,9 +415,9 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
             // Both produce a purchase event → both try to append at sequence 7.
             var resolver = new TownStoreCatalogResolver();
-            var offer1 = resolver.Resolve(copy1.World.GetTown(copy1.Player.CurrentTownId))
+            var offer1 = resolver.Resolve(copy1.World.GetTown(copy1.Player.CurrentTownId!.Value))
                 .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
-            var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId))
+            var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId!.Value))
                 .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
             copy1.Purchase(offer1, 1);
             copy2.Purchase(offer2, 1);
@@ -472,7 +472,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
             var loaded = await seedRepo.GetByIdAsync(sessionId);
             var resolver = new TownStoreCatalogResolver();
-            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
                 .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
             loaded.Purchase(offer, 1);
             await seedRepo.StoreAsync(loaded);
@@ -533,7 +533,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
             var loaded = await seedRepo.GetByIdAsync(sessionId);
             var resolver = new TownStoreCatalogResolver();
-            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId))
+            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
                 .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
             loaded.Purchase(offer, 1);
             await seedRepo.StoreAsync(loaded);

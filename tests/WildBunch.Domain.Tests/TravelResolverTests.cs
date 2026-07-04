@@ -28,7 +28,7 @@ public sealed class TravelResolverTests
         var session = CreateMountedSession();
         var resolver = new TravelResolver();
 
-        var result = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory);
+        var result = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory);
 
         Assert.True(result.Success);
         Assert.NotNull(result.Preview);
@@ -63,7 +63,7 @@ public sealed class TravelResolverTests
         var session = CreateFootSession();
         var resolver = new TravelResolver();
 
-        var result = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory);
+        var result = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory);
 
         Assert.True(result.Success);
         Assert.NotNull(result.Preview);
@@ -82,7 +82,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateMountedSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
 
         var result = session.StartJourney(preview);
 
@@ -103,7 +103,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateMountedSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -133,7 +133,7 @@ public sealed class TravelResolverTests
             trailRisk: TrailRisk.Moderate,
             GameDifficulty: GameDifficulty.Challenging);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -151,7 +151,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateProgressionSession(new HorseTravelState(1, 1, 0), TrailTerrain.Badlands, WaterFeature.None, canteenCharges: 0, trailRisk: TrailRisk.Moderate);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         // Force a quiet day so the horse-death/upkeep mechanic is tested without
@@ -174,7 +174,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateProgressionSession(HorseTravelState.Healthy, TrailTerrain.Badlands, WaterFeature.None, withSaddle: false, canteenCharges: 0);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("midway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("midway"), session.Player.Inventory).Preview!;
         Assert.Equal(TravelMode.Foot, preview.TravelMode);
         Assert.False(preview.MountedTravelAvailable);
         session.StartJourney(preview);
@@ -197,7 +197,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateLuckyFootSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("silvercreek"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("silvercreek"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -227,7 +227,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateBadLuckSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -264,7 +264,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateNoHorseBadLuckSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -279,7 +279,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateEasyLuckyFoodSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -299,7 +299,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateEasyLuckyWaterSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryspring"), session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryspring"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -317,7 +317,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHardBadLuckSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("hardpan"), session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("hardpan"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -332,7 +332,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHardMountedHorseSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("ridgeway"), session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("ridgeway"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -346,7 +346,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateDryMountedSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         Assert.True(preview.WaterSecure);
         Assert.Equal(2, preview.RequiredHorseFeed);
         Assert.Contains(preview.Warnings, warning => warning.Contains("poor grazing", StringComparison.OrdinalIgnoreCase));
@@ -367,7 +367,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateDryFootSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -395,7 +395,7 @@ public sealed class TravelResolverTests
         });
 
         var mountedSession = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), mountedInventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-        var mountedPreview = resolver.PreviewJourney(mountedSession.World, mountedSession.Player.CurrentTownId, new TownId("dryfork"), mountedSession.Player.Inventory).Preview!;
+        var mountedPreview = resolver.PreviewJourney(mountedSession.World, mountedSession.Player.CurrentTownId!.Value, new TownId("dryfork"), mountedSession.Player.Inventory).Preview!;
 
         Assert.Equal(5m, mountedPreview.RideDayDistance);
         Assert.Equal(5, mountedPreview.ExpectedDays);
@@ -414,7 +414,7 @@ public sealed class TravelResolverTests
         });
 
         var footSession = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), footInventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-        var footPreview = resolver.PreviewJourney(footSession.World, footSession.Player.CurrentTownId, new TownId("dryfork"), footSession.Player.Inventory).Preview!;
+        var footPreview = resolver.PreviewJourney(footSession.World, footSession.Player.CurrentTownId!.Value, new TownId("dryfork"), footSession.Player.Inventory).Preview!;
 
         Assert.Equal(5m, footPreview.RideDayDistance);
         Assert.Equal(TravelMode.Foot, footPreview.TravelMode);
@@ -452,10 +452,10 @@ public sealed class TravelResolverTests
         });
 
         var withHorseSession = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), withHorseInventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-        var withHorsePreview = resolver.PreviewJourney(withHorseSession.World, withHorseSession.Player.CurrentTownId, new TownId("dryfork"), withHorseSession.Player.Inventory).Preview!;
+        var withHorsePreview = resolver.PreviewJourney(withHorseSession.World, withHorseSession.Player.CurrentTownId!.Value, new TownId("dryfork"), withHorseSession.Player.Inventory).Preview!;
 
         var noHorseSession = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, new TownId("pinecross"), Wallet.Starting(25m), noHorseInventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-        var noHorsePreview = resolver.PreviewJourney(noHorseSession.World, noHorseSession.Player.CurrentTownId, new TownId("dryfork"), noHorseSession.Player.Inventory).Preview!;
+        var noHorsePreview = resolver.PreviewJourney(noHorseSession.World, noHorseSession.Player.CurrentTownId!.Value, new TownId("dryfork"), noHorseSession.Player.Inventory).Preview!;
 
         Assert.Contains(withHorsePreview.Warnings, warning => warning.Contains("stress the horse", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(noHorsePreview.Warnings, warning => warning.Contains("horse", StringComparison.OrdinalIgnoreCase));
@@ -466,7 +466,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateMountedSession(withHorseFeed: 0);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -486,7 +486,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateMountedSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("holloway"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var safetyLimit = 4;
@@ -518,7 +518,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
@@ -543,7 +543,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -564,7 +564,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -594,7 +594,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(withHorse: false);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -619,7 +619,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(GameDifficulty: GameDifficulty.Challenging);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -636,7 +636,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(withRevolverAmmo: 1);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -661,7 +661,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(withRevolverAmmo: 0);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -685,7 +685,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -712,7 +712,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(3m));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -736,7 +736,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession();
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.MarkInterrupted(CreateFoeEncounter(profile: new JourneyFoeProfile(8, 8, 8m)));
@@ -760,7 +760,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(withRevolverAmmo: 2);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.MarkInterrupted(CreateFoeEncounter(profile: new JourneyFoeProfile(8, 8, 8m)));
@@ -782,7 +782,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -809,7 +809,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(20m));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.MarkInterrupted(CreateFoeEncounter(profile: new JourneyFoeProfile(6, 6, 6m)));
@@ -835,7 +835,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.MarkInterrupted(CreateFoeEncounter(profile: new JourneyFoeProfile(6, 6, 10m)));
@@ -867,7 +867,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);
@@ -893,7 +893,7 @@ public sealed class TravelResolverTests
     {
         var session = CreateHighRiskSession(withHorse: false);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.SetCurrentDayPlan(null);

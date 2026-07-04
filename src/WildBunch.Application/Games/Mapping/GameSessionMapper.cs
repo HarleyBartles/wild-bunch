@@ -74,11 +74,13 @@ public static class GameSessionMapper
             session.Journey is null ? null : TravelMapper.ToDto(session.Journey, TravelRulesProfile.For(session.GameDifficulty)),
             session.TravelDiaryDays,
             session.LogEntries,
-            ToActiveSaloonPersonOfInterestDto(
-                session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
-                session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
-                session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
-                session.CaseFile),
+            session.StartFlowPhase >= StartFlowPhase.GameStarted && session.TownVisitState is not null
+                ? ToActiveSaloonPersonOfInterestDto(
+                    session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestId,
+                    session.TownVisitState.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
+                    session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
+                    session.CaseFile)
+                : null,
             null,
             null);
     }
@@ -123,7 +125,7 @@ public static class GameSessionMapper
     private static PlayerDto ToDto(DomainPlayer player)
         => new(
             player.Name,
-            player.CurrentTownId.Value,
+            player.CurrentTownId?.Value,
             player.Health);
 
     private static WorldDto ToDto(DomainWorld world)

@@ -32,7 +32,7 @@ public sealed class GameSessionCommandHandlerTests
             async (s, ct) =>
             {
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId))
+                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
                 await Task.Yield();
@@ -83,7 +83,7 @@ public sealed class GameSessionCommandHandlerTests
             {
                 // Produce an event so StoreAsync is called
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId))
+                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
                 await Task.Yield();
@@ -110,7 +110,7 @@ public sealed class GameSessionCommandHandlerTests
             {
                 // Produce an event so StoreAsync is called
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId))
+                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
                 await Task.Yield();

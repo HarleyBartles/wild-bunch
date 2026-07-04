@@ -6,7 +6,7 @@ public sealed record JournalDto(
     Guid Id,
     GameStatus Status,
     GameClockDto Clock,
-    JournalTownDto CurrentTown,
+    JournalTownDto? CurrentTown,
     JournalCaseFileDto CaseFile,
     IReadOnlyList<GameLogEntryDto> LogEntries);
 

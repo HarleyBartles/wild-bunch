@@ -8,7 +8,7 @@ namespace WildBunch.Domain.Game;
 
 public sealed class Player
 {
-    public Player(string name, TownId currentTownId, int health, Wallet wallet, DomainInventory inventory)
+    public Player(string name, TownId? currentTownId, int health, Wallet wallet, DomainInventory inventory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -21,7 +21,7 @@ public sealed class Player
 
     public string Name { get; }
 
-    public TownId CurrentTownId { get; private set; }
+    public TownId? CurrentTownId { get; private set; }
 
     public int Health { get; private set; }
 

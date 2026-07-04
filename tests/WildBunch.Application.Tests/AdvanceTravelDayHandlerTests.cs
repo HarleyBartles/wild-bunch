@@ -181,7 +181,7 @@ public sealed class AdvanceTravelDayHandlerTests
         session.SelectStartingTown(pinecross.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }
@@ -214,7 +214,7 @@ public sealed class AdvanceTravelDayHandlerTests
         session.SelectStartingTown(pinecross.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         // Force a foe encounter so the test doesn't depend on the deterministic seed
         // producing a foe. The seed hash changed when the difficulty enum was renamed
@@ -247,7 +247,7 @@ public sealed class AdvanceTravelDayHandlerTests
         session.SelectStartingTown(pinecross.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, sixmile.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, sixmile.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }
@@ -289,7 +289,7 @@ public sealed class AdvanceTravelDayHandlerTests
         session.SelectStartingTown(pinecross.Id);
         session.CompleteGameStart(Wallet.Starting(25m), new Inventory(items));
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, midway.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, midway.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }

@@ -107,13 +107,13 @@ public sealed class PostgreSqlPersistenceTests
             Assert.NotNull(reloaded);
             Assert.Equal(session.Id, reloaded!.Id);
             Assert.Equal(session.Player.Name, reloaded.Player.Name);
-            Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+            Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
             Assert.Equal(session.Status, reloaded.Status);
             Assert.Equal(GameSessionLogProjection.Project(session).Count, GameSessionLogProjection.Project(reloaded).Count);
             Assert.Equal(session.TravelDiaryDays.Count, reloaded.TravelDiaryDays.Count);
             Assert.NotNull(reloaded.Journey);
             Assert.Equal(JourneyStatus.Completed, reloaded.Journey!.Status);
-            Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+            Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         }
 
         try
@@ -251,7 +251,7 @@ public sealed class PostgreSqlPersistenceTests
         session.SelectStartingTown(dustvale.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
 
-        var preview = CreatePostgreSqlLanePreview(session.Player.CurrentTownId, holloway.Id, "Dustvale", "Holloway");
+        var preview = CreatePostgreSqlLanePreview(session.Player.CurrentTownId!.Value, holloway.Id, "Dustvale", "Holloway");
         Assert.True(preview.Success);
         session.StartJourney(preview.Preview!);
 

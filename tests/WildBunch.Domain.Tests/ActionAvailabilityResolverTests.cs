@@ -91,7 +91,7 @@ public sealed class ActionAvailabilityResolverTests
     {
         var session = CreateSession(TownServices.None);
         var travelResolver = new TravelResolver();
-        var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("connected"), session.Player.Inventory).Preview!;
+        var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("connected"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var resolver = new ActionAvailabilityResolver();
@@ -113,7 +113,7 @@ public sealed class ActionAvailabilityResolverTests
     {
         var session = CreateHighRiskSession();
         var travelResolver = new TravelResolver();
-        var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
         session.AdvanceJourneyDay();
         session.Journey!.MarkInterrupted(CreateFoeEncounter());

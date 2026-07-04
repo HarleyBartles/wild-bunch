@@ -212,7 +212,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         session.SelectStartingTown(pinecross.Id);
         session.CompleteGameStart(wallet ?? Wallet.Starting(25m), inventory);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         // Force a foe encounter so the tests don't depend on the deterministic seed
         // producing a foe. The seed hash changed when the difficulty enum was renamed

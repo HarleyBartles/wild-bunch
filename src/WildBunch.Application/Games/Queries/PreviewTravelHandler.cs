@@ -2,6 +2,7 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using TownId = WildBunch.Domain.World.TownId;
 
@@ -24,10 +25,16 @@ public sealed class PreviewTravelHandler
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
         var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+
+        if (session.StartFlowPhase < StartFlowPhase.GameStarted)
+        {
+            return new TravelPreviewResultDto(false, "The game hasn't started yet.", null);
+        }
+
         var destinationTownId = new TownId(query.DestinationTownId);
         var previewResult = _travelResolver.PreviewJourney(
             session.World,
-            session.Player.CurrentTownId,
+            session.Player.CurrentTownId!.Value,
             destinationTownId,
             session.Player.Inventory,
             session.TravelRules);

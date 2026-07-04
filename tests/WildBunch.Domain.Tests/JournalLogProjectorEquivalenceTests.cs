@@ -72,7 +72,7 @@ public sealed class JournalLogProjectorEquivalenceTests
         var (session, preview, setupEvents) = TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
 
         var resolver = new TownStoreCatalogResolver();
-        var town = session.World.GetTown(session.Player.CurrentTownId);
+        var town = session.World.GetTown(session.Player.CurrentTownId!.Value);
         var offer = resolver.Resolve(town)
             .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == ItemKind.Food);
 

@@ -134,7 +134,7 @@ public sealed class InspectNoticeBoardHandlerTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("connected"),
                 session.Player.Inventory)
             .Preview!;

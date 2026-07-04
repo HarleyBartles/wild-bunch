@@ -93,7 +93,7 @@ public sealed class ForceTravelOverrideHandlerTests
 
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(
-            session.World, session.Player.CurrentTownId, dryfork.Id,
+            session.World, session.Player.CurrentTownId!.Value, dryfork.Id,
             session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         session.MarkEventsCommitted();

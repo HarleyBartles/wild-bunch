@@ -20,7 +20,7 @@ public sealed class GameSessionPurchaseTests
     {
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
 
         var result = session.Purchase(offer, 3);
@@ -38,7 +38,7 @@ public sealed class GameSessionPurchaseTests
     {
         var session = CreateSession(emptyInventory: true, wallet: Wallet.Starting(100m));
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.Stable && candidate.ItemKind == DomainItemKind.Horse);
 
         var result = session.Purchase(offer, 1);
@@ -57,7 +57,7 @@ public sealed class GameSessionPurchaseTests
     {
         var session = CreateSession(wallet: Wallet.Starting(4m));
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Canteen);
 
         var result = session.Purchase(offer, 1);
@@ -77,7 +77,7 @@ public sealed class GameSessionPurchaseTests
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
         }));
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Canteen);
 
         var result = session.Purchase(offer, 1);
@@ -94,7 +94,7 @@ public sealed class GameSessionPurchaseTests
     {
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
 
         var result = session.Purchase(offer, 0);
@@ -112,7 +112,7 @@ public sealed class GameSessionPurchaseTests
         var session = CreateSession();
         StartJourney(session);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
 
         var result = session.Purchase(offer, 1);
@@ -131,7 +131,7 @@ public sealed class GameSessionPurchaseTests
     {
         var session = CreateSession(emptyInventory: true);
         var resolver = new TownStoreCatalogResolver();
-        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId))
+        var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(candidate => candidate.VendorType == StoreVendorType.Stable && candidate.ItemKind == DomainItemKind.Horse);
 
         var result = session.Purchase(offer, 2);
@@ -180,7 +180,7 @@ public sealed class GameSessionPurchaseTests
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(
                 session.World,
-                session.Player.CurrentTownId,
+                session.Player.CurrentTownId!.Value,
                 new TownId("redmesa"),
                 session.Player.Inventory)
             .Preview!;

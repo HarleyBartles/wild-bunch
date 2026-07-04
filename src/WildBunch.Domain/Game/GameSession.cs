@@ -68,15 +68,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         SaltSource = saltSource;
         SeedCode = null; // Set by Apply(GameStarted) during event replay
         // During setup phase (StartSetup, RehydrateFromEvents), currentTownVisit is null
-        // and the player's CurrentTownId is a placeholder. Defer TownAggregate creation
+        // and the player's CurrentTownId is null. Defer TownAggregate creation
         // until Apply(GameStarted) when the real starting town is known. For snapshot-based
         // loads, currentTownVisit is non-null and we create _currentTown immediately.
-        if (currentTownVisit is not null)
+        if (currentTownVisit is not null && player.CurrentTownId is not null)
         {
-            _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId), currentTownVisit);
+            _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId.Value), currentTownVisit);
             if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
             {
-                _currentTown.EnterTown(World.GetTown(player.CurrentTownId));
+                _currentTown.EnterTown(World.GetTown(player.CurrentTownId.Value));
             }
             _currentTown.PrimeCurrentTown();
         }
@@ -861,7 +861,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         var placeholderPlayer = new Player(
             playerName,
-            world.Towns.First().Id,
+            currentTownId: null,
             health: StartingHealthFor(gameDifficulty),
             WildBunch.Domain.Economy.Wallet.Starting(25m),
             DomainInventory.Empty());
@@ -1018,8 +1018,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             ArchivedAtUtc = archivedAtUtc ?? DateTime.UtcNow,
             ArchiveReason = archiveReason,
             PlayerName = Player.Name,
-            LastTownId = CurrentTown.TownId,
-            LastTownName = CurrentTown.TownName,
+            LastTownId = IsSetupPhase ? null : CurrentTown.TownId,
+            LastTownName = IsSetupPhase ? null : CurrentTown.TownName,
             Day = Clock.Day,
             Turn = Clock.Turn.ToString(),
             StatusBeforeArchive = Status
@@ -1086,7 +1086,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         GameEntropy = e.GameEntropy;
         Player = new Player(
             e.PlayerName,
-            Player.CurrentTownId,
+            currentTownId: null,
             health: Player.Health,
             Player.Wallet,
             Player.Inventory);
