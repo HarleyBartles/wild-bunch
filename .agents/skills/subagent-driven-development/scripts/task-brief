@@ -4,8 +4,7 @@
 # through the controller's context.
 #
 # Usage: task-brief PLAN_FILE TASK_NUMBER [OUTFILE]
-# Default OUTFILE: <repo-root>/.agents/superpowers/sdd/task-<N>-brief.md
-# (per worktree; concurrent runs in the same working tree share it).
+# Default OUTFILE: <repo-root>/.superpowers/sdd/<plan-stem>/task-<N>-brief.md
 set -euo pipefail
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
@@ -17,12 +16,15 @@ plan=$1
 n=$2
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
+script_dir="$(cd "$(dirname "$0")" && pwd)"
 if [ $# -eq 3 ]; then
   out=$3
 else
-  dir=$("$(cd "$(dirname "$0")" && pwd)/sdd-workspace")
+  dir="$("$script_dir/sdd-workspace" "$plan")"
   out="$dir/task-${n}-brief.md"
 fi
+
+mkdir -p "$(dirname "$out")"
 
 awk -v n="$n" '
   /^```/ { infence = !infence }
