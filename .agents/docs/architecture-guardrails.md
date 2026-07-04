@@ -2,6 +2,8 @@
 
 Use this reference when making architecture decisions, touching GameSession, modifying persistence, or working with seed codecs.
 
+**This repo uses DDD, CQRS, and Event Sourcing as its architecture stack. These are not optional or aspirational — they are the established patterns. Hand-rolling non-DDD, non-CQRS, or non-event-sourced solutions is not acceptable. When in doubt, invoke the `/ddd`, `/cqrs-event-sourcing`, `/wild-bunch-dotnet-architecture`, and `/wild-bunch-domain-modeling` skills and follow their guidance.**
+
 ## Core Architecture Rules
 - `GameSession` is the live-play aggregate root.
 - Game mutations should flow through `GameSession` or the established aggregate route.
@@ -14,6 +16,39 @@ Use this reference when making architecture decisions, touching GameSession, mod
 - Mounted travel requires a living/non-lame horse plus saddle.
 - Travel advances one trail day at a time; do not reintroduce instant multi-day travel.
 - Keep temporary cockpit/debug-shell UI light; do not spend architecture cleanup effort polishing it for its own sake.
+
+## DDD / CQRS / Event Sourcing Enforcement
+
+This repo's architecture stack is DDD + CQRS + Event Sourcing. These patterns are the established standard, not one option among many. See ADR-0014, ADR-0020, and ADR-0028 for the full decision history.
+
+### Aggregate Root Pattern (DDD)
+- `GameSession` is the sole entry point for gameplay mutations. External code never directly mutates child entities (`Player`, `TownVisitState`, `CaseFile`, etc.).
+- The aggregate root enforces all invariants. Invariant violations return `Failed` result objects (e.g., `StorePurchaseResult.Failed(message)`), not exceptions. This is the established pattern — see `IsArchived`, `IsJourneyModal`, and `IsSetupPhase` guards.
+- Child components (`BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, `ActionContextTracker`) receive narrow context records, return outcomes or events-to-produce, and do NOT reference `GameSession` or produce events directly.
+- Do not extract domain rules into services that mutate the aggregate from outside. The aggregate owns its rules.
+- Do not create placeholder state. Objects are created at the right time with real values. If a value is not yet known (e.g., starting town during setup), the field is nullable (`TownId?`) and set when the value becomes known (e.g., `Apply(GameStarted)`). Placeholder values that get silently replaced are an anti-pattern.
+
+### Command / Query Separation (CQRS)
+- Commands mutate state through `GameSession` and return result objects. Queries read state through projections and read models.
+- Command handlers live in `Application.Games.Commands` and inherit `GameSessionCommandHandler`. Query handlers live in `Application.Games.Queries`.
+- Do not mix read logic into command handlers or mutation logic into query handlers.
+- Read models (`GameSessionReadModel`, `JournalSnapshot`, `HudProjection`, `DiaryProjection`) are derived from the event stream via projectors, not from direct aggregate state scraping.
+- The `GameSessionMapper` maps the aggregate to DTOs for command return values. Read-store loaders map persisted snapshots to read models for query-side reads. These are separate paths.
+
+### Event Sourcing
+- Gameplay mutations produce typed domain events (`IDomainEvent`), apply them through `Apply(EventType)` methods, and record uncommitted events via `ProduceEvent`.
+- The repository appends typed events to the event stream and keeps JSON component snapshots as cache. Snapshots are cache, not the source of truth — the event stream is the source of history.
+- `Apply` methods are the event-sourced mutation path. They must be pure: no external calls, no time-dependent logic, no random. They set state from the event's fields.
+- Command-path state and replay-path state must converge. This is verified by parity tests (`RehydrateFromEvents_Replay_Matches_Command_Path_State`). If a command mutates state directly, the corresponding `Apply` method must produce the same state from the event.
+- Do not add direct state mutations outside the event-sourced route. If you need to change state, produce an event and let `Apply` do the work.
+- Do not introduce a separate event-store interface, broker, EventStoreDB, or normalized live-session table split unless the issue explicitly scopes it.
+
+### Setup Phase and Nullable State
+- During setup phase (`StartFlowPhase < GameStarted`), the player has not chosen a starting town. `Player.CurrentTownId` is `null`. `_currentTown` is `null`. `CurrentTownVisit` is `null`.
+- Gameplay command methods check `IsSetupPhase` as the first invariant (before `IsArchived` and `IsJourneyModal`) and return `Failed(SetupPhaseBlockMessage)`.
+- `ArchivePlaythrough` is an exception — it is a lifecycle operation, not a gameplay command. It works during setup phase and records `null` for `LastTownId`/`LastTownName` in the `PlaythroughArchived` event. A player can archive and start over at any point after the event stream begins.
+- Read models, projections, and DTOs that expose town-scoped fields use nullable types (`TownId?`, `string?`) and return `null` during setup phase.
+- Dev mappers (`SessionDevContextMapper`, `SaloonDevContextMapper`) return null town fields for setup-phase sessions.
 
 ## GameSession Child-Component Boundaries
 - `GameSession` remains the session aggregate root, command entry point, event-production boundary, apply-dispatch owner, and persistence boundary. It may orchestrate cross-component behavior. It should not directly accumulate all game rules.
