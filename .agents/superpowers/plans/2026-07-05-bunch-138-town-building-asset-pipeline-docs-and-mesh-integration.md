@@ -278,5 +278,5 @@ The main gap was where the guidance should live. That is closed by splitting hum
 
 ### Open questions
 
-None. The remaining work is execution, not design.
+None. This plan is complete; any future work belongs in a follow-up issue or doc patch.
 
