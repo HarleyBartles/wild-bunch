@@ -71,13 +71,17 @@ export class TownHubScene extends Phaser.Scene {
     for (const building of layout.buildings) {
       const color = BUILDING_COLORS[building.kind] ?? 0x6a6a6a;
       const rect = this.add.rectangle(building.x, building.y, building.width, building.height, color);
-      rect.setStrokeStyle(2, 0x000000);
 
-      if (building.kind !== BuildingKind.Telegraph && isBuildingAvailable(building.kind, this.availableActions)) {
+      if (building.kind === BuildingKind.Telegraph) {
+        rect.setAlpha(0.6);
+      } else if (isBuildingAvailable(building.kind, this.availableActions)) {
+        rect.setStrokeStyle(2, 0xffffff);
         rect.setInteractive({ useHandCursor: true });
         rect.on("pointerover", () => rect.setScale(1.05));
         rect.on("pointerout", () => rect.setScale(1));
         rect.on("pointerdown", () => this.selectBuilding(building.kind));
+      } else {
+        rect.setAlpha(0.4);
       }
 
       const label = BUILDING_LABELS[building.kind] ?? "Building";

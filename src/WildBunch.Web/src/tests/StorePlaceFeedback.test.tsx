@@ -267,7 +267,9 @@ describe("Store purchase feedback", () => {
     const user = userEvent.setup();
 
     // The store surface should render with the buy button.
-    const buyButton = await screen.findByRole("button", { name: /^buy$/i });
+    // StorePlace is lazy-loaded via React.lazy, so under full-suite load
+    // it may take longer than the default 1000ms findByRole timeout.
+    const buyButton = await screen.findByRole("button", { name: /^buy$/i }, { timeout: 5000 });
     await user.click(buyButton);
 
     // The purchase confirmation notice should appear.

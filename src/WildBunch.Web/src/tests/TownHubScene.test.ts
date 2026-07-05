@@ -127,6 +127,141 @@ describe("TownHubScene", () => {
   });
 });
 
+describe("TownHubScene visual feedback", () => {
+  interface MockRect {
+    kind: BuildingKind;
+    alpha: number;
+    strokeStyle: { lineWidth: number; color: number } | null;
+    interactive: boolean;
+    setAlpha: (a: number) => MockRect;
+    setStrokeStyle: (lw: number, color: number) => MockRect;
+    setInteractive: (opts?: unknown) => MockRect;
+    on: (event: string, handler: () => void) => MockRect;
+    setScale: (s: number) => MockRect;
+  }
+
+  function createSceneWithMockedAdd(
+    layout: TownLayoutDto,
+    availableActions: AvailableActionKind[],
+  ): { scene: TownHubScene; rects: MockRect[] } {
+    const rects: MockRect[] = [];
+    const onBuildingSelected = vi.fn();
+
+    const scene = new TownHubScene(layout, availableActions, onBuildingSelected) as TownHubScene & {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      add: any;
+    };
+
+    scene.add = {
+      rectangle: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
+        const rect: MockRect = {
+          kind: rects.length as BuildingKind,
+          alpha: 1,
+          strokeStyle: null,
+          interactive: false,
+          setAlpha(a) {
+            this.alpha = a;
+            return this;
+          },
+          setStrokeStyle(lineWidth, color) {
+            this.strokeStyle = { lineWidth, color };
+            return this;
+          },
+          setInteractive() {
+            this.interactive = true;
+            return this;
+          },
+          on() {
+            return this;
+          },
+          setScale() {
+            return this;
+          },
+        };
+        rects.push(rect);
+        return rect;
+      },
+      text: () => ({ setOrigin: () => {} }),
+      circle: () => {},
+    };
+
+    // Track which building kind each rect corresponds to by order of creation.
+    // The create() method iterates layout.buildings in order, so rect[i]
+    // corresponds to layout.buildings[i].
+    scene.create();
+    for (let i = 0; i < rects.length && i < layout.buildings.length; i++) {
+      rects[i].kind = layout.buildings[i].kind;
+    }
+
+    return { scene, rects };
+  }
+
+  it("renders available buildings with full opacity and white border highlight", () => {
+    const layout = createLayout();
+    const { rects } = createSceneWithMockedAdd(layout, [AvailableActionKind.BuySupplies]);
+
+    const storeRect = rects.find((r) => r.kind === BuildingKind.Store);
+    expect(storeRect).toBeDefined();
+    expect(storeRect!.alpha).toBe(1);
+    expect(storeRect!.strokeStyle).toEqual({ lineWidth: 2, color: 0xffffff });
+    expect(storeRect!.interactive).toBe(true);
+  });
+
+  it("renders unavailable buildings with 0.4 opacity and no border", () => {
+    const layout = createLayout();
+    // Only Store is available; Sheriff/Saloon/Trailhead are unavailable.
+    const { rects } = createSceneWithMockedAdd(layout, [AvailableActionKind.BuySupplies]);
+
+    const sheriffRect = rects.find((r) => r.kind === BuildingKind.Sheriff);
+    expect(sheriffRect).toBeDefined();
+    expect(sheriffRect!.alpha).toBe(0.4);
+    expect(sheriffRect!.strokeStyle).toBeNull();
+    expect(sheriffRect!.interactive).toBe(false);
+
+    const saloonRect = rects.find((r) => r.kind === BuildingKind.Saloon);
+    expect(saloonRect!.alpha).toBe(0.4);
+    expect(saloonRect!.strokeStyle).toBeNull();
+    expect(saloonRect!.interactive).toBe(false);
+
+    const trailheadRect = rects.find((r) => r.kind === BuildingKind.Trailhead);
+    expect(trailheadRect!.alpha).toBe(0.4);
+    expect(trailheadRect!.strokeStyle).toBeNull();
+    expect(trailheadRect!.interactive).toBe(false);
+  });
+
+  it("renders Telegraph at 0.6 opacity with no border and no interactive hit area", () => {
+    const layout = createLayout();
+    const { rects } = createSceneWithMockedAdd(layout, [AvailableActionKind.BuySupplies]);
+
+    const telegraphRect = rects.find((r) => r.kind === BuildingKind.Telegraph);
+    expect(telegraphRect).toBeDefined();
+    expect(telegraphRect!.alpha).toBe(0.6);
+    expect(telegraphRect!.strokeStyle).toBeNull();
+    expect(telegraphRect!.interactive).toBe(false);
+  });
+
+  it("renders all buildings at full opacity when all actions are available", () => {
+    const layout = createLayout();
+    const allActions: AvailableActionKind[] = [
+      AvailableActionKind.BuySupplies,
+      AvailableActionKind.ReadWantedPosters,
+      AvailableActionKind.LookAroundSaloon,
+      AvailableActionKind.Travel,
+    ];
+    const { rects } = createSceneWithMockedAdd(layout, allActions);
+
+    for (const rect of rects) {
+      if (rect.kind === BuildingKind.Telegraph) {
+        expect(rect.alpha).toBe(0.6);
+      } else {
+        expect(rect.alpha).toBe(1);
+        expect(rect.strokeStyle).toEqual({ lineWidth: 2, color: 0xffffff });
+        expect(rect.interactive).toBe(true);
+      }
+    }
+  });
+});
+
 describe("TownHubScene truth boundary", () => {
   it("does not give the scene access to any API function", () => {
     const layout = createLayout();
