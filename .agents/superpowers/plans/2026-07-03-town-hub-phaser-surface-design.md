@@ -26,7 +26,7 @@ Extends `Phaser.Scene`:
 - Visual feedback for available/unavailable buildings
 
 ### Data Source
-**Backend Extension**: Extend `TownDto` and `TownDefinition` to include layout data:
+**Backend Extension**: Extend the `Town` record in `WorldModels.cs` with a `TownLayout? Layout` property, and extend `TownDto` in `GameDtos.cs` with a `TownLayoutDto? Layout` property. There is no `TownDefinition` type — the town model is the `Town` record:
 
 ```csharp
 // Domain model
@@ -101,7 +101,7 @@ public sealed record BuildingPlacementDto(
 ### Backend Data Generation
 1. **World Generation**: Extend `SeedWorldBuilder` to generate town layouts during world creation
 2. **Layout Algorithm**: Seeded random placement based on town services and map layout palette
-3. **Persistence**: Store layout data in `TownDefinition` as part of world generation
+3. **Persistence**: Store layout data on the `Town` record's `Layout` property as part of world generation
 4. **Consistency**: Same seed produces same layout for each town
 
 ### React Integration
@@ -110,10 +110,15 @@ public sealed record BuildingPlacementDto(
 3. **Update Phase**: React re-renders Phaser scene when town changes or layout updates
 4. **Interaction Phase**: Phaser scene calls React callbacks for building clicks
 
-### Backend Commands
-1. **Building Click**: React sends command to backend (e.g., `EnterStoreCommand`)
-2. **State Update**: Backend processes command, returns updated session state
-3. **Scene Update**: React updates Phaser scene with new state (e.g., building availability changes)
+### Building Click Routing
+
+Building clicks do **not** introduce new backend enter-building commands in this slice. Phaser scene clicks call React callbacks, which route through the existing frontend place navigation in `TownHubSurface.tsx`:
+
+1. **Building Click**: Phaser scene calls a React callback with the `BuildingKind`
+2. **Frontend Navigation**: React maps the `BuildingKind` to the existing `onPlaceChange` callback (e.g., `BuildingKind.Store` → `onPlaceChange("store")` → `StorePlace`)
+3. **Scene Update**: React updates Phaser scene with new state (e.g., building availability changes) when the available action set changes
+
+This preserves the existing place surfaces (`StorePlace`, `SheriffPlace`, `SaloonPlace`, `TravelPrepSurface`) and the existing `GameSession` command route. No `EnterStoreCommand` or `POST /enter-store` endpoints are added in this slice.
 
 ## Domain Integration
 
@@ -177,8 +182,8 @@ public static class TownLayoutGenerator
 
 ### Layout Generation Strategy
 - **Seeded Random**: Use existing `GameSetupDeterministicSource` for reproducible layouts
-- **Service-Based**: Only generate buildings for available services
-- **Positional Rules**: Trailhead at edge, services clustered, player spawn in center
+- **Baseline + Service-Driven**: Always emit baseline navigation buildings (Store, Sheriff, Saloon, Trailhead); emit service-driven optional buildings (Telegraph) only when the corresponding `TownServices` flag is set
+- **Positional Rules**: Trailhead at edge, other buildings clustered, player spawn in center
 - **Consistency**: Same town always has same layout across visits
 
 ### Asset Strategy (Phase 1)
@@ -212,13 +217,9 @@ public static class TownLayoutGenerator
 // Get town layout for current town
 GET /api/games/{sessionId}/town-layout
 Response: TownLayoutDto
-
-// Enter building (delegates to existing commands)
-POST /api/games/{sessionId}/enter-store
-POST /api/games/{sessionId}/enter-sheriff
-POST /api/games/{sessionId}/enter-saloon
-POST /api/games/{sessionId}/enter-trailhead
 ```
+
+> **No enter-building endpoints in this slice.** Building clicks route through the existing frontend place navigation (`onPlaceChange` → existing place surfaces), not new backend commands. See the Building Click Routing section above.
 
 ### DTO Changes
 - Extend `TownDto` to include `TownLayoutDto`
@@ -237,9 +238,8 @@ POST /api/games/{sessionId}/enter-trailhead
 ### Phase 2: Backend Integration
 1. Add town layout endpoint
 2. Update `TownDto` mapping to include layout
-3. Add building entry commands (if not already existing)
-4. Update repository to persist layout data
-5. **No Migration Needed**: Greenfield project, can drop and rebuild database
+3. Layout persists on the `Town` record via `SeedWorldBuilder` (no new enter-building commands in this slice — building clicks route through existing frontend place navigation)
+4. **No Migration Needed**: Greenfield project, can drop and rebuild database
 
 ### Phase 3: Frontend Integration
 1. Create `PhaserTownHubHost` component
