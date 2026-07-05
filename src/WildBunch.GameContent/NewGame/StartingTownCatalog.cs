@@ -11,7 +11,7 @@ public static class StartingTownCatalog
     /// </summary>
     public static IReadOnlyList<Town> GetStartingTownCandidates()
     {
-        var world = SeedWorldCatalog.CreateCanonicalWorld();
+        var world = SeedWorldFactory.CreateCanonicalWorld();
         return world.Towns
             .OrderBy(town => town.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();

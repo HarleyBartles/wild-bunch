@@ -19,7 +19,7 @@ public static class SeedWorldMapLayout
 
     public static IReadOnlyList<SeedMapTown> GetMapTowns()
     {
-        var world = SeedWorldCatalog.CreateCanonicalWorld();
+        var world = SeedWorldFactory.CreateCanonicalWorld();
         return GetMapTowns(world);
     }
 
