@@ -4,7 +4,7 @@
 
 **Goal:** Replace the single-route `GameFlowRouter` pattern with TanStack Router URL routes, lazy-load route components, isolate Phaser into its own chunk, and rework the arrival flow into `TrailFlowSurface`.
 
-**Architecture:** TanStack Router route tree with lazy-loaded components. Two sync hooks in `ShellChrome` reconcile URL with backend-derived phase (`usePhaseRouteSync`) and dev surface (`useDevSurfaceSync`). Phaser isolated via explicit `React.lazy` boundary on `StartingTownStep` inside `PreSessionSurface`. Vendor deps split via `manualChunks`.
+**Architecture:** TanStack Router route tree with lazy-loaded components. Town place routes (`/town/store`, `/town/sheriff`, etc.) are flat siblings under the root route, not children of `/town` — `TownHubSurface` renders the hub directly without an `<Outlet />`, so child routes would not render. Two sync hooks in `ShellChrome` reconcile URL with backend-derived phase (`usePhaseRouteSync`, which skips sync while the session query is loading) and dev surface (`useDevSurfaceSync`). Phaser isolated via explicit `React.lazy` boundary on `StartingTownStep` inside `PreSessionSurface`. Vendor deps split via `manualChunks`.
 
 **Tech Stack:** React 18, TanStack Router v1, TanStack Query v5, styled-components v6, Vite, Vitest, Phaser 3.
 
@@ -112,10 +112,31 @@ git commit -m "feat: add RouteLoading Suspense fallback component"
 
 **Interfaces:**
 - Consumes: `useGamePhase()` from `src/hooks/useGamePhase.ts` (returns `{ phase, hasSession, ... }`)
+- Consumes: `useGameSession()` from `src/state/useGameSession.ts` (returns `{ loading, ... }`)
 - Consumes: TanStack Router's `useLocation()` and `useNavigate()`
 - Produces: `usePhaseRouteSync()` — a hook that navigates to the correct URL when the phase doesn't match the current route
+- Requires: `sessionLoading` field exposed from `useCurrentGameSession` (added in Step 1)
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Expose `sessionLoading` from `useCurrentGameSession`**
+
+The sync hook needs to know whether the session query is still in its initial loading state, so it can skip the stale-URL redirect until the session has resolved. The existing `loading` field is `busyMode !== "idle"` (mutation/refresh loading), not initial fetch loading. We need `sessionQuery.isLoading`.
+
+In `src/hooks/useCurrentGameSession.ts`, add `sessionLoading` to the return object (around line 280). Find the `return {` block and add the field:
+
+```ts
+  return {
+    session,
+    journal,
+    // ... existing fields ...
+    loading,
+    sessionLoading: sessionQuery.isLoading,
+    // ... rest of existing fields ...
+  };
+```
+
+Verify compilation: `npx tsc --noEmit` — expected: no errors (the field is additive).
+
+- [ ] **Step 2: Write the failing test**
 
 ```tsx
 // src/tests/usePhaseRouteSync.test.tsx
@@ -300,6 +321,22 @@ describe("usePhaseRouteSync", () => {
       expect(window.location.pathname).toBe("/");
     });
   });
+
+  it("does not redirect while session is still loading (stale deep-link)", async () => {
+    // Simulate a pending session query — getGame never resolves during this test
+    mockedGetGame.mockReturnValue(new Promise(() => {}));
+    vi.mocked(getAvailableActions).mockResolvedValue([]);
+    vi.mocked(getJournal).mockResolvedValue(createJournal());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderWithRouter("/town/store");
+
+    // Wait a tick to ensure no redirect happens
+    await waitFor(() => {
+      expect(screen.getByTestId("sync-host")).toBeInTheDocument();
+    });
+    expect(window.location.pathname).toBe("/town/store");
+  });
 });
 ```
 
@@ -312,24 +349,31 @@ Expected: FAIL — module `../shell/usePhaseRouteSync` not found
 
 ```ts
 // src/shell/usePhaseRouteSync.ts
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useGamePhase } from "../hooks/useGamePhase";
+import { useGameSession } from "../state/useGameSession";
 
 /**
  * Reconciles the URL with the backend-derived game phase.
  * Backend transitions drive navigation — when the phase changes,
  * the hook navigates to the matching route if the URL doesn't already match.
+ *
+ * Skips sync while the session query is still loading, so stale URLs
+ * (e.g. deep-linked /town/store with no session yet) are not redirected
+ * to / until we know whether a session exists.
  */
 export function usePhaseRouteSync(): void {
   const { phase, hasSession } = useGamePhase();
+  const { sessionLoading } = useGameSession();
   const location = useLocation();
   const navigate = useNavigate();
-  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    // Skip sync while the session is still being fetched from the backend.
+    // This prevents redirecting a stale deep-linked URL before we know
+    // whether the player has a session.
+    if (sessionLoading) {
       return;
     }
 
@@ -344,7 +388,7 @@ export function usePhaseRouteSync(): void {
     }
 
     void navigate({ to: expectedPrefix });
-  }, [phase, hasSession, location.pathname, navigate]);
+  }, [phase, hasSession, sessionLoading, location.pathname, navigate]);
 }
 
 function phaseToUrlPrefix(phase: string): string | null {
@@ -367,12 +411,12 @@ function phaseToUrlPrefix(phase: string): string | null {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/tests/usePhaseRouteSync.test.tsx`
-Expected: PASS (3 tests)
+Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/shell/usePhaseRouteSync.ts src/tests/usePhaseRouteSync.test.tsx
+git add src/hooks/useCurrentGameSession.ts src/shell/usePhaseRouteSync.ts src/tests/usePhaseRouteSync.test.tsx
 git commit -m "feat: add usePhaseRouteSync hook for phase-URL reconciliation"
 ```
 
@@ -480,7 +524,7 @@ function renderWithRouter(initialUrl: string) {
   const storeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/town/store", component: () => <div>store</div> });
   const trailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/trail", component: () => <div>trail</div> });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([indexRoute, townRoute.addChildren([storeRoute]), trailRoute]),
+    routeTree: rootRoute.addChildren([indexRoute, townRoute, storeRoute, trailRoute]),
   });
 
   const queryClient = new QueryClient({
@@ -1313,8 +1357,11 @@ const TownHubLead = styled.p`
   color: var(--muted);
 `;
 
-const ArrivalNotice = styled.p`
-  margin: 0;
+const ArrivalNotice = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 12px 18px;
   background: rgba(223, 159, 79, 0.12);
   border: 1px solid rgba(223, 159, 79, 0.22);
@@ -1322,6 +1369,21 @@ const ArrivalNotice = styled.p`
   color: var(--accent-strong);
   font-size: 0.95rem;
   font-weight: 600;
+`;
+
+const DismissButton = styled.button`
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+  }
 `;
 
 const TownHubGrid = styled.div`
@@ -1410,7 +1472,14 @@ export function TownHubSurface() {
       </TownHubHeader>
       {arrived === "1" ? (
         <ArrivalNotice role="status">
-          You've arrived in {townName}. Take a moment to look around.
+          <span>You've arrived in {townName}. Take a moment to look around.</span>
+          <DismissButton
+            type="button"
+            aria-label="Dismiss arrival notice"
+            onClick={() => void navigate({ to: "/town", search: {} })}
+          >
+            ×
+          </DismissButton>
         </ArrivalNotice>
       ) : null}
       <TownHubGrid>
@@ -1590,27 +1659,31 @@ const townRoute = createRoute({
   component: TownHubSurface,
 });
 
+// Town place routes are siblings under rootRoute, NOT children of townRoute.
+// townRoute's component is TownHubSurface which renders the hub directly
+// (no <Outlet />), so child routes would not render. Flat paths under root
+// keep each place as an independently-rendered route.
 const storeRoute = createRoute({
-  getParentRoute: () => townRoute,
-  path: "store",
+  getParentRoute: () => rootRoute,
+  path: "/town/store",
   component: StorePlace,
 });
 
 const sheriffRoute = createRoute({
-  getParentRoute: () => townRoute,
-  path: "sheriff",
+  getParentRoute: () => rootRoute,
+  path: "/town/sheriff",
   component: SheriffPlace,
 });
 
 const saloonRoute = createRoute({
-  getParentRoute: () => townRoute,
-  path: "saloon",
+  getParentRoute: () => rootRoute,
+  path: "/town/saloon",
   component: SaloonPlace,
 });
 
 const trailheadRoute = createRoute({
-  getParentRoute: () => townRoute,
-  path: "trailhead",
+  getParentRoute: () => rootRoute,
+  path: "/town/trailhead",
   component: TravelPrepSurface,
 });
 
@@ -1622,7 +1695,11 @@ const trailRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  townRoute.addChildren([storeRoute, sheriffRoute, saloonRoute, trailheadRoute]),
+  townRoute,
+  storeRoute,
+  sheriffRoute,
+  saloonRoute,
+  trailheadRoute,
   trailRoute,
 ]);
 
@@ -1994,7 +2071,7 @@ git commit -m "chore: final verification for BUNCH-124"
 | `manualChunks` vendor splitting | Task 11 |
 | `chunkSizeWarningLimit: 1100` | Task 11 |
 | `validateSearch` on `/town` route | Task 8 |
-| `TownHubSurface` arrival notice via `useSearch` | Task 6 |
+| `TownHubSurface` arrival notice via `useSearch` with dismiss | Task 6 |
 | Place surfaces use `useNavigate` | Task 5 |
 | `TownHubSurface` uses `useNavigate` for place cards | Task 6 |
 | Remove `GameFlowRouter` | Task 9 |
