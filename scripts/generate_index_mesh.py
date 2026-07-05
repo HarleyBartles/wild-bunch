@@ -200,7 +200,7 @@ def walk_index_targets() -> list[IndexTarget]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate or validate the repo-wide INDEX.md mesh")
-    parser.add_argument("--check", action="store_true", help="validate without writing")
+    parser.add_argument("--check", "--validate", dest="check", action="store_true", help="validate without writing")
     args = parser.parse_args()
 
     targets = walk_index_targets()

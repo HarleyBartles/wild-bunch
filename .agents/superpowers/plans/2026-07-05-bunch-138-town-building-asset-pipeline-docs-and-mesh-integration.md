@@ -4,7 +4,7 @@
 
 **Goal:** Wire the town-building art workflow into the repo mesh so human docs, agent doctrine, and asset-subtree pointers all point at the same canonical guidance and asset homes.
 
-**Architecture:** Keep the split surface explicit. Human-facing truth lives in `docs/art/town-buildings/`, agent-facing doctrine lives in `.agents/art/town-buildings/`, and the operational pointer lives in `src/WildBunch.Web/public/assets/town-buildings/AGENTS.md` where asset work actually happens. Final sprites ship from `src/WildBunch.Web/public/assets/town-buildings/sprites/`; pipeline intermediates land in `src/WildBunch.Web/public/assets/town-buildings/_pipeline/`. Generated `INDEX.md` files remain generated only.
+**Architecture:** Keep the split surface explicit. Human-facing truth lives in `docs/art/town-buildings/`, agent-facing doctrine lives in `.agents/art/town-buildings/`, and the operational pointer lives in `src/WildBunch.Assets/town-buildings/AGENTS.md` where asset work actually happens. Final sprites live in `src/WildBunch.Assets/town-buildings/sprites/`; pipeline intermediates land in `src/WildBunch.Assets/town-buildings/_pipeline/`. Generated `INDEX.md` files remain generated only.
 
 **Tech Stack:** Markdown, PowerShell, `scripts/generate_index_mesh.py`, git worktree hygiene.
 
@@ -14,8 +14,8 @@
 - `INDEX.md` files are generated only. Never hand-edit them.
 - Human-facing guidance stays in `docs/`.
 - Agent-facing guidance stays in `.agents/`.
-- Final shipped sprites live under `src/WildBunch.Web/public/assets/town-buildings/sprites/`.
-- Pipeline intermediates live under `src/WildBunch.Web/public/assets/town-buildings/_pipeline/`.
+- Final shipped sprites live under `src/WildBunch.Assets/town-buildings/sprites/`.
+- Pipeline intermediates live under `src/WildBunch.Assets/town-buildings/_pipeline/`.
 - Keep the current town-building art contract intact: top-down slight oblique camera, pixel-art style, 60x50 footprint normalisation, and the 5-view turnaround semantics already established in chat.
 - Work in the isolated worktree based on current `origin/main`. Do not mutate the main checkout.
 - Do not broaden scope beyond town-building art docs, mesh pointers, and the lawful asset homes needed for the pipeline.
@@ -147,10 +147,10 @@ git commit -m "docs: add town building agent doctrine"
 ### Task 3: Add the local asset-subtree pointer and durable asset homes
 
 **Files:**
-- Create: `src/WildBunch.Web/public/assets/town-buildings/AGENTS.md`
-- Create: `src/WildBunch.Web/public/assets/town-buildings/README.md`
-- Create: `src/WildBunch.Web/public/assets/town-buildings/sprites/.gitkeep`
-- Create: `src/WildBunch.Web/public/assets/town-buildings/_pipeline/.gitkeep`
+- Create: `src/WildBunch.Assets/town-buildings/AGENTS.md`
+- Create: `src/WildBunch.Assets/town-buildings/README.md`
+- Create: `src/WildBunch.Assets/town-buildings/sprites/.gitkeep`
+- Create: `src/WildBunch.Assets/town-buildings/_pipeline/.gitkeep`
 
 **Interfaces:**
 - Consumes: the canonical docs from Tasks 1 and 2
@@ -178,8 +178,8 @@ Keep this short and discoverable. It should explain:
 
 Add placeholder files so git keeps the folders alive even before the first asset drop:
 
-- `src/WildBunch.Web/public/assets/town-buildings/sprites/.gitkeep`
-- `src/WildBunch.Web/public/assets/town-buildings/_pipeline/.gitkeep`
+- `src/WildBunch.Assets/town-buildings/sprites/.gitkeep`
+- `src/WildBunch.Assets/town-buildings/_pipeline/.gitkeep`
 
 If the first real asset pass lands during this work, replace the placeholders with the actual generated images instead of leaving the keeps behind.
 
@@ -199,7 +199,8 @@ git commit -m "docs: add town building asset subtree pointers and homes"
 **Files:**
 - Regenerate: `docs/INDEX.md`
 - Regenerate: `.agents/INDEX.md`
-- Regenerate: `src/WildBunch.Web/public/assets/town-buildings/INDEX.md`
+- Regenerate: `src/WildBunch.Assets/INDEX.md`
+- Regenerate: `src/WildBunch.Assets/town-buildings/INDEX.md`
 - Regenerate: any other affected `INDEX.md` files reported by the generator
 
 **Interfaces:**
@@ -220,7 +221,7 @@ From the repo root:
 
 ```powershell
 python scripts/generate_index_mesh.py --validate
-rg -n "town-buildings|art" .agents/INDEX.md docs/INDEX.md src/WildBunch.Web/public/assets/town-buildings/AGENTS.md
+ rg -n "town-buildings|art" .agents/INDEX.md docs/INDEX.md src/WildBunch.Assets/town-buildings/AGENTS.md
 git status --short
 ```
 
@@ -262,7 +263,7 @@ No prose placeholders remain. The tracked `.gitkeep` files are intentional asset
 
 - `docs/art/town-buildings/` is the human-facing branch point
 - `.agents/art/town-buildings/` is the agent-facing branch point
-- `src/WildBunch.Web/public/assets/town-buildings/` is the operational asset subtree
+- `src/WildBunch.Assets/town-buildings/` is the operational asset subtree
 - `sprites/` is the final output home
 - `_pipeline/` is the intermediate home
 - `scripts/generate_index_mesh.py` is the only index-mesh writer

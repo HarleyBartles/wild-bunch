@@ -6,8 +6,10 @@ What belongs in git:
 
 - the human-facing docs in `docs/art/town-buildings/`
 - generated indexes
-- final sprite output in `sprites/`
-- intermediate work only when it is intentionally kept for review or reuse
+- final sprite output in `src/WildBunch.Assets/town-buildings/sprites/`
+- intermediate work in `src/WildBunch.Assets/town-buildings/_pipeline/` when it is intentionally kept for review or reuse
+
+The web bundle can later copy promoted sprites into `src/WildBunch.Web/public/assets/`, but that tree is not the working asset home.
 
 What should never be treated as final art:
 

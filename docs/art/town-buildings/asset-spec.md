@@ -4,10 +4,11 @@ This document defines the repo-facing contract for town-building art.
 
 ## Asset homes
 
-- Final sprites: `src/WildBunch.Web/public/assets/town-buildings/sprites/`
-- Pipeline intermediates: `src/WildBunch.Web/public/assets/town-buildings/_pipeline/`
+- Final sprites: `src/WildBunch.Assets/town-buildings/sprites/`
+- Pipeline intermediates: `src/WildBunch.Assets/town-buildings/_pipeline/`
 
 The `sprites/` tree is the shippable output home. The `_pipeline/` tree is for working files, studies, and other intermediate art that is not ready to ship.
+The web project may publish from `src/WildBunch.Assets/` into `src/WildBunch.Web/public/assets/`, but that web tree is delivery output only, not the working home.
 
 ## Naming
 
@@ -17,11 +18,11 @@ The `sprites/` tree is the shippable output home. The `_pipeline/` tree is for w
 
 Recommended pattern:
 
+- `general-store/front.png`
+- `general-store/profile.png`
+- `general-store/rear.png`
 - `general-store/front-oblique.png`
-- `general-store/left-side.png`
-- `general-store/back.png`
-- `general-store/diag-facing-camera.png`
-- `general-store/diag-facing-away.png`
+- `general-store/rear-oblique.png`
 
 Apply the same pattern to `sheriff-office`, `saloon`, and `telegraph-office`.
 
