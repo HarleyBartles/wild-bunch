@@ -12,8 +12,7 @@ export type DevSurface =
   | "sheriff"
   | "store"
   | "trailhead"
-  | "trail"
-  | "arrival";
+  | "trail";
 
 const DevSurfaceContext = createContext<DevSurface>("pre-session");
 const DevSurfaceSetterContext = createContext<(surface: DevSurface) => void>(() => {});

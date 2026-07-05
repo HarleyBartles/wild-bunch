@@ -5,7 +5,6 @@ import type { DevSurface } from "../dev/DevSurfaceContext";
 import { PreSessionSurface } from "./PreSessionSurface";
 import { TownHubSurface } from "./TownHubSurface";
 import { TrailFlowSurface } from "./TrailFlowSurface";
-import { ArrivalSurface } from "./ArrivalSurface";
 
 export type TownPlace = "store" | "sheriff" | "saloon" | "trailhead" | null;
 
@@ -26,8 +25,6 @@ export function GameFlowRouter() {
       setDevSurface("pre-session");
     } else if (phase === "on-trail") {
       setDevSurface("trail");
-    } else if (phase === "arrival") {
-      setDevSurface("arrival");
     } else if (phase === "in-town") {
       setDevSurface(activePlace ? placeToSurface[activePlace] : "town");
     }
@@ -52,8 +49,6 @@ export function GameFlowRouter() {
       );
     case "on-trail":
       return <TrailFlowSurface />;
-    case "arrival":
-      return <ArrivalSurface />;
     default:
       return <PreSessionSurface />;
   }
