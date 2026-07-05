@@ -1,11 +1,8 @@
+// src/flow/TownHubSurface.tsx
 import styled from "styled-components";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useGameSession } from "../state/useGameSession";
 import { AvailableActionKind } from "../api/types";
-import type { TownPlace } from "./GameFlowRouter";
-import { StorePlace } from "./places/StorePlace";
-import { SheriffPlace } from "./places/SheriffPlace";
-import { SaloonPlace } from "./places/SaloonPlace";
-import { TravelPrepSurface } from "./TravelPrepSurface";
 import { FlowSurface } from "../components/ui/sharedStyled";
 
 const TownHubHeader = styled.header`
@@ -22,6 +19,35 @@ const TownHubLead = styled.p`
   margin: 0;
   font-size: 1.1rem;
   color: var(--muted);
+`;
+
+const ArrivalNotice = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(223, 159, 79, 0.12);
+  border: 1px solid rgba(223, 159, 79, 0.22);
+  border-radius: 12px;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+  font-weight: 600;
+`;
+
+const DismissButton = styled.button`
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+  }
 `;
 
 const TownHubGrid = styled.div`
@@ -84,33 +110,15 @@ const PlaceCardBody = styled.div`
   }
 `;
 
-interface TownHubSurfaceProps {
-  activePlace: TownPlace;
-  onPlaceChange: (place: TownPlace) => void;
-}
-
-export function TownHubSurface({ activePlace, onPlaceChange }: TownHubSurfaceProps) {
+export function TownHubSurface() {
   const { session, currentTown, actions } = useGameSession();
+  const navigate = useNavigate();
+  const { arrived } = useSearch({ strict: false }) as { arrived?: string };
 
   if (!session) {
     return null;
   }
 
-  // If a place is active, render the place surface with a back button
-  if (activePlace === "store") {
-    return <StorePlace onLeave={() => onPlaceChange(null)} />;
-  }
-  if (activePlace === "sheriff") {
-    return <SheriffPlace onLeave={() => onPlaceChange(null)} />;
-  }
-  if (activePlace === "saloon") {
-    return <SaloonPlace onLeave={() => onPlaceChange(null)} />;
-  }
-  if (activePlace === "trailhead") {
-    return <TravelPrepSurface onBack={() => onPlaceChange(null)} />;
-  }
-
-  // Otherwise render the town hub with place cards
   const hasStore = actions.some((a) => a.kind === AvailableActionKind.BuySupplies);
   const hasSheriff =
     actions.some((a) => a.kind === AvailableActionKind.ReadWantedPosters) ||
@@ -126,9 +134,21 @@ export function TownHubSurface({ activePlace, onPlaceChange }: TownHubSurfacePro
         <h1>{townName}</h1>
         <TownHubLead>Where to next?</TownHubLead>
       </TownHubHeader>
+      {arrived === "1" ? (
+        <ArrivalNotice role="status">
+          <span>You've arrived in {townName}. Take a moment to look around.</span>
+          <DismissButton
+            type="button"
+            aria-label="Dismiss arrival notice"
+            onClick={() => void navigate({ to: "/town", search: {} })}
+          >
+            ×
+          </DismissButton>
+        </ArrivalNotice>
+      ) : null}
       <TownHubGrid>
         {hasStore ? (
-          <PlaceCard type="button" onClick={() => onPlaceChange("store")}>
+          <PlaceCard type="button" onClick={() => void navigate({ to: "/town/store" })}>
             <PlaceCardIcon aria-hidden="true">📦</PlaceCardIcon>
             <PlaceCardBody>
               <strong>Store</strong>
@@ -137,7 +157,7 @@ export function TownHubSurface({ activePlace, onPlaceChange }: TownHubSurfacePro
           </PlaceCard>
         ) : null}
         {hasSheriff ? (
-          <PlaceCard type="button" onClick={() => onPlaceChange("sheriff")}>
+          <PlaceCard type="button" onClick={() => void navigate({ to: "/town/sheriff" })}>
             <PlaceCardIcon aria-hidden="true">⭐</PlaceCardIcon>
             <PlaceCardBody>
               <strong>Sheriff Office</strong>
@@ -146,7 +166,7 @@ export function TownHubSurface({ activePlace, onPlaceChange }: TownHubSurfacePro
           </PlaceCard>
         ) : null}
         {hasSaloon ? (
-          <PlaceCard type="button" onClick={() => onPlaceChange("saloon")}>
+          <PlaceCard type="button" onClick={() => void navigate({ to: "/town/saloon" })}>
             <PlaceCardIcon aria-hidden="true">🥃</PlaceCardIcon>
             <PlaceCardBody>
               <strong>Saloon</strong>
@@ -155,7 +175,7 @@ export function TownHubSurface({ activePlace, onPlaceChange }: TownHubSurfacePro
           </PlaceCard>
         ) : null}
         {hasTrailhead ? (
-          <PlaceCard type="button" className="trailhead" onClick={() => onPlaceChange("trailhead")}>
+          <PlaceCard type="button" className="trailhead" onClick={() => void navigate({ to: "/town/trailhead" })}>
             <PlaceCardIcon aria-hidden="true">🐎</PlaceCardIcon>
             <PlaceCardBody>
               <strong>Hit the trail</strong>
