@@ -226,9 +226,11 @@ describe("TownHubSurface Phaser integration", () => {
       expect(mockState.games).toHaveLength(1);
     });
 
-    // The card grid buttons (Store / Saloon place cards) are no longer rendered.
-    expect(screen.queryByRole("button", { name: /store/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /saloon/i })).not.toBeInTheDocument();
+    // The visible card grid is gone — replaced by the Phaser canvas.
+    // A visually-hidden nav exists for screen-reader access, but the
+    // visible place cards (with descriptions like "Buy supplies") are gone.
+    expect(screen.queryByText(/buy supplies, food, and gear/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/look around, gather gossip/i)).not.toBeInTheDocument();
   });
 
   it("passes the current town's layout to the TownHubScene", async () => {
@@ -315,6 +317,59 @@ describe("TownHubSurface Phaser integration", () => {
     scene.selectBuilding(BuildingKind.Telegraph);
 
     expect(mockState.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("TownHubSurface accessibility fallback", () => {
+  it("renders a visually-hidden nav with keyboard-accessible buttons for available buildings", async () => {
+    primeMocks();
+    renderHub();
+
+    await waitFor(() => {
+      expect(mockState.games).toHaveLength(1);
+    });
+
+    const nav = screen.getByRole("navigation", { name: /town buildings/i });
+    expect(nav).toBeInTheDocument();
+
+    // Available buildings have keyboard-accessible buttons.
+    expect(screen.getByRole("button", { name: /store/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sheriff office/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /saloon/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /hit the trail/i })).toBeInTheDocument();
+  });
+
+  it("does not render fallback buttons for unavailable buildings", async () => {
+    // Only BuySupplies is available — Sheriff, Saloon, Trailhead are not.
+    primeMocks(
+      createSession(),
+      [AvailableActionKind.BuySupplies],
+    );
+    renderHub();
+
+    await waitFor(() => {
+      expect(mockState.games).toHaveLength(1);
+    });
+
+    expect(screen.getByRole("button", { name: /store/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sheriff office/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /saloon/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /hit the trail/i })).not.toBeInTheDocument();
+  });
+
+  it("fallback buttons navigate to the correct routes when activated", async () => {
+    primeMocks();
+    renderHub();
+
+    await waitFor(() => {
+      expect(mockState.games).toHaveLength(1);
+    });
+
+    const user = userEvent.setup();
+    const storeButton = screen.getByRole("button", { name: /store/i });
+    await user.click(storeButton);
+
+    expect(mockState.navigate).toHaveBeenCalledWith({ to: "/town/store" });
   });
 });
 

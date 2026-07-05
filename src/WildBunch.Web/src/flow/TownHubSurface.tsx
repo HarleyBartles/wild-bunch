@@ -6,6 +6,7 @@ import { useGameSession } from "../state/useGameSession";
 import { AvailableActionKind, BuildingKind } from "../api/types";
 import { FlowSurface } from "../components/ui/sharedStyled";
 import { PhaserTownHubHost } from "../components/town-hub/PhaserTownHubHost";
+import { isBuildingAvailable } from "../components/town-hub/TownHubScene";
 
 const TownHubHeader = styled.header`
   display: grid;
@@ -52,12 +53,40 @@ const DismissButton = styled.button`
   }
 `;
 
+// Visually-hidden DOM fallback for keyboard/screen-reader access (ADR-0035).
+// Sighted users see the Phaser canvas; keyboard users tab through these buttons.
+const VisuallyHiddenNav = styled.nav`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
 const BUILDING_ROUTES: Partial<Record<BuildingKind, string>> = {
   [BuildingKind.Store]: "/town/store",
   [BuildingKind.Sheriff]: "/town/sheriff",
   [BuildingKind.Saloon]: "/town/saloon",
   [BuildingKind.Trailhead]: "/town/trailhead",
 };
+
+const BUILDING_LABELS: Partial<Record<BuildingKind, string>> = {
+  [BuildingKind.Store]: "Store",
+  [BuildingKind.Sheriff]: "Sheriff Office",
+  [BuildingKind.Saloon]: "Saloon",
+  [BuildingKind.Trailhead]: "Hit the trail",
+};
+
+const NAVIGABLE_BUILDINGS = [
+  BuildingKind.Store,
+  BuildingKind.Sheriff,
+  BuildingKind.Saloon,
+  BuildingKind.Trailhead,
+];
 
 export function TownHubSurface() {
   const { session, currentTown, actions } = useGameSession();
@@ -111,6 +140,19 @@ export function TownHubSurface() {
         availableActions={availableActions}
         onBuildingSelected={onBuildingSelected}
       />
+      <VisuallyHiddenNav aria-label="Town buildings">
+        {NAVIGABLE_BUILDINGS.filter((kind) =>
+          isBuildingAvailable(kind, availableActions),
+        ).map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => onBuildingSelected(kind)}
+          >
+            {BUILDING_LABELS[kind]}
+          </button>
+        ))}
+      </VisuallyHiddenNav>
     </FlowSurface>
   );
 }
