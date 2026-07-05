@@ -46,10 +46,6 @@ const TravelPrepActions = styled.div`
   margin-top: 12px;
 `;
 
-interface TravelPrepSurfaceProps {
-  onBack: () => void;
-}
-
 interface ConnectedDestination {
   town: TownDto;
   trailCount: number;
