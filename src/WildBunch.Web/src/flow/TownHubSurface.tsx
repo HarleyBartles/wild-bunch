@@ -53,18 +53,39 @@ const DismissButton = styled.button`
   }
 `;
 
-// Visually-hidden DOM fallback for keyboard/screen-reader access (ADR-0035).
-// Sighted users see the Phaser canvas; keyboard users tab through these buttons.
-const VisuallyHiddenNav = styled.nav`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+// Visible keyboard-operable fallback for building navigation (ADR-0035).
+// Sighted mouse users click buildings on the Phaser canvas; keyboard users
+// tab through these visible buttons beneath the canvas. This preserves
+// visible focus indication — the player can see which building they are
+// about to activate.
+const KeyboardFallbackNav = styled.nav`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0 4px;
+
+  button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: color-mix(in srgb, var(--accent-strong) 40%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-strong);
+      outline-offset: 2px;
+      background: rgba(223, 159, 79, 0.12);
+      border-color: var(--accent-strong);
+    }
+  }
 `;
 
 const BUILDING_ROUTES: Partial<Record<BuildingKind, string>> = {
@@ -140,7 +161,7 @@ export function TownHubSurface() {
         availableActions={availableActions}
         onBuildingSelected={onBuildingSelected}
       />
-      <VisuallyHiddenNav aria-label="Town buildings">
+      <KeyboardFallbackNav aria-label="Town buildings">
         {NAVIGABLE_BUILDINGS.filter((kind) =>
           isBuildingAvailable(kind, availableActions),
         ).map((kind) => (
@@ -152,7 +173,7 @@ export function TownHubSurface() {
             {BUILDING_LABELS[kind]}
           </button>
         ))}
-      </VisuallyHiddenNav>
+      </KeyboardFallbackNav>
     </FlowSurface>
   );
 }

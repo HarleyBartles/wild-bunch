@@ -227,8 +227,9 @@ describe("TownHubSurface Phaser integration", () => {
     });
 
     // The visible card grid is gone — replaced by the Phaser canvas.
-    // A visually-hidden nav exists for screen-reader access, but the
-    // visible place cards (with descriptions like "Buy supplies") are gone.
+    // The old place cards with descriptions like "Buy supplies" are gone.
+    // (A visible keyboard fallback nav with building buttons exists beneath
+    // the canvas — those are tested in the accessibility fallback suite.)
     expect(screen.queryByText(/buy supplies, food, and gear/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/look around, gather gossip/i)).not.toBeInTheDocument();
   });
@@ -321,7 +322,7 @@ describe("TownHubSurface Phaser integration", () => {
 });
 
 describe("TownHubSurface accessibility fallback", () => {
-  it("renders a visually-hidden nav with keyboard-accessible buttons for available buildings", async () => {
+  it("renders a visible keyboard-operable nav with buttons for available buildings", async () => {
     primeMocks();
     renderHub();
 
@@ -331,6 +332,8 @@ describe("TownHubSurface accessibility fallback", () => {
 
     const nav = screen.getByRole("navigation", { name: /town buildings/i });
     expect(nav).toBeInTheDocument();
+    // The nav is visible (not clipped to 1px) so sighted keyboard users can see focus.
+    expect(nav).toBeVisible();
 
     // Available buildings have keyboard-accessible buttons.
     expect(screen.getByRole("button", { name: /store/i })).toBeInTheDocument();
@@ -370,6 +373,25 @@ describe("TownHubSurface accessibility fallback", () => {
     await user.click(storeButton);
 
     expect(mockState.navigate).toHaveBeenCalledWith({ to: "/town/store" });
+  });
+
+  it("fallback buttons are keyboard-focusable with visible focus indication", async () => {
+    primeMocks();
+    renderHub();
+
+    await waitFor(() => {
+      expect(mockState.games).toHaveLength(1);
+    });
+
+    const user = userEvent.setup();
+    const storeButton = screen.getByRole("button", { name: /store/i });
+    storeButton.focus();
+    expect(storeButton).toHaveFocus();
+
+    // Tab moves to the next building button.
+    await user.tab();
+    const sheriffButton = screen.getByRole("button", { name: /sheriff office/i });
+    expect(sheriffButton).toHaveFocus();
   });
 });
 
