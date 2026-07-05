@@ -93,14 +93,37 @@ The test is not "is the repo better in the abstract" — it's three concrete que
 
 **The deferral trap:** The most common failure mode is "I'll fix this in a follow-up." Follow-ups don't happen unless they're tracked. The reviewer should treat a deferred fix that meets the "already here + small" test as an Important finding, not a Minor one. If the worker wants to defer a larger fix, they must flag it in their return, plan, or PR body so it can be tracked as a Linear issue — silent deferral is not acceptable.
 
-## 8. Definition of Done Compliance
+## 8. Test Coverage
+
+Reviewers must verify that the work is adequately tested:
+
+- **New code is covered by tests.** Every new function, component, hook, handler, or domain method must have tests that verify its behavior — not just its existence. If the diff adds production code without corresponding tests, that's an Important finding.
+- **Tests verify real behavior, not mock interactions.** Tests should assert on observable outcomes (rendered output, returned values, state changes), not on which mock functions were called in which order. Mock-heavy tests that pass but don't actually test the behavior are a finding.
+- **Edge cases are covered.** The reviewer should identify edge cases in the diff (null/undefined inputs, empty collections, error states, boundary conditions) and check that tests exist for them. Missing edge case coverage is an Important finding for critical paths, Minor for non-critical paths.
+- **The right test kind is used.** See `.agents/docs/validation-policy.md` for the repo's five test kinds (unit, integration, game-content, API, brute-force). Using a unit test where an integration test is needed (or vice versa) is a finding.
+- **No flaky tests.** A test that passes in isolation but fails under full-suite load is a flaky test. Flaky tests are not acceptable — they erode confidence in the suite and waste CI time. Common causes: shared mutable state (router instances, singletons, module-level caches), timing-dependent assertions on lazy-loaded components, missing `waitFor` around async renders, test ordering dependencies. If a test is flaky, the reviewer must flag it as Critical — a flaky test is worse than no test because it trains the team to ignore failures.
+- **All tests pass.** The full suite must pass: `npx vitest run` from `src/WildBunch.Web/` for frontend, `dotnet test` for backend. No skipped tests (`it.skip`, `describe.skip`) without a documented reason.
+- **Test output is pristine.** No stray warnings, no console noise, no unhandled promise rejections in test output. Warnings in test output are findings — they indicate either a real problem being silenced or test setup that doesn't match production behavior.
+
+## 9. CI Verification
+
+A review is not complete until the reviewer verifies that CI passes on the PR branch:
+
+- **Check CI status before signing off.** Use `gh pr checks <PR-number>` or the GitHub PR UI to verify all CI jobs are green. A review that approves a PR with failing CI is not a complete review.
+- **If CI is failing, the review is blocked.** Do not approve a PR with failing CI, even if the failures seem unrelated. Investigate the failures — if they're genuinely pre-existing and unrelated, document that in the review. If they're caused by the PR's changes, they must be fixed before approval.
+- **If CI is still running, wait for it.** Do not approve a PR while CI is in progress. The reviewer's job is to verify the final state, not a provisional state.
+
+## 10. Definition of Done Compliance
 
 A review is not complete until the reviewer verifies:
 
 - All tests pass (`npx vitest run` from `src/WildBunch.Web/` for frontend, `dotnet test` for backend)
+- CI passes on the PR branch (see section 9)
 - Build succeeds (`npm run build` for frontend, `dotnet build` for backend)
 - `npx tsc --noEmit` is clean for frontend work (no new errors)
 - `dotnet ef migrations list` passes when persistence may be affected
+- New code is covered by tests (see section 8)
+- No flaky tests (see section 8)
 - INDEX.md files are regenerated if files were added/removed
 - ADR log is fresh if architectural decisions changed
 - Linear issue is updated to reflect the work
@@ -111,7 +134,7 @@ A review is not complete until the reviewer verifies:
 
 See `.agents/docs/workflow-policy.md` for the full GREEN checklist and `.agents/docs/validation-policy.md` for validation commands.
 
-## 9. Review Output Format
+## 11. Review Output Format
 
 Reviews should produce structured output:
 
@@ -125,7 +148,7 @@ Reviews should produce structured output:
 - **Repo improvement check** — any fix-while-here opportunities or deferred-work flags
 - **Assessment and verdict** — approved or needs fixes, with reasoning
 
-## 10. Additional Policy Awareness
+## 12. Additional Policy Awareness
 
 Reviewers should be aware of these repo policies and apply them when relevant:
 
