@@ -258,16 +258,13 @@ describe("Store purchase feedback", () => {
   it("shows the purchase confirmation notice on the store surface after a successful buy", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    // The TownHubSurface now renders a Phaser canvas instead of place cards,
+    // so navigate directly to the store route rather than clicking a card.
+    window.history.replaceState({}, "", "/town/store");
 
     renderShell();
 
     const user = userEvent.setup();
-
-    // Wait for the town hub to render with the Store place card.
-    // TownHubSurface is lazy-loaded via React.lazy, so under full-suite load
-    // it may take longer than the default 1000ms findByRole timeout.
-    const storeCard = await screen.findByRole("button", { name: /store/i }, { timeout: 5000 });
-    await user.click(storeCard);
 
     // The store surface should render with the buy button.
     const buyButton = await screen.findByRole("button", { name: /^buy$/i });

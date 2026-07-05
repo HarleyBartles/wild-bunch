@@ -1,9 +1,11 @@
 // src/flow/TownHubSurface.tsx
+import { useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useGameSession } from "../state/useGameSession";
-import { AvailableActionKind } from "../api/types";
+import { AvailableActionKind, BuildingKind } from "../api/types";
 import { FlowSurface } from "../components/ui/sharedStyled";
+import { PhaserTownHubHost } from "../components/town-hub/PhaserTownHubHost";
 
 const TownHubHeader = styled.header`
   display: grid;
@@ -50,81 +52,39 @@ const DismissButton = styled.button`
   }
 `;
 
-const TownHubGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-
-  @media (max-width: 1366px) {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  }
-
-  @media (max-width: 960px) {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-`;
-
-const PlaceCard = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  text-align: left;
-  cursor: pointer;
-  color: var(--text);
-  transition:
-    transform 0.15s ease-out,
-    border-color 0.15s ease-out;
-
-  &:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-
-  &.trailhead {
-    border-color: var(--accent-strong);
-    background: linear-gradient(180deg, var(--bg-elevated), rgba(223, 159, 79, 0.05));
-  }
-`;
-
-const PlaceCardIcon = styled.div`
-  font-size: 2rem;
-  flex-shrink: 0;
-`;
-
-const PlaceCardBody = styled.div`
-  display: grid;
-  gap: 4px;
-
-  strong {
-    font-size: 1.05rem;
-  }
-
-  p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--muted);
-  }
-`;
+const BUILDING_ROUTES: Partial<Record<BuildingKind, string>> = {
+  [BuildingKind.Store]: "/town/store",
+  [BuildingKind.Sheriff]: "/town/sheriff",
+  [BuildingKind.Saloon]: "/town/saloon",
+  [BuildingKind.Trailhead]: "/town/trailhead",
+};
 
 export function TownHubSurface() {
   const { session, currentTown, actions } = useGameSession();
   const navigate = useNavigate();
   const { arrived } = useSearch({ strict: false }) as { arrived?: string };
 
+  // Map AvailableActionDto[] → AvailableActionKind[] and memoize so the
+  // Phaser game is not recreated on every parent render (the actions array
+  // reference from react-query is stable across renders unless data changes).
+  const availableActions = useMemo(
+    () => actions.map((a) => a.kind),
+    [actions],
+  );
+
+  const onBuildingSelected = useCallback(
+    (kind: BuildingKind) => {
+      const route = BUILDING_ROUTES[kind];
+      if (route) {
+        void navigate({ to: route });
+      }
+    },
+    [navigate],
+  );
+
   if (!session) {
     return null;
   }
-
-  const hasStore = actions.some((a) => a.kind === AvailableActionKind.BuySupplies);
-  const hasSheriff =
-    actions.some((a) => a.kind === AvailableActionKind.ReadWantedPosters) ||
-    actions.some((a) => a.kind === AvailableActionKind.CheckSheriffRecords);
-  const hasSaloon = actions.some((a) => a.kind === AvailableActionKind.LookAroundSaloon);
-  const hasTrailhead = actions.some((a) => a.kind === AvailableActionKind.Travel);
 
   const townName = currentTown?.name ?? session.player.currentTownId;
 
@@ -146,44 +106,11 @@ export function TownHubSurface() {
           </DismissButton>
         </ArrivalNotice>
       ) : null}
-      <TownHubGrid>
-        {hasStore ? (
-          <PlaceCard type="button" onClick={() => void navigate({ to: "/town/store" })}>
-            <PlaceCardIcon aria-hidden="true">📦</PlaceCardIcon>
-            <PlaceCardBody>
-              <strong>Store</strong>
-              <p>Buy supplies, food, and gear.</p>
-            </PlaceCardBody>
-          </PlaceCard>
-        ) : null}
-        {hasSheriff ? (
-          <PlaceCard type="button" onClick={() => void navigate({ to: "/town/sheriff" })}>
-            <PlaceCardIcon aria-hidden="true">⭐</PlaceCardIcon>
-            <PlaceCardBody>
-              <strong>Sheriff Office</strong>
-              <p>Read wanted posters and check records.</p>
-            </PlaceCardBody>
-          </PlaceCard>
-        ) : null}
-        {hasSaloon ? (
-          <PlaceCard type="button" onClick={() => void navigate({ to: "/town/saloon" })}>
-            <PlaceCardIcon aria-hidden="true">🥃</PlaceCardIcon>
-            <PlaceCardBody>
-              <strong>Saloon</strong>
-              <p>Look around, gather gossip, confront a suspect.</p>
-            </PlaceCardBody>
-          </PlaceCard>
-        ) : null}
-        {hasTrailhead ? (
-          <PlaceCard type="button" className="trailhead" onClick={() => void navigate({ to: "/town/trailhead" })}>
-            <PlaceCardIcon aria-hidden="true">🐎</PlaceCardIcon>
-            <PlaceCardBody>
-              <strong>Hit the trail</strong>
-              <p>Ride to the next town.</p>
-            </PlaceCardBody>
-          </PlaceCard>
-        ) : null}
-      </TownHubGrid>
+      <PhaserTownHubHost
+        layout={currentTown?.layout}
+        availableActions={availableActions}
+        onBuildingSelected={onBuildingSelected}
+      />
     </FlowSurface>
   );
 }
