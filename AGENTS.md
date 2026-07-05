@@ -13,6 +13,8 @@
 - **Frontend standards (must read before implementing or reviewing frontend work)**: `.agents/docs/frontend-standards.md`
 - **Validation policy (must read before writing or reviewing tests)**: `.agents/docs/validation-policy.md`
 - **Write-tool phantom files (must read before batch writes on Windows)**: `.agents/doctrine/write-tool-phantom-files.md`
+- **Implementing guide (must read before implementing or dispatching implementer subagents)**: `.agents/docs/implementing-guide.md`
+- **Planning guide (must read before planning multi-step work)**: `.agents/docs/planning-guide.md`
 - **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — inspect this folder before running ad-hoc commands for repo operations
 - Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
@@ -85,6 +87,8 @@ Use these reference files when working in specific areas:
 - **[`.agents/docs/repo-skills-policy.md`](.agents/docs/repo-skills-policy.md)** - Use when syncing marketplace skills or working with the skill vendoring system
 - **[`.agents/docs/mesh-policy.md`](.agents/docs/mesh-policy.md)** - Use when working with the documentation mesh (AGENTS.md, INDEX.md, README files)
 - **[`.agents/docs/code-review-guide.md`](.agents/docs/code-review-guide.md)** - **Must read for code reviewers.** Review methodology, lenses (architect, QA, engineer, product owner, player), architecture/frontend/unslop checks, repo improvement check, and DoD compliance.
+- **[`.agents/docs/implementing-guide.md`](.agents/docs/implementing-guide.md)** - **Must read for implementers.** Standards to read before coding, skills to invoke, TDD discipline, pre-completion verification, and subagent dispatch guidance.
+- **[`.agents/docs/planning-guide.md`](.agents/docs/planning-guide.md)** - **Must read for planners.** Standards to read before planning, skills to invoke, plan structure requirements, artifact placement, and plan review checklist.
 
 ## ADR Log Freshness
 - The ADR log at `docs/adr/` must represent the system as it exists today. See [`.agents/docs/workflow-policy.md`](.agents/docs/workflow-policy.md) for freshness check requirements.
