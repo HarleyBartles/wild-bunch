@@ -431,12 +431,14 @@ Read `tests/WildBunch.GameContent.Tests/INDEX.md` and confirm:
 - `SeedWorldFactoryTests.cs` is listed
 - `SeedWorldBuilderTests.cs` is NOT listed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/AGENTS.md docs/adr/ADR-0012-gamecontent-in-code-now-db-backed-content-later.md src/WildBunch.GameContent/NewGame/INDEX.md tests/WildBunch.GameContent.Tests/INDEX.md .agents/superpowers/plans/INDEX.md
 git commit -m "docs: update AGENTS.md and ADR-0012 references, regenerate index mesh"
 ```
+
+Commit: `0cb9885`
 
 ---
 
@@ -482,6 +484,10 @@ Note: `INDEX.md` files are excluded from the text scan because they are generate
 
 Expected: zero matches. If any match appears, it is a stale reference that must be fixed before the refactor is complete.
 
-- [ ] **Step 4: Commit final state if any stray fixes were needed**
+Initial scan found 1 stale reference: `SeedWorldFactoryTests.cs:8` still had class name `SeedWorldBuilderTests` (Task 4 class rename didn't persist on the renamed file). Fixed and re-verified — scan now clean across src/, tests/, docs/.
+
+- [x] **Step 4: Commit final state if any stray fixes were needed**
 
 If Step 3 found stale references, fix them and commit. If clean, no commit needed — the refactor is complete.
+
+Commit: `b36078d` (fix for stale class name reference)
