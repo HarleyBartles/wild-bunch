@@ -288,6 +288,7 @@ export function useCurrentGameSession() {
     cockpitMode,
     busyMode,
     loading,
+    sessionLoading: sessionQuery.isLoading,
     notice: state.notice,
     error: state.error,
     resetToken: state.resetToken,
