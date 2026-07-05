@@ -13,4 +13,16 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
   },
+  build: {
+    chunkSizeWarningLimit: 1100, // Phaser lazy chunk ~1 MB; only loaded on town-selection/trailhead
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          router: ["@tanstack/react-router", "@tanstack/react-query"],
+          styled: ["styled-components"],
+        },
+      },
+    },
+  },
 });
