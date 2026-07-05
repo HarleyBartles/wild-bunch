@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **BUNCH-135 dependency:** This plan references `SeedWorldCatalog` throughout. If [BUNCH-135](https://linear.app/harleys-workspace/issue/BUNCH-135/collapse-seedworldbuilder-into-seedworldfactory) has merged, replace `SeedWorldCatalog` with `SeedWorldFactory` and `SeedWorldBuilder` references can be ignored (the class is deleted). The `IsCanonicalSeedWorld` predicate moves to `SeedWorld.IsCanonical`. No architecture change — just the class name.
+> **BUNCH-135 merged:** `SeedWorldCatalog` has been renamed to `SeedWorldFactory`. `SeedWorldBuilder` has been deleted; `IsCanonicalSeedWorld` is now `SeedWorld.IsCanonical`. All references in this plan have been updated to use `SeedWorldFactory`.
 
 **Linear issue:** [BUNCH-130](https://linear.app/harleys-workspace/issue/BUNCH-130/town-hub-phaser-surface)
 
@@ -19,7 +19,7 @@
 ## Global Constraints
 
 - Follow existing PhaserMapHost pattern for React-Phaser integration
-- Use existing seed/world-construction pipeline for seeded layout generation (GameSetupDeterministicSource / MapGenerator / SeedWorldCatalog)
+- Use existing seed/world-construction pipeline for seeded layout generation (GameSetupDeterministicSource / MapGenerator / SeedWorldFactory)
 - Extend the `Town` record in `WorldModels.cs`; `TownAggregate.Definition` carries the layout automatically
 - Update `TownSnapshot.FromDomain`/`ToDomain` to round-trip the layout — the `WorldGenerated` event is the source of truth for the world
 - React manages all state, Phaser scenes do not maintain local state
@@ -115,7 +115,7 @@ This preserves the exact current player-visible behavior: the same buildings are
 
 **Modified GameContent Files:**
 
-- `src/WildBunch.GameContent/NewGame/MapGenerator.cs` - Post-process World after `CreateWorld` call to attach layouts using `with` expressions (source is in scope here, not in `CreateWorld`)
+- `src/WildBunch.GameContent/NewGame/MapGenerator.cs` - Post-process World after `SeedWorldFactory.CreateWorld` call to attach layouts using `with` expressions (source is in scope here, not in `CreateWorld`)
 
 **Modified Application Files:**
 
@@ -208,7 +208,7 @@ Add optional `TownLayout? Layout = null` property to the `Town` record in WorldM
 
 - [ ] **Step 4: Update Town construction calls**
 
-Update Town construction calls in `SeedWorldCatalog` and test fixtures to pass layout parameter (use null for now — layout generation is integrated in Task 5).
+Update Town construction calls in `SeedWorldFactory` and test fixtures to pass layout parameter (use null for now — layout generation is integrated in Task 5).
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -323,16 +323,16 @@ git commit -m "feat: implement deterministic town layout generation algorithm"
 **Interfaces:**
 
 - Consumes: `TownLayoutGenerator.GenerateLayout` from Task 4
-- Consumes: `GameSetupDeterministicSource` (available in `MapGenerator.Generate`, NOT in `SeedWorldCatalog.CreateWorld`)
+- Consumes: `GameSetupDeterministicSource` (available in `MapGenerator.Generate`, NOT in `SeedWorldFactory.CreateWorld`)
 - Produces: World with `Town` records that have non-null `Layout` properties
 
-**Architecture note (correct integration site — critical):** `SeedWorldCatalog.CreateWorld` does NOT receive a `GameSetupDeterministicSource` parameter — it only has `SaltSource?` and `Guid? seedCode`. The `GameSetupDeterministicSource` is available one level up in `MapGenerator.Generate(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)`, which calls `SeedWorldCatalog.CreateWorld` at line 90 and returns the `World`.
+**Architecture note (correct integration site — critical):** `SeedWorldFactory.CreateWorld` does NOT receive a `GameSetupDeterministicSource` parameter — it only has `SaltSource?` and `Guid? seedCode`. The `GameSetupDeterministicSource` is available one level up in `MapGenerator.Generate(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)`, which calls `SeedWorldFactory.CreateWorld` at line 90 and returns the `World`.
 
-**Do NOT change `SeedWorldCatalog.CreateWorld`'s signature.** Instead, post-process the returned `World` in `MapGenerator.Generate`:
+**Do NOT change `SeedWorldFactory.CreateWorld`'s signature.** Instead, post-process the returned `World` in `MapGenerator.Generate`:
 
 ```csharp
 // In MapGenerator.Generate, after the existing CreateWorld call:
-var world = SeedWorldCatalog.CreateWorld(...);
+var world = SeedWorldFactory.CreateWorld(...);
 
 // Attach layouts using with-expressions — source is in scope here.
 var townsWithLayouts = world.Towns.Select((town, index) =>
@@ -349,7 +349,7 @@ return world with { Towns = townsWithLayouts };
 
 This is the cleanest integration: no signature changes, `source` is in scope, and `with` expressions on records produce new `Town` instances with layouts attached.
 
-**Architecture note (CreateCanonicalWorld does NOT need layouts):** `SeedWorldCatalog.CreateCanonicalWorld()` is called by `StartingTownCatalog` and `SeedWorldMapLayout` for the start-screen map only. It does NOT go through `MapGenerator` and does NOT have a `GameSetupDeterministicSource`. Layouts are only needed for gameplay worlds (via `MapGenerator`), not the start-screen canonical world. Do NOT add layout generation to `CreateCanonicalWorld`.
+**Architecture note (CreateCanonicalWorld does NOT need layouts):** `SeedWorldFactory.CreateCanonicalWorld()` is called by `StartingTownCatalog` and `SeedWorldMapLayout` for the start-screen map only. It does NOT go through `MapGenerator` and does NOT have a `GameSetupDeterministicSource`. Layouts are only needed for gameplay worlds (via `MapGenerator`), not the start-screen canonical world. Do NOT add layout generation to `CreateCanonicalWorld`.
 
 - [ ] **Step 1: Write the failing test for layout integration**
 
@@ -362,7 +362,7 @@ Expected: FAIL with Layout being null
 
 - [ ] **Step 3: Post-process World in MapGenerator.Generate**
 
-After the existing `SeedWorldCatalog.CreateWorld(...)` call in `MapGenerator.Generate`, iterate `world.Towns` and attach layouts using `town with { Layout = TownLayoutGenerator.GenerateLayout(...) }`. Return `world with { Towns = townsWithLayouts }`. Pass the town's `Services`, `Id`, slot index, total town count, `source`, and `saltSource` to the generator.
+After the existing `SeedWorldFactory.CreateWorld(...)` call in `MapGenerator.Generate`, iterate `world.Towns` and attach layouts using `town with { Layout = TownLayoutGenerator.GenerateLayout(...) }`. Return `world with { Towns = townsWithLayouts }`. Pass the town's `Services`, `Id`, slot index, total town count, `source`, and `saltSource` to the generator.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -730,7 +730,7 @@ git commit -m "test: validate full suite for town hub phaser surface"
 - Extends Town record in WorldModels.cs; TownAggregate.Definition carries the layout automatically (no TownAggregate change needed)
 - TownSnapshot round-trips the layout for event-sourcing integrity (WorldGenerated event carries it)
 - Layout generation uses existing seed plumbing (GameSetupDeterministicSource) — no unseeded random
-- World construction integration post-processes the World in `MapGenerator.Generate` (where `source` is in scope) using `with` expressions — does NOT change `SeedWorldCatalog.CreateWorld`'s signature
+- World construction integration post-processes the World in `MapGenerator.Generate` (where `source` is in scope) using `with` expressions — does NOT change `SeedWorldFactory.CreateWorld`'s signature
 - `CreateCanonicalWorld` (start-screen map) does NOT get layouts — only gameplay worlds via `MapGenerator` need them
 - No separate API endpoint — layout rides existing GameSessionDto → WorldDto → TownDto.Layout → frontend `currentTown.layout`
 - Frontend `TownDto` in `types.ts` extended with `layout` field (currently only has id, name, services)
@@ -768,10 +768,10 @@ This plan was verified against current source on 2026-07-05 and repaired after a
 - `AvailableActionKind` enum exists in `src/WildBunch.Domain/Actions/AvailableActionKind.cs` with Travel, BuySupplies, SendTelegram, ReadWantedPosters, CheckSheriffRecords, LookAroundSaloon, GatherLocalGossip, FollowTelegraphLeads, and others
 - `ActionAvailabilityResolver` in `src/WildBunch.Domain/Actions/ActionAvailabilityResolver.cs` always adds BuySupplies; adds SendTelegram when `TownServices.Telegraph` is set; adds investigation actions from `TownSourceCatalog.Default`
 - `TownSourceCatalog.Default` in `src/WildBunch.Domain/World/TownSourceModels.cs` includes baseline sources (notice board, local records, local gossip, saloon look-around) with `TownServices.None` and conditional telegraph leads with `TownServices.Telegraph`
-- `SeedWorldBuilder` at `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` is a thin wrapper (BUNCH-135 will delete it and rename `SeedWorldCatalog` to `SeedWorldFactory`). Not relevant to this plan's integration site.
-- `SeedWorldCatalog` at `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` contains the town construction (`CreateWorld`), prosperity palettes, and services palettes. `CreateWorld` does NOT receive `GameSetupDeterministicSource` — only `SaltSource?` and `Guid? seedCode`.
-- `MapGenerator` at `src/WildBunch.GameContent/NewGame/MapGenerator.cs` is the actual integration site for Task 5. Its `Generate(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)` method has `source` in scope and calls `SeedWorldCatalog.CreateWorld(...)` at line 90. Task 5 post-processes the returned `World` with `with` expressions to attach layouts.
-- `CreateCanonicalWorld()` in `SeedWorldCatalog` is called by `StartingTownCatalog` and `SeedWorldMapLayout` for the start-screen map only. It does NOT go through `MapGenerator` and does NOT need layouts.
+- `SeedWorldBuilder` has been deleted by BUNCH-135. `IsCanonicalSeedWorld` is now `SeedWorld.IsCanonical`. Not relevant to this plan's integration site.
+- `SeedWorldFactory` at `src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs` (renamed from `SeedWorldCatalog` by BUNCH-135) contains the town construction (`CreateWorld`), prosperity palettes, and services palettes. `CreateWorld` does NOT receive `GameSetupDeterministicSource` — only `SaltSource?` and `Guid? seedCode`.
+- `MapGenerator` at `src/WildBunch.GameContent/NewGame/MapGenerator.cs` is the actual integration site for Task 5. Its `Generate(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)` method has `source` in scope and calls `SeedWorldFactory.CreateWorld(...)` at line 90. Task 5 post-processes the returned `World` with `with` expressions to attach layouts.
+- `CreateCanonicalWorld()` in `SeedWorldFactory` is called by `StartingTownCatalog` and `SeedWorldMapLayout` for the start-screen map only. It does NOT go through `MapGenerator` and does NOT need layouts.
 - `PhaserMapHost` pattern exists at `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx`
 - `GameSessionMapper` exists at `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`; `ToDto(DomainTown town)` maps Id, Name, Services, MapX, MapY — Task 6 extends this with Layout.
 - `TownDto` exists at `src/WildBunch.Application/Games/Models/GameDtos.cs` with minimal fields: Id, Name, Services, MapX, MapY — Task 6 adds Layout as a deliberate minimal extension.
@@ -780,7 +780,7 @@ This plan was verified against current source on 2026-07-05 and repaired after a
 - Frontend `TownDto` in `src/WildBunch.Web/src/api/types.ts` (line 310-314) currently has only `{ id, name, services }` — must be extended with `layout?: TownLayoutDto | null` in Task 9.
 - Frontend data path: `useGameSession()` → `session.world.towns.find(t => t.id === session.player.currentTownId)` = `currentTown` (per `useGameSessionQueries.ts:38-42`). Once `TownDto` has `layout`, `currentTown.layout` gives the layout for the Phaser scene.
 - `PhaserMapHost.test.tsx` at `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx` mocks Phaser via `vi.mock("phaser", ...)` — tests verify scene construction and callback wiring, NOT visual rendering. Task 8 follows this pattern.
-- `GameSetupDeterministicSource` exists in `src/WildBunch.GameContent/NewGame/` and is available in `MapGenerator.Generate` (NOT in `SeedWorldCatalog.CreateWorld`).
+- `GameSetupDeterministicSource` exists in `src/WildBunch.GameContent/NewGame/` and is available in `MapGenerator.Generate` (NOT in `SeedWorldFactory.CreateWorld`).
 - Architecture guardrails at `.agents/docs/architecture-guardrails.md` confirm: DDD + CQRS + Event Sourcing is the established stack; GameSession is the aggregate root; event stream is source of truth; JSON snapshots are cache; seeded setup requires explicit seams.
 
 All file paths and patterns match current source. The plan has been repaired to align with the repo's architecture stack after a full review, plus a second pass to close 7 execution gaps (source availability, Telegraph routing, Phaser test pattern, frontend data path, CreateCanonicalWorld scope, BUNCH-135 rename, parity test wording).

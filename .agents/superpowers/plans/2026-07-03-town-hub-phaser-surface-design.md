@@ -99,7 +99,7 @@ public sealed record BuildingPlacementDto(
 ## Data Flow
 
 ### Backend Data Generation
-1. **World Generation**: Integrate `TownLayoutGenerator` into the world construction pipeline at the actual `Town` construction site in `SeedWorldCatalog` (not the thin `SeedWorldBuilder` wrapper, which delegates to `SeedWorldCatalog.CreateCanonicalWorld()`)
+1. **World Generation**: Integrate `TownLayoutGenerator` into the world construction pipeline by post-processing the `World` returned by `SeedWorldFactory.CreateWorld` in `MapGenerator.Generate` (where `GameSetupDeterministicSource` is in scope). Do NOT change `SeedWorldFactory.CreateWorld`'s signature — attach layouts using `with` expressions on the returned `World.Towns`. `SeedWorldFactory.CreateCanonicalWorld` (start-screen map) does NOT need layouts.
 2. **Layout Algorithm**: Seeded random placement using existing `GameSetupDeterministicSource` — no unseeded random calls. Based on town services and map layout palette.
 3. **Persistence**: Store layout data on the `Town` record's `Layout` property as part of world generation. The layout flows into `TownSnapshot` via `FromDomain` and is carried by the `WorldGenerated` event — this is the event-sourced source of truth. JSON snapshots are cache.
 4. **Event Replay**: `TownSnapshot.ToDomain` restores the layout during `RehydrateFromEvents`. A parity test verifies command-path and replay-path convergence.
@@ -120,6 +120,8 @@ Building clicks do **not** introduce new backend enter-building commands in this
 3. **Scene Update**: React updates Phaser scene with new state (e.g., building availability changes) when the available action set changes
 
 This preserves the existing place surfaces (`StorePlace`, `SheriffPlace`, `SaloonPlace`, `TravelPrepSurface`) and the existing `GameSession` command route. No `EnterStoreCommand` or `POST /enter-store` endpoints are added in this slice.
+
+**Telegraph deferred:** The Telegraph building is rendered visually but not clickable in this slice. There is no `TelegraphPlace` surface and the current `TownHubSurface.tsx` has no telegraph card. Telegraph actions (`FollowTelegraphLeads`) are handled via action handlers, not place navigation. A future issue ([BUNCH-136](https://linear.app/harleys-workspace/issue/BUNCH-136/telegraphaggregate-extraction-and-telegraph-place-surface)) will extract a `TelegraphAggregate` and add the place surface.
 
 ## Domain Integration
 
@@ -260,7 +262,7 @@ The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layou
 2. Add `Layout` property to `Town` record in `WorldModels.cs`
 3. Update `TownSnapshot.FromDomain`/`ToDomain` to round-trip `Layout` (event-sourcing integrity)
 4. Add layout generation algorithm (`TownLayoutGenerator` with deterministic seed plumbing)
-5. Integrate layout generation into `SeedWorldCatalog` at the actual `Town` construction site
+5. Integrate layout generation into `MapGenerator.Generate` by post-processing the `World` returned by `SeedWorldFactory.CreateWorld` (do NOT change `SeedWorldFactory.CreateWorld`'s signature)
 6. **No Migration Needed**: Greenfield project, can drop and rebuild database
 
 ### Phase 2: Backend Integration
@@ -333,7 +335,8 @@ The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layou
 
 ### Existing Code
 - `PhaserMapHost` pattern for React-Phaser integration
-- `SeedWorldCatalog` for actual town construction (SeedWorldBuilder is a thin wrapper that delegates to it)
+- `SeedWorldFactory` for town construction (renamed from `SeedWorldCatalog` by BUNCH-135; `SeedWorldBuilder` has been deleted)
+- `MapGenerator.Generate` as the layout integration site (post-processes `World` after `SeedWorldFactory.CreateWorld` using `with` expressions — `GameSetupDeterministicSource` is in scope here)
 - `Town` record in `WorldModels.cs` for service mapping and layout storage
 - `TownAggregate` at `src/WildBunch.Domain/Game/TownAggregate.cs` — session-owned child component of `GameSession` that carries `Town Definition`; adding `Layout` to `Town` flows through automatically
 - `TownSnapshot` in `WorldSnapshot.cs` for event-sourced round-trip (must be updated to carry Layout)
@@ -350,8 +353,11 @@ The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layou
 - `TownLayoutGenerator` for layout generation
 - `PhaserTownHubHost` React component
 - `TownHubScene` Phaser scene
-- Town layout API endpoint
 - Layout snapshot serialization
+
+### No New API Endpoint
+
+No separate `GET /town-layout` endpoint is created. The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layout` path via the existing `GetGameSessionHandler`. This follows the established CQRS read path and avoids a redundant read surface for the same data. The frontend already fetches `GameSessionDto` via `useGameSession`.
 
 ## Risks and Mitigations
 
