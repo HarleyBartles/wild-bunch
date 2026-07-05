@@ -39,13 +39,7 @@ Reviewers must check the repo's architectural choices in `.agents/docs/architect
 
 ## 3. Frontend Review
 
-Reviewers must ensure frontend work aligns with this repo's frontend architecture stack:
-
-- **Styling stack:** `styled-components` for component-owned layout, SASS for global concerns (tokens, reset, base). No plain CSS classes in `className`. Design tokens via `var(--token-name)`. Shared primitives from `src/components/ui/sharedStyled.tsx`. Enforced by `src/tests/stylingEnforcement.test.ts`. See `src/WildBunch.Web/AGENTS.md` and `docs/frontend-styling.md`.
-- **Play-surface UI:** Player-facing surfaces must be in-world, not cockpit dashboards. See `.agents/unslop/play-surface-ui.md`. Keep player-facing surfaces as player-usable surfaces, not product chrome.
-- **Dev overlay:** If work touches dev overlay, apply `.agents/dev-overlay/DOCTRINE.md` and `.agents/unslop/dev-overlay.md`. Dev panels are contextual to the current gameplay surface. Dev mutations go through backend commands — the frontend never fakes player progress.
-- **Source truth:** React renders backend/player-known state, never invents canonical game facts or hidden internal interpretations.
-- **Routing:** TanStack Router route tree, lazy-loaded components, URL reflects game state via sync hooks (`usePhaseRouteSync`, `useDevSurfaceSync`). Town place routes are flat siblings under rootRoute, not children of townRoute (TownHubSurface has no Outlet).
+Reviewers must verify that frontend work aligns with the frontend standards documented in [`.agents/docs/frontend-standards.md`](frontend-standards.md). That document covers the styling stack, play-surface UI, source truth, dev overlay, and routing conventions. Reviewers should read it before reviewing frontend work and check the diff against each applicable standard.
 
 ## 4. Unslop Application
 
@@ -71,8 +65,7 @@ Durable agent guidance is for "agents will trip over this if they don't know." D
 
 ## 6. Tooling Hygiene
 
-- The `write` tool on Windows creates phantom files in parent directories of paths with hyphenated components. After batch writes, verify no junk files were created. See `.agents/doctrine/write-tool-phantom-files.md`.
-- Before claiming work is done, verify the workspace is clean — no stray files, no uncommitted debug artifacts, no phantom files in parent directories.
+Reviewers must verify the workspace is clean — no stray files, no uncommitted debug artifacts, no phantom files in parent directories. The `write` tool on Windows creates phantom files in parent directories of paths with hyphenated components. See [`.agents/doctrine/write-tool-phantom-files.md`](../doctrine/write-tool-phantom-files.md) for detection and cleanup procedures.
 
 ## 7. Repo Improvement Check
 
@@ -95,15 +88,15 @@ The test is not "is the repo better in the abstract" — it's three concrete que
 
 ## 8. Test Coverage
 
-Reviewers must verify that the work is adequately tested:
+Reviewers must verify that the work is adequately tested. The test quality standards are documented in [`.agents/docs/validation-policy.md`](validation-policy.md) under "Test Quality Standards" — reviewers should read that section and check the diff against each standard. Key points the reviewer must verify:
 
-- **New code is covered by tests.** Every new function, component, hook, handler, or domain method must have tests that verify its behavior — not just its existence. If the diff adds production code without corresponding tests, that's an Important finding.
-- **Tests verify real behavior, not mock interactions.** Tests should assert on observable outcomes (rendered output, returned values, state changes), not on which mock functions were called in which order. Mock-heavy tests that pass but don't actually test the behavior are a finding.
-- **Edge cases are covered.** The reviewer should identify edge cases in the diff (null/undefined inputs, empty collections, error states, boundary conditions) and check that tests exist for them. Missing edge case coverage is an Important finding for critical paths, Minor for non-critical paths.
-- **The right test kind is used.** See `.agents/docs/validation-policy.md` for the repo's five test kinds (unit, integration, game-content, API, brute-force). Using a unit test where an integration test is needed (or vice versa) is a finding.
-- **No flaky tests.** A test that passes in isolation but fails under full-suite load is a flaky test. Flaky tests are not acceptable — they erode confidence in the suite and waste CI time. Common causes: shared mutable state (router instances, singletons, module-level caches), timing-dependent assertions on lazy-loaded components, missing `waitFor` around async renders, test ordering dependencies. If a test is flaky, the reviewer must flag it as Critical — a flaky test is worse than no test because it trains the team to ignore failures.
-- **All tests pass.** The full suite must pass: `npx vitest run` from `src/WildBunch.Web/` for frontend, `dotnet test` for backend. No skipped tests (`it.skip`, `describe.skip`) without a documented reason.
-- **Test output is pristine.** No stray warnings, no console noise, no unhandled promise rejections in test output. Warnings in test output are findings — they indicate either a real problem being silenced or test setup that doesn't match production behavior.
+- New code is covered by tests
+- Tests verify real behavior, not mock interactions
+- Edge cases are covered
+- The right test kind is used (see validation-policy.md's Test Kinds section)
+- No flaky tests — a flaky test is a Critical finding (worse than no test)
+- All tests pass with no skipped tests without reason
+- Test output is pristine (no warnings, no noise)
 
 ## 9. CI Verification
 

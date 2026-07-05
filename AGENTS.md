@@ -10,6 +10,9 @@
 - Architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
 - **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
+- **Frontend standards (must read before implementing or reviewing frontend work)**: `.agents/docs/frontend-standards.md`
+- **Validation policy (must read before writing or reviewing tests)**: `.agents/docs/validation-policy.md`
+- **Write-tool phantom files (must read before batch writes on Windows)**: `.agents/doctrine/write-tool-phantom-files.md`
 - **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — inspect this folder before running ad-hoc commands for repo operations
 - Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
