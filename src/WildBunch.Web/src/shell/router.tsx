@@ -37,9 +37,12 @@ const indexRoute = createRoute({
 const townRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/town",
-  validateSearch: (search: Record<string, unknown>) => ({
-    arrived: search.arrived === "1" ? "1" : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { arrived?: "1" } => {
+    if (search.arrived === "1") {
+      return { arrived: "1" };
+    }
+    return {};
+  },
   component: TownHubSurface,
 });
 
