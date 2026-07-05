@@ -271,7 +271,6 @@ const allSurfaces: DevSurface[] = [
   "store",
   "trailhead",
   "trail",
-  "arrival",
 ];
 
 describe("Start Over regression — player-facing, not dev-only", () => {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider, createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SheriffPlace } from "../flow/places/SheriffPlace";
@@ -118,10 +119,18 @@ function renderSheriffPlace() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+  const rootRoute = createRootRoute({ component: () => <Outlet /> });
+  const sheriffRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/sheriff",
+    component: () => <SheriffPlace />,
+  });
+  const router = createRouter({ routeTree: rootRoute.addChildren([sheriffRoute]) });
+  window.history.replaceState({}, "", "/town/sheriff");
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <SheriffPlace onLeave={() => {}} />
+        <RouterProvider router={router} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );

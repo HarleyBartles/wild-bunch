@@ -228,6 +228,9 @@ describe("StartFlow", () => {
     });
 
     // Select a town through the Phaser map
+    await waitFor(() => {
+      expect(phaserMockState.games.length).toBeGreaterThan(0);
+    });
     const game = phaserMockState.games[0];
     const scene = (game.config as any).scene;
     scene.onTownSelected("t-town");
@@ -316,6 +319,9 @@ describe("StartFlow", () => {
     });
 
     // Select a town through the Phaser map
+    await waitFor(() => {
+      expect(phaserMockState.games.length).toBeGreaterThan(0);
+    });
     const game = phaserMockState.games[0];
     const scene = (game.config as any).scene;
     scene.onTownSelected("t-town");
@@ -347,6 +353,9 @@ describe("StartFlow", () => {
     });
 
     // Select a town through the Phaser map
+    await waitFor(() => {
+      expect(phaserMockState.games.length).toBeGreaterThan(0);
+    });
     const game = phaserMockState.games[0];
     const scene = (game.config as any).scene;
     scene.onTownSelected("t-town");
