@@ -61,14 +61,14 @@ The layout generator maps from both sources to `BuildingKind` during layout gene
 
 ### Navigation routing
 
-Building clicks in the Phaser scene map to the existing place navigation logic in `TownHubSurface.tsx` — no new backend commands:
+Building clicks in the Phaser scene map to URL navigation via TanStack Router (`useNavigate`) — no new backend commands. BUNCH-124 replaced the old `GameFlowRouter` / `onPlaceChange` callback pattern with URL-based routing:
 
-- `BuildingKind.Store` → `onPlaceChange("store")` → `StorePlace`
-- `BuildingKind.Sheriff` → `onPlaceChange("sheriff")` → `SheriffPlace`
-- `BuildingKind.Saloon` → `onPlaceChange("saloon")` → `SaloonPlace`
-- `BuildingKind.Trailhead` → `onPlaceChange("trailhead")` → `TravelPrepSurface`
+- `BuildingKind.Store` → `navigate({ to: "/town/store" })` → `StorePlace`
+- `BuildingKind.Sheriff` → `navigate({ to: "/town/sheriff" })` → `SheriffPlace`
+- `BuildingKind.Saloon` → `navigate({ to: "/town/saloon" })` → `SaloonPlace`
+- `BuildingKind.Trailhead` → `navigate({ to: "/town/trailhead" })` → `TravelPrepSurface`
 
-**Telegraph deferred to future slice:** The current `TownHubSurface.tsx` has no telegraph card — telegraph actions (`SendTelegram`, `FollowTelegraphLeads`) are handled via action handlers, not as a place you navigate to from the town hub. There is no `TelegraphPlace` surface. In this slice, the Telegraph building is rendered visually in the layout but is **not clickable** — it has no `onPlaceChange` routing. Clicking it is a no-op (or shows a "coming soon" tooltip). A future issue will add a telegraph place surface or action picker and wire up the click. This keeps the slice focused on replacing the existing card grid with a Phaser surface without inventing new place surfaces.
+**Telegraph deferred to future slice:** The current `TownHubSurface.tsx` has no telegraph card — telegraph actions (`SendTelegram`, `FollowTelegraphLeads`) are handled via action handlers, not as a place you navigate to from the town hub. There is no `TelegraphPlace` surface and no `/town/telegraph` route. In this slice, the Telegraph building is rendered visually in the layout but is **not clickable** — it has no navigation routing. Clicking it is a no-op (or shows a "coming soon" tooltip). A future issue ([BUNCH-136](https://linear.app/harleys-workspace/issue/BUNCH-136/telegraphaggregate-extraction-and-telegraph-place-surface)) will add a telegraph place surface, route, and wire up the click. This keeps the slice focused on replacing the existing card grid with a Phaser surface without inventing new place surfaces.
 
 ### Building availability
 
@@ -78,7 +78,7 @@ Building availability (clickable vs grayed-out) is driven by the same `Available
 - Sheriff available when `AvailableActionKind.ReadWantedPosters` or `AvailableActionKind.CheckSheriffRecords` present
 - Saloon available when `AvailableActionKind.LookAroundSaloon` or `AvailableActionKind.GatherLocalGossip` present
 - Trailhead available when `AvailableActionKind.Travel` present
-- Telegraph: rendered visually but not clickable in this slice (see Navigation routing above)
+- Telegraph: rendered visually but not clickable in this slice (see Navigation routing above — no `/town/telegraph` route exists)
 
 This preserves the exact current player-visible behavior: the same buildings are clickable under the same conditions as the current card grid.
 
@@ -125,8 +125,8 @@ This preserves the exact current player-visible behavior: the same buildings are
 **Modified Web Files:**
 
 - `src/WildBunch.Web/src/api/types.ts` - Add `layout` to frontend `TownDto`, add `TownLayoutDto` / `BuildingPlacementDto` / `BuildingKind` types
-- `src/WildBunch.Web/src/flow/GameFlowRouter.tsx` - Integrate town hub surface
-- `src/WildBunch.Web/src/flow/TownHubSurface.tsx` - Replace card grid with Phaser surface
+- `src/WildBunch.Web/src/flow/TownHubSurface.tsx` - Replace card grid with Phaser surface, use `useNavigate` for building click routing
+- `src/WildBunch.Web/src/shell/router.tsx` - No changes needed (routes already exist for `/town`, `/town/store`, `/town/sheriff`, `/town/saloon`, `/town/trailhead` from BUNCH-124)
 
 **Not created (architecture decision):**
 
@@ -584,25 +584,35 @@ git commit -m "feat: implement React PhaserTownHubHost component"
 
 ---
 
-### Task 10: Integrate Town Hub into GameFlowRouter
+### Task 10: Integrate Town Hub into URL Routing
 
 **Files:**
 
 - Modify: `src/WildBunch.Web/src/flow/TownHubSurface.tsx`
-- Modify: `src/WildBunch.Web/src/flow/GameFlowRouter.tsx`
 - Test: `src/WildBunch.Web/src/tests/TownHubSurface.test.tsx`
 
 **Interfaces:**
 
 - Consumes: `PhaserTownHubHost` from Task 9
-- Produces: TownHubSurface that renders Phaser surface instead of card grid
-- Produces: GameFlowRouter that routes to Phaser town hub
+- Consumes: `useNavigate` from `@tanstack/react-router` (BUNCH-124 replaced `GameFlowRouter` with TanStack Router)
+- Produces: TownHubSurface that renders Phaser surface instead of card grid, with building clicks navigating to existing URL routes
 
-**Preservation requirement:** The existing place navigation logic (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) must remain unchanged. Only the entry point changes — building clicks in Phaser replace card clicks, but route to the same place surfaces via the same `onPlaceChange` callback. No new backend commands are introduced.
+**BUNCH-124 alignment note (critical):** BUNCH-124 deleted `GameFlowRouter.tsx` and replaced it with TanStack Router (`shell/router.tsx`). Place navigation is now URL-based via `useNavigate` from `@tanstack/react-router`, not `onPlaceChange` callbacks. The existing routes are already defined in `shell/router.tsx`:
+
+- `/town` → `TownHubSurface`
+- `/town/store` → `StorePlace`
+- `/town/sheriff` → `SheriffPlace`
+- `/town/saloon` → `SaloonPlace`
+- `/town/trailhead` → `TravelPrepSurface`
+- `/trail` → `TrailFlowSurface`
+
+No changes to `shell/router.tsx` are needed — the routes already exist. This task only modifies `TownHubSurface.tsx` to render `PhaserTownHubHost` instead of the card grid, and passes a `navigate`-based callback to the Phaser scene for building clicks.
+
+**Preservation requirement:** The existing place surfaces (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) and their routes must remain unchanged. Only the entry point changes — building clicks in Phaser replace card clicks, but navigate to the same URL routes. No new backend commands are introduced.
 
 - [ ] **Step 1: Write the failing test for Phaser town hub integration**
 
-Write test that verifies TownHubSurface renders PhaserTownHubHost instead of card grid, and that building clicks route to the correct place navigation.
+Write test that verifies TownHubSurface renders PhaserTownHubHost instead of card grid, and that building clicks call `navigate` with the correct URL. Mock `@tanstack/react-router`'s `useNavigate` and `useSearch` per the existing test patterns in `AppShell.test.tsx`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -611,15 +621,15 @@ Expected: FAIL
 
 - [ ] **Step 3: Replace card grid with Phaser surface**
 
-Update TownHubSurface to render `PhaserTownHubHost` instead of the card grid. Map building clicks to the existing place navigation logic:
+Update TownHubSurface to render `PhaserTownHubHost` instead of the card grid. Pass a navigation callback to `PhaserTownHubHost` that calls `navigate({ to: route })` for each building kind:
 
-- `BuildingKind.Store` → `onPlaceChange("store")`
-- `BuildingKind.Sheriff` → `onPlaceChange("sheriff")`
-- `BuildingKind.Saloon` → `onPlaceChange("saloon")`
-- `BuildingKind.Trailhead` → `onPlaceChange("trailhead")`
+- `BuildingKind.Store` → `navigate({ to: "/town/store" })`
+- `BuildingKind.Sheriff` → `navigate({ to: "/town/sheriff" })`
+- `BuildingKind.Saloon` → `navigate({ to: "/town/saloon" })`
+- `BuildingKind.Trailhead` → `navigate({ to: "/town/trailhead" })`
 - `BuildingKind.Telegraph` → no-op (rendered visually, not clickable in this slice — see Navigation routing above)
 
-Keep the existing place surface rendering (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) when a place is active. Update GameFlowRouter if needed.
+Keep the arrival notice logic (`?arrived=1` search param) and the `useSearch` / `useNavigate` imports from `@tanstack/react-router`. No changes to `shell/router.tsx` — routes already exist from BUNCH-124.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -629,8 +639,8 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/WildBunch.Web/src/flow/TownHubSurface.tsx src/WildBunch.Web/src/flow/GameFlowRouter.tsx src/WildBunch.Web/src/tests/TownHubSurface.test.tsx
-git commit -m "feat: integrate Phaser town hub into GameFlowRouter"
+git add src/WildBunch.Web/src/flow/TownHubSurface.tsx src/WildBunch.Web/src/tests/TownHubSurface.test.tsx
+git commit -m "feat: replace town hub card grid with Phaser surface"
 ```
 
 ---
@@ -727,6 +737,7 @@ git commit -m "test: validate full suite for town hub phaser surface"
 
 **4. Architecture compliance:**
 - Follows existing PhaserMapHost pattern (including Phaser mock test pattern)
+- Follows BUNCH-124 URL routing pattern (TanStack Router, `useNavigate`, lazy-loaded routes) — no `GameFlowRouter` or `onPlaceChange` callbacks
 - Extends Town record in WorldModels.cs; TownAggregate.Definition carries the layout automatically (no TownAggregate change needed)
 - TownSnapshot round-trips the layout for event-sourcing integrity (WorldGenerated event carries it)
 - Layout generation uses existing seed plumbing (GameSetupDeterministicSource) — no unseeded random
@@ -743,7 +754,7 @@ git commit -m "test: validate full suite for town hub phaser surface"
 
 **6. Preservation requirements:**
 - Existing GameSession command route and current player-visible behavior must remain stable
-- Existing TownHubSurface card grid replaced with Phaser surface, but underlying navigation logic (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) unchanged
+- Existing TownHubSurface card grid replaced with Phaser surface, but underlying URL routes (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) unchanged — BUNCH-124's TanStack Router routes remain as-is
 - Phaser remains renderer/input adapter, with React/backend/domain owning truth
 - No new backend commands introduced
 
@@ -776,11 +787,13 @@ This plan was verified against current source on 2026-07-05 and repaired after a
 - `GameSessionMapper` exists at `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`; `ToDto(DomainTown town)` maps Id, Name, Services, MapX, MapY — Task 6 extends this with Layout.
 - `TownDto` exists at `src/WildBunch.Application/Games/Models/GameDtos.cs` with minimal fields: Id, Name, Services, MapX, MapY — Task 6 adds Layout as a deliberate minimal extension.
 - `GetGameSessionHandler` exists at `src/WildBunch.Application/Games/Queries/GetGameSessionHandler.cs` and returns `GameSessionDto` via `GameSessionMapper.ToDto` — no new endpoint needed.
-- `TownHubSurface.tsx` exists at `src/WildBunch.Web/src/flow/TownHubSurface.tsx` with card grid pattern driven by AvailableActionKind. It has cards for Store, Sheriff, Saloon, Trailhead — NO telegraph card. Telegraph actions are handled via action handlers, not place navigation.
+- `TownHubSurface.tsx` exists at `src/WildBunch.Web/src/flow/TownHubSurface.tsx` with card grid pattern driven by AvailableActionKind. It has cards for Store, Sheriff, Saloon, Trailhead — NO telegraph card. Telegraph actions are handled via action handlers, not place navigation. BUNCH-124 updated it to use `useNavigate` from `@tanstack/react-router` for place navigation (not `onPlaceChange` callbacks).
+- `GameFlowRouter.tsx` has been DELETED by BUNCH-124. URL routing is now handled by TanStack Router at `src/WildBunch.Web/src/shell/router.tsx` with routes: `/town`, `/town/store`, `/town/sheriff`, `/town/saloon`, `/town/trailhead`, `/trail`. Each route is lazy-loaded. `usePhaseRouteSync` at `src/WildBunch.Web/src/shell/usePhaseRouteSync.ts` reconciles URL with backend game phase.
+- BUNCH-124 test patterns: `AppShell.test.tsx` mocks TanStack Router; `routingConventions.test.tsx` verifies route structure; `usePhaseRouteSync.test.tsx` verifies phase-to-URL sync. Task 10 tests should follow these patterns.
 - Frontend `TownDto` in `src/WildBunch.Web/src/api/types.ts` (line 310-314) currently has only `{ id, name, services }` — must be extended with `layout?: TownLayoutDto | null` in Task 9.
 - Frontend data path: `useGameSession()` → `session.world.towns.find(t => t.id === session.player.currentTownId)` = `currentTown` (per `useGameSessionQueries.ts:38-42`). Once `TownDto` has `layout`, `currentTown.layout` gives the layout for the Phaser scene.
 - `PhaserMapHost.test.tsx` at `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx` mocks Phaser via `vi.mock("phaser", ...)` — tests verify scene construction and callback wiring, NOT visual rendering. Task 8 follows this pattern.
 - `GameSetupDeterministicSource` exists in `src/WildBunch.GameContent/NewGame/` and is available in `MapGenerator.Generate` (NOT in `SeedWorldFactory.CreateWorld`).
 - Architecture guardrails at `.agents/docs/architecture-guardrails.md` confirm: DDD + CQRS + Event Sourcing is the established stack; GameSession is the aggregate root; event stream is source of truth; JSON snapshots are cache; seeded setup requires explicit seams.
 
-All file paths and patterns match current source. The plan has been repaired to align with the repo's architecture stack after a full review, plus a second pass to close 7 execution gaps (source availability, Telegraph routing, Phaser test pattern, frontend data path, CreateCanonicalWorld scope, BUNCH-135 rename, parity test wording).
+All file paths and patterns match current source. The plan has been repaired to align with the repo's architecture stack after a full review, plus passes to close 7 execution gaps (source availability, Telegraph routing, Phaser test pattern, frontend data path, CreateCanonicalWorld scope, BUNCH-135 rename, parity test wording), plus a BUNCH-124 alignment pass (TanStack Router URL routing, `GameFlowRouter` deletion, `useNavigate` pattern).

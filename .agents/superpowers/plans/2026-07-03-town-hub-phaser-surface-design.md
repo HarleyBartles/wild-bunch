@@ -116,7 +116,7 @@ public sealed record BuildingPlacementDto(
 Building clicks do **not** introduce new backend enter-building commands in this slice. Phaser scene clicks call React callbacks, which route through the existing frontend place navigation in `TownHubSurface.tsx`:
 
 1. **Building Click**: Phaser scene calls a React callback with the `BuildingKind`
-2. **Frontend Navigation**: React maps the `BuildingKind` to the existing `onPlaceChange` callback (e.g., `BuildingKind.Store` → `onPlaceChange("store")` → `StorePlace`)
+2. **Frontend Navigation**: React maps the `BuildingKind` to a `useNavigate` call from `@tanstack/react-router` (e.g., `BuildingKind.Store` → `navigate({ to: "/town/store" })` → `StorePlace`). BUNCH-124 replaced the old `GameFlowRouter` / `onPlaceChange` callback pattern with TanStack Router URL-based routing.
 3. **Scene Update**: React updates Phaser scene with new state (e.g., building availability changes) when the available action set changes
 
 This preserves the existing place surfaces (`StorePlace`, `SheriffPlace`, `SaloonPlace`, `TravelPrepSurface`) and the existing `GameSession` command route. No `EnterStoreCommand` or `POST /enter-store` endpoints are added in this slice.
@@ -248,7 +248,7 @@ public static class TownLayoutGenerator
 
 The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layout` path via the existing `GetGameSessionHandler`. No separate `GET /town-layout` endpoint is created. This follows the established CQRS read path and avoids a redundant read surface for the same data. The frontend already fetches `GameSessionDto` via `useGameSession`.
 
-> **No enter-building endpoints in this slice.** Building clicks route through the existing frontend place navigation (`onPlaceChange` → existing place surfaces), not new backend commands. See the Building Click Routing section above.
+> **No enter-building endpoints in this slice.** Building clicks route through the existing TanStack Router URL navigation (`useNavigate` → existing routes like `/town/store`), not new backend commands. See the Building Click Routing section above.
 
 ### DTO Changes
 - Extend `TownDto` to include `TownLayoutDto? Layout` (deliberate minimal extension — the existing `TownDto` carries only Id, Name, Services, MapX, MapY; Layout is added because the frontend needs it for rendering)
@@ -274,7 +274,7 @@ The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layou
 ### Phase 3: Frontend Integration
 1. Create `PhaserTownHubHost` component
 2. Create `TownHubScene` Phaser scene
-3. Integrate with existing `GameFlowRouter`
+3. Integrate with existing TanStack Router routes (no changes to `shell/router.tsx` — routes already exist from BUNCH-124)
 4. Replace React town hub cards with Phaser surface
 5. **No Migration Needed**: UI change, no data migration needed
 
@@ -346,7 +346,8 @@ The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layou
 - `TownSourceCatalog.Default` for baseline investigation sources
 - `GetGameSessionHandler` / `GameSessionMapper` for existing read path (layout rides this path)
 - `useGameSession` hook for state management
-- `GameFlowRouter` for navigation
+- `shell/router.tsx` (TanStack Router) for URL-based navigation — BUNCH-124 replaced `GameFlowRouter` with TanStack Router
+- `usePhaseRouteSync` for backend-phase-to-URL reconciliation
 
 ### New Code Required
 - `TownLayout` domain model and DTOs
