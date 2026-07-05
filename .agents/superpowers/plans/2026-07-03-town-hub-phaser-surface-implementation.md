@@ -233,12 +233,13 @@ const game = new Phaser.Game({
 - Telegraph building: 0.6 opacity (rendered but not interactive), no border
 - Building labels: `this.add.text(x, y + height/2 + 12, label, { fontSize: '12px', color: '#fff' }).setOrigin(0.5)` — "Store", "Sheriff", "Saloon", "Trailhead", "Telegraph"
 
-**Player walking animation (on building click):**
+**Player walking animation (on building click) — DEFERRED to follow-up:**
 - On `selectBuilding(kind)`, before calling the callback, tween the player circle from current position to the clicked building's position:
   `this.tweens.add({ targets: playerCircle, x: building.x, y: building.y, duration: 800, ease: 'linear' })`
 - After the tween completes, call `this.onBuildingSelected(kind)`.
 - If the player is already at the building, call the callback immediately.
 - Telegraph building: no tween, no callback (no-op).
+- **Note:** The walking tween was deferred during BUNCH-130 execution. The player circle renders at spawn position as a static visual anchor. `selectBuilding` calls `onBuildingSelected` directly without animation. A follow-up issue should implement the tween for UX polish.
 
 **Building availability mapping:**
 

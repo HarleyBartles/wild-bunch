@@ -108,7 +108,6 @@ internal static class MapGenerator
                 town.Services,
                 town.Id,
                 index,
-                world.Towns.Count,
                 source,
                 saltSource) }).ToArray();
 

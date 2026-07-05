@@ -35,7 +35,6 @@ internal static class TownLayoutGenerator
         TownServices services,
         TownId townId,
         int townSlotIndex,
-        int totalTownCount,
         GameSetupDeterministicSource source,
         SaltSource? saltSource)
     {

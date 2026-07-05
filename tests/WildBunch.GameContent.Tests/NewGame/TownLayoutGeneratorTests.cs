@@ -21,9 +21,9 @@ public sealed class TownLayoutGeneratorTests
         var salt = SaltSource.CreateFixed("deterministic-salt");
 
         var a = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, townId, 0, 5, sourceA, salt);
+            TownServices.Telegraph, townId, 0, sourceA, salt);
         var b = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, townId, 0, 5, sourceB, salt);
+            TownServices.Telegraph, townId, 0, sourceB, salt);
 
         Assert.Equal(a.PlayerSpawnX, b.PlayerSpawnX);
         Assert.Equal(a.PlayerSpawnY, b.PlayerSpawnY);
@@ -38,7 +38,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_AlwaysIncludesBaselineNavigationBuildings()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, NewTownId("town-1"), 0, 5, NewSource(), null);
+            TownServices.None, NewTownId("town-1"), 0, NewSource(), null);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Store, kinds);
@@ -51,7 +51,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_IncludesTelegraphWhenServiceSet()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, NewTownId("town-1"), 0, 5, NewSource(), null);
+            TownServices.Telegraph, NewTownId("town-1"), 0, NewSource(), null);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Telegraph, kinds);
@@ -61,7 +61,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_ExcludesTelegraphWhenNoServices()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, NewTownId("town-1"), 0, 5, NewSource(), null);
+            TownServices.None, NewTownId("town-1"), 0, NewSource(), null);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.DoesNotContain(BuildingKind.Telegraph, kinds);
@@ -71,7 +71,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_PlacesTrailheadAtRightEdgeAndSpawnInCenter()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, NewTownId("town-1"), 0, 5, NewSource(), null);
+            TownServices.None, NewTownId("town-1"), 0, NewSource(), null);
 
         Assert.Equal(400, layout.PlayerSpawnX);
         Assert.Equal(250, layout.PlayerSpawnY);
@@ -86,7 +86,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_BaselineBuildingsUseStandardFootprint()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, NewTownId("town-1"), 0, 5, NewSource(), null);
+            TownServices.Telegraph, NewTownId("town-1"), 0, NewSource(), null);
 
         Assert.All(layout.Buildings, b =>
         {
@@ -100,7 +100,7 @@ public sealed class TownLayoutGeneratorTests
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, townId, 0, 5, NewSource(), null);
+            TownServices.Telegraph, townId, 0, NewSource(), null);
 
         var expected = new Dictionary<BuildingKind, (int X, int Y)>
         {
