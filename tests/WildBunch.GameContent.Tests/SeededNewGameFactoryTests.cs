@@ -166,7 +166,7 @@ public sealed class SeededNewGameFactoryTests
 
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
 
-        Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldCatalog.NamePool.Select(n => n.Id));
+        Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldFactory.NamePool.Select(n => n.Id));
         // Town-specific civic clues/warrants are a runtime/salt concern (Task 4),
         // not setup-time. The seed case file surfaces only the base pools.
         Assert.Equal(6, session.CaseFile.PublicClues.Count);
