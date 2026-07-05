@@ -4,24 +4,29 @@
 
 **Linear issue:** [BUNCH-130](https://linear.app/harleys-workspace/issue/BUNCH-130/town-hub-phaser-surface)
 
-**Goal:** Implement a top-down town layout where players click on buildings to navigate, with each town having a unique building arrangement based on available services and layouts that persist across revisits.
+**Goal:** Implement a top-down town layout where players click on buildings to navigate, with each town having a unique building arrangement based on available services and layouts that persist across visits.
 
-**Architecture:** React host component manages Phaser game instance lifecycle following the existing PhaserMapHost pattern. Backend extends SeedWorldBuilder to generate seeded town layouts. Town record (in WorldModels.cs) gets layout property. React drives all state, Phaser is pure renderer.
+**Architecture:** React host component manages Phaser game instance lifecycle following the existing PhaserMapHost pattern. Backend extends the world construction pipeline to generate seeded town layouts. The `Town` record in `WorldModels.cs` gets a `Layout` property. `TownSnapshot` round-trips the layout so the `WorldGenerated` event carries it and event replay preserves it. The existing `GameSessionDto` / `TownDto` carries the layout to the frontend — no separate endpoint. React drives all state, Phaser is pure renderer.
 
-**Scope:** Town layout generation, Town model extension, React/Phaser integration for building navigation. Future town features (new building types, dynamic building availability changes, richer town events) are out of scope.
+**Architecture stack:** This repo uses DDD + CQRS + Event Sourcing. `GameSession` is the live-play aggregate root. `TownAggregate` is a session-owned child component of `GameSession` that pairs the static `Town` definition with visit-scoped `TownVisitState`. The `Town` record is the static world definition; adding `Layout` to it flows through `TownAggregate.Definition` automatically. World state is event-sourced via `WorldGenerated` (carrying `WorldSnapshot`); JSON snapshots are cache. No new backend commands are introduced — building clicks route through existing frontend place navigation.
+
+**Scope:** Town layout generation, Town model extension, TownSnapshot event-sourcing round-trip, React/Phaser integration for building navigation. Future town features (new building types, dynamic building availability changes, richer town events) are out of scope.
 
 **Tech Stack:** Phaser 3, React, TypeScript, C#/.NET, styled-components
 
 ## Global Constraints
 
 - Follow existing PhaserMapHost pattern for React-Phaser integration
-- Use existing GameSetupDeterministicSource for seeded layout generation
-- Extend existing Town record in WorldModels.cs, do not modify aggregate boundaries
+- Use existing seed/world-construction pipeline for seeded layout generation (GameSetupDeterministicSource / SeedWorldResolver / SeedWorldCatalog)
+- Extend the `Town` record in `WorldModels.cs`; `TownAggregate.Definition` carries the layout automatically
+- Update `TownSnapshot.FromDomain`/`ToDomain` to round-trip the layout — the `WorldGenerated` event is the source of truth for the world
 - React manages all state, Phaser scenes do not maintain local state
 - Use procedural assets (Phaser graphics primitives) in Phase 1
 - Follow existing styled-components pattern for React styling
 - Maintain existing useGameSession hook integration
+- No new backend enter-building commands — building clicks route through existing frontend place navigation
 - No database migration needed (greenfield project)
+- Layout generation must be deterministic given the same seed + town identity + TownServices — no unseeded random calls
 
 ---
 
@@ -45,14 +50,16 @@ This is the core model decision that reconciles rendering, domain services, and 
 
 ### BuildingKind vs TownServices
 
-`BuildingKind` is a visual representation enum for rendering and click-to-navigate routing, not a service flag. `TownServices` is a domain service flag on the `Town` record. The layout generator maps from both sources to `BuildingKind` during layout generation:
+`BuildingKind` is a domain enum that describes the generated shape of the world (what buildings exist in a town). It is NOT a service flag — `TownServices` is the domain service flag on the `Town` record. `BuildingKind` lives in the Domain layer because it is part of the world's generated shape (persisted in `TownSnapshot` / `WorldGenerated`), not merely a rendering detail. The frontend also uses it for click-to-navigate routing, but its source of truth is the domain.
+
+The layout generator maps from both sources to `BuildingKind` during layout generation:
 
 - Baseline navigation buildings are always emitted (Store, Sheriff, Saloon, Trailhead).
 - Service-driven buildings are emitted only when the corresponding `TownServices` flag is set.
 
 ### Navigation routing
 
-Building clicks in the Phaser scene map to the existing place navigation logic in `TownHubSurface.tsx`:
+Building clicks in the Phaser scene map to the existing place navigation logic in `TownHubSurface.tsx` — no new backend commands:
 
 - `BuildingKind.Store` → `onPlaceChange("store")` → `StorePlace`
 - `BuildingKind.Sheriff` → `onPlaceChange("sheriff")` → `SheriffPlace`
@@ -80,21 +87,17 @@ This preserves the exact current player-visible behavior: the same buildings are
 
 - `src/WildBunch.Domain/World/TownLayout.cs` - Town layout domain model
 - `src/WildBunch.Domain/World/BuildingPlacement.cs` - Building placement domain model
-- `src/WildBunch.Domain/World/BuildingKind.cs` - Building kind enum (visual representation)
+- `src/WildBunch.Domain/World/BuildingKind.cs` - Building kind enum (domain concept: part of the world's generated shape)
 
 **New GameContent Files:**
 
-- `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs` - Layout generation algorithm
+- `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs` - Layout generation algorithm (deterministic, uses existing seed plumbing)
 
 **New Application Files:**
 
 - `src/WildBunch.Application/Games/Models/TownLayoutDto.cs` - Town layout DTO
 - `src/WildBunch.Application/Games/Models/BuildingPlacementDto.cs` - Building placement DTO
 - `src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs` - Layout mapping logic
-
-**New API Files:**
-
-- `src/WildBunch.Api/Games/GetTownLayoutEndpoint.cs` - API endpoint
 
 **New Web Files:**
 
@@ -104,18 +107,27 @@ This preserves the exact current player-visible behavior: the same buildings are
 
 **Modified Domain Files:**
 
-- `src/WildBunch.Domain/World/WorldModels.cs` - Add Layout property to Town record
-- `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` - Add layout generation call
+- `src/WildBunch.Domain/World/WorldModels.cs` - Add `Layout` property to `Town` record
+- `src/WildBunch.Domain/World/WorldSnapshot.cs` - Update `TownSnapshot.FromDomain`/`ToDomain` to round-trip `Layout`
+
+**Modified GameContent Files:**
+
+- `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` - Integrate layout generation at Town construction site (or the seed resolution pipeline site that constructs Town records)
 
 **Modified Application Files:**
 
-- `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs` - Add layout mapping
-- `src/WildBunch.Application/Games/Models/GameDtos.cs` - Extend TownDto
+- `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs` - Map layout via `TownLayoutMapper`
+- `src/WildBunch.Application/Games/Models/GameDtos.cs` - Extend `TownDto` with `Layout` (deliberate minimal-DTO extension — only add what the frontend needs)
 
 **Modified Web Files:**
 
 - `src/WildBunch.Web/src/flow/GameFlowRouter.tsx` - Integrate town hub surface
 - `src/WildBunch.Web/src/flow/TownHubSurface.tsx` - Replace card grid with Phaser surface
+
+**Not created (architecture decision):**
+
+- No separate `GET /town-layout` API endpoint — the layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layout` path via the existing `GetGameSessionHandler`. This follows the established CQRS read path and avoids a redundant read surface for the same data.
+- No new backend enter-building commands — building clicks are frontend view transitions, not domain mutations.
 
 ---
 
@@ -133,6 +145,8 @@ This preserves the exact current player-visible behavior: the same buildings are
 - Produces: `TownLayout` with Buildings and PlayerSpawnPosition
 - Produces: `BuildingPlacement` with BuildingId, Kind, Position, Rotation
 - Produces: `BuildingKind` enum with Store, Sheriff, Saloon, Trailhead (baseline) and Telegraph (service-driven), with room for future building types
+
+**Architecture note:** `BuildingKind` is a domain concept — part of the world's generated shape, persisted in `TownSnapshot` / `WorldGenerated`. It is not merely a rendering detail. The frontend uses it for click-to-navigate routing, but its source of truth is the domain.
 
 - [ ] **Step 1: Write the failing test for TownLayout creation**
 
@@ -171,7 +185,9 @@ git commit -m "feat: add town layout domain models"
 **Interfaces:**
 
 - Consumes: `TownLayout` from Task 1
-- Produces: Town record with Layout property
+- Produces: `Town` record with `Layout` property
+
+**Architecture note:** The `Town` record is the static world definition. `TownAggregate` (a session-owned child component of `GameSession` at `src/WildBunch.Domain/Game/TownAggregate.cs`) holds a `Town Definition` property — adding `Layout` to `Town` flows through `TownAggregate.Definition` automatically. No change to `TownAggregate` is needed.
 
 - [ ] **Step 1: Write the failing test for Town with Layout**
 
@@ -184,11 +200,11 @@ Expected: FAIL with Layout property not defined
 
 - [ ] **Step 3: Add Layout property to Town record**
 
-Add optional `TownLayout? Layout` property to the Town record in WorldModels.cs. Follow existing record pattern. The Town record currently has parameters: Id, Name, Services, Prosperity, SourceCatalog, MapX, MapY, IsOutlier. Add Layout as an additional optional parameter.
+Add optional `TownLayout? Layout = null` property to the `Town` record in WorldModels.cs. Follow existing record pattern with default parameters. The Town record currently has parameters: Id, Name, Services, Prosperity, SourceCatalog, MapX, MapY, IsOutlier. Add Layout as an additional optional parameter.
 
-- [ ] **Step 4: Update Town construction calls to provide layout parameter**
+- [ ] **Step 4: Update Town construction calls**
 
-Update Town construction calls in SeedWorldBuilder and test fixtures to pass layout parameter (use null for now).
+Update Town construction calls in `SeedWorldCatalog` and test fixtures to pass layout parameter (use null for now — layout generation is integrated in Task 5).
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -204,7 +220,48 @@ git commit -m "feat: add Layout property to Town record"
 
 ---
 
-### Task 3: Implement Town Layout Generation Algorithm
+### Task 3: Update TownSnapshot Round-Trip for Layout
+
+**Files:**
+
+- Modify: `src/WildBunch.Domain/World/WorldSnapshot.cs`
+- Test: `tests/WildBunch.Domain.Tests/World/WorldSnapshotTests.cs`
+
+**Interfaces:**
+
+- Consumes: `TownLayout` from Task 1, `Town.Layout` from Task 2
+- Produces: `TownSnapshot` that round-trips `Layout` through `FromDomain`/`ToDomain`
+
+**Architecture note (critical — event sourcing integrity):** The world is event-sourced via the `WorldGenerated` domain event, which carries a `WorldSnapshot` containing `TownSnapshot` records. `TownSnapshot.FromDomain`/`ToDomain` currently round-trip: Id, Name, Services, Prosperity, MapX, MapY, IsOutlier. If `Layout` is added to `Town` but NOT to `TownSnapshot`, then `WorldGenerated` events won't carry the layout, event replay (`RehydrateFromEvents`) will reconstruct towns WITHOUT layouts, the JSON snapshot cache will lose layouts, and parity tests will break. This task closes that gap.
+
+- [ ] **Step 1: Write the failing test for TownSnapshot layout round-trip**
+
+Write test that verifies `TownSnapshot.FromDomain` preserves `Layout` and `ToDomain` restores it. Include both a town with a layout and a town with null layout.
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~WorldSnapshotTests" -v`
+Expected: FAIL — Layout not carried by TownSnapshot
+
+- [ ] **Step 3: Update TownSnapshot to round-trip Layout**
+
+Add `TownLayout? Layout` to the `TownSnapshot` record. Update `FromDomain` to map `town.Layout` into the snapshot. Update `ToDomain` to pass `Layout` to the `Town` constructor.
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~WorldSnapshotTests" -v`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/WildBunch.Domain/World/WorldSnapshot.cs tests/WildBunch.Domain.Tests/World/WorldSnapshotTests.cs
+git commit -m "feat: round-trip TownLayout through TownSnapshot for event sourcing"
+```
+
+---
+
+### Task 4: Implement Town Layout Generation Algorithm
 
 **Files:**
 
@@ -214,9 +271,10 @@ git commit -m "feat: add Layout property to Town record"
 **Interfaces:**
 
 - Consumes: `TownLayout`, `BuildingPlacement`, `BuildingKind` from Task 1
-- Consumes: existing SeedWorldBuilder coordinate system
-- Consumes: `TownServices` from Town record
+- Consumes: `TownServices` from `Town` record
 - Produces: `TownLayoutGenerator.GenerateLayout` method
+
+**Architecture note (seed plumbing):** Per the GameContent AGENTS.md and architecture guardrails: "Seeded setup and randomness require explicit seams. Avoid unseeded random calls and hidden world-start defaults in domain or application code." The generator MUST use the existing `GameSetupDeterministicSource` / seed plumbing for reproducible layouts. Same seed + same town identity + same `TownServices` must produce the same layout. No `new Random()` or `Random.Shared` calls.
 
 - [ ] **Step 1: Write the failing test for layout generation**
 
@@ -246,172 +304,153 @@ Expected: PASS
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorTests.cs
-git commit -m "feat: implement town layout generation algorithm"
+git commit -m "feat: implement deterministic town layout generation algorithm"
 ```
 
 ---
 
-### Task 4: Integrate Layout Generation into SeedWorldBuilder
+### Task 5: Integrate Layout Generation into World Construction Pipeline
 
 **Files:**
 
-- Modify: `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`
-- Test: `tests/WildBunch.GameContent.Tests/NewGame/SeedWorldBuilderTests.cs`
+- Modify: `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` (or the seed resolution pipeline site that constructs `Town` records)
+- Test: `tests/WildBunch.GameContent.Tests/NewGame/SeedWorldCatalogTests.cs` (or the relevant pipeline test)
 
 **Interfaces:**
 
-- Consumes: `TownLayoutGenerator.GenerateLayout` from Task 3
-- Produces: SeedWorldBuilder that generates layouts for each town
+- Consumes: `TownLayoutGenerator.GenerateLayout` from Task 4
+- Produces: World construction that generates layouts for each town
+
+**Architecture note (correct target file):** `SeedWorldBuilder` is a thin wrapper that delegates to `SeedWorldCatalog.CreateCanonicalWorld()`. The actual `Town` records are constructed inside `SeedWorldCatalog` (or via the seed resolution pipeline: `SeedWorldResolver` → `SeedWorld` → world construction). This task targets the actual Town construction site, not the thin wrapper. Per the GameContent AGENTS.md pipeline: `seed code -> SeedWorld -> ... -> ResolvedGameSetup -> GameSession`. Layout generation belongs in the world-construction step.
 
 - [ ] **Step 1: Write the failing test for layout integration**
 
-Write test that verifies CreateWorld generates Town records with non-null Layout properties.
+Write test that verifies the world construction pipeline produces `Town` records with non-null `Layout` properties.
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --filter "FullyQualifiedName~SeedWorldBuilderTests" -v`
+Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --filter "FullyQualifiedName~SeedWorldCatalogTests" -v`
 Expected: FAIL with Layout being null
 
-- [ ] **Step 3: Modify SeedWorldBuilder.CreateWorld to generate layouts**
+- [ ] **Step 3: Integrate TownLayoutGenerator at the Town construction site**
 
-Integrate `TownLayoutGenerator.GenerateLayout` call into town creation. Follow existing SeedWorldBuilder pattern for coordinate derivation. Pass the town seed and `TownServices` flags.
+Call `TownLayoutGenerator.GenerateLayout` at the point where `Town` records are created in `SeedWorldCatalog` (or the seed resolution pipeline). Pass the town's seed-derived identity and `TownServices` flags. Follow existing seed-derivation patterns for coordinate and property derivation.
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --filter "FullyQualifiedName~SeedWorldBuilderTests" -v`
+Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --filter "FullyQualifiedName~SeedWorldCatalogTests" -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs tests/WildBunch.GameContent.Tests/NewGame/SeedWorldBuilderTests.cs
-git commit -m "feat: integrate layout generation into SeedWorldBuilder"
+git add src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs tests/WildBunch.GameContent.Tests/NewGame/SeedWorldCatalogTests.cs
+git commit -m "feat: integrate layout generation into world construction pipeline"
 ```
 
 ---
 
-### Task 5: Add Town Layout DTOs and Mapping
+### Task 6: Add Town Layout DTOs, Mapping, and Extend TownDto
 
 **Files:**
 
 - Create: `src/WildBunch.Application/Games/Models/TownLayoutDto.cs`
 - Create: `src/WildBunch.Application/Games/Models/BuildingPlacementDto.cs`
 - Create: `src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs`
+- Modify: `src/WildBunch.Application/Games/Models/GameDtos.cs`
+- Modify: `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`
 - Test: `tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperTests.cs`
+- Test: `tests/WildBunch.Application.Tests/Games/Mapping/GameSessionMapperTests.cs`
 
 **Interfaces:**
 
 - Consumes: `TownLayout`, `BuildingPlacement`, `BuildingKind` from Task 1
 - Produces: `TownLayoutDto`, `BuildingPlacementDto`
 - Produces: `TownLayoutMapper.ToDto` method
+- Produces: `TownDto` with `Layout` property
+- Produces: `GameSessionMapper.ToDto(DomainTown town)` that maps layout
+
+**Architecture note (no separate endpoint):** The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layout` path via the existing `GetGameSessionHandler`. No separate `GET /town-layout` endpoint is created. This follows the established CQRS read path and avoids a redundant read surface for the same data. The frontend already fetches `GameSessionDto` via `useGameSession`.
+
+**Architecture note (minimal DTO pattern):** The existing `TownDto` is intentionally minimal: `Id, Name, Services, MapX, MapY`. It does not carry `Prosperity`, `SourceCatalog`, or `IsOutlier`. Adding `Layout` is a deliberate minimal extension — only carry what the frontend needs, consistent with the existing pattern.
 
 - [ ] **Step 1: Write the failing test for DTO mapping**
 
-Write test that verifies TownLayoutMapper.ToDto maps TownLayout to TownLayoutDto correctly, including all BuildingKind values.
+Write test that verifies `TownLayoutMapper.ToDto` maps `TownLayout` to `TownLayoutDto` correctly, including all `BuildingKind` values.
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~TownLayoutMapperTests" -v`
 Expected: FAIL with "TownLayoutMapper not defined"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Create DTOs and mapper**
 
-Create DTOs and mapper. Follow existing DTO patterns in GameDtos.cs and existing mapper patterns in GameSessionMapper.cs. The DTOs must carry the full BuildingKind enum so the frontend can route clicks to the correct place navigation.
+Create `TownLayoutDto`, `BuildingPlacementDto`, and `TownLayoutMapper`. Follow existing DTO patterns in `GameDtos.cs` and existing mapper patterns in `GameSessionMapper.cs`. The DTOs must carry the full `BuildingKind` enum so the frontend can route clicks to the correct place navigation.
+
+- [ ] **Step 4: Write the failing test for TownDto with Layout**
+
+Write test that verifies `TownDto` includes `Layout` property and `GameSessionMapper.ToDto(DomainTown town)` maps it correctly.
+
+- [ ] **Step 5: Run test to verify it fails**
+
+Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~GameSessionMapperTests" -v`
+Expected: FAIL
+
+- [ ] **Step 6: Add Layout to TownDto and GameSessionMapper**
+
+Add `TownLayoutDto? Layout = null` to `TownDto` in `GameDtos.cs`. Update `GameSessionMapper.ToDto(DomainTown town)` to map `town.Layout` via `TownLayoutMapper.ToDto`.
+
+- [ ] **Step 7: Run tests to verify they pass**
+
+Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~TownLayoutMapperTests|FullyQualifiedName~GameSessionMapperTests" -v`
+Expected: PASS
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/WildBunch.Application/Games/Models/TownLayoutDto.cs src/WildBunch.Application/Games/Models/BuildingPlacementDto.cs src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs src/WildBunch.Application/Games/Models/GameDtos.cs src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperTests.cs tests/WildBunch.Application.Tests/Games/Mapping/GameSessionMapperTests.cs
+git commit -m "feat: add town layout DTOs, mapping, and extend TownDto with layout"
+```
+
+---
+
+### Task 7: Add Event Replay Parity Test for Layout
+
+**Files:**
+
+- Test: `tests/WildBunch.Domain.Tests/Game/GameSessionEventReplayTests.cs` (or the existing parity test file)
+
+**Interfaces:**
+
+- Consumes: `Town.Layout` from Task 2, `TownSnapshot` round-trip from Task 3, world construction from Task 5
+- Produces: Parity test verifying event replay preserves layouts
+
+**Architecture note (event sourcing parity):** Per the architecture guardrails: "Command-path state and replay-path state must converge. This is verified by parity tests. If a command mutates state directly, the corresponding Apply method must produce the same state from the event." The world is created during game setup (command path) and reconstructed from `WorldGenerated` during replay. This test verifies that layouts survive the round-trip.
+
+- [ ] **Step 1: Write the failing parity test**
+
+Write test that creates a game session with a world containing towns with layouts, then rehydrates from the event stream, and verifies the rehydrated towns have the same layouts.
+
+- [ ] **Step 2: Run test to verify it fails or passes**
+
+Run: `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~GameSessionEventReplayTests" -v`
+
+If Task 3 was done correctly, this should PASS. If it fails, the `TownSnapshot` round-trip or `Apply(WorldGenerated)` has a gap.
+
+- [ ] **Step 3: Fix any parity gap if needed**
+
+If the test fails, inspect `Apply(WorldGenerated)` in `GameSessionEventReplay.cs` to ensure it restores the world from `WorldSnapshot.ToDomain()` which now carries layouts.
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~TownLayoutMapperTests" -v`
+Run: `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~GameSessionEventReplayTests" -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/WildBunch.Application/Games/Models/TownLayoutDto.cs src/WildBunch.Application/Games/Models/BuildingPlacementDto.cs src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperTests.cs
-git commit -m "feat: add town layout DTOs and mapping"
-```
-
----
-
-### Task 6: Extend GameSessionMapper and TownDto with Layout
-
-**Files:**
-
-- Modify: `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`
-- Modify: `src/WildBunch.Application/Games/Models/GameDtos.cs`
-- Test: `tests/WildBunch.Application.Tests/Games/Mapping/GameSessionMapperTests.cs`
-
-**Interfaces:**
-
-- Consumes: `TownLayoutMapper.ToDto` from Task 5
-- Produces: TownDto with Layout property
-- Produces: GameSessionMapper that maps town layout
-
-- [ ] **Step 1: Write the failing test for TownDto with Layout**
-
-Write test that verifies TownDto includes Layout property and GameSessionMapper maps it correctly.
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~GameSessionMapperTests" -v`
-Expected: FAIL
-
-- [ ] **Step 3: Add Layout to TownDto and GameSessionMapper**
-
-Add `TownLayoutDto? Layout` to TownDto in GameDtos.cs. Update GameSessionMapper to map town layout using TownLayoutMapper.
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~GameSessionMapperTests" -v`
-Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs src/WildBunch.Application/Games/Models/GameDtos.cs tests/WildBunch.Application.Tests/Games/Mapping/GameSessionMapperTests.cs
-git commit -m "feat: extend GameSessionMapper and TownDto with layout"
-```
-
----
-
-### Task 7: Add Town Layout API Endpoint
-
-**Files:**
-
-- Create: `src/WildBunch.Api/Games/GetTownLayoutEndpoint.cs`
-- Test: `tests/WildBunch.Api.Tests/Games/GetTownLayoutEndpointTests.cs`
-
-**Interfaces:**
-
-- Consumes: `TownLayoutDto` from Task 5
-- Produces: GET endpoint that returns town layout by session and town id
-
-- [ ] **Step 1: Write the failing test for the endpoint**
-
-Write test that verifies the endpoint returns town layout for a valid session and town id.
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `dotnet test tests/WildBunch.Api.Tests/WildBunch.Api.Tests.csproj --filter "FullyQualifiedName~GetTownLayoutEndpointTests" -v`
-Expected: FAIL
-
-- [ ] **Step 3: Write minimal implementation**
-
-Create the endpoint following existing endpoint patterns in `src/WildBunch.Api/Games/`. The endpoint should accept a session id and town id, load the session, and return the town layout DTO.
-
-- [ ] **Step 4: Register endpoint in Program.cs**
-
-Register endpoint following existing endpoint registration pattern.
-
-- [ ] **Step 5: Run test to verify it passes**
-
-Run: `dotnet test tests/WildBunch.Api.Tests/WildBunch.Api.Tests.csproj --filter "FullyQualifiedName~GetTownLayoutEndpointTests" -v`
-Expected: PASS
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/WildBunch.Api/Games/GetTownLayoutEndpoint.cs tests/WildBunch.Api.Tests/Games/GetTownLayoutEndpointTests.cs
-git commit -m "feat: add town layout API endpoint"
+git add tests/WildBunch.Domain.Tests/Game/GameSessionEventReplayTests.cs
+git commit -m "test: add event replay parity test for town layout"
 ```
 
 ---
@@ -467,7 +506,7 @@ git commit -m "feat: implement Phaser TownHubScene"
 **Interfaces:**
 
 - Consumes: `TownHubScene` from Task 8
-- Consumes: town layout data from useGameSession
+- Consumes: town layout data from useGameSession (via `GameSessionDto.World.Towns[].Layout`)
 - Produces: React component that manages Phaser game instance lifecycle
 
 - [ ] **Step 1: Write the failing test for PhaserTownHubHost**
@@ -511,7 +550,7 @@ git commit -m "feat: implement React PhaserTownHubHost component"
 - Produces: TownHubSurface that renders Phaser surface instead of card grid
 - Produces: GameFlowRouter that routes to Phaser town hub
 
-**Preservation requirement:** The existing place navigation logic (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) must remain unchanged. Only the entry point changes — building clicks in Phaser replace card clicks, but route to the same place surfaces via the same `onPlaceChange` callback.
+**Preservation requirement:** The existing place navigation logic (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) must remain unchanged. Only the entry point changes — building clicks in Phaser replace card clicks, but route to the same place surfaces via the same `onPlaceChange` callback. No new backend commands are introduced.
 
 - [ ] **Step 1: Write the failing test for Phaser town hub integration**
 
@@ -592,7 +631,7 @@ git commit -m "feat: add visual feedback for available/unavailable buildings"
 - [ ] **Step 1: Run all .NET tests**
 
 Run: `dotnet test`
-Expected: All tests pass
+Expected: All tests pass, including the new event replay parity test (Task 7)
 
 - [ ] **Step 2: Run all frontend tests**
 
@@ -623,11 +662,11 @@ git commit -m "test: validate full suite for town hub phaser surface"
 **1. Spec coverage:**
 - Town layout domain models (Task 1)
 - Town record extension (Task 2)
-- Layout generation algorithm (Task 3)
-- SeedWorldBuilder integration (Task 4)
-- DTOs and mapping (Task 5)
-- GameSessionMapper extension (Task 6)
-- API endpoint (Task 7)
+- TownSnapshot event-sourcing round-trip (Task 3)
+- Layout generation algorithm (Task 4)
+- World construction pipeline integration (Task 5)
+- DTOs, mapping, and TownDto extension (Task 6)
+- Event replay parity test (Task 7)
 - Phaser scene (Task 8)
 - React host component (Task 9)
 - Game flow integration (Task 10)
@@ -636,34 +675,56 @@ git commit -m "test: validate full suite for town hub phaser surface"
 
 **2. Building/navigation model:** BuildingKind includes Store, Sheriff, Saloon, Trailhead (baseline navigation, always present) and Telegraph (service-driven, optional). This preserves current player-visible town hub behavior (store/sheriff/saloon/trailhead navigation) while allowing service-driven optional buildings such as telegraph.
 
-**3. Type consistency:** All types match across tasks - TownLayout, BuildingPlacement, BuildingKind used consistently.
+**3. Type consistency:** All types match across tasks — TownLayout, BuildingPlacement, BuildingKind used consistently.
 
-**4. Architecture compliance:** Follows existing PhaserMapHost pattern, extends Town record in WorldModels.cs (no boundary changes, no TownAggregate), React-driven state management.
+**4. Architecture compliance:**
+- Follows existing PhaserMapHost pattern
+- Extends Town record in WorldModels.cs; TownAggregate.Definition carries the layout automatically (no TownAggregate change needed)
+- TownSnapshot round-trips the layout for event-sourcing integrity (WorldGenerated event carries it)
+- Layout generation uses existing seed plumbing (GameSetupDeterministicSource) — no unseeded random
+- World construction integration targets SeedWorldCatalog (the actual Town construction site), not the thin SeedWorldBuilder wrapper
+- No separate API endpoint — layout rides existing GameSessionDto → WorldDto → TownDto.Layout
+- No new backend enter-building commands — building clicks are frontend view transitions
+- React-driven state management, Phaser is pure renderer
+- Event replay parity test verifies command-path and replay-path convergence
 
-**5. Greenfield project:** No migration steps included - all database changes assume greenfield status.
+**5. Greenfield project:** No migration steps included — all database changes assume greenfield status.
 
 **6. Preservation requirements:**
 - Existing GameSession command route and current player-visible behavior must remain stable
 - Existing TownHubSurface card grid replaced with Phaser surface, but underlying navigation logic (StorePlace, SheriffPlace, SaloonPlace, TravelPrepSurface) unchanged
 - Phaser remains renderer/input adapter, with React/backend/domain owning truth
+- No new backend commands introduced
+
+**7. Architecture stack alignment:**
+- DDD: Town record owns the layout; TownAggregate (session-owned child component) carries it via Definition; no aggregate boundary changes
+- CQRS: Layout reads through existing GetGameSessionHandler/GameSessionMapper (query side); no new commands (no mutation needed — entering a place is a frontend view transition)
+- Event Sourcing: TownSnapshot round-trips Layout; WorldGenerated event carries it; parity test verifies replay convergence
+- Clean Architecture: Domain (TownLayout, BuildingKind) has no external refs; GameContent references Domain; Application references Domain; Web consumes DTOs
 
 ---
 
 ## Staleness Check
 
-This plan was verified against current source on 2026-07-05:
+This plan was verified against current source on 2026-07-05 and repaired after an architecture review against the repo's DDD/CQRS/Event Sourcing/Clean Architecture stack:
 
 - `Town` record exists in `src/WildBunch.Domain/World/WorldModels.cs` with parameters: Id, Name, Services, Prosperity, SourceCatalog, MapX, MapY, IsOutlier
-- `TownServices` enum exists in `WorldModels.cs` with `None = 0` and `Telegraph = 1` only (no HasStore, HasSheriff, HasSaloon, HasStable, HasDoctor flags)
+- `TownAggregate` EXISTS at `src/WildBunch.Domain/Game/TownAggregate.cs` — it is a session-owned child component of `GameSession` that pairs the static `Town` definition with visit-scoped `TownVisitState`. It holds `Town Definition` (the static record). Adding `Layout` to `Town` flows through `TownAggregate.Definition` automatically.
+- `TownSnapshot` exists in `src/WildBunch.Domain/World/WorldSnapshot.cs` with `FromDomain`/`ToDomain` round-tripping: Id, Name, Services, Prosperity, MapX, MapY, IsOutlier. It does NOT currently round-trip Layout — Task 3 closes this gap.
+- `WorldGenerated` event exists at `src/WildBunch.Domain/Events/WorldGenerated.cs` and carries `WorldSnapshot` — this is the event-sourced source of truth for the world.
+- `GameSessionEventReplay` at `src/WildBunch.Domain/Game/GameSessionEventReplay.cs` reconstructs the world from `WorldGenerated` during replay.
+- `TownServices` enum exists in `WorldModels.cs` with `None = 0` and `Telegraph = 1` only
 - `AvailableActionKind` enum exists in `src/WildBunch.Domain/Actions/AvailableActionKind.cs` with Travel, BuySupplies, SendTelegram, ReadWantedPosters, CheckSheriffRecords, LookAroundSaloon, GatherLocalGossip, FollowTelegraphLeads, and others
 - `ActionAvailabilityResolver` in `src/WildBunch.Domain/Actions/ActionAvailabilityResolver.cs` always adds BuySupplies; adds SendTelegram when `TownServices.Telegraph` is set; adds investigation actions from `TownSourceCatalog.Default`
 - `TownSourceCatalog.Default` in `src/WildBunch.Domain/World/TownSourceModels.cs` includes baseline sources (notice board, local records, local gossip, saloon look-around) with `TownServices.None` and conditional telegraph leads with `TownServices.Telegraph`
+- `SeedWorldBuilder` at `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs` is a thin wrapper that delegates to `SeedWorldCatalog.CreateCanonicalWorld()`. The actual `Town` records are constructed inside `SeedWorldCatalog` — Task 5 targets that site.
+- `SeedWorldCatalog` at `src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs` contains the actual town construction, prosperity palettes, and services palettes.
 - `PhaserMapHost` pattern exists at `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx`
-- `GameSessionMapper` exists at `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`
-- `GameDtos.cs` exists at `src/WildBunch.Application/Games/Models/GameDtos.cs`
+- `GameSessionMapper` exists at `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`; `ToDto(DomainTown town)` maps Id, Name, Services, MapX, MapY — Task 6 extends this with Layout.
+- `TownDto` exists at `src/WildBunch.Application/Games/Models/GameDtos.cs` with minimal fields: Id, Name, Services, MapX, MapY — Task 6 adds Layout as a deliberate minimal extension.
+- `GetGameSessionHandler` exists at `src/WildBunch.Application/Games/Queries/GetGameSessionHandler.cs` and returns `GameSessionDto` via `GameSessionMapper.ToDto` — no new endpoint needed.
 - `TownHubSurface.tsx` exists at `src/WildBunch.Web/src/flow/TownHubSurface.tsx` with card grid pattern driven by AvailableActionKind
 - `GameSetupDeterministicSource` exists in `src/WildBunch.GameContent/NewGame/`
-- `SeedWorldBuilder` exists in `src/WildBunch.GameContent/NewGame/`
-- No `TownAggregate` class exists; the town model is the `Town` record in `WorldModels.cs`
+- Architecture guardrails at `.agents/docs/architecture-guardrails.md` confirm: DDD + CQRS + Event Sourcing is the established stack; GameSession is the aggregate root; event stream is source of truth; JSON snapshots are cache; seeded setup requires explicit seams.
 
-All file paths and patterns match current source. The BuildingKind enum and building/navigation model have been corrected to preserve current player-visible town hub behavior while supporting service-driven optional buildings.
+All file paths and patterns match current source. The plan has been repaired to align with the repo's architecture stack after a full review.

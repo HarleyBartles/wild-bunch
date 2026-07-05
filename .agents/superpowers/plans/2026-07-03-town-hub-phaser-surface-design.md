@@ -99,13 +99,14 @@ public sealed record BuildingPlacementDto(
 ## Data Flow
 
 ### Backend Data Generation
-1. **World Generation**: Extend `SeedWorldBuilder` to generate town layouts during world creation
-2. **Layout Algorithm**: Seeded random placement based on town services and map layout palette
-3. **Persistence**: Store layout data on the `Town` record's `Layout` property as part of world generation
-4. **Consistency**: Same seed produces same layout for each town
+1. **World Generation**: Integrate `TownLayoutGenerator` into the world construction pipeline at the actual `Town` construction site in `SeedWorldCatalog` (not the thin `SeedWorldBuilder` wrapper, which delegates to `SeedWorldCatalog.CreateCanonicalWorld()`)
+2. **Layout Algorithm**: Seeded random placement using existing `GameSetupDeterministicSource` — no unseeded random calls. Based on town services and map layout palette.
+3. **Persistence**: Store layout data on the `Town` record's `Layout` property as part of world generation. The layout flows into `TownSnapshot` via `FromDomain` and is carried by the `WorldGenerated` event — this is the event-sourced source of truth. JSON snapshots are cache.
+4. **Event Replay**: `TownSnapshot.ToDomain` restores the layout during `RehydrateFromEvents`. A parity test verifies command-path and replay-path convergence.
+5. **Consistency**: Same seed + same town identity + same `TownServices` produces same layout for each town
 
 ### React Integration
-1. **Load Phase**: React fetches town layout data via new endpoint `/api/games/{sessionId}/town-layout`
+1. **Load Phase**: React reads town layout data from the existing `GameSessionDto.World.Towns[].Layout` via `useGameSession` — no separate endpoint
 2. **Render Phase**: React passes layout data to Phaser scene constructor
 3. **Update Phase**: React re-renders Phaser scene when town changes or layout updates
 4. **Interaction Phase**: Phaser scene calls React callbacks for building clicks
@@ -125,7 +126,9 @@ This preserves the existing place surfaces (`StorePlace`, `SheriffPlace`, `Saloo
 ### Town Record Extension
 **File**: `src/WildBunch.Domain/World/WorldModels.cs`
 
-The town model is the `Town` record in `WorldModels.cs` (there is no `TownAggregate` class). Add an optional Layout property:
+The static town model is the `Town` record in `WorldModels.cs`. `TownAggregate` (at `src/WildBunch.Domain/Game/TownAggregate.cs`) is a session-owned child component of `GameSession` that pairs the static `Town` definition with visit-scoped `TownVisitState`. It holds a `Town Definition` property — adding `Layout` to the `Town` record flows through `TownAggregate.Definition` automatically. No change to `TownAggregate` is needed.
+
+Add an optional Layout property to the `Town` record:
 ```csharp
 public sealed record Town(
     TownId Id,
@@ -138,6 +141,33 @@ public sealed record Town(
     bool IsOutlier = false,
     TownLayout? Layout = null)
 ```
+
+### TownSnapshot Event-Sourcing Round-Trip
+**File**: `src/WildBunch.Domain/World/WorldSnapshot.cs`
+
+The world is event-sourced via the `WorldGenerated` domain event, which carries a `WorldSnapshot` containing `TownSnapshot` records. `TownSnapshot.FromDomain`/`ToDomain` currently round-trip: Id, Name, Services, Prosperity, MapX, MapY, IsOutlier. **They must also round-trip `Layout`**, or event replay will reconstruct towns without layouts and the JSON snapshot cache will lose them.
+
+Update `TownSnapshot` to carry `TownLayout? Layout`:
+```csharp
+public sealed record TownSnapshot(
+    string Id,
+    string Name,
+    TownServices Services,
+    TownProsperity Prosperity,
+    int MapX,
+    int MapY,
+    bool IsOutlier,
+    TownLayout? Layout = null)
+{
+    public static TownSnapshot FromDomain(Town town)
+        => new(town.Id.Value, town.Name, town.Services, town.Prosperity, town.MapX, town.MapY, town.IsOutlier, town.Layout);
+
+    public Town ToDomain()
+        => new(new TownId(Id), Name, Services, Prosperity, MapX: MapX, MapY: MapY, IsOutlier: IsOutlier, Layout: Layout);
+}
+```
+
+A parity test must verify that event replay (`RehydrateFromEvents`) preserves layouts.
 
 ### Building Source Mapping
 
@@ -212,17 +242,14 @@ public static class TownLayoutGenerator
 
 ## API Changes
 
-### New Endpoints
-```csharp
-// Get town layout for current town
-GET /api/games/{sessionId}/town-layout
-Response: TownLayoutDto
-```
+### No New Endpoints
+
+The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layout` path via the existing `GetGameSessionHandler`. No separate `GET /town-layout` endpoint is created. This follows the established CQRS read path and avoids a redundant read surface for the same data. The frontend already fetches `GameSessionDto` via `useGameSession`.
 
 > **No enter-building endpoints in this slice.** Building clicks route through the existing frontend place navigation (`onPlaceChange` → existing place surfaces), not new backend commands. See the Building Click Routing section above.
 
 ### DTO Changes
-- Extend `TownDto` to include `TownLayoutDto`
+- Extend `TownDto` to include `TownLayoutDto? Layout` (deliberate minimal extension — the existing `TownDto` carries only Id, Name, Services, MapX, MapY; Layout is added because the frontend needs it for rendering)
 - Add `BuildingKind` enum to shared types
 - Add `BuildingPlacementDto` to shared types
 
@@ -230,15 +257,16 @@ Response: TownLayoutDto
 
 ### Phase 1: Data Model
 1. Add `TownLayout` domain model and DTOs
-2. Extend `SeedWorldBuilder` to generate layouts
-3. Add layout generation algorithm
-4. Update snapshot format to include layouts
-5. **No Migration Needed**: Greenfield project, can drop and rebuild database
+2. Add `Layout` property to `Town` record in `WorldModels.cs`
+3. Update `TownSnapshot.FromDomain`/`ToDomain` to round-trip `Layout` (event-sourcing integrity)
+4. Add layout generation algorithm (`TownLayoutGenerator` with deterministic seed plumbing)
+5. Integrate layout generation into `SeedWorldCatalog` at the actual `Town` construction site
+6. **No Migration Needed**: Greenfield project, can drop and rebuild database
 
 ### Phase 2: Backend Integration
-1. Add town layout endpoint
-2. Update `TownDto` mapping to include layout
-3. Layout persists on the `Town` record via `SeedWorldBuilder` (no new enter-building commands in this slice — building clicks route through existing frontend place navigation)
+1. Extend `TownDto` with `Layout` and update `GameSessionMapper.ToDto(DomainTown town)` to map it (no separate endpoint — layout rides existing `GameSessionDto`)
+2. Add event replay parity test verifying layouts survive `RehydrateFromEvents`
+3. No new enter-building commands in this slice — building clicks route through existing frontend place navigation
 4. **No Migration Needed**: Greenfield project, can drop and rebuild database
 
 ### Phase 3: Frontend Integration
@@ -251,14 +279,16 @@ Response: TownLayoutDto
 ## Testing Strategy
 
 ### Domain Tests
-- Test layout generation determinism (same seed = same layout)
+- Test layout generation determinism (same seed + same town identity + same TownServices = same layout)
 - Test service-to-building mapping
 - Test layout constraints (spacing, clustering rules)
 - Test edge cases (single building towns, maximum building towns)
+- Test `TownSnapshot.FromDomain`/`ToDomain` round-trips `Layout`
+- Test event replay parity: layouts survive `RehydrateFromEvents` (command-path and replay-path converge)
 
 ### Integration Tests
-- Test town layout endpoint returns valid data
-- Test layout persistence across session load/save
+- Test layout is present in `GameSessionDto.World.Towns[].Layout` via existing `GetGameSessionHandler`
+- Test layout persistence across session load/save (event stream + snapshot cache)
 - Test React-Phaser data flow
 - Test building click interactions
 
@@ -303,10 +333,15 @@ Response: TownLayoutDto
 
 ### Existing Code
 - `PhaserMapHost` pattern for React-Phaser integration
-- `SeedWorldBuilder` for coordinate derivation
-- `Town` record in `WorldModels.cs` for service mapping
+- `SeedWorldCatalog` for actual town construction (SeedWorldBuilder is a thin wrapper that delegates to it)
+- `Town` record in `WorldModels.cs` for service mapping and layout storage
+- `TownAggregate` at `src/WildBunch.Domain/Game/TownAggregate.cs` — session-owned child component of `GameSession` that carries `Town Definition`; adding `Layout` to `Town` flows through automatically
+- `TownSnapshot` in `WorldSnapshot.cs` for event-sourced round-trip (must be updated to carry Layout)
+- `WorldGenerated` event for event-sourced world persistence
+- `GameSetupDeterministicSource` for seeded layout generation
 - `ActionAvailabilityResolver` for available action derivation
 - `TownSourceCatalog.Default` for baseline investigation sources
+- `GetGameSessionHandler` / `GameSessionMapper` for existing read path (layout rides this path)
 - `useGameSession` hook for state management
 - `GameFlowRouter` for navigation
 
