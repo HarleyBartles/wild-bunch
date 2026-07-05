@@ -14,13 +14,21 @@ export default defineConfig({
     port: 5173,
   },
   build: {
-    chunkSizeWarningLimit: 1100, // Phaser lazy chunk ~1 MB; only loaded on town-selection/trailhead
+    chunkSizeWarningLimit: 1500, // Phaser lazy chunk ~1.5 MB; only loaded on town-selection/trailhead
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          router: ["@tanstack/react-router", "@tanstack/react-query"],
-          styled: ["styled-components"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react-dom") || id.includes("react/") || id.includes("scheduler/")) {
+              return "vendor";
+            }
+            if (id.includes("@tanstack/react-router") || id.includes("@tanstack/react-query")) {
+              return "router";
+            }
+            if (id.includes("styled-components")) {
+              return "styled";
+            }
+          }
         },
       },
     },
