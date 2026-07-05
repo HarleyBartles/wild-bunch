@@ -99,7 +99,7 @@ public sealed record BuildingPlacementDto(
 ## Data Flow
 
 ### Backend Data Generation
-1. **World Generation**: Integrate `TownLayoutGenerator` into the world construction pipeline by post-processing the `World` returned by `SeedWorldFactory.CreateWorld` in `MapGenerator.Generate` (where `GameSetupDeterministicSource` is in scope). Do NOT change `SeedWorldFactory.CreateWorld`'s signature — attach layouts using `with` expressions on the returned `World.Towns`. `SeedWorldFactory.CreateCanonicalWorld` (start-screen map) does NOT need layouts.
+1. **World Generation**: Integrate `TownLayoutGenerator` into the world construction pipeline by post-processing the `World` returned by `SeedWorldFactory.CreateWorld` in `MapGenerator.Generate` (where `GameSetupDeterministicSource` is in scope). Do NOT change `SeedWorldFactory.CreateWorld`'s signature — attach layouts using `with` expressions on `Town` records (Town is a sealed record), then construct a new `World` with the modified towns and existing trails (`new World(townsWithLayouts, world.Trails)` — World is a sealed class, NOT a record, so no `with` expression on World itself). `SeedWorldFactory.CreateCanonicalWorld` (start-screen map) does NOT need layouts.
 2. **Layout Algorithm**: Seeded random placement using existing `GameSetupDeterministicSource` — no unseeded random calls. Based on town services and map layout palette.
 3. **Persistence**: Store layout data on the `Town` record's `Layout` property as part of world generation. The layout flows into `TownSnapshot` via `FromDomain` and is carried by the `WorldGenerated` event — this is the event-sourced source of truth. JSON snapshots are cache.
 4. **Event Replay**: `TownSnapshot.ToDomain` restores the layout during `RehydrateFromEvents`. A parity test verifies command-path and replay-path convergence.
@@ -336,7 +336,7 @@ The layout rides the existing `GameSessionDto` → `WorldDto` → `TownDto.Layou
 ### Existing Code
 - `PhaserMapHost` pattern for React-Phaser integration
 - `SeedWorldFactory` for town construction (renamed from `SeedWorldCatalog` by BUNCH-135; `SeedWorldBuilder` has been deleted)
-- `MapGenerator.Generate` as the layout integration site (post-processes `World` after `SeedWorldFactory.CreateWorld` using `with` expressions — `GameSetupDeterministicSource` is in scope here)
+- `MapGenerator.Generate` as the layout integration site (post-processes `World` after `SeedWorldFactory.CreateWorld` — `Town` record `with` expressions attach layouts, new `World` constructed with modified towns + existing trails; `GameSetupDeterministicSource` is in scope here)
 - `Town` record in `WorldModels.cs` for service mapping and layout storage
 - `TownAggregate` at `src/WildBunch.Domain/Game/TownAggregate.cs` — session-owned child component of `GameSession` that carries `Town Definition`; adding `Layout` to `Town` flows through automatically
 - `TownSnapshot` in `WorldSnapshot.cs` for event-sourced round-trip (must be updated to carry Layout)
