@@ -1,21 +1,6 @@
-export enum BuildingKind {
-  Store = 0,
-  Sheriff = 1,
-  Saloon = 2,
-  Trailhead = 3,
-  Telegraph = 4,
-}
-
-export interface BuildingPlacementDto {
-  kind: BuildingKind;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface TownLayoutDto {
-  buildings: BuildingPlacementDto[];
-  playerSpawnX: number;
-  playerSpawnY: number;
-}
+// Town hub layout DTO types are defined in the canonical API types file and
+// re-exported here so town-hub consumers can import them from a single local
+// surface. The backend owns the shape (see TownLayoutDto / BuildingPlacementDto
+// / BuildingKind in WildBunch.Application.Games.Models); the frontend mirrors it.
+export { BuildingKind } from "../../api/types";
+export type { BuildingPlacementDto, TownLayoutDto } from "../../api/types";

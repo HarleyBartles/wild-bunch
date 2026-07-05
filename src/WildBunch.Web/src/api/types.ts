@@ -307,10 +307,34 @@ export interface PlayerDto {
   health: number;
 }
 
+export type BuildingKind = 0 | 1 | 2 | 3 | 4;
+export const BuildingKind = {
+  Store: 0,
+  Sheriff: 1,
+  Saloon: 2,
+  Trailhead: 3,
+  Telegraph: 4,
+} as const;
+
+export interface BuildingPlacementDto {
+  kind: BuildingKind;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface TownLayoutDto {
+  buildings: BuildingPlacementDto[];
+  playerSpawnX: number;
+  playerSpawnY: number;
+}
+
 export interface TownDto {
   id: string;
   name: string;
   services: TownServices;
+  layout?: TownLayoutDto | null;
 }
 
 export interface StoreOfferDto {
