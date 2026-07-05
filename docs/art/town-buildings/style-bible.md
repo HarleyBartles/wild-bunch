@@ -7,7 +7,7 @@ The town-building set is a small, readable western asset family for top-down pla
 - Camera: top-down with a slight oblique tilt.
 - Presentation: pixel art, not painted concept art.
 - Footprint: normalized to 60x50.
-- Turnaround: 5 views per building family.
+- Turnaround: 5 views per building family. The canonical set is front-facing oblique (roof + front), side, back, 45-degree facing camera, and 45-degree facing away from camera; mirrored variants fill the 8-way placement contract.
 - Shape read: roof and massing first, trim and detail second.
 - Layout freedom: doors, windows, and other side details may vary so different towns can reuse the same building family.
 
