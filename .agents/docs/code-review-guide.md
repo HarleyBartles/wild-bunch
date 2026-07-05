@@ -129,7 +129,9 @@ See `.agents/docs/workflow-policy.md` for the full GREEN checklist and `.agents/
 
 ## 11. Review Output Format
 
-Reviews should produce structured output:
+Reviews must produce structured output reported back to the session AND post findings to the GitHub PR (see section 14 for the connector posting flow). The structured output is the primary deliverable; PR comments are for provenance and resolution tracking.
+
+Structured output must include:
 
 - **Spec compliance verdict** — does the diff match what was requested?
 - **Strengths** — specific, evidence-based (file:line references)
@@ -137,6 +139,7 @@ Reviews should produce structured output:
 - **Per-lens findings** — architect, QA, engineer, and if invoked, product owner / player. Lens findings should still reference the P-labels from the grouped findings.
 - **Repo improvement check** — any fix-while-here opportunities or deferred-work flags
 - **Assessment and verdict** — approved or needs fixes, with reasoning. A verdict of "needs fixes" must list the P0 and P1 findings that block approval. P2 and P3 findings do not block approval.
+- **PR posting confirmation** — confirm that findings were posted to the PR (review with inline comments or summary comment), or report the connector error if posting failed.
 
 ## 12. Additional Policy Awareness
 
@@ -187,3 +190,169 @@ Reviews written before this taxonomy used Critical/Important/Minor. The mapping 
 - **Needs fixes:** any P0 or P1 finding blocks approval. The verdict must list the blocking findings by label.
 - **Approved with notes:** no P0 or P1 findings, but P2/P3 findings exist. The author may address them at their discretion.
 - **Approved:** no findings, or only P3 findings.
+
+## 14. Posting Review Findings to the PR
+
+A review is not complete until findings are posted to the GitHub PR. The structured output in the agent's response is the primary deliverable; PR comments are for tracing, provenance, and for follow-up agents to pick up and resolve. Reviewers must always post review output to the PR — there is no "review without posting."
+
+### Same-authored constraint
+
+The PR author and code reviewer share the same GitHub connector auth (Harley's token). This means:
+
+- **Cannot submit `APPROVE` or `REQUEST_CHANGES`** — GitHub does not allow an author to review their own PR with a blocking event. Attempting it will fail or be silently ignored.
+- **Can submit `COMMENT` reviews** — a non-blocking review with inline comments attached to diff lines. This is the correct channel for findings with file:line references.
+- **Can post regular PR comments** — via `add_issue_comment`. This is the correct channel for summary comments when there are no inline findings.
+
+### When to use which channel
+
+| Situation | Channel | Tool |
+|-----------|---------|------|
+| One or more findings (P0–P3) with file:line references | COMMENT review with inline comments | `pull_request_review_write` + `add_comment_to_pending_review` |
+| No findings, or only a summary verdict (approved, no inline items) | Regular PR comment | `add_issue_comment` |
+| Both inline findings AND a summary verdict | COMMENT review with inline comments + body summary | `pull_request_review_write` (body = summary) |
+
+### Connector: posting inline review comments
+
+Use the `github-mcp-server` connector. The flow is a three-step sequence: create a pending review, add inline comments, then submit the pending review as a `COMMENT` review.
+
+**Step 1 — Create a pending review:**
+
+```
+mcp_call_tool:
+  server_name: github-mcp-server
+  tool_name: pull_request_review_write
+  arguments:
+    method: create
+    owner: HarleyBartles
+    repo: wild-bunch
+    pullNumber: <PR number>
+    commitID: <latest PR head SHA>
+    # Do NOT pass event — omitting it creates a pending review
+```
+
+**Step 2 — Add each inline comment** (one call per finding):
+
+```
+mcp_call_tool:
+  server_name: github-mcp-server
+  tool_name: add_comment_to_pending_review
+  arguments:
+    owner: HarleyBartles
+    repo: wild-bunch
+    pullNumber: <PR number>
+    path: <file path as it appears in the PR diff, relative to repo root>
+    line: <line number in the new (RIGHT) side of the diff>
+    side: RIGHT
+    subjectType: LINE
+    body: |
+      **P1.2 — Missing test coverage for arrival flow**
+
+      The `?arrived=1` param is never set by any code path, making the
+      arrival notice UI dead code. Add a test that verifies the param
+      is set when transitioning from on-trail to in-town.
+```
+
+For multi-line comments, also pass `startLine` and `startSide`:
+
+```
+    startLine: <first line of the range>
+    startSide: RIGHT
+```
+
+For file-level comments (no specific line), use `subjectType: FILE` and omit `line`/`side`/`startLine`/`startSide`.
+
+**Step 3 — Submit the pending review as COMMENT:**
+
+```
+mcp_call_tool:
+  server_name: github-mcp-server
+  tool_name: pull_request_review_write
+  arguments:
+    method: submit_pending
+    owner: HarleyBartles
+    repo: wild-bunch
+    pullNumber: <PR number>
+    event: COMMENT
+    body: |
+      ## Code Review Summary
+
+      **Verdict:** Needs fixes (P0.1, P1.2)
+
+      See inline comments for findings. Structured output with full
+      per-lens analysis has been reported back to the session.
+```
+
+### Connector: posting a summary comment (no inline findings)
+
+When there are no inline findings (e.g. approved with no P2/P3 items, or only a verdict summary), post a regular PR comment:
+
+```
+mcp_call_tool:
+  server_name: github-mcp-server
+  tool_name: add_issue_comment
+  arguments:
+    owner: HarleyBartles
+    repo: wild-bunch
+    issue_number: <PR number>
+    body: |
+      ## Code Review Summary
+
+      **Verdict:** Approved
+
+      All 227 tests pass, tsc clean, build succeeds. No findings.
+      Structured output reported back to the session.
+```
+
+### Comment body format
+
+Each inline comment body must include:
+
+1. **The P-label** (P0.1, P1.2, etc.) as a bold header
+2. **A one-line summary** of the finding
+3. **The detail** — what's wrong, why it matters, and what to do about it
+4. **A file:line reference** if the comment is file-level but references a specific location
+
+The review body (submitted with the pending review) must include:
+
+1. **Verdict** — "Needs fixes", "Approved with notes", or "Approved"
+2. **Blocking findings** — list P0 and P1 labels by name (if any)
+3. **A note** that structured output with full per-lens analysis has been reported back to the session
+
+### Getting the PR head SHA and diff for line mapping
+
+Before posting inline comments, the reviewer must map each finding to a line in the PR diff. Use:
+
+```
+mcp_call_tool:
+  server_name: github-mcp-server
+  tool_name: pull_request_read
+  arguments:
+    method: get
+    owner: HarleyBartles
+    repo: wild-bunch
+    pullNumber: <PR number>
+```
+
+This returns the PR metadata including `headRefOid` (the latest head SHA). Use `method: get_diff` to get the diff for line mapping. The `line` parameter in `add_comment_to_pending_review` refers to the line number in the file (not the diff hunk), on the RIGHT side (new state).
+
+### Error handling
+
+If the connector rejects a review submission or inline comment:
+
+- Do NOT silently fall back to a generic PR comment for inline findings — that loses the file:line context.
+- Report the connector error in the structured output and note that the PR comments were not posted.
+- If a specific line cannot be mapped to the diff, omit that inline comment and note it in the review body with the file:line reference in plain text.
+
+### What PR comments are NOT for
+
+PR comments are not a substitute for the structured output. The structured output is the primary deliverable and must always be reported back to the session. PR comments are for:
+
+- **Provenance** — a durable record on the PR that a review happened and what it found
+- **Resolution tracking** — follow-up agents can read the PR review comments and resolve them
+- **Visibility** — non-agent humans can see the review happened
+
+PR comments are NOT for:
+
+- Duplicating the full structured output (that goes in the session response)
+- Posting findings that the reviewer has already fixed (fixed findings are noted in the structured output, not posted as PR comments)
+- Generic progress notes or chat — use the structured output for that
