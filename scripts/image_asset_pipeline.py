@@ -87,24 +87,36 @@ def _sample_background_color(image: Image.Image, radius: int) -> tuple[int, int,
     return Counter(samples).most_common(1)[0][0]
 
 
-def _is_background(pixel: tuple[int, int, int, int], background: tuple[int, int, int], tolerance: int) -> bool:
+def _is_background(
+    pixel: tuple[int, int, int, int],
+    background: tuple[int, int, int],
+    tolerance: int,
+    *,
+    require_green_dominance: bool = True,
+) -> bool:
     if pixel[3] == 0:
         return True
     r, g, b, _ = pixel
     br, bg, bb = background
     distance = abs(r - br) + abs(g - bg) + abs(b - bb)
     green_dominance = g >= max(r, b) + 8
-    return distance <= tolerance * 3 and green_dominance
+    return distance <= tolerance * 3 and (green_dominance if require_green_dominance else True)
 
 
-def _cut_background(image: Image.Image, background: tuple[int, int, int], tolerance: int) -> Image.Image:
+def _cut_background(
+    image: Image.Image,
+    background: tuple[int, int, int],
+    tolerance: int,
+    *,
+    require_green_dominance: bool = True,
+) -> Image.Image:
     rgba = image.convert("RGBA")
     pixels = rgba.load()
     width, height = rgba.size
     for y in range(height):
         for x in range(width):
             pixel = pixels[x, y]
-            if _is_background(pixel, background, tolerance):
+            if _is_background(pixel, background, tolerance, require_green_dominance=require_green_dominance):
                 pixels[x, y] = (pixel[0], pixel[1], pixel[2], 0)
     return rgba
 
@@ -263,6 +275,19 @@ def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig)
         normalized.save(output_path)
 
 
+def cut_background_in_place(input_path: Path, config: PipelineConfig) -> None:
+    with Image.open(input_path) as image:
+        background = _sample_background_color(image, config.sample_radius)
+        cut = _cut_background(
+            image,
+            background,
+            config.color_tolerance,
+            require_green_dominance=False,
+        )
+        input_path.parent.mkdir(parents=True, exist_ok=True)
+        cut.save(input_path)
+
+
 def promote_sprites(input_root: Path, output_root: Path, config: PipelineConfig) -> int:
     if not input_root.exists():
         raise SystemExit(f"Input root does not exist: {input_root}")
@@ -272,6 +297,7 @@ def promote_sprites(input_root: Path, output_root: Path, config: PipelineConfig)
         relative_path = source_path.relative_to(input_root)
         if "normalized" in relative_path.parts:
             continue
+        cut_background_in_place(source_path, config)
         destination_path = output_root / relative_path
         normalize_image(source_path, destination_path, config)
         promoted += 1

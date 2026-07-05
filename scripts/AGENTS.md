@@ -85,7 +85,7 @@ onto a fixed canvas.
 
 - `python scripts/image_asset_pipeline.py normalize --input <source.png> --out <normalized.png>`
 - `python scripts/image_asset_pipeline.py slice-sheet --input <sheet.png> --out-dir <out-dir> --names front,profile,rear,front-oblique,rear-oblique`
-- `python scripts/image_asset_pipeline.py promote-sprites --input-root <pipeline-root> --out-root <sprites-root>` - normalize and mirror a staged pipeline tree into the matching final sprites tree, skipping `normalized/` scratch files
+- `python scripts/image_asset_pipeline.py promote-sprites --input-root <pipeline-root> --out-root <sprites-root>` - cut the staged pipeline tree to transparent cutouts in place, then normalize and mirror it into the matching final sprites tree, skipping `normalized/` scratch files
 
 The primary backend is Pillow in Python 3.11+ with the package installed in
 the active environment. The selection and promotion note lives in
