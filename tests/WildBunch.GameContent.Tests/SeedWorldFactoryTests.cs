@@ -5,7 +5,7 @@ using WildBunch.Domain.Game;
 
 namespace WildBunch.GameContent.Tests;
 
-public sealed class SeedWorldBuilderTests
+public sealed class SeedWorldFactoryTests
 {
     [Fact]
     public void CreateCanonicalWorldAppliesUniformProsperousPalette()
