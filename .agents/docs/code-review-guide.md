@@ -84,7 +84,7 @@ The test is not "is the repo better in the abstract" — it's three concrete que
 - It is not a requirement to fix pre-existing tech debt that the PR didn't touch. If you're not in the file, you're not obligated to fix it.
 - It is not a blocker for PRs that are scoped correctly but don't happen to touch legacy code. A clean, well-scoped PR that adds a new feature without touching legacy patterns passes this check.
 
-**The deferral trap:** The most common failure mode is "I'll fix this in a follow-up." Follow-ups don't happen unless they're tracked. The reviewer should treat a deferred fix that meets the "already here + small" test as an Important finding, not a Minor one. If the worker wants to defer a larger fix, they must flag it in their return, plan, or PR body so it can be tracked as a Linear issue — silent deferral is not acceptable.
+**The deferral trap:** The most common failure mode is "I'll fix this in a follow-up." Follow-ups don't happen unless they're tracked. The reviewer should treat a deferred fix that meets the "already here + small" test as a P1 finding, not a P2. If the worker wants to defer a larger fix, they must flag it in their return, plan, or PR body so it can be tracked as a Linear issue — silent deferral is not acceptable.
 
 ## 8. Test Coverage
 
@@ -94,7 +94,7 @@ Reviewers must verify that the work is adequately tested. The test quality stand
 - Tests verify real behavior, not mock interactions
 - Edge cases are covered
 - The right test kind is used (see validation-policy.md's Test Kinds section)
-- No flaky tests — a flaky test is a Critical finding (worse than no test)
+- No flaky tests — a flaky test is a P0 finding (worse than no test)
 - All tests pass with no skipped tests without reason
 - Test output is pristine (no warnings, no noise)
 
@@ -133,13 +133,10 @@ Reviews should produce structured output:
 
 - **Spec compliance verdict** — does the diff match what was requested?
 - **Strengths** — specific, evidence-based (file:line references)
-- **Issues categorized by severity:**
-  - Critical (must fix) — incorrect behavior, security issues, missing requirements
-  - Important (should fix) — fragile behavior, maintainability damage, deferred fixes that meet the "already here + small" test
-  - Minor (nice to have) — polish, coverage broadening, naming improvements
-- **Per-lens findings** — architect, QA, engineer, and if invoked, product owner / player
+- **Findings categorized by priority** — reviewers must use the P0–P3 taxonomy defined in section 13. Each finding gets a stable label (P0.1, P1.1, P1.2, P2.1, P3.1, …) so they can be referenced in discussion and follow-up. Group findings by priority level, not by lens.
+- **Per-lens findings** — architect, QA, engineer, and if invoked, product owner / player. Lens findings should still reference the P-labels from the grouped findings.
 - **Repo improvement check** — any fix-while-here opportunities or deferred-work flags
-- **Assessment and verdict** — approved or needs fixes, with reasoning
+- **Assessment and verdict** — approved or needs fixes, with reasoning. A verdict of "needs fixes" must list the P0 and P1 findings that block approval. P2 and P3 findings do not block approval.
 
 ## 12. Additional Policy Awareness
 
@@ -151,3 +148,42 @@ Reviewers should be aware of these repo policies and apply them when relevant:
 - **Artifact policy** (`.agents/docs/artifact-policy.md`) — agent artifact management, screenshots, evidence
 - **Mesh policy** (`.agents/docs/mesh-policy.md`) — AGENTS.md, INDEX.md, README file management
 - **Dev overlay doctrine** (`.agents/dev-overlay/DOCTRINE.md`) — binding doctrine for dev overlay work
+
+## 13. Finding Priority Taxonomy
+
+All review findings must be labeled using the P0–P3 priority taxonomy. This replaces the previous Critical/Important/Minor severity scheme. The taxonomy is priority, not severity — it tells the author what to do about the finding, not just how bad it is.
+
+### Priority levels
+
+| Label | Meaning | Blocks approval? | Examples |
+|-------|---------|-------------------|----------|
+| **P0** | Must fix | Yes | Incorrect behavior, security issues, missing requirements, data loss, broken build, flaky tests |
+| **P1** | Should fix | Yes | Fragile behavior, maintainability damage, deferred fixes that meet the "already here + small" test, missing test coverage for new behavior |
+| **P2** | Could fix | No | Polish, coverage broadening, naming improvements, minor type-safety widening |
+| **P3** | Ok to defer | No | Pre-existing tech debt not touched by the diff, style preferences, larger refactors that warrant a separate issue |
+
+### Labeling convention
+
+When a review has multiple findings in the same priority group, number them sequentially within that group:
+
+- `P0.1`, `P0.2` — two must-fix findings
+- `P1.1`, `P1.2`, `P1.3` — three should-fix findings
+- `P2.1` — one could-fix finding
+- `P3.1`, `P3.2` — two deferred findings
+
+If a group has only one finding, use the bare label (`P0`, `P1`, `P2`, `P3`) or the numbered form (`P0.1`) — both are acceptable, but be consistent within a single review.
+
+### Mapping from the old severity scheme
+
+Reviews written before this taxonomy used Critical/Important/Minor. The mapping is:
+
+- Critical → P0
+- Important → P1
+- Minor → P2
+- (no equivalent) → P3
+
+### Verdict rules
+
+- **Needs fixes:** any P0 or P1 finding blocks approval. The verdict must list the blocking findings by label.
+- **Approved with notes:** no P0 or P1 findings, but P2/P3 findings exist. The author may address them at their discretion.
+- **Approved:** no findings, or only P3 findings.
