@@ -25,46 +25,48 @@ function ShellChrome() {
   useDevSurfaceSync();
 
   return (
-    <DevSurfaceProvider>
-      <Shell>
-        <ChromeBar ref={chromeBarRef}>
-          <Hud
-            onOpenJournal={() => setOpenOverlay("journal")}
-            onOpenGameSettings={() => setOpenOverlay("game-settings")}
-          />
-          <OverlayBar>
-            <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
-            <DevNav aria-label="Developer tools">
-              <DevToggleButton
-                type="button"
-                $active={devOverlayOpen}
-                onClick={() => setDevOverlayOpen((prev) => !prev)}
-                aria-expanded={devOverlayOpen}
-              >
-                {devOverlayOpen ? "Hide dev" : "Dev"}
-              </DevToggleButton>
-            </DevNav>
-          </OverlayBar>
-        </ChromeBar>
-        <RouteOutlet aria-live="polite">
-          <Route>
-            <Suspense fallback={<RouteLoading />}>
-              <Outlet />
-            </Suspense>
-          </Route>
-        </RouteOutlet>
-        <DevOverlay
-          open={devOverlayOpen}
-          onClose={() => setDevOverlayOpen(false)}
-          top={chromeBarHeight}
+    <Shell>
+      <ChromeBar ref={chromeBarRef}>
+        <Hud
+          onOpenJournal={() => setOpenOverlay("journal")}
+          onOpenGameSettings={() => setOpenOverlay("game-settings")}
         />
-      </Shell>
-    </DevSurfaceProvider>
+        <OverlayBar>
+          <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
+          <DevNav aria-label="Developer tools">
+            <DevToggleButton
+              type="button"
+              $active={devOverlayOpen}
+              onClick={() => setDevOverlayOpen((prev) => !prev)}
+              aria-expanded={devOverlayOpen}
+            >
+              {devOverlayOpen ? "Hide dev" : "Dev"}
+            </DevToggleButton>
+          </DevNav>
+        </OverlayBar>
+      </ChromeBar>
+      <RouteOutlet aria-live="polite">
+        <Route>
+          <Suspense fallback={<RouteLoading />}>
+            <Outlet />
+          </Suspense>
+        </Route>
+      </RouteOutlet>
+      <DevOverlay
+        open={devOverlayOpen}
+        onClose={() => setDevOverlayOpen(false)}
+        top={chromeBarHeight}
+      />
+    </Shell>
   );
 }
 
 export function AppShell() {
-  return <ShellChrome />;
+  return (
+    <DevSurfaceProvider>
+      <ShellChrome />
+    </DevSurfaceProvider>
+  );
 }
 
 const Shell = styled.div`
