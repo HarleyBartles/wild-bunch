@@ -1,6 +1,6 @@
 # BUNCH-124: URL Routing + Vite Bundle Splitting — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the single-route `GameFlowRouter` pattern with TanStack Router URL routes, lazy-load route components, isolate Phaser into its own chunk, and rework the arrival flow into `TrailFlowSurface`.
 
@@ -77,7 +77,7 @@
 **Interfaces:**
 - Produces: `RouteLoading` — a styled-components component rendered as a Suspense fallback
 
-- [ ] **Step 1: Create the component**
+- [x] **Step 1: Create the component**
 
 ```tsx
 // src/shell/RouteLoading.tsx
@@ -92,12 +92,12 @@ export const RouteLoading = styled.div`
 `;
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 Run: `npx tsc --noEmit`
 Expected: no errors
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/shell/RouteLoading.tsx
@@ -117,7 +117,7 @@ git commit -m "feat: add RouteLoading Suspense fallback component"
 - Produces: `usePhaseRouteSync()` — a hook that navigates to the correct URL when the phase doesn't match the current route
 - Requires: `sessionLoading` field exposed from `useCurrentGameSession` (added in Step 1)
 
-- [ ] **Step 1: Expose `sessionLoading` from `useCurrentGameSession`**
+- [x] **Step 1: Expose `sessionLoading` from `useCurrentGameSession`**
 
 The sync hook needs to know whether the session query is still in its initial loading state, so it can skip the stale-URL redirect until the session has resolved. The existing `loading` field is `busyMode !== "idle"` (mutation/refresh loading), not initial fetch loading. We need `sessionQuery.isLoading`.
 
@@ -136,7 +136,7 @@ In `src/hooks/useCurrentGameSession.ts`, add `sessionLoading` to the return obje
 
 Verify compilation: `npx tsc --noEmit` — expected: no errors (the field is additive).
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```tsx
 // src/tests/usePhaseRouteSync.test.tsx
@@ -340,12 +340,12 @@ describe("usePhaseRouteSync", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/tests/usePhaseRouteSync.test.tsx`
 Expected: FAIL — module `../shell/usePhaseRouteSync` not found
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```ts
 // src/shell/usePhaseRouteSync.ts
@@ -408,12 +408,12 @@ function phaseToUrlPrefix(phase: string): string | null {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/tests/usePhaseRouteSync.test.tsx`
 Expected: PASS (4 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/hooks/useCurrentGameSession.ts src/shell/usePhaseRouteSync.ts src/tests/usePhaseRouteSync.test.tsx
@@ -432,7 +432,7 @@ git commit -m "feat: add usePhaseRouteSync hook for phase-URL reconciliation"
 - Consumes: `useSetDevSurface()` from `src/dev/DevSurfaceContext.tsx`
 - Produces: `useDevSurfaceSync()` — a hook that maps phase + current route to a `DevSurface` and calls `useSetDevSurface()`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```tsx
 // src/tests/useDevSurfaceSync.test.tsx
@@ -587,12 +587,12 @@ describe("useDevSurfaceSync", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/tests/useDevSurfaceSync.test.tsx`
 Expected: FAIL — module `../shell/useDevSurfaceSync` not found
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```ts
 // src/shell/useDevSurfaceSync.ts
@@ -636,12 +636,12 @@ function deriveDevSurface(phase: string, pathname: string): DevSurface {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/tests/useDevSurfaceSync.test.tsx`
 Expected: PASS (3 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/shell/useDevSurfaceSync.ts src/tests/useDevSurfaceSync.test.tsx
@@ -664,7 +664,7 @@ git commit -m "feat: add useDevSurfaceSync hook to re-home dev surface tracking"
 - `DevSurface` removes `"arrival"`
 - `TrailFlowSurface` now renders a completed-journey view when `journey.status === JourneyStatus.Completed`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```tsx
 // src/tests/TrailFlowSurfaceCompleted.test.tsx
@@ -847,12 +847,12 @@ describe("TrailFlowSurface completed-journey view", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/tests/TrailFlowSurfaceCompleted.test.tsx`
 Expected: FAIL — TrailFlowSurface does not render arrival content
 
-- [ ] **Step 3: Update `useGamePhase.ts` — remove "arrival" phase**
+- [x] **Step 3: Update `useGamePhase.ts` — remove "arrival" phase**
 
 Replace the entire file content:
 
@@ -926,7 +926,7 @@ export function useGamePhase(): GamePhaseState {
 }
 ```
 
-- [ ] **Step 4: Update `DevSurfaceContext.tsx` — remove "arrival"**
+- [x] **Step 4: Update `DevSurfaceContext.tsx` — remove "arrival"**
 
 Change the `DevSurface` union (line 8-16) to remove `"arrival"`:
 
@@ -941,7 +941,7 @@ export type DevSurface =
   | "trail";
 ```
 
-- [ ] **Step 5: Update `DevPanelRegistry.tsx` — remove "arrival" from TravelDevPanel**
+- [x] **Step 5: Update `DevPanelRegistry.tsx` — remove "arrival" from TravelDevPanel**
 
 Change line 51 from:
 ```ts
@@ -952,7 +952,7 @@ to:
     surfaces: ["trail", "trailhead"],
 ```
 
-- [ ] **Step 6: Update `GameFlowRouter.tsx` — remove arrival case (temporary, deleted in Task 9)**
+- [x] **Step 6: Update `GameFlowRouter.tsx` — remove arrival case (temporary, deleted in Task 9)**
 
 Remove the `case "arrival"` branch and the `setDevSurface("arrival")` call. The `on-trail` case now handles Completed journeys (TrailFlowSurface renders the arrival view). Replace the full file:
 
@@ -1015,7 +1015,7 @@ export function GameFlowRouter() {
 }
 ```
 
-- [ ] **Step 7: Update `TrailFlowSurface.tsx` — add completed-journey view**
+- [x] **Step 7: Update `TrailFlowSurface.tsx` — add completed-journey view**
 
 Replace the entire file:
 
@@ -1110,17 +1110,17 @@ export function TrailFlowSurface() {
 }
 ```
 
-- [ ] **Step 8: Run the test to verify it passes**
+- [x] **Step 8: Run the test to verify it passes**
 
 Run: `npx vitest run src/tests/TrailFlowSurfaceCompleted.test.tsx`
 Expected: PASS (3 tests)
 
-- [ ] **Step 9: Run the full test suite to check for regressions**
+- [x] **Step 9: Run the full test suite to check for regressions**
 
 Run: `npx vitest run`
 Expected: Some tests may fail (e.g. `GameFlowRouter.test.tsx` arrival test, `StartOverRegression.test.tsx` allSurfaces). Note the failures — they will be fixed in Task 8. The key is that the TrailFlowSurface test passes and no compilation errors occur.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/hooks/useGamePhase.ts src/dev/DevSurfaceContext.tsx src/dev/DevPanelRegistry.tsx src/flow/GameFlowRouter.tsx src/flow/TrailFlowSurface.tsx src/tests/TrailFlowSurfaceCompleted.test.tsx
@@ -1138,7 +1138,7 @@ git commit -m "feat: remove arrival phase, add TrailFlowSurface completed-journe
 **Interfaces:**
 - All four components lose their `onLeave`/`onBack` props and use `useNavigate()` to navigate to `/town` instead
 
-- [ ] **Step 1: Update StorePlace.tsx**
+- [x] **Step 1: Update StorePlace.tsx**
 
 Remove the `StorePlaceProps` interface and `onLeave` prop. Add `useNavigate` import and replace `onLeave` with `useNavigate({ to: "/town" })`.
 
@@ -1189,7 +1189,7 @@ export function StorePlace() {
 }
 ```
 
-- [ ] **Step 2: Update SheriffPlace.tsx**
+- [x] **Step 2: Update SheriffPlace.tsx**
 
 Same pattern — remove `SheriffPlaceProps` and `onLeave`, add `useNavigate`:
 
@@ -1235,7 +1235,7 @@ export function SheriffPlace() {
       {/* ... rest of PlaceBody unchanged ... */}
 ```
 
-- [ ] **Step 3: Update SaloonPlace.tsx**
+- [x] **Step 3: Update SaloonPlace.tsx**
 
 Same pattern — remove `SaloonPlaceProps` and `onLeave`, add `useNavigate`:
 
@@ -1284,7 +1284,7 @@ export function SaloonPlace() {
       {/* ... rest of PlaceBody unchanged ... */}
 ```
 
-- [ ] **Step 4: Update TravelPrepSurface.tsx**
+- [x] **Step 4: Update TravelPrepSurface.tsx**
 
 Remove `TravelPrepSurfaceProps` and `onBack`, add `useNavigate`:
 
@@ -1308,12 +1308,12 @@ Replace the `onBack` usage (line 188):
         </BackButton>
 ```
 
-- [ ] **Step 5: Verify compilation**
+- [x] **Step 5: Verify compilation**
 
 Run: `npx tsc --noEmit`
 Expected: Errors in `TownHubSurface.tsx` (still passes `onLeave`/`onBack` to these components) and `SheriffPlace.test.tsx` / `TravelPrepSurface.test.tsx` (still pass props). These will be fixed in Tasks 6 and 8. Note the errors but proceed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/flow/places/StorePlace.tsx src/flow/places/SheriffPlace.tsx src/flow/places/SaloonPlace.tsx src/flow/TravelPrepSurface.tsx
@@ -1331,7 +1331,7 @@ git commit -m "refactor: place surfaces use useNavigate instead of onLeave/onBac
 - Reads `?arrived=1` search param via `useSearch` to show an arrival notice
 - `TownPlace` type is inlined here (no longer imported from `GameFlowRouter`)
 
-- [ ] **Step 1: Replace TownHubSurface.tsx**
+- [x] **Step 1: Replace TownHubSurface.tsx**
 
 ```tsx
 // src/flow/TownHubSurface.tsx
@@ -1525,12 +1525,12 @@ export function TownHubSurface() {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [x] **Step 2: Verify compilation**
 
 Run: `npx tsc --noEmit`
 Expected: Errors only in `GameFlowRouter.tsx` (still passes props to TownHubSurface) and test files. These will be fixed in Tasks 8 and 9.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/flow/TownHubSurface.tsx
@@ -1545,7 +1545,7 @@ git commit -m "refactor: TownHubSurface uses useNavigate for place cards, adds a
 **Interfaces:**
 - `StartingTownStep` is now lazy-loaded inside `PreSessionSurface` so Phaser is not loaded for name/prologue steps
 
-- [ ] **Step 1: Update PreSessionSurface.tsx**
+- [x] **Step 1: Update PreSessionSurface.tsx**
 
 Replace the static import of `StartingTownStep` (line 9) with a lazy import and add `Suspense`:
 
@@ -1582,17 +1582,17 @@ Then wrap the `StartingTownStep` usage (around line 103) in `Suspense`:
       )}
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [x] **Step 2: Verify compilation**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors (the lazy import is self-contained)
 
-- [ ] **Step 3: Run StartingTownStep test to verify it still passes**
+- [x] **Step 3: Run StartingTownStep test to verify it still passes**
 
 Run: `npx vitest run src/tests/StartingTownStep.test.tsx`
 Expected: PASS — the test renders `StartingTownStep` directly, not through `PreSessionSurface`, so the lazy boundary doesn't affect it.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/flow/PreSessionSurface.tsx
@@ -1610,7 +1610,7 @@ git commit -m "perf: lazy-load StartingTownStep to isolate Phaser from start-flo
 - The `/town` route has `validateSearch` for the `arrived` query param
 - `AppShell.tsx` calls `usePhaseRouteSync()` and `useDevSurfaceSync()` in `ShellChrome` and wraps `Outlet` in `Suspense`
 
-- [ ] **Step 1: Replace router.tsx**
+- [x] **Step 1: Replace router.tsx**
 
 ```tsx
 // src/shell/router.tsx
@@ -1715,7 +1715,7 @@ declare module "@tanstack/react-router" {
 }
 ```
 
-- [ ] **Step 2: Update AppShell.tsx — add sync hooks and Suspense**
+- [x] **Step 2: Update AppShell.tsx — add sync hooks and Suspense**
 
 Add imports after line 2 (`import { Outlet } from "@tanstack/react-router";`):
 
@@ -1745,17 +1745,17 @@ Wrap the `Outlet` in `Suspense` (replace lines 43-46):
         </RouteOutlet>
 ```
 
-- [ ] **Step 3: Verify compilation**
+- [x] **Step 3: Verify compilation**
 
 Run: `npx tsc --noEmit`
 Expected: Errors only in `GameFlowRouter.tsx` (no longer imported by router but still exists with stale `TownPlace` export and `activePlace`/`onPlaceChange` props passed to `TownHubSurface`). This file will be deleted in Task 9. Also errors in test files that will be fixed in Task 10.
 
-- [ ] **Step 4: Run the full test suite**
+- [x] **Step 4: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: Some failures in `AppShell.test.tsx`, `GameFlowRouter.test.tsx`, `SheriffPlace.test.tsx`, `TravelPrepSurface.test.tsx`, `StartOverRegression.test.tsx`. Note the failures — they will be fixed in Task 10. The new hook tests (`usePhaseRouteSync`, `useDevSurfaceSync`, `TrailFlowSurfaceCompleted`) should pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/shell/router.tsx src/shell/AppShell.tsx
@@ -1775,7 +1775,7 @@ git commit -m "feat: expand route tree with lazy-loaded routes, wire sync hooks 
 - Delete: `src/tests/GameFlowRouter.test.tsx`
 - Regenerate: `src/flow/INDEX.md`, `src/routes/` directory
 
-- [ ] **Step 1: Delete dead files**
+- [x] **Step 1: Delete dead files**
 
 ```bash
 rm src/flow/GameFlowRouter.tsx
@@ -1784,7 +1784,7 @@ rm -r src/routes/
 rm src/tests/GameFlowRouter.test.tsx
 ```
 
-- [ ] **Step 2: Regenerate index mesh**
+- [x] **Step 2: Regenerate index mesh**
 
 From the repo root:
 ```bash
@@ -1792,17 +1792,17 @@ python scripts/generate_index_mesh.py
 ```
 Expected: `src/flow/INDEX.md` updated (no longer lists `ArrivalSurface.tsx` or `GameFlowRouter.tsx`). `src/routes/` directory no longer exists.
 
-- [ ] **Step 3: Verify compilation**
+- [x] **Step 3: Verify compilation**
 
 Run: `npx tsc --noEmit`
 Expected: No references to deleted files. If any remain, search for imports of `GameFlowRouter`, `ArrivalSurface`, or `src/routes/` and remove them.
 
-- [ ] **Step 4: Run the full test suite**
+- [x] **Step 4: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: Failures only in test files that reference deleted modules or pass stale props (fixed in Task 10).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -1821,7 +1821,7 @@ git commit -m "chore: remove dead code (GameFlowRouter, ArrivalSurface, orphaned
 - Modify: `src/tests/GameSettingsOverlay.test.tsx` (if it references GameFlowRouter)
 - Modify: `src/tests/DevOverlay.test.tsx` (if it references "arrival" surface)
 
-- [ ] **Step 1: Fix SheriffPlace.test.tsx — remove onLeave prop**
+- [x] **Step 1: Fix SheriffPlace.test.tsx — remove onLeave prop**
 
 Find the `renderSheriffPlace` function (line 152) and change:
 ```tsx
@@ -1859,7 +1859,7 @@ function renderSheriffPlace() {
 
 Add `import { Outlet } from "@tanstack/react-router";` to imports.
 
-- [ ] **Step 2: Fix TravelPrepSurface.test.tsx — remove onBack prop**
+- [x] **Step 2: Fix TravelPrepSurface.test.tsx — remove onBack prop**
 
 Find the `renderPrep` function (line 218) and change:
 ```tsx
@@ -1895,7 +1895,7 @@ function renderPrep() {
 }
 ```
 
-- [ ] **Step 3: Fix StartOverRegression.test.tsx — remove "arrival" from allSurfaces**
+- [x] **Step 3: Fix StartOverRegression.test.tsx — remove "arrival" from allSurfaces**
 
 Find the `allSurfaces` array (around line 266-275) and remove `"arrival"`:
 
@@ -1913,7 +1913,7 @@ const allSurfaces: DevSurface[] = [
 
 Also check if the test uses `RouterProvider` with the real `router` — if so, it should still work since the new route tree is compatible. If any test navigates to a URL that no longer exists, update the URL.
 
-- [ ] **Step 4: Fix AppShell.test.tsx — update for new route tree**
+- [x] **Step 4: Fix AppShell.test.tsx — update for new route tree**
 
 The test "defaults to the flow router and shows the pre-session surface" (line 239) should still work — the `/` route renders `PreSessionSurface`. Verify it passes.
 
@@ -1921,7 +1921,7 @@ The test "renders the persistent HUD with player name and clock once a session h
 
 If any test fails because it expects `GameFlowRouter` to render a specific surface, update it to navigate to the correct URL first or check for route-specific content.
 
-- [ ] **Step 5: Fix any other test files that reference deleted modules**
+- [x] **Step 5: Fix any other test files that reference deleted modules**
 
 Search for imports of `GameFlowRouter` or `ArrivalSurface`:
 ```bash
@@ -1929,7 +1929,7 @@ grep -r "GameFlowRouter\|ArrivalSurface" src/tests/
 ```
 If any test files still import these, remove the imports and update the tests to use the new route-based components.
 
-- [ ] **Step 6: Fix DevOverlay.test.tsx — remove "arrival" surface references**
+- [x] **Step 6: Fix DevOverlay.test.tsx — remove "arrival" surface references**
 
 Search for `"arrival"` in `src/tests/DevOverlay.test.tsx`:
 ```bash
@@ -1937,12 +1937,12 @@ grep -n "arrival" src/tests/DevOverlay.test.tsx
 ```
 If found, replace `"arrival"` with `"trail"` (since completed journey now maps to `"trail"`).
 
-- [ ] **Step 7: Run the full test suite**
+- [x] **Step 7: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: ALL TESTS PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/tests/
@@ -1954,7 +1954,7 @@ git commit -m "test: update existing tests for new route tree and removed props"
 **Files:**
 - Modify: `vite.config.ts`
 
-- [ ] **Step 1: Update vite.config.ts**
+- [x] **Step 1: Update vite.config.ts**
 
 Replace the entire file:
 
@@ -1990,7 +1990,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 2: Run the build**
+- [x] **Step 2: Run the build**
 
 Run: `npm run build`
 Expected: Build succeeds. Check the chunk list output:
@@ -2001,7 +2001,7 @@ Expected: Build succeeds. Check the chunk list output:
 - `index.js` — app shell + root route (should be well under 500 kB)
 - `start-flow` chunk — should NOT contain Phaser
 
-- [ ] **Step 3: Verify Phaser isolation**
+- [x] **Step 3: Verify Phaser isolation**
 
 Examine the build output chunk list. Verify:
 1. No chunk loaded on the initial `/` route contains Phaser (the `start-flow` / `PreSessionSurface` chunk must not import `phaser`)
@@ -2009,12 +2009,12 @@ Examine the build output chunk list. Verify:
 
 If Phaser still appears in the start-flow chunk, the lazy boundary is wrong. Move the lazy boundary closer to `PhaserMapHost` (lazy-load `PhaserMapHost` inside `StartingTownStep` instead of lazy-loading `StartingTownStep` inside `PreSessionSurface`).
 
-- [ ] **Step 4: Run the full test suite**
+- [x] **Step 4: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: ALL TESTS PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add vite.config.ts
@@ -2023,17 +2023,17 @@ git commit -m "perf: add manualChunks vendor split and chunkSizeWarningLimit for
 
 ### Task 12: Final verification
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: ALL TESTS PASS (baseline + new tests)
 
-- [ ] **Step 2: Run the build**
+- [x] **Step 2: Run the build**
 
 Run: `npm run build`
 Expected: Build succeeds with no chunk-size warnings for initial-route chunks
 
-- [ ] **Step 3: Manual dev server smoke test**
+- [x] **Step 3: Manual dev server smoke test**
 
 Run: `npm run dev`
 Open `http://localhost:5173/` in a browser and verify:
@@ -2044,7 +2044,7 @@ Open `http://localhost:5173/` in a browser and verify:
 - The DevOverlay shows `"store"` surface panels on `/town/store`
 - Phaser is NOT loaded on the initial `/` route (check Network tab — no `phaser` chunk loaded until town selection or trailhead)
 
-- [ ] **Step 4: Commit any remaining changes**
+- [x] **Step 4: Commit any remaining changes**
 
 ```bash
 git add -A
