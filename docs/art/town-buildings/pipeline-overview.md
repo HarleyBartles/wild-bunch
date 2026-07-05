@@ -24,3 +24,5 @@ How to review outputs:
 - confirm the view and footprint are correct
 - check that the sprite is clean enough to promote
 - keep the review focused on shape, readability, and contract match
+
+Promotion into `src/WildBunch.Assets/town-buildings/sprites/` is handled by `python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/town-buildings/_pipeline --out-root src/WildBunch.Assets/town-buildings/sprites`.

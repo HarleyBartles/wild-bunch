@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cut and normalize generated image assets onto a fixed transparent canvas.
+"""Cut, normalize, and promote generated image assets onto fixed canvases.
 
 Primary backend: Python 3.11+ with Pillow installed in the active environment.
 Optional fallback path: Node.js 20+ with sharp installed, then jimp only if
@@ -63,6 +63,18 @@ def _parse_args() -> argparse.Namespace:
     sheet.add_argument("--sample-radius", type=int, default=12)
     sheet.add_argument("--background-tolerance", type=int, default=20)
     sheet.add_argument("--padding", type=int, default=12)
+
+    promote = subparsers.add_parser(
+        "promote-sprites",
+        help="Normalize a pipeline tree into the matching sprites tree",
+    )
+    promote.add_argument("--input-root", required=True, type=Path, help="Pipeline root to promote from")
+    promote.add_argument("--out-root", required=True, type=Path, help="Sprite root to promote into")
+    promote.add_argument("--canvas-width", type=int, default=60)
+    promote.add_argument("--canvas-height", type=int, default=50)
+    promote.add_argument("--padding", type=int, default=1)
+    promote.add_argument("--sample-radius", type=int, default=6)
+    promote.add_argument("--color-tolerance", type=int, default=42)
 
     return parser.parse_args()
 
@@ -251,6 +263,25 @@ def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig)
         normalized.save(output_path)
 
 
+def promote_sprites(input_root: Path, output_root: Path, config: PipelineConfig) -> int:
+    if not input_root.exists():
+        raise SystemExit(f"Input root does not exist: {input_root}")
+
+    promoted = 0
+    for source_path in sorted(input_root.rglob("*.png")):
+        relative_path = source_path.relative_to(input_root)
+        if "normalized" in relative_path.parts:
+            continue
+        destination_path = output_root / relative_path
+        normalize_image(source_path, destination_path, config)
+        promoted += 1
+
+    if promoted == 0:
+        raise SystemExit(f"No PNG files found under {input_root}")
+
+    return promoted
+
+
 def main() -> int:
     args = _parse_args()
     if args.command == "normalize":
@@ -275,6 +306,17 @@ def main() -> int:
             tolerance=args.background_tolerance,
             padding=args.padding,
         )
+        return 0
+    if args.command == "promote-sprites":
+        config = PipelineConfig(
+            canvas_width=args.canvas_width,
+            canvas_height=args.canvas_height,
+            padding=args.padding,
+            sample_radius=args.sample_radius,
+            color_tolerance=args.color_tolerance,
+        )
+        promoted = promote_sprites(args.input_root, args.out_root, config)
+        print(f"Promoted {promoted} PNG files from {args.input_root} to {args.out_root}")
         return 0
     raise SystemExit(f"Unknown command: {args.command}")
 

@@ -10,6 +10,8 @@ This document defines the repo-facing contract for town-building art.
 The `sprites/` tree is the shippable output home. The `_pipeline/` tree is for working files, studies, and other intermediate art that is not ready to ship.
 The web project may publish from `src/WildBunch.Assets/` into `src/WildBunch.Web/public/assets/`, but that web tree is delivery output only, not the working home.
 
+When the pipeline is promoted, the `sprites/` tree mirrors the staged tier/family layout from `_pipeline/` so the final assets stay easy to trace back to their source cut.
+
 ## Naming
 
 - Use the building family slug first.
