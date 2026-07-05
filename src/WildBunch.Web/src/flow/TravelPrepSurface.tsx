@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { TravelMode } from "../api/types";
@@ -84,7 +85,8 @@ function connectedDestinations(session: GameSessionDto) {
   );
 }
 
-export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
+export function TravelPrepSurface() {
+  const navigate = useNavigate();
   const { session, gameId, loading, handleTravel, notice, error } = useGameSession();
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
   const [preview, setPreview] = useState<TravelPreviewDto | null>(null);
@@ -185,7 +187,7 @@ export function TravelPrepSurface({ onBack }: TravelPrepSurfaceProps) {
   return (
     <FlowSurface $variant="travel-prep">
       <PlaceHeader>
-        <BackButton type="button" onClick={onBack}>
+        <BackButton type="button" onClick={() => void navigate({ to: "/town" })}>
           ← Back to town
         </BackButton>
         <h1>Hit the trail</h1>

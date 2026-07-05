@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { useNavigate } from "@tanstack/react-router";
 import { useGameSession } from "../../state/useGameSession";
 import { WantedPosterSurface } from "../../components/WantedPosterSurface";
 import { InvestigationSourceKind } from "../../api/types";
@@ -37,11 +38,8 @@ const LeadMeta = styled.p`
   color: var(--muted);
 `;
 
-interface SheriffPlaceProps {
-  onLeave: () => void;
-}
-
-export function SheriffPlace({ onLeave }: SheriffPlaceProps) {
+export function SheriffPlace() {
+  const navigate = useNavigate();
   const {
     session,
     journal,
@@ -67,7 +65,7 @@ export function SheriffPlace({ onLeave }: SheriffPlaceProps) {
   return (
     <FlowSurface $variant="place">
       <PlaceHeader>
-        <BackButton type="button" onClick={onLeave}>
+        <BackButton type="button" onClick={() => void navigate({ to: "/town" })}>
           ← Back to town
         </BackButton>
         <h1>Sheriff Office</h1>

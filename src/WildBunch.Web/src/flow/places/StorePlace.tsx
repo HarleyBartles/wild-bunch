@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { useNavigate } from "@tanstack/react-router";
 import { useGameSession } from "../../state/useGameSession";
 import { StoreOffersPanel } from "../../components/StoreOffersPanel";
 import { InventoryPanel } from "../../components/InventoryPanel";
@@ -19,11 +20,8 @@ const PlaceBody = styled.div`
   gap: 20px;
 `;
 
-interface StorePlaceProps {
-  onLeave: () => void;
-}
-
-export function StorePlace({ onLeave }: StorePlaceProps) {
+export function StorePlace() {
+  const navigate = useNavigate();
   const { session, storeOffers, storeOffersLoading, loading, handleBuyOffer, notice, error } = useGameSession();
 
   if (!session) {
@@ -33,7 +31,7 @@ export function StorePlace({ onLeave }: StorePlaceProps) {
   return (
     <FlowSurface $variant="place">
       <PlaceHeader>
-        <BackButton type="button" onClick={onLeave}>
+        <BackButton type="button" onClick={() => void navigate({ to: "/town" })}>
           ← Back to town
         </BackButton>
         <h1>Store</h1>
