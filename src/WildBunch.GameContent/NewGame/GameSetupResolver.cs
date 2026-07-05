@@ -62,7 +62,7 @@ internal sealed class GameSetupResolver
 
         // 5. Build case file using resolved culprit/accusation indices from
         //    MysteryTruthResolution — NOT raw seed world defaults.
-        var isCanonical = SeedWorldBuilder.IsCanonicalSeedWorld(seedWorld);
+        var isCanonical = seedWorld.IsCanonical;
         var caseFile = isCanonical
             ? SeedCaseBuilder.CreateCanonicalCaseFile(
                 source,

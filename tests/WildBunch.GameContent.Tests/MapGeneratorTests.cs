@@ -226,7 +226,7 @@ public sealed class MapGeneratorTests
                             {
                                 for (var cb = 0; cb <= 8; cb++)
                                 {
-                                    var mainNames = SeedWorldCatalog.DeriveTownNames(
+                                    var mainNames = SeedWorldFactory.DeriveTownNames(
                                         variants[v], townCount, ai, di, cb,
                                         prosperityPalettes[pp],
                                         servicesPalettes[sp]);
@@ -234,9 +234,9 @@ public sealed class MapGeneratorTests
 
                                     // Replicate the fix: derive the full outlier pool and pick
                                     // the first name not in the main set.
-                                    var outlierPool = SeedWorldCatalog.DeriveTownNames(
+                                    var outlierPool = SeedWorldFactory.DeriveTownNames(
                                         variants[v],
-                                        townCount: SeedWorldCatalog.NamePool.Count,
+                                        townCount: SeedWorldFactory.NamePool.Count,
                                         accusationIndex: 0,
                                         defaultCulpritIndex: 0,
                                         cashBonus: 0,

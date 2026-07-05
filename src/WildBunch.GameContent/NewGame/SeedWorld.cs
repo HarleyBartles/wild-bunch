@@ -49,11 +49,29 @@ public sealed record SeedWorld(
     public string SeedCodeText => SeedCode.ToString("D");
 
     /// <summary>
+    /// Whether this seed world is the canonical shape (8 towns,
+    /// Canonical variant, HubTelegraph services, UniformProsperous prosperity,
+    /// single cluster, Sparse graph density, accusation index 1,
+    /// default culprit index 3, zero cash bonus). Used by GameSetupResolver
+    /// to select the canonical case file path.
+    /// </summary>
+    public bool IsCanonical =>
+        WorldVariant == SeedWorldVariant.Canonical
+            && TownCount == 8
+            && ServicesPalette == ServicesPalette.HubTelegraph
+            && ProsperityPalette == ProsperityPalette.UniformProsperous
+            && ClusterCount == 1
+            && GraphDensity == GraphDensity.Sparse
+            && AccusationIndex == 1
+            && DefaultCulpritIndex == 3
+            && CashBonus == 0;
+
+    /// <summary>
     /// Derives the selected town IDs for this seed world by running the
     /// deterministic name shuffle. This is a derived view, not encoded state.
     /// </summary>
     public IReadOnlyList<string> GetSelectedTownIds()
-        => SeedWorldCatalog.DeriveTownNames(
+        => SeedWorldFactory.DeriveTownNames(
             WorldVariant, TownCount, AccusationIndex, DefaultCulpritIndex,
             CashBonus, ProsperityPalette, ServicesPalette)
             .Select(t => t.Id)

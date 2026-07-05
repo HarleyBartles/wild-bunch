@@ -23,7 +23,7 @@ internal static class MapGenerator
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
 
-        var townNames = SeedWorldCatalog.DeriveTownNames(
+        var townNames = SeedWorldFactory.DeriveTownNames(
             seedWorld.WorldVariant,
             seedWorld.TownCount,
             seedWorld.AccusationIndex,
@@ -55,9 +55,9 @@ internal static class MapGenerator
 
             // Derive a unique name for the outlier from the full name pool.
             var existingIds = new HashSet<string>(townNames.Select(t => t.Id));
-            var outlierPool = SeedWorldCatalog.DeriveTownNames(
+            var outlierPool = SeedWorldFactory.DeriveTownNames(
                 seedWorld.WorldVariant,
-                townCount: SeedWorldCatalog.NamePool.Count,
+                townCount: SeedWorldFactory.NamePool.Count,
                 accusationIndex: 0,
                 defaultCulpritIndex: 0,
                 cashBonus: 0,
@@ -87,7 +87,7 @@ internal static class MapGenerator
                 6m));
         }
 
-        return SeedWorldCatalog.CreateWorld(
+        return SeedWorldFactory.CreateWorld(
             seedWorld.WorldVariant,
             townNames,
             seedWorld.ServicesPalette,

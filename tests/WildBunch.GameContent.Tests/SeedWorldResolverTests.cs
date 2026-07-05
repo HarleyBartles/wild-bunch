@@ -206,15 +206,15 @@ public sealed class SeedWorldResolverTests
     [Fact]
     public void NamePoolHasAtLeastTwiceMaxTownCount()
     {
-        Assert.True(SeedWorldCatalog.NamePool.Count >= SeedWorldResolver.MaxTownCount * 2,
-            $"Name pool has {SeedWorldCatalog.NamePool.Count} entries, need at least {SeedWorldResolver.MaxTownCount * 2}.");
+        Assert.True(SeedWorldFactory.NamePool.Count >= SeedWorldResolver.MaxTownCount * 2,
+            $"Name pool has {SeedWorldFactory.NamePool.Count} entries, need at least {SeedWorldResolver.MaxTownCount * 2}.");
     }
 
     [Fact]
     public void AllTownNamesAreUnique()
     {
-        var names = SeedWorldCatalog.NamePool.Select(n => n.Name).ToArray();
-        var ids = SeedWorldCatalog.NamePool.Select(n => n.Id).ToArray();
+        var names = SeedWorldFactory.NamePool.Select(n => n.Name).ToArray();
+        var ids = SeedWorldFactory.NamePool.Select(n => n.Id).ToArray();
         Assert.Equal(names.Length, names.Distinct().Count());
         Assert.Equal(ids.Length, ids.Distinct().Count());
     }

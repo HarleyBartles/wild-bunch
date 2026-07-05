@@ -105,15 +105,15 @@ internal static class ServicesPalettes
 }
 
 /// <summary>
-/// The slot-based world catalog. Town names are flavor — derived from the
-/// seed, not encoded. The catalog provides a name pool (40 entries, twice
+/// The slot-based world factory. Town names are flavor — derived from the
+/// seed, not encoded. The factory provides a name pool (40 entries, twice
 /// the max town count of 20) and a slot-based trail topology covering
 /// slots 0-19. Services and prosperity are palette-indexed. The seed
 /// encodes only: town count, variant, services palette, prosperity palette,
 /// accusation index, culprit index, and cash bonus. Bandwidth scales with
-/// max selection (20), not catalog size.
+/// max selection (20), not factory size.
 /// </summary>
-internal static class SeedWorldCatalog
+internal static class SeedWorldFactory
 {
     /// <summary>
     /// The flavor name pool. At least twice the max town count (20), so

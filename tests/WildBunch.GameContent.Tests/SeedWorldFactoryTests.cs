@@ -5,12 +5,12 @@ using WildBunch.Domain.Game;
 
 namespace WildBunch.GameContent.Tests;
 
-public sealed class SeedWorldBuilderTests
+public sealed class SeedWorldFactoryTests
 {
     [Fact]
     public void CreateCanonicalWorldAppliesUniformProsperousPalette()
     {
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var world = SeedWorldFactory.CreateCanonicalWorld();
 
         foreach (var town in world.Towns)
         {
@@ -21,7 +21,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void CreateCanonicalWorldAppliesHubTelegraphServicesPalette()
     {
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var world = SeedWorldFactory.CreateCanonicalWorld();
         var townsByIndex = world.Towns.OrderBy(t => t.Id.Value, StringComparer.OrdinalIgnoreCase).ToArray();
 
         // HubTelegraph: only slot 0 has telegraph. But slot assignment is by
@@ -51,7 +51,7 @@ public sealed class SeedWorldBuilderTests
     {
         // Starting town is NOT seed-owned. The safe default from StartingTownPolicy
         // is the first town in the world (slot 0), which is always present.
-        var canonicalWorld = SeedWorldBuilder.CreateCanonicalWorld();
+        var canonicalWorld = SeedWorldFactory.CreateCanonicalWorld();
         var defaultTown = StartingTownPolicy.ResolveStartingTown(canonicalWorld, null);
         Assert.Contains(canonicalWorld.Towns, t => t.Id.Equals(defaultTown));
     }
@@ -59,7 +59,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void StartingTownPolicyAcceptsAnyValidTownChoice()
     {
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var world = SeedWorldFactory.CreateCanonicalWorld();
         var chosenTown = world.Towns.First();
 
         var resolved = StartingTownPolicy.ResolveStartingTown(world, chosenTown.Id);
@@ -69,7 +69,7 @@ public sealed class SeedWorldBuilderTests
     [Fact]
     public void StartingTownPolicyRejectsInvalidTownChoice()
     {
-        var world = SeedWorldBuilder.CreateCanonicalWorld();
+        var world = SeedWorldFactory.CreateCanonicalWorld();
 
         Assert.Throws<ArgumentException>(() =>
             StartingTownPolicy.ResolveStartingTown(world, new TownId("nonexistent-town")));
