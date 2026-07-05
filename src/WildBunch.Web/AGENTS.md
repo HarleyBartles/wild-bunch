@@ -28,3 +28,11 @@ Also apply [`.agents/unslop/dev-overlay.md`](../../.agents/unslop/dev-overlay.md
 Dev panels are contextual to the current gameplay surface. Each panel deeply owns one domain node/surface and only lightly manipulates related nodes. Dev mutations go through backend commands — the frontend never fakes player progress or injects final results.
 
 The dev overlay is a developer tool, not a player-facing surface. It lives under `src/dev/` and is toggled from the shell chrome bar, not from player routes.
+
+## Code Review
+
+**Must read before reviewing frontend work:** [`../../.agents/docs/code-review-guide.md`](../../.agents/docs/code-review-guide.md) — review methodology, lenses, and checks. For frontend work, pay particular attention to:
+- The styling stack rules above (enforced by `src/tests/stylingEnforcement.test.ts`)
+- The play-surface UI discipline (in-world surfaces, not cockpit dashboards)
+- The player lens (invoke when the diff touches player-facing UI or game flow)
+- The routing conventions (TanStack Router, lazy-loaded routes, flat town place routes)

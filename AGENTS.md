@@ -81,6 +81,7 @@ Use these reference files when working in specific areas:
 - **[`.agents/docs/worker-environment.md`](.agents/docs/worker-environment.md)** - Use when working with connectors, handling images, running dev services, or managing worker cleanup
 - **[`.agents/docs/repo-skills-policy.md`](.agents/docs/repo-skills-policy.md)** - Use when syncing marketplace skills or working with the skill vendoring system
 - **[`.agents/docs/mesh-policy.md`](.agents/docs/mesh-policy.md)** - Use when working with the documentation mesh (AGENTS.md, INDEX.md, README files)
+- **[`.agents/docs/code-review-guide.md`](.agents/docs/code-review-guide.md)** - **Must read for code reviewers.** Review methodology, lenses (architect, QA, engineer, product owner, player), architecture/frontend/unslop checks, repo improvement check, and DoD compliance.
 
 ## ADR Log Freshness
 - The ADR log at `docs/adr/` must represent the system as it exists today. See [`.agents/docs/workflow-policy.md`](.agents/docs/workflow-policy.md) for freshness check requirements.
