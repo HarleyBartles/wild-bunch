@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet } from "@tanstack/react-router";
 import styled from "styled-components";
 import { Hud } from "./Hud";
 import { GlobalOverlays, type OverlayKind } from "../flow/GlobalOverlays";
 import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
+import { usePhaseRouteSync } from "./usePhaseRouteSync";
+import { useDevSurfaceSync } from "./useDevSurfaceSync";
+import { RouteLoading } from "./RouteLoading";
 
 function ShellChrome() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
@@ -18,45 +21,52 @@ function ShellChrome() {
     }
   }, [devOverlayOpen]);
 
+  usePhaseRouteSync();
+  useDevSurfaceSync();
+
   return (
-    <DevSurfaceProvider>
-      <Shell>
-        <ChromeBar ref={chromeBarRef}>
-          <Hud
-            onOpenJournal={() => setOpenOverlay("journal")}
-            onOpenGameSettings={() => setOpenOverlay("game-settings")}
-          />
-          <OverlayBar>
-            <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
-            <DevNav aria-label="Developer tools">
-              <DevToggleButton
-                type="button"
-                $active={devOverlayOpen}
-                onClick={() => setDevOverlayOpen((prev) => !prev)}
-                aria-expanded={devOverlayOpen}
-              >
-                {devOverlayOpen ? "Hide dev" : "Dev"}
-              </DevToggleButton>
-            </DevNav>
-          </OverlayBar>
-        </ChromeBar>
-        <RouteOutlet aria-live="polite">
-          <Route>
-            <Outlet />
-          </Route>
-        </RouteOutlet>
-        <DevOverlay
-          open={devOverlayOpen}
-          onClose={() => setDevOverlayOpen(false)}
-          top={chromeBarHeight}
+    <Shell>
+      <ChromeBar ref={chromeBarRef}>
+        <Hud
+          onOpenJournal={() => setOpenOverlay("journal")}
+          onOpenGameSettings={() => setOpenOverlay("game-settings")}
         />
-      </Shell>
-    </DevSurfaceProvider>
+        <OverlayBar>
+          <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
+          <DevNav aria-label="Developer tools">
+            <DevToggleButton
+              type="button"
+              $active={devOverlayOpen}
+              onClick={() => setDevOverlayOpen((prev) => !prev)}
+              aria-expanded={devOverlayOpen}
+            >
+              {devOverlayOpen ? "Hide dev" : "Dev"}
+            </DevToggleButton>
+          </DevNav>
+        </OverlayBar>
+      </ChromeBar>
+      <RouteOutlet aria-live="polite">
+        <Route>
+          <Suspense fallback={<RouteLoading />}>
+            <Outlet />
+          </Suspense>
+        </Route>
+      </RouteOutlet>
+      <DevOverlay
+        open={devOverlayOpen}
+        onClose={() => setDevOverlayOpen(false)}
+        top={chromeBarHeight}
+      />
+    </Shell>
   );
 }
 
 export function AppShell() {
-  return <ShellChrome />;
+  return (
+    <DevSurfaceProvider>
+      <ShellChrome />
+    </DevSurfaceProvider>
+  );
 }
 
 const Shell = styled.div`

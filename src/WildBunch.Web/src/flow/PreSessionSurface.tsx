@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import styled from "styled-components";
 import { useGamePhase } from "../hooks/useGamePhase";
 import { useGameSession } from "../state/useGameSession";
@@ -6,8 +7,11 @@ import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { FlowSurface, FlowNotice, FlowError } from "../components/ui/sharedStyled";
 import { SetupHuntStep } from "../components/start-flow/SetupHuntStep";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
-import { StartingTownStep } from "../components/start-flow/StartingTownStep";
 import { CreatingStep } from "../components/start-flow/CreatingStep";
+
+const StartingTownStep = lazy(() =>
+  import("../components/start-flow/StartingTownStep").then((m) => ({ default: m.StartingTownStep })),
+);
 
 const FlowHero = styled.div`
   display: grid;
@@ -101,11 +105,13 @@ export function PreSessionSurface() {
       )}
 
       {effectiveStep === "town" && (
-        <StartingTownStep
-          sessionId={session?.id ?? ""}
-          selectedTownId={flow.selectedTownId}
-          onSelectTown={handleStartWithTown}
-        />
+        <Suspense fallback={<div>Loading town selection…</div>}>
+          <StartingTownStep
+            sessionId={session?.id ?? ""}
+            selectedTownId={flow.selectedTownId}
+            onSelectTown={handleStartWithTown}
+          />
+        </Suspense>
       )}
 
       {effectiveStep === "creating" && <CreatingStep busy={loading} />}

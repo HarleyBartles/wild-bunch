@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider, createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
@@ -222,10 +223,18 @@ function renderPrep() {
       mutations: { retry: false },
     },
   });
+  const rootRoute = createRootRoute({ component: () => <Outlet /> });
+  const trailheadRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/trailhead",
+    component: () => <TravelPrepSurface />,
+  });
+  const router = createRouter({ routeTree: rootRoute.addChildren([trailheadRoute]) });
+  window.history.replaceState({}, "", "/town/trailhead");
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <TravelPrepSurface onBack={vi.fn()} />
+        <RouterProvider router={router} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );

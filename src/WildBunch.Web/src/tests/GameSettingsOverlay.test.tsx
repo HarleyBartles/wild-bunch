@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { router } from "../shell/router";
+import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
 import {
@@ -79,7 +79,7 @@ function renderShell() {
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <RouterProvider router={router} />
+        <RouterProvider router={createAppRouter()} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );

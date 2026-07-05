@@ -3,10 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { router } from "../shell/router";
+import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import { AvailableActionKind, JourneyStatus, StartFlowPhase, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
 import {
+  acknowledgeTravelArrival,
   getAvailableActions,
   getGame,
   getJournal,
@@ -37,6 +38,18 @@ vi.mock("../api/wildBunchApi", () => ({
   followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
+  acknowledgeTravelArrival: vi.fn(),
+  advanceTravelDay: vi.fn(),
+  resolveTravelEncounter: vi.fn(),
+  getWorldMap: vi.fn(),
+  getStartingTownMap: vi.fn(),
+  setupGame: vi.fn(),
+  markPrologueViewed: vi.fn(),
+  startGameWithTown: vi.fn(),
+  archiveGame: vi.fn(),
+  getPrologue: vi.fn(),
+  getStartingTowns: vi.fn(),
+  previewTravel: vi.fn(),
 }));
 
 vi.mock("../dev/devApi", () => ({
@@ -56,6 +69,7 @@ const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
+const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
 
 afterEach(() => {
@@ -76,7 +90,7 @@ function renderShell() {
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <RouterProvider router={router} />
+        <RouterProvider router={createAppRouter()} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );
@@ -166,6 +180,49 @@ function createStoreOffers(): TownStoreOffersDto {
     sourceNote: "General store",
     offers: [],
   };
+}
+
+function createOnTrailSession(): GameSessionDto {
+  const session = createSession();
+  session.journey = {
+    originTownId: "t-town", originTownName: "Tumbleweed",
+    destinationTownId: "dust-fork", destinationTownName: "Dust Fork",
+    travelMode: 1, status: JourneyStatus.Active,
+    mountedTravelAvailable: false, waterSecure: true,
+    rideDayDistance: 3, remainingRideDayDistance: 2,
+    baselineRideDays: 3, expectedDays: 3, remainingDays: 1,
+    canteenChargesPerDay: 0, requiredCanteenCharges: 0,
+    availableCanteenCharges: 0, canteenReserveCharges: 0,
+    delayMarginDays: 0, delayRisk: false,
+    requiredFood: 0, availableFood: 0,
+    requiredHorseFeed: 0, availableHorseFeed: 0,
+    horseState: null, daysTravelled: 1, delayDays: 0,
+    pendingEncounter: null, warnings: [],
+    routeProfile: { trailId: "trail-1", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3, mountedRideDayProgress: 1, footRideDayProgress: 0.5, warnings: [] },
+  };
+  session.world.trails = [
+    { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3 },
+  ];
+  return session;
+}
+
+function createCompletedJourneySession(): GameSessionDto {
+  const session = createOnTrailSession();
+  session.journey!.status = JourneyStatus.Completed;
+  session.journey!.daysTravelled = 3;
+  session.journey!.remainingDays = 0;
+  session.journey!.remainingRideDayDistance = 0;
+  return session;
+}
+
+function createInTownSessionAtDestination(): GameSessionDto {
+  const session = createSession();
+  session.player.currentTownId = "dust-fork";
+  session.world.towns = [
+    { id: "t-town", name: "Tumbleweed", services: 0 },
+    { id: "dust-fork", name: "Dust Fork", services: 0 },
+  ];
+  return session;
 }
 
 function primeMocks() {
@@ -362,4 +419,96 @@ describe("AppShell", () => {
     expect(screen.getByRole("banner", { name: /game status/i })).toBeInTheDocument();
     expect(within(hud).getByText("Ruth")).toBeInTheDocument();
   });
+
+  it("syncs the dev surface to 'trail' when on /trail with an on-trail session (real AppShell wiring)", async () => {
+    mockedGetGame.mockResolvedValue(createOnTrailSession());
+    mockedGetAvailableActions.mockResolvedValue([]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/trail");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+
+    // The "Travel dev" panel only appears for "trail" or "trailhead" surfaces.
+    // Its presence as the default active tab proves useDevSurfaceSync set the
+    // surface to "trail" through the real AppShell provider boundary.
+    const travelTab = within(drawer).getByRole("button", { name: /travel dev/i });
+    expect(travelTab).toBeInTheDocument();
+    expect(travelTab.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("syncs the dev surface to 'store' when on /town/store with an in-town session (real AppShell wiring)", async () => {
+    mockedGetGame.mockResolvedValue(createSession());
+    mockedGetAvailableActions.mockResolvedValue([
+      { kind: AvailableActionKind.BuySupplies, label: "Buy supplies" },
+    ]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
+    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town/store");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(screen.getByRole("button", { name: /^dev$/i }));
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+
+    // "store" surface has no surface-owner panel, so only "Session audit" and
+    // "Session dev" appear (no "Travel dev" or "Saloon dev"). This proves the
+    // surface is NOT stuck at the default "trail" — it changed to "store".
+    expect(within(drawer).queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
+    expect(within(drawer).getByRole("button", { name: /session audit/i })).toBeInTheDocument();
+  });
+
+  it("shows the arrival notice after acknowledging a completed journey (trail → town?arrived=1)", async () => {
+    // First getGame call returns the completed journey (on-trail phase).
+    // Subsequent calls (after invalidateGameQueries refetch) return in-town.
+    mockedGetGame.mockResolvedValueOnce(createCompletedJourneySession());
+    mockedGetGame.mockResolvedValue(createInTownSessionAtDestination());
+    mockedGetAvailableActions.mockResolvedValue([]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
+    mockedAcknowledgeTravelArrival.mockResolvedValue({
+      success: true,
+      message: "You step into town.",
+      currentSession: createInTownSessionAtDestination(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/trail");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const stepButton = await screen.findByRole("button", { name: /step into town/i }, { timeout: 10000 });
+    await user.click(stepButton);
+
+    // After acknowledge, the session becomes in-town, usePhaseRouteSync
+    // navigates to /town?arrived=1, and TownHubSurface shows the arrival notice.
+    const arrivalNotice = await screen.findByRole("status", {}, { timeout: 10000 });
+    expect(within(arrivalNotice).getByText(/you've arrived in dust fork/i)).toBeInTheDocument();
+
+    // Verify the URL is /town with the arrived search param.
+    // TanStack Router JSON-serializes string values, so "1" appears as %221%22.
+    expect(window.location.pathname).toBe("/town");
+    expect(window.location.search).toContain("arrived");
+  }, 30000);
 });

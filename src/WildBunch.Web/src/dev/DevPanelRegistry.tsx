@@ -48,7 +48,7 @@ export const devPanels: DevPanelDefinition[] = [
     id: "travel-dev",
     label: "Travel dev",
     render: () => <TravelDevPanel />,
-    surfaces: ["trail", "arrival", "trailhead"],
+    surfaces: ["trail", "trailhead"],
     isSurfaceOwner: true,
   },
   {

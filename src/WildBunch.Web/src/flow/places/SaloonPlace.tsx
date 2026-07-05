@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { useNavigate } from "@tanstack/react-router";
 import { useGameSession } from "../../state/useGameSession";
 import {
   FlowSurface,
@@ -28,11 +29,8 @@ const PlaceBody = styled.div`
   gap: 20px;
 `;
 
-interface SaloonPlaceProps {
-  onLeave: () => void;
-}
-
-export function SaloonPlace({ onLeave }: SaloonPlaceProps) {
+export function SaloonPlace() {
+  const navigate = useNavigate();
   const {
     session,
     wantedPosters,
@@ -61,7 +59,7 @@ export function SaloonPlace({ onLeave }: SaloonPlaceProps) {
   return (
     <FlowSurface $variant="place">
       <PlaceHeader>
-        <BackButton type="button" onClick={onLeave}>
+        <BackButton type="button" onClick={() => void navigate({ to: "/town" })}>
           ← Back to town
         </BackButton>
         <h1>Saloon</h1>

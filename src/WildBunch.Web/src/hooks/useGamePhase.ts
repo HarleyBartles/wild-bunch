@@ -8,14 +8,12 @@ export type GamePhase =
   | "prologue"
   | "town-selection"
   | "in-town"
-  | "on-trail"
-  | "arrival";
+  | "on-trail";
 
 export interface GamePhaseState {
   phase: GamePhase;
   hasSession: boolean;
   isOnTrail: boolean;
-  isArrivalPending: boolean;
 }
 
 /**
@@ -28,8 +26,9 @@ export interface GamePhaseState {
  * - prologue: setup complete, prologue not yet viewed
  * - town-selection: prologue viewed, town not yet selected
  * - in-town: game started, no active journey
- * - on-trail: journey is Active or Interrupted
- * - arrival: journey is Completed, awaiting acknowledgement
+ * - on-trail: journey is Active, Interrupted, or Completed
+ *   (Completed means the player sees the last day's resolution and
+ *   acknowledges arrival via TrailFlowSurface before transitioning to town)
  */
 export function useGamePhase(): GamePhaseState {
   const { session } = useGameSession();
@@ -40,65 +39,28 @@ export function useGamePhase(): GamePhaseState {
         phase: "pre-session" as const,
         hasSession: false,
         isOnTrail: false,
-        isArrivalPending: false,
       };
     }
 
-    // Check start flow phase first — if the game hasn't fully started yet,
-    // route to the appropriate start flow step.
     if (session.startFlowPhase !== StartFlowPhase.GameStarted) {
       if (session.startFlowPhase === StartFlowPhase.SetupComplete) {
-        return {
-          phase: "prologue" as const,
-          hasSession: true,
-          isOnTrail: false,
-          isArrivalPending: false,
-        };
+        return { phase: "prologue" as const, hasSession: true, isOnTrail: false };
       }
       if (session.startFlowPhase === StartFlowPhase.PrologueViewed ||
           session.startFlowPhase === StartFlowPhase.StartingTownSelected) {
-        return {
-          phase: "town-selection" as const,
-          hasSession: true,
-          isOnTrail: false,
-          isArrivalPending: false,
-        };
+        return { phase: "town-selection" as const, hasSession: true, isOnTrail: false };
       }
-      // NotStarted or unknown — treat as pre-session
-      return {
-        phase: "pre-session" as const,
-        hasSession: false,
-        isOnTrail: false,
-        isArrivalPending: false,
-      };
+      return { phase: "pre-session" as const, hasSession: false, isOnTrail: false };
     }
 
     const journey = session.journey;
 
     if (!journey) {
-      return {
-        phase: "in-town" as const,
-        hasSession: true,
-        isOnTrail: false,
-        isArrivalPending: false,
-      };
+      return { phase: "in-town" as const, hasSession: true, isOnTrail: false };
     }
 
-    if (journey.status === JourneyStatus.Completed) {
-      return {
-        phase: "arrival" as const,
-        hasSession: true,
-        isOnTrail: false,
-        isArrivalPending: true,
-      };
-    }
-
-    // Active or Interrupted — both mean the player is on the trail
-    return {
-      phase: "on-trail" as const,
-      hasSession: true,
-      isOnTrail: true,
-      isArrivalPending: false,
-    };
+    // Active, Interrupted, or Completed — all mean the player is on the trail.
+    // Completed shows the arrival/acknowledge view inside TrailFlowSurface.
+    return { phase: "on-trail" as const, hasSession: true, isOnTrail: true };
   }, [session]);
 }

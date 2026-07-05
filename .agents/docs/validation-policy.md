@@ -28,6 +28,23 @@ The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_me
 - If coverage is skipped, state the reason explicitly and keep the gap narrow and deliberate.
 - Debug-only or temporary prototype surfaces may use lighter-weight coverage while they remain debug-only.
 
+## Test Quality Standards
+
+These standards apply to all test kinds and to both implementers and reviewers.
+
+- **New code must be covered by tests.** Every new function, component, hook, handler, or domain method must have tests that verify its behavior — not just its existence. Production code without corresponding tests is a gap that must be flagged.
+- **Tests must verify real behavior, not mock interactions.** Tests should assert on observable outcomes (rendered output, returned values, state changes), not on which mock functions were called in which order. Mock-heavy tests that pass but don't actually test the behavior are a finding — they give false confidence.
+- **Edge cases must be covered.** Identify edge cases in the code under test (null/undefined inputs, empty collections, error states, boundary conditions) and ensure tests exist for them. Missing edge case coverage is critical for critical paths, minor for non-critical paths.
+- **The right test kind must be used.** See the Test Kinds section above. Using a unit test where an integration test is needed (or vice versa) is a finding.
+- **No flaky tests.** A test that passes in isolation but fails under full-suite load is a flaky test. Flaky tests are not acceptable — they erode confidence in the suite and waste CI time. Common causes and fixes:
+  - **Shared mutable state** (router instances, singletons, module-level caches) — create fresh instances per test instead of sharing module-level singletons. For TanStack Router, use a `createAppRouter()` factory rather than importing the shared `router` singleton.
+  - **Timing-dependent assertions on lazy-loaded components** — use `findByRole`/`findByText` with an extended timeout (e.g. `{ timeout: 5000 }`) instead of the default 1000ms, since lazy imports take longer under full-suite memory pressure.
+  - **Missing `waitFor` around async renders** — wrap assertions that depend on async state resolution in `waitFor`.
+  - **Test ordering dependencies** — tests must not depend on execution order. Each test must set up and tear down its own state.
+  - A flaky test is worse than no test because it trains the team to ignore failures. If a test is flaky, it must be fixed immediately or removed.
+- **All tests must pass.** The full suite must pass: `npx vitest run` from `src/WildBunch.Web/` for frontend, `dotnet test` for backend. No skipped tests (`it.skip`, `describe.skip`) without a documented reason.
+- **Test output must be pristine.** No stray warnings, no console noise, no unhandled promise rejections in test output. Warnings in test output are findings — they indicate either a real problem being silenced or test setup that doesn't match production behavior.
+
 ## Test Kinds
 
 This repo uses five test kinds. Each has a distinct purpose and structure:
