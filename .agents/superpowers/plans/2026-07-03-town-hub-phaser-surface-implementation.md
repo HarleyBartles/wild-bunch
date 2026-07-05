@@ -696,12 +696,12 @@ Expected: All tests pass, including the new event replay parity test (Task 7)
 Run: `npm test -- --run`
 Expected: All tests pass
 
-- [ ] **Step 3: Run frontend lint and typecheck**
+- [ ] **Step 3: Run frontend typecheck and build**
 
-Run: `npm run lint && npm run typecheck`
+Run: `npm run typecheck && npm run build`
 Expected: No errors
 
-- [ ] **Step 4: Validate build**
+- [ ] **Step 4: Validate backend build**
 
 Run: `dotnet build`
 Expected: Build succeeds
