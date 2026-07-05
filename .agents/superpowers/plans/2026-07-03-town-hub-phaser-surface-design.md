@@ -46,15 +46,21 @@ public sealed class BuildingPlacement
 
 public enum BuildingKind
 {
+    // Baseline navigation buildings — always present in every town layout,
+    // derived from the existing TownHubSurface card grid (AvailableActionKind-driven).
     Store,
     Sheriff,
     Saloon,
-    Stable,
-    Doctor,
+    Trailhead,
+    // Service-driven optional buildings — derived from TownServices flags on the Town record.
     Telegraph,
-    Trailhead
+    // Future building types (Stable, Doctor, etc.) will be added here as services are introduced.
+    Stable,
+    Doctor
 }
 ```
+
+> **Note:** `BuildingKind` is a visual representation enum for rendering and click-to-navigate routing, not a service flag. `TownServices` is the domain service flag. See the Building and Navigation Model section in the implementation plan for the full mapping.
 
 **DTO Extension**:
 ```csharp
@@ -111,22 +117,38 @@ public sealed record BuildingPlacementDto(
 
 ## Domain Integration
 
-### TownAggregate Extension
-**File**: `src/WildBunch.Domain/Game/TownAggregate.cs`
+### Town Record Extension
+**File**: `src/WildBunch.Domain/World/WorldModels.cs`
 
-Add layout property:
+The town model is the `Town` record in `WorldModels.cs` (there is no `TownAggregate` class). Add an optional Layout property:
 ```csharp
-public TownLayout Layout { get; }
+public sealed record Town(
+    TownId Id,
+    string Name,
+    TownServices Services,
+    TownProsperity Prosperity = TownProsperity.Prosperous,
+    TownSourceCatalog? SourceCatalog = null,
+    int MapX = 0,
+    int MapY = 0,
+    bool IsOutlier = false,
+    TownLayout? Layout = null)
 ```
 
-### Service Mapping
-- `TownServices.HasStore` → Store building
-- `TownServices.HasSheriff` → Sheriff building
-- `TownServices.HasSaloon` → Saloon building
-- `TownServices.HasStable` → Stable building
-- `TownServices.HasDoctor` → Doctor building (future)
-- `TownServices.HasTelegraph` → Telegraph building (future)
-- Trailhead always available → Trailhead building
+### Building Source Mapping
+
+Buildings come from two sources:
+
+**Baseline navigation buildings** — always present, derived from the existing `TownHubSurface` card grid which is driven by `AvailableActionKind` from `ActionAvailabilityResolver`:
+- Store → always available (every town has a shop; `BuySupplies` is always available)
+- Sheriff → always available (sheriff records / wanted posters are baseline sources in `TownSourceCatalog.Default`)
+- Saloon → always available (saloon look-around / local gossip are baseline sources in `TownSourceCatalog.Default`)
+- Trailhead → always available when `AvailableActionKind.Travel` is present
+
+**Service-driven optional buildings** — derived from `TownServices` flags on the `Town` record:
+- `TownServices.Telegraph` → Telegraph building
+- Future `TownServices` flags will add their corresponding buildings
+
+> **Note:** `TownServices` currently has only `None = 0` and `Telegraph = 1`. There are no `HasStore`, `HasSheriff`, `HasSaloon`, `HasStable`, or `HasDoctor` flags. Store/Sheriff/Saloon/Trailhead are baseline navigation buildings, not service-driven.
 
 ### Layout Generation Algorithm
 **File**: `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`
@@ -282,7 +304,9 @@ POST /api/games/{sessionId}/enter-trailhead
 ### Existing Code
 - `PhaserMapHost` pattern for React-Phaser integration
 - `SeedWorldBuilder` for coordinate derivation
-- `TownAggregate` for service mapping
+- `Town` record in `WorldModels.cs` for service mapping
+- `ActionAvailabilityResolver` for available action derivation
+- `TownSourceCatalog.Default` for baseline investigation sources
 - `useGameSession` hook for state management
 - `GameFlowRouter` for navigation
 
