@@ -4,7 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
-import { router } from "../shell/router";
+import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider, useSetDevSurface } from "../dev/DevSurfaceContext";
@@ -89,7 +89,7 @@ function renderShell() {
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <RouterProvider router={router} />
+        <RouterProvider router={createAppRouter()} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );

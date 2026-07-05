@@ -90,10 +90,14 @@ const routeTree = rootRoute.addChildren([
   trailRoute,
 ]);
 
-export const router = createRouter({
-  routeTree,
-  defaultPreload: "intent",
-});
+export function createAppRouter() {
+  return createRouter({
+    routeTree,
+    defaultPreload: "intent",
+  });
+}
+
+export const router = createAppRouter();
 
 declare module "@tanstack/react-router" {
   interface Register {
