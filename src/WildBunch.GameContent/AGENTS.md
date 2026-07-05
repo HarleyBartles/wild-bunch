@@ -50,7 +50,7 @@ The starting town is NOT a seed-owned fact. It is a player setup choice validate
 
 ## When to update this project
 
-- **New town or trail**: add to `SeedWorldCatalog.cs`, update `SeedWorldBuilderTests` snapshot assertions, update `SeededNewGameFactoryTests` count assertions.
+- **New town or trail**: add to `SeedWorldFactory.cs`, update `SeedWorldFactoryTests` snapshot assertions, update `SeededNewGameFactoryTests` count assertions.
 - **New world variant**: add to `SeedWorldVariant` enum, add variant-specific terrain/water/services to existing town/trail definitions, update `ResolveWorldVariant` in `SeedWorldResolver.cs`, update snapshot tests.
 - **New difficulty or entropy level**: update enums, update `DifficultyEnvelope.For` / `EntropyPolicy.For`, update tests.
 - **Any new seed-owned field**: add to `SeedWorld`, add to `SeedWorldResolver.Resolve`, update the bit-packing layout in `SeedWorldResolver.CreateRepresentativeSeedCode`, add a round-trip guardrail test.

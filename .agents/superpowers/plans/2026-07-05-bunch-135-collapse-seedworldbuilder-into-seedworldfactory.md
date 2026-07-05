@@ -53,14 +53,14 @@ This is the foundational rename. All subsequent tasks depend on the new name exi
 - Consumes: nothing new
 - Produces: `internal static class SeedWorldFactory` with identical members (`NamePool`, `DeriveTownNames`, `CreateWorld`, `CreateCanonicalWorld`) — same signatures, same namespace `WildBunch.GameContent.NewGame`
 
-- [ ] **Step 1: Rename the file via git mv**
+- [x] **Step 1: Rename the file via git mv**
 
 Run from the worktree root:
 ```bash
 git mv src/WildBunch.GameContent/NewGame/SeedWorldCatalog.cs src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs
 ```
 
-- [ ] **Step 2: Rename the class declaration and update the doc comment**
+- [x] **Step 2: Rename the class declaration and update the doc comment**
 
 In `src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs`, replace the class declaration and its preceding doc comment.
 
@@ -92,17 +92,21 @@ Replace with:
 internal static class SeedWorldFactory
 ```
 
-- [ ] **Step 3: Verify the build compiles (expect reference errors — they will be fixed in Tasks 2-4)**
+- [x] **Step 3: Verify the build compiles (expect reference errors — they will be fixed in Tasks 2-4)**
 
 Run: `dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj`
 Expected: FAIL with CS0103 "The name 'SeedWorldCatalog' does not exist in the current context" errors at the call sites listed in Tasks 2-4. This confirms the rename took effect and the remaining work is reference updates.
 
-- [ ] **Step 4: Commit**
+Verified: 8 expected CS0103 errors at SeedWorld.cs:56, SeedWorldBuilder.cs:13, MapGenerator.cs:26/58/60/90, SeedWorldMapLayout.cs:22, StartingTownCatalog.cs:14.
+
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs
 git commit -m "refactor: rename SeedWorldCatalog file to SeedWorldFactory"
 ```
+
+Commit: `f409281`
 
 ---
 
@@ -177,12 +181,14 @@ Run from the worktree root:
 git rm src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/SeedWorld.cs
 git commit -m "refactor: move IsCanonicalSeedWorld to SeedWorld.IsCanonical, delete SeedWorldBuilder"
 ```
+
+Commit: `0843980`
 
 ---
 
@@ -268,17 +274,21 @@ Line 90:
         return SeedWorldFactory.CreateWorld(
 ```
 
-- [ ] **Step 5: Verify the production build compiles**
+- [x] **Step 5: Verify the production build compiles**
 
 Run: `dotnet build src/WildBunch.GameContent/WildBunch.GameContent.csproj`
 Expected: PASS (zero errors, zero warnings). All production references are now resolved.
 
-- [ ] **Step 6: Commit**
+Verified: Build succeeded, 0 errors, 0 warnings.
+
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/WildBunch.GameContent/NewGame/GameSetupResolver.cs src/WildBunch.GameContent/NewGame/StartingTownCatalog.cs src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs src/WildBunch.GameContent/NewGame/MapGenerator.cs
 git commit -m "refactor: update production call sites to SeedWorldFactory and SeedWorld.IsCanonical"
 ```
+
+Commit: `45a24ba`
 
 ---
 
@@ -342,17 +352,21 @@ Replace with:
 
 In `tests/WildBunch.GameContent.Tests/MapGeneratorTests.cs`, replace all 3 occurrences of `SeedWorldCatalog` with `SeedWorldFactory` (lines 229, 237, 239). Use a file-scoped replace-all of `SeedWorldCatalog` → `SeedWorldFactory`.
 
-- [ ] **Step 6: Run the GameContent test suite**
+- [x] **Step 6: Run the GameContent test suite**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj`
 Expected: PASS — all tests green. This is a pure rename, so no test logic changes are needed; only the referenced type names changed.
 
-- [ ] **Step 7: Commit**
+Verified: Passed! - Failed: 0, Passed: 155, Skipped: 0, Total: 155.
+
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/WildBunch.GameContent.Tests/SeedWorldFactoryTests.cs tests/WildBunch.GameContent.Tests/SeedWorldResolverTests.cs tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs tests/WildBunch.GameContent.Tests/MapGeneratorTests.cs
 git commit -m "test: rename SeedWorldBuilderTests to SeedWorldFactoryTests, update all test references"
 ```
+
+Commit: `dbf990d`
 
 ---
 

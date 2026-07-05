@@ -95,7 +95,7 @@ separately, including GitHub issue `#34`.
 
 - `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`
 - `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs`
-- `src/WildBunch.GameContent/NewGame/SeedWorldBuilder.cs`
+- `src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs`
 - `src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs`
 - `tests/WildBunch.GameContent.Tests/`
 
