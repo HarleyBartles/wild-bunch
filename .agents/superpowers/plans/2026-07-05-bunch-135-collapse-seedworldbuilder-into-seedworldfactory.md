@@ -122,7 +122,7 @@ This task moves the canonical-shape predicate onto the `SeedWorld` record as a c
 - Consumes: `SeedWorldFactory.DeriveTownNames` (from Task 1)
 - Produces: `SeedWorld.IsCanonical` (computed `bool` property on the `SeedWorld` record)
 
-- [ ] **Step 1: Add the `IsCanonical` property to `SeedWorld`**
+- [x] **Step 1: Add the `IsCanonical` property to `SeedWorld`**
 
 In `src/WildBunch.GameContent/NewGame/SeedWorld.cs`, add the computed property inside the record body, after `SeedCodeText` and before `GetSelectedTownIds`.
 
@@ -160,7 +160,7 @@ Replace with:
     /// Derives the selected town IDs for this seed world by running the
 ```
 
-- [ ] **Step 2: Update `GetSelectedTownIds` to call `SeedWorldFactory`**
+- [x] **Step 2: Update `GetSelectedTownIds` to call `SeedWorldFactory`**
 
 In the same file, replace the `SeedWorldCatalog.DeriveTownNames` call inside `GetSelectedTownIds`.
 
@@ -174,7 +174,7 @@ Replace with:
         => SeedWorldFactory.DeriveTownNames(
 ```
 
-- [ ] **Step 3: Delete `SeedWorldBuilder.cs`**
+- [x] **Step 3: Delete `SeedWorldBuilder.cs`**
 
 Run from the worktree root:
 ```bash
@@ -206,7 +206,7 @@ Update the four production files that still reference the old names.
 - Consumes: `SeedWorld.IsCanonical` (from Task 2), `SeedWorldFactory.*` (from Task 1)
 - Produces: all production references resolved
 
-- [ ] **Step 1: Update `GameSetupResolver.cs`**
+- [x] **Step 1: Update `GameSetupResolver.cs`**
 
 In `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`, replace the `IsCanonicalSeedWorld` call.
 
@@ -220,7 +220,7 @@ Replace with:
         var isCanonical = seedWorld.IsCanonical;
 ```
 
-- [ ] **Step 2: Update `StartingTownCatalog.cs`**
+- [x] **Step 2: Update `StartingTownCatalog.cs`**
 
 In `src/WildBunch.GameContent/NewGame/StartingTownCatalog.cs`, replace the `CreateCanonicalWorld` call.
 
@@ -234,7 +234,7 @@ Replace with:
         var world = SeedWorldFactory.CreateCanonicalWorld();
 ```
 
-- [ ] **Step 3: Update `SeedWorldMapLayout.cs`**
+- [x] **Step 3: Update `SeedWorldMapLayout.cs`**
 
 In `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs`, replace the `CreateCanonicalWorld` call.
 
@@ -248,7 +248,7 @@ Replace with:
         var world = SeedWorldFactory.CreateCanonicalWorld();
 ```
 
-- [ ] **Step 4: Update `MapGenerator.cs` (4 references)**
+- [x] **Step 4: Update `MapGenerator.cs` (4 references)**
 
 In `src/WildBunch.GameContent/NewGame/MapGenerator.cs`, replace all four `SeedWorldCatalog` references with `SeedWorldFactory`. Use a project-wide replace scoped to this file.
 
@@ -307,14 +307,14 @@ Update the four test files that reference the old names. The primary test file i
 - Consumes: `SeedWorldFactory.*` (from Task 1), `SeedWorld.IsCanonical` (from Task 2)
 - Produces: all test references resolved; test file naming matches production naming
 
-- [ ] **Step 1: Rename the test file via git mv**
+- [x] **Step 1: Rename the test file via git mv**
 
 Run from the worktree root:
 ```bash
 git mv tests/WildBunch.GameContent.Tests/SeedWorldBuilderTests.cs tests/WildBunch.GameContent.Tests/SeedWorldFactoryTests.cs
 ```
 
-- [ ] **Step 2: Rename the test class and update all 6 `SeedWorldBuilder.CreateCanonicalWorld()` calls**
+- [x] **Step 2: Rename the test class and update all 6 `SeedWorldBuilder.CreateCanonicalWorld()` calls**
 
 In `tests/WildBunch.GameContent.Tests/SeedWorldFactoryTests.cs`:
 
@@ -330,11 +330,11 @@ public sealed class SeedWorldFactoryTests
 
 Then replace every occurrence of `SeedWorldBuilder.CreateCanonicalWorld()` with `SeedWorldFactory.CreateCanonicalWorld()`. There are 6 occurrences (lines 13, 24, 54, 62, 72 in the original file). Use a file-scoped replace-all.
 
-- [ ] **Step 3: Update `SeedWorldResolverTests.cs` (4 references)**
+- [x] **Step 3: Update `SeedWorldResolverTests.cs` (4 references)**
 
 In `tests/WildBunch.GameContent.Tests/SeedWorldResolverTests.cs`, replace all 4 occurrences of `SeedWorldCatalog.NamePool` with `SeedWorldFactory.NamePool` (lines 209, 210, 216, 217). Use a file-scoped replace-all of `SeedWorldCatalog` → `SeedWorldFactory`.
 
-- [ ] **Step 4: Update `SeededNewGameFactoryTests.cs` (1 reference)**
+- [x] **Step 4: Update `SeededNewGameFactoryTests.cs` (1 reference)**
 
 In `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`, replace the single occurrence of `SeedWorldCatalog.NamePool` with `SeedWorldFactory.NamePool` (line 169).
 
@@ -348,7 +348,7 @@ Replace with:
         Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldFactory.NamePool.Select(n => n.Id));
 ```
 
-- [ ] **Step 5: Update `MapGeneratorTests.cs` (3 references)**
+- [x] **Step 5: Update `MapGeneratorTests.cs` (3 references)**
 
 In `tests/WildBunch.GameContent.Tests/MapGeneratorTests.cs`, replace all 3 occurrences of `SeedWorldCatalog` with `SeedWorldFactory` (lines 229, 237, 239). Use a file-scoped replace-all of `SeedWorldCatalog` → `SeedWorldFactory`.
 
@@ -383,7 +383,7 @@ Update the two documentation files that reference the old names, then regenerate
 - Consumes: completed renames from Tasks 1-4
 - Produces: documentation matches the new source layout; index mesh current
 
-- [ ] **Step 1: Update `src/WildBunch.GameContent/AGENTS.md`**
+- [x] **Step 1: Update `src/WildBunch.GameContent/AGENTS.md`**
 
 In `src/WildBunch.GameContent/AGENTS.md`, update the "When to update this project" line.
 
@@ -397,7 +397,7 @@ Replace with:
 - **New town or trail**: add to `SeedWorldFactory.cs`, update `SeedWorldFactoryTests` snapshot assertions, update `SeededNewGameFactoryTests` count assertions.
 ```
 
-- [ ] **Step 2: Update `docs/adr/ADR-0012-gamecontent-in-code-now-db-backed-content-later.md`**
+- [x] **Step 2: Update `docs/adr/ADR-0012-gamecontent-in-code-now-db-backed-content-later.md`**
 
 In `docs/adr/ADR-0012-gamecontent-in-code-now-db-backed-content-later.md`, update the "Related Stable Source Surfaces" entry.
 
@@ -411,7 +411,7 @@ Replace with:
 - `src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs`
 ```
 
-- [ ] **Step 3: Regenerate the index mesh**
+- [x] **Step 3: Regenerate the index mesh**
 
 Run from the worktree root:
 ```bash
@@ -420,7 +420,7 @@ python scripts/generate_index_mesh.py
 
 Expected: exits 0. This regenerates `INDEX.md` files in `src/WildBunch.GameContent/NewGame/` (now lists `SeedWorldFactory.cs`, no longer lists `SeedWorldBuilder.cs` or `SeedWorldCatalog.cs`), `tests/WildBunch.GameContent.Tests/` (now lists `SeedWorldFactoryTests.cs`, no longer lists `SeedWorldBuilderTests.cs`), and `.agents/superpowers/plans/` (now lists this plan).
 
-- [ ] **Step 4: Verify the regenerated index files look correct**
+- [x] **Step 4: Verify the regenerated index files look correct**
 
 Read `src/WildBunch.GameContent/NewGame/INDEX.md` and confirm:
 - `SeedWorldFactory.cs` is listed
@@ -446,12 +446,12 @@ Commit: `0cb9885`
 
 Run the full validation suite to confirm zero behavior change. This matches the issue's Definition of Done (`dotnet build` passes, `dotnet test` passes).
 
-- [ ] **Step 1: Full build**
+- [x] **Step 1: Full build**
 
 Run: `dotnet build`
 Expected: PASS — zero errors, zero warnings across the entire solution.
 
-- [ ] **Step 2: Full test suite**
+- [x] **Step 2: Full test suite**
 
 Run the full `dotnet test` to match the issue DoD. Integration tests require the shared PostgreSQL dev cluster.
 
@@ -472,7 +472,7 @@ dotnet test
 
 Expected: PASS — all tests green across all test projects (unit, integration, game-content, API). This is a pure rename refactor with no behavior change, so no test should fail. If an integration test fails, investigate whether a stale reference was missed in Task 3 or Task 4 — do not narrow the suite to make it green.
 
-- [ ] **Step 3: Confirm no stale references remain on live surfaces**
+- [x] **Step 3: Confirm no stale references remain on live surfaces**
 
 Scan only live source, test, and durable-doc surfaces for the old names. Historical plan records (`.agents/superpowers/plans/**`), historical session artifacts (`.agents/superpowers/sdd/historical/**`), and design specs (`.agents/superpowers/specs/**`) are out of scope — they are historical artifacts that describe past state and must not be rewritten as part of this refactor.
 
