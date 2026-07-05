@@ -47,6 +47,11 @@ export class TownHubScene extends Phaser.Scene {
   private readonly availableActions: AvailableActionKind[];
   private readonly onBuildingSelected: (kind: BuildingKind) => void;
 
+  // Canvas dimensions in pixels. Logical coordinates from the domain (0-100)
+  // are scaled to these dimensions for rendering.
+  private static readonly CanvasWidth = 800;
+  private static readonly CanvasHeight = 500;
+
   constructor(
     layout: TownLayoutDto,
     availableActions: AvailableActionKind[],
@@ -67,10 +72,16 @@ export class TownHubScene extends Phaser.Scene {
 
   create(): void {
     const layout = this.layout;
+    const sx = TownHubScene.CanvasWidth / 100;
+    const sy = TownHubScene.CanvasHeight / 100;
 
     for (const building of layout.buildings) {
       const color = BUILDING_COLORS[building.kind] ?? 0x6a6a6a;
-      const rect = this.add.rectangle(building.x, building.y, building.width, building.height, color);
+      const px = building.x * sx;
+      const py = building.y * sy;
+      const pw = building.width * sx;
+      const ph = building.height * sy;
+      const rect = this.add.rectangle(px, py, pw, ph, color);
 
       if (building.kind === BuildingKind.Telegraph) {
         rect.setAlpha(0.6);
@@ -86,13 +97,13 @@ export class TownHubScene extends Phaser.Scene {
 
       const label = BUILDING_LABELS[building.kind] ?? "Building";
       this.add
-        .text(building.x, building.y + building.height / 2 + 12, label, {
+        .text(px, py + ph / 2 + 12, label, {
           fontSize: "12px",
           color: "#fff",
         })
         .setOrigin(0.5);
     }
 
-    this.add.circle(layout.playerSpawnX, layout.playerSpawnY, 12, 0xffd700);
+    this.add.circle(layout.playerSpawnX * sx, layout.playerSpawnY * sy, 12, 0xffd700);
   }
 }

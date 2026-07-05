@@ -14,13 +14,13 @@ public sealed class GameSessionMapperTests
             new[]
             {
                 new BuildingPlacement(BuildingKind.Store, 10, 20),
-                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, 70, 60),
+                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, 12, 8),
                 new BuildingPlacement(BuildingKind.Saloon, 50, 60),
                 new BuildingPlacement(BuildingKind.Trailhead, 70, 80),
                 new BuildingPlacement(BuildingKind.Telegraph, 90, 100)
             },
-            400,
-            250);
+            50,
+            50);
 
         var townWithLayout = new Town(
             new TownId("town-with-layout"),
@@ -48,17 +48,17 @@ public sealed class GameSessionMapperTests
 
         var withLayout = Assert.Single(worldDto.Towns, t => t.Id == "town-with-layout");
         Assert.NotNull(withLayout.Layout);
-        Assert.Equal(400, withLayout.Layout!.PlayerSpawnX);
-        Assert.Equal(250, withLayout.Layout.PlayerSpawnY);
+        Assert.Equal(50, withLayout.Layout!.PlayerSpawnX);
+        Assert.Equal(50, withLayout.Layout.PlayerSpawnY);
         Assert.Equal(5, withLayout.Layout.Buildings.Count);
         Assert.Equal(BuildingKind.Store, withLayout.Layout.Buildings[0].Kind);
         Assert.Equal(10, withLayout.Layout.Buildings[0].X);
         Assert.Equal(20, withLayout.Layout.Buildings[0].Y);
-        Assert.Equal(60, withLayout.Layout.Buildings[0].Width);
-        Assert.Equal(50, withLayout.Layout.Buildings[0].Height);
+        Assert.Equal(8, withLayout.Layout.Buildings[0].Width);
+        Assert.Equal(10, withLayout.Layout.Buildings[0].Height);
         Assert.Equal(BuildingKind.Sheriff, withLayout.Layout.Buildings[1].Kind);
-        Assert.Equal(70, withLayout.Layout.Buildings[1].Width);
-        Assert.Equal(60, withLayout.Layout.Buildings[1].Height);
+        Assert.Equal(12, withLayout.Layout.Buildings[1].Width);
+        Assert.Equal(8, withLayout.Layout.Buildings[1].Height);
         Assert.Equal(BuildingKind.Telegraph, withLayout.Layout.Buildings[4].Kind);
 
         var withoutLayout = Assert.Single(worldDto.Towns, t => t.Id == "town-no-layout");

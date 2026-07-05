@@ -6,24 +6,25 @@ namespace WildBunch.GameContent.NewGame;
 /// <summary>
 /// Generates deterministic town hub surface layouts. The same seed code, town
 /// identity, and <see cref="TownServices"/> always produce the same layout — no
-/// unseeded randomness is used. Buildings are placed on a fixed grid (scene
-/// 800x500) with small deterministic +/-20px jitter derived from
-/// <see cref="GameSetupDeterministicSource.PickIndex"/> so each town looks
-/// slightly different while remaining reproducible.
+/// unseeded randomness is used. Buildings are placed on a fixed logical grid
+/// (0-100 in both dimensions) with small deterministic +/-2 jitter derived
+/// from <see cref="GameSetupDeterministicSource.PickIndex"/> so each town
+/// looks slightly different while remaining reproducible. The frontend scales
+/// these logical units to actual canvas pixels.
 /// </summary>
 internal static class TownLayoutGenerator
 {
-    private const int SceneWidth = 800;
-    private const int SceneHeight = 500;
-    private const int PlayerSpawnX = 400;
-    private const int PlayerSpawnY = 250;
+    private const int SceneWidth = 100;
+    private const int SceneHeight = 100;
+    private const int PlayerSpawnX = 50;
+    private const int PlayerSpawnY = 50;
 
-    private const int BuildingWidth = 60;
-    private const int BuildingHeight = 50;
+    private const int BuildingWidth = 8;
+    private const int BuildingHeight = 10;
 
-    // Jitter range: PickIndex(label, 41) yields 0..40, subtract 20 -> -20..+20.
-    private const int JitterRange = 41;
-    private const int JitterOffset = 20;
+    // Jitter range: PickIndex(label, 5) yields 0..4, subtract 2 -> -2..+2.
+    private const int JitterRange = 5;
+    private const int JitterOffset = 2;
 
     /// <summary>
     /// Generates a deterministic <see cref="TownLayout"/> for a town hub surface.
@@ -42,15 +43,15 @@ internal static class TownLayoutGenerator
 
         var buildings = new List<BuildingPlacement>
         {
-            PlaceBuilding(BuildingKind.Store, baseX: 100, baseY: 100, townId, townSlotIndex, source, saltSource),
-            PlaceBuilding(BuildingKind.Sheriff, baseX: 370, baseY: 100, townId, townSlotIndex, source, saltSource),
-            PlaceBuilding(BuildingKind.Saloon, baseX: 640, baseY: 100, townId, townSlotIndex, source, saltSource),
-            PlaceBuilding(BuildingKind.Trailhead, baseX: 720, baseY: 250, townId, townSlotIndex, source, saltSource),
+            PlaceBuilding(BuildingKind.Store, baseX: 12, baseY: 15, townId, townSlotIndex, source, saltSource),
+            PlaceBuilding(BuildingKind.Sheriff, baseX: 46, baseY: 15, townId, townSlotIndex, source, saltSource),
+            PlaceBuilding(BuildingKind.Saloon, baseX: 80, baseY: 15, townId, townSlotIndex, source, saltSource),
+            PlaceBuilding(BuildingKind.Trailhead, baseX: 90, baseY: 50, townId, townSlotIndex, source, saltSource),
         };
 
         if ((services & TownServices.Telegraph) == TownServices.Telegraph)
         {
-            buildings.Add(PlaceBuilding(BuildingKind.Telegraph, baseX: 370, baseY: 350, townId, townSlotIndex, source, saltSource));
+            buildings.Add(PlaceBuilding(BuildingKind.Telegraph, baseX: 46, baseY: 70, townId, townSlotIndex, source, saltSource));
         }
 
         return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY);

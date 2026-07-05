@@ -17,10 +17,10 @@ public sealed class WorldModelsTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 100, 200),
-            new(BuildingKind.Saloon, 300, 120)
+            new(BuildingKind.Store, 10, 20),
+            new(BuildingKind.Saloon, 30, 12)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 250, PlayerSpawnY: 350);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
 
         var town = new Town(
             new TownId("t1"),
@@ -30,8 +30,8 @@ public sealed class WorldModelsTests
 
         Assert.NotNull(town.Layout);
         Assert.Equal(2, town.Layout!.Buildings.Count);
-        Assert.Equal(250, town.Layout.PlayerSpawnX);
-        Assert.Equal(350, town.Layout.PlayerSpawnY);
+        Assert.Equal(50, town.Layout.PlayerSpawnX);
+        Assert.Equal(35, town.Layout.PlayerSpawnY);
     }
 
     [Fact]
@@ -39,9 +39,9 @@ public sealed class WorldModelsTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 100, 200)
+            new(BuildingKind.Store, 10, 20)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 250, PlayerSpawnY: 350);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
         var town = new Town(new TownId("t1"), "Dodge", TownServices.Telegraph, Layout: layout);
 
         var renamed = town with { Name = "Tombstone" };

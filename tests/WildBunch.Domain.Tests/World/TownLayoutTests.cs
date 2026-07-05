@@ -9,22 +9,22 @@ public sealed class TownLayoutTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 100, 200),
-            new(BuildingKind.Sheriff, 300, 120),
-            new(BuildingKind.Saloon, 500, 180),
-            new(BuildingKind.Trailhead, 50, 400),
-            new(BuildingKind.Telegraph, 220, 320)
+            new(BuildingKind.Store, 12, 20),
+            new(BuildingKind.Sheriff, 30, 12),
+            new(BuildingKind.Saloon, 50, 18),
+            new(BuildingKind.Trailhead, 5, 40),
+            new(BuildingKind.Telegraph, 22, 32)
         };
 
-        var layout = new TownLayout(buildings, PlayerSpawnX: 250, PlayerSpawnY: 350);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
 
         Assert.Equal(5, layout.Buildings.Count);
         Assert.Equal(BuildingKind.Store, layout.Buildings[0].Kind);
         Assert.Equal(BuildingKind.Telegraph, layout.Buildings[4].Kind);
-        Assert.Equal(100, layout.Buildings[0].X);
-        Assert.Equal(200, layout.Buildings[0].Y);
-        Assert.Equal(250, layout.PlayerSpawnX);
-        Assert.Equal(350, layout.PlayerSpawnY);
+        Assert.Equal(12, layout.Buildings[0].X);
+        Assert.Equal(20, layout.Buildings[0].Y);
+        Assert.Equal(50, layout.PlayerSpawnX);
+        Assert.Equal(35, layout.PlayerSpawnY);
     }
 
     [Fact]
@@ -32,17 +32,17 @@ public sealed class TownLayoutTests
     {
         var placement = new BuildingPlacement(BuildingKind.Store, 10, 20);
 
-        Assert.Equal(60, placement.Width);
-        Assert.Equal(50, placement.Height);
+        Assert.Equal(8, placement.Width);
+        Assert.Equal(10, placement.Height);
     }
 
     [Fact]
     public void BuildingPlacementAllowsCustomDimensions()
     {
-        var placement = new BuildingPlacement(BuildingKind.Saloon, 10, 20, Width: 120, Height: 80);
+        var placement = new BuildingPlacement(BuildingKind.Saloon, 10, 20, Width: 12, Height: 8);
 
-        Assert.Equal(120, placement.Width);
-        Assert.Equal(80, placement.Height);
+        Assert.Equal(12, placement.Width);
+        Assert.Equal(8, placement.Height);
     }
 
     [Fact]

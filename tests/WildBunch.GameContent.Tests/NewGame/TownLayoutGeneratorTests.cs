@@ -73,13 +73,13 @@ public sealed class TownLayoutGeneratorTests
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.None, NewTownId("town-1"), 0, NewSource(), null);
 
-        Assert.Equal(400, layout.PlayerSpawnX);
-        Assert.Equal(250, layout.PlayerSpawnY);
+        Assert.Equal(50, layout.PlayerSpawnX);
+        Assert.Equal(50, layout.PlayerSpawnY);
 
         var trailhead = layout.Buildings.Single(b => b.Kind == BuildingKind.Trailhead);
-        // Trailhead base position is (720, 250) at the right edge; jitter is +/-20px.
-        Assert.InRange(trailhead.X, 700, 740);
-        Assert.InRange(trailhead.Y, 230, 270);
+        // Trailhead base position is (90, 50) at the right edge; jitter is +/-2.
+        Assert.InRange(trailhead.X, 88, 92);
+        Assert.InRange(trailhead.Y, 48, 52);
     }
 
     [Fact]
@@ -90,13 +90,13 @@ public sealed class TownLayoutGeneratorTests
 
         Assert.All(layout.Buildings, b =>
         {
-            Assert.Equal(60, b.Width);
-            Assert.Equal(50, b.Height);
+            Assert.Equal(8, b.Width);
+            Assert.Equal(10, b.Height);
         });
     }
 
     [Fact]
-    public void GenerateLayout_JitterStaysWithinTwentyPixelsOfBasePosition()
+    public void GenerateLayout_JitterStaysWithinTwoUnitsOfBasePosition()
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
@@ -104,18 +104,18 @@ public sealed class TownLayoutGeneratorTests
 
         var expected = new Dictionary<BuildingKind, (int X, int Y)>
         {
-            [BuildingKind.Store] = (100, 100),
-            [BuildingKind.Sheriff] = (370, 100),
-            [BuildingKind.Saloon] = (640, 100),
-            [BuildingKind.Trailhead] = (720, 250),
-            [BuildingKind.Telegraph] = (370, 350),
+            [BuildingKind.Store] = (12, 15),
+            [BuildingKind.Sheriff] = (46, 15),
+            [BuildingKind.Saloon] = (80, 15),
+            [BuildingKind.Trailhead] = (90, 50),
+            [BuildingKind.Telegraph] = (46, 70),
         };
 
         foreach (var building in layout.Buildings)
         {
             var (baseX, baseY) = expected[building.Kind];
-            Assert.InRange(building.X, baseX - 20, baseX + 20);
-            Assert.InRange(building.Y, baseY - 20, baseY + 20);
+            Assert.InRange(building.X, baseX - 2, baseX + 2);
+            Assert.InRange(building.Y, baseY - 2, baseY + 2);
         }
     }
 }

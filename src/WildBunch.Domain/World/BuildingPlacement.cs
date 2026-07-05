@@ -1,14 +1,15 @@
 namespace WildBunch.Domain.World;
 
 /// <summary>
-/// A single building placed on a town hub surface. Coordinates (X, Y) are
-/// surface-space pixels relative to the town hub canvas. Width/Height default
-/// to the standard building footprint (60x50) and may be overridden for
-/// non-standard buildings.
+/// A single building placed on a town hub surface. Coordinates (X, Y) and
+/// dimensions (Width, Height) are in logical units (0-100) relative to the
+/// town hub surface. The frontend scales these to actual canvas pixels.
+/// Width/Height default to the standard building footprint (8x10 logical
+/// units) and may be overridden for non-standard buildings.
 /// </summary>
 public sealed record BuildingPlacement(
     BuildingKind Kind,
     int X,
     int Y,
-    int Width = 60,
-    int Height = 50);
+    int Width = 8,
+    int Height = 10);

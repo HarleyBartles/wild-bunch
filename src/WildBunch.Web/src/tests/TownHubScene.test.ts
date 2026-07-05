@@ -29,19 +29,19 @@ afterEach(() => {
 
 function createBuildings(): BuildingPlacementDto[] {
   return [
-    { kind: BuildingKind.Store, x: 100, y: 100, width: 80, height: 60 },
-    { kind: BuildingKind.Sheriff, x: 300, y: 100, width: 80, height: 60 },
-    { kind: BuildingKind.Saloon, x: 500, y: 100, width: 80, height: 60 },
-    { kind: BuildingKind.Trailhead, x: 700, y: 100, width: 80, height: 60 },
-    { kind: BuildingKind.Telegraph, x: 400, y: 300, width: 60, height: 40 },
+    { kind: BuildingKind.Store, x: 12, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Sheriff, x: 30, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Saloon, x: 50, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Trailhead, x: 90, y: 50, width: 8, height: 10 },
+    { kind: BuildingKind.Telegraph, x: 46, y: 70, width: 8, height: 10 },
   ];
 }
 
 function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: createBuildings(),
-    playerSpawnX: 400,
-    playerSpawnY: 400,
+    playerSpawnX: 50,
+    playerSpawnY: 50,
     ...overrides,
   };
 }

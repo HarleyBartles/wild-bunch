@@ -145,25 +145,25 @@ public sealed class GameSessionEventReplayTests
         var pinecrossLayout = new TownLayout(
             new[]
             {
-                new BuildingPlacement(BuildingKind.Store, 100, 200),
-                new BuildingPlacement(BuildingKind.Sheriff, 300, 120),
-                new BuildingPlacement(BuildingKind.Saloon, 500, 180),
-                new BuildingPlacement(BuildingKind.Trailhead, 50, 400),
-                new BuildingPlacement(BuildingKind.Telegraph, 220, 320)
+                new BuildingPlacement(BuildingKind.Store, 10, 20),
+                new BuildingPlacement(BuildingKind.Sheriff, 30, 12),
+                new BuildingPlacement(BuildingKind.Saloon, 50, 18),
+                new BuildingPlacement(BuildingKind.Trailhead, 5, 40),
+                new BuildingPlacement(BuildingKind.Telegraph, 22, 32)
             },
-            PlayerSpawnX: 250,
-            PlayerSpawnY: 350);
+            PlayerSpawnX: 50,
+            PlayerSpawnY: 35);
 
         var redmesaLayout = new TownLayout(
             new[]
             {
-                new BuildingPlacement(BuildingKind.Store, 110, 210),
-                new BuildingPlacement(BuildingKind.Sheriff, 310, 130),
-                new BuildingPlacement(BuildingKind.Saloon, 510, 190),
-                new BuildingPlacement(BuildingKind.Trailhead, 60, 410)
+                new BuildingPlacement(BuildingKind.Store, 11, 21),
+                new BuildingPlacement(BuildingKind.Sheriff, 31, 13),
+                new BuildingPlacement(BuildingKind.Saloon, 51, 19),
+                new BuildingPlacement(BuildingKind.Trailhead, 6, 41)
             },
-            PlayerSpawnX: 260,
-            PlayerSpawnY: 360);
+            PlayerSpawnX: 52,
+            PlayerSpawnY: 36);
 
         var pinecross = new Town(
             new TownId("pinecross"),

@@ -13,26 +13,26 @@ public sealed class TownLayoutMapperTests
             new[]
             {
                 new BuildingPlacement(BuildingKind.Store, 10, 20),
-                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, 70, 60),
+                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, 12, 8),
                 new BuildingPlacement(BuildingKind.Saloon, 50, 60),
                 new BuildingPlacement(BuildingKind.Trailhead, 70, 80),
                 new BuildingPlacement(BuildingKind.Telegraph, 90, 100)
             },
-            400,
-            250);
+            50,
+            50);
 
         var dto = TownLayoutMapper.ToDto(layout);
 
         Assert.NotNull(dto);
-        Assert.Equal(400, dto.PlayerSpawnX);
-        Assert.Equal(250, dto.PlayerSpawnY);
+        Assert.Equal(50, dto.PlayerSpawnX);
+        Assert.Equal(50, dto.PlayerSpawnY);
         Assert.Equal(5, dto.Buildings.Count);
 
-        AssertBuildingPlacement(dto.Buildings[0], BuildingKind.Store, 10, 20, 60, 50);
-        AssertBuildingPlacement(dto.Buildings[1], BuildingKind.Sheriff, 30, 40, 70, 60);
-        AssertBuildingPlacement(dto.Buildings[2], BuildingKind.Saloon, 50, 60, 60, 50);
-        AssertBuildingPlacement(dto.Buildings[3], BuildingKind.Trailhead, 70, 80, 60, 50);
-        AssertBuildingPlacement(dto.Buildings[4], BuildingKind.Telegraph, 90, 100, 60, 50);
+        AssertBuildingPlacement(dto.Buildings[0], BuildingKind.Store, 10, 20, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[1], BuildingKind.Sheriff, 30, 40, 12, 8);
+        AssertBuildingPlacement(dto.Buildings[2], BuildingKind.Saloon, 50, 60, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[3], BuildingKind.Trailhead, 70, 80, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[4], BuildingKind.Telegraph, 90, 100, 8, 10);
     }
 
     [Fact]
@@ -40,15 +40,15 @@ public sealed class TownLayoutMapperTests
     {
         var layout = new TownLayout(
             Array.Empty<BuildingPlacement>(),
-            400,
-            250);
+            50,
+            50);
 
         var dto = TownLayoutMapper.ToDto(layout);
 
         Assert.NotNull(dto);
         Assert.Empty(dto.Buildings);
-        Assert.Equal(400, dto.PlayerSpawnX);
-        Assert.Equal(250, dto.PlayerSpawnY);
+        Assert.Equal(50, dto.PlayerSpawnX);
+        Assert.Equal(50, dto.PlayerSpawnY);
     }
 
     [Fact]

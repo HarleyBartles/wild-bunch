@@ -9,13 +9,13 @@ public sealed class WorldSnapshotTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 100, 200),
-            new(BuildingKind.Sheriff, 300, 120),
-            new(BuildingKind.Saloon, 500, 180),
-            new(BuildingKind.Trailhead, 50, 400),
-            new(BuildingKind.Telegraph, 220, 320)
+            new(BuildingKind.Store, 10, 20),
+            new(BuildingKind.Sheriff, 30, 12),
+            new(BuildingKind.Saloon, 50, 18),
+            new(BuildingKind.Trailhead, 5, 40),
+            new(BuildingKind.Telegraph, 22, 32)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 250, PlayerSpawnY: 350);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
         var town = new Town(
             new TownId("t1"),
             "Dodge",
@@ -30,15 +30,15 @@ public sealed class WorldSnapshotTests
         var restored = snapshot.ToDomain();
 
         Assert.NotNull(restored.Layout);
-        Assert.Equal(250, restored.Layout!.PlayerSpawnX);
-        Assert.Equal(350, restored.Layout.PlayerSpawnY);
+        Assert.Equal(50, restored.Layout!.PlayerSpawnX);
+        Assert.Equal(35, restored.Layout.PlayerSpawnY);
         Assert.Equal(5, restored.Layout.Buildings.Count);
         Assert.Equal(BuildingKind.Store, restored.Layout.Buildings[0].Kind);
         Assert.Equal(BuildingKind.Telegraph, restored.Layout.Buildings[4].Kind);
-        Assert.Equal(100, restored.Layout.Buildings[0].X);
-        Assert.Equal(200, restored.Layout.Buildings[0].Y);
-        Assert.Equal(60, restored.Layout.Buildings[0].Width);
-        Assert.Equal(50, restored.Layout.Buildings[0].Height);
+        Assert.Equal(10, restored.Layout.Buildings[0].X);
+        Assert.Equal(20, restored.Layout.Buildings[0].Y);
+        Assert.Equal(8, restored.Layout.Buildings[0].Width);
+        Assert.Equal(10, restored.Layout.Buildings[0].Height);
     }
 
     [Fact]
