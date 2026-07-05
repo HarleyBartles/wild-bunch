@@ -22,13 +22,14 @@ public sealed record TownSnapshot(
     TownProsperity Prosperity,
     int MapX,
     int MapY,
-    bool IsOutlier)
+    bool IsOutlier,
+    TownLayout? Layout = null)
 {
     public static TownSnapshot FromDomain(Town town)
-        => new(town.Id.Value, town.Name, town.Services, town.Prosperity, town.MapX, town.MapY, town.IsOutlier);
+        => new(town.Id.Value, town.Name, town.Services, town.Prosperity, town.MapX, town.MapY, town.IsOutlier, town.Layout);
 
     public Town ToDomain()
-        => new(new TownId(Id), Name, Services, Prosperity, MapX: MapX, MapY: MapY, IsOutlier: IsOutlier);
+        => new(new TownId(Id), Name, Services, Prosperity, MapX: MapX, MapY: MapY, IsOutlier: IsOutlier, Layout: Layout);
 }
 
 public sealed record TrailSnapshot(

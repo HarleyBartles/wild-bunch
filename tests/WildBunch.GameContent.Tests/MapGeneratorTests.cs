@@ -619,6 +619,50 @@ public sealed class MapGeneratorTests
             $"expected >= 10%. Full distribution: {degreeSummary}");
     }
 
+    [Fact]
+    public void Generate_EveryTownHasNonNullLayout()
+    {
+        var seed = NewSeedWorld(townCount: 8, clusterCount: 2, density: GraphDensity.Sparse, outlierSlotType: 1);
+        var source = NewSource();
+
+        var world = MapGenerator.Generate(seed, source, GameEntropy.Wild, SaltSource.CreateFixed("layout-salt"));
+
+        Assert.NotEmpty(world.Towns);
+        Assert.All(world.Towns, town =>
+        {
+            Assert.NotNull(town.Layout);
+            Assert.NotEmpty(town.Layout!.Buildings);
+        });
+    }
+
+    [Fact]
+    public void Generate_LayoutIsDeterministicForSameSeedAndSalt()
+    {
+        var seed = NewSeedWorld(townCount: 8, clusterCount: 2, density: GraphDensity.Sparse);
+        var source = NewSource();
+        var salt = SaltSource.CreateFixed("deterministic-layout-salt");
+
+        var a = MapGenerator.Generate(seed, source, GameEntropy.Boring, salt);
+        var b = MapGenerator.Generate(seed, source, GameEntropy.Boring, salt);
+
+        var townsA = a.Towns.OrderBy(t => t.Id.Value).ToArray();
+        var townsB = b.Towns.OrderBy(t => t.Id.Value).ToArray();
+
+        Assert.Equal(townsA.Length, townsB.Length);
+        for (var i = 0; i < townsA.Length; i++)
+        {
+            var layoutA = townsA[i].Layout;
+            var layoutB = townsB[i].Layout;
+            Assert.NotNull(layoutA);
+            Assert.NotNull(layoutB);
+            Assert.Equal(layoutA!.Buildings.Count, layoutB!.Buildings.Count);
+            for (var j = 0; j < layoutA.Buildings.Count; j++)
+            {
+                Assert.Equal(layoutA.Buildings[j], layoutB.Buildings[j]);
+            }
+        }
+    }
+
     private static bool SegmentsIntersect((int MapX, int MapY) p1, (int MapX, int MapY) p2, (int MapX, int MapY) p3, (int MapX, int MapY) p4)
     {
         var d1 = Sign(p3, p4, p1);

@@ -11,4 +11,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="WildBunch.Application.Tests" />
+  </ItemGroup>
+
 </Project>
