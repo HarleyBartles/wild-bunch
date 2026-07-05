@@ -95,7 +95,8 @@ public sealed record TownDto(
     string Name,
     TownServices Services,
     int MapX = 0,
-    int MapY = 0);
+    int MapY = 0,
+    TownLayoutDto? Layout = null);
 
 public sealed record TrailDto(
     string Id,

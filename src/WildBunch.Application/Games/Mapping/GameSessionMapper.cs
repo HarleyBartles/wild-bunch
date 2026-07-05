@@ -139,7 +139,8 @@ public static class GameSessionMapper
             town.Name,
             town.Services,
             town.MapX,
-            town.MapY);
+            town.MapY,
+            TownLayoutMapper.ToDto(town.Layout));
 
     private static TrailDto ToDto(DomainTrail trail)
         => new(
