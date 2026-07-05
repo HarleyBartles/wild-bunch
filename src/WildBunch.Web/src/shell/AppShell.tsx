@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet } from "@tanstack/react-router";
 import styled from "styled-components";
 import { Hud } from "./Hud";
 import { GlobalOverlays, type OverlayKind } from "../flow/GlobalOverlays";
 import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
+import { usePhaseRouteSync } from "./usePhaseRouteSync";
+import { useDevSurfaceSync } from "./useDevSurfaceSync";
+import { RouteLoading } from "./RouteLoading";
 
 function ShellChrome() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
@@ -17,6 +20,9 @@ function ShellChrome() {
       setChromeBarHeight(chromeBarRef.current.offsetHeight);
     }
   }, [devOverlayOpen]);
+
+  usePhaseRouteSync();
+  useDevSurfaceSync();
 
   return (
     <DevSurfaceProvider>
@@ -42,7 +48,9 @@ function ShellChrome() {
         </ChromeBar>
         <RouteOutlet aria-live="polite">
           <Route>
-            <Outlet />
+            <Suspense fallback={<RouteLoading />}>
+              <Outlet />
+            </Suspense>
           </Route>
         </RouteOutlet>
         <DevOverlay
