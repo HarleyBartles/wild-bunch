@@ -128,7 +128,7 @@ public static class GameSessionMapper
             player.CurrentTownId?.Value,
             player.Health);
 
-    private static WorldDto ToDto(DomainWorld world)
+    internal static WorldDto ToDto(DomainWorld world)
         => new(
             world.Towns.Select(ToDto).ToArray(),
             world.Trails.Select(ToDto).ToArray());

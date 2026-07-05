@@ -88,6 +88,19 @@ public sealed class SeedWorldFactoryTests
         }
     }
 
+    [Fact]
+    public void CreateCanonicalWorldTownsHaveNullLayouts()
+    {
+        // The canonical start-screen world does not go through MapGenerator and
+        // must not carry town hub layouts — layouts are gameplay-only.
+        var world = SeedWorldFactory.CreateCanonicalWorld();
+
+        foreach (var town in world.Towns)
+        {
+            Assert.Null(town.Layout);
+        }
+    }
+
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
         => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 }

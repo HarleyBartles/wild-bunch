@@ -74,20 +74,10 @@ public sealed class GameSessionMapperTests
     }
 
     /// <summary>
-    /// GameSessionMapper.ToDto(DomainWorld) is private, but the public
-    /// ToDto(DomainGameSession) delegates to it. To exercise the town-level
-    /// mapping without standing up a full GameSession, we reflect into the
-    /// private static method.
+    /// GameSessionMapper.ToDto(DomainWorld) is internal, exposed to tests via
+    /// InternalsVisibleTo. This lets us exercise the town-level mapping without
+    /// standing up a full GameSession.
     /// </summary>
     private static WorldDto MapWorld(DomainWorld world)
-    {
-        var method = typeof(GameSessionMapper)
-            .GetMethod("ToDto", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-                binder: null,
-                types: new[] { typeof(DomainWorld) },
-                modifiers: null);
-
-        Assert.NotNull(method);
-        return (WorldDto)method!.Invoke(null, new object[] { world })!;
-    }
+        => GameSessionMapper.ToDto(world);
 }
