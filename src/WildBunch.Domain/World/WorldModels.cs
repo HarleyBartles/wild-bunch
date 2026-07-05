@@ -25,7 +25,8 @@ public sealed record Town(
     TownSourceCatalog? SourceCatalog = null,
     int MapX = 0,
     int MapY = 0,
-    bool IsOutlier = false)
+    bool IsOutlier = false,
+    TownLayout? Layout = null)
 {
     public TownSourceCatalog Sources => SourceCatalog ?? TownSourceCatalog.Default;
 }
