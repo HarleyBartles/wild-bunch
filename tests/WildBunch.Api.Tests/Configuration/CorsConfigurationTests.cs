@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Api;
 
-namespace WildBunch.Api.Tests;
+namespace WildBunch.Api.Tests.Configuration;
 
-public sealed class CorsPolicyTests
+public sealed class CorsConfigurationTests
 {
     [Fact]
     public void ViteDevClientPolicyAllowsAnyLocalhostPort()
