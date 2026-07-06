@@ -2,10 +2,8 @@
 """Cut, normalize, and promote generated image assets onto fixed canvases.
 
 Primary backend: Python 3.11+ with Pillow installed in the active environment.
-Optional fallback path: Node.js 20+ with sharp installed, then jimp only if
-sharp is unavailable. This script is intentionally generic so it can be reused
-for any future asset family that needs background cutout and footprint
-normalization.
+This script is intentionally generic so it can be reused for any future asset
+family that needs background cutout and footprint normalization.
 """
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ try:
 except ImportError as exc:  # pragma: no cover - import guard
     raise SystemExit(
         "Pillow is required for the primary image pipeline backend. "
-        "Install it in your active Python environment or use the Node fallback."
+        "Install it in your active Python environment."
     ) from exc
 
 
@@ -103,7 +101,7 @@ def _is_background(
     return distance <= tolerance * 3 and (green_dominance if require_green_dominance else True)
 
 
-def _cut_background(
+def _edge_connected_background_mask(
     image: Image.Image,
     background: tuple[int, int, int],
     tolerance: int,
@@ -111,13 +109,50 @@ def _cut_background(
     require_green_dominance: bool = True,
 ) -> Image.Image:
     rgba = image.convert("RGBA")
-    pixels = rgba.load()
     width, height = rgba.size
+    pixels = rgba.load()
+    mask = [[False] * width for _ in range(height)]
+    queue: deque[tuple[int, int]] = deque()
+
+    def enqueue_if_background(x: int, y: int) -> None:
+        if mask[y][x]:
+            return
+        if _is_background(pixels[x, y], background, tolerance, require_green_dominance=require_green_dominance):
+            mask[y][x] = True
+            queue.append((x, y))
+
+    for x in range(width):
+        enqueue_if_background(x, 0)
+        if height > 1:
+            enqueue_if_background(x, height - 1)
+    for y in range(height):
+        enqueue_if_background(0, y)
+        if width > 1:
+            enqueue_if_background(width - 1, y)
+
+    while queue:
+        current_x, current_y = queue.popleft()
+        for next_x, next_y in (
+            (current_x + 1, current_y),
+            (current_x - 1, current_y),
+            (current_x, current_y + 1),
+            (current_x, current_y - 1),
+        ):
+            if 0 <= next_x < width and 0 <= next_y < height and not mask[next_y][next_x]:
+                if _is_background(
+                    pixels[next_x, next_y],
+                    background,
+                    tolerance,
+                    require_green_dominance=require_green_dominance,
+                ):
+                    mask[next_y][next_x] = True
+                    queue.append((next_x, next_y))
+
     for y in range(height):
         for x in range(width):
-            pixel = pixels[x, y]
-            if _is_background(pixel, background, tolerance, require_green_dominance=require_green_dominance):
-                pixels[x, y] = (pixel[0], pixel[1], pixel[2], 0)
+            if mask[y][x]:
+                pixels[x, y] = (pixels[x, y][0], pixels[x, y][1], pixels[x, y][2], 0)
+
     return rgba
 
 
@@ -263,7 +298,12 @@ def _normalize_to_canvas(image: Image.Image, *, canvas_width: int, canvas_height
 def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig) -> None:
     with Image.open(input_path) as image:
         background = _sample_background_color(image, config.sample_radius)
-        cut = _cut_background(image, background, config.color_tolerance)
+        cut = _edge_connected_background_mask(
+            image,
+            background,
+            config.color_tolerance,
+            require_green_dominance=True,
+        )
         trimmed = _trim_transparency(cut)
         normalized = _normalize_to_canvas(
             trimmed,
@@ -278,7 +318,7 @@ def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig)
 def cut_background_in_place(input_path: Path, config: PipelineConfig) -> None:
     with Image.open(input_path) as image:
         background = _sample_background_color(image, config.sample_radius)
-        cut = _cut_background(
+        cut = _edge_connected_background_mask(
             image,
             background,
             config.color_tolerance,

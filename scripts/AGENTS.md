@@ -18,8 +18,6 @@ the needed tooling. That includes PostgreSQL setup/validation via
   tooling under `.local/postgresql16`.
 - `image_asset_pipeline.py` requires Python 3.11+ with Pillow installed in the
   active environment.
-- Optional image pipeline fallback: Node.js 20+ with `sharp`, then `jimp` only
-  if `sharp` cannot be used.
 
 ## Scripts
 

@@ -13,8 +13,7 @@ or image assets for the first time.
 ## Required dependencies
 
 - Python 3.11+ with Pillow installed for the primary pipeline path
-- Node.js 20+ with `sharp` installed for the optional Node fallback
-- `jimp` only if the environment cannot use `sharp`
+- `image_asset_pipeline.py` depends on Pillow for the cut, slice, and normalize commands
 
 ## First-pass workflow
 
@@ -54,8 +53,7 @@ python scripts/image_asset_pipeline.py slice-sheet \
 ```
 
 If the environment does not have Pillow available, install it into the active
-Python environment or use the Node fallback with `sharp` first and `jimp`
-only if `sharp` is unavailable.
+Python environment before using the repo helper.
 
 ## Follow-up
 
