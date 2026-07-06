@@ -11,11 +11,11 @@ namespace WildBunch.GameContent.NewGame;
 /// </summary>
 public static class BuildingLayoutCatalog
 {
-    // TODO: This method is temporary - will be removed in Task 4 when TownLayoutGenerator is rewritten
+    // TODO: This method is temporary - will be removed in Task 7 when TownLayoutGenerator is rewritten
     // to use the new PaletteSpec-based tile grid system
     public static BuildingLayoutPattern GetLayout(BuildingLayoutPalette palette)
     {
-        // Return a fallback layout for all palettes until Task 4
+        // Return a stub layout for all palettes until Task 7
         return FallbackLayout;
     }
 
@@ -46,7 +46,7 @@ public static class BuildingLayoutCatalog
         };
     }
 
-    // TODO: This fallback layout is temporary - will be removed in Task 4
+    // TODO: This fallback layout is temporary - will be removed in Task 7
     private static readonly BuildingLayoutPattern FallbackLayout = new(
         BuildingPlacements: new[]
         {
@@ -70,7 +70,7 @@ public enum SpurDirection
     West
 }
 
-// TODO: These types are temporary - will be removed in Task 4 when TownLayoutGenerator is rewritten
+// TODO: These types are temporary - will be removed in Task 7 when TownLayoutGenerator is rewritten
 // to use the new PaletteSpec-based tile grid system
 public sealed record BuildingLayoutPattern(
     BuildingPlacementSpec[] BuildingPlacements,
