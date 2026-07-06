@@ -184,6 +184,19 @@ describe("TownHubScene visual feedback", () => {
       },
       text: () => ({ setOrigin: () => {} }),
       circle: () => {},
+      graphics: () => ({
+        lineStyle: () => ({}),
+        moveTo: () => ({}),
+        lineTo: () => ({}),
+        strokePath: () => ({}),
+      }),
+    };
+
+    // Mock textures to always return false (no sprites loaded in unit tests)
+    // This forces the code to use the rectangle fallback path
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (scene as any).textures = {
+      exists: () => false,
     };
 
     // Track which building kind each rect corresponds to by order of creation.
