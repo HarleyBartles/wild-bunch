@@ -8,6 +8,14 @@
 
 **Tech Stack:** C#/.NET backend, xUnit tests, GameSetupDeterministicSource for seed-derived randomness
 
+## Execution Confidence Assessment
+
+**REQUIRED:** Before saving this plan, the planner must perform the execution confidence assessment from the planning guide and document the rating here. A plan cannot be presented as ready for execution without this assessment.
+
+**Confidence Rating:** 9/10
+
+**Assessment Summary:** Verified all file paths, class names, and method signatures against actual source code. Found and closed critical SeedWorldResolver codec gap (modulo 8 → 16, validation TODO, canonical palette). Added Task 1.5 to fix codec before system break. All tile grid constants, placement algorithms, and view selection are fully specified. TownLayoutGenerator rewrite is complex but step-by-step breakdown makes it manageable.
+
 ## Global Constraints
 
 - Do NOT move asset custody to web public tree manually - use Vite bundling

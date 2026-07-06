@@ -66,6 +66,14 @@ independently testable deliverable.
 
 **Tech Stack:** [Key technologies/libraries]
 
+## Execution Confidence Assessment
+
+**REQUIRED:** Before saving this plan, the planner must perform the execution confidence assessment from the planning guide and document the rating here. A plan cannot be presented as ready for execution without this assessment.
+
+**Confidence Rating:** [0-10]
+
+**Assessment Summary:** [Brief summary of verification performed - file paths checked, source code verified, gaps found and closed]
+
 ## Global Constraints
 
 [The spec's project-wide requirements — version floors, dependency limits,
@@ -155,9 +163,16 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 ## Execution Handoff
 
+**Before presenting the plan:**
+1. Perform the execution confidence assessment from the planning guide
+2. Verify all file paths, class names, and method signatures against actual source code
+3. Document the confidence rating in the plan header
+4. If confidence < 8/10, close the gaps before presenting the plan
+5. When presenting the plan, state the confidence rating out of 10
+
 After saving the plan, offer execution choice:
 
-**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Two execution options:**
+**"Plan complete and saved to `.agents/superpowers/plans/<filename>.md`. Two execution options:**
 
 **1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
 

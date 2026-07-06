@@ -29,7 +29,7 @@ Every implementation plan in this repo must contain:
 - **Test cases** — each task specifies the test cases to write, with TDD ordering (failing test first, then implementation). Specify the test kind (unit, integration, etc.) per `.agents/docs/validation-policy.md`.
 - **Commit messages** — each task specifies its commit message.
 - **Expected interim state** — tasks that leave the build in a temporarily broken state (e.g. tsc errors fixed by a later task) must document this explicitly so the implementer knows it's expected.
-- **SDD confidence rating** — the plan includes a confidence rating (0-10) reflecting how well-specified the tasks are for subagent-driven execution. This rating must be the result of an honest execution confidence assessment (see below), not a self-assigned number.
+- **Execution confidence assessment** — documented in the plan header, verified against actual source code before the plan is presented as ready for execution. This is a plan completion criterion, not a post-writing checklist. A plan cannot be presented as ready for execution without this assessment documented.
 
 ## Plan Artifact Placement
 
@@ -57,7 +57,9 @@ Before executing a plan, run through this checklist. Each item is a general prin
 7. **Interim state documentation.** Are temporary build breaks between tasks (tsc errors, failing tests, missing imports) documented so the implementer knows they're expected? An undocumented interim break will cause the implementer to waste time debugging a "failure" that's planned.
 8. **Task independence.** Can each task be executed independently without shared mutable state between tasks? If task B depends on task A's state changes, that must be documented. SDD parallel execution requires independence.
 
-## Execution Confidence Assessment (required before reporting ready)
+## Execution Confidence Assessment (plan completion criterion)
+
+**REQUIRED:** Before saving and presenting a plan, the planner must perform the execution confidence assessment and document the rating in the plan header. A plan cannot be presented as ready for execution without this assessment documented. This is a plan completion criterion, not a post-writing checklist.
 
 Before reporting a plan as ready for execution, the planner must honestly assess the plan's execution confidence. This is not a formality — it is a verification step that catches gaps the planner would otherwise discover too late.
 
