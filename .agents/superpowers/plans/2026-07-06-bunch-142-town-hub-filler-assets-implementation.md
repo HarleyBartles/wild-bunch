@@ -121,7 +121,7 @@
 - Consumes: the current town-building docs and the approved BUNCH-142 design spec
 - Produces: explicit docs for the three asset tracks, the new source/staging/sprites custody rule, the filler-building visibility rule, and the tile-tessellation contract
 
-- [ ] **Step 1: Rewrite the style bible to carry the final prompt contract**
+- [x] **Step 1: Rewrite the style bible to carry the final prompt contract**
 
 Write the docs so they say, in plain language:
 - filler buildings are visually unobtrusive supporting buildings, not the dominant town feature
@@ -130,7 +130,7 @@ Write the docs so they say, in plain language:
 - road tiles are about mirroring and topology, not tier variation
 - dirt variation comes from base textures, prop-baked tiles, and a single larger landform set
 
-- [ ] **Step 2: Rewrite the asset spec and pipeline overview for the new custody tree**
+- [x] **Step 2: Rewrite the asset spec and pipeline overview for the new custody tree**
 
 Update the human-facing docs so they name the actual homes:
 - `src/WildBunch.Assets/source/`
@@ -142,11 +142,11 @@ Make the docs explicitly describe:
 - `town-hub-roads`
 - `town-hub-ground`
 
-- [ ] **Step 3: Update the asset-root AGENTS files**
+- [x] **Step 3: Update the asset-root AGENTS files**
 
 Add the repo-local guidance that points workers at the style bible, asset spec, and doctrine documents for the town-hub asset family split.
 
-- [ ] **Step 4: Verify the doc diff is clean**
+- [x] **Step 4: Verify the doc diff is clean**
 
 Run:
 ```powershell
@@ -154,7 +154,7 @@ git diff --check
 ```
 Expected: no whitespace errors, no malformed markdown blocks, no accidental trailing whitespace.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add docs/art/town-buildings/style-bible.md docs/art/town-buildings/asset-spec.md docs/art/town-buildings/pipeline-overview.md .agents/art/town-buildings/DOCTRINE.md src/WildBunch.Assets/README.md src/WildBunch.Assets/AGENTS.md
@@ -183,17 +183,17 @@ git commit -m "docs: rewrite town-hub asset contract for source staging sprites"
 - Consumes: the rewritten docs from Task 1
 - Produces: a real `source/staging/sprites` custody tree that the rest of the asset work can target
 
-- [ ] **Step 1: Move the existing town-building custody tree**
+- [x] **Step 1: Move the existing town-building custody tree**
 
 Re-home the current town-building asset content out of `src/WildBunch.Assets/town-buildings/` and into the new `source/staging/sprites` layout so the source assets stop looking like pipeline scratch.
 
-- [ ] **Step 2: Scaffold the three family roots**
+- [x] **Step 2: Scaffold the three family roots**
 
 Create the road and ground family roots even if they start empty so later generations have a stable home:
 - `town-hub-roads`
 - `town-hub-ground`
 
-- [ ] **Step 3: Regenerate the repo mesh**
+- [x] **Step 3: Regenerate the repo mesh**
 
 Run:
 ```powershell
@@ -202,7 +202,7 @@ python scripts/generate_index_mesh.py --check
 ```
 Expected: the generated `INDEX.md` mesh reflects the new source/staging/sprites layout.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add -A
@@ -222,7 +222,7 @@ git commit -m "chore: rehome town-hub asset custody tree"
 - Consumes: the rewritten style bible and the `town-hub-buildings` family scaffold
 - Produces: 40 total filler-building images, 20 per family, each with the canonical five-view turnaround and four prosperity tiers
 
-- [ ] **Step 1: Generate the first filler family**
+- [x] **Step 1: Generate the first filler family**
 
 Use the approved style bible prompt language to generate `background-house` across all four prosperity tiers.
 
@@ -238,17 +238,17 @@ python scripts/image_asset_pipeline.py normalize --input <view.png> --out <out.p
 
 The worker must end this step with exactly 20 images for `background-house`: 4 prosperity tiers times 5 views.
 
-- [ ] **Step 2: Generate the second filler family**
+- [x] **Step 2: Generate the second filler family**
 
 Use the same prompt contract for `background-shop`, but keep the silhouette distinct enough that the two families read as different supporting buildings without making either one the dominant town feature.
 
 The worker must end this step with exactly 20 images for `background-shop`: 4 prosperity tiers times 5 views.
 
-- [ ] **Step 3: Make the filler buildings transparently cut and promotion-ready**
+- [x] **Step 3: Make the filler buildings transparently cut and promotion-ready**
 
 Verify the output has clean transparent backgrounds and that the normalized sprites sit cleanly on the 60x50 canvas with the bottom anchor preserved.
 
-- [ ] **Step 4: Copy source into staging**
+- [x] **Step 4: Copy source into staging**
 
 Run:
 ```powershell
@@ -256,7 +256,7 @@ if (Test-Path src/WildBunch.Assets/staging/town-hub-buildings) { Remove-Item -Re
 Copy-Item -Recurse src/WildBunch.Assets/source/town-hub-buildings src/WildBunch.Assets/staging/town-hub-buildings
 ```
 
-- [ ] **Step 5: Promote staging into sprites**
+- [x] **Step 5: Promote staging into sprites**
 
 Run:
 ```powershell
@@ -266,7 +266,7 @@ python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunc
 
 This promotion step is required even if the source tree already contains normalized outputs; the final sprites tree is the shippable home.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add src/WildBunch.Assets/source/town-hub-buildings src/WildBunch.Assets/staging/town-hub-buildings src/WildBunch.Assets/sprites/town-hub-buildings
@@ -288,7 +288,7 @@ git commit -m "feat: add filler-building families for town hubs"
 - Consumes: the approved style bible and the new road/ground family roots
 - Produces: road and dirt tiles that tessellate on the intended edges and keep the town hub visually alive without prosperity tiers
 
-- [ ] **Step 1: Generate the main-road tile set**
+- [x] **Step 1: Generate the main-road tile set**
 
 Create the 2-tile-wide main road family first so the edge, path, spur-cross, and end-piece contracts are settled before the spur and dirt tiles are tuned against them.
 
@@ -296,7 +296,7 @@ The worker must end this step with exactly 8 main-road tiles:
 - 4 right-side canonical variants: `flat-edge-right`, `path-edge-right`, `spur-cross-right`, `end-bottom`
 - 4 mirrored derivatives: `flat-edge-left`, `path-edge-left`, `spur-cross-left`, `end-top`
 
-- [ ] **Step 2: Generate the spur-road tile set**
+- [x] **Step 2: Generate the spur-road tile set**
 
 Create the 1-tile-tall spur family with a clear horizontal read, a building-attachment variant, and mirrored end pieces.
 
@@ -306,7 +306,7 @@ The worker must end this step with exactly 4 spur-road tiles:
 - `end-right`
 - `end-left`
 
-- [ ] **Step 3: Generate the ground-fill tile set**
+- [x] **Step 3: Generate the ground-fill tile set**
 
 Create the 3 base dirt textures, the 8 prop-baked dirt tiles, and the 4-tile landform set. Keep the dirt edges compatible with the road dirt edges and with each other.
 
@@ -315,7 +315,7 @@ The worker must end this step with exactly 15 ground tiles:
 - 8 prop dirt tiles
 - 4 landform tiles
 
-- [ ] **Step 4: Copy source into staging**
+- [x] **Step 4: Copy source into staging**
 
 ```powershell
 if (Test-Path src/WildBunch.Assets/staging/town-hub-roads) { Remove-Item -Recurse -Force src/WildBunch.Assets/staging/town-hub-roads }
@@ -324,7 +324,7 @@ Copy-Item -Recurse src/WildBunch.Assets/source/town-hub-roads src/WildBunch.Asse
 Copy-Item -Recurse src/WildBunch.Assets/source/town-hub-ground src/WildBunch.Assets/staging/town-hub-ground
 ```
 
-- [ ] **Step 5: Validate tile dimensions and seam-safe mirror pairs**
+- [x] **Step 5: Validate tile dimensions and seam-safe mirror pairs**
 
 Run:
 ```powershell
@@ -370,7 +370,7 @@ print("Road and ground staging checks passed")
 
 After the automated check passes, do a visual seam pass on the staged road edges before copying them forward.
 
-- [ ] **Step 6: Promote staging into sprites by copy**
+- [x] **Step 6: Promote staging into sprites by copy**
 
 Run:
 ```powershell
@@ -380,7 +380,7 @@ Copy-Item -Recurse src/WildBunch.Assets/staging/town-hub-roads src/WildBunch.Ass
 Copy-Item -Recurse src/WildBunch.Assets/staging/town-hub-ground src/WildBunch.Assets/sprites/town-hub-ground
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add src/WildBunch.Assets/source/town-hub-roads src/WildBunch.Assets/staging/town-hub-roads src/WildBunch.Assets/sprites/town-hub-roads src/WildBunch.Assets/source/town-hub-ground src/WildBunch.Assets/staging/town-hub-ground src/WildBunch.Assets/sprites/town-hub-ground
@@ -397,7 +397,7 @@ git commit -m "feat: add road and ground tile families for town hubs"
 - Consumes: all generated source/staging/sprites assets from Tasks 2-4
 - Produces: a clean final tree, validated index mesh, and a reviewable PR-ready diff
 
-- [ ] **Step 1: Run the final building promotion pass**
+- [x] **Step 1: Run the final building promotion pass**
 
 Run the shared promotion surface for the building family from staging into sprites so the shippable building tree is current:
 ```powershell
@@ -406,7 +406,7 @@ python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunc
 
 The road and ground families must already be present in `src/WildBunch.Assets/sprites/` from the Task 4 copy promotion path; do not run the sprite cutter over them.
 
-- [ ] **Step 2: Regenerate the index mesh**
+- [x] **Step 2: Regenerate the index mesh**
 
 Run:
 ```powershell
@@ -414,7 +414,7 @@ python scripts/generate_index_mesh.py
 python scripts/generate_index_mesh.py --check
 ```
 
-- [ ] **Step 3: Run the final repo sanity checks**
+- [x] **Step 3: Run the final repo sanity checks**
 
 Run:
 ```powershell
@@ -422,7 +422,7 @@ git status --short
 ```
 Expected: only the intended plan, doc, and asset changes remain, with no stray scratch files outside the branch-scoped worktree.
 
-- [ ] **Step 4: Commit the final verification state**
+- [x] **Step 4: Commit the final verification state**
 
 ```powershell
 git add -A
