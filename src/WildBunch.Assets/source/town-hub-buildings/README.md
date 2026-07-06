@@ -1,11 +1,12 @@
-# Town Buildings Assets
+# Town Hub Buildings Assets
 
-This subtree is the source-custody home for the town-building family.
+This subtree is the source-custody home for the town-hub building track.
 
 - The full-size custody assets live here under tier and family folders.
 - Family-specific `AGENTS.md` guidance lives here alongside the source assets.
-- The matching staging and shipping outputs live in `src/WildBunch.Assets/staging/`
-  and `src/WildBunch.Assets/sprites/`.
+- The matching staging and shipping outputs live in
+  `src/WildBunch.Assets/staging/town-hub-buildings/` and
+  `src/WildBunch.Assets/sprites/town-hub-buildings/`.
 - The current canonical building families are `general-store`, `sheriff-office`,
   `saloon`, and `telegraph-office`.
 - The current prosperity tiers are `destitute`, `poor`, `prosperous`, and
