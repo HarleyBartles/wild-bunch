@@ -84,7 +84,7 @@ describe("PhaserTownHubHost", () => {
   it("passes the current town's layout data to the TownHubScene constructor", () => {
     const layout = createLayout({
       buildings: [
-        { kind: BuildingKind.Saloon, x: 100, y: 100, width: 70, height: 50 },
+        { kind: BuildingKind.Saloon, x: 100, y: 100, width: 70, height: 50, view: BuildingView.Front },
       ],
       playerSpawnX: 120,
       playerSpawnY: 130,
