@@ -302,7 +302,7 @@ def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig)
             image,
             background,
             config.color_tolerance,
-            require_green_dominance=True,
+            require_green_dominance=False,
         )
         trimmed = _trim_transparency(cut)
         normalized = _normalize_to_canvas(
