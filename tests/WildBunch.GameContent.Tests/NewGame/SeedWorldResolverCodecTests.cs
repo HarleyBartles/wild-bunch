@@ -45,4 +45,28 @@ public sealed class SeedWorldResolverCodecTests
         Assert.True(Enum.IsDefined(typeof(BuildingLayoutPalette), (int)BuildingLayoutPalette.TwoSpursLeftRight_SpreadEvenly));
         Assert.True(Enum.IsDefined(typeof(BuildingLayoutPalette), (int)BuildingLayoutPalette.Reserved12));
     }
+
+    [Fact]
+    public void Resolve_DecodesAll16PaletteValues()
+    {
+        // Test that all 16 palette values (0-15) decode correctly
+        for (var i = 0; i < 16; i++)
+        {
+            var seedCode = Guid.NewGuid();
+            var bytes = seedCode.ToByteArray();
+            var low = BitConverter.ToUInt64(bytes, 0);
+        
+            // Encode palette value at bits 29-32
+            var encodedLow = (low & ~(0xFUL << 29)) | ((ulong)i << 29);
+            var encodedBytes = new byte[16];
+            BitConverter.TryWriteBytes(encodedBytes.AsSpan(0), encodedLow);
+            BitConverter.TryWriteBytes(encodedBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
+            var encodedSeedCode = new Guid(encodedBytes);
+        
+            var decoded = SeedWorldResolver.Resolve(encodedSeedCode);
+            var decodedValue = (int)decoded.BuildingLayoutPalette;
+        
+            Assert.Equal(i, decodedValue);
+        }
+    }
 }

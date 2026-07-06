@@ -161,9 +161,9 @@ public static class SeedWorldResolver
         // Wrap within the current legal range using modulo.
         servicesPalette = (ServicesPalette)((int)servicesPalette % 8);
 
-        // 4-bit buildingLayoutPalette produces 0-15, which maps to 8 layouts (3 bits used, 1 reserved).
-        // Wrap within the current legal range using modulo (8 layouts).
-        buildingLayoutPalette = (BuildingLayoutPalette)((int)buildingLayoutPalette % 8);
+        // 4-bit buildingLayoutPalette produces 0-15, which maps to 16 palettes (12 functional, 4 reserved).
+        // Wrap within the current legal range using modulo (16 palettes).
+        buildingLayoutPalette = (BuildingLayoutPalette)((int)buildingLayoutPalette % 16);
 
         // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
         // Wrap to 5-10 via modulo for v11.
@@ -238,11 +238,10 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Cash bonus is outside the legal envelope.");
         }
 
-        // TODO: Add BuildingLayoutPalette validation after enum is finalized
-        // if (!Enum.IsDefined(typeof(BuildingLayoutPalette), seedWorld.BuildingLayoutPalette))
-        // {
-        //     return SeedWorldValidationResult.Failed("Building layout palette is invalid.");
-        // }
+        if (!Enum.IsDefined(typeof(BuildingLayoutPalette), seedWorld.BuildingLayoutPalette))
+        {
+            return SeedWorldValidationResult.Failed("Building layout palette is invalid.");
+        }
 
         if (seedWorld.OutlierSlotType > 0 && seedWorld.TownCount >= MaxTownCount)
         {
