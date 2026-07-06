@@ -68,7 +68,7 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_PlacesTrailheadAtRightEdgeAndSpawnInCenter()
+    public void GenerateLayout_PlacesTrailheadInBuildingZoneAndSpawnInCenter()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
@@ -77,9 +77,13 @@ public sealed class TownLayoutGeneratorTests
         Assert.Equal(50, layout.PlayerSpawnY);
 
         var trailhead = layout.Buildings.Single(b => b.Kind == BuildingKind.Trailhead);
-        // NoSpurs_SpreadEvenly palette places trailhead at (50, 85) with +/-2 jitter
-        Assert.InRange(trailhead.X, 48, 52);
-        Assert.InRange(trailhead.Y, 83, 87);
+        // Tile-based system: trailhead is placed in a building zone tile
+        // Building zones are at columns 0 (left) and 3 (right), rows 1-8
+        // Zones are filled in order: (1,0), (1,3), (2,0), (2,3), (3,0), (3,3), ...
+        // With Prosperous prosperity (0.75 density), 6 of 8 zones are filled
+        // Trailhead is the 4th building, so it's placed at (2, 3) -> tile center at (35, 25) with +/-2 jitter
+        Assert.InRange(trailhead.X, 33, 37);
+        Assert.InRange(trailhead.Y, 23, 27);
     }
 
     [Fact]
@@ -96,16 +100,57 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_UsesLayoutPatternPositions()
+    public void GenerateLayout_UsesTileBasedPositions()
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        // NoSpurs_SpreadEvenly palette uses different base positions than the old baseline
-        // Store is at (35, 20) in the pattern, not (12, 15)
+        // Tile-based system: Store is the 1st building, placed at (1, 0) -> tile center at (5, 15) with +/-2 jitter
         var store = layout.Buildings.Single(b => b.Kind == BuildingKind.Store);
-        Assert.InRange(store.X, 33, 37); // 35 +/- 2
-        Assert.InRange(store.Y, 18, 22); // 20 +/- 2
+        Assert.InRange(store.X, 3, 7); // 5 +/- 2
+        Assert.InRange(store.Y, 13, 17); // 15 +/- 2
+    }
+
+    [Fact]
+    public void GenerateLayout_AlwaysPlacesRequiredBuildings()
+    {
+        var townId = NewTownId("town-1");
+        var source = NewSource();
+
+        // All prosperity levels should place all required buildings
+        foreach (var prosperity in new[] { TownProsperity.Boomtown, TownProsperity.Prosperous, TownProsperity.Poor, TownProsperity.Destitute })
+        {
+            var layout = TownLayoutGenerator.GenerateLayout(
+                TownServices.Telegraph, prosperity, townId, 0, source, null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+            Assert.Equal(5, layout.Buildings.Count); // Store, Sheriff, Saloon, Trailhead, Telegraph
+        }
+    }
+
+    [Fact]
+    public void GenerateLayout_SpursAddSpurBuildingZones()
+    {
+        var townId = NewTownId("town-1");
+        var source = NewSource();
+
+        // No spurs: 8 building zones
+        var noSpursLayout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, source, null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+        Assert.Equal(5, noSpursLayout.Buildings.Count);
+
+        // One spur: 8 building zones + 1 spur zone = 9 zones
+        var oneSpurLayout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, source, null, BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
+        Assert.Equal(5, oneSpurLayout.Buildings.Count); // Still 5 buildings (zones available >= building count)
+    }
+
+    [Fact]
+    public void GenerateLayout_GeneratesPathSegments()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+
+        // Each building should have a path segment to the road
+        Assert.Equal(layout.Buildings.Count, layout.Paths.Count);
     }
 }

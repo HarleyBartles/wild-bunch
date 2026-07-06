@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 
@@ -27,6 +28,25 @@ internal static class TownLayoutGenerator
     private const int JitterRange = 5;
     private const int JitterOffset = 2;
 
+    // Tile grid constants
+    private const int TileSize = 10; // Each tile is 10 logical units
+    private const int GridWidth = 10; // 10 tiles wide
+    private const int GridHeight = 10; // 10 tiles tall
+    private const int RoadColumnStart = 1; // Road tiles start at column 1
+    private const int RoadColumnEnd = 2; // Road tiles end at column 2
+    private const int BuildingZoneLeft = 0; // Left building zone
+    private const int BuildingZoneRight = 3; // Right building zone
+
+    // Tile type enum for grid representation
+    private enum TileType
+    {
+        Empty,
+        Road,
+        BuildingZone,
+        SpurStart,
+        SpurRoad
+    }
+
     /// <summary>
     /// Generates a deterministic <see cref="TownLayout"/> for a town hub surface.
     /// Always emits the baseline navigation buildings (Store, Sheriff, Saloon,
@@ -46,109 +66,259 @@ internal static class TownLayoutGenerator
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var layoutPattern = BuildingLayoutCatalog.GetLayout(layoutPalette);
+        var paletteSpec = BuildingLayoutCatalog.GetPaletteSpec(layoutPalette);
+        var grid = BuildTileGrid(paletteSpec);
         var buildings = new List<BuildingPlacement>();
         var paths = new List<PathSegment>();
 
-        // Place buildings from the layout pattern
-        foreach (var spec in layoutPattern.BuildingPlacements)
-        {
-            // Skip telegraph if not in services
-            if (spec.Kind == BuildingKind.Telegraph && (services & TownServices.Telegraph) != TownServices.Telegraph)
-            {
-                continue;
-            }
+        // Identify available building zones from grid
+        var availableZones = GetAvailableBuildingZones(grid, paletteSpec);
 
-            var placement = PlaceBuildingFromSpec(spec, townId, townSlotIndex, source, saltSource);
-            buildings.Add(placement);
+        // Assign buildings to zones using seed-derived ordering
+        var buildingKinds = GetBuildingKindsForTown(services);
+        // Ensure we have enough zones for all required buildings
+        var zonesNeeded = Math.Min(buildingKinds.Count, availableZones.Count);
+        var zonesToUse = availableZones.Take(zonesNeeded).ToList();
+        for (var i = 0; i < buildingKinds.Count && i < zonesToUse.Count; i++)
+        {
+            var (row, col, isOnSpur) = zonesToUse[i];
+            var kind = buildingKinds[i];
+            var isOnLeftSide = col < RoadColumnStart;
+
+            // Calculate base position from tile
+            var (baseX, baseY) = TileToLogical(row, col);
+
+            // Select building view
+            var viewLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-view";
+            var view = SelectBuildingView(isOnSpur, isOnLeftSide, source, viewLabel);
+
+            // Apply jitter
+            var xLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-x";
+            var yLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-y";
+            var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
+            var x = ClampToScene(baseX + Jitter(source, xLabel + saltSegment), SceneWidth);
+            var y = ClampToScene(baseY + Jitter(source, yLabel + saltSegment), SceneHeight);
+
+            buildings.Add(new BuildingPlacement(kind, x, y, view, BuildingWidth, BuildingHeight));
         }
 
-        // Ensure baseline buildings are present if not in the pattern
-        EnsureBaselineBuildings(buildings, services, townId, townSlotIndex, source, saltSource);
-
-        // Generate path segments based on layout pattern spurs
-        paths = GeneratePathSegments(layoutPattern, buildings, townId, townSlotIndex, source, saltSource);
+        // Generate path segments from buildings to roads
+        paths = GeneratePathSegmentsFromGrid(grid, buildings, townId, townSlotIndex, source, saltSource);
 
         return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths);
     }
 
-    private static BuildingPlacement PlaceBuildingFromSpec(
-        BuildingPlacementSpec spec,
-        TownId townId,
-        int townSlotIndex,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource)
+    private static TileType[,] BuildTileGrid(PaletteSpec paletteSpec)
     {
-        var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
-        var kindName = spec.Kind.ToString().ToLowerInvariant();
-        var xLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kindName}-x{saltSegment}";
-        var yLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kindName}-y{saltSegment}";
+        var grid = new TileType[GridHeight, GridWidth];
 
-        var x = ClampToScene(spec.X + Jitter(source, xLabel), SceneWidth);
-        var y = ClampToScene(spec.Y + Jitter(source, yLabel), SceneHeight);
-
-        return new BuildingPlacement(spec.Kind, x, y, spec.View, BuildingWidth, BuildingHeight);
-    }
-
-    private static void EnsureBaselineBuildings(
-        List<BuildingPlacement> buildings,
-        TownServices services,
-        TownId townId,
-        int townSlotIndex,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource)
-    {
-        var existingKinds = buildings.Select(b => b.Kind).ToHashSet();
-        var baselineKinds = new[] { BuildingKind.Store, BuildingKind.Sheriff, BuildingKind.Saloon, BuildingKind.Trailhead };
-
-        foreach (var kind in baselineKinds)
+        // Initialize empty grid
+        for (var row = 0; row < GridHeight; row++)
         {
-            if (!existingKinds.Contains(kind))
+            for (var col = 0; col < GridWidth; col++)
             {
-                var (baseX, baseY) = GetBaselinePosition(kind);
-                buildings.Add(PlaceBuilding(kind, baseX, baseY, townId, townSlotIndex, source, saltSource));
+                grid[row, col] = TileType.Empty;
             }
         }
 
-        // Ensure telegraph if in services
-        if ((services & TownServices.Telegraph) == TownServices.Telegraph && !existingKinds.Contains(BuildingKind.Telegraph))
+        // Build major road (vertical, 2 tiles wide, full height)
+        for (var row = 0; row < GridHeight; row++)
         {
-            buildings.Add(PlaceBuilding(BuildingKind.Telegraph, baseX: 46, baseY: 70, townId, townSlotIndex, source, saltSource));
+            grid[row, RoadColumnStart] = TileType.Road;
+            grid[row, RoadColumnEnd] = TileType.Road;
+        }
+
+        // Build building zones (1 tile on each side of road)
+        for (var row = 1; row < GridHeight - 1; row++) // Skip trailhead rows
+        {
+            grid[row, BuildingZoneLeft] = TileType.BuildingZone;
+            grid[row, BuildingZoneRight] = TileType.BuildingZone;
+        }
+
+        // Build spurs based on palette spec
+        for (var i = 0; i < paletteSpec.SpurCount; i++)
+        {
+            var spurRow = paletteSpec.SpurRows[i];
+            var spurDirection = paletteSpec.SpurDirections[i];
+
+            // Spur starts in building zone
+            var spurStartCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
+            grid[spurRow, spurStartCol] = TileType.SpurStart;
+
+            // Spur extends 1 tile beyond building zone
+            var spurRoadCol = spurDirection == SpurDirection.West ? spurStartCol - 1 : spurStartCol + 1;
+            if (spurRoadCol >= 0 && spurRoadCol < GridWidth)
+            {
+                grid[spurRow, spurRoadCol] = TileType.SpurRoad;
+            }
+        }
+
+        return grid;
+    }
+
+    private static (int X, int Y) TileToLogical(int tileRow, int tileCol)
+    {
+        var x = tileCol * TileSize + TileSize / 2; // Center of tile
+        var y = tileRow * TileSize + TileSize / 2; // Center of tile
+        return (x, y);
+    }
+
+    private static BuildingView SelectBuildingView(
+        bool isOnSpur,
+        bool isOnLeftSide,
+        GameSetupDeterministicSource source,
+        string label)
+    {
+        if (isOnSpur)
+        {
+            // Equal weight between Front, FrontOblique, and mirrored FrontOblique
+            var viewIndex = source.PickIndex($"{label}-view", 3);
+            return viewIndex switch
+            {
+                0 => BuildingView.Front,
+                1 => BuildingView.FrontOblique,
+                2 => BuildingView.FrontOblique, // Will be mirrored if on left side
+                _ => BuildingView.FrontOblique
+            };
+        }
+        else
+        {
+            // Major road: 75% FrontOblique, 25% Profile
+            var viewIndex = source.PickIndex($"{label}-view", 4);
+            return viewIndex < 3 ? BuildingView.FrontOblique : BuildingView.Profile;
         }
     }
 
-    private static (int X, int Y) GetBaselinePosition(BuildingKind kind)
+    private static bool ShouldMirror(BuildingView view, bool isOnLeftSide)
     {
-        return kind switch
-        {
-            BuildingKind.Store => (12, 15),
-            BuildingKind.Sheriff => (46, 15),
-            BuildingKind.Saloon => (80, 15),
-            BuildingKind.Trailhead => (90, 50),
-            BuildingKind.Telegraph => (46, 70),
-            _ => (50, 50)
-        };
+        // Assets canonically face right (canonical orientation)
+        // Buildings on left side need mirroring to face the road
+        // Buildings on right side use canonical orientation
+
+        // FrontOblique on left side should be mirrored
+        // Profile and Front don't need mirroring for this slice
+        return isOnLeftSide && view == BuildingView.FrontOblique;
     }
 
-    private static BuildingPlacement PlaceBuilding(
-        BuildingKind kind,
-        int baseX,
-        int baseY,
+    private static List<(int Row, int Col, bool IsOnSpur)> GetAvailableBuildingZones(TileType[,] grid, PaletteSpec paletteSpec)
+    {
+        var zones = new List<(int, int, bool)>();
+
+        for (var row = 1; row < GridHeight - 1; row++) // Skip trailhead rows
+        {
+            // Check left building zone
+            if (grid[row, BuildingZoneLeft] == TileType.BuildingZone)
+            {
+                zones.Add((row, BuildingZoneLeft, false));
+            }
+
+            // Check right building zone
+            if (grid[row, BuildingZoneRight] == TileType.BuildingZone)
+            {
+                zones.Add((row, BuildingZoneRight, false));
+            }
+        }
+
+        // Add spur building zones (1 per spur, above the spur road)
+        for (var i = 0; i < paletteSpec.SpurCount; i++)
+        {
+            var spurRow = paletteSpec.SpurRows[i];
+            var spurDirection = paletteSpec.SpurDirections[i];
+            var spurStartCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
+            var spurRoadCol = spurDirection == SpurDirection.West ? spurStartCol - 1 : spurStartCol + 1;
+
+            // Building zone is above the spur road
+            if (spurRow > 0 && spurRoadCol >= 0 && spurRoadCol < GridWidth)
+            {
+                zones.Add((spurRow - 1, spurRoadCol, true));
+            }
+        }
+
+        return zones;
+    }
+
+    private static List<BuildingKind> GetBuildingKindsForTown(TownServices services)
+    {
+        var kinds = new List<BuildingKind>
+        {
+            BuildingKind.Store,
+            BuildingKind.Sheriff,
+            BuildingKind.Saloon,
+            BuildingKind.Trailhead
+        };
+
+        if ((services & TownServices.Telegraph) == TownServices.Telegraph)
+        {
+            kinds.Add(BuildingKind.Telegraph);
+        }
+
+        return kinds;
+    }
+
+    private static (int Row, int Col) LogicalToTile(int logicalX, int logicalY)
+    {
+        var tileCol = logicalX / TileSize;
+        var tileRow = logicalY / TileSize;
+        return (tileRow, tileCol);
+    }
+
+    private static (int Row, int Col) FindNearestRoadTile(TileType[,] grid, int startRow, int startCol)
+    {
+        // Simple search for nearest road tile
+        for (var distance = 0; distance < GridHeight; distance++)
+        {
+            for (var row = Math.Max(0, startRow - distance); row <= Math.Min(GridHeight - 1, startRow + distance); row++)
+            {
+                for (var col = Math.Max(0, startCol - distance); col <= Math.Min(GridWidth - 1, startCol + distance); col++)
+                {
+                    if (grid[row, col] == TileType.Road || grid[row, col] == TileType.SpurRoad)
+                    {
+                        return (row, col);
+                    }
+                }
+            }
+        }
+
+        return (-1, -1); // No road found
+    }
+
+    private static List<PathSegment> GeneratePathSegmentsFromGrid(
+        TileType[,] grid,
+        List<BuildingPlacement> buildings,
         TownId townId,
         int townSlotIndex,
         GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        BuildingView view = BuildingView.FrontOblique)
+        SaltSource? saltSource)
     {
+        var paths = new List<PathSegment>();
         var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
-        var kindName = kind.ToString().ToLowerInvariant();
-        var xLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kindName}-x{saltSegment}";
-        var yLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kindName}-y{saltSegment}";
 
-        var x = ClampToScene(baseX + Jitter(source, xLabel), SceneWidth);
-        var y = ClampToScene(baseY + Jitter(source, yLabel), SceneHeight);
+        foreach (var building in buildings)
+        {
+            // Find nearest road tile
+            var (buildingTileRow, buildingTileCol) = LogicalToTile(building.X, building.Y);
+            var (roadTileRow, roadTileCol) = FindNearestRoadTile(grid, buildingTileRow, buildingTileCol);
 
-        return new BuildingPlacement(kind, x, y, view, BuildingWidth, BuildingHeight);
+            if (roadTileRow >= 0)
+            {
+                var (roadX, roadY) = TileToLogical(roadTileRow, roadTileCol);
+                var buildingCenterX = building.X + BuildingWidth / 2;
+                var buildingCenterY = building.Y + BuildingHeight / 2;
+
+                // Add jitter for visual variety
+                var jitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{building.Kind.ToString().ToLowerInvariant()}{saltSegment}";
+                var jitter = Jitter(source, jitterLabel);
+
+                var pathStartX = ClampToScene(buildingCenterX + jitter, SceneWidth);
+                var pathStartY = ClampToScene(buildingCenterY + jitter, SceneHeight);
+                var pathEndX = ClampToScene(roadX + jitter, SceneWidth);
+                var pathEndY = ClampToScene(roadY + jitter, SceneHeight);
+
+                paths.Add(PathSegment.Create(pathStartX, pathStartY, pathEndX, pathEndY));
+            }
+        }
+
+        return paths;
     }
 
     private static int Jitter(GameSetupDeterministicSource source, string label)
@@ -159,89 +329,5 @@ internal static class TownLayoutGenerator
         if (value < 0) return 0;
         if (value > max) return max;
         return value;
-    }
-
-    private static List<PathSegment> GeneratePathSegments(
-        BuildingLayoutPattern layoutPattern,
-        List<BuildingPlacement> buildings,
-        TownId townId,
-        int townSlotIndex,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource)
-    {
-        var paths = new List<PathSegment>();
-        var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
-
-        // Main road is a horizontal line at Y=50 spanning X=10 to X=90
-        const int mainRoadY = 50;
-
-        // Generate paths for each spur
-        for (var i = 0; i < layoutPattern.SpurCount; i++)
-        {
-            var spurPosition = layoutPattern.SpurPositions[i];
-            var spurDirection = layoutPattern.SpurDirections[i];
-
-            // Calculate road connection point
-            var roadX = ClampToScene(spurPosition, SceneWidth);
-            var roadY = mainRoadY;
-
-            // Find a building to connect (use the building closest to the spur)
-            var targetBuilding = FindBuildingForSpur(buildings, spurPosition, spurDirection);
-            if (targetBuilding is null)
-            {
-                continue;
-            }
-
-            // Calculate path from building center to road
-            var buildingCenterX = targetBuilding.X + BuildingWidth / 2;
-            var buildingCenterY = targetBuilding.Y + BuildingHeight / 2;
-
-            // Path goes from building to road
-            var pathStartX = buildingCenterX;
-            var pathStartY = buildingCenterY;
-            var pathEndX = roadX;
-            var pathEndY = roadY;
-
-            // Add jitter to path endpoints for visual variety
-            var xJitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{i}-x{saltSegment}";
-            var yJitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{i}-y{saltSegment}";
-            var xJitter = Jitter(source, xJitterLabel);
-            var yJitter = Jitter(source, yJitterLabel);
-
-            pathStartX = ClampToScene(pathStartX + xJitter, SceneWidth);
-            pathStartY = ClampToScene(pathStartY + yJitter, SceneHeight);
-            pathEndX = ClampToScene(pathEndX + xJitter, SceneWidth);
-            pathEndY = ClampToScene(pathEndY + yJitter, SceneHeight);
-
-            paths.Add(PathSegment.Create(pathStartX, pathStartY, pathEndX, pathEndY));
-        }
-
-        return paths;
-    }
-
-    private static BuildingPlacement? FindBuildingForSpur(
-        List<BuildingPlacement> buildings,
-        int spurPosition,
-        SpurDirection direction)
-    {
-        // Simple heuristic: find the building closest to the spur position
-        // In a more sophisticated implementation, this would use the layout pattern's
-        // building-to-spur mapping
-        BuildingPlacement? closest = null;
-        var closestDistance = int.MaxValue;
-
-        foreach (var building in buildings)
-        {
-            var buildingCenterX = building.X + BuildingWidth / 2;
-            var distance = Math.Abs(buildingCenterX - spurPosition);
-
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                closest = building;
-            }
-        }
-
-        return closest;
     }
 }
