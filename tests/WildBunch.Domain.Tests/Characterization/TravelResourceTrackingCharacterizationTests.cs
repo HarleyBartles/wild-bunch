@@ -3,7 +3,7 @@ using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.Characterization;
 
 /// <summary>
 /// Characterization tests pinning exact resource tracking and journey completion

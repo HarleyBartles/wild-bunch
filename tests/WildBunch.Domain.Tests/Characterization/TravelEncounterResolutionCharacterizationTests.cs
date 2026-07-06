@@ -2,7 +2,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.Characterization;
 
 /// <summary>
 /// Characterization tests for encounter resolution with deterministic ForcedRoll.
