@@ -24,12 +24,13 @@ namespace WildBunch.GameContent.NewGame;
 ///   bits 24-25:  clusterCount (2, 0-3 → 1-4 clusters)
 ///   bit  26:     graphDensity (1, 0=Sparse, 1=Dense)
 ///   bits 27-28:  outlierSlotType (2, 0=no outlier, 1=simple outlier, 2-3 reserved)
-///   bits 29-63:  reserved (35)
+///   bits 29-32:  buildingLayoutPalette (4, 3 bits used for 8 layouts, 1 reserved)
+///   bits 33-63:  reserved (31)
 ///
 /// Bytes 8-15 (high): reserved (64)
 /// </code>
 ///
-/// Total used: 29 bits. Reserved: 99 bits for future seed-owned fields
+/// Total used: 33 bits. Reserved: 95 bits for future seed-owned fields
 /// (warrants, etc.). Bandwidth scales with max selection (20),
 /// not catalog size — the name pool can grow to any size with zero bit cost.
 ///
@@ -74,8 +75,10 @@ public static class SeedWorldResolver
     /// - v16: Replaced MapLayoutPalette (3 bits at 24-26) with ClusterCount (2 bits at 24-25, 0-3 → 1-4 clusters)
     ///       and GraphDensity (1 bit at 26, 0=Sparse, 1=Dense). MapLayoutPalette enum deleted.
     ///       29 bits used, 99 reserved. No domain behavior change to other fields.
+    /// - v17: Added BuildingLayoutPalette (4 bits at positions 29-32, 3 bits used for 8 layouts, 1 reserved).
+    ///       33 bits used, 95 reserved. Supports deterministic building layout patterns.
     /// </summary>
-    public const string ResolverContractVersion = "resolver-v16";
+    public const string ResolverContractVersion = "resolver-v17";
     private const string SeedCodeFormat = "D";
 
     /// <summary>Minimum number of towns in a valid world.</summary>
@@ -135,6 +138,7 @@ public static class SeedWorldResolver
         var clusterCountEncoded = (int)((low >> 24) & 0x3UL); // 2 bits for cluster count
         var graphDensity = (GraphDensity)((low >> 26) & 0x1UL); // 1 bit for graph density
         var outlierSlotType = (int)((low >> 27) & 0x3UL); // 2 bits for outlier type
+        var buildingLayoutPalette = (BuildingLayoutPalette)((low >> 29) & 0xFUL); // 4 bits for building layout palette
 
         // 4-bit suspect fields produce 0-15, but the current roster is 7 suspects (indices 0-6).
         // Clamp to the current legal range. When the roster grows, raise this clamp.
@@ -157,6 +161,10 @@ public static class SeedWorldResolver
         // Wrap within the current legal range using modulo.
         servicesPalette = (ServicesPalette)((int)servicesPalette % 8);
 
+        // 4-bit buildingLayoutPalette produces 0-15, which maps to 8 layouts (3 bits used, 1 reserved).
+        // Wrap within the current legal range using modulo (8 layouts).
+        buildingLayoutPalette = (BuildingLayoutPalette)((int)buildingLayoutPalette % 8);
+
         // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
         // Wrap to 5-10 via modulo for v11.
         var townCount = MinTownCount + ((townCountEncoded + TownCountOffset - MinTownCount) % (MaxTownCount - MinTownCount + 1));
@@ -172,7 +180,8 @@ public static class SeedWorldResolver
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            OutlierSlotType: outlierSlotType);
+            OutlierSlotType: outlierSlotType,
+            BuildingLayoutPalette: buildingLayoutPalette);
     }
 
     internal static SeedWorldValidationResult Validate(SeedWorld seedWorld)
@@ -229,6 +238,12 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Cash bonus is outside the legal envelope.");
         }
 
+        // TODO: Add BuildingLayoutPalette validation after enum is finalized
+        // if (!Enum.IsDefined(typeof(BuildingLayoutPalette), seedWorld.BuildingLayoutPalette))
+        // {
+        //     return SeedWorldValidationResult.Failed("Building layout palette is invalid.");
+        // }
+
         if (seedWorld.OutlierSlotType > 0 && seedWorld.TownCount >= MaxTownCount)
         {
             return SeedWorldValidationResult.Failed("Cannot have outlier slot when town count is at maximum.");
@@ -283,6 +298,7 @@ public static class SeedWorldResolver
         low |= (ulong)((seedWorld.ClusterCount - 1) & 0x3) << 24; // 2 bits for cluster count (1-4 → 0-3)
         low |= (ulong)((int)seedWorld.GraphDensity & 0x1) << 26; // 1 bit for graph density
         low |= (ulong)(seedWorld.OutlierSlotType & 0x3) << 27; // 2 bits for outlier type
+        low |= (ulong)((int)seedWorld.BuildingLayoutPalette & 0xF) << 29; // 4 bits for building layout palette
 
         ulong high = 0UL;
 
@@ -315,7 +331,8 @@ public static class SeedWorldResolver
             accusationIndex,
             defaultCulpritIndex,
             cashBonus,
-            OutlierSlotType: 0);
+            OutlierSlotType: 0,
+            BuildingLayoutPalette: BuildingLayoutPalette.HubAndSpoke);
     }
 
     private static Guid CreateCanonicalSeedCodeCore()

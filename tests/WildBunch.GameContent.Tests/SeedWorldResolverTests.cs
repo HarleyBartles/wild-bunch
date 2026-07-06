@@ -19,6 +19,7 @@ public sealed class SeedWorldResolverTests
         Assert.Equal(seedWorld.ProsperityPalette, resolved.ProsperityPalette);
         Assert.Equal(seedWorld.ClusterCount, resolved.ClusterCount);
         Assert.Equal(seedWorld.GraphDensity, resolved.GraphDensity);
+        Assert.Equal(seedWorld.BuildingLayoutPalette, resolved.BuildingLayoutPalette);
         Assert.Equal(seedWorld.GetSelectedTownIds(), resolved.GetSelectedTownIds());
         Assert.Equal(seedWorld.AccusationIndex, resolved.AccusationIndex);
         Assert.Equal(seedWorld.DefaultCulpritIndex, resolved.DefaultCulpritIndex);

@@ -1,0 +1,31 @@
+using WildBunch.Domain.World;
+using WildBunch.GameContent.NewGame;
+using Xunit;
+
+namespace WildBunch.GameContent.Tests.NewGame;
+
+public sealed class SeedWorldResolverCodecTests
+{
+    [Fact]
+    public void CreateRepresentativeSeedCode_RoundTripsBuildingLayoutPalette()
+    {
+        var seedWorld = new SeedWorld(
+            Guid.NewGuid(),
+            SeedWorldVariant.Canonical,
+            5,
+            ServicesPalette.HubTelegraph,
+            ProsperityPalette.UniformProsperous,
+            1,
+            GraphDensity.Sparse,
+            0,
+            0,
+            0,
+            0,
+            BuildingLayoutPalette: BuildingLayoutPalette.Tree);
+
+        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
+        var decoded = SeedWorldResolver.Resolve(seedCode);
+
+        Assert.Equal(BuildingLayoutPalette.Tree, decoded.BuildingLayoutPalette);
+    }
+}
