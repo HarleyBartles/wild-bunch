@@ -21,8 +21,8 @@ public sealed class SeedWorldTests
             0,
             0,
             0,
-            BuildingLayoutPalette: BuildingLayoutPalette.HubAndSpoke);
+            BuildingLayoutPalette: BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        Assert.Equal(BuildingLayoutPalette.HubAndSpoke, seedWorld.BuildingLayoutPalette);
+        Assert.Equal(BuildingLayoutPalette.NoSpurs_SpreadEvenly, seedWorld.BuildingLayoutPalette);
     }
 }
