@@ -2,7 +2,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.Guardrails;
 
 /// <summary>
 /// Guardrail tests proving heat is future lawman pressure from time spent in
