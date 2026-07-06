@@ -7,27 +7,30 @@ namespace WildBunch.GameContent.Tests.NewGame;
 public sealed class BuildingLayoutCatalogTests
 {
     [Fact]
-    public void GetLayout_ReturnsCanonicalLayout()
+    public void GetPaletteSpec_ReturnsCorrectConfiguration()
     {
-        // TODO: Task 2 will implement the switch statement mapping each palette to its tile-based layout pattern
-        // For now, verify that the catalog returns a layout for the new palette
-        var layout = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+        var spec = BuildingLayoutCatalog.GetPaletteSpec(BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
 
-        Assert.NotNull(layout);
-        Assert.NotEmpty(layout.BuildingPlacements);
+        Assert.Equal(1, spec.SpurCount);
+        Assert.Single(spec.SpurRows);
+        Assert.Equal(4, spec.SpurRows[0]);
+        Assert.Single(spec.SpurDirections);
+        Assert.Equal(SpurDirection.West, spec.SpurDirections[0]);
+        Assert.Equal(PlacementStrategy.SpreadEvenly, spec.PlacementStrategy);
     }
 
     [Fact]
-    public void GetLayout_ReturnsLayoutForAllNewPalettes()
+    public void GetPaletteSpec_AllPalettesHaveValidConfiguration()
     {
-        // TODO: Task 2 will implement the switch statement mapping each palette to its tile-based layout pattern
-        // For now, verify that the catalog returns a layout for all new palettes
-        var noSpurs = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.NoSpurs_SpreadEvenly);
-        var oneSpur = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
-        var twoSpurs = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.TwoSpursLeftRight_SpreadEvenly);
+        var palettes = Enum.GetValues<BuildingLayoutPalette>();
 
-        Assert.NotNull(noSpurs);
-        Assert.NotNull(oneSpur);
-        Assert.NotNull(twoSpurs);
+        foreach (BuildingLayoutPalette palette in palettes)
+        {
+            var spec = BuildingLayoutCatalog.GetPaletteSpec(palette);
+
+            Assert.InRange(spec.SpurCount, 0, 2);
+            Assert.Equal(spec.SpurCount, spec.SpurRows.Length);
+            Assert.Equal(spec.SpurCount, spec.SpurDirections.Length);
+        }
     }
 }
