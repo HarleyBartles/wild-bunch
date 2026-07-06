@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
@@ -19,13 +20,17 @@ public sealed class TownLayoutMapperTests
                 new BuildingPlacement(BuildingKind.Telegraph, 90, 100)
             },
             50,
-            50);
+            50,
+            TownProsperity.Prosperous,
+            Array.Empty<PathSegment>());
 
         var dto = TownLayoutMapper.ToDto(layout);
 
         Assert.NotNull(dto);
         Assert.Equal(50, dto.PlayerSpawnX);
         Assert.Equal(50, dto.PlayerSpawnY);
+        Assert.Equal(TownProsperity.Prosperous, dto.Prosperity);
+        Assert.Empty(dto.Paths);
         Assert.Equal(5, dto.Buildings.Count);
 
         AssertBuildingPlacement(dto.Buildings[0], BuildingKind.Store, 10, 20, 8, 10);
@@ -41,7 +46,9 @@ public sealed class TownLayoutMapperTests
         var layout = new TownLayout(
             Array.Empty<BuildingPlacement>(),
             50,
-            50);
+            50,
+            TownProsperity.Prosperous,
+            Array.Empty<PathSegment>());
 
         var dto = TownLayoutMapper.ToDto(layout);
 
@@ -49,6 +56,8 @@ public sealed class TownLayoutMapperTests
         Assert.Empty(dto.Buildings);
         Assert.Equal(50, dto.PlayerSpawnX);
         Assert.Equal(50, dto.PlayerSpawnY);
+        Assert.Equal(TownProsperity.Prosperous, dto.Prosperity);
+        Assert.Empty(dto.Paths);
     }
 
     [Fact]
@@ -61,7 +70,9 @@ public sealed class TownLayoutMapperTests
             var layout = new TownLayout(
                 new[] { new BuildingPlacement(kind, 0, 0) },
                 0,
-                0);
+                0,
+                TownProsperity.Prosperous,
+                Array.Empty<PathSegment>());
 
             var dto = TownLayoutMapper.ToDto(layout);
 

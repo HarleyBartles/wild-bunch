@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
 
@@ -25,7 +26,9 @@ public static class TownLayoutMapper
         return new TownLayoutDto(
             layout.Buildings.Select(ToDto).ToArray(),
             layout.PlayerSpawnX,
-            layout.PlayerSpawnY);
+            layout.PlayerSpawnY,
+            layout.Prosperity,
+            layout.Paths.Select(ToDto).ToArray());
     }
 
     private static BuildingPlacementDto ToDto(BuildingPlacement placement)
@@ -35,4 +38,7 @@ public static class TownLayoutMapper
             placement.Y,
             placement.Width,
             placement.Height);
+
+    private static PathSegmentDto ToDto(PathSegment path)
+        => new(path.StartX, path.StartY, path.EndX, path.EndY);
 }

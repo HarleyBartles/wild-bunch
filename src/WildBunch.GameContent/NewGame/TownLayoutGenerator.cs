@@ -34,6 +34,7 @@ internal static class TownLayoutGenerator
     /// </summary>
     public static TownLayout GenerateLayout(
         TownServices services,
+        TownProsperity prosperity,
         TownId townId,
         int townSlotIndex,
         GameSetupDeterministicSource source,
@@ -54,7 +55,10 @@ internal static class TownLayoutGenerator
             buildings.Add(PlaceBuilding(BuildingKind.Telegraph, baseX: 46, baseY: 70, townId, townSlotIndex, source, saltSource));
         }
 
-        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY);
+        // TODO: Generate path segments in Task 8
+        var paths = Array.Empty<PathSegment>();
+
+        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths);
     }
 
     private static BuildingPlacement PlaceBuilding(

@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Tests.World;
@@ -15,7 +16,7 @@ public sealed class WorldSnapshotTests
             new(BuildingKind.Trailhead, 5, 40),
             new(BuildingKind.Telegraph, 22, 32)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Boomtown, Array.Empty<PathSegment>());
         var town = new Town(
             new TownId("t1"),
             "Dodge",

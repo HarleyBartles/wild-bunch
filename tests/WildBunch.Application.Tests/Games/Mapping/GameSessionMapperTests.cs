@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
@@ -20,7 +21,9 @@ public sealed class GameSessionMapperTests
                 new BuildingPlacement(BuildingKind.Telegraph, 90, 100)
             },
             50,
-            50);
+            50,
+            TownProsperity.Prosperous,
+            Array.Empty<PathSegment>());
 
         var townWithLayout = new Town(
             new TownId("town-with-layout"),

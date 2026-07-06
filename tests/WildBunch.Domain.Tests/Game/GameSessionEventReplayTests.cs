@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Events;
@@ -152,7 +153,9 @@ public sealed class GameSessionEventReplayTests
                 new BuildingPlacement(BuildingKind.Telegraph, 22, 32)
             },
             PlayerSpawnX: 50,
-            PlayerSpawnY: 35);
+            PlayerSpawnY: 35,
+            TownProsperity.Prosperous,
+            Array.Empty<PathSegment>());
 
         var redmesaLayout = new TownLayout(
             new[]
@@ -163,7 +166,9 @@ public sealed class GameSessionEventReplayTests
                 new BuildingPlacement(BuildingKind.Trailhead, 6, 41)
             },
             PlayerSpawnX: 52,
-            PlayerSpawnY: 36);
+            PlayerSpawnY: 36,
+            TownProsperity.Poor,
+            Array.Empty<PathSegment>());
 
         var pinecross = new Town(
             new TownId("pinecross"),

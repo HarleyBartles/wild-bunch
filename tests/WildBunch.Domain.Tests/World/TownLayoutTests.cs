@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Tests.World;
@@ -16,7 +17,7 @@ public sealed class TownLayoutTests
             new(BuildingKind.Telegraph, 22, 32)
         };
 
-        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Prosperous, Array.Empty<PathSegment>());
 
         Assert.Equal(5, layout.Buildings.Count);
         Assert.Equal(BuildingKind.Store, layout.Buildings[0].Kind);
