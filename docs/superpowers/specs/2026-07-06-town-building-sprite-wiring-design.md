@@ -55,7 +55,7 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 
 **TownLayoutGenerator.cs**
 - Encode canonical building positions in the seed (each town has deterministic building placement for the same seed)
-  - **Planner note:** Read the existing seed codec in `SeedWorldResolver.cs` to understand the bit-packing layout. Specify how to add encoding for building positions, leaving room for future buildings (currently 4, will expand later).
+  - **Planner note:** Read the existing seed codec in `SeedWorldResolver.cs` to understand the bit-packing layout and add encoding for building positions. Leave room for future buildings (currently 4, will expand later).
 - Enhance view selection logic with mechanical angle calculation based on road attachment
 - Implement main road north-south layout (x=50, y 0-100)
 - Implement side spur generation (1-2 spurs branching east/west at seeded positions)
@@ -82,7 +82,7 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
    - Path segments connecting buildings to roads (line segments from building center to nearest road point)
    - Creates `TownLayout` with prosperity tier, calculated `BuildingView` for each placement, and path segments
 
-3. **DTO Mapping:** `TownLayoutMapper.ToDto()` maps domain `TownLayout` to `TownLayoutDto` including prosperity, pre-calculated view fields, and path segments
+3. **DTO Mapping:** `TownLayoutMapper.ToDto()` maps domain `TownLayout` to `TownLayoutDto` including prosperity, pre-calculated view fields, and path segments (maps `PathSegment` to `PathSegmentDto`)
 
 4. **Session Mapping:** `GameSessionMapper.ToDto()` includes town prosperity in `TownDto` when building `WorldDto`
 
@@ -161,4 +161,4 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 - Vertical road: 75% FrontOblique, 25% Profile bias
 - Horizontal road: 33% Front, 33% FrontOblique, 33% FrontOblique mirrored, no side bias
 - Path rendering: line drawing for this slice, tiles are future work
-- **Planner note:** Read the existing seed codec in `SeedWorldResolver.cs` to understand the bit-packing layout. Specify how to add encoding for canonical building positions, leaving room for future buildings (currently 4, will expand later).
+- **Planner note:** When writing the implementation plan, read the existing seed codec in `SeedWorldResolver.cs` to understand the bit-packing layout and specify how to add encoding for canonical building positions. Leave room for future buildings (currently 4, will expand later).
