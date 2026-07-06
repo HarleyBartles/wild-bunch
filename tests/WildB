@@ -1,0 +1,26 @@
+using WildBunch.Domain.World;
+using Xunit;
+
+namespace WildBunch.Domain.Tests.World;
+
+public sealed class SeedWorldTests
+{
+    [Fact]
+    public void SeedWorld_WithBuildingLayoutPalette_StoresValue()
+    {
+        var seedWorld = new SeedWorld(
+            Guid.NewGuid(),
+            SeedWorldVariant.Canonical,
+            5,
+            ServicesPalette.Palette0,
+            ProsperityPalette.Palette0,
+            1,
+            GraphDensity.Sparse,
+            0,
+            0,
+            0,
+            BuildingLayoutPalette: BuildingLayoutPalette.HubAndSpoke);
+
+        Assert.Equal(BuildingLayoutPalette.HubAndSpoke, seedWorld.BuildingLayoutPalette);
+    }
+}

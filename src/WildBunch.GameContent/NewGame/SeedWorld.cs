@@ -5,11 +5,12 @@ namespace WildBunch.GameContent.NewGame;
 /// <summary>
 /// Seed-owned deterministic world/map layer decoded from the UUID seed code.
 /// Owns generated world facts: world variant, town count, services palette,
-/// prosperity palette, cluster count, graph density,
+/// prosperity palette, cluster count, graph density, building layout palette,
 /// accusation/default culprit candidates, and seed-derived cash bonus.
 ///
 /// The seed encodes only: variant, townCount, servicesPalette,
-/// prosperityPalette, clusterCount, graphDensity, accusationIndex, defaultCulpritIndex, cashBonus.
+/// prosperityPalette, clusterCount, graphDensity, buildingLayoutPalette,
+/// accusationIndex, defaultCulpritIndex, cashBonus.
 /// Town names, selected town IDs, and per-town services are derived from the
 /// encoded fields via a deterministic shuffle of the name pool — they are
 /// flavor, not encoded state. This means the catalog can grow to any size
@@ -28,7 +29,7 @@ namespace WildBunch.GameContent.NewGame;
 /// - SeedWorld owns the candidate/generated map shape: how many towns, what
 ///   services each slot has (via palette), what prosperity each slot has
 ///   (via palette), the cluster structure (via ClusterCount), the graph
-///   density (via GraphDensity).
+///   density (via GraphDensity), and the building layout pattern (via BuildingLayoutPalette).
 /// - Same seed + same difficulty should produce the same resolved map.
 /// - Difficulty may later influence map pressure/layout realization
 ///   downstream of the seed codec, not by hiding difficulty inside the seed.
@@ -44,15 +45,16 @@ public sealed record SeedWorld(
     int AccusationIndex,
     int DefaultCulpritIndex,
     int CashBonus,
-    int OutlierSlotType) // 0=no outlier, 1=simple outlier, 2-3 reserved
+    int OutlierSlotType, // 0=no outlier, 1=simple outlier, 2-3 reserved
+    BuildingLayoutPalette BuildingLayoutPalette = BuildingLayoutPalette.HubAndSpoke)
 {
     public string SeedCodeText => SeedCode.ToString("D");
 
     /// <summary>
     /// Whether this seed world is the canonical shape (8 towns,
     /// Canonical variant, HubTelegraph services, UniformProsperous prosperity,
-    /// single cluster, Sparse graph density, accusation index 1,
-    /// default culprit index 3, zero cash bonus). Used by GameSetupResolver
+    /// single cluster, Sparse graph density, HubAndSpoke building layout,
+    /// accusation index 1, default culprit index 3, zero cash bonus). Used by GameSetupResolver
     /// to select the canonical case file path.
     /// </summary>
     public bool IsCanonical =>
@@ -62,6 +64,7 @@ public sealed record SeedWorld(
             && ProsperityPalette == ProsperityPalette.UniformProsperous
             && ClusterCount == 1
             && GraphDensity == GraphDensity.Sparse
+            && BuildingLayoutPalette == BuildingLayoutPalette.HubAndSpoke
             && AccusationIndex == 1
             && DefaultCulpritIndex == 3
             && CashBonus == 0;
