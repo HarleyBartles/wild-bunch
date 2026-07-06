@@ -3,7 +3,7 @@ using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.EventSourcing;
 
 public sealed class InvestigationEventSourcingTests
 {

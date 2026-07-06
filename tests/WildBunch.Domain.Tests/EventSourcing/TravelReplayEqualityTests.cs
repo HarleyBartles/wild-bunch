@@ -3,7 +3,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.EventSourcing;
 
 /// <summary>
 /// Proves that command-path state == replay-path state for travel events.

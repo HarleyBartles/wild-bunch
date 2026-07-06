@@ -4,7 +4,7 @@ using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.EventSourcing;
 
 /// <summary>
 /// Apply tests for the 6 typed travel domain events. Each test drives a single Apply
