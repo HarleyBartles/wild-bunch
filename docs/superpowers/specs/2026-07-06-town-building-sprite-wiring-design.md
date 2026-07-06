@@ -37,6 +37,22 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 
 ### Backend Changes
 
+**SeedWorld.cs**
+- Add `BuildingLayoutPalette BuildingLayoutPalette` field (4-bit encoding from seed)
+
+**BuildingLayoutPalette.cs** (new domain enum)
+- Enum with 8 layout patterns (HubAndSpoke, LinearChain, etc.) - 3 bits used, 1 reserved for future expansion
+
+**BuildingLayoutCatalog.cs** (new domain catalog)
+- Similar to existing prosperity/services catalog pattern
+- Provides canonical building layout for each palette index: building positions, views, spur count, spur positions
+
+**SeedWorldResolver.cs**
+- Add BuildingLayoutPalette decoding (bits 29-32) in Resolve() method
+- Add BuildingLayoutPalette encoding in CreateRepresentativeSeedCode() method
+- Update version to v17
+- Add validation for BuildingLayoutPalette range
+
 **TownLayout.cs**
 - Add `IReadOnlyList<PathSegment> Paths` field to store path connectivity data
 
@@ -54,8 +70,7 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 - Map domain `PathSegment` to DTO `PathSegmentDto`
 
 **TownLayoutGenerator.cs**
-- Encode canonical building positions in the seed (each town has deterministic building placement for the same seed)
-  - **Planner note:** Read the existing seed codec in `SeedWorldResolver.cs` to understand the bit-packing layout and add encoding for building positions. Leave room for future buildings (currently 4, will expand later).
+- Use BuildingLayoutPalette from SeedWorld to select canonical building layout pattern via BuildingLayoutCatalog
 - Enhance view selection logic with mechanical angle calculation based on road attachment
 - Implement main road north-south layout (x=50, y 0-100)
 - Implement side spur generation (1-2 spurs branching east/west at seeded positions)
@@ -77,7 +92,7 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 
 1. **Backend Generation:** `TownLayoutGenerator.GenerateLayout()` mechanically calculates:
    - Road network (main road north-south, side spurs east/west)
-   - Building positions along roads (canonical positions encoded in seed)
+   - Building positions along roads (canonical positions from BuildingLayoutCatalog indexed by BuildingLayoutPalette from seed)
    - Building views based on road attachment (vertical vs horizontal road, seeded ratios)
    - Path segments connecting buildings to roads (line segments from building center to nearest road point)
    - Creates `TownLayout` with prosperity tier, calculated `BuildingView` for each placement, and path segments
@@ -161,4 +176,3 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 - Vertical road: 75% FrontOblique, 25% Profile bias
 - Horizontal road: 33% Front, 33% FrontOblique, 33% FrontOblique mirrored, no side bias
 - Path rendering: line drawing for this slice, tiles are future work
-- **Planner note:** When writing the implementation plan, read the existing seed codec in `SeedWorldResolver.cs` to understand the bit-packing layout and specify how to add encoding for canonical building positions. Leave room for future buildings (currently 4, will expand later).
