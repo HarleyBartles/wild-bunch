@@ -2,7 +2,7 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public sealed class WantedPosterMapperTests
 {

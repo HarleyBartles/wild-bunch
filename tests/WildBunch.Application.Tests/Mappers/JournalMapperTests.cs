@@ -5,7 +5,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public sealed class JournalMapperTests
 {

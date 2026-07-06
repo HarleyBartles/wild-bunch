@@ -2,7 +2,7 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using Xunit;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public class ClueTimeAnchorBeatLabelTests
 {

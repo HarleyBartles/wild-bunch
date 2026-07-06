@@ -3,7 +3,7 @@ using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public sealed class TravelDiaryMapperTests
 {
