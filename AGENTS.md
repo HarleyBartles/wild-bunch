@@ -5,23 +5,24 @@
 - Workers branch from current `main` and publish work through a PR.
 - Root index: `INDEX.md`
 - Docs index: `docs/INDEX.md`
+- Authored docs live in `docs/` and `.agents/docs/`; keep `.agents/` itself for routing, workflow, and other agent surfaces rather than scattering topic docs there.
 
 ## Required Working Knowledge
 
 **Scripts are first-class surfaces. Before reporting environmental issues (PostgreSQL not running, dev servers not started, etc.), read `scripts/AGENTS.md` and use the provided scripts.**
 
 - **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — **MUST read before running ad-hoc commands or reporting environmental issues**. Scripts handle PostgreSQL setup, dev server management, and other repo operations idempotently.
-- Architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
+- Architecture-sensitive work: `.agents/INDEX.md`, `.agents/docs/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
 - **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
 - **Frontend standards (must read before implementing or reviewing frontend work)**: `.agents/docs/frontend-standards.md`
 - **Validation policy (must read before writing or reviewing tests)**: `.agents/docs/validation-policy.md`
-- **Write-tool phantom files (must read before batch writes on Windows)**: `.agents/doctrine/write-tool-phantom-files.md`
+- **Write-tool phantom files (must read before batch writes on Windows)**: `.agents/docs/write-tool-phantom-files.md`
 - **Implementing guide (must read before implementing or dispatching implementer subagents)**: `.agents/docs/implementing-guide.md`
 - **Planning guide (must read before planning multi-step work)**: `.agents/docs/planning-guide.md`
 - **Code review guide (must read for code reviewers)**: `.agents/docs/code-review-guide.md`
 - Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
-- Dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
+- Dev overlay work: `.agents/docs/dev-overlay-doctrine.md`, `.agents/unslop/dev-overlay.md`
 
 ## Required Skills - Workflow Routing
 

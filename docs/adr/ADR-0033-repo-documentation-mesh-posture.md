@@ -6,7 +6,7 @@
 
 ## Dated Status History
 
-- 2026-06-27 - live: Mesh policy installed in root `AGENTS.md`. Index mesh installed across the full folder tree (88 new `INDEX.md` files, all-or-nothing with documented exclusions). Dev-overlay doctrine installed at `.agents/dev-overlay/DOCTRINE.md` as the first agent-facing doctrine file living outside the root/scoped `AGENTS.md` nodes. Scoped `AGENTS.md` nodes updated to link the doctrine as required reading.
+- 2026-06-27 - live: Mesh policy installed in root `AGENTS.md`. Index mesh installed across the full folder tree (88 new `INDEX.md` files, all-or-nothing with documented exclusions). Dev-overlay doctrine installed at `.agents/docs/dev-overlay-doctrine.md` as the first agent-facing doctrine file living outside the root/scoped `AGENTS.md` nodes. Scoped `AGENTS.md` nodes updated to link the doctrine as required reading.
 
 ## Decision Type
 
@@ -39,7 +39,7 @@ The repo uses three separate documentation/navigation surfaces with different jo
 
 - Scoped node mesh — not every folder needs an `AGENTS.md`. Add or update only at meaningful law-boundary nodes (root, project folders, sub-areas with distinct rules).
 - No `AGENTS.md` should be siloed; scoped nodes must be understandable from root agent law and the upstream nodes between here and root.
-- Agent-facing doctrine that is too long for an `AGENTS.md` node lives in a dedicated file under `.agents/` (e.g., `.agents/dev-overlay/DOCTRINE.md`) and is linked from the relevant `AGENTS.md` nodes as required reading.
+- Agent-facing doctrine that is too long for an `AGENTS.md` node lives in a dedicated file under `.agents/docs/` (e.g., `.agents/docs/dev-overlay-doctrine.md`) and is linked from the relevant `AGENTS.md` nodes as required reading.
 - The `.agents/INDEX.md` catalogue lists all doctrine files so they are discoverable from one place.
 
 ### 2. Index mesh (`INDEX.md` files)
@@ -67,9 +67,9 @@ If a worker reads stale or misleading `AGENTS.md`, `INDEX.md`, or README content
 
 Doctrine-length agent-facing content lives under `.agents/` in a dedicated subfolder:
 
-- `.agents/dev-overlay/DOCTRINE.md` — dev overlay state/action boundary, panel ownership, layout, hidden truth, backend authority, closeout proof.
+- `.agents/docs/dev-overlay-doctrine.md` — dev overlay state/action boundary, panel ownership, layout, hidden truth, backend authority, closeout proof.
 
-Future doctrine files follow the same pattern: `.agents/<area>/DOCTRINE.md` or `.agents/<area>/<topic>.md`, linked from the relevant `AGENTS.md` nodes and catalogued in `.agents/INDEX.md`.
+Future doctrine files follow the same pattern: `.agents/docs/<topic>.md`, linked from the relevant `AGENTS.md` nodes and catalogued in `.agents/INDEX.md`.
 
 `docs/` and README surfaces point humans at the doctrine but do not own the binding law. The key distinction: AGENTS mesh owns law; INDEX mesh owns navigation; README/docs are human-facing explanation unless deliberately linked from AGENTS as agent doctrine.
 
@@ -84,8 +84,10 @@ Future doctrine files follow the same pattern: `.agents/<area>/DOCTRINE.md` or `
 ## Consequences
 
 - The repo has 89 `INDEX.md` files covering the full folder tree (excluding build output, dependencies, git internals, local output, and skill folders).
-- Agent-facing doctrine has a clear home: `AGENTS.md` nodes for scoped law, `.agents/<area>/DOCTRINE.md` for doctrine-length content, `.agents/INDEX.md` for discovery.
+- Agent-facing doctrine has a clear home: `AGENTS.md` nodes for scoped law, `.agents/docs/<topic>.md` for doctrine-length content, `.agents/INDEX.md` for discovery.
 - `docs/` and README files remain human-facing. They may point at agent doctrine but do not own it.
 - The self-healing rule means the mesh stays current: any worker who reads stale mesh content is responsible for repairing it in the same PR.
 - Future doctrine files (e.g., for travel dev, casefile dev, suspect dev) follow the same pattern without needing a new ADR.
 - The mesh policy adds a small ongoing cost: new folders need `INDEX.md` files, and new doctrine needs to be linked from the agents mesh. This cost is bounded by the self-healing rule and is far smaller than the cost of navigating a repo with inconsistent or missing documentation.
+
+

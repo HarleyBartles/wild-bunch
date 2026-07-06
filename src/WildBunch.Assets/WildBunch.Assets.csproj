@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="town-buildings\**\*" />
+    <None Include="source\**\*;staging\**\*;sprites\**\*" />
   </ItemGroup>
 
 </Project>

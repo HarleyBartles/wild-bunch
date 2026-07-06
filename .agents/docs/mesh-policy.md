@@ -9,7 +9,7 @@ This is the agent-facing contract for the three documentation/navigation surface
 ### Structure: routing files, not doctrine containers
 
 - `AGENTS.md` files must be **routing files** with "must read when" pointers to doctrine documents, not containers for doctrine themselves.
-- Doctrine belongs in `.agents/docs/` (standards, policies, guides) or `.agents/doctrine/` (cross-project invariants). `AGENTS.md` points at these docs with framing like "must read before writing code: `.agents/docs/coding-discipline.md`".
+- Doctrine belongs in `.agents/docs/` (standards, policies, guides). `AGENTS.md` points at these docs with framing like "must read before writing code: `.agents/docs/coding-discipline.md`".
 - The root `AGENTS.md` carries: project identity, Required Working Knowledge (pointers to standards docs with "must read when" framing), Required Skills (skill invocation routing), Policy Reference (pointers to policy docs), and ADR freshness reminders.
 - Scoped `AGENTS.md` files (e.g. `src/WildBunch.Web/AGENTS.md`) carry: a "Must Read When" section with pointers to the standards docs that apply to that subtree, plus any scoped deltas that differ from root law.
 - If a scoped `AGENTS.md` finds itself carrying more than ~30 lines of doctrine, extract the doctrine into a document under `.agents/docs/` and leave a pointer.

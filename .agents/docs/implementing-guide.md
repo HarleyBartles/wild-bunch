@@ -9,7 +9,7 @@ Read these standards documents before writing any code. The root `AGENTS.md` lis
 - **[`.agents/docs/coding-discipline.md`](coding-discipline.md)** — scope discipline, architecture stack discipline (DDD/CQRS/event-sourcing is mandatory, not optional), refactoring rules. Read before writing any code.
 - **[`.agents/docs/frontend-standards.md`](frontend-standards.md)** — styling stack, play-surface UI, source truth, dev overlay, routing conventions. Read before any frontend work.
 - **[`.agents/docs/validation-policy.md`](validation-policy.md)** — test kinds, validation commands, and test quality standards (no flaky tests, real behavior not mocks, pristine output). Read before writing or modifying tests.
-- **[`.agents/doctrine/write-tool-phantom-files.md`](../doctrine/write-tool-phantom-files.md)** — the write-tool phantom-file bug on Windows. Read before batch writes. Clean up phantom files before committing.
+- **[`.agents/docs/write-tool-phantom-files.md`](write-tool-phantom-files.md)** — the write-tool phantom-file bug on Windows. Read before batch writes. Clean up phantom files before committing.
 - **[`.agents/docs/architecture-guardrails.md`](architecture-guardrails.md)** — read before touching GameSession, persistence, or domain logic.
 
 ## Skills to Invoke
@@ -40,7 +40,7 @@ Before claiming work is done, verify:
 - **Build succeeds:** `npm run build` for frontend, `dotnet build` for backend.
 - **Type-check clean:** `npx tsc --noEmit` for frontend work (no new errors).
 - **No flaky tests:** Run the full suite at least once. If a test passes in isolation but fails under full-suite load, it's flaky — fix it before claiming done. See `.agents/docs/validation-policy.md` Test Quality Standards for common causes.
-- **Workspace clean:** No phantom files, no stray debug artifacts, no uncommitted scratch files. See `.agents/doctrine/write-tool-phantom-files.md`.
+- **Workspace clean:** No phantom files, no stray debug artifacts, no uncommitted scratch files. See `.agents/docs/write-tool-phantom-files.md`.
 - **INDEX.md regenerated:** If files were added or removed, run `python scripts/generate_index_mesh.py`.
 - **No secrets committed:** Check your diff for credentials, API keys, or connection strings.
 

@@ -26,7 +26,7 @@ React renders backend/player-known state rather than inventing canonical game fa
 
 ## Dev Overlay
 
-Required reading: `.agents/dev-overlay/DOCTRINE.md` — binding doctrine for dev overlay state/action boundary, panel ownership, related panel visibility, layout, hidden truth, backend authority, and closeout proof.
+Required reading: `.agents/docs/dev-overlay-doctrine.md` — binding doctrine for dev overlay state/action boundary, panel ownership, related panel visibility, layout, hidden truth, backend authority, and closeout proof.
 
 Also apply `.agents/unslop/dev-overlay.md` — the dev overlay unslop drift-prevention profile.
 
