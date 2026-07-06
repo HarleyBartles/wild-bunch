@@ -17,6 +17,7 @@
 - The road families should gain expressive range through mirroring and topology variants, not through prosperity tiers.
 - Variation belongs in the dirt layer as texture, props, and occasional larger features. It does not belong in prosperity variants.
 - The filler-building set is intentionally small because repeated view selection and mirroring can make one building family cover more of the hub without requiring many new assets.
+- The filler-building set is exactly two families, not one-and-a-half or a stretch goal.
 - `python scripts/image_asset_pipeline.py` requires Python 3.11+ with Pillow installed in the active environment.
 - `python scripts/generate_index_mesh.py --check` must pass after any file moves, renames, or doc updates.
 - Keep the work narrow to the town-hub asset generation slice and the docs that define it.
@@ -226,9 +227,13 @@ If the generator returns separate view images, normalize them into the source tr
 python scripts/image_asset_pipeline.py normalize --input <view.png> --out <out.png>
 ```
 
+The worker must end this step with exactly 20 images for `background-house`: 4 prosperity tiers times 5 views.
+
 - [ ] **Step 2: Generate the second filler family**
 
 Use the same prompt contract for `background-shop`, but keep the silhouette distinct enough that the two families read as different supporting buildings without making either one the dominant town feature.
+
+The worker must end this step with exactly 20 images for `background-shop`: 4 prosperity tiers times 5 views.
 
 - [ ] **Step 3: Make the filler buildings transparently cut and promotion-ready**
 
@@ -240,6 +245,8 @@ Run:
 ```powershell
 python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/source/town-hub-buildings --out-root src/WildBunch.Assets/sprites/town-hub-buildings
 ```
+
+This promotion step is required even if the source tree already contains normalized outputs; the final sprites tree is the shippable home.
 
 - [ ] **Step 5: Commit**
 
@@ -267,13 +274,28 @@ git commit -m "feat: add filler-building families for town hubs"
 
 Create the 2-tile-wide main road family first so the edge, path, spur-cross, and end-piece contracts are settled before the spur and dirt tiles are tuned against them.
 
+The worker must end this step with exactly 8 main-road tiles:
+- 4 right-side canonical variants: `flat-edge-right`, `path-edge-right`, `spur-cross-right`, `end-bottom`
+- 4 mirrored derivatives: `flat-edge-left`, `path-edge-left`, `spur-cross-left`, `end-top`
+
 - [ ] **Step 2: Generate the spur-road tile set**
 
 Create the 1-tile-tall spur family with a clear horizontal read, a building-attachment variant, and mirrored end pieces.
 
+The worker must end this step with exactly 4 spur-road tiles:
+- `straight`
+- `path-above`
+- `end-right`
+- `end-left`
+
 - [ ] **Step 3: Generate the ground-fill tile set**
 
 Create the 3 base dirt textures, the 8 prop-baked dirt tiles, and the 4-tile landform set. Keep the dirt edges compatible with the road dirt edges and with each other.
+
+The worker must end this step with exactly 15 ground tiles:
+- 3 base dirt textures
+- 8 prop dirt tiles
+- 4 landform tiles
 
 - [ ] **Step 4: Normalize and promote**
 
@@ -321,7 +343,7 @@ Run:
 ```powershell
 git status --short
 ```
-Expected: only the intended plan, doc, and asset changes remain.
+Expected: only the intended plan, doc, and asset changes remain, with no stray scratch files outside the branch-scoped worktree.
 
 - [ ] **Step 4: Commit the final verification state**
 
@@ -364,4 +386,3 @@ No placeholders remain. The plan uses concrete family names, concrete file paths
 - `town-hub-buildings`, `town-hub-roads`, and `town-hub-ground` are the only new asset-family root names used throughout the plan.
 - `normalize`, `slice-sheet`, and `promote-sprites` are the only pipeline helper commands used in the plan.
 - The final validation always uses `python scripts/generate_index_mesh.py --check` after any move or rename.
-
