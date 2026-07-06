@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Phaser from "phaser";
-import { AvailableActionKind, BuildingKind, TownProsperity } from "../api/types";
+import { AvailableActionKind, BuildingKind, BuildingView, TownProsperity } from "../api/types";
 import type { BuildingPlacementDto, TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
 

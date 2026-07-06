@@ -8,6 +8,7 @@ import { TownHubScene } from "../components/town-hub/TownHubScene";
 import {
   AvailableActionKind,
   BuildingKind,
+  BuildingView,
   StartFlowPhase,
   TownProsperity,
   type GameSessionDto,
