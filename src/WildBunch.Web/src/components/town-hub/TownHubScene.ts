@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { AvailableActionKind } from "../../api/types";
 import { BuildingKind } from "./types";
 import type { TownLayoutDto } from "./types";
+import { getSpriteUrl } from "./sprite-loader";
 
 const BUILDING_COLORS: Record<BuildingKind, number> = {
   [BuildingKind.Store]: 0x8b6914,
@@ -63,6 +64,19 @@ export class TownHubScene extends Phaser.Scene {
     this.onBuildingSelected = onBuildingSelected;
   }
 
+  preload(): void {
+    // Load all building sprites based on the layout's prosperity tier
+    const prosperity = this.layout.prosperity;
+    const view = "front"; // Default view for buildings
+
+    for (const building of this.layout.buildings) {
+      const spriteUrl = getSpriteUrl(building.kind, view, prosperity);
+      if (spriteUrl) {
+        this.load.image(`building-${building.kind}`, spriteUrl);
+      }
+    }
+  }
+
   selectBuilding(kind: BuildingKind): void {
     if (!isBuildingAvailable(kind, this.availableActions)) {
       return;
@@ -76,23 +90,43 @@ export class TownHubScene extends Phaser.Scene {
     const sy = TownHubScene.CanvasHeight / 100;
 
     for (const building of layout.buildings) {
-      const color = BUILDING_COLORS[building.kind] ?? 0x6a6a6a;
       const px = building.x * sx;
       const py = building.y * sy;
       const pw = building.width * sx;
       const ph = building.height * sy;
-      const rect = this.add.rectangle(px, py, pw, ph, color);
 
-      if (building.kind === BuildingKind.Telegraph) {
-        rect.setAlpha(0.6);
-      } else if (isBuildingAvailable(building.kind, this.availableActions)) {
-        rect.setStrokeStyle(2, 0xffffff);
-        rect.setInteractive({ useHandCursor: true });
-        rect.on("pointerover", () => rect.setScale(1.05));
-        rect.on("pointerout", () => rect.setScale(1));
-        rect.on("pointerdown", () => this.selectBuilding(building.kind));
+      // Try to use sprite if available, otherwise fall back to colored rectangle
+      const spriteKey = `building-${building.kind}`;
+      if (this.textures.exists(spriteKey)) {
+        const sprite = this.add.image(px, py, spriteKey);
+        sprite.setDisplaySize(pw, ph);
+
+        if (building.kind === BuildingKind.Telegraph) {
+          sprite.setAlpha(0.6);
+        } else if (isBuildingAvailable(building.kind, this.availableActions)) {
+          sprite.setInteractive({ useHandCursor: true });
+          sprite.on("pointerover", () => sprite.setScale(1.05));
+          sprite.on("pointerout", () => sprite.setScale(1));
+          sprite.on("pointerdown", () => this.selectBuilding(building.kind));
+        } else {
+          sprite.setAlpha(0.4);
+        }
       } else {
-        rect.setAlpha(0.4);
+        // Fallback to colored rectangle for buildings without sprites (e.g., Trailhead)
+        const color = BUILDING_COLORS[building.kind] ?? 0x6a6a6a;
+        const rect = this.add.rectangle(px, py, pw, ph, color);
+
+        if (building.kind === BuildingKind.Telegraph) {
+          rect.setAlpha(0.6);
+        } else if (isBuildingAvailable(building.kind, this.availableActions)) {
+          rect.setStrokeStyle(2, 0xffffff);
+          rect.setInteractive({ useHandCursor: true });
+          rect.on("pointerover", () => rect.setScale(1.05));
+          rect.on("pointerout", () => rect.setScale(1));
+          rect.on("pointerdown", () => this.selectBuilding(building.kind));
+        } else {
+          rect.setAlpha(0.4);
+        }
       }
 
       const label = BUILDING_LABELS[building.kind] ?? "Building";
@@ -102,6 +136,24 @@ export class TownHubScene extends Phaser.Scene {
           color: "#fff",
         })
         .setOrigin(0.5);
+    }
+
+    // Render paths using Phaser graphics
+    if (layout.paths && layout.paths.length > 0) {
+      const graphics = this.add.graphics();
+      graphics.lineStyle(2, 0xc0c0c0); // Silver/gray path color
+
+      for (const path of layout.paths) {
+        const startX = path.startX * sx;
+        const startY = path.startY * sy;
+        const endX = path.endX * sx;
+        const endY = path.endY * sy;
+
+        graphics.moveTo(startX, startY);
+        graphics.lineTo(endX, endY);
+      }
+
+      graphics.strokePath();
     }
 
     this.add.circle(layout.playerSpawnX * sx, layout.playerSpawnY * sy, 12, 0xffd700);

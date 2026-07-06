@@ -45,7 +45,10 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
     playerSpawnX: 50,
     playerSpawnY: 50,
     prosperity: TownProsperity.Prosperous,
-    paths: [],
+    paths: [
+      { startX: 12, startY: 25, endX: 46, endY: 25 },
+      { startX: 46, startY: 25, endX: 80, endY: 25 },
+    ],
     ...overrides,
   };
 }
