@@ -10,7 +10,7 @@ using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.Projections;
 
 public sealed class JournalResolverTests
 {

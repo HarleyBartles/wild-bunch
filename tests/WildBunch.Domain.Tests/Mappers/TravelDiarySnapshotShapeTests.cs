@@ -1,7 +1,7 @@
 using WildBunch.Domain.Travel;
 using Xunit;
 
-namespace WildBunch.Domain.Tests;
+namespace WildBunch.Domain.Tests.Mappers;
 
 /// <summary>
 /// Falsification tests proving that BeatSlots is NOT a field on TravelDiaryDayState.
