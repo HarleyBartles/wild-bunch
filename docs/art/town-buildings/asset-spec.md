@@ -44,6 +44,8 @@ to their source cut.
 - Road tiles do not use prosperity tiers.
 - Road variation comes from mirroring, topology, edge pairing, and end pieces.
 - Keep road tiles tile-safe and seam-safe through source, staging, and sprites.
+- Keep every road tile at the full 60x50 canvas in source, staging, and sprites;
+  copy promotion must preserve the canvas, not crop, trim, or rescale it.
 
 ### `town-hub-ground`
 
@@ -53,6 +55,8 @@ to their source cut.
 - Dirt tiles do not use prosperity tiers.
 - Keep the dirt set tile-safe and seam-safe through source, staging, and
   sprites.
+- Keep every dirt tile at the full 60x50 canvas in source, staging, and sprites;
+  copy promotion must preserve the canvas, not crop, trim, or rescale it.
 
 ## Naming
 

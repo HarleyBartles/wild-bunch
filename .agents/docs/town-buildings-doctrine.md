@@ -56,6 +56,11 @@ visually secondary to the named town buildings.
   textures, prop-baked tiles, and the landform set.
 - Roads and dirt do not use prosperity tiers, so do not add tier language to
   those prompts.
+- Road and ground tiles stay full-size 60x50 assets through source, staging,
+  and sprites. Copy promotion preserves the canvas and seam edges; do not use
+  sprite cutting, trimming, or rescaling on those tracks.
+- When the asset-root AGENTS file points at this doctrine, treat this file as
+  the canonical agent-facing contract for the town-hub split.
 
 ## Prompt style
 
