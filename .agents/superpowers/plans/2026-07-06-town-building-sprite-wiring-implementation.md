@@ -10,6 +10,8 @@
 
 **Design Document:** `.agents/superpowers/specs/2026-07-06-town-building-sprite-wiring-design.md`
 
+**Scope Justification:** This slice includes seed codec work (BuildingLayoutPalette) and canonical layout patterns, which is required for deterministic building placement. See the design document for detailed justification.
+
 ## Global Constraints
 
 - Do NOT move asset custody to web public tree manually - use Vite bundling
@@ -28,7 +30,47 @@
 
 ---
 
-### Task 1: Add PathSegment Domain Type
+### Preflight Task: Inventory Current Seed Codec Layout
+
+**Files:**
+- No file changes - analysis only
+
+**Interfaces:**
+- Consumes: `SeedWorldResolver.cs` current bit layout
+- Produces: Analysis of available bits and compatibility decision
+
+- [ ] **Step 1: Read current seed codec layout**
+
+Read `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs` and extract the current bit layout from the documentation comment. Current layout (v16):
+- Bytes 0-7 (low): 29 bits used, 99 reserved
+- Bits 29-63: reserved (35 bits)
+
+- [ ] **Step 2: Verify bits 29-32 are free**
+
+Confirm that bits 29-32 are within the reserved range (29-63) and are not currently used by any field.
+
+- [ ] **Step 3: Assess compatibility impact**
+
+- Adding BuildingLayoutPalette (4 bits at positions 29-32) will bump resolver version to v17
+- Old seed codes (v16) will fail to decode with v17 resolver
+- This is acceptable because: the repo is greenfield, no production seed codes exist yet
+- No fallback behavior needed - this is a breaking change to the codec itself
+
+- [ ] **Step 4: Confirm seed ownership decision**
+
+BuildingLayoutPalette should be seed-owned because:
+- The issue requires deterministic building placement for the same seed
+- Layout patterns are part of the canonical world definition
+- Consistent with existing seed-owned fields (prosperity/services palettes, cluster count, graph density)
+- The palette system (8 patterns) is efficient and extensible
+
+- [ ] **Step 5: Document decision**
+
+Add to plan notes: Seed codec v17, bits 29-32 for BuildingLayoutPalette, no compatibility concerns (greenfield repo).
+
+---
+
+### Task 2: Add PathSegment Domain Type
 
 **Files:**
 - Create: `src/WildBunch.Domain/World/PathSegment.cs`
@@ -115,7 +157,7 @@ git add src/WildBunch.Domain/World/PathSegment.cs src/WildBunch.Domain/World/Tow
 git commit -m "feat: add PathSegment domain type and Paths field to TownLayout"
 ```
 
-### Task 2: Add PathSegmentDto and Update TownLayoutDto
+### Task 3: Add PathSegmentDto and Update TownLayoutDto
 
 **Files:**
 - Create: `src/WildBunch.Application/Games/Models/PathSegmentDto.cs`
@@ -192,7 +234,7 @@ git add src/WildBunch.Application/Games/Models/PathSegmentDto.cs src/WildBunch.A
 git commit -m "feat: add PathSegmentDto and paths field to TownLayoutDto"
 ```
 
-### Task 3: Update TownLayoutMapper to Map Paths
+### Task 4: Update TownLayoutMapper to Map Paths
 
 **Files:**
 - Modify: `src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs`
@@ -303,7 +345,7 @@ git add src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs tests/WildBu
 git commit -m "feat: update TownLayoutMapper to map PathSegment to PathSegmentDto"
 ```
 
-### Task 4: Add BuildingLayoutPalette Enum and BuildingLayoutCatalog
+### Task 5: Add BuildingLayoutPalette Enum and BuildingLayoutCatalog
 
 **Files:**
 - Create: `src/WildBunch.Domain/World/BuildingLayoutPalette.cs`
@@ -472,7 +514,7 @@ git add src/WildBunch.Domain/World/BuildingLayoutPalette.cs src/WildBunch.GameCo
 git commit -m "feat: add BuildingLayoutPalette enum and BuildingLayoutCatalog"
 ```
 
-### Task 5: Update SeedWorld to Include BuildingLayoutPalette
+### Task 6: Update SeedWorld and Town to Include BuildingLayoutPalette
 
 **Files:**
 - Modify: `src/WildBunch.Domain/World/SeedWorld.cs`
@@ -557,7 +599,7 @@ git add src/WildBunch.Domain/World/SeedWorld.cs tests/WildBunch.Domain.Tests/Wor
 git commit -m "feat: add BuildingLayoutPalette field to SeedWorld"
 ```
 
-### Task 6: Update SeedWorldResolver to Encode/Decode BuildingLayoutPalette
+### Task 7: Update SeedWorldResolver to Encode/Decode BuildingLayoutPalette
 
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs`
@@ -684,7 +726,7 @@ git add src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs tests/WildBunch.G
 git commit -m "feat: add BuildingLayoutPalette encoding/decoding to SeedWorldResolver (v17)"
 ```
 
-### Task 7: Update TownLayoutGenerator to Use BuildingLayoutCatalog
+### Task 8: Update TownLayoutGenerator to Use BuildingLayoutCatalog
 
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`
@@ -899,7 +941,7 @@ git add src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs tests/WildBunch
 git commit -m "feat: update TownLayoutGenerator to use BuildingLayoutCatalog and generate paths"
 ```
 
-### Task 8: Add PathSegmentDto to Frontend Types
+### Task 9: Add PathSegmentDto to Frontend Types
 
 **Files:**
 - Modify: `src/WildBunch.Web/src/api/types.ts`
@@ -965,7 +1007,7 @@ git add src/WildBunch.Web/src/api/types.ts src/WildBunch.Web/src/tests/types.tes
 git commit -m "feat: add PathSegmentDto to frontend types and update TownLayoutDto"
 ```
 
-### Task 9: Update TownHubScene to Load Sprites and Render Paths
+### Task 10: Update TownHubScene to Load Sprites and Render Paths
 
 **Files:**
 - Modify: `src/WildBunch.Web/src/components/town-hub/TownHubScene.ts`
@@ -1171,7 +1213,7 @@ git add src/WildBunch.Web/src/components/town-hub/TownHubScene.ts src/WildBunch.
 git commit -m "feat: update TownHubScene to load sprites and render paths"
 ```
 
-### Task 10: Update Frontend Tests
+### Task 11: Update Frontend Tests
 
 **Files:**
 - Modify: `src/WildBunch.Web/src/tests/TownHubSurface.test.tsx`
@@ -1249,7 +1291,7 @@ git add src/WildBunch.Web/src/tests/TownHubSurface.test.tsx src/WildBunch.Web/sr
 git commit -m "test: update frontend test fixtures for paths and prosperity"
 ```
 
-### Task 11: Add Brute Force Test for TownLayoutGenerator
+### Task 12: Add Brute Force Test for TownLayoutGenerator
 
 **Files:**
 - Create: `tests/WildBunch.GameContent.Tests/NewGame/TownLayoutBruteForceAnalysisTests.cs`
@@ -1362,7 +1404,7 @@ git add tests/WildBunch.GameContent.Tests/NewGame/TownLayoutBruteForceAnalysisTe
 git commit -m "test: add brute force test for TownLayoutGenerator determinism"
 ```
 
-### Task 12: Configure Vite to Bundle Assets
+### Task 13: Configure Vite to Bundle Assets
 
 **Files:**
 - Modify: `src/WildBunch.Web/vite.config.ts`
@@ -1407,7 +1449,7 @@ git add src/WildBunch.Web/vite.config.ts src/WildBunch.Web/package.json src/Wild
 git commit -m "build: configure Vite to bundle town-building sprites with vite-plugin-static-copy"
 ```
 
-### Task 13: Run Backend Tests
+### Task 14: Run Backend Tests
 
 **Files:**
 - No file changes - validation only
@@ -1440,7 +1482,7 @@ git add src/
 git commit -m "fix: resolve backend test failures"
 ```
 
-### Task 14: Run Frontend Tests
+### Task 15: Run Frontend Tests
 
 **Files:**
 - No file changes - validation only
@@ -1468,7 +1510,7 @@ git add src/WildBunch.Web/src/
 git commit -m "fix: resolve frontend test failures"
 ```
 
-### Task 15: Browser Visual Smoke Check
+### Task 16: Browser Visual Smoke Check
 
 **Files:**
 - No file changes - validation only
@@ -1504,7 +1546,7 @@ Press Ctrl+C in the dev server terminal
 
 Note any visual issues or unexpected behavior
 
-### Task 16: Collect Return Evidence
+### Task 17: Collect Return Evidence
 
 **Files:**
 - No file changes - evidence collection

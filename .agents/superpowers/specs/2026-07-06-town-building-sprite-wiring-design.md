@@ -4,6 +4,22 @@
 
 Town Hub currently renders colored rectangles as building placeholders. The approved town-building sprites exist in `src/WildBunch.Assets/town-buildings/sprites/` organized by prosperity tier (boomtown/prosperous/poor/destitute) and building family (general-store/sheriff-office/saloon/telegraph-office) with five turnaround views each. The frontend needs to wire these sprites into the Town Hub Phaser surface, using the town's prosperity level to select the correct asset tier and mechanically generating town layouts with road/path connectivity.
 
+## Scope Justification
+
+This slice includes seed codec work (BuildingLayoutPalette) and canonical layout patterns, which may appear to expand beyond "sprite wiring." This work is required for this slice because:
+
+1. **Deterministic layout requirement:** The issue requires that "each town has deterministic building placement for the same seed." Without seed encoding, building placement would be non-deterministic across sessions.
+
+2. **No existing layout seam:** TownLayoutGenerator currently uses a simple mechanical layout (4 fixed positions). To support 8 canonical layout patterns with proper road/path connectivity, we need a palette system that can be selected deterministically from the seed.
+
+3. **Efficiency:** A 4-bit palette encoding (8 patterns) is far more efficient than encoding exact building positions (which would require 16+ bits). This follows the existing prosperity/services palette pattern.
+
+4. **Consistency:** The seed already owns prosperity/services palettes, cluster count, and graph density. Adding BuildingLayoutPalette maintains consistency with the existing seed-owned world layer.
+
+5. **No smaller seam:** Deferring this behind a smaller deterministic layout seam would require a temporary ad-hoc solution that would need to be replaced later. The palette system is the right long-term design.
+
+The path DTOs and brute-force tests are required to validate the mechanical layout generation and ensure determinism across seed/salt combinations.
+
 ## Goal
 
 Make the Town Hub scene render approved town-building sprites instead of placeholders, with mechanical town layout generation (main road north-south, side spurs, deterministic building placement and orientation), and path connectivity between buildings and roads.
@@ -43,7 +59,8 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 **BuildingLayoutPalette.cs** (new domain enum)
 - Enum with 8 layout patterns (HubAndSpoke, LinearChain, etc.) - 3 bits used, 1 reserved for future expansion
 
-**BuildingLayoutCatalog.cs** (new domain catalog)
+**BuildingLayoutCatalog.cs** (new GameContent catalog)
+- Located in `WildBunch.GameContent/NewGame` (not Domain)
 - Similar to existing prosperity/services catalog pattern
 - Provides canonical building layout for each palette index: building positions, views, spur count, spur positions
 
