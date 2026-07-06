@@ -1,8 +1,19 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: '../WildBunch.Assets/sprites/town-buildings',
+          dest: 'assets/town-buildings'
+        }
+      ]
+    })
+  ],
   test: {
     environment: "jsdom",
     setupFiles: ["./src/tests/test-utils/setup.ts"],
