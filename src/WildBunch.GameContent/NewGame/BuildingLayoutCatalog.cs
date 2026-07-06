@@ -12,7 +12,7 @@ public static class BuildingLayoutCatalog
 {
     public static BuildingLayoutPattern GetLayout(BuildingLayoutPalette palette)
     {
-        // TODO: Task 2 will implement tile-based layout generation
+        // TODO: Task 2 will implement the switch statement mapping each palette to its tile-based layout pattern
         // For now, map all palettes to a single fallback layout to allow build to pass
         return HubAndSpokeLayout;
     }

@@ -77,7 +77,7 @@ public sealed class TownLayoutGeneratorTests
         Assert.Equal(50, layout.PlayerSpawnY);
 
         var trailhead = layout.Buildings.Single(b => b.Kind == BuildingKind.Trailhead);
-        // HubAndSpoke pattern places trailhead at (50, 85) with +/-2 jitter
+        // NoSpurs_SpreadEvenly palette places trailhead at (50, 85) with +/-2 jitter
         Assert.InRange(trailhead.X, 48, 52);
         Assert.InRange(trailhead.Y, 83, 87);
     }
@@ -102,7 +102,7 @@ public sealed class TownLayoutGeneratorTests
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        // HubAndSpoke pattern uses different base positions than the old baseline
+        // NoSpurs_SpreadEvenly palette uses different base positions than the old baseline
         // Store is at (35, 20) in the pattern, not (12, 15)
         var store = layout.Buildings.Single(b => b.Kind == BuildingKind.Store);
         Assert.InRange(store.X, 33, 37); // 35 +/- 2

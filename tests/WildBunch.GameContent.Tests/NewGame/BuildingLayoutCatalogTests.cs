@@ -9,7 +9,7 @@ public sealed class BuildingLayoutCatalogTests
     [Fact]
     public void GetLayout_ReturnsCanonicalLayout()
     {
-        // TODO: Task 2 will implement tile-based layout generation
+        // TODO: Task 2 will implement the switch statement mapping each palette to its tile-based layout pattern
         // For now, verify that the catalog returns a layout for the new palette
         var layout = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
@@ -20,7 +20,7 @@ public sealed class BuildingLayoutCatalogTests
     [Fact]
     public void GetLayout_ReturnsLayoutForAllNewPalettes()
     {
-        // TODO: Task 2 will implement tile-based layout generation
+        // TODO: Task 2 will implement the switch statement mapping each palette to its tile-based layout pattern
         // For now, verify that the catalog returns a layout for all new palettes
         var noSpurs = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.NoSpurs_SpreadEvenly);
         var oneSpur = BuildingLayoutCatalog.GetLayout(BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
