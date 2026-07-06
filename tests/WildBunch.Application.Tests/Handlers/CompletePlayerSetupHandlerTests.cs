@@ -2,7 +2,7 @@ using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 /// <summary>
 /// Application-level tests for CompletePlayerSetupHandler — the first step of the

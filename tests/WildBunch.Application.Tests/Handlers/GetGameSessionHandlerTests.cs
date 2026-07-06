@@ -7,7 +7,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 public sealed class GetGameSessionHandlerTests
 {

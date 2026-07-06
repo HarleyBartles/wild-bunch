@@ -14,7 +14,7 @@ using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 public sealed class PurchaseStoreItemHandlerTests
 {

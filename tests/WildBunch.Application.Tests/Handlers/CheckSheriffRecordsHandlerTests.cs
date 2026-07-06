@@ -12,7 +12,7 @@ using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 public sealed class CheckSheriffRecordsHandlerTests
 {

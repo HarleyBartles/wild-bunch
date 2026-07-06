@@ -10,7 +10,7 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 public sealed class AdvanceTravelDayHandlerTests
 {

@@ -9,7 +9,7 @@ using WildBunch.GameContent.Abstractions;
 using WildBunch.GameContent.NewGame;
 using DomainGameDifficulty = WildBunch.Domain.Travel.GameDifficulty;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 public sealed class GetWorldMapHandlerTests
 {

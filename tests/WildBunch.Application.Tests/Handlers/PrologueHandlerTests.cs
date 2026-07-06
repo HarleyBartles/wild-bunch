@@ -2,7 +2,7 @@ using WildBunch.Application.Games.Models;
 using WildBunch.Application.Games.Queries;
 using WildBunch.GameContent.Prologue;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Handlers;
 
 public sealed class PrologueHandlerTests
 {
