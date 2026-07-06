@@ -4,7 +4,7 @@ using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public sealed class GameSessionDtoProjectionFieldsTests
 {

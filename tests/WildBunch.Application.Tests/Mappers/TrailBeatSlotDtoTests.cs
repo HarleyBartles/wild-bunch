@@ -4,7 +4,7 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using Xunit;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public class TrailBeatSlotDtoTests
 {
