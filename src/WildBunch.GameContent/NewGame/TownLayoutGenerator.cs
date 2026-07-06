@@ -143,16 +143,14 @@ internal static class TownLayoutGenerator
             var spurRow = paletteSpec.SpurRows[i];
             var spurDirection = paletteSpec.SpurDirections[i];
 
-            // Spur starts in building zone
-            var spurStartCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
-            grid[spurRow, spurStartCol] = TileType.SpurStart;
+            // Spur starts at road edge and extends outward
+            // West spurs: start at column 1 (left road edge), extend to column 0 (building zone)
+            // East spurs: start at column 2 (right road edge), extend to column 3 (building zone)
+            var spurRoadCol = spurDirection == SpurDirection.West ? RoadColumnStart : RoadColumnEnd;
+            var spurBuildingCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
 
-            // Spur extends 1 tile beyond building zone
-            var spurRoadCol = spurDirection == SpurDirection.West ? spurStartCol - 1 : spurStartCol + 1;
-            if (spurRoadCol >= 0 && spurRoadCol < GridWidth)
-            {
-                grid[spurRow, spurRoadCol] = TileType.SpurRoad;
-            }
+            grid[spurRow, spurRoadCol] = TileType.SpurStart;
+            grid[spurRow, spurBuildingCol] = TileType.SpurRoad;
         }
 
         return grid;
@@ -215,13 +213,16 @@ internal static class TownLayoutGenerator
         {
             var spurRow = paletteSpec.SpurRows[i];
             var spurDirection = paletteSpec.SpurDirections[i];
-            var spurStartCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
-            var spurRoadCol = spurDirection == SpurDirection.West ? spurStartCol - 1 : spurStartCol + 1;
 
-            // Building zone is above the spur road
-            if (spurRow > 0 && spurRoadCol >= 0 && spurRoadCol < GridWidth)
+            // Spur building zone is above the spur road tile
+            // West spurs: road at column 1, building zone at column 0
+            // East spurs: road at column 2, building zone at column 3
+            var spurRoadCol = spurDirection == SpurDirection.West ? RoadColumnStart : RoadColumnEnd;
+            var spurBuildingCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
+
+            if (spurRow > 0)
             {
-                zones.Add((spurRow - 1, spurRoadCol, true));
+                zones.Add((spurRow - 1, spurBuildingCol, true));
             }
         }
 
