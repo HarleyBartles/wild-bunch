@@ -125,7 +125,7 @@ The planning agent should update or create the following repository docs as part
 - `docs/art/town-buildings/style-bible.md`
 - `docs/art/town-buildings/asset-spec.md`
 - `docs/art/town-buildings/pipeline-overview.md`
-- `.agents/art/town-buildings/DOCTRINE.md`
+- `.agents/docs/town-buildings-doctrine.md`
 - `src/WildBunch.Assets/README.md`
 - `src/WildBunch.Assets/AGENTS.md`
 - `src/WildBunch.Assets/INDEX.md`
