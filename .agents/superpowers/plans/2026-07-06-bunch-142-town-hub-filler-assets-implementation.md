@@ -19,6 +19,8 @@
 - The filler-building set is intentionally small because repeated view selection and mirroring can make one building family cover more of the hub without requiring many new assets.
 - The filler-building set is exactly two families, not one-and-a-half or a stretch goal.
 - `python scripts/image_asset_pipeline.py` requires Python 3.11+ with Pillow installed in the active environment.
+- Building promotion may use `promote-sprites`, but road and ground tiles must stay tile-safe and never go through the sprite cutter because seam alignment matters more than trimming.
+- Road and ground tiles must keep their full 60x50 canvas through source, staging, and sprites; copy promotion is the contract for those families.
 - `python scripts/generate_index_mesh.py --check` must pass after any file moves, renames, or doc updates.
 - Keep the work narrow to the town-hub asset generation slice and the docs that define it.
 
@@ -83,6 +85,13 @@
 
 - Move the current `src/WildBunch.Assets/town-buildings/` custody tree into the new `src/WildBunch.Assets/source/town-hub-buildings/` / `staging/town-hub-buildings/` / `sprites/town-hub-buildings/` layout.
 - Preserve the existing canonical building tier/view filenames during the move so the new filler-building family can sit beside them without changing the established view vocabulary.
+
+### Deterministic staging contract
+
+- Buildings: copy `src/WildBunch.Assets/source/town-hub-buildings/` into `src/WildBunch.Assets/staging/town-hub-buildings/`, then run `promote-sprites` from staging into `src/WildBunch.Assets/sprites/town-hub-buildings/`.
+- Road tiles: copy `src/WildBunch.Assets/source/town-hub-roads/` into `src/WildBunch.Assets/staging/town-hub-roads/`, validate the tile dimensions and mirror pairs there, then copy staging into `src/WildBunch.Assets/sprites/town-hub-roads/`.
+- Ground tiles: copy `src/WildBunch.Assets/source/town-hub-ground/` into `src/WildBunch.Assets/staging/town-hub-ground/`, validate the tile dimensions and seam-safe variants there, then copy staging into `src/WildBunch.Assets/sprites/town-hub-ground/`.
+- All three custody homes remain part of the permanent contract; staging is not optional scratch space.
 
 ### Modified files
 
@@ -239,16 +248,25 @@ The worker must end this step with exactly 20 images for `background-shop`: 4 pr
 
 Verify the output has clean transparent backgrounds and that the normalized sprites sit cleanly on the 60x50 canvas with the bottom anchor preserved.
 
-- [ ] **Step 4: Promote into sprites**
+- [ ] **Step 4: Copy source into staging**
 
 Run:
 ```powershell
-python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/source/town-hub-buildings --out-root src/WildBunch.Assets/sprites/town-hub-buildings
+if (Test-Path src/WildBunch.Assets/staging/town-hub-buildings) { Remove-Item -Recurse -Force src/WildBunch.Assets/staging/town-hub-buildings }
+Copy-Item -Recurse src/WildBunch.Assets/source/town-hub-buildings src/WildBunch.Assets/staging/town-hub-buildings
+```
+
+- [ ] **Step 5: Promote staging into sprites**
+
+Run:
+```powershell
+if (Test-Path src/WildBunch.Assets/sprites/town-hub-buildings) { Remove-Item -Recurse -Force src/WildBunch.Assets/sprites/town-hub-buildings }
+python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-hub-buildings --out-root src/WildBunch.Assets/sprites/town-hub-buildings
 ```
 
 This promotion step is required even if the source tree already contains normalized outputs; the final sprites tree is the shippable home.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```powershell
 git add src/WildBunch.Assets/source/town-hub-buildings src/WildBunch.Assets/staging/town-hub-buildings src/WildBunch.Assets/sprites/town-hub-buildings
@@ -297,15 +315,72 @@ The worker must end this step with exactly 15 ground tiles:
 - 8 prop dirt tiles
 - 4 landform tiles
 
-- [ ] **Step 4: Normalize and promote**
+- [ ] **Step 4: Copy source into staging**
 
-Use the image pipeline helper where needed, then promote the whole road and ground tree:
 ```powershell
-python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/source/town-hub-roads --out-root src/WildBunch.Assets/sprites/town-hub-roads
-python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/source/town-hub-ground --out-root src/WildBunch.Assets/sprites/town-hub-ground
+if (Test-Path src/WildBunch.Assets/staging/town-hub-roads) { Remove-Item -Recurse -Force src/WildBunch.Assets/staging/town-hub-roads }
+if (Test-Path src/WildBunch.Assets/staging/town-hub-ground) { Remove-Item -Recurse -Force src/WildBunch.Assets/staging/town-hub-ground }
+Copy-Item -Recurse src/WildBunch.Assets/source/town-hub-roads src/WildBunch.Assets/staging/town-hub-roads
+Copy-Item -Recurse src/WildBunch.Assets/source/town-hub-ground src/WildBunch.Assets/staging/town-hub-ground
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Validate tile dimensions and seam-safe mirror pairs**
+
+Run:
+```powershell
+@'
+from pathlib import Path
+from PIL import Image, ImageChops, ImageOps
+
+expected_size = (60, 50)
+staging_roots = [
+    Path("src/WildBunch.Assets/staging/town-hub-roads"),
+    Path("src/WildBunch.Assets/staging/town-hub-ground"),
+]
+
+mirror_checks = [
+    ("src/WildBunch.Assets/staging/town-hub-roads/main-road/flat-edge-right.png", "src/WildBunch.Assets/staging/town-hub-roads/main-road/flat-edge-left.png", "horizontal"),
+    ("src/WildBunch.Assets/staging/town-hub-roads/main-road/path-edge-right.png", "src/WildBunch.Assets/staging/town-hub-roads/main-road/path-edge-left.png", "horizontal"),
+    ("src/WildBunch.Assets/staging/town-hub-roads/main-road/spur-cross-right.png", "src/WildBunch.Assets/staging/town-hub-roads/main-road/spur-cross-left.png", "horizontal"),
+    ("src/WildBunch.Assets/staging/town-hub-roads/main-road/end-bottom.png", "src/WildBunch.Assets/staging/town-hub-roads/main-road/end-top.png", "vertical"),
+    ("src/WildBunch.Assets/staging/town-hub-roads/spur-road/end-right.png", "src/WildBunch.Assets/staging/town-hub-roads/spur-road/end-left.png", "horizontal"),
+]
+
+failures = []
+
+for root in staging_roots:
+    for path in sorted(root.rglob("*.png")):
+        with Image.open(path) as image:
+            if image.size != expected_size:
+                failures.append(f"{path}: expected {expected_size}, got {image.size}")
+
+for canonical_path, mirror_path, axis in mirror_checks:
+    with Image.open(canonical_path) as canonical, Image.open(mirror_path) as mirror:
+        transformed = ImageOps.mirror(canonical) if axis == "horizontal" else ImageOps.flip(canonical)
+        diff = ImageChops.difference(transformed.convert("RGBA"), mirror.convert("RGBA"))
+        if diff.getbbox() is not None:
+            failures.append(f"{mirror_path}: does not exactly match mirrored {canonical_path}")
+
+if failures:
+    raise SystemExit("\n".join(failures))
+
+print("Road and ground staging checks passed")
+'@ | python -
+```
+
+After the automated check passes, do a visual seam pass on the staged road edges before copying them forward.
+
+- [ ] **Step 6: Promote staging into sprites by copy**
+
+Run:
+```powershell
+if (Test-Path src/WildBunch.Assets/sprites/town-hub-roads) { Remove-Item -Recurse -Force src/WildBunch.Assets/sprites/town-hub-roads }
+if (Test-Path src/WildBunch.Assets/sprites/town-hub-ground) { Remove-Item -Recurse -Force src/WildBunch.Assets/sprites/town-hub-ground }
+Copy-Item -Recurse src/WildBunch.Assets/staging/town-hub-roads src/WildBunch.Assets/sprites/town-hub-roads
+Copy-Item -Recurse src/WildBunch.Assets/staging/town-hub-ground src/WildBunch.Assets/sprites/town-hub-ground
+```
+
+- [ ] **Step 7: Commit**
 
 ```powershell
 git add src/WildBunch.Assets/source/town-hub-roads src/WildBunch.Assets/staging/town-hub-roads src/WildBunch.Assets/sprites/town-hub-roads src/WildBunch.Assets/source/town-hub-ground src/WildBunch.Assets/staging/town-hub-ground src/WildBunch.Assets/sprites/town-hub-ground
@@ -322,12 +397,14 @@ git commit -m "feat: add road and ground tile families for town hubs"
 - Consumes: all generated source/staging/sprites assets from Tasks 2-4
 - Produces: a clean final tree, validated index mesh, and a reviewable PR-ready diff
 
-- [ ] **Step 1: Run the final promotion pass**
+- [ ] **Step 1: Run the final building promotion pass**
 
-Run the shared promotion surface one more time from the full source root so no new family is left behind:
+Run the shared promotion surface for the building family from staging into sprites so the shippable building tree is current:
 ```powershell
-python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/source --out-root src/WildBunch.Assets/sprites
+python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-hub-buildings --out-root src/WildBunch.Assets/sprites/town-hub-buildings
 ```
+
+The road and ground families must already be present in `src/WildBunch.Assets/sprites/` from the Task 4 copy promotion path; do not run the sprite cutter over them.
 
 - [ ] **Step 2: Regenerate the index mesh**
 
@@ -373,7 +450,7 @@ git commit -m "chore: finalize town-hub filler asset pipeline"
 | Generate prop dirt tiles and a landform set | Task 4 |
 | Roads/dirt do not get prosperity variants | Task 1, Task 4 |
 | Tiles tessellate on the intended edges | Task 4 |
-| Promote through `image_asset_pipeline.py` | Tasks 3-5 |
+| Promote building assets through `image_asset_pipeline.py`; copy tile assets deterministically | Tasks 3-5 |
 | Refresh `INDEX.md` mesh and validate it | Tasks 2 and 5 |
 
 ### Placeholder scan
@@ -384,5 +461,5 @@ No placeholders remain. The plan uses concrete family names, concrete file paths
 
 - `background-house` and `background-shop` are the two required filler-building families throughout the plan.
 - `town-hub-buildings`, `town-hub-roads`, and `town-hub-ground` are the only new asset-family root names used throughout the plan.
-- `normalize`, `slice-sheet`, and `promote-sprites` are the only pipeline helper commands used in the plan.
+- `normalize`, `slice-sheet`, and `promote-sprites` are the only pipeline helper commands used in the plan, and `promote-sprites` is only used for the building family.
 - The final validation always uses `python scripts/generate_index_mesh.py --check` after any move or rename.
