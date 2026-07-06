@@ -1,6 +1,8 @@
 # Town Building Style Bible
 
 The town-building set is a small, readable western asset family for top-down play.
+It covers the named town buildings plus the filler-building families that keep a
+town hub from feeling empty.
 
 ## Visual contract
 
@@ -10,6 +12,13 @@ The town-building set is a small, readable western asset family for top-down pla
 - Turnaround: 5 views per building family. The canonical set is front-facing oblique (roof + front), side, back, 45-degree facing camera, and 45-degree facing away from camera; mirrored variants fill the 8-way placement contract.
 - Shape read: roof and massing first, trim and detail second.
 - Layout freedom: doors, windows, and other side details may vary so different towns can reuse the same building family.
+
+## Filler-building visibility
+
+- Filler buildings are visually unobtrusive supporting buildings, not the dominant town feature.
+- The two filler-building families, `background-house` and `background-shop`, use the same 5-view turnaround and the same 4 prosperity tiers as the named buildings.
+- Keep the filler families readable at town scale, but let the named buildings stay visually primary.
+- Filler buildings are still town buildings, so their tier read comes from maintenance, finish, ornament, and completeness rather than from a different camera or footprint.
 
 ## Prosperity ladder
 
@@ -52,12 +61,25 @@ Use the same four tiers for every family. The differences are in maintenance, or
 - `prosperous`: better-kept administrative frontage; cleaner utility cues, clearer notices, and stronger order in the facade.
 - `boomtown`: most finished telegraph expression; richest utility and administrative cues, but still compact and practical.
 
+## Road and ground contract
+
+- Roads do not use prosperity tiers.
+- Road tiles are about mirroring and topology, not tier variation.
+- Dirt variation comes from base textures, prop-baked tiles, and a single larger landform set.
+- Keep road and dirt prompts focused on seam behavior, edge matching, and clean tile reads instead of prosperity language.
+
 ## Prompt-ready guardrails
 
 Use these as copyable prompt blocks when generating or revising town-building art.
 
 - Do: Keep the image as a top-down slight oblique pixel-art western building with a 60x50 footprint and a five-view turnaround, and make the prosperity tier visible through finish, maintenance, ornament, and signage rather than through camera changes or a different building family.
 - Do not: Do not switch to a street-level view, a flat elevation, a painterly treatment, a different footprint, a different turnaround count, or a new building family; do not let the tier read through labels, captions, borders, or post-processing.
+
+- Do: Keep filler buildings visually secondary to the named town buildings, and use the same 5-view turnaround and 4-tier ladder for `background-house` and `background-shop`.
+- Do not: Do not make the filler buildings the dominant town feature, and do not invent new camera rules, tiers, or silhouettes for them.
+
+- Do: Keep roads about mirror pairs, end pieces, and topology, and keep dirt about base textures, prop-baked tiles, and larger landform shapes.
+- Do not: Do not add prosperity tiers to roads or dirt, and do not make the tile families behave like building sprites.
 
 - Do: For the general store, keep a commerce-first read with porch or awning, merchandise frontage, and clear goods cues, and vary the amount of polish so the same family can read as destitute, poor, prosperous, or boomtown without changing its core shape.
 - Do not: Do not let the general store drift into a sheriff office, saloon, or telegraph office read; do not remove the retail frontage language, and do not replace the commerce cues with official markers, entertainment cues, or communications hardware.

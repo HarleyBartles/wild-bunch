@@ -1,15 +1,16 @@
 # WildBunch.Assets
 
-This project holds the canonical asset source tree for generated art.
+This project holds the canonical asset source tree for generated town-hub art.
 
 Current layout:
 
-- `source/` - custody of the full-size source assets for each family
+- `source/` - custody of the full-size source assets for each track
 - `staging/` - reviewable scratch, cut, and normalization output
 - `sprites/` - final promoted sprite assets
 
-Each top-level bucket can host multiple asset families. Today that includes
-town buildings; future tile families should follow the same structure.
+The current town-hub tracks are `town-hub-buildings`, `town-hub-roads`, and
+`town-hub-ground`. The buildings track holds the filler-building families;
+the road and ground tracks hold tile families.
 
 Use `INDEX.md` for the exact inventory of files and directories; this README
 describes the shape and purpose of the project rather than enumerating every

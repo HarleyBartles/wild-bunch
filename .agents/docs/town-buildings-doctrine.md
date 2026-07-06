@@ -2,6 +2,16 @@
 
 Use this file as the agent-facing control surface for town-building sprite work. Keep it operational. The human-facing source of truth is the town-building style bible and asset spec in `docs/art/town-buildings/`; use those files for canonical vocabulary, footprint terms, and family names. Do not restate the whole style bible here.
 
+The town-hub asset split is:
+
+- `town-hub-buildings` for filler buildings
+- `town-hub-roads` for road-network tiles
+- `town-hub-ground` for dirt and landform tiles
+
+The source/staging/sprites custody homes are the working contract, and the
+filler-building visibility rule still applies: supporting buildings should stay
+visually secondary to the named town buildings.
+
 ## Reference image selection
 
 - Prefer references that already match the town-building contract: top-down with a slight oblique tilt, pixel art, and the 60x50 footprint.
@@ -34,6 +44,19 @@ Use this file as the agent-facing control surface for town-building sprite work.
 - Do not let `poor` drift into a new architecture or a new camera contract.
 - When prompting or reviewing, use the family-specific tier ladder in the style bible as the controlling source of truth; visual inspection is for catching defects, not for inferring tier meaning.
 
+## Track rules
+
+- `town-hub-buildings` uses the same 5-view turnaround and four-tier ladder as
+  the named building families, but the filler read must stay unobtrusive.
+- `background-house` and `background-shop` are supporting buildings, not the
+  dominant town feature.
+- `town-hub-roads` is a tile family. Keep the work centered on mirroring,
+  topology, and clean seam alignment.
+- `town-hub-ground` is also a tile family. Keep the work centered on base
+  textures, prop-baked tiles, and the landform set.
+- Roads and dirt do not use prosperity tiers, so do not add tier language to
+  those prompts.
+
 ## Prompt style
 
 - Keep prompts anchored to pixel art, crisp edges, readable silhouette, and a simple western palette.
@@ -48,6 +71,7 @@ Use this file as the agent-facing control surface for town-building sprite work.
 - Saloon: hospitality and social read, public frontage, porch rhythm, and a stronger entertainment-facing silhouette.
 - Telegraph office: communications and administration read, compact practical frontage, posted notices, and service-oriented cues.
 - For the sheriff office, remove storefront clutter, stacked goods, display-window language, and broad retail signage. If it still reads like the store, strengthen the official markers before retrying.
+- For the filler-building families, keep the town read secondary to the named buildings and keep the five-view, four-tier contract intact.
 
 ## Retry rules
 
@@ -61,3 +85,4 @@ Use this file as the agent-facing control surface for town-building sprite work.
 
 - For cut and normalization, use `.agents/docs/asset-pipeline/selection-cut-normalization.md` and the generic `scripts/image_asset_pipeline.py` helper.
 - Keep town-building notes focused on family-specific selection and camera rules, not on the shared image pipeline mechanics.
+- For roads and ground, prefer seam-safe copy promotion over sprite cutting.
