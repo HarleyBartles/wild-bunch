@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
 
@@ -65,8 +66,8 @@ internal static class TownLayoutGenerator
         // Ensure baseline buildings are present if not in the pattern
         EnsureBaselineBuildings(buildings, services, townId, townSlotIndex, source, saltSource);
 
-        // TODO: Generate path segments based on layout pattern spurs (Task 8 part 2)
-        // For now, use empty paths as placeholder
+        // Generate path segments based on layout pattern spurs
+        paths = GeneratePathSegments(layoutPattern, buildings, townId, townSlotIndex, source, saltSource);
 
         return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths);
     }
@@ -158,5 +159,89 @@ internal static class TownLayoutGenerator
         if (value < 0) return 0;
         if (value > max) return max;
         return value;
+    }
+
+    private static List<PathSegment> GeneratePathSegments(
+        BuildingLayoutPattern layoutPattern,
+        List<BuildingPlacement> buildings,
+        TownId townId,
+        int townSlotIndex,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource)
+    {
+        var paths = new List<PathSegment>();
+        var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
+
+        // Main road is a horizontal line at Y=50 spanning X=10 to X=90
+        const int mainRoadY = 50;
+
+        // Generate paths for each spur
+        for (var i = 0; i < layoutPattern.SpurCount; i++)
+        {
+            var spurPosition = layoutPattern.SpurPositions[i];
+            var spurDirection = layoutPattern.SpurDirections[i];
+
+            // Calculate road connection point
+            var roadX = ClampToScene(spurPosition, SceneWidth);
+            var roadY = mainRoadY;
+
+            // Find a building to connect (use the building closest to the spur)
+            var targetBuilding = FindBuildingForSpur(buildings, spurPosition, spurDirection);
+            if (targetBuilding is null)
+            {
+                continue;
+            }
+
+            // Calculate path from building center to road
+            var buildingCenterX = targetBuilding.X + BuildingWidth / 2;
+            var buildingCenterY = targetBuilding.Y + BuildingHeight / 2;
+
+            // Path goes from building to road
+            var pathStartX = buildingCenterX;
+            var pathStartY = buildingCenterY;
+            var pathEndX = roadX;
+            var pathEndY = roadY;
+
+            // Add jitter to path endpoints for visual variety
+            var xJitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{i}-x{saltSegment}";
+            var yJitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{i}-y{saltSegment}";
+            var xJitter = Jitter(source, xJitterLabel);
+            var yJitter = Jitter(source, yJitterLabel);
+
+            pathStartX = ClampToScene(pathStartX + xJitter, SceneWidth);
+            pathStartY = ClampToScene(pathStartY + yJitter, SceneHeight);
+            pathEndX = ClampToScene(pathEndX + xJitter, SceneWidth);
+            pathEndY = ClampToScene(pathEndY + yJitter, SceneHeight);
+
+            paths.Add(PathSegment.Create(pathStartX, pathStartY, pathEndX, pathEndY));
+        }
+
+        return paths;
+    }
+
+    private static BuildingPlacement? FindBuildingForSpur(
+        List<BuildingPlacement> buildings,
+        int spurPosition,
+        SpurDirection direction)
+    {
+        // Simple heuristic: find the building closest to the spur position
+        // In a more sophisticated implementation, this would use the layout pattern's
+        // building-to-spur mapping
+        BuildingPlacement? closest = null;
+        var closestDistance = int.MaxValue;
+
+        foreach (var building in buildings)
+        {
+            var buildingCenterX = building.X + BuildingWidth / 2;
+            var distance = Math.Abs(buildingCenterX - spurPosition);
+
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closest = building;
+            }
+        }
+
+        return closest;
     }
 }
