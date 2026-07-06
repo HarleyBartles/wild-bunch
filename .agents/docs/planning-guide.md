@@ -99,6 +99,17 @@ When reporting a plan as ready, include:
 
 If the SDD confidence is below 7, do not report the plan as SDD-ready. Either refine the plan or report it as direct-execution-only with the reasons why.
 
+## Pre-Handoff Confidence Floor
+
+Before handing a plan back to the user for an execution-lane decision, the planner must check whether the plan is already strong enough to avoid avoidable in-flight invention.
+
+- If the planner cannot honestly rate the plan at least `8/10`, do not offer the execution-choice handoff yet.
+- Keep verifying source, tightening file paths, closing open questions, or splitting the work until the confidence reaches the floor or the remaining gap is explicitly user-owned.
+- If an open question materially changes scope, sequence, or file targets, surface it before the handoff rather than burying it in the ready report.
+- The handoff should only happen once the plan is both honest and as de-risked as the current source allows.
+
+This floor is a repo-local workflow rule layered on top of the writing-plans skill. It does not replace the skill's output shape; it gates when the output may be handed back for execution choice.
+
 ## What a Plan is NOT
 
 - A plan is not a design document — design decisions should be made during brainstorming, not during planning.
