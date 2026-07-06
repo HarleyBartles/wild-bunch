@@ -19,26 +19,48 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 ### Frontend Changes
 
 **TownHubScene.ts**
-- Add sprite path mapping constants (prosperity tier folders, building family folders, view filenames)
+- Add sprite path mapping constants: asset path pattern is `/assets/town-buildings/{prosperity}/{building}/{view}.png`
 - Add `preload()` method to load sprites based on layout data
 - Update `create()` to render sprites instead of rectangles
 - Add sprite mirroring logic for left-facing buildings
+- Add path rendering: draw line segments for each path in `layout.paths` using Phaser graphics
 - Add fallback to rectangle rendering if sprite loading fails
 
 **Test Files**
-- `TownHubScene.test.ts` - Update test fixtures to include prosperity and view fields, verify sprite loading
+- `TownHubScene.test.ts` - Update test fixtures to include prosperity and view fields, verify sprite loading, verify path rendering
 - `TownHubSurface.test.tsx` - Update test fixtures with new DTO fields
 - `PhaserTownHubHost.test.tsx` - Update test fixtures with new DTO fields
 
+**Frontend DTO Types**
+- Add `PathSegmentDto` interface to `src/WildBunch.Web/src/api/types.ts`
+- Add `paths` field to `TownLayoutDto` interface
+
 ### Backend Changes
 
+**TownLayout.cs**
+- Add `IReadOnlyList<PathSegment> Paths` field to store path connectivity data
+
+**PathSegment.cs** (new domain type)
+- Simple record: `PathSegment(int StartX, int StartY, int EndX, int EndY)`
+- Coordinates in logical units (0-100) matching building placement
+
+**TownLayoutDto.cs**
+- Add `paths: PathSegmentDto[]` field
+
+**PathSegmentDto.cs** (new DTO type)
+- Simple record: `PathSegmentDto(int StartX, int StartY, int EndX, int EndY)`
+
+**TownLayoutMapper.cs**
+- Map domain `PathSegment` to DTO `PathSegmentDto`
+
 **TownLayoutGenerator.cs**
+- Encode canonical building positions in the seed (each town has deterministic building placement for the same seed)
 - Enhance view selection logic with mechanical angle calculation based on road attachment
 - Implement main road north-south layout (x=50, y 0-100)
 - Implement side spur generation (1-2 spurs branching east/west at seeded positions)
-- Add building-to-road attachment detection
+- Add building-to-road attachment detection: buildings within 15 logical units of x=50 attach to main road, others attach to spurs
 - Implement view selection: vertical road (75% FrontOblique, 25% Profile), horizontal road (33% Front, 33% FrontOblique, 33% FrontOblique mirrored)
-- Add path drawing (line segments from buildings to roads) - for this slice, paths are rendered as lines in the frontend, tiles are future work
+- Generate path segments from each building center to nearest road point
 
 **Test File**
 - Add brute force test in `WildBunch.GameContent.Tests` to verify layout determinism across seed/salt combinations
@@ -47,18 +69,19 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 ### Build Configuration
 
 **vite.config.ts**
-- Configure Vite to bundle assets from `src/WildBunch.Assets/town-buildings/sprites/` to public folder
+- Use `vite-plugin-static-copy` to bundle assets from `src/WildBunch.Assets/town-buildings/sprites/` to public folder during build
+- Assets will be available at `/assets/town-buildings/` path in the running app
 
 ## Data Flow
 
 1. **Backend Generation:** `TownLayoutGenerator.GenerateLayout()` mechanically calculates:
    - Road network (main road north-south, side spurs east/west)
-   - Building positions along roads
+   - Building positions along roads (canonical positions encoded in seed)
    - Building views based on road attachment (vertical vs horizontal road, seeded ratios)
-   - Path segments connecting buildings to roads
-   - Creates `TownLayout` with prosperity tier and calculated `BuildingView` for each placement
+   - Path segments connecting buildings to roads (line segments from building center to nearest road point)
+   - Creates `TownLayout` with prosperity tier, calculated `BuildingView` for each placement, and path segments
 
-3. **DTO Mapping:** `TownLayoutMapper.ToDto()` maps domain `TownLayout` to `TownLayoutDto` including prosperity and pre-calculated view fields
+3. **DTO Mapping:** `TownLayoutMapper.ToDto()` maps domain `TownLayout` to `TownLayoutDto` including prosperity, pre-calculated view fields, and path segments
 
 4. **Session Mapping:** `GameSessionMapper.ToDto()` includes town prosperity in `TownDto` when building `WorldDto`
 
@@ -112,7 +135,11 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 - Test path connectivity line drawing
 
 **Brute Force Test:**
-- Add brute force test in `WildBunch.GameContent.Tests` to verify `TownLayoutGenerator` produces deterministic layouts across all seed/salt combinations
+- Add brute force test in `WildBunch.GameContent.Tests` following the pattern of `MapGeneratorBruteForceAnalysisTests`
+- Iterate over combination matrix: 100 representative seed codes, all town slot indices (0-9), all prosperity levels (4), all service flags (reasonable subset)
+- Collect data in single pass: view distribution by road type, spur count distribution, building position ranges
+- Assert statistical expectations: view ratios match intended (75/25 for vertical, 33/33/33 for horizontal), spur count distribution is reasonable
+- Assert anti-pattern detection: no duplicate building placements, all buildings have valid views, no buildings outside scene bounds
 - Ensures mechanical angle calculation is consistent and no hidden randomness
 
 **Test Kind:**
