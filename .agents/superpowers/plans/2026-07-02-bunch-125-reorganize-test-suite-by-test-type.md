@@ -3,10 +3,10 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Linear issue:** [BUNCH-125](https://linear.app/harleys-workspace/issue/BUNCH-125/reorganize-test-suite-by-test-type)
-**Route state:** `preflight_needed` → this plan is the preflight artifact. After approval and merge, route state becomes `approved_plan_execution_ready`.
+**Route state:** `stale_plan_repair_needed` → this plan has been repaired against current main (`0b3b6b86`). After approval and merge, route state becomes `approved_plan_execution_ready`.
 **Branch (plan-only PR):** `harleydbartles/bunch-125-reorganize-test-suite-by-test-type`
 **Worktree:** `C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-125`
-**Base commit:** `9194c93` (origin/main tip as of plan authoring)
+**Base commit:** `0b3b6b86` (origin/main tip as of plan repair)
 
 ## Goal
 
@@ -27,19 +27,21 @@ C# / .NET 10, xUnit v2, `WebApplicationFactory` for integration tests, Testconta
 
 ## Current test suite snapshot (audit baseline)
 
-Source inspection at `9194c93` shows 5 test projects with 137 `.cs` files (excluding `.csproj` and `INDEX.md`):
+Source inspection at `0b3b6b86` shows 5 test projects with 181 `.cs` files (excluding `.csproj` and `INDEX.md`):
 
 | Project | Root files | Subdirectories (existing) | Test count by type (approx) |
 | --- | --- | --- | --- |
 | `WildBunch.Api.Tests` | 1 (`CorsPolicyTests.cs`) | none | 1 configuration |
-| `WildBunch.Application.Tests` | 36 root files | `Dev/` (12 handler), `Execution/` (1 handler), `Projections/` (4 projection), `TestDoubles/` (2 helpers) | 24 handler, 6 mapper, 3 renderer, 2 projection, 1 structural/guardrail |
-| `WildBunch.Domain.Tests` | 67 root files | `Events/` (3 event sourcing) | ~50 unit/domain, ~10 characterization, 3 event sourcing, 2 structural/guardrail, 2 projection-equivalence, 1 mapper |
-| `WildBunch.GameContent.Tests` | 12 root files | none | 12 unit/content |
-| `WildBunch.Integration.Tests` | 22 root files | `Acceptance/` (3), `Dev/` (5), `TestInfrastructure/` (8) | 14 integration/endpoint, 3 acceptance, 5 dev-endpoint, 2 persistence, 1 migration, 1 serializer |
+| `WildBunch.Application.Tests` | 38 root files | `Dev/` (13 handler), `Execution/` (1 handler), `Games/Mapping/` (2 mapper), `Projections/` (4 projection), `TestDoubles/` (2 helpers) | 24 handler, 9 mapper, 3 renderer, 2 projection, 1 structural/guardrail |
+| `WildBunch.Domain.Tests` | 72 root files | `Events/` (3 event sourcing), `Game/` (1 event replay), `World/` (3 domain) | ~55 unit/domain, ~10 characterization, 5 event sourcing, 2 structural/guardrail, 2 projection-equivalence, 1 mapper |
+| `WildBunch.GameContent.Tests` | 14 root files | `NewGame/` (8 content) | 13 unit/content, 1 brute-force |
+| `WildBunch.Integration.Tests` | 23 root files | `Acceptance/` (3), `Dev/` (5), `TestInfrastructure/` (8) | 14 integration/endpoint, 3 acceptance, 5 dev-endpoint, 2 persistence, 1 migration, 1 serializer |
 
 ### Identified mixed-concern and misplaced files
 
 The audit found these specific files that are misplaced relative to their test type:
+
+**Note:** The brute-force test `MapGeneratorBruteForceAnalysisTests.cs` in `GameContent.Tests/` root is correctly placed — brute-force tests typically live in the root of their test project. No move is needed for this file.
 
 1. **Projection tests in `Application.Tests` root** (should be in `Projections/`):
    - `GameSessionDtoProjectionFieldsTests.cs` — tests `GameSessionMapper.ToDto` projection fields (projection/mapper boundary)
@@ -54,6 +56,7 @@ The audit found these specific files that are misplaced relative to their test t
    - `TrailBeatSlotDtoTests.cs` (tests `TravelDiaryMapper.ToDto`)
    - `TravelDiaryMapperTests.cs`
    - `WantedPosterMapperTests.cs`
+   - Note: `GameSessionMapperTests.cs` and `TownLayoutMapperTests.cs` are already in `Games/Mapping/` (organized in recent work)
 
 3. **Renderer tests in `Application.Tests` root** (should be in `Renderers/`):
    - `BeatLabelRendererTests.cs`
@@ -156,6 +159,7 @@ Create `.agents/docs/test-patterns.md` with this structure:
 | Configuration | A configuration/policy registration produces the expected service collection | `{Project}.Tests/Configuration/` | `{Config}ConfigurationTests.cs` |
 | Characterization | Pins exact current behavior before a migration; values are captured from deterministic scenarios | `{Project}.Tests/Characterization/` | `{Subject}CharacterizationTests.cs` |
 | Event sourcing | Proves event apply/replay produces the same state as the command path | `{Project}.Tests/EventSourcing/` or `Events/` | `{Subject}EventSourcingTests.cs` |
+| Brute-force | Iterates over thousands of seed/salt/parameter combinations to catch silent bias, rare anti-patterns, and verify distribution fairness | `GameContent.Tests/` (typically) | `{Subject}BruteForceAnalysisTests.cs` or `{Subject}BruteForceTests.cs` |
 | Acceptance | End-to-end scenario through the API proving a user-facing flow works | `Integration.Tests/Acceptance/` | `{Flow}AcceptanceTests.cs` |
 | Integration | Full HTTP pipeline via `WebApplicationFactory` | `Integration.Tests/` root or `{Concern}/` | `{Endpoint}Tests.cs` |
 
@@ -171,6 +175,7 @@ Create `.agents/docs/test-patterns.md` with this structure:
 8. **New configuration/policy** → configuration test in `Api.Tests/Configuration/`.
 9. **Migration that changes behavior** → characterization tests first, then update them after migration.
 10. **Source-shape invariant** → structural/guardrail test in `{Project}.Tests/Guardrails/`.
+11. **Generator with seed/salt parameters** → brute-force test in `GameContent.Tests/` to verify distribution fairness and catch anti-patterns across thousands of combinations.
 
 ## Test organization rules
 
@@ -207,7 +212,7 @@ git commit -m "BUNCH-125: add test-patterns guidance document"
 ### Task 2: Move Application.Tests handler files to `Handlers/`
 
 **Files:**
-- Move: 24 `*HandlerTests.cs` files from `tests/WildBunch.Application.Tests/` root to `tests/WildBunch.Application.Tests/Handlers/`.
+- Move: 21 `*HandlerTests.cs` files from `tests/WildBunch.Application.Tests/` root to `tests/WildBunch.Application.Tests/Handlers/`.
 - Modify: each moved file's `namespace` declaration from `WildBunch.Application.Tests;` to `WildBunch.Application.Tests.Handlers;`.
 - Modify: any files that reference these moved types via `using` (audit: none expected — no cross-references to handler test classes exist outside the test files themselves).
 
@@ -215,33 +220,31 @@ git commit -m "BUNCH-125: add test-patterns guidance document"
 - Consumes: the audit baseline.
 - Produces: all handler tests in `Handlers/` with matching namespaces.
 
-The 24 handler files to move:
+The 21 handler files to move (updated from current audit):
 1. `AdvanceTravelDayHandlerTests.cs`
 2. `ArchivePlaythroughHandlerTests.cs`
 3. `CheckSheriffRecordsHandlerTests.cs`
 4. `CompletePlayerSetupHandlerTests.cs`
-5. `CompletePlayerSetupOneActivePlaythroughTests.cs`
-6. `ConfrontSaloonWantedSuspectHandlerTests.cs`
-7. `ConfrontWantedSuspectHandlerTests.cs`
-8. `GetAvailableActionsHandlerTests.cs`
-9. `GetGameSessionHandlerTests.cs`
-10. `GetJournalHandlerTests.cs`
-11. `GetStartingTownMapHandlerTests.cs`
-12. `GetStartingTownsHandlerTests.cs`
-13. `GetTownStoreOffersHandlerTests.cs`
-14. `GetWorldMapHandlerTests.cs`
-15. `InspectNoticeBoardHandlerTests.cs`
-16. `InvestigationSourceHandlerTests.cs`
-17. `PreviewTravelHandlerTests.cs`
-18. `PrologueHandlerTests.cs`
-19. `PurchaseStoreItemHandlerTests.cs`
-20. `ReadWantedPostersHandlerTests.cs`
-21. `ResolveJourneyEncounterHandlerTests.cs`
-22. `TravelToTownHandlerTests.cs`
-23. `TurnInToSheriffHandlerTests.cs`
-24. `SaloonPersonOfInterestDescriptorParityTests.cs` (tests handler-to-mapper parity; primary concern is handler orchestration)
+5. `ConfrontSaloonWantedSuspectHandlerTests.cs`
+6. `ConfrontWantedSuspectHandlerTests.cs`
+7. `GetAvailableActionsHandlerTests.cs`
+8. `GetGameSessionHandlerTests.cs`
+9. `GetJournalHandlerTests.cs`
+10. `GetStartingTownMapHandlerTests.cs`
+11. `GetStartingTownsHandlerTests.cs`
+12. `GetTownStoreOffersHandlerTests.cs`
+13. `GetWorldMapHandlerTests.cs`
+14. `InspectNoticeBoardHandlerTests.cs`
+15. `InvestigationSourceHandlerTests.cs`
+16. `PreviewTravelHandlerTests.cs`
+17. `PrologueHandlerTests.cs`
+18. `PurchaseStoreItemHandlerTests.cs`
+19. `ReadWantedPostersHandlerTests.cs`
+20. `ResolveJourneyEncounterHandlerTests.cs`
+21. `TravelToTownHandlerTests.cs`
+22. `TurnInToSheriffHandlerTests.cs`
 
-**Note:** `CompletePlayerSetupOneActivePlaythroughTests.cs` does not end in `HandlerTests` but tests the `CompletePlayerSetup` handler flow. It belongs with the handler tests.
+**Note:** `CompletePlayerSetupOneActivePlaythroughTests.cs` and `SaloonPersonOfInterestDescriptorParityTests.cs` were removed in recent work (geometry-first and mapper reorganization).
 
 - [ ] **Step 1: Create the `Handlers/` directory**
 
@@ -268,30 +271,28 @@ Expected: all tests pass, same count as before the move.
 - [ ] **Step 4: Regenerate the index mesh and commit**
 
 Run: `python scripts/generate_index_mesh.py`
-Inspect the diff: `tests/WildBunch.Application.Tests/INDEX.md` should show the 24 files moved from the Files section to a new `Handlers/` directory entry.
+Inspect the diff: `tests/WildBunch.Application.Tests/INDEX.md` should show the 21 files moved from the Files section to a new `Handlers/` directory entry.
 
 ```bash
 git add tests/WildBunch.Application.Tests/Handlers/ tests/WildBunch.Application.Tests/INDEX.md
 git add tests/WildBunch.Application.Tests/*.cs  # catch any remaining namespace edits
-git commit -m "BUNCH-125: move Application.Tests handler tests to Handlers/"
+git commit -m "BUNCH-125: move Application.Tests handler tests to Handlers/ (21 files)"
 ```
 
 ### Task 3: Move Application.Tests mapper files to `Mappers/`
 
 **Files:**
-- Move: 7 mapper test files from `tests/WildBunch.Application.Tests/` root to `tests/WildBunch.Application.Tests/Mappers/`.
+- Move: 4 mapper test files from `tests/WildBunch.Application.Tests/` root to `tests/WildBunch.Application.Tests/Mappers/`.
 - Modify: each moved file's `namespace` declaration from `WildBunch.Application.Tests;` to `WildBunch.Application.Tests.Mappers;`.
 
-The 7 mapper files:
+The 4 mapper files to move (updated from current audit):
 1. `CaseBoardMapperTests.cs`
 2. `ClueTimeAnchorBeatLabelTests.cs` (tests `CaseReadMapper.ToDto`)
 3. `JournalMapperTests.cs`
-4. `TrailBeatSlotDtoTests.cs` (tests `TravelDiaryMapper.ToDto`)
-5. `TravelDiaryMapperTests.cs`
-6. `WantedPosterMapperTests.cs`
-7. `GameSessionDtoProjectionFieldsTests.cs` (tests `GameSessionMapper.ToDto` — mapper/projection boundary; primary concern is DTO mapping)
+4. `TravelDiaryMapperTests.cs`
+5. `WantedPosterMapperTests.cs`
 
-**Note:** `SaloonPersonOfInterestDescriptorParityTests.cs` was moved to `Handlers/` in Task 2 because its primary concern is handler-to-mapper parity in the handler flow. `GameSessionDtoProjectionFieldsTests.cs` is a mapper test (tests `GameSessionMapper.ToDto`), so it goes in `Mappers/`.
+**Note:** `GameSessionMapperTests.cs` and `TownLayoutMapperTests.cs` are already in `Games/Mapping/` (organized in recent work). `SaloonPersonOfInterestDescriptorParityTests.cs` was removed in recent work. `TrailBeatSlotDtoTests.cs` tests DTO shape rather than mapper logic and should stay in root or move to a `Dtos/` subdirectory if volume grows. `GameSessionDtoProjectionFieldsTests.cs` tests projection fields and should stay in root or move to `Projections/` if volume grows.
 
 - [ ] **Step 1: Create the `Mappers/` directory**
 
@@ -318,12 +319,12 @@ Expected: all tests pass, same count as before.
 - [ ] **Step 4: Regenerate the index mesh and commit**
 
 Run: `python scripts/generate_index_mesh.py`
-Inspect the diff: `tests/WildBunch.Application.Tests/INDEX.md` should show the 7 files moved to a new `Mappers/` directory entry.
+Inspect the diff: `tests/WildBunch.Application.Tests/INDEX.md` should show the 4 files moved to a new `Mappers/` directory entry.
 
 ```bash
 git add tests/WildBunch.Application.Tests/Mappers/ tests/WildBunch.Application.Tests/INDEX.md
 git add tests/WildBunch.Application.Tests/*.cs
-git commit -m "BUNCH-125: move Application.Tests mapper tests to Mappers/"
+git commit -m "BUNCH-125: move Application.Tests mapper tests to Mappers/ (4 files)"
 ```
 
 ### Task 4: Move Application.Tests renderer files to `Renderers/`
