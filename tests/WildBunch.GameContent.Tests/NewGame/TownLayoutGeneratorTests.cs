@@ -159,15 +159,23 @@ public sealed class TownLayoutGeneratorTests
     [Fact]
     public void GenerateLayout_ProsperityAffectsZoneDensity()
     {
-        var townId = NewTownId("town-1");
-        var source = NewSource();
-
-        // Verify that prosperity is correctly stored in the layout
-        foreach (var prosperity in new[] { TownProsperity.Boomtown, TownProsperity.Prosperous, TownProsperity.Poor, TownProsperity.Destitute })
+        // Verify that GetBuildingZoneCount produces correct zone counts for different prosperity levels
+        // Standard NoSpurs layout has 8 building zones
+        var totalZones = 8;
+        
+        var expectedCounts = new Dictionary<TownProsperity, int>
         {
-            var layout = TownLayoutGenerator.GenerateLayout(
-                TownServices.Telegraph, prosperity, townId, 0, source, null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
-            Assert.Equal(prosperity, layout.Prosperity);
+            { TownProsperity.Boomtown, 8 },   // 1.0 * 8 = 8
+            { TownProsperity.Prosperous, 6 }, // 0.75 * 8 = 6
+            { TownProsperity.Poor, 4 },       // 0.5 * 8 = 4
+            { TownProsperity.Destitute, 2 }   // 0.25 * 8 = 2
+        };
+
+        foreach (var (prosperity, expectedCount) in expectedCounts)
+        {
+            var actualCount = TownLayoutGenerator.GetBuildingZoneCount(prosperity, totalZones);
+            Assert.True(expectedCount == actualCount, 
+                $"Prosperity {prosperity} should produce {expectedCount} zones, but got {actualCount}");
         }
     }
 }

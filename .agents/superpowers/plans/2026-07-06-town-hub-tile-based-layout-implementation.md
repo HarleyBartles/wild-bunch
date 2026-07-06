@@ -384,13 +384,13 @@ public static class BuildingLayoutCatalog
 }
 ```
 
-- [ ] **Step 4: Remove old BuildingLayoutPattern and related code**
+- [ ] **Step 4: Remove old layout pattern fields and stub GetLayout**
 
 Delete the following from BuildingLayoutCatalog.cs:
 - All private layout pattern fields (HubAndSpokeLayout, LinearChainLayout, etc.)
-- BuildingLayoutPattern record
-- BuildingPlacementSpec record
-- SpurDirection enum (will be recreated in PaletteSpec.cs if needed)
+- Keep BuildingLayoutPattern record and BuildingPlacementSpec record (needed by TownLayoutGenerator.cs which still uses GetLayout)
+- Keep SpurDirection enum (it's already in this file and used by other code)
+- Update GetLayout method to return a stub layout with TODO for Task 7 (when TownLayoutGenerator is rewritten to use PaletteSpec)
 
 - [ ] **Step 5: Update BuildingLayoutCatalogTests to test palette specs**
 

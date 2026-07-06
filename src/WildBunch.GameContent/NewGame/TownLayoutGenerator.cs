@@ -246,7 +246,7 @@ internal static class TownLayoutGenerator
         return kinds;
     }
 
-    private static int GetBuildingZoneCount(TownProsperity prosperity, int totalZones)
+    internal static int GetBuildingZoneCount(TownProsperity prosperity, int totalZones)
     {
         // Calculate density based on prosperity level
         var density = prosperity switch
