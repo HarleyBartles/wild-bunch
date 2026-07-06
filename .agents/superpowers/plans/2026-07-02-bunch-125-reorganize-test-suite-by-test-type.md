@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Linear issue:** [BUNCH-125](https://linear.app/harleys-workspace/issue/BUNCH-125/reorganize-test-suite-by-test-type)
-**Route state:** `stale_plan_repair_needed` → this plan has been repaired against current main (`0b3b6b86`). After approval and merge, route state becomes `approved_plan_execution_ready`.
+**Route state:** `execution_complete` → this plan has been executed successfully. All tasks completed, all unit tests passing (915 total), index mesh check passing.
 **Branch (plan-only PR):** `harleydbartles/bunch-125-reorganize-test-suite-by-test-type`
 **Worktree:** `C:\WORK\repo-workspace\wild-bunch\.worktrees\bunch-125`
 **Base commit:** `0b3b6b86` (origin/main tip as of plan repair)
