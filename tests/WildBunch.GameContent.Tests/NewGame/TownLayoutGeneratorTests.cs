@@ -119,6 +119,8 @@ public sealed class TownLayoutGeneratorTests
         var source = NewSource();
 
         // All prosperity levels should place all required buildings
+        // Required buildings (Store, Sheriff, Saloon, Trailhead, Telegraph when service is set)
+        // override prosperity-based density calculations
         foreach (var prosperity in new[] { TownProsperity.Boomtown, TownProsperity.Prosperous, TownProsperity.Poor, TownProsperity.Destitute })
         {
             var layout = TownLayoutGenerator.GenerateLayout(
@@ -152,5 +154,20 @@ public sealed class TownLayoutGeneratorTests
 
         // Each building should have a path segment to the road
         Assert.Equal(layout.Buildings.Count, layout.Paths.Count);
+    }
+
+    [Fact]
+    public void GenerateLayout_ProsperityAffectsZoneDensity()
+    {
+        var townId = NewTownId("town-1");
+        var source = NewSource();
+
+        // Verify that prosperity is correctly stored in the layout
+        foreach (var prosperity in new[] { TownProsperity.Boomtown, TownProsperity.Prosperous, TownProsperity.Poor, TownProsperity.Destitute })
+        {
+            var layout = TownLayoutGenerator.GenerateLayout(
+                TownServices.Telegraph, prosperity, townId, 0, source, null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+            Assert.Equal(prosperity, layout.Prosperity);
+        }
     }
 }

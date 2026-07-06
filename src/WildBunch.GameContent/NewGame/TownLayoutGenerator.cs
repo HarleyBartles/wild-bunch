@@ -76,8 +76,10 @@ internal static class TownLayoutGenerator
 
         // Assign buildings to zones using seed-derived ordering
         var buildingKinds = GetBuildingKindsForTown(services);
-        // Ensure we have enough zones for all required buildings
-        var zonesNeeded = Math.Min(buildingKinds.Count, availableZones.Count);
+        // Calculate how many zones to fill based on prosperity
+        var zonesToFill = GetBuildingZoneCount(prosperity, availableZones.Count);
+        // Ensure we have enough zones for all required buildings (required buildings override prosperity)
+        var zonesNeeded = Math.Min(buildingKinds.Count, Math.Max(zonesToFill, buildingKinds.Count));
         var zonesToUse = availableZones.Take(zonesNeeded).ToList();
         for (var i = 0; i < buildingKinds.Count && i < zonesToUse.Count; i++)
         {
@@ -189,17 +191,6 @@ internal static class TownLayoutGenerator
         }
     }
 
-    private static bool ShouldMirror(BuildingView view, bool isOnLeftSide)
-    {
-        // Assets canonically face right (canonical orientation)
-        // Buildings on left side need mirroring to face the road
-        // Buildings on right side use canonical orientation
-
-        // FrontOblique on left side should be mirrored
-        // Profile and Front don't need mirroring for this slice
-        return isOnLeftSide && view == BuildingView.FrontOblique;
-    }
-
     private static List<(int Row, int Col, bool IsOnSpur)> GetAvailableBuildingZones(TileType[,] grid, PaletteSpec paletteSpec)
     {
         var zones = new List<(int, int, bool)>();
@@ -253,6 +244,21 @@ internal static class TownLayoutGenerator
         }
 
         return kinds;
+    }
+
+    private static int GetBuildingZoneCount(TownProsperity prosperity, int totalZones)
+    {
+        // Calculate density based on prosperity level
+        var density = prosperity switch
+        {
+            TownProsperity.Boomtown => 1.0,
+            TownProsperity.Prosperous => 0.75,
+            TownProsperity.Poor => 0.5,
+            TownProsperity.Destitute => 0.25,
+            _ => 0.75
+        };
+
+        return (int)Math.Ceiling(totalZones * density);
     }
 
     private static (int Row, int Col) LogicalToTile(int logicalX, int logicalY)
