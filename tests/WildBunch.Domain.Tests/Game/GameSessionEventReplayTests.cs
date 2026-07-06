@@ -146,11 +146,11 @@ public sealed class GameSessionEventReplayTests
         var pinecrossLayout = new TownLayout(
             new[]
             {
-                new BuildingPlacement(BuildingKind.Store, 10, 20),
-                new BuildingPlacement(BuildingKind.Sheriff, 30, 12),
-                new BuildingPlacement(BuildingKind.Saloon, 50, 18),
-                new BuildingPlacement(BuildingKind.Trailhead, 5, 40),
-                new BuildingPlacement(BuildingKind.Telegraph, 22, 32)
+                new BuildingPlacement(BuildingKind.Store, 10, 20, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Sheriff, 30, 12, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Saloon, 50, 18, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Trailhead, 5, 40, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Telegraph, 22, 32, BuildingView.FrontOblique)
             },
             PlayerSpawnX: 50,
             PlayerSpawnY: 35,
@@ -160,10 +160,10 @@ public sealed class GameSessionEventReplayTests
         var redmesaLayout = new TownLayout(
             new[]
             {
-                new BuildingPlacement(BuildingKind.Store, 11, 21),
-                new BuildingPlacement(BuildingKind.Sheriff, 31, 13),
-                new BuildingPlacement(BuildingKind.Saloon, 51, 19),
-                new BuildingPlacement(BuildingKind.Trailhead, 6, 41)
+                new BuildingPlacement(BuildingKind.Store, 11, 21, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Sheriff, 31, 13, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Saloon, 51, 19, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Trailhead, 6, 41, BuildingView.FrontOblique)
             },
             PlayerSpawnX: 52,
             PlayerSpawnY: 36,

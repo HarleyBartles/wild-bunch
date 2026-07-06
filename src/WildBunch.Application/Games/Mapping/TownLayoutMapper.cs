@@ -36,6 +36,7 @@ public static class TownLayoutMapper
             placement.Kind,
             placement.X,
             placement.Y,
+            placement.View,
             placement.Width,
             placement.Height);
 

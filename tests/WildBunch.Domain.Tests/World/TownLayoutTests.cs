@@ -24,6 +24,7 @@ public sealed class TownLayoutTests
         Assert.Equal(BuildingKind.Telegraph, layout.Buildings[4].Kind);
         Assert.Equal(12, layout.Buildings[0].X);
         Assert.Equal(20, layout.Buildings[0].Y);
+        Assert.Equal(BuildingView.FrontOblique, layout.Buildings[0].View);
         Assert.Equal(50, layout.PlayerSpawnX);
         Assert.Equal(35, layout.PlayerSpawnY);
     }
@@ -31,7 +32,7 @@ public sealed class TownLayoutTests
     [Fact]
     public void BuildingPlacementUsesDefaultDimensionsWhenOmitted()
     {
-        var placement = new BuildingPlacement(BuildingKind.Store, 10, 20);
+        var placement = new BuildingPlacement(BuildingKind.Store, 10, 20, BuildingView.FrontOblique);
 
         Assert.Equal(8, placement.Width);
         Assert.Equal(10, placement.Height);
@@ -40,7 +41,7 @@ public sealed class TownLayoutTests
     [Fact]
     public void BuildingPlacementAllowsCustomDimensions()
     {
-        var placement = new BuildingPlacement(BuildingKind.Saloon, 10, 20, Width: 12, Height: 8);
+        var placement = new BuildingPlacement(BuildingKind.Saloon, 10, 20, BuildingView.Profile, Width: 12, Height: 8);
 
         Assert.Equal(12, placement.Width);
         Assert.Equal(8, placement.Height);
@@ -54,5 +55,15 @@ public sealed class TownLayoutTests
         Assert.True(Enum.IsDefined(typeof(BuildingKind), BuildingKind.Saloon));
         Assert.True(Enum.IsDefined(typeof(BuildingKind), BuildingKind.Trailhead));
         Assert.True(Enum.IsDefined(typeof(BuildingKind), BuildingKind.Telegraph));
+    }
+
+    [Fact]
+    public void BuildingViewEnumHasExpectedMembers()
+    {
+        Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.Front));
+        Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.Profile));
+        Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.Rear));
+        Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.FrontOblique));
+        Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.RearOblique));
     }
 }

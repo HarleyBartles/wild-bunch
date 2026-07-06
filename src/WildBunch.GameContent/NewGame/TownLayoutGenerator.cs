@@ -78,7 +78,7 @@ internal static class TownLayoutGenerator
         var x = ClampToScene(baseX + Jitter(source, xLabel), SceneWidth);
         var y = ClampToScene(baseY + Jitter(source, yLabel), SceneHeight);
 
-        return new BuildingPlacement(kind, x, y, BuildingWidth, BuildingHeight);
+        return new BuildingPlacement(kind, x, y, BuildingView.FrontOblique, BuildingWidth, BuildingHeight);
     }
 
     private static int Jitter(GameSetupDeterministicSource source, string label)

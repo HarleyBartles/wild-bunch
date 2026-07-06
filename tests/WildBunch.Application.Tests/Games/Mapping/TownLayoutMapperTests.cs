@@ -13,11 +13,11 @@ public sealed class TownLayoutMapperTests
         var layout = new TownLayout(
             new[]
             {
-                new BuildingPlacement(BuildingKind.Store, 10, 20),
-                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, 12, 8),
-                new BuildingPlacement(BuildingKind.Saloon, 50, 60),
-                new BuildingPlacement(BuildingKind.Trailhead, 70, 80),
-                new BuildingPlacement(BuildingKind.Telegraph, 90, 100)
+                new BuildingPlacement(BuildingKind.Store, 10, 20, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, BuildingView.FrontOblique, 12, 8),
+                new BuildingPlacement(BuildingKind.Saloon, 50, 60, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Trailhead, 70, 80, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Telegraph, 90, 100, BuildingView.FrontOblique)
             },
             50,
             50,
@@ -33,11 +33,11 @@ public sealed class TownLayoutMapperTests
         Assert.Empty(dto.Paths);
         Assert.Equal(5, dto.Buildings.Count);
 
-        AssertBuildingPlacement(dto.Buildings[0], BuildingKind.Store, 10, 20, 8, 10);
-        AssertBuildingPlacement(dto.Buildings[1], BuildingKind.Sheriff, 30, 40, 12, 8);
-        AssertBuildingPlacement(dto.Buildings[2], BuildingKind.Saloon, 50, 60, 8, 10);
-        AssertBuildingPlacement(dto.Buildings[3], BuildingKind.Trailhead, 70, 80, 8, 10);
-        AssertBuildingPlacement(dto.Buildings[4], BuildingKind.Telegraph, 90, 100, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[0], BuildingKind.Store, 10, 20, BuildingView.FrontOblique, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[1], BuildingKind.Sheriff, 30, 40, BuildingView.FrontOblique, 12, 8);
+        AssertBuildingPlacement(dto.Buildings[2], BuildingKind.Saloon, 50, 60, BuildingView.FrontOblique, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[3], BuildingKind.Trailhead, 70, 80, BuildingView.FrontOblique, 8, 10);
+        AssertBuildingPlacement(dto.Buildings[4], BuildingKind.Telegraph, 90, 100, BuildingView.FrontOblique, 8, 10);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class TownLayoutMapperTests
         foreach (var kind in Enum.GetValues<BuildingKind>())
         {
             var layout = new TownLayout(
-                new[] { new BuildingPlacement(kind, 0, 0) },
+                new[] { new BuildingPlacement(kind, 0, 0, BuildingView.FrontOblique) },
                 0,
                 0,
                 TownProsperity.Prosperous,
@@ -78,6 +78,7 @@ public sealed class TownLayoutMapperTests
 
             Assert.NotNull(dto);
             Assert.Equal(kind, dto.Buildings[0].Kind);
+            Assert.Equal(BuildingView.FrontOblique, dto.Buildings[0].View);
         }
     }
 
@@ -86,12 +87,14 @@ public sealed class TownLayoutMapperTests
         BuildingKind expectedKind,
         int expectedX,
         int expectedY,
+        BuildingView expectedView,
         int expectedWidth,
         int expectedHeight)
     {
         Assert.Equal(expectedKind, actual.Kind);
         Assert.Equal(expectedX, actual.X);
         Assert.Equal(expectedY, actual.Y);
+        Assert.Equal(expectedView, actual.View);
         Assert.Equal(expectedWidth, actual.Width);
         Assert.Equal(expectedHeight, actual.Height);
     }
