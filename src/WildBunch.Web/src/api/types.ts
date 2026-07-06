@@ -324,8 +324,18 @@ export const BuildingKind = {
   Telegraph: 4,
 } as const;
 
+export type BuildingView = 0 | 1 | 2 | 3 | 4;
+export const BuildingView = {
+  Front: 0,
+  Profile: 1,
+  Rear: 2,
+  FrontOblique: 3,
+  RearOblique: 4,
+} as const;
+
 export interface BuildingPlacementDto {
   kind: BuildingKind;
+  view: BuildingView;
   x: number;
   y: number;
   width: number;

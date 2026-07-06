@@ -67,10 +67,9 @@ export class TownHubScene extends Phaser.Scene {
   preload(): void {
     // Load all building sprites based on the layout's prosperity tier
     const prosperity = this.layout.prosperity;
-    const view = "front"; // Default view for buildings
 
     for (const building of this.layout.buildings) {
-      const spriteUrl = getSpriteUrl(building.kind, view, prosperity);
+      const spriteUrl = getSpriteUrl(building.kind, building.view, prosperity);
       if (spriteUrl) {
         this.load.image(`building-${building.kind}`, spriteUrl);
       }

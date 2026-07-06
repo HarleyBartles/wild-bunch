@@ -28,11 +28,11 @@ afterEach(() => {
 
 function createBuildings(): BuildingPlacementDto[] {
   return [
-    { kind: BuildingKind.Store, x: 12, y: 15, width: 8, height: 10 },
-    { kind: BuildingKind.Sheriff, x: 30, y: 15, width: 8, height: 10 },
-    { kind: BuildingKind.Saloon, x: 50, y: 15, width: 8, height: 10 },
-    { kind: BuildingKind.Trailhead, x: 90, y: 50, width: 8, height: 10 },
-    { kind: BuildingKind.Telegraph, x: 46, y: 70, width: 8, height: 10 },
+    { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 30, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 50, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
+    { kind: BuildingKind.Telegraph, view: BuildingView.FrontOblique, x: 46, y: 70, width: 8, height: 10 },
   ];
 }
 
