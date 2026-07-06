@@ -65,7 +65,7 @@ Durable agent guidance is for "agents will trip over this if they don't know." D
 
 ## 6. Tooling Hygiene
 
-Reviewers must verify the workspace is clean — no stray files, no uncommitted debug artifacts, no phantom files in parent directories. The `write` tool on Windows creates phantom files in parent directories of paths with hyphenated components. See [`.agents/doctrine/write-tool-phantom-files.md`](../doctrine/write-tool-phantom-files.md) for detection and cleanup procedures.
+Reviewers must verify the workspace is clean — no stray files, no uncommitted debug artifacts, no phantom files in parent directories. The `write` tool on Windows creates phantom files in parent directories of paths with hyphenated components. See [`.agents/docs/write-tool-phantom-files.md`](write-tool-phantom-files.md) for detection and cleanup procedures.
 
 ## 7. Repo Improvement Check
 
@@ -150,7 +150,7 @@ Reviewers should be aware of these repo policies and apply them when relevant:
 - **Coding discipline** (`.agents/docs/coding-discipline.md`) — scope boundaries, architecture stack discipline, refactoring rules
 - **Artifact policy** (`.agents/docs/artifact-policy.md`) — agent artifact management, screenshots, evidence
 - **Mesh policy** (`.agents/docs/mesh-policy.md`) — AGENTS.md, INDEX.md, README file management
-- **Dev overlay doctrine** (`.agents/dev-overlay/DOCTRINE.md`) — binding doctrine for dev overlay work
+- **Dev overlay doctrine** (`.agents/docs/dev-overlay-doctrine.md`) — binding doctrine for dev overlay work
 
 ## 13. Finding Priority Taxonomy
 
