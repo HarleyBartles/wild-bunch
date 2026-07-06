@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Phaser from "phaser";
-import { AvailableActionKind } from "../api/types";
-import { BuildingKind } from "../components/town-hub/types";
-import type { BuildingPlacementDto, TownLayoutDto } from "../components/town-hub/types";
+import { AvailableActionKind, BuildingKind, TownProsperity } from "../api/types";
+import type { BuildingPlacementDto, TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
 
 vi.mock("phaser", () => {
@@ -42,6 +41,8 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
     buildings: createBuildings(),
     playerSpawnX: 50,
     playerSpawnY: 50,
+    prosperity: TownProsperity.Prosperous,
+    paths: [],
     ...overrides,
   };
 }

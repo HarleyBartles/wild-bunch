@@ -9,6 +9,7 @@ import {
   AvailableActionKind,
   BuildingKind,
   StartFlowPhase,
+  TownProsperity,
   type GameSessionDto,
   type JournalDto,
   type TownLayoutDto,
@@ -103,6 +104,8 @@ function createLayout(): TownLayoutDto {
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
+    prosperity: TownProsperity.Prosperous,
+    paths: [],
   };
 }
 

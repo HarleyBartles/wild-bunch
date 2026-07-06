@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { PhaserTownHubHost } from "../components/town-hub/PhaserTownHubHost";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
-import { AvailableActionKind, BuildingKind, type TownLayoutDto } from "../api/types";
+import { AvailableActionKind, BuildingKind, TownProsperity, type PathSegmentDto, type TownLayoutDto } from "../api/types";
 import Phaser from "phaser";
 
 const mockState = vi.hoisted(() => ({
@@ -44,6 +44,8 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
+    prosperity: TownProsperity.Prosperous,
+    paths: [],
     ...overrides,
   };
 }

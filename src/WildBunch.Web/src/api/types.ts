@@ -307,6 +307,14 @@ export interface PlayerDto {
   health: number;
 }
 
+export type TownProsperity = 0 | 1 | 2 | 3;
+export const TownProsperity = {
+  Boomtown: 0,
+  Prosperous: 1,
+  Poor: 2,
+  Destitute: 3,
+} as const;
+
 export type BuildingKind = 0 | 1 | 2 | 3 | 4;
 export const BuildingKind = {
   Store: 0,
@@ -324,10 +332,19 @@ export interface BuildingPlacementDto {
   height: number;
 }
 
+export interface PathSegmentDto {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}
+
 export interface TownLayoutDto {
   buildings: BuildingPlacementDto[];
   playerSpawnX: number;
   playerSpawnY: number;
+  prosperity: TownProsperity;
+  paths: PathSegmentDto[];
 }
 
 export interface TownDto {
