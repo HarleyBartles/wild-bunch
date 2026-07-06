@@ -7,7 +7,7 @@ subtree, read:
 
 - `docs/art/town-buildings/style-bible.md`
 - `docs/art/town-buildings/asset-spec.md`
-- `.agents/docs/town-buildings-doctrine.md`
+- `.agents/art/town-buildings/DOCTRINE.md`
 - `src/WildBunch.Assets/AGENTS.md`
 - `.agents/docs/asset-pipeline/selection-cut-normalization.md`
 

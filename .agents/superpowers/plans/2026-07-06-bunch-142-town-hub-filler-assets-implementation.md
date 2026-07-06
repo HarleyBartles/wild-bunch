@@ -98,7 +98,7 @@
 - `docs/art/town-buildings/style-bible.md`
 - `docs/art/town-buildings/asset-spec.md`
 - `docs/art/town-buildings/pipeline-overview.md`
-- `.agents/docs/town-buildings-doctrine.md`
+- `.agents/art/town-buildings/DOCTRINE.md`
 - `src/WildBunch.Assets/README.md`
 - `src/WildBunch.Assets/AGENTS.md`
 - `src/WildBunch.Assets/INDEX.md`
@@ -113,7 +113,7 @@
 - Modify: `docs/art/town-buildings/style-bible.md`
 - Modify: `docs/art/town-buildings/asset-spec.md`
 - Modify: `docs/art/town-buildings/pipeline-overview.md`
-- Modify: `.agents/docs/town-buildings-doctrine.md`
+- Modify: `.agents/art/town-buildings/DOCTRINE.md`
 - Modify: `src/WildBunch.Assets/README.md`
 - Modify: `src/WildBunch.Assets/AGENTS.md`
 
@@ -157,7 +157,7 @@ Expected: no whitespace errors, no malformed markdown blocks, no accidental trai
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add docs/art/town-buildings/style-bible.md docs/art/town-buildings/asset-spec.md docs/art/town-buildings/pipeline-overview.md .agents/docs/town-buildings-doctrine.md src/WildBunch.Assets/README.md src/WildBunch.Assets/AGENTS.md
+git add docs/art/town-buildings/style-bible.md docs/art/town-buildings/asset-spec.md docs/art/town-buildings/pipeline-overview.md .agents/art/town-buildings/DOCTRINE.md src/WildBunch.Assets/README.md src/WildBunch.Assets/AGENTS.md
 git commit -m "docs: rewrite town-hub asset contract for source staging sprites"
 ```
 
