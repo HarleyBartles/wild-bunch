@@ -7,6 +7,10 @@
 - Docs index: `docs/INDEX.md`
 
 ## Required Working Knowledge
+
+**Scripts are first-class surfaces. Before reporting environmental issues (PostgreSQL not running, dev servers not started, etc.), read `scripts/AGENTS.md` and use the provided scripts.**
+
+- **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — **MUST read before running ad-hoc commands or reporting environmental issues**. Scripts handle PostgreSQL setup, dev server management, and other repo operations idempotently.
 - Architecture-sensitive work: `.agents/INDEX.md`, `.agents/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
 - **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
@@ -16,7 +20,6 @@
 - **Implementing guide (must read before implementing or dispatching implementer subagents)**: `.agents/docs/implementing-guide.md`
 - **Planning guide (must read before planning multi-step work)**: `.agents/docs/planning-guide.md`
 - **Code review guide (must read for code reviewers)**: `.agents/docs/code-review-guide.md`
-- **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — inspect this folder before running ad-hoc commands for repo operations
 - Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
 - Dev overlay work: `.agents/dev-overlay/DOCTRINE.md`, `.agents/unslop/dev-overlay.md`
 
@@ -67,6 +70,19 @@
 - `/wild-bunch-domain-modeling` - Wild Bunch domain modeling: GameSession boundaries, player wallet/inventory, travel rules, clue/journal flows, hidden culprit truth.
 - `/ef-core` - Entity Framework Core patterns when persistence work touches DbContext, migrations, or queries.
 - For architecture work, inspect current source and canonical repo decisions, then invoke the smallest relevant specialist skill above. **Do not hand-roll non-DDD, non-CQRS, or non-event-sourced solutions. The skills and ADRs are the authority, not the repo's current code.**
+
+## Script Discovery
+
+**Scripts in `scripts/` are first-class surfaces. Before reporting environmental issues or running ad-hoc commands, read `scripts/AGENTS.md` and use the provided scripts.**
+
+When you encounter:
+- PostgreSQL connection errors or missing database → read `scripts/AGENTS.md` and use `postgres-dev.ps1`
+- Dev servers not running → read `scripts/AGENTS.md` and use `dev-servers.ps1`
+- Need to regenerate index mesh → read `scripts/AGENTS.md` and use `generate_index_mesh.py`
+- Need to sync marketplace skills → read `scripts/AGENTS.md` and use `sync-skills.ps1`
+- Need image asset processing → read `scripts/AGENTS.md` and use `image_asset_pipeline.py`
+
+**Do not report "environmental issue" or "missing tooling" without first checking `scripts/AGENTS.md`.** The scripts folder is the canonical way to perform these operations and must be treated as a first-class discovery surface.
 
 ## Specialist Skill Discovery
 When work touches architecture, domain modeling, persistence, frontend, browser-game delivery, testing, or other specialist areas:
