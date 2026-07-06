@@ -1,4 +1,4 @@
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Guardrails;
 
 /// <summary>
 /// Source-inspection guardrail proving the BUNCH-84/BUNCH-86 read-path and command-load

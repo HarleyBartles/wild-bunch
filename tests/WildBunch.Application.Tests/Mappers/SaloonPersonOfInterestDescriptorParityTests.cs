@@ -8,7 +8,7 @@ using Town = WildBunch.Domain.World.Town;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Mappers;
 
 public sealed class SaloonPersonOfInterestDescriptorParityTests
 {
