@@ -37,7 +37,7 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 - Implement main road north-south layout (x=50, y 0-100)
 - Implement side spur generation (1-2 spurs branching east/west at seeded positions)
 - Add building-to-road attachment detection
-- Implement view selection: vertical road (75% FrontOblique, 25% Profile), horizontal road (50% Front, 50% FrontOblique)
+- Implement view selection: vertical road (75% FrontOblique, 25% Profile), horizontal road (33% Front, 33% FrontOblique, 33% FrontOblique mirrored)
 - Add path drawing (line segments from buildings to roads) - for this slice, paths are rendered as lines in the frontend, tiles are future work
 
 **Test File**
@@ -77,7 +77,7 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 
 **View Selection:**
 - **Vertical road (main road):** 75% FrontOblique (hero view), 25% Profile (deterministic seed)
-- **Horizontal road (spurs):** 50% Front, 50% FrontOblique (deterministic seed), no side bias
+- **Horizontal road (spurs):** 33% Front, 33% FrontOblique, 33% FrontOblique mirrored (deterministic seed), no side bias
 
 **Mirroring:**
 - Main road: left side (x < 50) → mirror, right side (x > 50) → no mirror
@@ -131,5 +131,5 @@ Data flow: Domain (TownProsperity, BuildingView) → DTOs → Frontend → Phase
 - Main road runs north-south, side spurs branch east/west
 - Buildings always have their front to the road
 - Vertical road: 75% FrontOblique, 25% Profile bias
-- Horizontal road: 50% Front, 50% FrontOblique, no side bias
+- Horizontal road: 33% Front, 33% FrontOblique, 33% FrontOblique mirrored, no side bias
 - Path rendering: line drawing for this slice, tiles are future work
