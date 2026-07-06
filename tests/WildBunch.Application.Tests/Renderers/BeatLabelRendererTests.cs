@@ -2,7 +2,7 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Game;
 using Xunit;
 
-namespace WildBunch.Application.Tests;
+namespace WildBunch.Application.Tests.Renderers;
 
 public class BeatLabelRendererTests
 {
