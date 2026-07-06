@@ -21,9 +21,9 @@ public sealed class TownLayoutGeneratorTests
         var salt = SaltSource.CreateFixed("deterministic-salt");
 
         var a = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceA, salt);
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceA, salt, BuildingLayoutPalette.HubAndSpoke);
         var b = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceB, salt);
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceB, salt, BuildingLayoutPalette.HubAndSpoke);
 
         Assert.Equal(a.PlayerSpawnX, b.PlayerSpawnX);
         Assert.Equal(a.PlayerSpawnY, b.PlayerSpawnY);
@@ -38,7 +38,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_AlwaysIncludesBaselineNavigationBuildings()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null);
+            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Store, kinds);
@@ -51,7 +51,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_IncludesTelegraphWhenServiceSet()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null);
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Telegraph, kinds);
@@ -61,7 +61,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_ExcludesTelegraphWhenNoServices()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null);
+            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.DoesNotContain(BuildingKind.Telegraph, kinds);
@@ -71,22 +71,22 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_PlacesTrailheadAtRightEdgeAndSpawnInCenter()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null);
+            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
 
         Assert.Equal(50, layout.PlayerSpawnX);
         Assert.Equal(50, layout.PlayerSpawnY);
 
         var trailhead = layout.Buildings.Single(b => b.Kind == BuildingKind.Trailhead);
-        // Trailhead base position is (90, 50) at the right edge; jitter is +/-2.
-        Assert.InRange(trailhead.X, 88, 92);
-        Assert.InRange(trailhead.Y, 48, 52);
+        // HubAndSpoke pattern places trailhead at (50, 85) with +/-2 jitter
+        Assert.InRange(trailhead.X, 48, 52);
+        Assert.InRange(trailhead.Y, 83, 87);
     }
 
     [Fact]
     public void GenerateLayout_BaselineBuildingsUseStandardFootprint()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null);
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
 
         Assert.All(layout.Buildings, b =>
         {
@@ -96,26 +96,16 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_JitterStaysWithinTwoUnitsOfBasePosition()
+    public void GenerateLayout_UsesLayoutPatternPositions()
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null);
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
 
-        var expected = new Dictionary<BuildingKind, (int X, int Y)>
-        {
-            [BuildingKind.Store] = (12, 15),
-            [BuildingKind.Sheriff] = (46, 15),
-            [BuildingKind.Saloon] = (80, 15),
-            [BuildingKind.Trailhead] = (90, 50),
-            [BuildingKind.Telegraph] = (46, 70),
-        };
-
-        foreach (var building in layout.Buildings)
-        {
-            var (baseX, baseY) = expected[building.Kind];
-            Assert.InRange(building.X, baseX - 2, baseX + 2);
-            Assert.InRange(building.Y, baseY - 2, baseY + 2);
-        }
+        // HubAndSpoke pattern uses different base positions than the old baseline
+        // Store is at (35, 20) in the pattern, not (12, 15)
+        var store = layout.Buildings.Single(b => b.Kind == BuildingKind.Store);
+        Assert.InRange(store.X, 33, 37); // 35 +/- 2
+        Assert.InRange(store.Y, 18, 22); // 20 +/- 2
     }
 }

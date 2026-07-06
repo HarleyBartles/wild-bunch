@@ -30,7 +30,9 @@ internal static class TownLayoutGenerator
     /// Generates a deterministic <see cref="TownLayout"/> for a town hub surface.
     /// Always emits the baseline navigation buildings (Store, Sheriff, Saloon,
     /// Trailhead). Emits Telegraph only when <paramref name="services"/> has the
-    /// <see cref="TownServices.Telegraph"/> flag set.
+    /// <see cref="TownServices.Telegraph"/> flag set. Uses the
+    /// <paramref name="layoutPalette"/> to select the building layout pattern from
+    /// <see cref="BuildingLayoutCatalog"/>.
     /// </summary>
     public static TownLayout GenerateLayout(
         TownServices services,
@@ -38,27 +40,93 @@ internal static class TownLayoutGenerator
         TownId townId,
         int townSlotIndex,
         GameSetupDeterministicSource source,
-        SaltSource? saltSource)
+        SaltSource? saltSource,
+        BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.HubAndSpoke)
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var buildings = new List<BuildingPlacement>
-        {
-            PlaceBuilding(BuildingKind.Store, baseX: 12, baseY: 15, townId, townSlotIndex, source, saltSource),
-            PlaceBuilding(BuildingKind.Sheriff, baseX: 46, baseY: 15, townId, townSlotIndex, source, saltSource),
-            PlaceBuilding(BuildingKind.Saloon, baseX: 80, baseY: 15, townId, townSlotIndex, source, saltSource),
-            PlaceBuilding(BuildingKind.Trailhead, baseX: 90, baseY: 50, townId, townSlotIndex, source, saltSource),
-        };
+        var layoutPattern = BuildingLayoutCatalog.GetLayout(layoutPalette);
+        var buildings = new List<BuildingPlacement>();
+        var paths = new List<PathSegment>();
 
-        if ((services & TownServices.Telegraph) == TownServices.Telegraph)
+        // Place buildings from the layout pattern
+        foreach (var spec in layoutPattern.BuildingPlacements)
+        {
+            // Skip telegraph if not in services
+            if (spec.Kind == BuildingKind.Telegraph && (services & TownServices.Telegraph) != TownServices.Telegraph)
+            {
+                continue;
+            }
+
+            var placement = PlaceBuildingFromSpec(spec, townId, townSlotIndex, source, saltSource);
+            buildings.Add(placement);
+        }
+
+        // Ensure baseline buildings are present if not in the pattern
+        EnsureBaselineBuildings(buildings, services, townId, townSlotIndex, source, saltSource);
+
+        // TODO: Generate path segments based on layout pattern spurs (Task 8 part 2)
+        // For now, use empty paths as placeholder
+
+        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths);
+    }
+
+    private static BuildingPlacement PlaceBuildingFromSpec(
+        BuildingPlacementSpec spec,
+        TownId townId,
+        int townSlotIndex,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource)
+    {
+        var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
+        var kindName = spec.Kind.ToString().ToLowerInvariant();
+        var xLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kindName}-x{saltSegment}";
+        var yLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kindName}-y{saltSegment}";
+
+        var x = ClampToScene(spec.X + Jitter(source, xLabel), SceneWidth);
+        var y = ClampToScene(spec.Y + Jitter(source, yLabel), SceneHeight);
+
+        return new BuildingPlacement(spec.Kind, x, y, spec.View, BuildingWidth, BuildingHeight);
+    }
+
+    private static void EnsureBaselineBuildings(
+        List<BuildingPlacement> buildings,
+        TownServices services,
+        TownId townId,
+        int townSlotIndex,
+        GameSetupDeterministicSource source,
+        SaltSource? saltSource)
+    {
+        var existingKinds = buildings.Select(b => b.Kind).ToHashSet();
+        var baselineKinds = new[] { BuildingKind.Store, BuildingKind.Sheriff, BuildingKind.Saloon, BuildingKind.Trailhead };
+
+        foreach (var kind in baselineKinds)
+        {
+            if (!existingKinds.Contains(kind))
+            {
+                var (baseX, baseY) = GetBaselinePosition(kind);
+                buildings.Add(PlaceBuilding(kind, baseX, baseY, townId, townSlotIndex, source, saltSource));
+            }
+        }
+
+        // Ensure telegraph if in services
+        if ((services & TownServices.Telegraph) == TownServices.Telegraph && !existingKinds.Contains(BuildingKind.Telegraph))
         {
             buildings.Add(PlaceBuilding(BuildingKind.Telegraph, baseX: 46, baseY: 70, townId, townSlotIndex, source, saltSource));
         }
+    }
 
-        // TODO: Generate path segments in Task 8
-        var paths = Array.Empty<PathSegment>();
-
-        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths);
+    private static (int X, int Y) GetBaselinePosition(BuildingKind kind)
+    {
+        return kind switch
+        {
+            BuildingKind.Store => (12, 15),
+            BuildingKind.Sheriff => (46, 15),
+            BuildingKind.Saloon => (80, 15),
+            BuildingKind.Trailhead => (90, 50),
+            BuildingKind.Telegraph => (46, 70),
+            _ => (50, 50)
+        };
     }
 
     private static BuildingPlacement PlaceBuilding(
@@ -68,7 +136,8 @@ internal static class TownLayoutGenerator
         TownId townId,
         int townSlotIndex,
         GameSetupDeterministicSource source,
-        SaltSource? saltSource)
+        SaltSource? saltSource,
+        BuildingView view = BuildingView.FrontOblique)
     {
         var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
         var kindName = kind.ToString().ToLowerInvariant();
@@ -78,7 +147,7 @@ internal static class TownLayoutGenerator
         var x = ClampToScene(baseX + Jitter(source, xLabel), SceneWidth);
         var y = ClampToScene(baseY + Jitter(source, yLabel), SceneHeight);
 
-        return new BuildingPlacement(kind, x, y, BuildingView.FrontOblique, BuildingWidth, BuildingHeight);
+        return new BuildingPlacement(kind, x, y, view, BuildingWidth, BuildingHeight);
     }
 
     private static int Jitter(GameSetupDeterministicSource source, string label)

@@ -110,7 +110,8 @@ internal static class MapGenerator
                 town.Id,
                 index,
                 source,
-                saltSource) }).ToArray();
+                saltSource,
+                seedWorld.BuildingLayoutPalette) }).ToArray();
 
         return new World(townsWithLayouts, world.Trails);
     }
