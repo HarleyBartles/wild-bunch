@@ -21,9 +21,9 @@ public sealed class TownLayoutGeneratorTests
         var salt = SaltSource.CreateFixed("deterministic-salt");
 
         var a = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceA, salt, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceA, salt, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
         var b = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceB, salt, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceB, salt, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         Assert.Equal(a.PlayerSpawnX, b.PlayerSpawnX);
         Assert.Equal(a.PlayerSpawnY, b.PlayerSpawnY);
@@ -38,7 +38,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_AlwaysIncludesBaselineNavigationBuildings()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Store, kinds);
@@ -51,7 +51,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_IncludesTelegraphWhenServiceSet()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Telegraph, kinds);
@@ -61,7 +61,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_ExcludesTelegraphWhenNoServices()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.DoesNotContain(BuildingKind.Telegraph, kinds);
@@ -71,7 +71,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_PlacesTrailheadAtRightEdgeAndSpawnInCenter()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         Assert.Equal(50, layout.PlayerSpawnX);
         Assert.Equal(50, layout.PlayerSpawnY);
@@ -86,7 +86,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_BaselineBuildingsUseStandardFootprint()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         Assert.All(layout.Buildings, b =>
         {
@@ -100,7 +100,7 @@ public sealed class TownLayoutGeneratorTests
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null, BuildingLayoutPalette.HubAndSpoke);
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         // HubAndSpoke pattern uses different base positions than the old baseline
         // Store is at (35, 20) in the pattern, not (12, 15)

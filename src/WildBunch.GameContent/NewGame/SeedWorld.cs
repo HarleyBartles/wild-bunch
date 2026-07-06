@@ -46,14 +46,14 @@ public sealed record SeedWorld(
     int DefaultCulpritIndex,
     int CashBonus,
     int OutlierSlotType, // 0=no outlier, 1=simple outlier, 2-3 reserved
-    BuildingLayoutPalette BuildingLayoutPalette = BuildingLayoutPalette.HubAndSpoke)
+    BuildingLayoutPalette BuildingLayoutPalette = BuildingLayoutPalette.NoSpurs_SpreadEvenly)
 {
     public string SeedCodeText => SeedCode.ToString("D");
 
     /// <summary>
     /// Whether this seed world is the canonical shape (8 towns,
     /// Canonical variant, HubTelegraph services, UniformProsperous prosperity,
-    /// single cluster, Sparse graph density, HubAndSpoke building layout,
+    /// single cluster, Sparse graph density, NoSpurs_SpreadEvenly building layout,
     /// accusation index 1, default culprit index 3, zero cash bonus). Used by GameSetupResolver
     /// to select the canonical case file path.
     /// </summary>
@@ -64,7 +64,7 @@ public sealed record SeedWorld(
             && ProsperityPalette == ProsperityPalette.UniformProsperous
             && ClusterCount == 1
             && GraphDensity == GraphDensity.Sparse
-            && BuildingLayoutPalette == BuildingLayoutPalette.HubAndSpoke
+            && BuildingLayoutPalette == BuildingLayoutPalette.NoSpurs_SpreadEvenly
             && AccusationIndex == 1
             && DefaultCulpritIndex == 3
             && CashBonus == 0;

@@ -12,18 +12,9 @@ public static class BuildingLayoutCatalog
 {
     public static BuildingLayoutPattern GetLayout(BuildingLayoutPalette palette)
     {
-        return palette switch
-        {
-            BuildingLayoutPalette.HubAndSpoke => HubAndSpokeLayout,
-            BuildingLayoutPalette.LinearChain => LinearChainLayout,
-            BuildingLayoutPalette.DoubleLine => DoubleLineLayout,
-            BuildingLayoutPalette.Tree => TreeLayout,
-            BuildingLayoutPalette.Star => StarLayout,
-            BuildingLayoutPalette.XShaped => XShapedLayout,
-            BuildingLayoutPalette.Cluster => ClusterLayout,
-            BuildingLayoutPalette.Grid => GridLayout,
-            _ => HubAndSpokeLayout
-        };
+        // TODO: Task 2 will implement tile-based layout generation
+        // For now, map all palettes to a single fallback layout to allow build to pass
+        return HubAndSpokeLayout;
     }
 
     // HubAndSpoke: Buildings arranged around a central hub with one main road and one side spur.

@@ -332,7 +332,7 @@ public static class SeedWorldResolver
             defaultCulpritIndex,
             cashBonus,
             OutlierSlotType: 0,
-            BuildingLayoutPalette: BuildingLayoutPalette.HubAndSpoke);
+            BuildingLayoutPalette: BuildingLayoutPalette.NoSpurs_SpreadEvenly);
     }
 
     private static Guid CreateCanonicalSeedCodeCore()

@@ -42,7 +42,7 @@ internal static class TownLayoutGenerator
         int townSlotIndex,
         GameSetupDeterministicSource source,
         SaltSource? saltSource,
-        BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.HubAndSpoke)
+        BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.NoSpurs_SpreadEvenly)
     {
         ArgumentNullException.ThrowIfNull(source);
 
