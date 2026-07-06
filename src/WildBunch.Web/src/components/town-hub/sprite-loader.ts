@@ -24,7 +24,6 @@ function getBuildingDirectoryName(kind: BuildingKind): string | null {
 
 /**
  * Maps TownProsperity enum values to sprite directory names.
- * Note: Poor (2) has no dedicated sprite tier; maps to prosperous.
  */
 function getProsperityDirectoryName(prosperity: TownProsperity): string {
   switch (prosperity) {
@@ -33,8 +32,7 @@ function getProsperityDirectoryName(prosperity: TownProsperity): string {
     case TownProsperity.Prosperous:
       return "prosperous";
     case TownProsperity.Poor:
-      // Poor tier has no dedicated sprites; use prosperous
-      return "prosperous";
+      return "poor";
     case TownProsperity.Destitute:
       return "destitute";
     default:
@@ -43,17 +41,38 @@ function getProsperityDirectoryName(prosperity: TownProsperity): string {
 }
 
 /**
+ * Maps BuildingView numeric values to sprite file names.
+ * BuildingView is defined as 0 | 1 | 2 | 3 | 4 in types.ts.
+ */
+function getViewFileName(view: number): string {
+  switch (view) {
+    case 0:
+      return "front";
+    case 1:
+      return "profile";
+    case 2:
+      return "rear";
+    case 3:
+      return "front-oblique";
+    case 4:
+      return "rear-oblique";
+    default:
+      return "front";
+  }
+}
+
+/**
  * Gets the sprite URL for a building kind, view, and prosperity tier.
  * Returns null if the building has no sprite assets (e.g., Trailhead).
  *
  * @param kind - The building kind (Store, Sheriff, Saloon, etc.)
- * @param view - The view angle (front, profile, rear, front-oblique, rear-oblique)
+ * @param view - The view angle (0=Front, 1=Profile, 2=Rear, 3=FrontOblique, 4=RearOblique)
  * @param prosperity - The town prosperity tier (Boomtown, Prosperous, Poor, Destitute)
  * @returns The sprite URL or null if no sprite exists
  */
 export function getSpriteUrl(
   kind: BuildingKind,
-  view: string,
+  view: number,
   prosperity: TownProsperity,
 ): string | null {
   const buildingDir = getBuildingDirectoryName(kind);
@@ -62,5 +81,6 @@ export function getSpriteUrl(
   }
 
   const prosperityDir = getProsperityDirectoryName(prosperity);
-  return `/assets/town-buildings/${prosperityDir}/${buildingDir}/${view}.png`;
+  const viewFileName = getViewFileName(view);
+  return `/assets/town-buildings/${prosperityDir}/${buildingDir}/${viewFileName}.png`;
 }
