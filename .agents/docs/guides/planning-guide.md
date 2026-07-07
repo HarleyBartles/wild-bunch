@@ -1,35 +1,34 @@
-# Planning Guide
+﻿# Planning Guide
 
-Use this reference when planning work in the Wild Bunch repo — before writing an implementation plan, before touching code. This guide covers the planner workflow: what to read before planning, what skills to invoke, what a plan must contain, and where plan artifacts go.
+Use this reference when planning work in the Wild Bunch repo â€” before writing an implementation plan, before touching code. This guide covers the planner workflow: what to read before planning, what skills to invoke, what a plan must contain, and where plan artifacts go.
 
 ## Before You Begin: Read the Standards
 
 A plan that doesn't account for the repo's standards will produce implementations that fail review. Read these before planning:
 
-- **[`.agents/docs/coding-discipline.md`](coding-discipline.md)** — scope discipline (do only the requested slice, no opportunistic refactors), architecture stack discipline (DDD/CQRS/event-sourcing is mandatory). The plan must respect these boundaries.
-- **[`.agents/docs/architecture-guardrails.md`](architecture-guardrails.md)** — read before planning any work that touches GameSession, persistence, or domain logic. The plan must not hand-roll non-DDD solutions.
-- **[`.agents/docs/frontend-standards.md`](frontend-standards.md)** — read before planning any frontend work. The plan must respect the styling stack, routing conventions, and play-surface UI rules.
-- **[`.agents/docs/validation-policy.md`](validation-policy.md)** — read before planning test coverage. The plan must specify the right test kind for each test and follow the test quality standards.
-- **[`.agents/docs/workflow-policy.md`](workflow-policy.md)** — read for the GREEN checklist and PR workflow. The plan must produce work that can pass the GREEN gate.
+- **[`.agents/docs/coding-discipline.md`](../coding-discipline.md)** â€” scope discipline (do only the requested slice, no opportunistic refactors), architecture stack discipline (DDD/CQRS/event-sourcing is mandatory). The plan must respect these boundaries.
+- **[`.agents/docs/architecture-guardrails.md`](../architecture-guardrails.md)** â€” read before planning any work that touches GameSession, persistence, or domain logic. The plan must not hand-roll non-DDD solutions.
+- **[`.agents/docs/frontend-standards.md`](../frontend-standards.md)** â€” read before planning any frontend work. The plan must respect the styling stack, routing conventions, and play-surface UI rules.
+- **[`.agents/docs/validation-policy.md`](../validation-policy.md)** â€” read before planning test coverage. The plan must specify the right test kind for each test and follow the test quality standards.
+- **[`.agents/docs/workflow-policy.md`](../workflow-policy.md)** â€” read for the GREEN checklist and PR workflow. The plan must produce work that can pass the GREEN gate.
 
 ## Skills to Invoke
 
-- **`/brainstorming`** — invoke before any creative work (creating features, building components, adding functionality, or modifying behavior). Explore user intent, requirements, and design before planning.
-- **`/writing-plans`** — invoke when you have a spec or requirements for a multi-step task, before touching code.
-- **Architecture skills** (`/ddd`, `/cqrs-event-sourcing`, `/event-driven-architecture`, `/clean-architecture`, `/wild-bunch-dotnet-architecture`, `/wild-bunch-domain-modeling`) — invoke before planning work that touches domain, persistence, or command/query handlers. The plan must model aggregates, value objects, domain events, and command/query handlers correctly.
-- **`/wild-bunch-browser-game`** — invoke before planning browser delivery, HUD design, Phaser/TypeScript/Vite, or DOM overlay work.
+- Invoke `/brainstorming` before any creative work, then invoke `/writing-plans` once the spec is ready.
+- Invoke the relevant architecture skills before planning work that touches domain, persistence, or command/query handlers.
+- Invoke `/wild-bunch-browser-game` before planning browser delivery, HUD design, Phaser/TypeScript/Vite, or DOM overlay work.
 
 ## Plan Structure
 
 Every implementation plan in this repo must contain:
 
-- **Task breakdown** — the work divided into independently implementable tasks, each with a clear scope and no shared mutable state between tasks (for SDD parallel execution).
-- **Exact code** — each task step contains the exact code to write, not prose descriptions. Implementers should be transcribing, not designing.
-- **File structure** — which files to create, modify, or delete. Each file has one clear responsibility.
-- **Test cases** — each task specifies the test cases to write, with TDD ordering (failing test first, then implementation). Specify the test kind (unit, integration, etc.) per `.agents/docs/validation-policy.md`.
-- **Commit messages** — each task specifies its commit message.
-- **Expected interim state** — tasks that leave the build in a temporarily broken state (e.g. tsc errors fixed by a later task) must document this explicitly so the implementer knows it's expected.
-- **SDD confidence rating** — the plan includes a confidence rating (0-10) reflecting how well-specified the tasks are for subagent-driven execution. This rating must be the result of an honest execution confidence assessment (see below), not a self-assigned number.
+- **Task breakdown** â€” the work divided into independently implementable tasks, each with a clear scope and no shared mutable state between tasks (for SDD parallel execution).
+- **Exact code** â€” each task step contains the exact code to write, not prose descriptions. Implementers should be transcribing, not designing.
+- **File structure** â€” which files to create, modify, or delete. Each file has one clear responsibility.
+- **Test cases** â€” each task specifies the test cases to write, with TDD ordering (failing test first, then implementation). Specify the test kind (unit, integration, etc.) per `.agents/docs/validation-policy.md`.
+- **Commit messages** â€” each task specifies its commit message.
+- **Expected interim state** â€” tasks that leave the build in a temporarily broken state (e.g. tsc errors fixed by a later task) must document this explicitly so the implementer knows it's expected.
+- **SDD confidence rating** â€” the plan includes a confidence rating (0-10) reflecting how well-specified the tasks are for subagent-driven execution. This rating must be the result of an honest execution confidence assessment (see below), not a self-assigned number.
 
 ## Plan Artifact Placement
 
@@ -41,10 +40,10 @@ Do not create loose files at repo root. Do not place agent-generated artifacts u
 
 ## Plan Review
 
-Before executing a plan, run through this checklist. Each item is a general principle — the examples are illustrative, not exhaustive.
+Before executing a plan, run through this checklist. Each item is a general principle â€” the examples are illustrative, not exhaustive.
 
 ### Structural integrity
-1. **Parent-child rendering compatibility.** If the plan nests routes, components, or UI elements hierarchically, verify the parent actually renders its children. Example: a parent route component must render `<Outlet />` for child routes to work — if it doesn't, use flat siblings instead. This applies to any framework with a parent-renders-child contract (TanStack Router outlets, React context providers, layout wrappers).
+1. **Parent-child rendering compatibility.** If the plan nests routes, components, or UI elements hierarchically, verify the parent actually renders its children. Example: a parent route component must render `<Outlet />` for child routes to work â€” if it doesn't, use flat siblings instead. This applies to any framework with a parent-renders-child contract (TanStack Router outlets, React context providers, layout wrappers).
 2. **Lifecycle completeness.** For every UI element the plan adds that has a show/dismiss lifecycle (modals, notices, overlays, query params, state flags), verify the plan includes a way to clear or dismiss it. A notice that appears but can't be dismissed is a bug. A query param that's set but never cleared will leak into navigations.
 3. **Cleanup on unmount/navigation.** If the plan adds state that persists across route changes (URL params, global state, subscriptions), verify the plan includes cleanup logic. State that leaks across routes causes subtle bugs that are hard to trace.
 
@@ -59,7 +58,7 @@ Before executing a plan, run through this checklist. Each item is a general prin
 
 ## Execution Confidence Assessment (required before reporting ready)
 
-Before reporting a plan as ready for execution, the planner must honestly assess the plan's execution confidence. This is not a formality — it is a verification step that catches gaps the planner would otherwise discover too late.
+Before reporting a plan as ready for execution, the planner must honestly assess the plan's execution confidence. This is not a formality â€” it is a verification step that catches gaps the planner would otherwise discover too late.
 
 ### How to assess
 
@@ -71,7 +70,7 @@ Verify the plan's assumptions against the actual source code, not against the pl
 2. **Verify every "follows the X pattern" claim.** Read the referenced pattern (e.g. `PhaserMapHost`). Is the pattern concrete enough to replicate? Does the plan specify the prop interface, or does it leave the implementer to design it?
 3. **Verify every "new code" claim.** If the plan says "create `TownLayoutGenerator`", confirm nothing similar already exists. If the plan says "add `BuildingKind` enum", confirm it doesn't already exist.
 4. **Verify every DTO, snapshot, and mapping boundary.** Read the current DTO, snapshot, and mapper. Are the fields the plan expects to extend actually there? Are there pre-existing sync issues (e.g. C# DTO has fields that TypeScript DTO doesn't) that the plan would inherit or worsen?
-5. **Verify every integration site.** If the plan says "post-process in `MapGenerator.Generate`", open that method and confirm the integration is possible as described — the source is in scope, the return type supports `with` expressions, the call site is where the plan says it is.
+5. **Verify every integration site.** If the plan says "post-process in `MapGenerator.Generate`", open that method and confirm the integration is possible as described â€” the source is in scope, the return type supports `with` expressions, the call site is where the plan says it is.
 6. **Identify underspecified design decisions.** If a task requires the implementer to make visual, algorithmic, or interface design decisions that aren't specified in the plan, that's a gap. "Simple grid-based layout" without dimensions, spacing, or visual concept is a gap. "Follows PhaserMapHost pattern" without specifying the exact props is a gap.
 
 ### Gap closure obligation
@@ -91,11 +90,11 @@ If a gap cannot be closed without making a design decision that requires user in
 
 When reporting a plan as ready, include:
 
-1. **Confidence rating (0-10)** — how confident the planner is that the plan will deliver the right thing first time without needing to discover and solve problems in flight.
-2. **Direct execution confidence** — confidence for a single implementer working sequentially with the ability to ask clarifying questions.
-3. **SDD confidence** — confidence for subagent-driven execution where implementers cannot ask clarifying questions and must work from the plan alone.
-4. **Gap closure summary** — what gaps were found during assessment and how they were closed.
-5. **Open questions** — any gaps that could not be closed without user input, with enough context for the user to make a decision.
+1. **Confidence rating (0-10)** â€” how confident the planner is that the plan will deliver the right thing first time without needing to discover and solve problems in flight.
+2. **Direct execution confidence** â€” confidence for a single implementer working sequentially with the ability to ask clarifying questions.
+3. **SDD confidence** â€” confidence for subagent-driven execution where implementers cannot ask clarifying questions and must work from the plan alone.
+4. **Gap closure summary** â€” what gaps were found during assessment and how they were closed.
+5. **Open questions** â€” any gaps that could not be closed without user input, with enough context for the user to make a decision.
 
 If the SDD confidence is below 7, do not report the plan as SDD-ready. Either refine the plan or report it as direct-execution-only with the reasons why.
 
@@ -112,6 +111,7 @@ This floor is a repo-local workflow rule layered on top of the writing-plans ski
 
 ## What a Plan is NOT
 
-- A plan is not a design document — design decisions should be made during brainstorming, not during planning.
-- A plan is not a spec — the spec comes from the Linear issue and brainstorming. The plan translates the spec into implementable tasks.
-- A plan is not a license to scope-creep — follow `.agents/docs/coding-discipline.md` scope rules. If the plan discovers work outside the issue's scope, flag it for a Linear issue, don't expand the plan.
+- A plan is not a design document â€” design decisions should be made during brainstorming, not during planning.
+- A plan is not a spec â€” the spec comes from the Linear issue and brainstorming. The plan translates the spec into implementable tasks.
+- A plan is not a license to scope-creep â€” follow `.agents/docs/coding-discipline.md` scope rules. If the plan discovers work outside the issue's scope, flag it for a Linear issue, don't expand the plan.
+

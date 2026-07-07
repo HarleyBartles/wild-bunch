@@ -1,37 +1,59 @@
-# BUNCH-142 Town Hub Filler Assets Design
+# BUNCH-142 Town Hub Asset, Terrain, and Prop Contract Design
 
 **Linear issue:** [BUNCH-142](https://linear.app/harleys-workspace/issue/BUNCH-142/generate-town-hub-filler-assets-for-buildings-and-road-tiles)
-**Date:** 2026-07-06
+**Date:** 2026-07-07
 
 ## Goals
 
 1. **Fill the town hub cleanly** - towns should read as inhabited places, not isolated buildings on an empty plane.
-2. **Keep tiles efficient** - road and dirt assets must tile cleanly and remain small in number.
-3. **Keep asset families distinct** - filler buildings, road-network tiles, and dirt/ground tiles each need their own contract.
-4. **Stay visually consistent** - the new assets must match the existing western town look and the approved style bible direction.
-5. **Support future placement work** - the asset shapes should make town-hub assembly mostly mechanical later.
+2. **Keep the terrain readable** - dirt, paths, props, and larger landforms must compose into a varied ground plane without obvious broken seams.
+3. **Keep assets efficient** - tiles stay small in number, props stay reusable, and the placement contract stays mechanical.
+4. **Keep asset families distinct** - filler buildings, road-network tiles, ground tiles, and standalone props each need their own contract.
+5. **Stay visually consistent** - the new assets must match the existing western town look and the approved style-bible direction.
+6. **Support future placement work** - the asset shapes should make town-hub assembly mostly mechanical later.
 
 ## Scope
 
-This issue covers three asset tracks:
+This issue covers four asset tracks and the contract that lets them compose into a town hub:
 
 1. **Filler buildings** - generic building shapes used to occupy inactive town-hub slots.
 2. **Road-network tiles** - main road pieces and spur pieces that define how a town hub lays out its circulation.
-3. **Ground-fill tiles** - dirt, dirt-with-prop, and larger landform tiles that make the hub feel like a place.
+3. **Ground tiles** - base dirt, dirt-with-path, and larger landform tiles that make the hub feel like a place.
+4. **Standalone props** - transparent sprites such as cactus and tumbleweed that add variance without breaking tile seams.
 
-The issue also covers the style-bible rewrite needed to keep those three tracks visually aligned before new generation work proceeds.
+The issue also covers the style-bible rewrite needed to keep those tracks visually aligned before new generation work proceeds, and the repo-doc updates needed to keep the new asset-tree contract honest.
+
+### Required documentation surfaces
+
+The planner should treat the following docs as in-scope and update them together:
+
+- `docs/art/town-buildings/style-bible.md`
+- `docs/art/town-buildings/asset-spec.md`
+- `docs/art/town-buildings/pipeline-overview.md`
+- `.agents/art/town-buildings/DOCTRINE.md`
+- `src/WildBunch.Assets/README.md`
+- `src/WildBunch.Assets/AGENTS.md`
+- `src/WildBunch.Assets/source/town-hub-buildings/README.md`
+- `src/WildBunch.Assets/source/town-hub-buildings/AGENTS.md`
+- `src/WildBunch.Assets/source/town-hub-roads/README.md`
+- `src/WildBunch.Assets/source/town-hub-roads/AGENTS.md`
+- `src/WildBunch.Assets/source/town-hub-ground/README.md`
+- `src/WildBunch.Assets/source/town-hub-ground/AGENTS.md`
+- `src/WildBunch.Assets/source/town-hub-ground/paths/README.md` and `AGENTS.md` if the path family is split into its own on-disk bucket during the execution plan
 
 ## Non-goals
 
 - Do not change the existing building prosperity ladder.
-- Do not introduce prosperity variants for road or dirt tiles.
-- Do not broaden into town placement logic, road graph generation, or Phaser placement code.
+- Do not introduce prosperity variants for road tiles or ground tiles.
+- Do not add random jitter to tiles or buildings.
+- Do not broaden into town placement logic, road graph generation, or Phaser code changes.
 - Do not move anything into the web public tree as source custody.
-- Do not create new canonical building families beyond the generic filler-building set required here.
+- Do not keep baked-in prop dirt tiles as the long-term contract when a prop should really be a sprite.
+- Do not treat the existing 60x50 outputs in this branch as reusable final assets; they are stale against the current 80x50 tile contract and should be regenerated.
 
 ## Asset Family Structure
 
-The design uses one level of family separation under the asset root. The new source-tree homes are:
+The design uses one level of family separation under the asset root. The current home is already split into source, staging, and final sprites:
 
 - `src/WildBunch.Assets/source/`
   - `town-hub-buildings/`
@@ -42,130 +64,39 @@ The design uses one level of family separation under the asset root. The new sou
 - `src/WildBunch.Assets/sprites/`
   - mirrored family layout for final promoted outputs
 
-Each family root should carry its own `README.md` and `AGENTS.md`, and those should point back to the controlling style bible and asset-spec guidance.
+The ground family is conceptually split into:
 
-The planning agent should treat the current `src/WildBunch.Assets/town-buildings/` layout as the old custody shape and plan the migration into the new `source/staging/sprites` tree as part of this issue.
+- `town-hub-ground/base/` - seam-safe dirt textures
+- `town-hub-ground/paths/` - dirt-with-path tiles
+- `town-hub-ground/props/` - transparent prop sprites
+- `town-hub-ground/landforms/` - larger dirt hill or berm tiles
 
-## Implementation Order
+The planning agent should preserve that conceptual separation and treat `paths/` as a required contract bucket for the execution plan. If the current on-disk tree is missing `paths/`, the plan should create it and move the path tiles there rather than folding them into `base/`.
 
-The planning agent should expand the issue into tasks in this order:
+## Tile Contract
 
-1. **Doc rewrite first** - update the style bible, asset spec, pipeline overview, doctrine, and root/family README + AGENTS files so the asset contract is current before generation work starts.
-2. **Tree migration second** - define and move the asset custody layout from `src/WildBunch.Assets/town-buildings/` into the new `src/WildBunch.Assets/source/`, `staging/`, and `sprites/` homes.
-3. **Filler buildings third** - generate the two required filler-building families across the four prosperity tiers and five-turnaround views.
-4. **Road tiles fourth** - generate the main-road and spur-road tile families with the required mirrored and end-piece variants.
-5. **Ground tiles fifth** - generate the base dirt, prop dirt, and landform tiles.
-6. **Promotion and verification last** - cut, normalize, promote, and regenerate the index mesh after any file moves or renames.
+All tile-based art in this slice shares the same base canvas contract:
 
-If a task needs to split, split between the doc/tree migration work and the image generation work, not within the core asset family definition.
+- Tile canvas: `80x50`
+- Tiles are not jittered.
+- Tiles are not rotated as a substitute for missing seam work.
+- Tiles must tile cleanly on their intended edges before any mirroring or map assembly uses them.
 
-## V1 Deliverables
+This applies to road tiles, base dirt tiles, dirt-with-path tiles, and landform tiles.
 
-The first actionable slice should generate the following minimum set:
+## Building Contract
 
-### Filler buildings
+Filler buildings remain sprites, not tiles.
 
-- 2 required generic filler-building families
-- each family gets the canonical 5-view turnaround contract: `front`, `profile`, `rear`, `front-oblique`, `rear-oblique`
-- each family gets the 4 prosperity tiers used elsewhere in the town-building stack: `boomtown`, `prosperous`, `poor`, `destitute`
-- each family therefore produces 20 images
-- the total building output is 40 images
-- the filler-building set is intentionally small because repeated view selection and mirroring can make one building family cover more of the hub without requiring many new assets
-
-### Main road
-
-- 5 unique main-road tile variants:
-  - flat edge
-  - thin path connector
-  - spur-crossroad edge
-  - bottom end piece
-  - top end piece
-- canonical art is the right-side version
-- left-side and top/bottom counterparts are mirrored derivatives as defined by the tile contract
-
-### Spur road
-
-- 3 unique spur-road tile variants:
-  - straight
-  - path connector
-  - right end piece
-- mirrored left-end derivative
-- canonical art is the right-side version
-
-### Ground fill
-
-- 3 tessellating base dirt textures
-- 8 prop dirt tiles:
-  - cactus
-  - tumbleweed
-  - scrub clump
-  - broken post or fence remnant
-  - wheel-rut patch
-  - trampled patch
-  - dry grass tuft
-  - small rock cluster
-- 1 four-tile dirt hill / berm set
-
-## Style-Bible Contract
-
-The style-bible rewrite must make the following explicit:
-
-- positive and negative guardrails in bullet-paragraph form so prompts can be copied directly into image generation
-- separate guidance for buildings, roads, and ground fill
-- canonical view / tile naming
-- what should never drift: camera, palette, readability, and edge behavior
-- how to keep the family visually cohesive while allowing small town-to-town variation
-
-The style bible should not rely on visual inspection as the primary control. Visual inspection is complementary; the bible is the durable prompt contract.
-
-## Doc Targets
-
-The planning agent should update or create the following repository docs as part of the implementation plan:
-
-- `docs/art/town-buildings/style-bible.md`
-- `docs/art/town-buildings/asset-spec.md`
-- `docs/art/town-buildings/pipeline-overview.md`
-- `.agents/art/town-buildings/DOCTRINE.md`
-- `src/WildBunch.Assets/README.md`
-- `src/WildBunch.Assets/AGENTS.md`
-- `src/WildBunch.Assets/INDEX.md`
-- `src/WildBunch.Assets/source/town-hub-buildings/README.md`
-- `src/WildBunch.Assets/source/town-hub-buildings/AGENTS.md`
-- `src/WildBunch.Assets/source/town-hub-roads/README.md`
-- `src/WildBunch.Assets/source/town-hub-roads/AGENTS.md`
-- `src/WildBunch.Assets/source/town-hub-ground/README.md`
-- `src/WildBunch.Assets/source/town-hub-ground/AGENTS.md`
-
-## Filler-Building Contract
-
-Filler buildings are sprite assets, not tiles.
-
-### Purpose
-
-- occupy town-hub slots that are not one of the canonical named buildings
-- give the town a populated silhouette and architectural density
-- act as mechanical background pieces that still read as part of the same town family
-
-### Contract
-
-- maintain the same top-down slight oblique western look as the existing town-building set
-- remain visually unobtrusive compared with the named buildings
-- preserve a readable roof mass and footprint at town scale
-- use the same prosperity tiers as the named building families so hub density can match town prosperity without inventing new road or ground tiers
-- fit cleanly with the named buildings in the same prosperity tier, but never compete with them for visual dominance
-- read as supporting architecture that fills the town out behind the more important main buildings
-
-### Variation
-
-- allow modest roofline / porch / massing differences so the filler buildings do not become clones
-- keep them recognizable as town buildings first and filler pieces second
-- keep prosperity readable through accumulated detail, materials, and completeness rather than through a new building taxonomy
-- use different view selections of the same building family, plus mirroring, to stretch a small source set into a larger hub presence
-- rely on reuse and orientation variety to make one filler family feel sufficient unless the hub needs a second family for balance
+- Buildings keep the existing 5-view turnaround contract.
+- Buildings do not receive positional jitter.
+- Buildings remain visually dominant over any filler or terrain detail touching the same hub slot.
+- The prosperity tiers remain `boomtown`, `prosperous`, `poor`, and `destitute`.
+- The family set remains intentionally small so the town can be populated mechanically without requiring many unique art families.
 
 ## Road-Network Contract
 
-Road-network assets are tiles.
+Road-network assets are tiles and follow the `80x50` tile canvas contract.
 
 ### Main road
 
@@ -211,54 +142,83 @@ The road families should gain expressive range through mirroring and topology va
 
 Rotation may be added later if the town-hub placement system needs north-south spurs or east-west major roads, but this issue should not depend on rotation.
 
-## Ground-Fill Contract
+## Ground Contract
 
-Ground-fill assets are tiles.
+Ground assets are tiles unless they are explicitly standalone props.
 
 ### Base dirt
 
 - create 3 base dirt textures
 - all 3 must tessellate on every edge
+- all 3 must remain seam-safe when repeated normally or mirrored horizontally/vertically
 - they should be interchangeable so towns can vary their ground rhythm without extra topology cost
+- they should be visually varied enough that the play surface can avoid a stamped repeated look when the generator mixes them
 
-### Prop dirt
+### Dirt-with-path tiles
 
-Prop dirt tiles are self-contained dirt tiles with a baked-in prop and edge-compatible framing. They are not overlays.
+- dirt-with-path is a tile family, not a sprite overlay
+- path tiles do not jitter
+- path tiles must support buildings facing 8 directions: `N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`
+- the authored path set should be 4 tiles, with these canonical orientations:
+  - `north` - path exits toward the top of the tile
+  - `east` - path exits toward the right of the tile
+  - `south` - path exits toward the bottom of the tile
+  - `west` - path exits toward the left of the tile
+- the mirrored placement contract should cover the diagonals without requiring separate authored `NE`, `SE`, `SW`, or `NW` art
+- path seams must still match the surrounding dirt, including mirrored placement
+- the path must read as a deliberate connector from a building front to the road, not as a random stripe on the dirt
 
-Recommended prop set:
+The planner may document the exact mirror mapping if needed, but the authored set itself is fixed at the four cardinal directions above.
+
+### Standalone props
+
+Standalone props are transparent sprites, not baked dirt tiles.
+
+- props may have small positional jitter
+- props do not receive path-like precision placement; they are decorative variance
+- props should not obscure road seams or path seams
+- props should fit over the base dirt family cleanly
+- props are the correct home for isolated objects that do not need to participate in tile seam logic
+
+Recommended initial prop set:
 
 - cactus
 - tumbleweed
 - scrub clump
-- broken post or fence remnant
-- wheel-rut patch
-- trampled patch
-- dry grass tuft
+- broken fence post
 - small rock cluster
+
+This is a starter set, not a hard ceiling. If a later prop is clearly useful and still fits the contract, it can be added without changing the terrain rules.
 
 ### Landform tiles
 
-- include a 4-tile dirt hill or berm as an occasional larger feature
-- the landform should feel like a composition anchor, not a repeating noise tile
+- include a 4-tile dirt hill or berm set
+- landforms are tiles, not props
+- landforms do not jitter
+- landforms should feel like occasional composition anchors, not a noise pattern
 
 ### Ground variation rule
 
-Variation belongs in the dirt layer as texture, props, and occasional larger features. It does not belong in prosperity variants.
+Variation belongs in the dirt layer as texture, path placement, props, and occasional larger features. It does not belong in prosperity variants.
 
-## Tessellation Rules
+Do not use baked prop dirt as the durable way to get terrain variety when the same result can be achieved with base dirt plus separate prop sprites.
 
-The tiles must support three simultaneous composition contracts:
+## Composition Rules
 
-1. **Main-road repetition** - top and bottom of main-road pieces connect perfectly so the road can repeat vertically.
-2. **Spur repetition** - left and right of spur pieces connect perfectly so the spur can repeat horizontally.
-3. **Ground blending** - dirt connects naturally to dirt and to the dirt-facing edges of roads and spurs.
+The surface should compose in the following order:
+
+1. **Base dirt** - establishes the terrain plane.
+2. **Path tiles** - connect building fronts to roads with no jitter and no broken seams.
+3. **Props** - add visual variety with small jitter so the surface feels inhabited and less repetitive.
+4. **Buildings** - sit cleanly on top without jitter and keep the town silhouette dominant.
 
 Additional edge rules:
 
-- spurs should have dirt on the top and bottom edges
-- a dirt tile should fit above or below a spur without visible seams
-- main-road outer edges should face dirt cleanly
-- path and spur variants should cross the dirt edge without breaking the seam contract
+- dirt should connect naturally with dirt edges, other dirt pieces, and the dirt edges of roads and spurs
+- a dirt tile should be able to sit above or below a spur and connect cleanly
+- road pieces should keep the outer edge as dirt and should fit next to adjacent dirt without visible seam breaks
+- path tiles should be readable at a glance as connectors, not as decorative noise
+- props should never be the thing that makes the seam work; the seam must already be correct without the prop
 
 ## Town Identity and Landscape Variety
 
@@ -267,11 +227,11 @@ Each town should feel like its own place without adding excessive asset families
 Recommended controls:
 
 - vary the weighting of the 3 base dirt textures per town
-- vary the density of prop dirt tiles per town
-- choose different prop mixes for different town moods
-- reserve the 4-tile landform for a few meaningful placements
+- vary the density of the 5 starter props per town
+- place props more sparsely near important path and road junctions
+- reserve the 4-tile landform set for a few meaningful placements
 
-This keeps the hub visually alive while preserving a small reusable asset set.
+This keeps the hub visually alive while preserving a small reusable asset set and avoiding a repeated tiled look.
 
 ## Validation
 
@@ -283,9 +243,10 @@ The implementation should validate:
 - filler buildings read as the correct architectural family at town scale
 - filler building prosperity tiers read correctly at town scale
 - road tiles tessellate on their intended edges
-- ground tiles tessellate with each other and with road dirt edges
-- prop dirt tiles remain fully tile-compatible
-- the output homes are correct for source, staging, and promoted sprites
+- base dirt tiles tessellate cleanly on all edges and remain seam-safe when mirrored
+- dirt-with-path tiles cover all 8 building-facing directions through the authored set plus mirrors
+- standalone props remain transparent, readable, and jittered only at the sprite-placement layer
+- landform tiles remain tile-compatible and non-jittered
 - generated outputs are transparent where expected
 - `python scripts/image_asset_pipeline.py slice-sheet` or `normalize` is used where the source material requires it
 - `python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/source --out-root src/WildBunch.Assets/sprites` is the promotion surface, with family-specific subpaths
@@ -293,13 +254,14 @@ The implementation should validate:
 
 ## Success Criteria
 
-- filler buildings, road tiles, and ground tiles are each clearly defined as separate asset tracks
-- road and ground tiles tile cleanly without requiring prosperity variants
-- filler buildings have the expected prosperity ladder across the five-turnaround set
-- the town hub can be assembled from a small reusable set of tiles plus generic filler buildings
-- towns can vary their identity through base dirt weighting, props, and occasional landforms
+- filler buildings, road tiles, ground tiles, and standalone props are each clearly defined as separate asset tracks
+- base dirt can repeat normally and in mirrored placement without the seams falling apart
+- the town hub can be assembled from a small reusable set of terrain pieces plus a few transparent props
+- dirt-with-path tiles connect buildings to roads in all supported building orientations without needing ad hoc art per building
+- towns can vary their identity through dirt weighting, prop density, and occasional landforms without inventing new tile taxonomies
+- the play surface can look varied and inhabited without turning into an obviously stamped tiled pattern
 - future placement work can choose tile variants mechanically instead of artistically guessing
 
 ## Next Step
 
-After this design is approved, write the implementation plan for the asset-generation work and keep the repo docs honest about the new family split.
+After this design is approved, write the implementation plan for the asset-generation work and keep the repo docs honest about the tile, prop, and path split.
