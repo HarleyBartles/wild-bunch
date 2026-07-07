@@ -372,17 +372,45 @@ internal static class TownLayoutGenerator
             if (roadTileRow >= 0)
             {
                 var (roadX, roadY) = TileToLogical(roadTileRow, roadTileCol);
-                var buildingCenterX = building.X + BuildingWidth / 2;
-                var buildingCenterY = building.Y + BuildingHeight / 2;
+                
+                // Calculate front door position (edge of building facing the road)
+                double frontDoorX, frontDoorY;
+                
+                if (building.Kind == BuildingKind.Trailhead)
+                {
+                    // Trailhead at north/south tips of road - front door faces road vertically
+                    // North Trailhead (y=5): front door at bottom edge
+                    // South Trailhead (y=95): front door at top edge
+                    if (building.Y < 50)
+                    {
+                        // North Trailhead - front door at bottom
+                        frontDoorX = building.X + BuildingWidth / 2;
+                        frontDoorY = building.Y + BuildingHeight;
+                    }
+                    else
+                    {
+                        // South Trailhead - front door at top
+                        frontDoorX = building.X + BuildingWidth / 2;
+                        frontDoorY = building.Y;
+                    }
+                }
+                else
+                {
+                    // Regular buildings - front door faces road horizontally
+                    // Road is centered at x=50, so buildings with x < 50 are on the left side
+                    var isOnLeftSide = building.X < 50;
+                    frontDoorX = isOnLeftSide ? building.X + BuildingWidth : building.X;
+                    frontDoorY = building.Y + BuildingHeight / 2;
+                }
 
                 // Add jitter for visual variety
                 var jitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{building.Kind.ToString().ToLowerInvariant()}{saltSegment}";
                 var jitter = Jitter(source, jitterLabel);
 
-                var pathStartX = ClampToScene(buildingCenterX + jitter, SceneWidth);
-                var pathStartY = ClampToScene(buildingCenterY + jitter, SceneHeight);
-                var pathEndX = ClampToScene(roadX + jitter, SceneWidth);
-                var pathEndY = ClampToScene(roadY + jitter, SceneHeight);
+                var pathStartX = ClampToScene((int)(frontDoorX + jitter), SceneWidth);
+                var pathStartY = ClampToScene((int)(frontDoorY + jitter), SceneHeight);
+                var pathEndX = ClampToScene((int)(roadX + jitter), SceneWidth);
+                var pathEndY = ClampToScene((int)(roadY + jitter), SceneHeight);
 
                 paths.Add(PathSegment.Create(pathStartX, pathStartY, pathEndX, pathEndY));
             }
