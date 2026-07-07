@@ -355,7 +355,7 @@ export interface TownLayoutDto {
   playerSpawnY: number;
   prosperity: TownProsperity;
   paths: PathSegmentDto[];
-  tileGrid: number[][]; // 10x10 grid: 0=Empty, 1=Road, 2=BuildingZone, 3=SpurStart, 4=SpurRoad
+  tileGrid?: number[][]; // 10x10 grid: 0=Empty, 1=Road, 2=BuildingZone, 3=SpurStart, 4=SpurRoad
 }
 
 export interface TownDto {

@@ -49,7 +49,7 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
       { startX: 12, startY: 25, endX: 46, endY: 25 },
       { startX: 46, startY: 25, endX: 80, endY: 25 },
     ],
-    tileGrid: Array(10).fill(null).map(() => Array(10).fill(0)),
+    tileGrid: undefined,
     ...overrides,
   };
 }

@@ -24,7 +24,7 @@ public sealed class GameSessionMapperTests
             50,
             TownProsperity.Prosperous,
             Array.Empty<PathSegment>(),
-            new int[10, 10]);
+            null);
 
         var townWithLayout = new Town(
             new TownId("town-with-layout"),

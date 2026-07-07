@@ -43,7 +43,7 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
     playerSpawnY: 50,
     prosperity: TownProsperity.Prosperous,
     paths: [],
-    tileGrid: Array(10).fill(null).map(() => Array(10).fill(0)),
+    tileGrid: undefined,
     ...overrides,
   };
 }

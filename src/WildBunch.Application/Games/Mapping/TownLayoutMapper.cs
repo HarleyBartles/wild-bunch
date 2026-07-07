@@ -24,13 +24,17 @@ public static class TownLayoutMapper
         }
 
         // Convert 2D int array to 2D array for DTO
-        var tileGrid = new int[layout.TileGrid.GetLength(0)][];
-        for (var row = 0; row < layout.TileGrid.GetLength(0); row++)
+        int[][]? tileGrid = null;
+        if (layout.TileGrid != null)
         {
-            tileGrid[row] = new int[layout.TileGrid.GetLength(1)];
-            for (var col = 0; col < layout.TileGrid.GetLength(1); col++)
+            tileGrid = new int[layout.TileGrid.GetLength(0)][];
+            for (var row = 0; row < layout.TileGrid.GetLength(0); row++)
             {
-                tileGrid[row][col] = layout.TileGrid[row, col];
+                tileGrid[row] = new int[layout.TileGrid.GetLength(1)];
+                for (var col = 0; col < layout.TileGrid.GetLength(1); col++)
+                {
+                    tileGrid[row][col] = layout.TileGrid[row, col];
+                }
             }
         }
 

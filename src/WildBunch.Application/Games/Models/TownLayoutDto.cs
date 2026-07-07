@@ -16,4 +16,4 @@ public sealed record TownLayoutDto(
     int PlayerSpawnY,
     TownProsperity Prosperity,
     IReadOnlyList<PathSegmentDto> Paths,
-    int[][] TileGrid);
+    int[][]? TileGrid);
