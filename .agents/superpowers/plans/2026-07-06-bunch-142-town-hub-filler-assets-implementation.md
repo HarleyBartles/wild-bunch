@@ -37,7 +37,7 @@
 - `src/WildBunch.Assets/source/town-hub-ground/AGENTS.md`
 - `src/WildBunch.Assets/source/town-hub-buildings/{boomtown,prosperous,poor,destitute}/background-house/{front,profile,rear,front-oblique,rear-oblique}.png`
 - `src/WildBunch.Assets/source/town-hub-buildings/{boomtown,prosperous,poor,destitute}/background-shop/{front,profile,rear,front-oblique,rear-oblique}.png`
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/{flat-edge-right,flat-edge-left,path-edge-right,path-edge-left,spur-cross-right,spur-cross-left,end-top,end-bottom}.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/{flat-edge,path-edge,spur-edge}.png`
 - `src/WildBunch.Assets/source/town-hub-roads/spur-road/{straight,path-above,end-right,end-left}.png`
 - `src/WildBunch.Assets/source/town-hub-ground/base/{dirt-a,dirt-b,dirt-c}.png`
 - `src/WildBunch.Assets/source/town-hub-ground/props/{cactus,tumbleweed,scrub-clump,broken-fence-post,small-rock-cluster}.png`
@@ -257,7 +257,7 @@ git commit -m "feat: add filler-building families for town hubs"
 
 **Files:**
 - Create and stage/promote:
-  - `src/WildBunch.Assets/source/town-hub-roads/main-road/{flat-edge-right,flat-edge-left,path-edge-right,path-edge-left,spur-cross-right,spur-cross-left,end-top,end-bottom}.png`
+  - `src/WildBunch.Assets/source/town-hub-roads/main-road/{flat-edge,path-edge,spur-edge}.png`
   - `src/WildBunch.Assets/source/town-hub-roads/spur-road/{straight,path-above,end-right,end-left}.png`
   - `src/WildBunch.Assets/source/town-hub-ground/base/{dirt-a,dirt-b,dirt-c}.png`
   - `src/WildBunch.Assets/source/town-hub-ground/props/{cactus,tumbleweed,scrub-clump,broken-fence-post,small-rock-cluster}.png`

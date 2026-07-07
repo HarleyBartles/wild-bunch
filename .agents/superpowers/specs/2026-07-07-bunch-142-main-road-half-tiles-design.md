@@ -9,7 +9,7 @@ Define the canonical main-road tile slice for the town hub so the road reads as 
 
 ## Scope
 
-This issue slice covers only the main-road half tiles and the repo docs that describe how to generate them.
+This issue slice covers only the main-road half tiles and the repo docs that describe how to constrain and validate them.
 
 ### In scope
 
@@ -28,20 +28,20 @@ This issue slice covers only the main-road half tiles and the repo docs that des
 
 ## Canonical Road Set
 
-The main-road source custody should be reduced to the canonical right-hand half tiles only:
+The main-road source custody is the canonical right-hand half tiles only:
 
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/flat-edge-right.png`
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/spur-cross-right.png`
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/path-edge-right.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/flat-edge.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/spur-edge.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/path-edge.png`
 
-The left-hand read is the horizontal mirror of each canonical tile and is not part of the canonical source custody set for this slice.
+The left-hand read is the horizontal mirror of each canonical tile and is not part of the canonical source custody set for this slice. These source files already exist and are the truth the pipeline must preserve.
 
 Derived outputs may still materialize the mirrored left-hand companions in `staging/` and `sprites/` when the pipeline or review workflow needs them, but those files are derived artifacts, not canonical custody. The implementation must not treat them as primary inputs or as an expanded source set.
 
 The following files are not part of the canonical road slice and should be removed, ignored, or otherwise de-canonized as part of implementation if they currently exist:
 
 - `flat-edge-left.png`
-- `spur-cross-left.png`
+- `spur-edge-left.png`
 - `path-edge-left.png`
 - `end-top.png`
 - `end-bottom.png`
@@ -56,9 +56,9 @@ Each canonical tile is a full `80x50` road-half tile with this edge contract:
   - This is the canonical road side.
   - When the tile is mirrored horizontally and placed adjacent to the original, the two tiles form the full two-tile-wide road band.
 - **Right edge:** variant-specific outer seam
-  - `flat-edge-right`: dirt edge only.
-  - `spur-cross-right`: spur side-trail junction.
-  - `path-edge-right`: thin path connector that can meet a later dirt/path tile.
+  - `flat-edge`: dirt edge only.
+  - `spur-edge`: spur side-trail junction.
+  - `path-edge`: thin path connector that can meet a later dirt/path tile.
 - **Top edge:** tiles cleanly with the bottom edge so the road can repeat vertically.
 - **Bottom edge:** tiles cleanly with the top edge for the same reason.
 
@@ -66,21 +66,21 @@ The road should read as a continuous vertical corridor. There are no visible cap
 
 ## Variant Intent
 
-### `flat-edge-right`
+### `flat-edge`
 
 - Default main-road half tile.
 - Left edge reads as the road band.
 - Right edge reads as dirt.
 - This is the cleanest version for straight runs of road beside dirt terrain.
 
-### `spur-cross-right`
+### `spur-edge`
 
 - Main-road half tile with a right-edge spur junction.
 - Left edge still reads as the road band.
 - Right edge shows the spur side-trail connection where a spur meets the major road.
 - This is the only road-half variant that needs to imply the spur mouth.
 
-### `path-edge-right`
+### `path-edge`
 
 - Main-road half tile with a right-edge thin path connector.
 - Left edge still reads as the road band.
@@ -105,9 +105,9 @@ The update should add composable prompt blocks with explicit positive and negati
 The road guidance should include:
 
 - one shared road contract block
-- one positive / negative block for `flat-edge-right`
-- one positive / negative block for `spur-cross-right`
-- one positive / negative block for `path-edge-right`
+- one positive / negative block for `flat-edge`
+- one positive / negative block for `spur-edge`
+- one positive / negative block for `path-edge`
 
 Each block should be written so an agent can paste it into a prompt without having to reconstruct the intent from surrounding prose. The blocks should state:
 

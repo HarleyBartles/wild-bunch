@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Canonicalize the main road into three right-hand half tiles, remove the accidental left-hand/end-cap custody from this slice, and rewrite the road guidance docs so image-generation agents can copy reusable `Do` / `Do not` guardrails directly.
+**Goal:** Keep the canonical main-road source custody aligned with the three existing tile files, remove stale left-hand/end-cap custody from this slice, and rewrite the road guidance docs so image-generation agents can copy reusable `Do` / `Do not` guardrails directly.
 
-**Architecture:** This is an asset-custody and documentation slice, not a gameplay or placement slice. The source tree keeps the canonical right-hand road halves only; staging and sprites stay aligned to that canonical set and may only materialize mirror companions if a later pipeline step explicitly needs them. The docs become the durable contract: the asset spec owns the file set, the pipeline overview owns the promotion story, the style bible owns the prompt blocks, and the doctrine gives the terse agent-facing version.
+**Architecture:** This is an asset-custody and documentation slice, not a gameplay or placement slice. The source tree keeps the canonical road halves only; staging and sprites stay aligned to that canonical set and may only materialize mirror companions if a later pipeline step explicitly needs them. The docs become the durable contract: the asset spec owns the file set, the pipeline overview owns the promotion story, the style bible owns the prompt blocks, and the doctrine gives the terse agent-facing version.
 
 **Tech Stack:** Python 3, Pillow, the repo-local asset pipeline helper, generated index mesh, Markdown docs.
 
 ## Global Constraints
 
-- Road source custody is canonical right-hand half tiles only: `flat-edge-right.png`, `spur-cross-right.png`, and `path-edge-right.png`.
+- Road source custody is canonical right-hand half tiles only: `flat-edge.png`, `spur-edge.png`, and `path-edge.png`.
 - The road slice uses a full `80x50` canvas.
 - The main road runs north-to-south with no visible cap ends in this slice.
 - Rotation-based road tiling is out of scope for this slice.
@@ -18,17 +18,16 @@
 
 ---
 
-### Task 1: Canonicalize the main-road tile generator and custody set
+### Task 1: Keep the main-road custody set canonical
 
 **Files:**
-- Modify: `scripts/generate_town_hub_tiles.py`
 - Modify or delete generated PNGs under `src/WildBunch.Assets/source/town-hub-roads/main-road/`
 - Modify or delete generated PNGs under `src/WildBunch.Assets/staging/town-hub-roads/main-road/`
 - Modify or delete generated PNGs under `src/WildBunch.Assets/sprites/town-hub-roads/main-road/`
 
 **Interfaces:**
-- Consumes: the current generator layout in `scripts/generate_town_hub_tiles.py`
-- Produces: only the three canonical right-hand road-half source files, plus any exact derived mirrors only if a later pipeline step explicitly requires them
+- Consumes: the existing source custody layout in `src/WildBunch.Assets/source/town-hub-roads/main-road/`
+- Produces: only the canonical road-half source files and their derived staging/sprites copies
 
 - [ ] **Step 1: Write the failing validation command**
 
@@ -39,9 +38,9 @@ from PIL import Image
 
 root = Path(r"src/WildBunch.Assets/source/town-hub-roads/main-road")
 expected = {
-    "flat-edge-right.png",
-    "spur-cross-right.png",
-    "path-edge-right.png",
+    "flat-edge.png",
+    "spur-edge.png",
+    "path-edge.png",
 }
 
 actual = {p.name for p in root.glob("*.png")}
@@ -52,28 +51,25 @@ for p in root.glob("*.png"):
 '@ | python -
 ```
 
-Expected: fail until the generator only writes the canonical right-hand files.
+Expected: fail until the source custody only contains the canonical three files.
 
-- [ ] **Step 2: Update the generator to emit the canonical set only**
+- [ ] **Step 2: Keep the canonical source set aligned**
 
-Make `generate_roads()` write only these three source files:
+If any stale road-half files remain, remove or de-canonize them so the source tree contains only these three files:
 
-```python
-sources = {
-    ROAD_SOURCE / "main-road" / "flat-edge-right.png": _tile_patch(_major_road_patch(101, "flat")),
-    ROAD_SOURCE / "main-road" / "path-edge-right.png": _tile_patch(_major_road_patch(102, "path")),
-    ROAD_SOURCE / "main-road" / "spur-cross-right.png": _tile_patch(_major_road_patch(103, "spur-cross")),
-}
+```text
+flat-edge.png
+spur-edge.png
+path-edge.png
 ```
 
-Remove the mirrored-output loop for the main-road slice and remove the `end-top` / `end-bottom` writes from this slice. Do not add a new rotation path or a cap-end path.
+Do not reintroduce cap ends or rotation-based road handling.
 
-- [ ] **Step 3: Regenerate and promote the road assets**
+- [ ] **Step 3: Verify the road assets stay promoted correctly**
 
 Run:
 
 ```powershell
-python scripts/generate_town_hub_tiles.py
 python scripts/image_asset_pipeline.py stage-tiles --input-root src/WildBunch.Assets/source/town-hub-roads --out-root src/WildBunch.Assets/staging/town-hub-roads --canvas-width 80 --canvas-height 50
 python scripts/image_asset_pipeline.py promote-tiles --input-root src/WildBunch.Assets/staging/town-hub-roads --out-root src/WildBunch.Assets/sprites/town-hub-roads
 ```
@@ -90,7 +86,7 @@ from pathlib import Path
 from PIL import Image
 
 root = Path(r"src/WildBunch.Assets/source/town-hub-roads/main-road")
-image = Image.open(root / "flat-edge-right.png").convert("RGBA")
+image = Image.open(root / "flat-edge.png").convert("RGBA")
 mirror = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
 combo = Image.new("RGBA", (160, 50), (0, 0, 0, 0))
 combo.paste(mirror, (0, 0))
@@ -102,12 +98,12 @@ assert combo.crop((152, 0, 160, 50)).getbbox() is not None
 '@ | python -
 ```
 
-Then confirm the source/staging/sprites main-road directories contain only the intended three canonical right-hand files.
+Then confirm the source/staging/sprites main-road directories contain only the intended three canonical files.
 
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add scripts/generate_town_hub_tiles.py src/WildBunch.Assets/source/town-hub-roads src/WildBunch.Assets/staging/town-hub-roads src/WildBunch.Assets/sprites/town-hub-roads
+git add src/WildBunch.Assets/source/town-hub-roads src/WildBunch.Assets/staging/town-hub-roads src/WildBunch.Assets/sprites/town-hub-roads
 git commit -m "feat: canonicalize main road half tiles"
 ```
 
@@ -126,7 +122,7 @@ git commit -m "feat: canonicalize main road half tiles"
 - [ ] **Step 1: Write the failing doc-content check**
 
 ```powershell
-rg -n "flat-edge-right|spur-cross-right|path-edge-right|Do: Keep the image as a single vertical main-road half tile|Do not: Do not add cap ends" docs/art/town-buildings .agents/art/town-buildings
+rg -n "flat-edge|spur-edge|path-edge|Do: Keep the image as a single vertical main-road half tile|Do not: Do not add cap ends" docs/art/town-buildings .agents/art/town-buildings
 ```
 
 Expected: fail until the road blocks exist in the docs.
@@ -139,13 +135,13 @@ Add a shared road block and three variant blocks. Use copyable positive and nega
 - Do: Keep the image as a single vertical main-road half tile at 80x50, with road on the left edge, dirt/spur/path on the right edge, and clean top/bottom seams for vertical repetition.
 - Do not: Do not add cap ends, rotation-only tiling, prosperity language, or any ground/building content to the road prompt.
 
-- Do: `flat-edge-right` is the canonical straight main-road half tile: road seam on the left, dirt on the right, seam-safe top and bottom edges, and a right-hand dirt edge that mirrors cleanly.
+- Do: `flat-edge` is the canonical straight main-road half tile: road seam on the left, dirt on the right, seam-safe top and bottom edges, and a right-hand dirt edge that mirrors cleanly.
 - Do not: Do not add a cap end, a spur junction, or a path lead-in to the flat road tile.
 
-- Do: `spur-cross-right` is the canonical main-road half with a right-edge spur junction: road seam on the left, spur mouth on the right, seam-safe top and bottom edges, and a mirrored partner that keeps the road band intact.
+- Do: `spur-edge` is the canonical main-road half with a right-edge spur junction: road seam on the left, spur mouth on the right, seam-safe top and bottom edges, and a mirrored partner that keeps the road band intact.
 - Do not: Do not turn the spur-cross tile into an end cap, a full intersection scene, or a rotated road tile.
 
-- Do: `path-edge-right` is the canonical main-road half with a right-edge thin path connector: road seam on the left, path lead-in on the right, seam-safe top and bottom edges, and a mirrored partner that keeps the road band intact.
+- Do: `path-edge` is the canonical main-road half with a right-edge thin path connector: road seam on the left, path lead-in on the right, seam-safe top and bottom edges, and a mirrored partner that keeps the road band intact.
 - Do not: Do not turn the path tile into a cap end or a full road junction.
 ```
 
@@ -215,9 +211,9 @@ roots = [
     Path(r"src/WildBunch.Assets/sprites/town-hub-roads/main-road"),
 ]
 expected = {
-    "flat-edge-right.png",
-    "spur-cross-right.png",
-    "path-edge-right.png",
+    "flat-edge.png",
+    "spur-edge.png",
+    "path-edge.png",
 }
 for root in roots:
     actual = {p.name for p in root.glob("*.png")}
@@ -225,7 +221,7 @@ for root in roots:
 '@ | python -
 ```
 
-Expected: every road-main folder contains only the three canonical right-hand files.
+Expected: every road-main folder contains only the three canonical files.
 
 ## Execution Confidence Assessment
 
