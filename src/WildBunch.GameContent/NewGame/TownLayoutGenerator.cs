@@ -80,7 +80,9 @@ internal static class TownLayoutGenerator
         var zonesToFill = GetBuildingZoneCount(prosperity, availableZones.Count);
         // Ensure we have enough zones for all required buildings (required buildings override prosperity)
         var zonesNeeded = Math.Min(buildingKinds.Count, Math.Max(zonesToFill, buildingKinds.Count));
-        var zonesToUse = availableZones.Take(zonesNeeded).ToList();
+        
+        // Distribute zones evenly across vertical space instead of bunching at top
+        var zonesToUse = DistributeZonesVertically(availableZones, zonesNeeded);
         for (var i = 0; i < buildingKinds.Count && i < zonesToUse.Count; i++)
         {
             var (row, col, isOnSpur) = zonesToUse[i];
@@ -231,6 +233,32 @@ internal static class TownLayoutGenerator
         }
 
         return zones;
+    }
+
+    private static List<(int Row, int Col, bool IsOnSpur)> DistributeZonesVertically(
+        List<(int Row, int Col, bool IsOnSpur)> availableZones,
+        int zonesNeeded)
+    {
+        if (zonesNeeded >= availableZones.Count)
+        {
+            return availableZones.ToList();
+        }
+
+        // Sort zones by row to get vertical distribution
+        var sortedZones = availableZones.OrderBy(z => z.Row).ToList();
+        
+        // Select zones at regular intervals to distribute vertically
+        var step = (double)(sortedZones.Count - 1) / Math.Max(1, zonesNeeded - 1);
+        var selectedZones = new List<(int Row, int Col, bool IsOnSpur)>();
+        
+        for (var i = 0; i < zonesNeeded; i++)
+        {
+            var index = (int)Math.Round(i * step);
+            index = Math.Clamp(index, 0, sortedZones.Count - 1);
+            selectedZones.Add(sortedZones[index]);
+        }
+
+        return selectedZones;
     }
 
     private static List<BuildingKind> GetBuildingKindsForTown(TownServices services)
