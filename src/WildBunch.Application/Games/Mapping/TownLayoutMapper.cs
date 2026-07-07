@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
 
@@ -22,10 +23,14 @@ public static class TownLayoutMapper
             return null;
         }
 
+        // TileGrid is already a jagged array, pass it through
         return new TownLayoutDto(
             layout.Buildings.Select(ToDto).ToArray(),
             layout.PlayerSpawnX,
-            layout.PlayerSpawnY);
+            layout.PlayerSpawnY,
+            layout.Prosperity,
+            layout.Paths.Select(ToDto).ToArray(),
+            layout.TileGrid);
     }
 
     private static BuildingPlacementDto ToDto(BuildingPlacement placement)
@@ -33,6 +38,10 @@ public static class TownLayoutMapper
             placement.Kind,
             placement.X,
             placement.Y,
+            placement.View,
             placement.Width,
             placement.Height);
+
+    private static PathSegmentDto ToDto(PathSegment path)
+        => new(path.StartX, path.StartY, path.EndX, path.EndY);
 }

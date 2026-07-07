@@ -307,6 +307,14 @@ export interface PlayerDto {
   health: number;
 }
 
+export type TownProsperity = 0 | 1 | 2 | 3;
+export const TownProsperity = {
+  Boomtown: 0,
+  Prosperous: 1,
+  Poor: 2,
+  Destitute: 3,
+} as const;
+
 export type BuildingKind = 0 | 1 | 2 | 3 | 4;
 export const BuildingKind = {
   Store: 0,
@@ -316,18 +324,38 @@ export const BuildingKind = {
   Telegraph: 4,
 } as const;
 
+export type BuildingView = 0 | 1 | 2 | 3 | 4;
+export const BuildingView = {
+  Front: 0,
+  Profile: 1,
+  Rear: 2,
+  FrontOblique: 3,
+  RearOblique: 4,
+} as const;
+
 export interface BuildingPlacementDto {
   kind: BuildingKind;
+  view: BuildingView;
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
+export interface PathSegmentDto {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}
+
 export interface TownLayoutDto {
   buildings: BuildingPlacementDto[];
   playerSpawnX: number;
   playerSpawnY: number;
+  prosperity: TownProsperity;
+  paths: PathSegmentDto[];
+  tileGrid?: number[][]; // 10x10 grid: 0=Empty, 1=Road, 2=BuildingZone, 3=SpurStart, 4=SpurRoad
 }
 
 export interface TownDto {

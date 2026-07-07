@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
@@ -13,14 +14,17 @@ public sealed class GameSessionMapperTests
         var layout = new TownLayout(
             new[]
             {
-                new BuildingPlacement(BuildingKind.Store, 10, 20),
-                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, 12, 8),
-                new BuildingPlacement(BuildingKind.Saloon, 50, 60),
-                new BuildingPlacement(BuildingKind.Trailhead, 70, 80),
-                new BuildingPlacement(BuildingKind.Telegraph, 90, 100)
+                new BuildingPlacement(BuildingKind.Store, 10, 20, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Sheriff, 30, 40, BuildingView.FrontOblique, 12, 8),
+                new BuildingPlacement(BuildingKind.Saloon, 50, 60, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Trailhead, 70, 80, BuildingView.FrontOblique),
+                new BuildingPlacement(BuildingKind.Telegraph, 90, 100, BuildingView.FrontOblique)
             },
             50,
-            50);
+            50,
+            TownProsperity.Prosperous,
+            Array.Empty<PathSegment>(),
+            null);
 
         var townWithLayout = new Town(
             new TownId("town-with-layout"),

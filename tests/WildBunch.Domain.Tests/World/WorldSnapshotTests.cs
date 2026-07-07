@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Tests.World;
@@ -9,13 +10,13 @@ public sealed class WorldSnapshotTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 10, 20),
-            new(BuildingKind.Sheriff, 30, 12),
-            new(BuildingKind.Saloon, 50, 18),
-            new(BuildingKind.Trailhead, 5, 40),
-            new(BuildingKind.Telegraph, 22, 32)
+            new(BuildingKind.Store, 10, 20, BuildingView.FrontOblique),
+            new(BuildingKind.Sheriff, 30, 12, BuildingView.FrontOblique),
+            new(BuildingKind.Saloon, 50, 18, BuildingView.FrontOblique),
+            new(BuildingKind.Trailhead, 5, 40, BuildingView.FrontOblique),
+            new(BuildingKind.Telegraph, 22, 32, BuildingView.FrontOblique)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Boomtown, Array.Empty<PathSegment>(), null);
         var town = new Town(
             new TownId("t1"),
             "Dodge",

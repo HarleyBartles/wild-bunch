@@ -1,3 +1,4 @@
+using System;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Tests.World;
@@ -17,10 +18,10 @@ public sealed class WorldModelsTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 10, 20),
-            new(BuildingKind.Saloon, 30, 12)
+            new(BuildingKind.Store, 10, 20, BuildingView.FrontOblique),
+            new(BuildingKind.Saloon, 30, 12, BuildingView.FrontOblique)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Prosperous, Array.Empty<PathSegment>(), null);
 
         var town = new Town(
             new TownId("t1"),
@@ -39,9 +40,9 @@ public sealed class WorldModelsTests
     {
         var buildings = new List<BuildingPlacement>
         {
-            new(BuildingKind.Store, 10, 20)
+            new(BuildingKind.Store, 10, 20, BuildingView.FrontOblique)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35);
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Prosperous, Array.Empty<PathSegment>(), null);
         var town = new Town(new TownId("t1"), "Dodge", TownServices.Telegraph, Layout: layout);
 
         var renamed = town with { Name = "Tombstone" };

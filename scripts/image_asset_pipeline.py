@@ -27,7 +27,7 @@ except ImportError as exc:  # pragma: no cover - import guard
 
 @dataclass(frozen=True)
 class PipelineConfig:
-    canvas_width: int = 60
+    canvas_width: int = 80
     canvas_height: int = 50
     padding: int = 1
     sample_radius: int = 6

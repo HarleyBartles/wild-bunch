@@ -3,12 +3,11 @@ name: testing
 description: >
   Use when writing .NET tests, setting up test infrastructure, reviewing test
   coverage, or needing guidance on xUnit, WebApplicationFactory, Testcontainers,
-  snapshot testing, the AAA pattern, WireMock, FakeTimeProvider, or brute-force
-  tests (thousands-of-combinations invariant and distribution testing).
+  snapshot testing, the AAA pattern, WireMock, or FakeTimeProvider.
 metadata:
   content_mode: adapted
   adapted_author: Harley Bartles
-  adaptation_note: Kept the testing guidance and removed provider-specific load assumptions. Added brute-force test kind guidance.
+  adaptation_note: Kept the testing guidance and removed provider-specific load assumptions.
   source_author: codewithmukesh
   source_license: MIT
   source_repo: https://github.com/codewithmukesh/dotnet-claude-kit
@@ -252,142 +251,6 @@ public async Task ExpireOrders_MarksOldPendingOrdersAsExpired()
     Assert.Equal(OrderStatus.Expired, updated!.Status);
 }
 ```
-
-### Brute-Force Tests
-
-Brute-force tests are a distinct test kind that iterates over thousands of
-seed/salt/parameter combinations in a single test method, asserting invariants
-and statistical properties that only become meaningful across many runs. They
-are NOT a replacement for unit or integration tests — they are a complement
-that catches silent bias, degenerate distributions, and rare anti-patterns that
-per-combination tests miss.
-
-**When to write a brute-force test:**
-- The system produces deterministic-but-varied output from seed/salt combinations
-  (map generation, encounter seeding, item distribution, mystery truth resolution)
-- You want to catch silent bias where invariants pass but output is suspiciously
-  skewed (e.g., 90% of trails are 2 days, one terrain type never appears)
-- You want to catch rare anti-patterns that occur in <1% of runs but should never
-  occur at all (self-loops, duplicate IDs, degenerate placement)
-- You want to verify that parameter variation (entropy, difficulty, variant)
-  actually produces measurably different output distributions
-
-**When NOT to write a brute-force test:**
-- The system is not deterministic (use property-based testing instead)
-- You're testing a single code path with known inputs (use a unit test)
-- You're testing the HTTP pipeline (use an integration test)
-- The system has no seed/salt variation surface to iterate over
-
-**Structure of a brute-force test:**
-
-1. **Combination matrix** — enumerate all valid combinations of the system's
-   input parameters (seed variants, entropy levels, salts, town counts, cluster
-   counts, densities, etc.). Use nested loops, not `[Theory]` data — the point
-   is to run thousands of combinations in one test method.
-
-2. **Per-combination invariants** — for each generated output, assert structural
-   correctness (counts, bounds, connectivity, uniqueness, determinism). Collect
-   failures into a list and assert at the end so you see ALL failures, not just
-   the first.
-
-3. **Statistical expectations** — after the loop, assert aggregate distribution
-   properties across all generated outputs:
-   - Each expected category (terrain type, risk level, distance band) appears
-     with reasonable frequency (typically ≥5% for common categories, ≥3% for
-     edge categories)
-   - No single category dominates excessively (typically ≤50%)
-   - Parameter variation produces measurably different distributions (e.g.,
-     different `SeedWorldVariant` values produce different terrain mixes)
-
-4. **Anti-pattern detection** — assert that things that should never happen
-   occur 0 times, and things that should be rare occur <1% of the time:
-   - Self-loops, duplicate IDs, zero/negative values: 0 occurrences
-   - Degenerate outputs (all-identical values, all-same-coordinate): <1%
-   - Over-connected nodes on small maps: <1%
-
-**Performance considerations:**
-- A single brute-force test should complete in under 5 seconds. If it takes
-  longer, narrow the combination matrix or reduce the per-combination work.
-- If multiple brute-force test methods share the same combination matrix,
-  extract a shared data collector that runs the matrix once and caches the
-  results (see `BruteForceDataCollector` in `MapGeneratorBruteForceAnalysisTests`
-  for the pattern).
-- Use `[Fact]`, not `[Theory]` — the loops are inside the test, not in the
-  data source.
-
-**Example pattern (from `MapGeneratorTests.cs`):**
-
-```csharp
-[Fact]
-public void Generate_BruteForce_AllValidCombinations_SatisfyAllInvariants()
-{
-    var failures = new List<string>();
-    var combinationsTested = 0;
-
-    foreach (var variant in Enum.GetValues<SeedWorldVariant>())
-    foreach (var density in Enum.GetValues<GraphDensity>())
-    foreach (var entropy in Enum.GetValues<GameEntropy>())
-    foreach (var salt in new[] { "salt-a", "salt-b", "salt-c" })
-    {
-        combinationsTested++;
-        var world = MapGenerator.Generate(seed, source, entropy, saltSource);
-
-        // Per-combination invariants — collect failures, don't throw
-        if (world.Towns.Count != expectedTowns)
-            failures.Add($"{label}: town count mismatch");
-
-        // ... more invariants ...
-    }
-
-    // Assert all invariants passed
-    Assert.True(failures.Count == 0,
-        $"Brute-force: {failures.Count} failures / {combinationsTested} combos. " +
-        $"First 5: {string.Join(" | ", failures.Take(5))}");
-}
-```
-
-**Example pattern (statistical + anti-pattern, shared collector):**
-
-```csharp
-// Shared collector runs the matrix once, caches for all tests in the class
-private static BruteForceDataCollector.CollectorData _data = null!;
-private static BruteForceDataCollector.CollectorData Data =>
-    _data ??= BruteForceDataCollector.CollectAll();
-
-[Fact]
-public void BruteForce_TerrainDiversity_AllTypesAppear()
-{
-    var data = Data;
-    foreach (TrailTerrain terrain in Enum.GetValues<TrailTerrain>())
-    {
-        var pct = 100.0 * data.TerrainCounts.GetValueOrDefault(terrain) / data.TotalTrails;
-        Assert.True(pct >= 5.0, $"{terrain} appears {pct:F1}%, expected >= 5%");
-    }
-}
-
-[Fact]
-public void BruteForce_NoSelfLoopTrails()
-{
-    Assert.True(Data.SelfLoopCount == 0, "Self-loops should never occur");
-}
-```
-
-**Existing brute-force tests in this repo:**
-- `MapGeneratorTests.Generate_BruteForce_AllValidCombinations_SatisfyAllInvariants`
-  — per-combination invariants + ride-day/degree distribution assertions
-- `MapGeneratorBruteForceAnalysisTests` — 15 statistical expectation and
-  anti-pattern tests sharing a single `BruteForceDataCollector` pass
-
-**Threshold guidance:**
-- Distribution floors (≥5%, ≥3%) should be generous enough to allow natural
-  variation but strict enough to catch real bias. Tune based on observed
-  distributions, not theoretical ideals.
-- Anti-pattern ceilings (<1%) should be 0 for things that must never happen,
-  and <1% for things that are rare-but-possible (e.g., all-identical distances
-  on a 2-town map with a single trail).
-- When a threshold fails, investigate the root cause before adjusting the
-  threshold. A failing distribution test usually means the generator has a
-  real bias that should be fixed, not a threshold that should be loosened.
 
 ### Test Naming Convention
 
