@@ -73,6 +73,8 @@ internal static class TownLayoutGenerator
 
         // Identify available building zones from grid
         var availableZones = GetAvailableBuildingZones(grid, paletteSpec);
+        var spurZones = availableZones.Where(z => z.IsOnSpur).ToList();
+        var majorRoadZones = availableZones.Where(z => !z.IsOnSpur).ToList();
 
         // Assign buildings to zones using seed-derived ordering
         var buildingKinds = GetBuildingKindsForTown(services);
@@ -97,20 +99,44 @@ internal static class TownLayoutGenerator
             buildingKinds.Remove(BuildingKind.Trailhead);
         }
 
-        // Place remaining buildings in regular zones
+        // Place remaining buildings - prioritize spurs first
         if (buildingKinds.Count > 0)
         {
-            // Calculate how many zones to fill based on prosperity
-            var zonesToFill = GetBuildingZoneCount(prosperity, availableZones.Count);
-            // Ensure we have enough zones for all required buildings (required buildings override prosperity)
-            var zonesNeeded = Math.Min(buildingKinds.Count, Math.Max(zonesToFill, buildingKinds.Count));
+            var zonesToUse = new List<(int Row, int Col, bool IsOnSpur)>();
+            var remainingBuildings = new List<BuildingKind>(buildingKinds);
             
-            // Distribute zones evenly across vertical space instead of bunching at top
-            var zonesToUse = DistributeZonesVertically(availableZones, zonesNeeded);
-            for (var i = 0; i < buildingKinds.Count && i < zonesToUse.Count; i++)
+            // First, assign at least one building to each spur (if spurs exist and we have buildings)
+            if (spurZones.Count > 0 && remainingBuildings.Count > 0)
+            {
+                var buildingsForSpurs = Math.Min(spurZones.Count, remainingBuildings.Count);
+                for (var i = 0; i < buildingsForSpurs; i++)
+                {
+                    zonesToUse.Add(spurZones[i]);
+                }
+                
+                // Remove assigned buildings from the list
+                remainingBuildings.RemoveRange(0, buildingsForSpurs);
+            }
+            
+            // Then, assign remaining buildings to major road zones
+            if (remainingBuildings.Count > 0 && majorRoadZones.Count > 0)
+            {
+                // Calculate how many zones to fill based on prosperity
+                var zonesToFill = GetBuildingZoneCount(prosperity, majorRoadZones.Count);
+                // Ensure we have enough zones for all required buildings (required buildings override prosperity)
+                var zonesNeeded = Math.Min(remainingBuildings.Count, Math.Max(zonesToFill, remainingBuildings.Count));
+                
+                // Distribute zones evenly across vertical space instead of bunching at top
+                var distributedMajorRoadZones = DistributeZonesVertically(majorRoadZones, zonesNeeded);
+                zonesToUse.AddRange(distributedMajorRoadZones);
+            }
+            
+            // Place buildings in selected zones
+            var buildingIndex = 0;
+            for (var i = 0; i < zonesToUse.Count; i++)
             {
                 var (row, col, isOnSpur) = zonesToUse[i];
-                var kind = buildingKinds[i];
+                var kind = buildingKinds[buildingIndex];
                 var isOnLeftSide = col < RoadColumnStart;
 
                 // Calculate base position from tile (no jitter for consistent placement)
@@ -121,11 +147,12 @@ internal static class TownLayoutGenerator
                 var view = SelectBuildingView(isOnSpur, isOnLeftSide, source, viewLabel);
 
                 buildings.Add(new BuildingPlacement(kind, baseX, baseY, view, BuildingWidth, BuildingHeight));
+                buildingIndex++;
             }
         }
 
-        // Generate path segments from buildings to roads
-        paths = GeneratePathSegmentsFromGrid(grid, buildings, townId, townSlotIndex, source, saltSource);
+        // Path generation disabled - will be implemented with proper tile-based rules later
+        paths = new List<PathSegment>();
 
         // Convert TileType grid to int grid for serialization
         var tileGrid = new int[GridHeight][];
