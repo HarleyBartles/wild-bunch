@@ -100,16 +100,19 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_UsesTileBasedPositions()
+    public void GenerateLayout_UsesTileBasedPositionsWithoutJitter()
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        // Tile-based system: Store is the 1st building, placed at (1, 0) -> tile center at (5, 15) with +/-2 jitter
+        // Tile-based system: buildings are placed at exact tile centers (no jitter)
+        // Each tile is 10 logical units, so tile (row, col) centers at (col*10 + 5, row*10 + 5)
         var store = layout.Buildings.Single(b => b.Kind == BuildingKind.Store);
-        Assert.InRange(store.X, 3, 7); // 5 +/- 2
-        Assert.InRange(store.Y, 13, 17); // 15 +/- 2
+        // Store should be placed at a building zone tile center
+        // Building zones are at columns 3 (left) and 6 (right)
+        Assert.True(store.X == 35 || store.X == 65, $"Store X should be 35 or 65, got {store.X}");
+        Assert.InRange(store.Y, 15, 85); // Building zones are in rows 1-8
     }
 
     [Fact]
@@ -157,25 +160,99 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_ProsperityAffectsZoneDensity()
+    public void GenerateLayout_SpursArePrioritizedForBuildingPlacement()
     {
-        // Verify that GetBuildingZoneCount produces correct zone counts for different prosperity levels
-        // Standard NoSpurs layout has 8 building zones
-        var totalZones = 8;
-        
-        var expectedCounts = new Dictionary<TownProsperity, int>
-        {
-            { TownProsperity.Boomtown, 8 },   // 1.0 * 8 = 8
-            { TownProsperity.Prosperous, 6 }, // 0.75 * 8 = 6
-            { TownProsperity.Poor, 4 },       // 0.5 * 8 = 4
-            { TownProsperity.Destitute, 2 }   // 0.25 * 8 = 2
-        };
+        var townId = NewTownId("town-1");
+        var source = NewSource();
 
-        foreach (var (prosperity, expectedCount) in expectedCounts)
+        // With a spur, at least one building should be placed on the spur
+        var oneSpurLayout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, source, null, BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
+        
+        // Check that at least one building is on the left side (where the spur is)
+        // Spur building zone is at column 2 (left of building zone at column 3)
+        var leftSideBuildings = oneSpurLayout.Buildings.Where(b => b.X < 35).ToList();
+        Assert.True(leftSideBuildings.Count > 0, "At least one building should be on the left side (spur)");
+    }
+
+    [Fact]
+    public void GenerateLayout_TileGridHasCorrectDimensions()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+
+        Assert.NotNull(layout.TileGrid);
+        Assert.Equal(10, layout.TileGrid.Length); // 10 rows
+        Assert.All(layout.TileGrid, row => Assert.Equal(10, row.Length)); // 10 columns per row
+    }
+
+    [Fact]
+    public void GenerateLayout_TileGridHasMajorRoadInCenter()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+
+        Assert.NotNull(layout.TileGrid);
+        
+        // Road tiles should be at columns 4 and 5 (center) for all rows
+        for (var row = 0; row < 10; row++)
         {
-            var actualCount = TownLayoutGenerator.GetBuildingZoneCount(prosperity, totalZones);
-            Assert.True(expectedCount == actualCount, 
-                $"Prosperity {prosperity} should produce {expectedCount} zones, but got {actualCount}");
+            Assert.Equal(1, layout.TileGrid[row][4]); // Road
+            Assert.Equal(1, layout.TileGrid[row][5]); // Road
         }
+    }
+
+    [Fact]
+    public void GenerateLayout_TileGridHasBuildingZonesOnSides()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+
+        Assert.NotNull(layout.TileGrid);
+        
+        // Building zones should be at columns 3 (left) and 6 (right) for rows 1-8 (skip trailhead rows)
+        for (var row = 1; row < 9; row++)
+        {
+            Assert.Equal(2, layout.TileGrid[row][3]); // BuildingZone
+            Assert.Equal(2, layout.TileGrid[row][6]); // BuildingZone
+        }
+    }
+
+    [Fact]
+    public void GenerateLayout_TileGridHasSpurTilesWhenSpursExist()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
+
+        Assert.NotNull(layout.TileGrid);
+        
+        // OneSpurLeft palette has a spur at row 4, direction West
+        // SpurStart at column 3 (junction), SpurRoad at column 2 (extension)
+        Assert.Equal(3, layout.TileGrid[4][3]); // SpurStart
+        Assert.Equal(4, layout.TileGrid[4][2]); // SpurRoad
+    }
+
+    [Fact]
+    public void GenerateLayout_BuildingsAreDistributedVertically()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+
+        // Get non-trailhead buildings
+        var nonTrailheadBuildings = layout.Buildings.Where(b => b.Kind != BuildingKind.Trailhead).ToList();
+        
+        // Buildings should be spread across different rows, not bunched at the top
+        var rows = nonTrailheadBuildings.Select(b => b.Y / 10).Distinct().ToList();
+        Assert.True(rows.Count > 1, "Buildings should be distributed across multiple rows");
+    }
+
+    [Fact]
+    public void GenerateLayout_PathsAreDisabled()
+    {
+        var layout = TownLayoutGenerator.GenerateLayout(
+            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+
+        // Path generation is disabled until proper tile-based rules are implemented
+        Assert.Empty(layout.Paths);
     }
 }

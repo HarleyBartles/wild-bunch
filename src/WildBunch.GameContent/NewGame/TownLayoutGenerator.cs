@@ -9,10 +9,8 @@ namespace WildBunch.GameContent.NewGame;
 /// Generates deterministic town hub surface layouts. The same seed code, town
 /// identity, and <see cref="TownServices"/> always produce the same layout — no
 /// unseeded randomness is used. Buildings are placed on a fixed logical grid
-/// (0-100 in both dimensions) with small deterministic +/-2 jitter derived
-/// from <see cref="GameSetupDeterministicSource.PickIndex"/> so each town
-/// looks slightly different while remaining reproducible. The frontend scales
-/// these logical units to actual canvas pixels.
+/// (0-100 in both dimensions) at tile centers for consistent placement. The
+/// frontend scales these logical units to actual canvas pixels.
 /// </summary>
 internal static class TownLayoutGenerator
 {
@@ -23,10 +21,6 @@ internal static class TownLayoutGenerator
 
     private const int BuildingWidth = 8;
     private const int BuildingHeight = 10;
-
-    // Jitter range: PickIndex(label, 5) yields 0..4, subtract 2 -> -2..+2.
-    private const int JitterRange = 5;
-    private const int JitterOffset = 2;
 
     // Tile grid constants
     private const int TileSize = 10; // Each tile is 10 logical units
@@ -359,100 +353,4 @@ internal static class TownLayoutGenerator
         return (tileRow, tileCol);
     }
 
-    private static (int Row, int Col) FindNearestRoadTile(TileType[,] grid, int startRow, int startCol)
-    {
-        // Simple search for nearest road tile
-        for (var distance = 0; distance < GridHeight; distance++)
-        {
-            for (var row = Math.Max(0, startRow - distance); row <= Math.Min(GridHeight - 1, startRow + distance); row++)
-            {
-                for (var col = Math.Max(0, startCol - distance); col <= Math.Min(GridWidth - 1, startCol + distance); col++)
-                {
-                    if (grid[row, col] == TileType.Road || grid[row, col] == TileType.SpurRoad)
-                    {
-                        return (row, col);
-                    }
-                }
-            }
-        }
-
-        return (-1, -1); // No road found
-    }
-
-    private static List<PathSegment> GeneratePathSegmentsFromGrid(
-        TileType[,] grid,
-        List<BuildingPlacement> buildings,
-        TownId townId,
-        int townSlotIndex,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource)
-    {
-        var paths = new List<PathSegment>();
-        var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
-
-        foreach (var building in buildings)
-        {
-            // Find nearest road tile
-            var (buildingTileRow, buildingTileCol) = LogicalToTile(building.X, building.Y);
-            var (roadTileRow, roadTileCol) = FindNearestRoadTile(grid, buildingTileRow, buildingTileCol);
-
-            if (roadTileRow >= 0)
-            {
-                var (roadX, roadY) = TileToLogical(roadTileRow, roadTileCol);
-                
-                // Calculate front door position (edge of building facing the road)
-                double frontDoorX, frontDoorY;
-                
-                if (building.Kind == BuildingKind.Trailhead)
-                {
-                    // Trailhead at north/south tips of road - front door faces road vertically
-                    // North Trailhead (y=5): front door at bottom edge
-                    // South Trailhead (y=95): front door at top edge
-                    if (building.Y < 50)
-                    {
-                        // North Trailhead - front door at bottom
-                        frontDoorX = building.X + BuildingWidth / 2;
-                        frontDoorY = building.Y + BuildingHeight;
-                    }
-                    else
-                    {
-                        // South Trailhead - front door at top
-                        frontDoorX = building.X + BuildingWidth / 2;
-                        frontDoorY = building.Y;
-                    }
-                }
-                else
-                {
-                    // Regular buildings - front door faces road horizontally
-                    // Road is centered at x=50, so buildings with x < 50 are on the left side
-                    var isOnLeftSide = building.X < 50;
-                    frontDoorX = isOnLeftSide ? building.X + BuildingWidth : building.X;
-                    frontDoorY = building.Y + BuildingHeight / 2;
-                }
-
-                // Add jitter for visual variety
-                var jitterLabel = $"town-{townId.Value}-slot-{townSlotIndex}-path-{building.Kind.ToString().ToLowerInvariant()}{saltSegment}";
-                var jitter = Jitter(source, jitterLabel);
-
-                var pathStartX = ClampToScene((int)(frontDoorX + jitter), SceneWidth);
-                var pathStartY = ClampToScene((int)(frontDoorY + jitter), SceneHeight);
-                var pathEndX = ClampToScene((int)(roadX + jitter), SceneWidth);
-                var pathEndY = ClampToScene((int)(roadY + jitter), SceneHeight);
-
-                paths.Add(PathSegment.Create(pathStartX, pathStartY, pathEndX, pathEndY));
-            }
-        }
-
-        return paths;
-    }
-
-    private static int Jitter(GameSetupDeterministicSource source, string label)
-        => source.PickIndex(label, JitterRange) - JitterOffset;
-
-    private static int ClampToScene(int value, int max)
-    {
-        if (value < 0) return 0;
-        if (value > max) return max;
-        return value;
-    }
 }
