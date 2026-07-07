@@ -103,6 +103,12 @@ export class TownHubScene extends Phaser.Scene {
         const sprite = this.add.image(px, py, spriteKey);
         sprite.setDisplaySize(pw, ph);
 
+        // Mirror buildings on the left side of the road (stored sprites are for right side)
+        // Road is centered at x=50, so buildings with x < 50 are on the left
+        if (building.x < 50) {
+          sprite.setFlipX(true);
+        }
+
         if (building.kind === BuildingKind.Telegraph) {
           sprite.setAlpha(0.6);
         } else if (isBuildingAvailable(building.kind, this.availableActions)) {

@@ -87,21 +87,14 @@ internal static class TownLayoutGenerator
             var kind = buildingKinds[i];
             var isOnLeftSide = col < RoadColumnStart;
 
-            // Calculate base position from tile
+            // Calculate base position from tile (no jitter for consistent placement)
             var (baseX, baseY) = TileToLogical(row, col);
 
             // Select building view
             var viewLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-view";
             var view = SelectBuildingView(isOnSpur, isOnLeftSide, source, viewLabel);
 
-            // Apply jitter
-            var xLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-x";
-            var yLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-y";
-            var saltSegment = saltSource is null ? string.Empty : $"|{saltSource.Salt}";
-            var x = ClampToScene(baseX + Jitter(source, xLabel + saltSegment), SceneWidth);
-            var y = ClampToScene(baseY + Jitter(source, yLabel + saltSegment), SceneHeight);
-
-            buildings.Add(new BuildingPlacement(kind, x, y, view, BuildingWidth, BuildingHeight));
+            buildings.Add(new BuildingPlacement(kind, baseX, baseY, view, BuildingWidth, BuildingHeight));
         }
 
         // Generate path segments from buildings to roads
