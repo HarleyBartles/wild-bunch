@@ -76,27 +76,52 @@ internal static class TownLayoutGenerator
 
         // Assign buildings to zones using seed-derived ordering
         var buildingKinds = GetBuildingKindsForTown(services);
-        // Calculate how many zones to fill based on prosperity
-        var zonesToFill = GetBuildingZoneCount(prosperity, availableZones.Count);
-        // Ensure we have enough zones for all required buildings (required buildings override prosperity)
-        var zonesNeeded = Math.Min(buildingKinds.Count, Math.Max(zonesToFill, buildingKinds.Count));
         
-        // Distribute zones evenly across vertical space instead of bunching at top
-        var zonesToUse = DistributeZonesVertically(availableZones, zonesNeeded);
-        for (var i = 0; i < buildingKinds.Count && i < zonesToUse.Count; i++)
+        // Handle Trailhead specially - place at north and south tips of major road
+        // Trailhead spans 2 tiles horizontally above and below the road (columns 3-6)
+        // North Trailhead: row 0, centered at road (x=50)
+        // South Trailhead: row 9, centered at road (x=50)
+        if (buildingKinds.Contains(BuildingKind.Trailhead))
         {
-            var (row, col, isOnSpur) = zonesToUse[i];
-            var kind = buildingKinds[i];
-            var isOnLeftSide = col < RoadColumnStart;
+            // North Trailhead at row 0, spanning columns 3-6
+            var northTrailheadX = 50; // Center of road
+            var northTrailheadY = 5; // Center of row 0 (tile center)
+            buildings.Add(new BuildingPlacement(BuildingKind.Trailhead, northTrailheadX, northTrailheadY, BuildingView.Front, 20, 10));
+            
+            // South Trailhead at row 9, spanning columns 3-6
+            var southTrailheadX = 50; // Center of road
+            var southTrailheadY = 95; // Center of row 9 (tile center)
+            buildings.Add(new BuildingPlacement(BuildingKind.Trailhead, southTrailheadX, southTrailheadY, BuildingView.Front, 20, 10));
+            
+            // Remove Trailhead from regular building list
+            buildingKinds.Remove(BuildingKind.Trailhead);
+        }
 
-            // Calculate base position from tile (no jitter for consistent placement)
-            var (baseX, baseY) = TileToLogical(row, col);
+        // Place remaining buildings in regular zones
+        if (buildingKinds.Count > 0)
+        {
+            // Calculate how many zones to fill based on prosperity
+            var zonesToFill = GetBuildingZoneCount(prosperity, availableZones.Count);
+            // Ensure we have enough zones for all required buildings (required buildings override prosperity)
+            var zonesNeeded = Math.Min(buildingKinds.Count, Math.Max(zonesToFill, buildingKinds.Count));
+            
+            // Distribute zones evenly across vertical space instead of bunching at top
+            var zonesToUse = DistributeZonesVertically(availableZones, zonesNeeded);
+            for (var i = 0; i < buildingKinds.Count && i < zonesToUse.Count; i++)
+            {
+                var (row, col, isOnSpur) = zonesToUse[i];
+                var kind = buildingKinds[i];
+                var isOnLeftSide = col < RoadColumnStart;
 
-            // Select building view
-            var viewLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-view";
-            var view = SelectBuildingView(isOnSpur, isOnLeftSide, source, viewLabel);
+                // Calculate base position from tile (no jitter for consistent placement)
+                var (baseX, baseY) = TileToLogical(row, col);
 
-            buildings.Add(new BuildingPlacement(kind, baseX, baseY, view, BuildingWidth, BuildingHeight));
+                // Select building view
+                var viewLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-view";
+                var view = SelectBuildingView(isOnSpur, isOnLeftSide, source, viewLabel);
+
+                buildings.Add(new BuildingPlacement(kind, baseX, baseY, view, BuildingWidth, BuildingHeight));
+            }
         }
 
         // Generate path segments from buildings to roads
