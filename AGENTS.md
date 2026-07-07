@@ -6,6 +6,7 @@
 - Root index: `INDEX.md`
 - Docs index: `docs/INDEX.md`
 - Authored docs live in `docs/` and `.agents/docs/`; keep `.agents/` itself for routing, workflow, and other agent surfaces rather than scattering topic docs there.
+- The planner, implementer, design, and review guides live in `.agents/docs/guides/`; use those paths instead of older flat guide paths.
 
 ## Required Working Knowledge
 

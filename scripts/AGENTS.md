@@ -78,16 +78,21 @@ to pull in upstream skill updates.
 
 ### image_asset_pipeline.py
 **Use when** you need to cut a generated image away from a flat background,
-slice a turnaround sheet into individual views, and normalize the result
-onto a fixed canvas.
+slice a turnaround sheet into individual views, normalize a building sprite
+onto a fixed canvas, or move tile art through the tile-safe staging/promotion
+path.
 
+- `python scripts/image_asset_pipeline.py cut-background --input <source.png> --out <cut.png>` - cut one image away from a flat background without resizing it; add `--remove-islands` for a second pass that clears enclosed chroma islands
+- `python scripts/image_asset_pipeline.py cut-background-tree --input-root <source-root> --out-root <out-root>` - cut every PNG in a tree away from a flat background without resizing it; add `--remove-islands` for the second island pass
 - `python scripts/image_asset_pipeline.py normalize --input <source.png> --out <normalized.png>`
 - `python scripts/image_asset_pipeline.py slice-sheet --input <sheet.png> --out-dir <out-dir> --names front,profile,rear,front-oblique,rear-oblique`
-- `python scripts/image_asset_pipeline.py promote-sprites --input-root <pipeline-root> --out-root <sprites-root>` - cut the staged pipeline tree to transparent cutouts in place, then normalize and mirror it into the matching final sprites tree, skipping `normalized/` scratch files
+- `python scripts/image_asset_pipeline.py stage-tiles --input-root <source-root> --out-root <staging-root>` - cut tile art to transparent cutouts while preserving the full tile canvas; add `--remove-islands` for the second island pass
+- `python scripts/image_asset_pipeline.py promote-tiles --input-root <staging-root> --out-root <sprites-root>` - copy staged tile PNGs into the matching sprites tree without resizing
+- `python scripts/image_asset_pipeline.py promote-sprites --input-root <pipeline-root> --out-root <sprites-root>` - cut the staged building tree to transparent cutouts in place, then normalize it into the matching final sprites tree, skipping `normalized/` scratch files; add `--remove-islands` for the second island pass
 
 The primary backend is Pillow in Python 3.11+ with the package installed in
 the active environment. The selection and promotion note lives in
-`.agents/art/asset-pipeline/`.
+`.agents/docs/asset-pipeline/selection-cut-normalization.md`.
 
 ### generate_index_mesh.py
 **Use when** you have added, removed, or renamed files or directories and

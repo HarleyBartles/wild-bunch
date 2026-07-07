@@ -41,5 +41,8 @@ Promotion into `src/WildBunch.Assets/sprites/town-hub-buildings/` is handled by 
 
 Road and ground tiles stay tile-safe through copy promotion from `staging/` to
 `sprites/` after seam checks. Their contract is about edge matching and
-tessellation, not image cutting, and they keep the full 60x50 canvas in every
-home so copy promotion never trims, rescales, or recenters them.
+tessellation, not image cutting, and they keep the full 80x50 canvas in every
+home so copy promotion never trims, rescales, or recenters them. The current
+tile contract is mirror tiling only: major roads mirror horizontally, spurs
+mirror both ways, and dirt tiles tile on all sides with mirrored variants still
+seam-safe.

@@ -23,6 +23,10 @@ The `source/` tree is the custody home for full-size inputs, tile masters, and
 family turnarounds.
 The web project may publish from `src/WildBunch.Assets/` into `src/WildBunch.Web/public/assets/`, but that web tree is delivery output only, not the working home.
 
+When source art is intended to be cut out into transparent assets, generate it
+on a strong green chroma-key background rather than white so the cutout pass
+can preserve light foreground details.
+
 When the pipeline is promoted, the `sprites/` tree mirrors the staged
 tier/family layout from `staging/` so the final assets stay easy to trace back
 to their source cut.
@@ -42,10 +46,13 @@ to their source cut.
 
 - The `town-hub-roads` track holds the road-network tiles.
 - Road tiles do not use prosperity tiers.
-- Road variation comes from mirroring, topology, edge pairing, and end pieces.
+- Road variation comes from mirror pairs, topology, edge pairing, and end pieces.
 - Keep road tiles tile-safe and seam-safe through source, staging, and sprites.
-- Keep every road tile at the full 60x50 canvas in source, staging, and sprites;
+- Keep every road tile at the full 80x50 canvas in source, staging, and sprites;
   copy promotion must preserve the canvas, not crop, trim, or rescale it.
+- Major road tiles only mirror horizontally and keep a right-way-up read.
+- Spur tiles mirror both ways and still connect cleanly to other spur tiles in
+  either mirror direction.
 
 ### `town-hub-ground`
 
@@ -55,8 +62,10 @@ to their source cut.
 - Dirt tiles do not use prosperity tiers.
 - Keep the dirt set tile-safe and seam-safe through source, staging, and
   sprites.
-- Keep every dirt tile at the full 60x50 canvas in source, staging, and sprites;
+- Keep every dirt tile at the full 80x50 canvas in source, staging, and sprites;
   copy promotion must preserve the canvas, not crop, trim, or rescale it.
+- Dirt tiles tile with other dirt tiles on all sides, and mirrored dirt tiles
+  still need to tile cleanly.
 
 ## Naming
 
@@ -95,7 +104,7 @@ Apply the same pattern to `background-house`, `background-shop`, `general-store`
 Before moving an image from `staging/` to `sprites/`, check that:
 
 - the family read matches the style bible
-- the footprint stays within the 60x50 contract
+- the footprint stays within the family contract
 - the view is the intended one
 - the background and framing are clean
 - the file is ready to ship without extra cleanup

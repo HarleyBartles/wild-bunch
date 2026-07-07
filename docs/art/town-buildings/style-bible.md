@@ -8,7 +8,9 @@ town hub from feeling empty.
 
 - Camera: top-down with a slight oblique tilt.
 - Presentation: pixel art, not painted concept art.
-- Footprint: normalized to 60x50.
+- Building footprint: normalized to 60x50.
+- Source art that will be cut out should sit on a strong green chroma-key
+  background, not white, so edge cutout stays clean and deterministic.
 - Turnaround: 5 views per building family. The canonical set is front-facing oblique (roof + front), side, back, 45-degree facing camera, and 45-degree facing away from camera; mirrored variants fill the 8-way placement contract.
 - Shape read: roof and massing first, trim and detail second.
 - Layout freedom: doors, windows, and other side details may vary so different towns can reuse the same building family.
@@ -65,21 +67,27 @@ Use the same four tiers for every family. The differences are in maintenance, or
 
 - Roads do not use prosperity tiers.
 - Road tiles are about mirroring and topology, not tier variation.
-- Dirt variation comes from base textures, prop-baked tiles, and a single larger landform set.
+- Major road tiles are horizontally mirrored only and keep a right-way-up read.
+- Spur tiles mirror both ways and still connect cleanly to other spur tiles in either mirror direction.
+- Dirt variation comes from base textures, standalone props placed over dirt, and a single larger landform set.
+- Dirt tiles tile with other dirt tiles on all sides, and mirrored dirt variants still need to tile cleanly.
 - Keep road and dirt prompts focused on seam behavior, edge matching, and clean tile reads instead of prosperity language.
 
 ## Prompt-ready guardrails
 
 Use these as copyable prompt blocks when generating or revising town-building art.
 
-- Do: Keep the image as a top-down slight oblique pixel-art western building with a 60x50 footprint and a five-view turnaround, and make the prosperity tier visible through finish, maintenance, ornament, and signage rather than through camera changes or a different building family.
+- Do: Keep the image as a top-down slight oblique pixel-art western building with a 60x50 building footprint and a five-view turnaround, and make the prosperity tier visible through finish, maintenance, ornament, and signage rather than through camera changes or a different building family.
 - Do not: Do not switch to a street-level view, a flat elevation, a painterly treatment, a different footprint, a different turnaround count, or a new building family; do not let the tier read through labels, captions, borders, or post-processing.
 
 - Do: Keep filler buildings visually secondary to the named town buildings, and use the same 5-view turnaround and 4-tier ladder for `background-house` and `background-shop`.
 - Do not: Do not make the filler buildings the dominant town feature, and do not invent new camera rules, tiers, or silhouettes for them.
 
-- Do: Keep roads about mirror pairs, end pieces, and topology, and keep dirt about base textures, prop-baked tiles, and larger landform shapes.
-- Do not: Do not add prosperity tiers to roads or dirt, and do not make the tile families behave like building sprites.
+- Do: Keep roads about mirror pairs, end pieces, and topology, and keep dirt about base textures, standalone props, and larger landform shapes.
+- Do not: Do not add prosperity tiers to roads or dirt, do not introduce rotation-only tile assumptions, and do not make the tile families behave like building sprites.
+
+- Do: When generating source art intended for cutout, place it on a strong green chroma-key background so the cutout helper can remove it cleanly in one or two passes.
+- Do not: Do not use white or near-white backgrounds for cutout-intended source art, because they are harder to remove without damaging light foreground details.
 
 - Do: For the general store, keep a commerce-first read with porch or awning, merchandise frontage, and clear goods cues, and vary the amount of polish so the same family can read as destitute, poor, prosperous, or boomtown without changing its core shape.
 - Do not: Do not let the general store drift into a sheriff office, saloon, or telegraph office read; do not remove the retail frontage language, and do not replace the commerce cues with official markers, entertainment cues, or communications hardware.

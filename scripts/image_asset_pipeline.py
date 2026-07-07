@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cut, normalize, and promote generated image assets onto fixed canvases.
+"""Cut, normalize, stage, and promote generated image assets onto fixed canvases.
 
 Primary backend: Python 3.11+ with Pillow installed in the active environment.
 This script is intentionally generic so it can be reused for any future asset
@@ -11,6 +11,8 @@ from __future__ import annotations
 import argparse
 from collections import Counter, deque
 from dataclasses import dataclass
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
@@ -37,9 +39,37 @@ class PipelineConfig:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="image_asset_pipeline.py",
-        description="Cut generated art away from a flat background and normalize it onto a canvas.",
+        description="Cut generated art away from a flat background and move it through the asset pipeline.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    cut_background = subparsers.add_parser(
+        "cut-background",
+        help="Cut one generated image away from its flat background without changing its canvas",
+    )
+    cut_background.add_argument("--input", required=True, type=Path, help="Source image")
+    cut_background.add_argument("--out", required=True, type=Path, help="Output PNG")
+    cut_background.add_argument("--sample-radius", type=int, default=6)
+    cut_background.add_argument("--color-tolerance", type=int, default=42)
+    cut_background.add_argument(
+        "--remove-islands",
+        action="store_true",
+        help="Run a second pass that clears any enclosed background islands after the edge cut",
+    )
+
+    cut_background_tree_parser = subparsers.add_parser(
+        "cut-background-tree",
+        help="Cut every PNG in a tree away from its flat background without changing its canvas",
+    )
+    cut_background_tree_parser.add_argument("--input-root", required=True, type=Path, help="Source tree")
+    cut_background_tree_parser.add_argument("--out-root", required=True, type=Path, help="Output tree")
+    cut_background_tree_parser.add_argument("--sample-radius", type=int, default=6)
+    cut_background_tree_parser.add_argument("--color-tolerance", type=int, default=42)
+    cut_background_tree_parser.add_argument(
+        "--remove-islands",
+        action="store_true",
+        help="Run a second pass that clears any enclosed background islands after the edge cut",
+    )
 
     normalize = subparsers.add_parser("normalize", help="Cut and normalize one image")
     normalize.add_argument("--input", required=True, type=Path, help="Source image")
@@ -62,6 +92,31 @@ def _parse_args() -> argparse.Namespace:
     sheet.add_argument("--background-tolerance", type=int, default=20)
     sheet.add_argument("--padding", type=int, default=12)
 
+    stage_tiles = subparsers.add_parser(
+        "stage-tiles",
+        help="Cut a tile tree away from flat background without trimming or rescaling",
+    )
+    stage_tiles.add_argument("--input-root", required=True, type=Path, help="Tile source root")
+    stage_tiles.add_argument("--out-root", required=True, type=Path, help="Tile staging root")
+    stage_tiles.add_argument("--canvas-width", type=int, default=80)
+    stage_tiles.add_argument("--canvas-height", type=int, default=50)
+    stage_tiles.add_argument("--sample-radius", type=int, default=6)
+    stage_tiles.add_argument("--color-tolerance", type=int, default=42)
+    stage_tiles.add_argument(
+        "--remove-islands",
+        action="store_true",
+        help="Run a second pass that clears any enclosed background islands after the edge cut",
+    )
+
+    promote_tiles = subparsers.add_parser(
+        "promote-tiles",
+        help="Copy a staged tile tree into the matching sprites tree without resizing",
+    )
+    promote_tiles.add_argument("--input-root", required=True, type=Path, help="Tile staging root")
+    promote_tiles.add_argument("--out-root", required=True, type=Path, help="Tile sprite root")
+    promote_tiles.add_argument("--canvas-width", type=int, default=80)
+    promote_tiles.add_argument("--canvas-height", type=int, default=50)
+
     promote = subparsers.add_parser(
         "promote-sprites",
         help="Normalize a pipeline tree into the matching sprites tree",
@@ -73,6 +128,11 @@ def _parse_args() -> argparse.Namespace:
     promote.add_argument("--padding", type=int, default=1)
     promote.add_argument("--sample-radius", type=int, default=6)
     promote.add_argument("--color-tolerance", type=int, default=42)
+    promote.add_argument(
+        "--remove-islands",
+        action="store_true",
+        help="Run a second pass that clears any enclosed background islands after the edge cut",
+    )
 
     return parser.parse_args()
 
@@ -99,6 +159,59 @@ def _is_background(
     distance = abs(r - br) + abs(g - bg) + abs(b - bb)
     green_dominance = g >= max(r, b) + 8
     return distance <= tolerance * 3 and (green_dominance if require_green_dominance else True)
+
+
+def _cut_background(
+    image: Image.Image,
+    background: tuple[int, int, int],
+    tolerance: int,
+    *,
+    require_green_dominance: bool = True,
+    remove_islands: bool = False,
+) -> Image.Image:
+    cut = _edge_connected_background_mask(
+        image,
+        background,
+        tolerance,
+        require_green_dominance=require_green_dominance,
+    )
+    if not remove_islands:
+        return cut
+
+    rgba = cut.convert("RGBA")
+    width, height = rgba.size
+    pixels = rgba.load()
+    seen = [[False] * width for _ in range(height)]
+
+    for y in range(height):
+        for x in range(width):
+            if seen[y][x]:
+                continue
+            if not _is_near_background(pixels[x, y], background, tolerance):
+                seen[y][x] = True
+                continue
+
+            queue: deque[tuple[int, int]] = deque([(x, y)])
+            seen[y][x] = True
+            island: list[tuple[int, int]] = []
+            while queue:
+                current_x, current_y = queue.popleft()
+                island.append((current_x, current_y))
+                for next_x, next_y in (
+                    (current_x + 1, current_y),
+                    (current_x - 1, current_y),
+                    (current_x, current_y + 1),
+                    (current_x, current_y - 1),
+                ):
+                    if 0 <= next_x < width and 0 <= next_y < height and not seen[next_y][next_x]:
+                        seen[next_y][next_x] = True
+                        if _is_near_background(pixels[next_x, next_y], background, tolerance):
+                            queue.append((next_x, next_y))
+
+            for island_x, island_y in island:
+                pixels[island_x, island_y] = (pixels[island_x, island_y][0], pixels[island_x, island_y][1], pixels[island_x, island_y][2], 0)
+
+    return rgba
 
 
 def _edge_connected_background_mask(
@@ -298,12 +411,7 @@ def _normalize_to_canvas(image: Image.Image, *, canvas_width: int, canvas_height
 def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig) -> None:
     with Image.open(input_path) as image:
         background = _sample_background_color(image, config.sample_radius)
-        cut = _edge_connected_background_mask(
-            image,
-            background,
-            config.color_tolerance,
-            require_green_dominance=False,
-        )
+        cut = _cut_background(image, background, config.color_tolerance, require_green_dominance=False)
         trimmed = _trim_transparency(cut)
         normalized = _normalize_to_canvas(
             trimmed,
@@ -315,20 +423,112 @@ def normalize_image(input_path: Path, output_path: Path, config: PipelineConfig)
         normalized.save(output_path)
 
 
-def cut_background_in_place(input_path: Path, config: PipelineConfig) -> None:
+def cut_background_file(input_path: Path, output_path: Path, config: PipelineConfig, *, remove_islands: bool = False) -> None:
     with Image.open(input_path) as image:
         background = _sample_background_color(image, config.sample_radius)
-        cut = _edge_connected_background_mask(
+        cut = _cut_background(
             image,
             background,
             config.color_tolerance,
             require_green_dominance=False,
+            remove_islands=remove_islands,
         )
-        input_path.parent.mkdir(parents=True, exist_ok=True)
-        cut.save(input_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if input_path.resolve() == output_path.resolve():
+            with tempfile.NamedTemporaryFile(
+                suffix=output_path.suffix,
+                dir=output_path.parent,
+                delete=False,
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+            try:
+                cut.save(temp_path)
+                temp_path.replace(output_path)
+            finally:
+                if temp_path.exists() and temp_path != output_path:
+                    temp_path.unlink(missing_ok=True)
+        else:
+            cut.save(output_path)
 
 
-def promote_sprites(input_root: Path, output_root: Path, config: PipelineConfig) -> int:
+def cut_background_tree(input_root: Path, output_root: Path, config: PipelineConfig, *, remove_islands: bool = False) -> int:
+    if not input_root.exists():
+        raise SystemExit(f"Input root does not exist: {input_root}")
+
+    cut_count = 0
+    for source_path in sorted(input_root.rglob("*.png")):
+        relative_path = source_path.relative_to(input_root)
+        destination_path = output_root / relative_path
+        cut_background_file(source_path, destination_path, config, remove_islands=remove_islands)
+        cut_count += 1
+
+    if cut_count == 0:
+        raise SystemExit(f"No PNG files found under {input_root}")
+
+    return cut_count
+
+
+def stage_tiles(input_root: Path, output_root: Path, config: PipelineConfig, *, remove_islands: bool = False) -> int:
+    if not input_root.exists():
+        raise SystemExit(f"Input root does not exist: {input_root}")
+
+    staged = 0
+    for source_path in sorted(input_root.rglob("*.png")):
+        relative_path = source_path.relative_to(input_root)
+        destination_path = output_root / relative_path
+        with Image.open(source_path) as image:
+            if image.size != (config.canvas_width, config.canvas_height):
+                raise RuntimeError(
+                    f"{source_path} is {image.size}, expected {(config.canvas_width, config.canvas_height)}"
+                )
+            background = _sample_background_color(image, config.sample_radius)
+            cut = _cut_background(
+                image,
+                background,
+                config.color_tolerance,
+                require_green_dominance=False,
+                remove_islands=remove_islands,
+            )
+            destination_path.parent.mkdir(parents=True, exist_ok=True)
+            cut.save(destination_path)
+        staged += 1
+
+    if staged == 0:
+        raise SystemExit(f"No PNG files found under {input_root}")
+
+    return staged
+
+
+def promote_tiles(input_root: Path, output_root: Path, config: PipelineConfig) -> int:
+    if not input_root.exists():
+        raise SystemExit(f"Input root does not exist: {input_root}")
+
+    promoted = 0
+    for source_path in sorted(input_root.rglob("*.png")):
+        relative_path = source_path.relative_to(input_root)
+        destination_path = output_root / relative_path
+        with Image.open(source_path) as image:
+            if image.size != (config.canvas_width, config.canvas_height):
+                raise RuntimeError(
+                    f"{source_path} is {image.size}, expected {(config.canvas_width, config.canvas_height)}"
+                )
+        destination_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, destination_path)
+        promoted += 1
+
+    if promoted == 0:
+        raise SystemExit(f"No PNG files found under {input_root}")
+
+    return promoted
+
+
+def promote_sprites(
+    input_root: Path,
+    output_root: Path,
+    config: PipelineConfig,
+    *,
+    remove_islands: bool = False,
+) -> int:
     if not input_root.exists():
         raise SystemExit(f"Input root does not exist: {input_root}")
 
@@ -337,7 +537,7 @@ def promote_sprites(input_root: Path, output_root: Path, config: PipelineConfig)
         relative_path = source_path.relative_to(input_root)
         if "normalized" in relative_path.parts:
             continue
-        cut_background_in_place(source_path, config)
+        cut_background_file(source_path, source_path, config, remove_islands=remove_islands)
         destination_path = output_root / relative_path
         normalize_image(source_path, destination_path, config)
         promoted += 1
@@ -350,6 +550,26 @@ def promote_sprites(input_root: Path, output_root: Path, config: PipelineConfig)
 
 def main() -> int:
     args = _parse_args()
+    if args.command == "cut-background":
+        config = PipelineConfig(
+            sample_radius=args.sample_radius,
+            color_tolerance=args.color_tolerance,
+        )
+        cut_background_file(args.input, args.out, config, remove_islands=args.remove_islands)
+        return 0
+    if args.command == "cut-background-tree":
+        config = PipelineConfig(
+            sample_radius=args.sample_radius,
+            color_tolerance=args.color_tolerance,
+        )
+        cut_count = cut_background_tree(
+            args.input_root,
+            args.out_root,
+            config,
+            remove_islands=args.remove_islands,
+        )
+        print(f"Cut {cut_count} PNG files from {args.input_root} to {args.out_root}")
+        return 0
     if args.command == "normalize":
         config = PipelineConfig(
             canvas_width=args.canvas_width,
@@ -373,6 +593,24 @@ def main() -> int:
             padding=args.padding,
         )
         return 0
+    if args.command == "stage-tiles":
+        config = PipelineConfig(
+            canvas_width=args.canvas_width,
+            canvas_height=args.canvas_height,
+            sample_radius=args.sample_radius,
+            color_tolerance=args.color_tolerance,
+        )
+        staged = stage_tiles(args.input_root, args.out_root, config, remove_islands=args.remove_islands)
+        print(f"Staged {staged} PNG files from {args.input_root} to {args.out_root}")
+        return 0
+    if args.command == "promote-tiles":
+        config = PipelineConfig(
+            canvas_width=args.canvas_width,
+            canvas_height=args.canvas_height,
+        )
+        promoted = promote_tiles(args.input_root, args.out_root, config)
+        print(f"Promoted {promoted} PNG files from {args.input_root} to {args.out_root}")
+        return 0
     if args.command == "promote-sprites":
         config = PipelineConfig(
             canvas_width=args.canvas_width,
@@ -381,7 +619,7 @@ def main() -> int:
             sample_radius=args.sample_radius,
             color_tolerance=args.color_tolerance,
         )
-        promoted = promote_sprites(args.input_root, args.out_root, config)
+        promoted = promote_sprites(args.input_root, args.out_root, config, remove_islands=args.remove_islands)
         print(f"Promoted {promoted} PNG files from {args.input_root} to {args.out_root}")
         return 0
     raise SystemExit(f"Unknown command: {args.command}")

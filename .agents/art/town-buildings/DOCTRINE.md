@@ -15,6 +15,7 @@ visually secondary to the named town buildings.
 ## Reference image selection
 
 - Prefer references that already match the town-building contract: top-down with a slight oblique tilt, pixel art, and the 60x50 footprint.
+- When a source image is intended to be cut out, prefer a strong green chroma-key background over white so the cutout pass can remove the backdrop without damaging light details.
 - Accept a reference only if it preserves the family read without forcing a new silhouette.
 - Reject street-level views, flat front elevations, painterly concept art, photoreal renders, extreme lens distortion, or anything that hides the roof plane.
 - Reject mixed-family references. Each reference set should stay inside one canonical building family.
@@ -56,9 +57,12 @@ visually secondary to the named town buildings.
   textures, prop-baked tiles, and the landform set.
 - Roads and dirt do not use prosperity tiers, so do not add tier language to
   those prompts.
-- Road and ground tiles stay full-size 60x50 assets through source, staging,
+- Road and ground tiles stay full-size 80x50 assets through source, staging,
   and sprites. Copy promotion preserves the canvas and seam edges; do not use
   sprite cutting, trimming, or rescaling on those tracks.
+- The tile contract is mirror tiling only: road and dirt tiles must still
+  tile cleanly after horizontal or vertical mirroring, but the contract does
+  not require rotation-based tiling at this stage.
 - When the asset-root AGENTS file points at this doctrine, treat this file as
   the canonical agent-facing contract for the town-hub split.
 

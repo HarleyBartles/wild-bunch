@@ -19,6 +19,10 @@ Before editing or promoting assets in this project, read:
 - `docs/art/town-buildings/style-bible.md`
 - `docs/art/town-buildings/asset-spec.md`
 - `.agents/art/town-buildings/DOCTRINE.md`
+- `docs/art/town-hub-ground/style-bible.md`
+- the matching family bible under `docs/art/town-hub-ground/` for dirt,
+  road, spur, path, or props work
+- `.agents/art/town-hub-ground/DOCTRINE.md`
 - `.agents/docs/asset-pipeline/selection-cut-normalization.md`
 
 ## Rules
