@@ -32,10 +32,10 @@ internal static class TownLayoutGenerator
     private const int TileSize = 10; // Each tile is 10 logical units
     private const int GridWidth = 10; // 10 tiles wide
     private const int GridHeight = 10; // 10 tiles tall
-    private const int RoadColumnStart = 1; // Road tiles start at column 1
-    private const int RoadColumnEnd = 2; // Road tiles end at column 2
-    private const int BuildingZoneLeft = 0; // Left building zone
-    private const int BuildingZoneRight = 3; // Right building zone
+    private const int RoadColumnStart = 4; // Road tiles start at column 4 (central)
+    private const int RoadColumnEnd = 5; // Road tiles end at column 5 (central)
+    private const int BuildingZoneLeft = 3; // Left building zone
+    private const int BuildingZoneRight = 6; // Right building zone
 
     // Tile type enum for grid representation
     private enum TileType
@@ -155,8 +155,8 @@ internal static class TownLayoutGenerator
             var spurDirection = paletteSpec.SpurDirections[i];
 
             // Spur starts at road edge and extends outward
-            // West spurs: start at column 1 (left road edge), extend to column 0 (building zone)
-            // East spurs: start at column 2 (right road edge), extend to column 3 (building zone)
+            // West spurs: start at column 4 (left road edge), extend to column 3 (building zone)
+            // East spurs: start at column 5 (right road edge), extend to column 6 (building zone)
             var spurRoadCol = spurDirection == SpurDirection.West ? RoadColumnStart : RoadColumnEnd;
             var spurBuildingCol = spurDirection == SpurDirection.West ? BuildingZoneLeft : BuildingZoneRight;
 
