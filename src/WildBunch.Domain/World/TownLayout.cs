@@ -2,9 +2,10 @@ namespace WildBunch.Domain.World;
 
 /// <summary>
 /// Immutable layout of a town hub surface: the set of placed buildings,
-/// the player spawn position, the town prosperity tier, and path segments
-/// connecting buildings to roads. All coordinates are in logical units (0-100)
-/// relative to the town hub surface. The frontend scales these to actual canvas pixels.
+/// the player spawn position, the town prosperity tier, path segments
+/// connecting buildings to roads, and the tile grid for visualization.
+/// All coordinates are in logical units (0-100) relative to the town hub surface.
+/// The frontend scales these to actual canvas pixels.
 /// Prosperity drives which asset tier (boomtown/prosperous/poor/destitute) to use
 /// for sprite selection. Produced by town layout generation and consumed by the
 /// frontend Phaser surface for rendering and click-to-navigate routing.
@@ -14,4 +15,5 @@ public sealed record TownLayout(
     int PlayerSpawnX,
     int PlayerSpawnY,
     TownProsperity Prosperity,
-    IReadOnlyList<PathSegment> Paths);
+    IReadOnlyList<PathSegment> Paths,
+    int[,] TileGrid);

@@ -111,6 +111,7 @@ function createLayout(): TownLayoutDto {
       { startX: 46, startY: 25, endX: 80, endY: 25 },
       { startX: 80, startY: 25, endX: 90, endY: 50 },
     ],
+    tileGrid: Array(10).fill(null).map(() => Array(10).fill(0)),
   };
 }
 

@@ -88,6 +88,9 @@ export class TownHubScene extends Phaser.Scene {
     const sx = TownHubScene.CanvasWidth / 100;
     const sy = TownHubScene.CanvasHeight / 100;
 
+    // Render tile grid first (behind buildings)
+    this.renderTileGrid(layout, sx, sy);
+
     for (const building of layout.buildings) {
       const px = building.x * sx;
       const py = building.y * sy;
@@ -156,5 +159,46 @@ export class TownHubScene extends Phaser.Scene {
     }
 
     this.add.circle(layout.playerSpawnX * sx, layout.playerSpawnY * sy, 12, 0xffd700);
+  }
+
+  private renderTileGrid(layout: TownLayoutDto, sx: number, sy: number): void {
+    if (!layout.tileGrid || layout.tileGrid.length === 0) {
+      return;
+    }
+
+    const graphics = this.add.graphics();
+    const tileSize = 10; // Each tile is 10 logical units
+
+    for (let row = 0; row < layout.tileGrid.length; row++) {
+      for (let col = 0; col < layout.tileGrid[row].length; col++) {
+        const tileType = layout.tileGrid[row][col];
+        const x = col * tileSize * sx;
+        const y = row * tileSize * sy;
+        const width = tileSize * sx;
+        const height = tileSize * sy;
+
+        // Tile type colors: 0=Empty, 1=Road, 2=BuildingZone, 3=SpurStart, 4=SpurRoad
+        switch (tileType) {
+          case 0: // Empty - don't render
+            break;
+          case 1: // Road - light brown
+            graphics.fillStyle(0x8b7355, 0.6);
+            graphics.fillRect(x, y, width, height);
+            break;
+          case 2: // BuildingZone - light gray placeholder
+            graphics.fillStyle(0xd3d3d3, 0.3);
+            graphics.fillRect(x, y, width, height);
+            break;
+          case 3: // SpurStart - darker road
+            graphics.fillStyle(0x6b5344, 0.8);
+            graphics.fillRect(x, y, width, height);
+            break;
+          case 4: // SpurRoad - medium road
+            graphics.fillStyle(0x7b6349, 0.7);
+            graphics.fillRect(x, y, width, height);
+            break;
+        }
+      }
+    }
   }
 }

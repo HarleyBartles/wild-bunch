@@ -107,7 +107,17 @@ internal static class TownLayoutGenerator
         // Generate path segments from buildings to roads
         paths = GeneratePathSegmentsFromGrid(grid, buildings, townId, townSlotIndex, source, saltSource);
 
-        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths);
+        // Convert TileType grid to int grid for serialization
+        var tileGrid = new int[GridHeight, GridWidth];
+        for (var row = 0; row < GridHeight; row++)
+        {
+            for (var col = 0; col < GridWidth; col++)
+            {
+                tileGrid[row, col] = (int)grid[row, col];
+            }
+        }
+
+        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths, tileGrid);
     }
 
     private static TileType[,] BuildTileGrid(PaletteSpec paletteSpec)

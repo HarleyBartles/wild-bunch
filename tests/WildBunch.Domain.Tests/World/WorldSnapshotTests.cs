@@ -16,7 +16,7 @@ public sealed class WorldSnapshotTests
             new(BuildingKind.Trailhead, 5, 40, BuildingView.FrontOblique),
             new(BuildingKind.Telegraph, 22, 32, BuildingView.FrontOblique)
         };
-        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Boomtown, Array.Empty<PathSegment>());
+        var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Boomtown, Array.Empty<PathSegment>(), new int[10, 10]);
         var town = new Town(
             new TownId("t1"),
             "Dodge",

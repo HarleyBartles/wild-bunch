@@ -22,7 +22,8 @@ public sealed class TownLayoutMapperTests
             50,
             50,
             TownProsperity.Prosperous,
-            Array.Empty<PathSegment>());
+            Array.Empty<PathSegment>(),
+            new int[10, 10]);
 
         var dto = TownLayoutMapper.ToDto(layout);
 
@@ -48,7 +49,8 @@ public sealed class TownLayoutMapperTests
             50,
             50,
             TownProsperity.Prosperous,
-            Array.Empty<PathSegment>());
+            Array.Empty<PathSegment>(),
+            new int[10, 10]);
 
         var dto = TownLayoutMapper.ToDto(layout);
 
@@ -72,7 +74,8 @@ public sealed class TownLayoutMapperTests
                 0,
                 0,
                 TownProsperity.Prosperous,
-                Array.Empty<PathSegment>());
+                Array.Empty<PathSegment>(),
+                new int[10, 10]);
 
             var dto = TownLayoutMapper.ToDto(layout);
 

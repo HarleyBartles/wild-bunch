@@ -23,12 +23,24 @@ public static class TownLayoutMapper
             return null;
         }
 
+        // Convert 2D int array to 2D array for DTO
+        var tileGrid = new int[layout.TileGrid.GetLength(0)][];
+        for (var row = 0; row < layout.TileGrid.GetLength(0); row++)
+        {
+            tileGrid[row] = new int[layout.TileGrid.GetLength(1)];
+            for (var col = 0; col < layout.TileGrid.GetLength(1); col++)
+            {
+                tileGrid[row][col] = layout.TileGrid[row, col];
+            }
+        }
+
         return new TownLayoutDto(
             layout.Buildings.Select(ToDto).ToArray(),
             layout.PlayerSpawnX,
             layout.PlayerSpawnY,
             layout.Prosperity,
-            layout.Paths.Select(ToDto).ToArray());
+            layout.Paths.Select(ToDto).ToArray(),
+            tileGrid);
     }
 
     private static BuildingPlacementDto ToDto(BuildingPlacement placement)

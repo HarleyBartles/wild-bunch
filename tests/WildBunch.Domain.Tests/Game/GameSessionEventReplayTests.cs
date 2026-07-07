@@ -155,7 +155,8 @@ public sealed class GameSessionEventReplayTests
             PlayerSpawnX: 50,
             PlayerSpawnY: 35,
             TownProsperity.Prosperous,
-            Array.Empty<PathSegment>());
+            Array.Empty<PathSegment>(),
+            new int[10, 10]);
 
         var redmesaLayout = new TownLayout(
             new[]
@@ -168,7 +169,8 @@ public sealed class GameSessionEventReplayTests
             PlayerSpawnX: 52,
             PlayerSpawnY: 36,
             TownProsperity.Poor,
-            Array.Empty<PathSegment>());
+            Array.Empty<PathSegment>(),
+            new int[10, 10]);
 
         var pinecross = new Town(
             new TownId("pinecross"),
