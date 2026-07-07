@@ -23,7 +23,7 @@ function Get-PlanStem {
 }
 
 $root = Get-RepoRoot
-$workspaceRoot = Join-Path $root '.superpowers/sdd'
+$workspaceRoot = Join-Path $root '.agents/superpowers/sdd'
 New-Item -ItemType Directory -Force -Path $workspaceRoot | Out-Null
 Set-Content -LiteralPath (Join-Path $workspaceRoot '.gitignore') -Value '*' -Encoding utf8
 

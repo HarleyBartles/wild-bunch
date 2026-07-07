@@ -7,9 +7,9 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV16()
+    public void ResolverContractVersion_IsV17()
     {
-        Assert.Equal("resolver-v16", SeedWorldResolver.ResolverContractVersion);
+        Assert.Equal("resolver-v17", SeedWorldResolver.ResolverContractVersion);
     }
 
     [Fact]

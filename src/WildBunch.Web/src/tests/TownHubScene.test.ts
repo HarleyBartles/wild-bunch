@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Phaser from "phaser";
-import { AvailableActionKind } from "../api/types";
-import { BuildingKind } from "../components/town-hub/types";
-import type { BuildingPlacementDto, TownLayoutDto } from "../components/town-hub/types";
+import { AvailableActionKind, BuildingKind, BuildingView, TownProsperity } from "../api/types";
+import type { BuildingPlacementDto, TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
 
 vi.mock("phaser", () => {
@@ -29,11 +28,11 @@ afterEach(() => {
 
 function createBuildings(): BuildingPlacementDto[] {
   return [
-    { kind: BuildingKind.Store, x: 12, y: 15, width: 8, height: 10 },
-    { kind: BuildingKind.Sheriff, x: 30, y: 15, width: 8, height: 10 },
-    { kind: BuildingKind.Saloon, x: 50, y: 15, width: 8, height: 10 },
-    { kind: BuildingKind.Trailhead, x: 90, y: 50, width: 8, height: 10 },
-    { kind: BuildingKind.Telegraph, x: 46, y: 70, width: 8, height: 10 },
+    { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 30, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 50, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
+    { kind: BuildingKind.Telegraph, view: BuildingView.FrontOblique, x: 46, y: 70, width: 8, height: 10 },
   ];
 }
 
@@ -42,6 +41,9 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
     buildings: createBuildings(),
     playerSpawnX: 50,
     playerSpawnY: 50,
+    prosperity: TownProsperity.Prosperous,
+    paths: [],
+    tileGrid: undefined,
     ...overrides,
   };
 }
@@ -183,6 +185,19 @@ describe("TownHubScene visual feedback", () => {
       },
       text: () => ({ setOrigin: () => {} }),
       circle: () => {},
+      graphics: () => ({
+        lineStyle: () => ({}),
+        moveTo: () => ({}),
+        lineTo: () => ({}),
+        strokePath: () => ({}),
+      }),
+    };
+
+    // Mock textures to always return false (no sprites loaded in unit tests)
+    // This forces the code to use the rectangle fallback path
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (scene as any).textures = {
+      exists: () => false,
     };
 
     // Track which building kind each rect corresponds to by order of creation.

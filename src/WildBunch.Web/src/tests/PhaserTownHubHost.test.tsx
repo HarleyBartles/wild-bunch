@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { PhaserTownHubHost } from "../components/town-hub/PhaserTownHubHost";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
-import { AvailableActionKind, BuildingKind, type TownLayoutDto } from "../api/types";
+import { AvailableActionKind, BuildingKind, BuildingView, TownProsperity, type PathSegmentDto, type TownLayoutDto } from "../api/types";
 import Phaser from "phaser";
 
 const mockState = vi.hoisted(() => ({
@@ -37,13 +37,19 @@ afterEach(() => {
 function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: [
-      { kind: BuildingKind.Store, x: 12, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Sheriff, x: 46, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Saloon, x: 80, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Trailhead, x: 90, y: 50, width: 8, height: 10 },
+      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 46, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
+    prosperity: TownProsperity.Prosperous,
+    paths: [
+      { startX: 12, startY: 25, endX: 46, endY: 25 },
+      { startX: 46, startY: 25, endX: 80, endY: 25 },
+    ],
+    tileGrid: undefined,
     ...overrides,
   };
 }
@@ -79,7 +85,7 @@ describe("PhaserTownHubHost", () => {
   it("passes the current town's layout data to the TownHubScene constructor", () => {
     const layout = createLayout({
       buildings: [
-        { kind: BuildingKind.Saloon, x: 100, y: 100, width: 70, height: 50 },
+        { kind: BuildingKind.Saloon, x: 100, y: 100, width: 70, height: 50, view: BuildingView.Front },
       ],
       playerSpawnX: 120,
       playerSpawnY: 130,

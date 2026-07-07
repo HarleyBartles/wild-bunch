@@ -106,10 +106,12 @@ internal static class MapGenerator
         var townsWithLayouts = world.Towns.Select((town, index) =>
             town with { Layout = TownLayoutGenerator.GenerateLayout(
                 town.Services,
+                town.Prosperity,
                 town.Id,
                 index,
                 source,
-                saltSource) }).ToArray();
+                saltSource,
+                seedWorld.BuildingLayoutPalette) }).ToArray();
 
         return new World(townsWithLayouts, world.Trails);
     }

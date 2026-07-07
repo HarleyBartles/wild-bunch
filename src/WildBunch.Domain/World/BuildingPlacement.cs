@@ -5,11 +5,13 @@ namespace WildBunch.Domain.World;
 /// dimensions (Width, Height) are in logical units (0-100) relative to the
 /// town hub surface. The frontend scales these to actual canvas pixels.
 /// Width/Height default to the standard building footprint (8x10 logical
-/// units) and may be overridden for non-standard buildings.
+/// units) and may be overridden for non-standard buildings. View determines
+/// which sprite asset to load for rendering.
 /// </summary>
 public sealed record BuildingPlacement(
     BuildingKind Kind,
     int X,
     int Y,
+    BuildingView View = BuildingView.FrontOblique,
     int Width = 8,
     int Height = 10);

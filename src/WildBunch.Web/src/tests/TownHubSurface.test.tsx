@@ -8,7 +8,9 @@ import { TownHubScene } from "../components/town-hub/TownHubScene";
 import {
   AvailableActionKind,
   BuildingKind,
+  BuildingView,
   StartFlowPhase,
+  TownProsperity,
   type GameSessionDto,
   type JournalDto,
   type TownLayoutDto,
@@ -95,14 +97,21 @@ afterEach(() => {
 function createLayout(): TownLayoutDto {
   return {
     buildings: [
-      { kind: BuildingKind.Store, x: 12, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Sheriff, x: 46, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Saloon, x: 80, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Trailhead, x: 90, y: 50, width: 8, height: 10 },
-      { kind: BuildingKind.Telegraph, x: 46, y: 70, width: 8, height: 10 },
+      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 46, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
+      { kind: BuildingKind.Telegraph, view: BuildingView.FrontOblique, x: 46, y: 70, width: 8, height: 10 },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
+    prosperity: TownProsperity.Prosperous,
+    paths: [
+      { startX: 12, startY: 25, endX: 46, endY: 25 },
+      { startX: 46, startY: 25, endX: 80, endY: 25 },
+      { startX: 80, startY: 25, endX: 90, endY: 50 },
+    ],
+    tileGrid: undefined,
   };
 }
 
