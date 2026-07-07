@@ -5,17 +5,17 @@ import { getSpriteUrl } from "./sprite-loader";
 describe("getSpriteUrl", () => {
   it("returns the correct URL for a prosperous store front-oblique view", () => {
     const url = getSpriteUrl(BuildingKind.Store, 3, TownProsperity.Prosperous);
-    expect(url).toBe("/assets/town-buildings/prosperous/general-store/front-oblique.png");
+    expect(url).toBe("/assets/town-hub-buildings/prosperous/general-store/front-oblique.png");
   });
 
   it("returns the correct URL for a boomtown sheriff profile view", () => {
     const url = getSpriteUrl(BuildingKind.Sheriff, 1, TownProsperity.Boomtown);
-    expect(url).toBe("/assets/town-buildings/boomtown/sheriff-office/profile.png");
+    expect(url).toBe("/assets/town-hub-buildings/boomtown/sheriff-office/profile.png");
   });
 
   it("returns the correct URL for a destitute saloon front view", () => {
     const url = getSpriteUrl(BuildingKind.Saloon, 0, TownProsperity.Destitute);
-    expect(url).toBe("/assets/town-buildings/destitute/saloon/front.png");
+    expect(url).toBe("/assets/town-hub-buildings/destitute/saloon/front.png");
   });
 
   it("returns null for Trailhead (which has no sprite assets)", () => {
@@ -25,12 +25,12 @@ describe("getSpriteUrl", () => {
 
   it("maps Poor prosperity to poor sprites", () => {
     const url = getSpriteUrl(BuildingKind.Store, 0, TownProsperity.Poor);
-    expect(url).toBe("/assets/town-buildings/poor/general-store/front.png");
+    expect(url).toBe("/assets/town-hub-buildings/poor/general-store/front.png");
   });
 
   it("returns the correct URL for telegraph office", () => {
     const url = getSpriteUrl(BuildingKind.Telegraph, 4, TownProsperity.Boomtown);
-    expect(url).toBe("/assets/town-buildings/boomtown/telegraph-office/rear-oblique.png");
+    expect(url).toBe("/assets/town-hub-buildings/boomtown/telegraph-office/rear-oblique.png");
   });
 
   it("handles all view angles correctly", () => {
@@ -38,7 +38,7 @@ describe("getSpriteUrl", () => {
     const viewNames = ["front", "profile", "rear", "front-oblique", "rear-oblique"];
     views.forEach((view, i) => {
       const url = getSpriteUrl(BuildingKind.Store, view, TownProsperity.Prosperous);
-      expect(url).toBe(`/assets/town-buildings/prosperous/general-store/${viewNames[i]}.png`);
+      expect(url).toBe(`/assets/town-hub-buildings/prosperous/general-store/${viewNames[i]}.png`);
     });
   });
 });

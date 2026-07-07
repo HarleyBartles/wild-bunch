@@ -8,8 +8,8 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: '../WildBunch.Assets/sprites/town-buildings/**/*',
-          dest: 'assets/town-buildings'
+          src: '../WildBunch.Assets/sprites/town-hub-buildings/**/*',
+          dest: 'assets/town-hub-buildings'
         }
       ]
     })
