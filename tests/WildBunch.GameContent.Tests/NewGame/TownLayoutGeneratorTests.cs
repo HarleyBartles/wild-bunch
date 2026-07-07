@@ -76,14 +76,16 @@ public sealed class TownLayoutGeneratorTests
         Assert.Equal(50, layout.PlayerSpawnX);
         Assert.Equal(50, layout.PlayerSpawnY);
 
-        var trailhead = layout.Buildings.Single(b => b.Kind == BuildingKind.Trailhead);
-        // Tile-based system: trailhead is placed in a building zone tile
-        // Building zones are at columns 0 (left) and 3 (right), rows 1-8
-        // Zones are filled in order: (1,0), (1,3), (2,0), (2,3), (3,0), (3,3), ...
-        // With Prosperous prosperity (0.75 density), 6 of 8 zones are filled
-        // Trailhead is the 4th building, so it's placed at (2, 3) -> tile center at (35, 25) with +/-2 jitter
-        Assert.InRange(trailhead.X, 33, 37);
-        Assert.InRange(trailhead.Y, 23, 27);
+        var trailheads = layout.Buildings.Where(b => b.Kind == BuildingKind.Trailhead).ToList();
+        Assert.Equal(2, trailheads.Count);
+
+        var northTrailhead = trailheads.Single(b => b.Y < 50);
+        var southTrailhead = trailheads.Single(b => b.Y > 50);
+
+        Assert.Equal(50, northTrailhead.X);
+        Assert.Equal(5, northTrailhead.Y);
+        Assert.Equal(50, southTrailhead.X);
+        Assert.Equal(95, southTrailhead.Y);
     }
 
     [Fact]
@@ -92,9 +94,15 @@ public sealed class TownLayoutGeneratorTests
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        Assert.All(layout.Buildings, b =>
+        Assert.All(layout.Buildings.Where(b => b.Kind != BuildingKind.Trailhead), b =>
         {
             Assert.Equal(8, b.Width);
+            Assert.Equal(10, b.Height);
+        });
+
+        Assert.All(layout.Buildings.Where(b => b.Kind == BuildingKind.Trailhead), b =>
+        {
+            Assert.Equal(20, b.Width);
             Assert.Equal(10, b.Height);
         });
     }
@@ -128,7 +136,7 @@ public sealed class TownLayoutGeneratorTests
         {
             var layout = TownLayoutGenerator.GenerateLayout(
                 TownServices.Telegraph, prosperity, townId, 0, source, null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
-            Assert.Equal(5, layout.Buildings.Count); // Store, Sheriff, Saloon, Trailhead, Telegraph
+            Assert.Equal(6, layout.Buildings.Count); // Store, Sheriff, Saloon, Telegraph, north trailhead, south trailhead
         }
     }
 
@@ -141,12 +149,12 @@ public sealed class TownLayoutGeneratorTests
         // No spurs: 8 building zones
         var noSpursLayout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, source, null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
-        Assert.Equal(5, noSpursLayout.Buildings.Count);
+        Assert.Equal(6, noSpursLayout.Buildings.Count);
 
         // One spur: 8 building zones + 1 spur zone = 9 zones
         var oneSpurLayout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, source, null, BuildingLayoutPalette.OneSpurLeft_SpreadEvenly);
-        Assert.Equal(5, oneSpurLayout.Buildings.Count); // Still 5 buildings (zones available >= building count)
+        Assert.Equal(6, oneSpurLayout.Buildings.Count); // Still 6 buildings (zones available >= building count)
     }
 
     [Fact]
@@ -155,8 +163,8 @@ public sealed class TownLayoutGeneratorTests
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewSource(), null, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        // Each building should have a path segment to the road
-        Assert.Equal(layout.Buildings.Count, layout.Paths.Count);
+        // Path generation is intentionally disabled for the current hub generator.
+        Assert.Empty(layout.Paths);
     }
 
     [Fact]

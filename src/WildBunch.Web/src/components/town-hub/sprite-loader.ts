@@ -82,5 +82,5 @@ export function getSpriteUrl(
 
   const prosperityDir = getProsperityDirectoryName(prosperity);
   const viewFileName = getViewFileName(view);
-  return `/assets/town-buildings/${prosperityDir}/${buildingDir}/${viewFileName}.png`;
+  return `/assets/town-hub-buildings/${prosperityDir}/${buildingDir}/${viewFileName}.png`;
 }

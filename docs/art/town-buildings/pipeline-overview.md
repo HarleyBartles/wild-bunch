@@ -1,16 +1,25 @@
 # Town Building Pipeline Overview
 
-The town-building pipeline turns approved reference work into a consistent sprite set for the four canonical building families.
+The town-building pipeline turns approved reference work into a consistent town-hub asset set.
 
-Prosperity tiering is part of the same contract: `poor` sits between `destitute` and `prosperous`, and tier differences should come from finish and maintenance rather than new silhouettes or camera changes.
+The split is three asset tracks:
+
+- `town-hub-buildings`
+- `town-hub-roads`
+- `town-hub-ground`
+
+Prosperity tiering is part of the building contract: `poor` sits between
+`destitute` and `prosperous`, and tier differences should come from finish and
+maintenance rather than new silhouettes or camera changes. Roads and dirt do
+not use prosperity tiers.
 
 What belongs in git:
 
 - the human-facing docs in `docs/art/town-buildings/`
 - generated indexes
-- final sprite output in `src/WildBunch.Assets/sprites/town-buildings/`
-- intermediate work in `src/WildBunch.Assets/staging/town-buildings/` when it is intentionally kept for review or reuse
-- full-size source custody in `src/WildBunch.Assets/source/town-buildings/`
+- final sprite output in `src/WildBunch.Assets/sprites/town-hub-buildings/`, `src/WildBunch.Assets/sprites/town-hub-roads/`, and `src/WildBunch.Assets/sprites/town-hub-ground/`
+- intermediate work in `src/WildBunch.Assets/staging/town-hub-buildings/`, `src/WildBunch.Assets/staging/town-hub-roads/`, and `src/WildBunch.Assets/staging/town-hub-ground/` when it is intentionally kept for review or reuse
+- full-size source custody in `src/WildBunch.Assets/source/town-hub-buildings/`, `src/WildBunch.Assets/source/town-hub-roads/`, and `src/WildBunch.Assets/source/town-hub-ground/`
 
 The web bundle can later copy promoted sprites into `src/WildBunch.Web/public/assets/`, but that tree is not the working asset home.
 
@@ -23,9 +32,17 @@ What should never be treated as final art:
 
 How to review outputs:
 
-- compare the image against the building family read
-- confirm the view and footprint are correct
-- check that the sprite is clean enough to promote
-- keep the review focused on shape, readability, and contract match
+- compare the image against the intended track and family read
+- confirm the view, footprint, and tile edge contract are correct
+- check that the asset is clean enough to promote or copy forward
+- keep the review focused on shape, readability, seam safety, and contract match
 
-Promotion into `src/WildBunch.Assets/sprites/town-buildings/` is handled by `python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-buildings --out-root src/WildBunch.Assets/sprites/town-buildings`.
+Promotion into `src/WildBunch.Assets/sprites/town-hub-buildings/` is handled by `python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-hub-buildings --out-root src/WildBunch.Assets/sprites/town-hub-buildings`.
+
+Road and ground tiles stay tile-safe through copy promotion from `staging/` to
+`sprites/` after seam checks. Their contract is about edge matching and
+tessellation, not image cutting, and they keep the full 80x50 canvas in every
+home so copy promotion never trims, rescales, or recenters them. The current
+tile contract is mirror tiling only: major roads mirror horizontally, spurs
+mirror both ways, and dirt tiles tile on all sides with mirrored variants still
+seam-safe.
