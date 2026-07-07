@@ -451,9 +451,29 @@ def cut_background_file(input_path: Path, output_path: Path, config: PipelineCon
             cut.save(output_path)
 
 
+def _clear_png_tree(root: Path, *, source_root: Path | None = None) -> int:
+    if not root.exists():
+        return 0
+
+    if source_root is not None:
+        try:
+            if root.resolve() == source_root.resolve():
+                return 0
+        except FileNotFoundError:
+            return 0
+
+    removed = 0
+    for png_path in sorted(root.rglob("*.png")):
+        png_path.unlink()
+        removed += 1
+    return removed
+
+
 def cut_background_tree(input_root: Path, output_root: Path, config: PipelineConfig, *, remove_islands: bool = False) -> int:
     if not input_root.exists():
         raise SystemExit(f"Input root does not exist: {input_root}")
+
+    _clear_png_tree(output_root, source_root=input_root)
 
     cut_count = 0
     for source_path in sorted(input_root.rglob("*.png")):
@@ -471,6 +491,8 @@ def cut_background_tree(input_root: Path, output_root: Path, config: PipelineCon
 def stage_tiles(input_root: Path, output_root: Path, config: PipelineConfig, *, remove_islands: bool = False) -> int:
     if not input_root.exists():
         raise SystemExit(f"Input root does not exist: {input_root}")
+
+    _clear_png_tree(output_root, source_root=input_root)
 
     staged = 0
     for source_path in sorted(input_root.rglob("*.png")):
@@ -503,6 +525,8 @@ def promote_tiles(input_root: Path, output_root: Path, config: PipelineConfig) -
     if not input_root.exists():
         raise SystemExit(f"Input root does not exist: {input_root}")
 
+    _clear_png_tree(output_root, source_root=input_root)
+
     promoted = 0
     for source_path in sorted(input_root.rglob("*.png")):
         relative_path = source_path.relative_to(input_root)
@@ -531,6 +555,8 @@ def promote_sprites(
 ) -> int:
     if not input_root.exists():
         raise SystemExit(f"Input root does not exist: {input_root}")
+
+    _clear_png_tree(output_root, source_root=input_root)
 
     promoted = 0
     for source_path in sorted(input_root.rglob("*.png")):

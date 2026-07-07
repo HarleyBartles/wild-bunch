@@ -33,7 +33,7 @@ Reviewers must invoke the architecture skills before reviewing work that touches
 - `/event-driven-architecture` â€” domain events and projections
 - `/clean-architecture` â€” Domain/Application/Infrastructure/Api layering, dependency inversion
 
-Reviewers must check the repo's architectural choices in `.agents/docs/architecture-guardrails.md` and `.agents/architecture-hygiene.md` and assess work against alignment with those standards. The skills and ADRs are the authority, not the repo's current code â€” if code and skills disagree, the skills win.
+Reviewers must check the repo's architectural choices in `.agents/docs/architecture-guardrails.md` and `.agents/docs/architecture-hygiene.md` and assess work against alignment with those standards. The skills and ADRs are the authority, not the repo's current code â€” if code and skills disagree, the skills win.
 
 **ADR freshness check:** If the work changes an architectural decision, the ADR log at `docs/adr/` must be updated. See `.agents/docs/workflow-policy.md` for freshness check requirements.
 
