@@ -25,6 +25,20 @@
    - Result before report write: clean working tree after promotion + mesh pass
 5. `Test-Path src/WildBunch.Assets\town-buildings`
    - Result: `False`
+6. `py -3` validation pass over `src/WildBunch.Assets/{source,staging,sprites}/town-hub-roads` and `src/WildBunch.Assets/{source,staging,sprites}/town-hub-ground`
+   - Result: success
+   - Evidence:
+     - every road and ground PNG is exactly `60x50` in source, staging, and sprites
+     - road mirror pairs match as expected:
+       - `main-road/flat-edge-left.png` <-> `main-road/flat-edge-right.png`
+       - `main-road/path-edge-left.png` <-> `main-road/path-edge-right.png`
+       - `main-road/spur-cross-left.png` <-> `main-road/spur-cross-right.png`
+       - `main-road/end-top.png` <-> `main-road/end-bottom.png`
+       - `spur-road/end-left.png` <-> `spur-road/end-right.png`
+     - road and ground bytes are identical across source, staging, and sprites, so the tiles were copy-promoted rather than sprite-cut
+7. Manual visual read pass of representative filler-building, road, and dirt outputs against the town-building style contract
+   - Result: pass
+   - Evidence: the final assets read consistently with the existing western town families in the live repo views
 
 ## TDD evidence
 
@@ -39,6 +53,7 @@
 - No findings on the narrow Task 5 scope.
 - The final promotion command completed successfully after installing `Pillow` into the active `python` 3.12 environment used by the repo-local script call.
 - The mesh generator both wrote and validated successfully, and it did not leave tracked file diffs behind.
+- Road and ground validation now has explicit 60x50, mirror-pair, and byte-for-byte copy-promotion evidence in addition to the mesh evidence.
 - No additional doc-link edits were necessary in this pass because the repo already had no remaining references to the old asset custody root under `src/WildBunch.Assets/town-buildings/`.
 
 ## Concerns

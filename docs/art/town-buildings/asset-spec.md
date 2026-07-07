@@ -72,8 +72,8 @@ Recommended pattern:
 - `general-store/front-oblique.png`
 - `general-store/rear-oblique.png`
 
-Apply the same pattern to `background-house`, `background-shop`, `sheriff-office`,
-`saloon`, and `telegraph-office`.
+Apply the same pattern to `background-house`, `background-shop`, `general-store`,
+`sheriff-office`, `saloon`, and `telegraph-office`.
 
 ## Source references vs shippable output
 
