@@ -108,12 +108,13 @@ internal static class TownLayoutGenerator
         paths = GeneratePathSegmentsFromGrid(grid, buildings, townId, townSlotIndex, source, saltSource);
 
         // Convert TileType grid to int grid for serialization
-        var tileGrid = new int[GridHeight, GridWidth];
+        var tileGrid = new int[GridHeight][];
         for (var row = 0; row < GridHeight; row++)
         {
+            tileGrid[row] = new int[GridWidth];
             for (var col = 0; col < GridWidth; col++)
             {
-                tileGrid[row, col] = (int)grid[row, col];
+                tileGrid[row][col] = (int)grid[row, col];
             }
         }
 
