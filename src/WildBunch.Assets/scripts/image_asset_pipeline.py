@@ -489,6 +489,21 @@ def _clear_png_tree(root: Path, *, source_root: Path | None = None) -> int:
     for png_path in sorted(root.rglob("*.png")):
         png_path.unlink()
         removed += 1
+
+    # Prune now-empty generated directories so removed asset branches disappear
+    # from staging and production instead of leaving dead folders behind.
+    for dir_path in sorted(
+        (path for path in root.rglob("*") if path.is_dir()),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    ):
+        if dir_path == root:
+            continue
+        try:
+            next(dir_path.iterdir())
+        except StopIteration:
+            dir_path.rmdir()
+
     return removed
 
 
