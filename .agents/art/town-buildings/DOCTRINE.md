@@ -1,6 +1,6 @@
 # Town Building Doctrine
 
-Use this file as the agent-facing control surface for town-building sprite work. Keep it operational. The human-facing source of truth is the town-building style bible and asset spec in `docs/art/town-buildings/`; use those files for canonical vocabulary, footprint terms, and family names. Do not restate the whole style bible here.
+Use this file as the agent-facing control surface for town-building sprite work. Keep it operational. The human-facing source of truth is the town-building master bible and asset spec in `src/WildBunch.Assets/docs/bibles/buildings/` and `src/WildBunch.Assets/docs/`; use those files for canonical vocabulary, footprint terms, and family names. Do not restate the whole style bible here.
 
 The town-hub asset split is:
 

@@ -3,14 +3,17 @@
 The road family is the approved main-road tile set for the town hub. It should
 read as a single continuous road when mirrored, not as two unrelated surfaces.
 
+For seam rules, use `src/WildBunch.Assets/docs/bibles/tiling-bible.md`. For
+canonical-side rules, use
+`src/WildBunch.Assets/docs/bibles/directional-mirroring-bible.md`.
+
 ## Visual contract
 
 - Surface: worn western road paving with dust, compacted grit, and weathered
   stone.
-- Orientation: north-south in the current contract.
-- Mirror rule: the canonical road half must mirror into a contiguous road with
-  no divider line or material break at the join.
 - Outer edge: the non-join side should transition into dirt shoulder cleanly.
+- The road should read as one continuous band rather than two unrelated
+  surfaces.
 - Current variants: flat edge, path edge, and spur-cross edge.
 - Full bleed: the road art must reach the tile edges cleanly. Do not include a
   white border, margin, or frame around the tile.
@@ -25,10 +28,10 @@ read as a single continuous road when mirrored, not as two unrelated surfaces.
 
 ## Prompt-ready guardrails
 
-- Do: Make the road look like a practical western street surface that can mirror
-  into a single continuous road band.
+- Do: Make the road look like a practical western street surface that reads as
+  one continuous road band.
 - Do not: Do not draw a center stripe, a divider, or a road-to-dirt seam at the
-  mirror join; do not treat the road as a rotation-ready tile at this stage.
+  join; do not treat the road as a rotation-ready tile at this stage.
 
 - Do: Keep the road edge suitable for adjacent dirt tiles and for smaller
   connector variants.

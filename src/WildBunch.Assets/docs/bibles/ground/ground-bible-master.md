@@ -4,6 +4,22 @@ The town-hub ground set is the shared western terrain language for the play
 surface. It is the target contract for dirt, road, spur, path, and prop art we
 are generating in this work, and it needs to read like one consistent world.
 
+For seam and tessellation rules, use
+`src/WildBunch.Assets/docs/bibles/tiling-bible.md`. For canonical-side
+and compass facing rules, use
+`src/WildBunch.Assets/docs/bibles/directional-mirroring-bible.md`.
+
+## Contract map
+
+| Document | Owns |
+| --- | --- |
+| `tiling-bible.md` | Seam behavior, tessellation, edge continuity, and mirror-safe tile contracts |
+| `directional-mirroring-bible.md` | Canonical-side custody, compass-facing rules, and source-side mirroring |
+| Family bibles | Visual identity, family-specific exceptions, and prompt-ready guardrails |
+
+Use this map before writing or updating a family bible so the rule lives in one
+place only.
+
 ## Visual contract
 
 - Camera: top-down with a slight oblique tilt.
