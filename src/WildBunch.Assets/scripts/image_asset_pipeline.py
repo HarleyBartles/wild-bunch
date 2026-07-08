@@ -11,7 +11,9 @@ from __future__ import annotations
 import argparse
 from collections import Counter, deque
 from dataclasses import dataclass
+import subprocess
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 from typing import Iterable
@@ -25,6 +27,9 @@ except ImportError as exc:  # pragma: no cover - import guard
     ) from exc
 
 
+WORKTREE_ROOT = Path(__file__).resolve().parents[3]
+
+
 @dataclass(frozen=True)
 class PipelineConfig:
     canvas_width: int = 80
@@ -34,6 +39,11 @@ class PipelineConfig:
     color_tolerance: int = 42
     sheet_padding: int = 0
     sheet_background_tolerance: int = 20
+
+
+def _refresh_index_mesh() -> None:
+    mesh_script = WORKTREE_ROOT / "scripts" / "generate_index_mesh.py"
+    subprocess.run([sys.executable, str(mesh_script)], check=True, cwd=WORKTREE_ROOT)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -585,6 +595,7 @@ def main() -> int:
             color_tolerance=args.color_tolerance,
         )
         cut_background_file(args.input, args.out, config, remove_islands=args.remove_islands)
+        _refresh_index_mesh()
         return 0
     if args.command == "cut-background-tree":
         config = PipelineConfig(
@@ -598,6 +609,7 @@ def main() -> int:
             remove_islands=args.remove_islands,
         )
         print(f"Cut {cut_count} PNG files from {args.input_root} to {args.out_root}")
+        _refresh_index_mesh()
         return 0
     if args.command == "normalize":
         config = PipelineConfig(
@@ -608,6 +620,7 @@ def main() -> int:
             color_tolerance=args.color_tolerance,
         )
         normalize_image(args.input, args.out, config)
+        _refresh_index_mesh()
         return 0
     if args.command == "slice-sheet":
         names = [name.strip() for name in args.names.split(",") if name.strip()]
@@ -621,6 +634,7 @@ def main() -> int:
             tolerance=args.background_tolerance,
             padding=args.padding,
         )
+        _refresh_index_mesh()
         return 0
     if args.command == "stage-tiles":
         config = PipelineConfig(
@@ -629,6 +643,7 @@ def main() -> int:
         )
         staged = stage_tiles(args.input_root, args.out_root, config)
         print(f"Staged {staged} PNG files from {args.input_root} to {args.out_root}")
+        _refresh_index_mesh()
         return 0
     if args.command == "promote-tiles":
         config = PipelineConfig(
@@ -637,6 +652,7 @@ def main() -> int:
         )
         promoted = promote_tiles(args.input_root, args.out_root, config)
         print(f"Promoted {promoted} PNG files from {args.input_root} to {args.out_root}")
+        _refresh_index_mesh()
         return 0
     if args.command == "promote-sprites":
         config = PipelineConfig(
@@ -648,6 +664,7 @@ def main() -> int:
         )
         promoted = promote_sprites(args.input_root, args.out_root, config, remove_islands=args.remove_islands)
         print(f"Promoted {promoted} PNG files from {args.input_root} to {args.out_root}")
+        _refresh_index_mesh()
         return 0
     if args.command == "tiles":
         if args.stage_only and args.promote_only:
@@ -669,6 +686,7 @@ def main() -> int:
                 raise SystemExit("--staging-root and --production-root are required unless --stage-only is set")
             promoted = promote_tiles(args.staging_root, args.production_root, config)
             print(f"Promoted {promoted} PNG files from {args.staging_root} to {args.production_root}")
+        _refresh_index_mesh()
 
         return 0
     raise SystemExit(f"Unknown command: {args.command}")

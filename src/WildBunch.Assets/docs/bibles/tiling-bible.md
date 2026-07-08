@@ -20,6 +20,8 @@ and related tile work.
   both axes.
 - Dirt variation must stay interior-only; edges must stay neutral and
   repeat-safe.
+- Dirt edge bands must stay in the shared canonical dirt palette so adjoining
+  dirt tiles read as one landscape instead of separate swatches.
 
 ### Main road
 

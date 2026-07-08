@@ -18,6 +18,17 @@ For seam rules, use `src/WildBunch.Assets/docs/bibles/tiling-bible.md`.
 - The 3 dirt variants are one tiling family and must stay visually distinct
   while remaining repeat-safe.
 
+## Canonical palette
+
+- Anchor the dirt family to the approved road-adjacent dirt tone used by the
+  existing main-road and spur road tiles.
+- Keep the edge band in a narrow canonical range so all dirt variants share the
+  same seam color and read as one continuous landscape when tiled.
+- Allow the interior to drift slightly warmer, cooler, lighter, or denser as
+  long as the edge band stays inside the shared family tone.
+- Prefer the main-road dirt tone as the canonical base, then let the dirt-only
+  variants add interior character without changing the family color identity.
+
 ## Dirt family rules
 
 - Keep the texture broad and even enough to survive repetition.

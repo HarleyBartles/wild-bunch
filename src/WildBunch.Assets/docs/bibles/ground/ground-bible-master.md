@@ -43,6 +43,8 @@ place only.
 - Mirrored copies must still tile cleanly.
 - Tile edges should blend naturally into adjacent tiles without a seam line,
   center stripe, or material break.
+- The canonical dirt palette is shared across the dirt family and should anchor
+  to the approved road-adjacent dirt tone rather than drifting per variant.
 - Keep the surface grounded and practical, not cinematic, painterly, or
   over-stylized.
 - Keep props separate from ground plates unless a family bible explicitly says
