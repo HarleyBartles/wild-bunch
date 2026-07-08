@@ -13,7 +13,7 @@ or image assets for the first time.
 ## Required dependencies
 
 - Python 3.11+ with Pillow installed for the primary pipeline path
-- `image_asset_pipeline.py` depends on Pillow for the cut, slice, and normalize commands
+- `src/WildBunch.Assets/scripts/image_asset_pipeline.py` depends on Pillow for the cut, slice, and normalize commands
 
 ## First-pass workflow
 
@@ -38,7 +38,7 @@ or image assets for the first time.
 Use the repository's primary Python backend first:
 
 ```bash
-python scripts/image_asset_pipeline.py normalize \
+python src/WildBunch.Assets/scripts/image_asset_pipeline.py normalize \
   --input C:/path/to/source.png \
   --out path/to/staging/output.png
 ```
@@ -46,7 +46,7 @@ python scripts/image_asset_pipeline.py normalize \
 For full turnaround sheets, slice the views into separate staging files:
 
 ```bash
-python scripts/image_asset_pipeline.py slice-sheet \
+python src/WildBunch.Assets/scripts/image_asset_pipeline.py slice-sheet \
   --input C:/path/to/sheet.png \
   --out-dir path/to/staging/family \
   --names front,profile,rear,front-oblique,rear-oblique

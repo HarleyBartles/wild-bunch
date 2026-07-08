@@ -92,6 +92,6 @@ visually secondary to the named town buildings.
 
 ## Asset pipeline pointer
 
-- For cut and normalization, use `.agents/docs/asset-pipeline/selection-cut-normalization.md` and the generic `scripts/image_asset_pipeline.py` helper.
+- For cut and normalization, use `.agents/docs/asset-pipeline/selection-cut-normalization.md` and the asset-local `src/WildBunch.Assets/scripts/image_asset_pipeline.py` helper, with the repo-root wrapper kept only for compatibility.
 - Keep town-building notes focused on family-specific selection and camera rules, not on the shared image pipeline mechanics.
 - For roads and ground, prefer seam-safe copy promotion over sprite cutting.

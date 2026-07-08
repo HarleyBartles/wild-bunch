@@ -14,4 +14,4 @@ subtree, read:
 
 Keep source custody here, review copies in
 `src/WildBunch.Assets/staging/town-hub-roads/`, and final tile copies in
-`src/WildBunch.Assets/sprites/town-hub-roads/`.
+`src/WildBunch.Assets/production/tiles/town-hub-roads/`.

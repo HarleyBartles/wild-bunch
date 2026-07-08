@@ -37,7 +37,7 @@ How to review outputs:
 - check that the asset is clean enough to promote or copy forward
 - keep the review focused on shape, readability, seam safety, and contract match
 
-Promotion into `src/WildBunch.Assets/sprites/town-hub-buildings/` is handled by `python scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-hub-buildings --out-root src/WildBunch.Assets/sprites/town-hub-buildings`.
+Promotion into `src/WildBunch.Assets/production/sprites/town-hub-buildings/` is handled by `python src/WildBunch.Assets/scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-hub-buildings --out-root src/WildBunch.Assets/production/sprites/town-hub-buildings`.
 
 Road and ground tiles stay tile-safe through copy promotion from `staging/` to
 `sprites/` after seam checks. Their contract is about edge matching and
