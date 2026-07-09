@@ -63,6 +63,12 @@ For Devin-backed repo tasks, work in a fresh dedicated worktree based on current
 
 Do not overwrite pre-existing dirty state. Report it. This gate composes with the fresh-main invariant; it does not replace it.
 
+### Repo-specific worktree locations
+
+For repos in Harley's workspace, worktrees should be placed in the centralized location `../_agent-worktrees/<repo-name>` (relative to the repo root) where `<repo-name>` is the name of the repository (e.g., `../_agent-worktrees/wild-bunch`, `../_agent-worktrees/agent-asset-marketplace`).
+
+This centralized location keeps worktrees outside the repo directories and is the preferred location for these projects. Individual repos may document this preference in their AGENTS.md as a declared preference that should be respected by the using-git-worktrees skill.
+
 ## Branch and PR discipline
 
 Use a task branch for repo work. Do not treat direct push to `main` as the normal path.
