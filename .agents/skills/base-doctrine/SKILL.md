@@ -84,4 +84,30 @@ Do not turn conversation memory, vibes, or a single unverified anecdote into cro
 
 A good doctrine-capture note states what happened, the evidence route, the principle at work, why it matters, and the next lawful capture route. Refuse to force lessons from trivial housekeeping.
 
+## Scratch folder architecture
+
+The centralized scratch folder provides a cross-runtime workspace pattern for temporary agent workspaces that should not be committed to repositories.
+
+### Architecture
+
+- **Scratch root**: `../_agent-scratch/`
+- **Per-repo structure**: `../_agent-scratch/<repo-name>/`
+- **Per-branch structure**: `../_agent-scratch/<repo-name>/<branch-name>/`
+
+### Scratch folder properties
+
+- **Disposable**: Not persistent beyond the agent's session
+- **Outside repo**: Prevents accidental commits
+- **Per-branch**: Matches worktree/branch name for isolation
+- **Auto-cleanup**: Agents must clean up scratch folder when cleaning up worktree
+- **Not for durable work**: Use the repo for persistent changes
+
+### Cleanup contract
+
+Agents must clean up their scratch folder when cleaning up their worktree. This ensures the scratch space remains clean and does not accumulate orphaned temporary files across sessions.
+
+### Implementation details
+
+Reference `repo-worker-base` for implementation details and usage patterns. The scratch folder architecture is designed to complement the worktree system by providing a disposable workspace for temporary outputs that should not be committed to the repository.
+
 

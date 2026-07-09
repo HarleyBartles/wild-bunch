@@ -148,3 +148,48 @@ def write_large_text(target: Path, text: str) -> None:
 If you would be tempted to say "write first, check size later", stop and branch to the large-write path before any write starts.
 
 If you would be tempted to compose a large document inline in the main session context, stop and route to a clean-context worker/subagent or section-by-section append path before composition starts.
+
+## Scratch folder for large temporary outputs
+
+For large temporary outputs that don't need to be committed, consider using the centralized scratch folder instead of bounded composition.
+
+### When to use scratch folder vs. bounded composition
+
+Use the scratch folder (`../_agent-scratch/<repo-name>/<branch-name>`) when:
+
+- The output is temporary and will be discarded after the session
+- The output is large intermediate data (logs, temporary analysis results, intermediate artifacts)
+- The output doesn't need to be committed to the repo
+- The output is disposable workspace material
+
+Use bounded composition when:
+
+- The output needs to be committed to the repo
+- The output is durable state that should persist
+- The output is part of the final deliverable
+- The output needs to be under version control
+
+### Scratch folder properties
+
+- **Disposable**: Not persistent beyond the agent's session
+- **Outside repo**: Prevents accidental commits
+- **Per-branch**: Matches worktree/branch name for isolation
+- **Auto-cleanup**: Agents must clean up scratch folder when cleaning up worktree
+- **Not for durable work**: Use the repo for persistent changes
+
+### Scratch folder structure
+
+- **Scratch root**: `../_agent-scratch/`
+- **Per-repo**: `../_agent-scratch/<repo-name>/`
+- **Per-branch**: `../_agent-scratch/<repo-name>/<branch-name>/`
+
+### Usage pattern
+
+1. Create scratch folder when needed: `../_agent-scratch/<repo-name>/<branch-name>/`
+2. Write large temporary outputs to scratch folder
+3. Use the temporary outputs as needed during the session
+4. Clean up scratch folder when work is complete (when cleaning up worktree)
+
+### Cleanup guidance
+
+Agents must clean up their scratch folder when cleaning up their worktree. This ensures the scratch space remains clean and does not accumulate orphaned temporary files across sessions.
