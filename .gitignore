@@ -6,9 +6,6 @@
 # dotenv files
 .env
 
-# Git worktrees
-.worktrees/
-
 # Agent commit-message temp files
 .commit-msg-*.txt
 
