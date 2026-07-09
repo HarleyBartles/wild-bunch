@@ -63,12 +63,16 @@ integration tests require this database to be running. Set the connection
 string environment variable:
 `$env:ConnectionStrings__WildBunchPostgresDb = "Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres"`
 
-### sync-skills.ps1
+### install_agent_skills.py/.ps1
 **Use when** you have updated the agent-asset-marketplace submodule and need
 to sync vendored skills into `.agents/skills/`.
 
-- `.\scripts\sync-skills.ps1` - sync if provenance SHA changed (no-op if already synced)
-- `.\scripts\sync-skills.ps1 -Force` - re-copy all skill directories regardless of provenance
+- `python scripts/install_agent_skills.py` - sync if provenance SHA changed (no-op if already synced)
+- `python scripts/install_agent_skills.py --force` - re-copy all skill directories regardless of provenance
+- `python scripts/install_agent_skills.py --check` - check mode: report what would change without making changes (CI validation)
+- `.\scripts\install_agent_skills.ps1` - PowerShell wrapper (same flags: -Check, -Force)
+
+The Python implementation provides content comparison to reduce file churn and supports --check mode for CI validation. The PowerShell wrapper is a thin convenience layer that calls the Python script.
 
 Reads `.agents/plugins/marketplace.json` and copies skill folders from the
 submodule into `.agents/skills/`. Provenance is tracked in
