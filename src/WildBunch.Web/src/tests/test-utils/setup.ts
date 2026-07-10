@@ -18,3 +18,9 @@ vi.mock("phaser", () => {
   const Scale = { FIT: 0, CENTER_BOTH: 0 };
   return { default: { Game, Scene, Scale }, Game, Scene, Scale };
 });
+
+vi.mock("../dev/devApi", () => ({
+  getTownLayoutSalts: vi.fn(),
+  setTownLayoutSalts: vi.fn(),
+  generateRandomTownLayoutSalts: vi.fn(),
+}));

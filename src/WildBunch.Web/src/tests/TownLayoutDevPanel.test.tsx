@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { TownLayoutDevPanel } from "../dev/panels/TownLayoutDevPanel";
 import { GameSessionProvider } from "../state/GameSessionProvider";
+import * as devApi from "../dev/devApi";
 
 afterEach(() => {
   cleanup();
@@ -33,28 +34,138 @@ describe("TownLayoutDevPanel", () => {
     expect(screen.getByText(/no active session/i)).toBeInTheDocument();
   });
 
-  it("shows no salts loaded message when salts state is null", () => {
+  it("shows loading state when gameId is present", () => {
     seedGameId("test-game-1");
     renderPanel();
-    expect(screen.getByText(/no salts loaded/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
-  it("renders salts display when salts are loaded", () => {
+  it("shows salts display when salts are loaded", async () => {
     seedGameId("test-game-2");
-    // Note: Currently salts are not loaded from API (Task 9 will add this)
-    // This test verifies the UI structure when salts are present
-    // For now, we can't easily test this without mocking useState or adding API integration
-    // This will be expanded in Task 9 when API integration is added
-  });
-
-  it("has placeholder handlers that log to console", () => {
-    seedGameId("test-game-3");
-    const consoleSpy = vi.spyOn(console, "log");
+    
+    const mockSalts = {
+      resolverVersion: "1.0.0",
+      buildingsSalt: "buildings-salt",
+      roadsSalt: "roads-salt",
+      dirtSalt: "dirt-salt",
+      propsSalt: "props-salt",
+    };
+    
+    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(mockSalts);
     
     renderPanel();
     
-    // Note: We can't easily click buttons without salts loaded
-    // This will be testable in Task 9 when API integration is added
-    consoleSpy.mockRestore();
+    await waitFor(() => {
+      expect(screen.getByText(/buildings-salt/i)).toBeInTheDocument();
+      expect(screen.getByText(/roads-salt/i)).toBeInTheDocument();
+      expect(screen.getByText(/dirt-salt/i)).toBeInTheDocument();
+      expect(screen.getByText(/props-salt/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows no salts loaded message when API returns null", async () => {
+    seedGameId("test-game-3");
+    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(null);
+    
+    renderPanel();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/no salts loaded/i)).toBeInTheDocument();
+    });
+  });
+
+  it("calls setTownLayoutSalts when Set Salts button is clicked", async () => {
+    seedGameId("test-game-4");
+    
+    const mockSalts = {
+      resolverVersion: "1.0.0",
+      buildingsSalt: "buildings-salt",
+      roadsSalt: "roads-salt",
+      dirtSalt: "dirt-salt",
+      propsSalt: "props-salt",
+    };
+    
+    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(mockSalts);
+    const setSaltsSpy = vi.spyOn(devApi, "setTownLayoutSalts").mockResolvedValue(undefined);
+    
+    renderPanel();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/set salts/i)).toBeInTheDocument();
+    });
+    
+    const setButton = screen.getByText(/set salts/i);
+    setButton.click();
+    
+    expect(setSaltsSpy).toHaveBeenCalledWith("test-game-4", mockSalts);
+  });
+
+  it("calls generateRandomTownLayoutSalts when Generate Random button is clicked", async () => {
+    seedGameId("test-game-5");
+    
+    const mockSalts = {
+      resolverVersion: "1.0.0",
+      buildingsSalt: "buildings-salt",
+      roadsSalt: "roads-salt",
+      dirtSalt: "dirt-salt",
+      propsSalt: "props-salt",
+    };
+    
+    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(mockSalts);
+    const randomSalts = {
+      resolverVersion: "1.0.0",
+      buildingsSalt: "random-buildings",
+      roadsSalt: "random-roads",
+      dirtSalt: "random-dirt",
+      propsSalt: "random-props",
+    };
+    const generateSpy = vi.spyOn(devApi, "generateRandomTownLayoutSalts").mockResolvedValue(randomSalts);
+    
+    renderPanel();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/generate random/i)).toBeInTheDocument();
+    });
+    
+    const generateButton = screen.getByText(/generate random/i);
+    generateButton.click();
+    
+    expect(generateSpy).toHaveBeenCalledWith("test-game-5");
+  });
+
+  it("updates salts state after generating random salts", async () => {
+    seedGameId("test-game-6");
+    
+    const mockSalts = {
+      resolverVersion: "1.0.0",
+      buildingsSalt: "buildings-salt",
+      roadsSalt: "roads-salt",
+      dirtSalt: "dirt-salt",
+      propsSalt: "props-salt",
+    };
+    
+    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(mockSalts);
+    const randomSalts = {
+      resolverVersion: "1.0.0",
+      buildingsSalt: "random-buildings",
+      roadsSalt: "random-roads",
+      dirtSalt: "random-dirt",
+      propsSalt: "random-props",
+    };
+    vi.spyOn(devApi, "generateRandomTownLayoutSalts").mockResolvedValue(randomSalts);
+    
+    renderPanel();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/buildings-salt/i)).toBeInTheDocument();
+    });
+    
+    const generateButton = screen.getByText(/generate random/i);
+    generateButton.click();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/random-buildings/i)).toBeInTheDocument();
+      expect(screen.getByText(/random-roads/i)).toBeInTheDocument();
+    });
   });
 });
