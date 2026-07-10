@@ -12,7 +12,7 @@
 
 **Worktree and Scratch locations**: 
 - Worktrees for this repo should be placed in `Z:\_agent-worktrees\wild-bunch` (centralized location outside the repo). This is a declared preference that should be respected by the using-git-worktrees skill.
-- Scratch files for this repo should be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>` where `<branch-name>` matches the worktree/branch name. This scratch space is disposable and not persistent beyond the agent's session. Agents must clean up their scratch folder when cleaning up their worktree.
+- **⚠️ CRITICAL: Scratch files must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>`** where `<branch-name>` matches the worktree/branch name. This scratch space is disposable and not persistent beyond the agent's session. Agents must clean up their scratch folder when cleaning up their worktree. **Never commit scratch artifacts to the repo root** - see `.agents/docs/artifact-policy.md` for details.
 
 **Scripts are first-class surfaces. Before reporting environmental issues (PostgreSQL not running, dev servers not started, etc.), read `scripts/AGENTS.md` and use the provided scripts.**
 
