@@ -1,4 +1,8 @@
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Dev.Models;
+using WildBunch.Application.Games.Exceptions;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Dev.Queries;
 
@@ -8,15 +12,33 @@ namespace WildBunch.Application.Dev.Queries;
 /// </summary>
 public sealed class GetTownLayoutSaltsHandler
 {
-    public TownLayoutSaltsDto Handle(GetTownLayoutSaltsQuery query)
+    private readonly IGameSessionRepository _repository;
+
+    public GetTownLayoutSaltsHandler(IGameSessionRepository repository)
     {
-        // TODO: Load game session and return DevLayoutSalts
-        // For now, return placeholder
+        _repository = repository;
+    }
+
+    public async Task<TownLayoutSaltsDto> HandleAsync(GetTownLayoutSaltsQuery query, CancellationToken cancellationToken = default)
+    {
+        var sessionId = new GameSessionId(query.SessionId);
+        var session = await _repository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        if (session is null)
+        {
+            throw new GameSessionNotFoundException(sessionId);
+        }
+
+        var salts = session.DevLayoutSalts ?? new LayoutSalts(
+            "default-buildings",
+            "default-roads",
+            "default-dirt",
+            "default-props");
+
         return new TownLayoutSaltsDto(
             "1.0.0",
-            "placeholder-buildings",
-            "placeholder-roads",
-            "placeholder-dirt",
-            "placeholder-props");
+            salts.BuildingsSalt,
+            salts.RoadsSalt,
+            salts.DirtSalt,
+            salts.PropsSalt);
     }
 }

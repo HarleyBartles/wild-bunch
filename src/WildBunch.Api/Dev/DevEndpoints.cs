@@ -438,15 +438,16 @@ public static class DevEndpoints
         }
     }
 
-    private static IResult GetTownLayoutSaltsAsync(
+    private static async Task<IResult> GetTownLayoutSaltsAsync(
         Guid id,
         DevRoleGuard guard,
-        GetTownLayoutSaltsHandler handler)
+        GetTownLayoutSaltsHandler handler,
+        CancellationToken cancellationToken)
     {
         try
         {
             guard.EnsureDevAccess();
-            var result = handler.Handle(new GetTownLayoutSaltsQuery(id));
+            var result = await handler.HandleAsync(new GetTownLayoutSaltsQuery(id), cancellationToken);
             return Results.Ok(result);
         }
         catch (DevAccessDeniedException)
@@ -488,15 +489,16 @@ public static class DevEndpoints
         }
     }
 
-    private static IResult GenerateRandomTownLayoutSaltsAsync(
+    private static async Task<IResult> GenerateRandomTownLayoutSaltsAsync(
         Guid id,
         DevRoleGuard guard,
-        GenerateRandomTownLayoutSaltsHandler handler)
+        GenerateRandomTownLayoutSaltsHandler handler,
+        CancellationToken cancellationToken)
     {
         try
         {
             guard.EnsureDevAccess();
-            var result = handler.Handle(new GenerateRandomTownLayoutSaltsCommand(id));
+            var result = await handler.HandleAsync(new GenerateRandomTownLayoutSaltsCommand(id), cancellationToken);
             return Results.Ok(result);
         }
         catch (DevAccessDeniedException)

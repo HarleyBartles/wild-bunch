@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useGameSession } from "../../state/useGameSession";
+import { getTownLayoutSalts, setTownLayoutSalts, generateRandomTownLayoutSalts } from "../devApi";
 
 interface TownLayoutSalts {
   resolverVersion: string;
@@ -19,20 +20,53 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
   const [salts, setSalts] = useState<TownLayoutSalts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (!gameId) return;
+
+    const loadSalts = async () => {
+      setIsLoading(true);
+      try {
+        const loadedSalts = await getTownLayoutSalts(gameId);
+        setSalts(loadedSalts);
+      } catch (error) {
+        console.error("Failed to load town layout salts:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSalts();
+  }, [gameId]);
+
   const handleCopyBundle = () => {
     if (!salts) return;
     const bundle = JSON.stringify(salts, null, 2);
     navigator.clipboard.writeText(bundle);
   };
 
-  const handleSetSalts = () => {
-    // TODO: Implement set salts dialog in Task 9
-    console.log("Set salts clicked");
+  const handleSetSalts = async () => {
+    if (!salts || !gameId) return;
+    setIsLoading(true);
+    try {
+      await setTownLayoutSalts(gameId, salts);
+    } catch (error) {
+      console.error("Failed to set town layout salts:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGenerateRandom = () => {
-    // TODO: Implement generate random in Task 9
-    console.log("Generate random clicked");
+  const handleGenerateRandom = async () => {
+    if (!gameId) return;
+    setIsLoading(true);
+    try {
+      const randomSalts = await generateRandomTownLayoutSalts(gameId);
+      setSalts(randomSalts);
+    } catch (error) {
+      console.error("Failed to generate random town layout salts:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!gameId) {

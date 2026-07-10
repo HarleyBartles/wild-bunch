@@ -103,6 +103,7 @@ internal static class MapGenerator
         // World is a sealed class (not a record) — construct a new World with the modified
         // towns and the existing trails. Layouts are gameplay-only: the canonical start-screen
         // world (CreateCanonicalWorld) does not go through MapGenerator and needs no layouts.
+        var entropyPolicy = EntropyPolicy.For(entropy);
         var townsWithLayouts = world.Towns.Select((town, index) =>
             town with { Layout = TownLayoutGenerator.GenerateLayout(
                 town.Services,
@@ -110,7 +111,13 @@ internal static class MapGenerator
                 town.Id,
                 index,
                 source,
-                layoutSalts: null,
+                layoutSalts: LayoutSaltDeriver.DeriveLayoutSalts(
+                    seedWorld,
+                    entropyPolicy,
+                    town.Id,
+                    index,
+                    source,
+                    devLayoutSalts: null),
                 seedWorld.BuildingLayoutPalette,
                 resolverVersion: "1.0.0") }).ToArray();
 

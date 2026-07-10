@@ -9,14 +9,14 @@ namespace WildBunch.Application.Dev.Commands;
 /// </summary>
 public sealed class GenerateRandomTownLayoutSaltsHandler
 {
-    public TownLayoutSaltsDto Handle(GenerateRandomTownLayoutSaltsCommand command)
+    public Task<TownLayoutSaltsDto> HandleAsync(GenerateRandomTownLayoutSaltsCommand command, CancellationToken cancellationToken = default)
     {
         var randomSalt = SaltSource.CreateRuntime().Salt;
-        return new TownLayoutSaltsDto(
+        return Task.FromResult(new TownLayoutSaltsDto(
             "1.0.0",
             randomSalt,
             randomSalt,
             randomSalt,
-            randomSalt);
+            randomSalt));
     }
 }
