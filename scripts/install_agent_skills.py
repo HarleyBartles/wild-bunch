@@ -65,7 +65,20 @@ def _has_skill_dirs() -> bool:
 
 
 def _files_identical(dir1: Path, dir2: Path) -> bool:
-    """Compare two directories byte-by-byte for content equality."""
+    """Compare two directories byte-by-byte for content equality.
+    
+    Uses byte-by-byte comparison rather than hash comparison because:
+    - Deterministic: no hash collision risk (however unlikely)
+    - Fast for small files: skill files are typically small text/markdown
+    - Simple: no need to manage hash caching or invalidation
+    - Optimized: file size check avoids reading contents when sizes differ
+    
+    This is appropriate for skill files which are small, numerous, and
+    change infrequently. For very large files, hash comparison would be
+    more efficient, but that's not the expected use case here.
+    
+    Optimizes by comparing file sizes before reading full contents.
+    """
     if not dir1.exists() or not dir2.exists():
         return False
     
@@ -76,11 +89,16 @@ def _files_identical(dir1: Path, dir2: Path) -> bool:
     if files1 != files2:
         return False
     
-    # Compare file contents byte-by-byte
+    # Compare file contents byte-by-byte, with size check optimization
     for rel_path in files1:
         file1 = dir1 / rel_path
         file2 = dir2 / rel_path
         
+        # Quick size check before reading contents
+        if file1.stat().st_size != file2.stat().st_size:
+            return False
+        
+        # Only read contents if sizes match
         if file1.read_bytes() != file2.read_bytes():
             return False
     
@@ -155,6 +173,15 @@ def _sync_skills(
     synced_skill_names = set()
     synced_plugin_names = []
     changes_made = False
+    total_skills = 0
+    skills_processed = 0
+    
+    # Count total skills for progress reporting
+    for plugin in default_plugins:
+        plugin_name = plugin.get("name", "unknown")
+        plugin_skills_dir = PLUGINS_ROOT / plugin_name / "skills"
+        if plugin_skills_dir.exists():
+            total_skills += len([d for d in plugin_skills_dir.iterdir() if d.is_dir()])
     
     # Copy each plugin's skill directories
     for plugin in default_plugins:
@@ -179,7 +206,7 @@ def _sync_skills(
             
             # Collision handling
             if skill_name in synced_skill_names:
-                print(f"Warning: Skill '{skill_name}' (from plugin '{plugin_name}') collides with already-synced skill; keeping first copy.")
+                print(f"Warning: Skill '{skill_name}' (from plugin '{pluginName}') collides with already-synced skill; keeping first copy.")
                 continue
             
             # Check if copy is needed
@@ -200,6 +227,11 @@ def _sync_skills(
                     synced_skill_names.add(skill_name)
                     plugin_skill_count += 1
                     changes_made = True
+            
+            # Progress indicator
+            skills_processed += 1
+            if total_skills > 0 and (skills_processed % 10 == 0 or skills_processed == total_skills):
+                print(f"  Progress: {skills_processed}/{total_skills} skills processed")
         
         if plugin_skill_count > 0 or check_mode:
             print(f"  {plugin_name} : {plugin_skill_count} skill(s)")
