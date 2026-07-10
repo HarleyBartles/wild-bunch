@@ -75,7 +75,7 @@ Use `boring-buster` to decide whether the issue is bounded, lawful, route-suitab
 
 Use the route-state block and compact packet shape to check or repair the implementation-plan shape: one observable goal, likely files or source seams, small executable steps or chosen implementation route, explicit validation commands, no placeholders, and no hidden replanning requirement. Keep plan PRs and implementation PRs distinct in the packet language.
 
-For preflight docs, allow investigation seams and understanding questions plus the compact route-state block. The route-state block is a control/index surface, not the implementation plan. Preflight docs must not become the full implementation plan.
+For route-state blocks, allow investigation seams and understanding questions plus the compact route-state block. The route-state block is a control/index surface for workflow phase classification, not the implementation plan. Route-state blocks must not become the full implementation plan.
 
 Approved plans live in the repo under `.agents/superpowers/plans/`. After a plan merges, plan-only PRs and implementation PRs are separate by default unless the issue explicitly authorizes a combined PR.
 
@@ -93,9 +93,10 @@ For worker-ready implementation issues, keep the issue body compact and treat it
 
 - goal and repo target stay in the issue body;
 - dense scope, implementation detail, validation, and return evidence move into attached Linear documents;
-- a single Preflight document is required for non-trivial repo/code issues;
-- Preflight contains investigation seams and understanding questions plus the compact route-state block; it must not become the full implementation plan;
-- do not turn Preflight into a second plan or implementation readiness claim; use the route-state block only as the control/index surface;
+- a compact route-state block is required for non-trivial repo/code issues to support workflow phase classification;
+- the route-state block contains workflow phase markers (design_needed, planning_needed, etc.) and is used by work-mode-router to classify the current phase;
+- do not put the full implementation plan, validation matrix, or dense evidence dump into the route-state block;
+- do not use the route-state block as a readiness state or second plan;
 - do not keep a separate compactor trigger for normal worker issue shaping.
 
 Use `references/compact-issue-shape.md` for the full worker issue-shape pattern when preparing or reviewing a worker-ready Linear packet.
@@ -181,7 +182,7 @@ After this skill classifies the route, do not read old dispatch or issue-managem
 
 - worker-send-ready boring/readiness verdict: use `boring-buster`;
 - campaign issue profile, worktree isolation gate, launch/resume templates, and self-checks: read `references/campaign-shape.md`;
-- implementation-plan shape for worker coding issues: use the compact worker issue-shape reference and keep the route-state block explicit;
+- implementation-plan shape for worker coding issues: use the compact worker issue-shape reference and keep the route-state block explicit for workflow phase classification;
 - skill creation/update/package work: use the skill-maintenance stack;
 - GitHub PR/repo proof: use GitHub verification tooling;
 - validation choice after code/PR/package evidence exists: use validation guidance;

@@ -1,17 +1,17 @@
 {
-    "sha":  "b515adc2f469dcb593385f040d63e82f43c4cc1e",
-    "syncedAt":  "2026-07-09T09:59:50.4374797+01:00",
-    "syncedPlugins":  [
-                          "repo-worker-pack",
-                          "superpowers-plus",
-                          "wild-bunch-project-pack",
-                          "game-studio",
-                          "dotnet-kit",
-                          "architecture-pack",
-                          "frontend-pack"
-                      ],
-    "syncedSkills":  53,
-    "source":  "HarleyBartles/agent-asset-marketplace",
-    "sourcePath":  ".agents/plugins/marketplace-source/codex-marketplace/plugins",
-    "marketplaceFile":  ".agents/plugins/marketplace.json"
+  "sha": "c420bacdb5d5d1dadabafc01f91db8d5f73806a9",
+  "syncedAt": "2026-07-10T15:09:37.825885+00:00",
+  "syncedPlugins": [
+    "repo-worker-pack",
+    "superpowers-plus",
+    "wild-bunch-project-pack",
+    "game-studio",
+    "dotnet-kit",
+    "architecture-pack",
+    "frontend-pack"
+  ],
+  "syncedSkills": 2,
+  "source": "HarleyBartles/agent-asset-marketplace",
+  "sourcePath": ".agents/plugins/marketplace-source/codex-marketplace/plugins",
+  "marketplaceFile": ".agents/plugins/marketplace.json"
 }
