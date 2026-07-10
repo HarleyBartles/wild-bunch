@@ -75,6 +75,21 @@ class TestIsGitignored:
         finally:
             generate_index_mesh.ROOT = original_root
 
+    def test_always_excluded_output_directory(self):
+        """Should always exclude output directory (binary artifacts)."""
+        import generate_index_mesh
+        original_root = generate_index_mesh.ROOT
+        
+        try:
+            # Check that 'output' is in the always-excluded list
+            assert "output" in generate_index_mesh.ALWAYS_EXCLUDED_DIR_NAMES
+            
+            # Test with a path that has 'output' as the directory name
+            output_dir = original_root / "output"
+            assert is_gitignored(output_dir) is True
+        finally:
+            generate_index_mesh.ROOT = original_root
+
     def test_no_gitignore_fallback(self):
         """Should return False when gitignore spec is not available."""
         import generate_index_mesh
