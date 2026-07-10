@@ -19,7 +19,7 @@
 - **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — **MUST read before running ad-hoc commands or reporting environmental issues**. Scripts handle PostgreSQL setup, dev server management, and other repo operations idempotently.
 - Architecture-sensitive work: `.agents/INDEX.md`, `.agents/docs/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
-- **Dev-enabled action pattern (must read before implementing dev controls that affect play actions)**: `.agents/docs/dev-enabled-action-pattern.md`
+- **Dev-enabled action pattern (must read before implementing dev controls that affect play actions)**: `docs/adr/ADR-0036-dev-enabled-action-pattern.md`
 - **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
 - **Frontend standards (must read before implementing or reviewing frontend work)**: `.agents/docs/frontend-standards.md`
 - **Validation policy (must read before writing or reviewing tests)**: `.agents/docs/validation-policy.md`
