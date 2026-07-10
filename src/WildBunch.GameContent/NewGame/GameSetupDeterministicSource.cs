@@ -6,15 +6,13 @@ namespace WildBunch.GameContent.NewGame;
 
 internal sealed class GameSetupDeterministicSource
 {
-    public GameSetupDeterministicSource(string seedCode, LayoutSalts? layoutSalts = null)
+    public GameSetupDeterministicSource(string seedCode)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
         SeedCode = seedCode;
-        LayoutSalts = layoutSalts;
     }
 
     public string SeedCode { get; }
-    public LayoutSalts? LayoutSalts { get; }
 
     public ulong Roll(string label)
     {

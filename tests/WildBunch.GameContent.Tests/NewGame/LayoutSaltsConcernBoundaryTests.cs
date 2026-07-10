@@ -12,24 +12,22 @@ namespace WildBunch.GameContent.Tests.NewGame;
 public sealed class LayoutSaltsConcernBoundaryTests
 {
     [Fact]
-    public void GameSetupDeterministicSource_LayoutSalts_DoNotAffectNonLayoutRolls()
+    public void GameSetupDeterministicSource_Roll_IsDeterministic()
     {
-        // Proves that GameSetupDeterministicSource.Roll no longer includes layout salts
-        // in its hash, ensuring layout salt changes don't affect non-layout decisions.
+        // Proves that GameSetupDeterministicSource.Roll is deterministic and
+        // only depends on seed code and label (no layout salts in the hash).
         var seedCode = "test-seed";
         
-        var sourceWithoutSalts = new GameSetupDeterministicSource(seedCode);
-        var sourceWithSalts = new GameSetupDeterministicSource(
-            seedCode,
-            new LayoutSalts("buildings", "roads", "dirt", "props"));
+        var source1 = new GameSetupDeterministicSource(seedCode);
+        var source2 = new GameSetupDeterministicSource(seedCode);
         
-        // Same label should produce same roll regardless of layout salts
-        var roll1 = sourceWithoutSalts.Roll("case-file-choice");
-        var roll2 = sourceWithSalts.Roll("case-file-choice");
+        // Same label should produce same roll
+        var roll1 = source1.Roll("case-file-choice");
+        var roll2 = source2.Roll("case-file-choice");
         
         Assert.Equal(roll1, roll2);
     }
-    
+
     [Fact]
     public void LayoutDeterministicSource_UsesConcernSpecificSalts()
     {
