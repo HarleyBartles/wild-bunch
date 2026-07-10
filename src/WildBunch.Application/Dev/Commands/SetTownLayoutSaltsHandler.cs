@@ -12,6 +12,9 @@ namespace WildBunch.Application.Dev.Commands;
 /// </summary>
 public sealed class SetTownLayoutSaltsHandler : GameSessionCommandHandler
 {
+    // Setup-flow handler: can operate on Prepped sessions (not yet started)
+    protected override bool RequiresGameStarted => false;
+
     public SetTownLayoutSaltsHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork)
@@ -32,6 +35,14 @@ public sealed class SetTownLayoutSaltsHandler : GameSessionCommandHandler
 
         await ExecuteWithRetryAsync(sessionId, (session, ct) =>
         {
+            // Only allow setting dev layout salts on sessions in Prepped status
+            // (before world generation is complete). Dev salts have no effect on active sessions.
+            if (session.Status != GameStatus.Prepped)
+            {
+                throw new InvalidOperationException(
+                    "Dev layout salts can only be set on sessions in Prepped status.");
+            }
+
             session.SetDevLayoutSalts(layoutSalts);
             return Task.FromResult(true);
         }, cancellationToken).ConfigureAwait(false);

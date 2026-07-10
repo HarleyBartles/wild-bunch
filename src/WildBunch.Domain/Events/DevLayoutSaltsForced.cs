@@ -8,4 +8,4 @@ namespace WildBunch.Domain.Events;
 /// layout generation. Does not affect gameplay state directly.
 /// See BUNCH-147.
 /// </summary>
-public sealed record DevLayoutSaltsForced(LayoutSalts ForcedLayoutSalts) : IDomainEvent;
+public sealed record DevLayoutSaltsForced(LayoutSalts DevLayoutSalts) : IDomainEvent;

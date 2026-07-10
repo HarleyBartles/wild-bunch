@@ -1,3 +1,4 @@
+using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
@@ -22,34 +23,41 @@ public sealed class DevEnabledActionPatternIntegrationTests
         var newGameFactory = new SeededNewGameFactory();
         var hudProjector = new HudProjector();
         var diaryProjector = new DiaryProjector();
-        
+
         var prepHandler = new PrepGameSessionHandler(repository, repository);
+        var setSaltsHandler = new SetTownLayoutSaltsHandler(repository, repository);
         var startHandler = new StartGameSessionHandler(newGameFactory, repository, repository, hudProjector, diaryProjector);
-        
+
         // Phase 1: Prep
-        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode())).ToString();
+        var seedCode = SeedWorldResolver.CreateCanonicalSeedCode().ToString();
         var prepCommand = new PrepGameSessionCommand(seedCode, GameDifficulty.Standard, GameEntropy.Classic);
         var prepResult = await prepHandler.HandleAsync(prepCommand, CancellationToken.None);
-        
+
         Assert.NotNull(prepResult.GameSessionId);
         var sessionId = Guid.Parse(prepResult.GameSessionId);
-        
+
         // Load the prepped session
         var prepped = await repository.GetByIdAsync(new GameSessionId(sessionId), CancellationToken.None);
         Assert.NotNull(prepped);
         Assert.Equal(GameStatus.Prepped, prepped.Status);
-        
-        // Phase 2: Inject dev salts (simulated via direct aggregate manipulation for test)
-        var devSalts = new LayoutSalts("dev-buildings", "dev-roads", "dev-dirt", "dev-props");
-        prepped.SetDevLayoutSalts(devSalts);
-        await repository.StoreAsync(prepped, Guid.NewGuid(), CancellationToken.None);
-        await repository.CommitAsync(CancellationToken.None);
-        prepped.MarkEventsCommitted();
-        
+
+        // Phase 2: Inject dev salts using the actual handler
+        var setSaltsCommand = new SetTownLayoutSaltsCommand(sessionId, "dev-buildings", "dev-roads", "dev-dirt", "dev-props");
+        await setSaltsHandler.HandleAsync(setSaltsCommand, CancellationToken.None);
+
+        // Verify the salts were set
+        var updated = await repository.GetByIdAsync(new GameSessionId(sessionId), CancellationToken.None);
+        Assert.NotNull(updated);
+        Assert.NotNull(updated.DevLayoutSalts);
+        Assert.Equal("dev-buildings", updated.DevLayoutSalts.BuildingsSalt);
+        Assert.Equal("dev-roads", updated.DevLayoutSalts.RoadsSalt);
+        Assert.Equal("dev-dirt", updated.DevLayoutSalts.DirtSalt);
+        Assert.Equal("dev-props", updated.DevLayoutSalts.PropsSalt);
+
         // Phase 3: Start
         var startCommand = new StartGameSessionCommand(sessionId);
         var result = await startHandler.HandleAsync(startCommand, CancellationToken.None);
-        
+
         Assert.NotNull(result);
         Assert.Equal(GameStatus.Active, result.Status);
         // The dev salts were used in world generation via INewGameFactory
@@ -63,24 +71,24 @@ public sealed class DevEnabledActionPatternIntegrationTests
         var newGameFactory = new SeededNewGameFactory();
         var hudProjector = new HudProjector();
         var diaryProjector = new DiaryProjector();
-        
+
         var prepHandler = new PrepGameSessionHandler(repository, repository);
         var startHandler = new StartGameSessionHandler(newGameFactory, repository, repository, hudProjector, diaryProjector);
-        
+
         // Phase 1: Prep
-        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode())).ToString();
+        var seedCode = SeedWorldResolver.CreateCanonicalSeedCode().ToString();
         var prepCommand = new PrepGameSessionCommand(seedCode, GameDifficulty.Standard, GameEntropy.Classic);
         var prepResult = await prepHandler.HandleAsync(prepCommand, CancellationToken.None);
-        
+
         Assert.NotNull(prepResult.GameSessionId);
         var sessionId = Guid.Parse(prepResult.GameSessionId);
-        
+
         // Phase 2: Skip inject (no dev salts set)
-        
+
         // Phase 3: Start
         var startCommand = new StartGameSessionCommand(sessionId);
         var result = await startHandler.HandleAsync(startCommand, CancellationToken.None);
-        
+
         Assert.NotNull(result);
         Assert.Equal(GameStatus.Active, result.Status);
         // Default salts were used in world generation

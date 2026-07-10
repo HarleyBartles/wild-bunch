@@ -142,6 +142,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.PendingDevSaloonOverride, devSaloonOverrideJson, now);
         }
 
+        var devLayoutSaltsJson = _serializer.SerializeDevLayoutSalts(session.DevLayoutSalts);
+        if (devLayoutSaltsJson is null)
+        {
+            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.DevLayoutSalts, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            UpsertComponent(entity.Id, GameSessionComponentNames.DevLayoutSalts, devLayoutSaltsJson, now);
+        }
+
         if (session.Journey is null)
         {
             await RemoveComponentAsync(entity.Id, GameSessionComponentNames.Journey, cancellationToken).ConfigureAwait(false);
@@ -378,6 +388,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (pendingDevSaloonOverride is not null || unrelatedCriminalLedger is not null)
         {
             session.RestoreBountyLoopState(unrelatedCriminalLedger, pendingDevSaloonOverride);
+        }
+
+        // Restore dev layout salts from snapshot. If there are post-snapshot events,
+        // ApplyCommittedEvents will overwrite this via Apply(DevLayoutSaltsForced).
+        // When the snapshot is current, this restores the persisted dev salts. See BUNCH-147.
+        var devLayoutSaltsJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.DevLayoutSalts);
+        var devLayoutSalts = _serializer.DeserializeDevLayoutSalts(devLayoutSaltsJson);
+        if (devLayoutSalts is not null)
+        {
+            session.RestoreDevLayoutSalts(devLayoutSalts);
         }
 
         if (hasPostSnapshotEvents)

@@ -89,4 +89,15 @@ internal static class GameSessionRehydrator
     {
         session.RestoreActionContextState(context, townId);
     }
+
+    /// <summary>
+    /// Restores the session's dev layout salts when loading from snapshot.
+    /// This is reconstructed from event replay via Apply(DevLayoutSaltsForced).
+    /// Both paths (snapshot load + event replay) must produce the same values.
+    /// See BUNCH-147.
+    /// </summary>
+    public static void RestoreDevLayoutSalts(GameSession session, WildBunch.Domain.World.LayoutSalts layoutSalts)
+    {
+        session.RestoreDevLayoutSalts(layoutSalts);
+    }
 }

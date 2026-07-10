@@ -14,22 +14,14 @@
 - ✅ Task 1: Add Prepped Session Infrastructure
 - ✅ Task 2: Add LayoutSalts Persistence
 - ✅ Task 3: Add Dev Salts Pipeline Integration
-- ✅ Task 4: Add Prep and Start Session Commands (core implementation only, endpoints skipped)
+- ✅ Task 4: Add Prep and Start Session Commands (including endpoint registration)
+- ✅ Task 5: Add Frontend API Functions (devApi.ts updates)
+- ✅ Task 6: Update Frontend for Three-Phase Flow (TownLayoutDevPanel.tsx)
 - ✅ Documentation: Dev-Enabled Action Pattern
+- ✅ Integration and API tests for three-phase flow
+- ✅ Code review findings addressed (P1, P2, P3)
 
-**Skipped Tasks:**
-- ⏭️ Task 5: Add Frontend API Functions (depends on Task 4 endpoints)
-- ⏭️ Task 6: Update Frontend for Three-Phase Flow (depends on Task 5)
-
-**Reason for Skipping Tasks 5-6:**
-Task 4 endpoint registration was skipped due to pre-existing build errors in DevEndpoints.cs (LockRngHandler and ClearRngHandler references). Tasks 5 and 6 depend on these endpoints being registered, so they were deferred. The core backend implementation (handlers, commands, INewGameFactory overload) is complete and tested.
-
-**Next Steps:**
-1. Fix pre-existing DevEndpoints.cs build errors
-2. Register prep/start endpoints in DevEndpoints.cs
-3. Register handlers in DependencyInjection.cs
-4. Complete Task 5 (Frontend API Functions)
-5. Complete Task 6 (Frontend Three-Phase Flow)
+**Note:** Tasks 5 and 6 were initially marked as skipped due to endpoint registration being deferred, but were subsequently completed after the DevEndpoints.cs build errors were resolved and endpoints were registered.
 
 ## Global Constraints
 

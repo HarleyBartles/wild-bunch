@@ -139,6 +139,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _actionContextTracker.RestoreState(context, townId);
     }
 
+    /// <summary>
+    /// Restores dev layout salts during snapshot rehydration.
+    /// The salts are reconstructed from event replay via Apply(DevLayoutSaltsForced).
+    /// Both paths (snapshot load + event replay) must produce the same values.
+    /// See BUNCH-147.
+    /// </summary>
+    internal void RestoreDevLayoutSalts(WildBunch.Domain.World.LayoutSalts layoutSalts)
+    {
+        DevLayoutSalts = layoutSalts;
+    }
+
     public GameStatus Status { get; private set; }
 
     /// <summary>
@@ -441,6 +452,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 break;
             case DevEntropyChanged dec:
                 Apply(dec);
+                break;
+            case WorldGenerated wg:
+                Apply(wg);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -794,7 +808,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void Apply(DevLayoutSaltsForced e)
     {
-        DevLayoutSalts = e.ForcedLayoutSalts;
+        DevLayoutSalts = e.DevLayoutSalts;
         _version++;
     }
 
@@ -873,12 +887,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SeedCode = seedCode
         };
 
+        var caseFileSnapshot = WildBunch.Domain.Cases.CaseFileSnapshot.FromDomain(caseFile);
         var worldEvent = new WorldGenerated
         {
             SeedCode = seedCode,
             SaltSource = saltSource,
             GameEntropy = gameEntropy,
-            World = WorldSnapshot.FromDomain(world)
+            World = WorldSnapshot.FromDomain(world),
+            CaseFile = caseFileSnapshot
         };
 
         var placeholderPlayer = new Player(
@@ -1158,6 +1174,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(WorldGenerated e)
     {
         World = e.World.ToDomain();
+        CaseFile = e.CaseFile.ToDomain();
         SaltSource = e.SaltSource;
         GameEntropy = e.GameEntropy;
         _version++;
@@ -1460,6 +1477,45 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         ArgumentNullException.ThrowIfNull(layoutSalts);
         ProduceEvent(new DevLayoutSaltsForced(layoutSalts));
+    }
+
+    /// <summary>
+    /// Transitions a prepped session to active phase by generating the world
+    /// with the provided world, case file, and salt source. Used by the three-phase
+    /// dev-enabled action pattern (prep → inject dev salts → start). See BUNCH-147.
+    /// </summary>
+    public void StartFromPrepped(
+        DomainWorld world,
+        CaseFile caseFile,
+        string seedCodeText,
+        SaltSource saltSource)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(caseFile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedCodeText);
+        ArgumentNullException.ThrowIfNull(saltSource);
+
+        if (Status != GameStatus.Prepped)
+        {
+            throw new InvalidOperationException("Session must be in Prepped status to start from prepped.");
+        }
+
+        World = world;
+        CaseFile = caseFile;
+        SeedCode = seedCodeText;
+        SaltSource = saltSource;
+        Status = GameStatus.Active;
+
+        var caseFileSnapshot = WildBunch.Domain.Cases.CaseFileSnapshot.FromDomain(caseFile);
+        var worldEvent = new WorldGenerated
+        {
+            SeedCode = seedCodeText,
+            SaltSource = saltSource,
+            GameEntropy = GameEntropy,
+            World = WorldSnapshot.FromDomain(world),
+            CaseFile = caseFileSnapshot
+        };
+        ProduceEvent(worldEvent);
     }
 
     private void RefreshTownVisit(TownId townId)

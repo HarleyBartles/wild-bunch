@@ -59,6 +59,9 @@ public sealed class StartGameSessionHandler : GameSessionCommandHandler
         var devLayoutSalts = preppedSession.DevLayoutSalts;
 
         // Resolve the world and case file with dev layout salts
+        // Note: Player name is intentionally reset to "Player" during start.
+        // The prepped session uses "Prepped" as a placeholder. If player name
+        // needs to be preserved, it should be added to PrepGameSessionCommand.
         var (world, caseFile, seedCodeText, saltSource) = _newGameFactory.ResolveWorld(
             "Player",
             preppedSession.GameDifficulty,
@@ -66,26 +69,23 @@ public sealed class StartGameSessionHandler : GameSessionCommandHandler
             preppedSession.GameEntropy,
             devLayoutSalts);
 
-        // Create the session in setup-complete phase
-        var newSession = GameSession.StartSetup(
-            "Player",
-            world,
-            caseFile,
-            preppedSession.GameDifficulty,
-            preppedSession.GameEntropy,
-            seedCodeText,
-            saltSource);
+        // Transition the prepped session to setup-complete phase (preserves session ID and event history)
+        await ExecuteWithRetryAsync(sessionId, (session, ct) =>
+        {
+            session.StartFromPrepped(world, caseFile, seedCodeText, saltSource);
+            return Task.FromResult(true);
+        }, cancellationToken).ConfigureAwait(false);
 
-        await GameSessionRepository.StoreAsync(
-            newSession,
-            Guid.NewGuid(),
-            cancellationToken).ConfigureAwait(false);
-        await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-        newSession.MarkEventsCommitted();
+        // Reload the session to get the updated state
+        var updatedSession = await GameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        if (updatedSession is null)
+        {
+            throw new InvalidOperationException("Failed to reload session after start");
+        }
 
-        var dto = GameSessionMapper.ToDto(newSession);
+        var dto = GameSessionMapper.ToDto(updatedSession);
         var events = await GameSessionRepository.GetEventStreamAsync(
-            newSession.Id, 0, cancellationToken).ConfigureAwait(false);
+            updatedSession.Id, 0, cancellationToken).ConfigureAwait(false);
         var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
         var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
 

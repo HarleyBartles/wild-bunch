@@ -1,3 +1,4 @@
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -18,12 +19,28 @@ public sealed class WorldGeneratedEventTests
         var world = new DomainWorld(new[] { town }, new[] { trail });
 
         var snapshot = WorldSnapshot.FromDomain(world);
+        var caseFileSnapshot = new WildBunch.Domain.Cases.CaseFileSnapshot(
+            Array.Empty<WildBunch.Domain.Cases.SuspectSnapshot>(),
+            "placeholder",
+            WildBunch.Domain.Cases.CaseOpeningLead.Create("placeholder"),
+            Array.Empty<WildBunch.Domain.Cases.ClueSnapshot>(),
+            Array.Empty<WildBunch.Domain.Cases.ClueSnapshot>(),
+            null,
+            Array.Empty<string>(),
+            0,
+            0,
+            Array.Empty<WildBunch.Domain.Cases.WarrantSnapshot>(),
+            Array.Empty<WildBunch.Domain.Cases.WarrantSnapshot>(),
+            Array.Empty<WildBunch.Domain.Cases.SuspectTurfAssignmentSnapshot>(),
+            Array.Empty<WildBunch.Domain.Cases.WantedSuspectConfrontationSnapshot>(),
+            Array.Empty<WildBunch.Domain.Cases.SheriffTurnInSettlementSnapshot>());
         var evt = new WorldGenerated
         {
             SeedCode = "test-seed",
             SaltSource = SaltSource.CreateFixed("test-salt"),
             GameEntropy = GameEntropy.Boring,
-            World = snapshot
+            World = snapshot,
+            CaseFile = caseFileSnapshot
         };
 
         var reconstructed = evt.World.ToDomain();
