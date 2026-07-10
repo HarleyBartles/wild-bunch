@@ -165,6 +165,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public string? SeedCode { get; private set; }
 
+    /// <summary>
+    /// Dev-controlled layout salts for town hub layout generation.
+    /// When set, these salts override the derived layout salts for reproducible
+    /// layout generation. Dev-only state. See BUNCH-147.
+    /// </summary>
+    public LayoutSalts? DevLayoutSalts { get; private set; }
+
     public TownAggregate CurrentTown => _currentTown
         ?? throw new InvalidOperationException("No town has been selected yet. The current town is only available after GameStarted.");
 
@@ -800,6 +807,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Applies a DevLayoutSaltsForced event. Stores the forced layout salts
+    /// in the session for use in layout generation. Dev-only event.
+    /// See BUNCH-147.
+    /// </summary>
+    internal void Apply(DevLayoutSaltsForced e)
+    {
+        DevLayoutSalts = e.ForcedLayoutSalts;
+        _version++;
+    }
+
+    /// <summary>
     /// Adjusts player food by a signed delta. Positive deltas add food; negative
     /// deltas remove food. Used by travel Apply methods for additive food deltas.
     /// </summary>
@@ -1385,6 +1403,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         ProduceEvent(new DevEntropyChanged
         {
             NewEntropy = entropy
+        });
+    }
+
+    /// <summary>
+    /// Dev command: forces layout salts for town hub layout generation.
+    /// Stores dev-controlled layout salts for reproducible layout generation.
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-147.
+    /// </summary>
+    public void SetDevLayoutSalts(LayoutSalts layoutSalts)
+    {
+        ArgumentNullException.ThrowIfNull(layoutSalts);
+        ProduceEvent(new DevLayoutSaltsForced
+        {
+            ForcedLayoutSalts = layoutSalts
         });
     }
 
