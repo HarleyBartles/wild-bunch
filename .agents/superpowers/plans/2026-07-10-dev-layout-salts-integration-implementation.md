@@ -8,6 +8,29 @@
 
 **Tech Stack:** C#/.NET backend with DDD patterns, TypeScript frontend with styled-components, existing dev overlay system.
 
+## Completion Status
+
+**Completed Tasks:**
+- ✅ Task 1: Add Prepped Session Infrastructure
+- ✅ Task 2: Add LayoutSalts Persistence
+- ✅ Task 3: Add Dev Salts Pipeline Integration
+- ✅ Task 4: Add Prep and Start Session Commands (core implementation only, endpoints skipped)
+- ✅ Documentation: Dev-Enabled Action Pattern
+
+**Skipped Tasks:**
+- ⏭️ Task 5: Add Frontend API Functions (depends on Task 4 endpoints)
+- ⏭️ Task 6: Update Frontend for Three-Phase Flow (depends on Task 5)
+
+**Reason for Skipping Tasks 5-6:**
+Task 4 endpoint registration was skipped due to pre-existing build errors in DevEndpoints.cs (LockRngHandler and ClearRngHandler references). Tasks 5 and 6 depend on these endpoints being registered, so they were deferred. The core backend implementation (handlers, commands, INewGameFactory overload) is complete and tested.
+
+**Next Steps:**
+1. Fix pre-existing DevEndpoints.cs build errors
+2. Register prep/start endpoints in DevEndpoints.cs
+3. Register handlers in DependencyInjection.cs
+4. Complete Task 5 (Frontend API Functions)
+5. Complete Task 6 (Frontend Three-Phase Flow)
+
 ## Global Constraints
 
 - Keep change narrow to dev layout salts integration
@@ -1054,6 +1077,8 @@ git commit -m "feat: add prep and start game session commands and endpoints"
 
 ### Task 5: Add Frontend API Functions
 
+**Status:** SKIPPED - Depends on Task 4 endpoints which were skipped due to pre-existing DevEndpoints.cs build errors
+
 **Files:**
 - Modify: `src/WildBunch.Web/src/api/wildBunchApi.ts`
 
@@ -1062,6 +1087,8 @@ git commit -m "feat: add prep and start game session commands and endpoints"
 - Produces: Frontend API functions for UI
 
 **Test Kind:** Frontend unit tests (API function tests)
+
+**Note:** This task should be completed after the pre-existing DevEndpoints.cs build errors are fixed and the endpoints from Task 4 are registered.
 
 **Implementation guidance:**
 - Add `prepGameSession(seed: string, difficulty: GameDifficulty, entropy: GameEntropy)` function
@@ -1177,6 +1204,8 @@ git commit -m "feat: add prep and start game session API functions"
 
 ### Task 6: Update Frontend for Three-Phase Flow
 
+**Status:** SKIPPED - Depends on Task 5 which was skipped due to Task 4 endpoints not being registered
+
 **Files:**
 - Modify: `src/WildBunch.Web/src/components/StartGameOptionsForm.tsx`
 - Modify: `src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx`
@@ -1188,6 +1217,8 @@ git commit -m "feat: add prep and start game session API functions"
 - Produces: Updated game setup flow, updated dev panel
 
 **Test Kind:** Frontend unit tests (component tests)
+
+**Note:** This task should be completed after Task 5 is completed.
 
 **Implementation guidance:**
 - Update `StartGameOptionsForm` to call `prepGameSession` on mount, store session ID in state
