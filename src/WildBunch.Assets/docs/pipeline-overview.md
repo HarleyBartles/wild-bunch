@@ -51,6 +51,16 @@ Promotion into `src/WildBunch.Assets/production/sprites/town-hub-buildings/` is 
 
 Props follow the same sprite promotion path from staging to production/sprites/town-hub-ground/props/.
 
+## Scaling workflow
+
+Ground assets follow a scaling workflow from large source files to target canvas sizes:
+
+1. Generate source files at large size (1024x1024)
+2. Use `normalize` command with canvas size parameters to scale to target size
+3. Promote through staging to production
+
+This enables future scaling to different output sizes without regenerating source art.
+
 Road and ground tiles stay tile-safe through copy promotion from `staging/` to
 `production/tiles/` after seam checks. Their contract is about edge matching
 and tessellation, not image cutting, and they keep the full 80x50 canvas in

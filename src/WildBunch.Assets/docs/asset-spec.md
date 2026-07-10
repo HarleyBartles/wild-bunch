@@ -105,6 +105,16 @@ Apply the same pattern to `background-house`, `background-shop`, `general-store`
 - Shippable output is the final sprite set that matches the style bible, footprint contract, and turnaround contract.
 - Do not treat a `staging/` image as final art just because it is visually close.
 
+## Source size and pipeline scaling
+
+All ground assets should be generated at large source size (1024x1024) to enable future scaling flexibility. The asset pipeline handles normalization and scaling:
+
+- Source files: 1024x1024 (large size for future scaling)
+- Staging files: normalized to target canvas size with transparent padding
+- Production files: final assets at target canvas size
+
+Use the asset pipeline `normalize` command with `--canvas-width` and `--canvas-height` parameters to scale from large source files to the target canvas size.
+
 ## Prosperity tiers
 
 - The shipping building families are reused across prosperity tiers.
