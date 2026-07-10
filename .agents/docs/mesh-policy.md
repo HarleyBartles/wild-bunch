@@ -60,7 +60,7 @@ README files are human-facing. They are not a mesh.
 ## 5. Mesh self-healing
 
 - If a worker finds stale or misleading authored mesh law (`AGENTS.md`, `README.md`, or other agent-facing doctrine docs), repair it in scope or return AMBER with the exact deferred repair.
-- If a worker finds stale generated `INDEX.md` navigation, repair it by regenerating the whole index mesh through `scripts/generate_index_mesh.py`.
+- If a worker finds stale generated `INDEX.md` navigation, repair it by regenerating the whole index mesh through `scripts/generate_index_mesh.py` (or `.\scripts\generate_index_mesh.ps1`).
 - Do not hand-edit individual generated `INDEX.md` files or regenerate only a subtree to satisfy CI.
 
 ## 6. Plugin posture
@@ -69,8 +69,8 @@ README files are human-facing. They are not a mesh.
 - `house-skills` is not default-installed in this repo.
 - Plugin skills are sourced from `HarleyBartles/agent-asset-marketplace`.
 - Devin CLI discovers repo skills only from local `.agents/skills/<name>/SKILL.md` directories; it has no Codex-marketplace plugin install path. Plugin skills are therefore vendored into `.agents/skills/` from the marketplace source so they are invocable and discoverable by any agent working in this repo.
-- The marketplace source is pinned as a git submodule at `.agents/plugins/marketplace-source/`. Vendored skills are synced from the submodule by `scripts/sync-skills.ps1`, which reads `marketplace.json`, copies each default-installed plugin's `skills/<name>/` directories into `.agents/skills/<name>/`, and records provenance (source commit SHA) in `.agents/skills/.provenance.json`.
-- To refresh vendored skills after upstream plugin updates: `git submodule update --remote .agents/plugins/marketplace-source`, then `.\scripts\sync-skills.ps1`. The sync script is idempotent and skips work when the submodule HEAD matches recorded provenance.
+- The marketplace source is pinned as a git submodule at `.agents/plugins/marketplace-source/`. Vendored skills are synced from the submodule by `scripts/install_agent_skills.py` (or `scripts/install_agent_skills.ps1`), which reads `marketplace.json`, copies each default-installed plugin's `skills/<name>/` directories into `.agents/skills/<name>/`, and records provenance (source commit SHA) in `.agents/skills/.provenance.json`.
+- To refresh vendored skills after upstream plugin updates: `git submodule update --remote .agents/plugins/marketplace-source`, then `.\scripts\install_agent_skills.ps1` (or `python scripts/install_agent_skills.py`). The sync script is idempotent and skips work when the submodule HEAD matches recorded provenance.
 - Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync.
 - Genuinely uncovered skills (no marketplace plugin home) may also live in `.agents/skills/` as temporary project custody — see section 7.
 
@@ -85,4 +85,4 @@ README files are human-facing. They are not a mesh.
 
 ### Current retained project-custody skills
 
-_None. All repo skills are vendored from default-installed marketplace plugins via `scripts/sync-skills.ps1`._
+_None. All repo skills are vendored from default-installed marketplace plugins via `scripts/install_agent_skills.py` (or `scripts/install_agent_skills.ps1`)._

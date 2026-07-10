@@ -9,11 +9,18 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+try:
+    from pathspec import PathSpec
+    from pathspec.patterns.gitwildmatch import GitWildMatchPattern
+    HAS_PATHSPEC = True
+except ImportError:
+    HAS_PATHSPEC = False
+
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_DIR_NAMES = {".git", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output", "marketplace-source", ".codex", ".playwright-mcp", ".superpowers"}
-EXCLUDED_ROOT_NAMES = {".git", "__pycache__", "bin", "obj", "node_modules", ".local", "sdd", "dist", "TestResults", "output", "marketplace-source", ".codex", ".playwright-mcp", ".superpowers"}
-EXCLUDED_FILE_NAMES = {".git"}
+# Always exclude these regardless of .gitignore (e.g., .git itself, submodules, output dirs)
+ALWAYS_EXCLUDED_DIR_NAMES = {".git", "marketplace-source", "output"}
+ALWAYS_EXCLUDED_FILE_NAMES = {".git"}
 
 
 @dataclass(frozen=True)
@@ -30,6 +37,75 @@ ADR_DATED_HISTORY_RE = re.compile(r"^## Dated Status History\s*\n(.*?)(?=^## |\Z
 ADR_DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
+def load_gitignore() -> PathSpec | None:
+    """Load and parse .gitignore file if pathspec is available."""
+    if not HAS_PATHSPEC:
+        return None
+    
+    gitignore_path = ROOT / ".gitignore"
+    if not gitignore_path.exists():
+        return None
+    
+    patterns = []
+    with open(gitignore_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Skip empty lines and comments
+            if not line or line.startswith("#"):
+                continue
+            patterns.append(line)
+    
+    if not patterns:
+        return None
+    
+    return PathSpec.from_lines(GitWildMatchPattern, patterns)
+
+
+GITIGNORE_SPEC = load_gitignore()
+
+
+def is_gitignored(path: Path) -> bool:
+    """Check if a path is ignored by .gitignore.
+    
+    Checks both the path itself and all parent directories,
+    since .gitignore patterns like 'cache/' match files inside
+    but may not match the directory itself.
+    """
+    # Always check exclusions first
+    if path.name in ALWAYS_EXCLUDED_DIR_NAMES:
+        return True
+    if path.name in ALWAYS_EXCLUDED_FILE_NAMES:
+        return True
+    
+    if GITIGNORE_SPEC is None:
+        return False
+    
+    relative_path = path.relative_to(ROOT)
+    path_str = str(relative_path)
+    
+    # Check the path itself
+    if GITIGNORE_SPEC.match_file(path_str):
+        return True
+    
+    # For directories, also check with trailing slash (for patterns like 'cache/')
+    if path.is_dir():
+        if GITIGNORE_SPEC.match_file(path_str + "/"):
+            return True
+    
+    # Check parent directories (for patterns like 'cache/')
+    for parent in path.parents:
+        if parent == ROOT:
+            break
+        parent_relative = parent.relative_to(ROOT)
+        parent_str = str(parent_relative)
+        if GITIGNORE_SPEC.match_file(parent_str):
+            return True
+        if GITIGNORE_SPEC.match_file(parent_str + "/"):
+            return True
+    
+    return False
+
+
 def is_skill_root(path: Path) -> bool:
     return (path / "SKILL.md").exists() or (path / "overlay.yaml").exists()
 
@@ -39,15 +115,26 @@ def is_under(path: Path, ancestor: Path) -> bool:
 
 
 def should_descend(child: Path) -> bool:
-    return child.name not in EXCLUDED_DIR_NAMES and not is_skill_root(child)
+    # Always exclude certain directories (e.g., .git)
+    if child.name in ALWAYS_EXCLUDED_DIR_NAMES:
+        return False
+    # Check gitignore
+    if is_gitignored(child):
+        return False
+    # Don't descend into skill roots
+    return not is_skill_root(child)
 
 
 def should_index(path: Path) -> bool:
     if path == ROOT:
         return True
-    relative = path.relative_to(ROOT)
-    if any(part in EXCLUDED_ROOT_NAMES for part in relative.parts):
+    # Always exclude certain directories (e.g., .git)
+    if any(part in ALWAYS_EXCLUDED_DIR_NAMES for part in path.parts):
         return False
+    # Check gitignore
+    if is_gitignored(path):
+        return False
+    # Don't index skill roots
     return not is_skill_root(path)
 
 
@@ -76,13 +163,13 @@ def render_index(path: Path) -> str:
         if entry.name == "INDEX.md":
             continue
         if entry.is_dir():
-            if entry.name in EXCLUDED_DIR_NAMES:
-                continue
-            if is_skill_root(path):
+            if not should_descend(entry):
                 continue
             dirs.append(entry)
         else:
-            if entry.name in EXCLUDED_FILE_NAMES:
+            if entry.name in ALWAYS_EXCLUDED_FILE_NAMES:
+                continue
+            if is_gitignored(entry):
                 continue
             files.append(entry)
 
@@ -208,7 +295,7 @@ def main() -> int:
     actual_paths = {
         path
         for path in ROOT.rglob("*")
-        if path.is_file() and path.name == "INDEX.md" and not any(part in EXCLUDED_ROOT_NAMES for part in path.relative_to(ROOT).parts)
+        if path.is_file() and path.name == "INDEX.md" and not is_gitignored(path) and not any(part in ALWAYS_EXCLUDED_DIR_NAMES for part in path.relative_to(ROOT).parts)
     }
     unexpected = sorted(path for path in actual_paths if path not in expected_paths)
     missing = sorted(path for path in expected_paths if path not in actual_paths)

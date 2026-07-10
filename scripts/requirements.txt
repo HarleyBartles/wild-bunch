@@ -1,0 +1,2 @@
+# For .gitignore parsing in generate_index_mesh.py
+pathspec>=0.12.0

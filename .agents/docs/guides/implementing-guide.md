@@ -39,7 +39,7 @@ Before claiming work is done, verify:
 - **Type-check clean:** `npx tsc --noEmit` for frontend work (no new errors).
 - **No flaky tests:** Run the full suite at least once. If a test passes in isolation but fails under full-suite load, it's flaky â€” fix it before claiming done. See `.agents/docs/validation-policy.md` Test Quality Standards for common causes.
 - **Workspace clean:** No phantom files, no stray debug artifacts, no uncommitted scratch files.
-- **INDEX.md regenerated:** If files were added or removed, run `python scripts/generate_index_mesh.py`.
+- **INDEX.md regenerated:** If files were added or removed, run `python scripts/generate_index_mesh.py` (or `.\scripts\generate_index_mesh.ps1`).
 - **No secrets committed:** Check your diff for credentials, API keys, or connection strings.
 
 ## PR, Linear, and Plan Honesty

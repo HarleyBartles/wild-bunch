@@ -63,7 +63,7 @@ BUNCH-107 moved difficulty and entropy OUT of the seed into pressure-owned / ent
 
 These are now false. The seed (`SeedWorld`) owns only the world/map layer; difficulty is pressure-owned (`DifficultyEnvelope.For`); entropy is entropy-owned (`EntropyPolicy` + `MysteryTruthResolver`); starting town is player/setup-owned (`StartingTownPolicy`).
 
-**Execution-time task (not implementation work):** On execution, the worker must create a Linear issue in the MARK project to repair the upstream skill reference in `HarleyBartles/agent-asset-marketplace` and re-sync the vendored copy. The vendored skill files must not be hand-edited in this repo — the fix goes upstream and re-syncs via the standard three-command sequence (`git submodule update --remote .agents/plugins/marketplace-source`, `.\scripts\sync-skills.ps1`, `python scripts\generate_index_mesh.py`). This is tracked as a self-healing follow-up, not a BUNCH-94 implementation deliverable, and does not block the difficulty implementation tasks.
+**Execution-time task (not implementation work):** On execution, the worker must create a Linear issue in the MARK project to repair the upstream skill reference in `HarleyBartles/agent-asset-marketplace` and re-sync the vendored copy. The vendored skill files must not be hand-edited in this repo — the fix goes upstream and re-syncs via the standard three-command sequence (`git submodule update --remote .agents/plugins/marketplace-source`, `.\scripts\install_agent_skills.ps1`, `python scripts\generate_index_mesh.py`). This is tracked as a self-healing follow-up, not a BUNCH-94 implementation deliverable, and does not block the difficulty implementation tasks.
 
 ### What is explicitly out of scope
 
