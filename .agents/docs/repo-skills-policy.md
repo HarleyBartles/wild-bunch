@@ -14,5 +14,6 @@ The complete repo skills policy is defined in [`.agents/docs/mesh-policy.md`](.a
   git submodule update --remote .agents/plugins/marketplace-source
   .\scripts\install_agent_skills.ps1
   python scripts\generate_index_mesh.py
+  # or: .\scripts\generate_index_mesh.ps1
   ```
   `scripts\install_agent_skills.ps1` (or `python scripts/install_agent_skills.py`) is idempotent: it no-ops when the submodule HEAD matches `.agents/skills/.provenance.json` (pass `-Force` to re-copy regardless). Do not look for or invent other skill-sync paths.

@@ -81,37 +81,40 @@ submodule into `.agents/skills/`. Provenance is tracked in
 **Use after** `git submodule update --remote .agents/plugins/marketplace-source`
 to pull in upstream skill updates.
 
-### image_asset_pipeline.py
+### image_asset_pipeline.py/.ps1
 **Use when** you need to cut a generated image away from a flat background,
 slice a turnaround sheet into individual views, normalize a building sprite
 onto a fixed canvas, scale tile art into the staging canvas, or move tile art
 through the tile-safe staging/promotion path.
 
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py cut-background --input <source.png> --out <cut.png>` - cut one image away from a flat background without resizing it; add `--remove-islands` for a second pass that clears enclosed chroma islands
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py cut-background-tree --input-root <source-root> --out-root <out-root>` - cut every PNG in a tree away from a flat background without resizing it; add `--remove-islands` for the second island pass
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py normalize --input <source.png> --out <normalized.png>`
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py slice-sheet --input <sheet.png> --out-dir <out-dir> --names front,profile,rear,front-oblique,rear-oblique`
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py tiles --input-root <source-root> --staging-root <staging-root> --production-root <production-root>` - run the tile pipeline sequentially from source to staging to production
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py tiles --input-root <source-root> --staging-root <staging-root> --production-root <production-root> --stage-only` - stop after the staging step
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py tiles --staging-root <staging-root> --production-root <production-root> --promote-only` - promote existing staged tiles into production without restaging
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py stage-tiles --input-root <source-root> --out-root <staging-root>` - phase-only helper that scales full-size tile masters down to the staging canvas without trimming or recentering
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py promote-tiles --input-root <staging-root> --out-root <production-root>` - phase-only helper that copies staged tile PNGs into the matching production tree without resizing
-- `python src/WildBunch.Assets/scripts/image_asset_pipeline.py promote-sprites --input-root <pipeline-root> --out-root <production-root>` - cut the staged building tree to transparent cutouts in place, then normalize it into the matching final production tree, skipping `normalized/` scratch files; add `--remove-islands` for the second island pass
+- `python scripts/image_asset_pipeline.py cut-background --input <source.png> --out <cut.png>` - cut one image away from a flat background without resizing it; add `--remove-islands` for a second pass that clears enclosed chroma islands
+- `python scripts/image_asset_pipeline.py cut-background-tree --input-root <source-root> --out-root <out-root>` - cut every PNG in a tree away from a flat background without resizing it; add `--remove-islands` for the second island pass
+- `python scripts/image_asset_pipeline.py normalize --input <source.png> --out <normalized.png>`
+- `python scripts/image_asset_pipeline.py slice-sheet --input <sheet.png> --out-dir <out-dir> --names front,profile,rear,front-oblique,rear-oblique`
+- `python scripts/image_asset_pipeline.py stage-tiles --input-root <source-root> --out-root <staging-root>` - cut tile art to transparent cutouts while preserving the full tile canvas; add `--remove-islands` for the second island pass
+- `python scripts/image_asset_pipeline.py promote-tiles --input-root <staging-root> --out-root <sprites-root>` - copy staged tile PNGs into the matching sprites tree without resizing
+- `python scripts/image_asset_pipeline.py promote-sprites --input-root <pipeline-root> --out-root <sprites-root>` - cut the staged building tree to transparent cutouts in place, then normalize it into the matching final sprites tree, skipping `normalized/` scratch files; add `--remove-islands` for the second island pass
+- `.\scripts\image_asset_pipeline.ps1` - PowerShell wrapper that passes all arguments through to the Python script
+
+The PowerShell wrapper is a thin convenience layer that calls the Python script.
 
 The primary backend is Pillow in Python 3.11+ with the package installed in
 the active environment. The selection and promotion note lives in
 `.agents/docs/asset-pipeline/selection-cut-normalization.md`.
 
-### generate_index_mesh.py
+### generate_index_mesh.py/.ps1
 **Use when** you have added, removed, or renamed files or directories and
 need to regenerate the repo-wide `INDEX.md` mesh.
 
 - `python scripts/generate_index_mesh.py` - regenerate all INDEX.md files
-- `python scripts/generate_index_mesh.py --validate` - validate without writing (CI mode)
+- `python scripts/generate_index_mesh.py --check` - validate without writing (CI mode)
+- `.\scripts\generate_index_mesh.ps1` - PowerShell wrapper (same flags: -Check)
+
+The PowerShell wrapper is a thin convenience layer that calls the Python script.
 
 Generates `INDEX.md` files in every directory (excluding build artifacts,
-node_modules, etc.) with links to child directories and files. Also checks
-ADR freshness in `docs/adr/`.
+node_modules, etc., and respecting .gitignore) with links to child directories
+and files. Also checks ADR freshness in `docs/adr/`.
 
 **Use after** creating new source files, test files, or directories to keep
 the index mesh current. The INDEX.md files are tracked in git.

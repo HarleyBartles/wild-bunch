@@ -59,7 +59,7 @@ Reviewers must ensure that anything important for future agents to understand is
 - If the work introduces a new pattern, convention, or gotcha that future agents would trip over without knowing, it should be documented in AGENTS.md or a doctrine document
 - If the work changes the build/test workflow, update the relevant AGENTS.md section
 - If the work discovers a tooling issue, it must be recorded in durable guidance so future agents don't trip over it
-- INDEX.md files must be regenerated if files were added/removed (via `python scripts/generate_index_mesh.py`)
+- INDEX.md files must be regenerated if files were added/removed (via `python scripts/generate_index_mesh.py` or `.\scripts\generate_index_mesh.ps1`)
 
 Durable agent guidance is for "agents will trip over this if they don't know." Deferred work is NOT durable agent guidance â€” it belongs in Linear issues (see section 7).
 

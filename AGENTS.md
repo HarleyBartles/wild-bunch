@@ -84,9 +84,9 @@
 When you encounter:
 - PostgreSQL connection errors or missing database → read `scripts/AGENTS.md` and use `postgres-dev.ps1`
 - Dev servers not running → read `scripts/AGENTS.md` and use `dev-servers.ps1`
-- Need to regenerate index mesh → read `scripts/AGENTS.md` and use `generate_index_mesh.py`
+- Need to regenerate index mesh → read `scripts/AGENTS.md` and use `generate_index_mesh.py` or `generate_index_mesh.ps1`
 - Need to sync marketplace skills → read `scripts/AGENTS.md` and use `install_agent_skills.py` or `install_agent_skills.ps1`
-- Need image asset processing → read `scripts/AGENTS.md` and use `image_asset_pipeline.py`
+- Need image asset processing → read `scripts/AGENTS.md` and use `image_asset_pipeline.py` or `image_asset_pipeline.ps1`
 
 **Do not report "environmental issue" or "missing tooling" without first checking `scripts/AGENTS.md`.** The scripts folder is the canonical way to perform these operations and must be treated as a first-class discovery surface.
 

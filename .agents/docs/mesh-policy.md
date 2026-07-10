@@ -60,7 +60,7 @@ README files are human-facing. They are not a mesh.
 ## 5. Mesh self-healing
 
 - If a worker finds stale or misleading authored mesh law (`AGENTS.md`, `README.md`, or other agent-facing doctrine docs), repair it in scope or return AMBER with the exact deferred repair.
-- If a worker finds stale generated `INDEX.md` navigation, repair it by regenerating the whole index mesh through `scripts/generate_index_mesh.py`.
+- If a worker finds stale generated `INDEX.md` navigation, repair it by regenerating the whole index mesh through `scripts/generate_index_mesh.py` (or `.\scripts\generate_index_mesh.ps1`).
 - Do not hand-edit individual generated `INDEX.md` files or regenerate only a subtree to satisfy CI.
 
 ## 6. Plugin posture
