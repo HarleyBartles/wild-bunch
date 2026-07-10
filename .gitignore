@@ -495,12 +495,6 @@ $RECYCLE.BIN/
 # Tool/MCP output dirs (agent-generated, not tracked)
 .codex/
 .playwright-mcp/
-
-# Session-specific directory (SDD) artifacts - gitignored to avoid cluttering git
-# Original comment said "intentionally NOT ignored" but we're ignoring it for cleanliness
-.agents/superpowers/sdd/
-
-# Superpowers output directory (binary artifacts)
-.agents/superpowers/output/
+# .agents/superpowers/sdd/ is intentionally NOT ignored so SDD progress
 # ledgers, task briefs, and reports can be published with the PR.
 # (User-directed un-ignore for BUNCH-75.)
