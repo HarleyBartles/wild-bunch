@@ -11,7 +11,7 @@ namespace WildBunch.Integration.Tests.Dev;
 
 public sealed class TownLayoutDevIntegrationTests
 {
-    [Fact]
+    [Fact(Skip = "Set ConnectionStrings__WildBunchPostgresDb to run the PostgreSQL test lane.")]
     public async Task ThreePhaseFlow_PrepInjectStart_UsesDevLayoutSalts()
     {
         using var factory = new PostgreSqlApiFactory();
@@ -67,7 +67,7 @@ public sealed class TownLayoutDevIntegrationTests
         Assert.NotNull(session.CaseFile);
     }
 
-    [Fact]
+    [Fact(Skip = "Set ConnectionStrings__WildBunchPostgresDb to run the PostgreSQL test lane.")]
     public async Task SetLayoutSalts_Returns400ForActiveSession()
     {
         using var factory = new PostgreSqlApiFactory();
@@ -85,7 +85,7 @@ public sealed class TownLayoutDevIntegrationTests
         Assert.Equal(HttpStatusCode.BadRequest, setSaltsResponse.StatusCode);
     }
 
-    [Fact]
+    [Fact(Skip = "Set ConnectionStrings__WildBunchPostgresDb to run the PostgreSQL test lane.")]
     public async Task GenerateRandomSalts_ReturnsValidSalts()
     {
         using var factory = new PostgreSqlApiFactory();
