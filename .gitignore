@@ -495,7 +495,9 @@ $RECYCLE.BIN/
 *.swp
 
 .superpowers/
-.agents/superpowers/output/
+# .agents/superpowers/output/ INDEX.md is tracked, but binary content is ignored
+.agents/superpowers/output/*
+!.agents/superpowers/output/INDEX.md
 # Tool/MCP output dirs (agent-generated, not tracked)
 .codex/
 .playwright-mcp/
