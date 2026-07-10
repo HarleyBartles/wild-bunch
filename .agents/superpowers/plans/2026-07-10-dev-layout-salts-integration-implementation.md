@@ -13,24 +13,41 @@
 - Keep change narrow to dev layout salts integration
 - Do not modify existing `/api/games/setup` endpoint (keep for normal players)
 - Respect dev-only API contract (dev endpoints require DevRoleGuard)
-- Follow existing DDD patterns (GameSession as aggregate root, event sourcing)
-- Follow existing frontend patterns (styled-components, no inline styles)
+- Follow DDD/CQRS/Event Sourcing patterns (GameSession as aggregate root, event sourcing)
+- Follow frontend standards (styled-components, no inline styles)
 - TDD discipline: write failing test first, then implement
 - Frequent commits after each task
 
 ---
 
-### Task 1: Add GameStatus.Prepped
+### Task 1: Add Prepped Session Infrastructure
 
 **Files:**
 - Modify: `src/WildBunch.Domain/Game/GameStatus.cs`
+- Modify: `src/WildBunch.Domain/Game/GameSession.cs`
 - Test: `tests/WildBunch.Domain.Tests/Game/GameStatusTests.cs`
+- Test: `tests/WildBunch.Domain.Tests/Game/GameSessionTests.cs`
 
 **Interfaces:**
-- Consumes: None (new enum value)
-- Produces: `GameStatus.Prepped` enum value for later tasks
+- Consumes: None (new infrastructure)
+- Produces: `GameStatus.Prepped` enum value, `GameSession.StartPrepped()` factory method
 
-- [ ] **Step 1: Write the failing test**
+**Test Kind:** Unit tests (isolated domain logic)
+
+**Implementation guidance:**
+- Add `Prepped = 4` to `GameStatus` enum
+- Add `GameSession.StartPrepped(string seedCode, GameDifficulty gameDifficulty, GameEntropy gameEntropy)` factory method
+- Follow the existing `StartSetup` pattern: create minimal session with placeholder player, no world, no case file
+- Set `Status = GameStatus.Prepped`
+- Set `SeedCode` directly (no event needed for prepped phase)
+- Do NOT bypass the aggregate root constructor - use the private constructor pattern
+
+**Verification:**
+- Unit test verifies `GameStatus.Prepped` exists and has value 4
+- Unit test verifies `StartPrepped` creates session with Prepped status, seed, difficulty, entropy
+- Unit test verifies session has null world and null case file
+
+- [ ] **Step 1: Write failing test for GameStatus.Prepped**
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -54,13 +71,11 @@ public sealed class GameStatusTests
 Run: `dotnet test tests/WildBunch.Domain.Tests/Game/GameStatusTests.cs -v`
 Expected: FAIL with "does not contain a definition for 'Prepped'"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Implement GameStatus.Prepped**
 
 Modify `src/WildBunch.Domain/Game/GameStatus.cs`:
 
 ```csharp
-namespace WildBunch.Domain.Game;
-
 public enum GameStatus
 {
     Active = 0,
@@ -76,26 +91,7 @@ public enum GameStatus
 Run: `dotnet test tests/WildBunch.Domain.Tests/Game/GameStatusTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.Domain/Game/GameStatus.cs tests/WildBunch.Domain.Tests/Game/GameStatusTests.cs
-git commit -m "feat: add GameStatus.Prepped for prepped game sessions"
-```
-
----
-
-### Task 2: Add GameSession.StartPrepped() Factory Method
-
-**Files:**
-- Modify: `src/WildBunch.Domain/Game/GameSession.cs`
-- Test: `tests/WildBunch.Domain.Tests/Game/GameSessionTests.cs`
-
-**Interfaces:**
-- Consumes: `GameStatus.Prepped` from Task 1
-- Produces: `GameSession.StartPrepped()` factory method for later tasks
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 5: Write failing test for GameSession.StartPrepped**
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -115,18 +111,20 @@ public sealed class GameSessionStartPreppedTests
         Assert.Equal("test-seed", session.SeedCode);
         Assert.Equal(GameDifficulty.Standard, session.GameDifficulty);
         Assert.Equal(GameEntropy.Classic, session.GameEntropy);
+        Assert.Null(session.World);
+        Assert.Null(session.CaseFile);
     }
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 6: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/Game/GameSessionStartPreppedTests.cs -v`
 Expected: FAIL with "does not contain a definition for 'StartPrepped'"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 7: Implement GameSession.StartPrepped**
 
-Add to `src/WildBunch.Domain/Game/GameSession.cs` after the `StartSetup` method (around line 900):
+Add to `src/WildBunch.Domain/Game/GameSession.cs` after the `StartSetup` method:
 
 ```csharp
 /// <summary>
@@ -151,8 +149,8 @@ public static GameSession StartPrepped(
     var session = new GameSession(
         GameSessionId.New(),
         placeholderPlayer,
-        world: null, // No world yet
-        caseFile: null, // No case file yet
+        world: null,
+        caseFile: null,
         new PursuitState(),
         new GameClock(),
         GameStatus.Prepped,
@@ -164,38 +162,57 @@ public static GameSession StartPrepped(
         completedJourneyHistory: null,
         wantedSuspectPresenceEntries: null);
 
-    // Set seed code directly (no event needed for prepped phase)
     session.SeedCode = seedCode;
 
     return session;
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 8: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Domain.Tests/Game/GameSessionStartPreppedTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/WildBunch.Domain/Game/GameSession.cs tests/WildBunch.Domain.Tests/Game/GameSessionStartPreppedTests.cs
-git commit -m "feat: add GameSession.StartPrepped() factory method"
+git add src/WildBunch.Domain/Game/GameStatus.cs src/WildBunch.Domain/Game/GameSession.cs tests/WildBunch.Domain.Tests/Game/GameStatusTests.cs tests/WildBunch.Domain.Tests/Game/GameSessionStartPreppedTests.cs
+git commit -m "feat: add prepped session infrastructure (GameStatus.Prepped, GameSession.StartPrepped)"
 ```
 
 ---
 
-### Task 3: Add LayoutSalts to TownLayout
+### Task 2: Add LayoutSalts Persistence
 
 **Files:**
 - Modify: `src/WildBunch.Domain/World/TownLayout.cs`
+- Modify: `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`
+- Modify: `src/WildBunch.Application/Games/Models/TownLayoutDto.cs`
+- Modify: `src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs`
 - Test: `tests/WildBunch.Domain.Tests/World/TownLayoutTests.cs`
+- Test: `tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorTests.cs`
+- Test: `tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperTests.cs`
 
 **Interfaces:**
 - Consumes: `LayoutSalts` from existing implementation
-- Produces: `TownLayout.LayoutSalts` field for persistence
+- Produces: `TownLayout.LayoutSalts` field, `TownLayoutDto.LayoutSalts` field, mapper updates
 
-- [ ] **Step 1: Write the failing test**
+**Test Kind:** Unit tests (isolated domain and mapping logic)
+
+**Implementation guidance:**
+- Add `LayoutSalts? LayoutSalts` field to `TownLayout` record (optional, last parameter)
+- Add `LayoutSalts? usedLayoutSalts` parameter to `TownLayoutGenerator.GenerateLayout` (optional, last parameter)
+- Pass `usedLayoutSalts` to TownLayout constructor in the return statement
+- Add `TownLayoutSaltsDto? LayoutSalts` field to `TownLayoutDto` (optional, last parameter)
+- Update `TownLayoutMapper.ToDto()` to map `TownLayout.LayoutSalts` to `TownLayoutDto.LayoutSalts`
+- Follow existing DTO mapping patterns in the mapper
+
+**Verification:**
+- Unit test verifies TownLayout with LayoutSalts creates successfully
+- Unit test verifies TownLayoutGenerator with usedLayoutSalts persists salts
+- Unit test verifies TownLayoutMapper maps LayoutSalts to DTO
+
+- [ ] **Step 1: Write failing test for TownLayout with LayoutSalts**
 
 ```csharp
 using WildBunch.Domain.World;
@@ -229,7 +246,7 @@ public sealed class TownLayoutLayoutSaltsTests
 Run: `dotnet test tests/WildBunch.Domain.Tests/World/TownLayoutLayoutSaltsTests.cs -v`
 Expected: FAIL with "does not contain a constructor that takes 8 arguments"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Implement TownLayout.LayoutSalts**
 
 Modify `src/WildBunch.Domain/World/TownLayout.cs`:
 
@@ -250,26 +267,7 @@ public sealed record TownLayout(
 Run: `dotnet test tests/WildBunch.Domain.Tests/World/TownLayoutLayoutSaltsTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.Domain/World/TownLayout.cs tests/WildBunch.Domain.Tests/World/TownLayoutLayoutSaltsTests.cs
-git commit -m "feat: add LayoutSalts field to TownLayout for persistence"
-```
-
----
-
-### Task 4: Update TownLayoutGenerator to Use LayoutSalts
-
-**Files:**
-- Modify: `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`
-- Test: `tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorTests.cs`
-
-**Interfaces:**
-- Consumes: `TownLayout.LayoutSalts` from Task 3
-- Produces: Updated `TownLayoutGenerator.GenerateLayout()` signature
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 5: Write failing test for TownLayoutGenerator with usedLayoutSalts**
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -304,16 +302,16 @@ public sealed class TownLayoutGeneratorLayoutSaltsTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 6: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorLayoutSaltsTests.cs -v`
 Expected: FAIL with "does not contain a constructor that takes 9 arguments"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 7: Implement TownLayoutGenerator usedLayoutSalts**
 
 Modify `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`:
 
-Update the signature at line 52:
+Update signature:
 
 ```csharp
 public static TownLayout GenerateLayout(
@@ -328,37 +326,18 @@ public static TownLayout GenerateLayout(
     LayoutSalts? usedLayoutSalts = null)
 ```
 
-Update the return statement at line 163:
+Update return statement:
 
 ```csharp
 return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths, tileGrid, resolverVersion, usedLayoutSalts);
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 8: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorLayoutSaltsTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorLayoutSaltsTests.cs
-git commit -m "feat: update TownLayoutGenerator to persist used layout salts"
-```
-
----
-
-### Task 5: Add LayoutSalts to TownLayoutDto
-
-**Files:**
-- Modify: `src/WildBunch.Application/Games/Models/TownLayoutDto.cs`
-- Test: `tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperTests.cs`
-
-**Interfaces:**
-- Consumes: `TownLayout.LayoutSalts` from Task 3
-- Produces: `TownLayoutDto.LayoutSalts` for frontend
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 9: Write failing test for TownLayoutMapper with LayoutSalts**
 
 ```csharp
 using WildBunch.Application.Games.Mapping;
@@ -393,12 +372,12 @@ public sealed class TownLayoutMapperLayoutSaltsTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 10: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperLayoutSaltsTests.cs -v`
 Expected: FAIL with "does not contain a definition for 'LayoutSalts'"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 11: Implement TownLayoutDto.LayoutSalts**
 
 Modify `src/WildBunch.Application/Games/Models/TownLayoutDto.cs`:
 
@@ -414,16 +393,16 @@ public sealed record TownLayoutDto(
     TownLayoutSaltsDto? LayoutSalts = null);
 ```
 
-- [ ] **Step 4: Run test to verify it fails**
+- [ ] **Step 12: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperLayoutSaltsTests.cs -v`
 Expected: FAIL with "does not match expected number of arguments"
 
-- [ ] **Step 5: Update mapper to include layout salts**
+- [ ] **Step 13: Implement TownLayoutMapper LayoutSalts mapping**
 
 Modify `src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs`:
 
-Update the return statement in `ToDto()`:
+Update the return statement in `ToDto()` to include LayoutSalts mapping:
 
 ```csharp
 return new TownLayoutDto(
@@ -442,31 +421,51 @@ return new TownLayoutDto(
         layout.LayoutSalts.PropsSalt));
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [ ] **Step 14: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperLayoutSaltsTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 15: Commit**
 
 ```bash
-git add src/WildBunch.Application/Games/Models/TownLayoutDto.cs src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperLayoutSaltsTests.cs
-git commit -m "feat: add LayoutSalts to TownLayoutDto and mapper"
+git add src/WildBunch.Domain/World/TownLayout.cs src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs src/WildBunch.Application/Games/Models/TownLayoutDto.cs src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs tests/WildBunch.Domain.Tests/World/TownLayoutLayoutSaltsTests.cs tests/WildBunch.GameContent.Tests/NewGame/TownLayoutGeneratorLayoutSaltsTests.cs tests/WildBunch.Application.Tests/Games/Mapping/TownLayoutMapperLayoutSaltsTests.cs
+git commit -m "feat: add LayoutSalts persistence to TownLayout and DTO"
 ```
 
 ---
 
-### Task 6: Add DevLayoutSalts to ResolvedGameSetup
+### Task 3: Add Dev Salts Pipeline Integration
 
 **Files:**
 - Modify: `src/WildBunch.GameContent/NewGame/ResolvedGameSetup.cs`
+- Modify: `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`
+- Modify: `src/WildBunch.GameContent/NewGame/MapGenerator.cs`
 - Test: `tests/WildBunch.GameContent.Tests/NewGame/ResolvedGameSetupTests.cs`
+- Test: `tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverTests.cs`
+- Test: `tests/WildBunch.GameContent.Tests/NewGame/MapGeneratorTests.cs`
 
 **Interfaces:**
 - Consumes: `LayoutSalts` from existing implementation
-- Produces: `ResolvedGameSetup.DevLayoutSalts` for pipeline
+- Produces: `ResolvedGameSetup.DevLayoutSalts`, `GameSetupResolver` overload, `MapGenerator` dev salts parameter
 
-- [ ] **Step 1: Write the failing test**
+**Test Kind:** GameContent tests (seed codec and game-setup pipeline tests)
+
+**Implementation guidance:**
+- Add `LayoutSalts? DevLayoutSalts` field to `ResolvedGameSetup` record (optional, last parameter)
+- Add overload to `GameSetupResolver.Resolve()` that accepts `LayoutSalts? devLayoutSalts` parameter
+- Keep existing `Resolve()` signature for backward compatibility
+- Pass devLayoutSalts to `MapGenerator.Generate()` in the new overload
+- Add `LayoutSalts? devLayoutSalts` parameter to `MapGenerator.Generate()`
+- Pass devLayoutSalts to `LayoutSaltDeriver.DeriveLayoutSalts()` call
+- Remove hardcoded `devLayoutSalts: null` from MapGenerator
+
+**Verification:**
+- GameContent test verifies ResolvedGameSetup with DevLayoutSalts creates successfully
+- GameContent test verifies GameSetupResolver overload passes dev salts to MapGenerator
+- GameContent test verifies MapGenerator with dev salts passes to LayoutSaltDeriver
+
+- [ ] **Step 1: Write failing test for ResolvedGameSetup with DevLayoutSalts**
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -507,7 +506,7 @@ public sealed class ResolvedGameSetupLayoutSaltsTests
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/ResolvedGameSetupLayoutSaltsTests.cs -v`
 Expected: FAIL with "does not contain a constructor that takes 15 arguments"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Implement ResolvedGameSetup.DevLayoutSalts**
 
 Modify `src/WildBunch.GameContent/NewGame/ResolvedGameSetup.cs`:
 
@@ -535,26 +534,7 @@ public sealed record ResolvedGameSetup(
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/ResolvedGameSetupLayoutSaltsTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.GameContent/NewGame/ResolvedGameSetup.cs tests/WildBunch.GameContent.Tests/NewGame/ResolvedGameSetupLayoutSaltsTests.cs
-git commit -m "feat: add DevLayoutSalts to ResolvedGameSetup"
-```
-
----
-
-### Task 7: Add GameSetupResolver Overload for Dev Salts
-
-**Files:**
-- Modify: `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs`
-- Test: `tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverTests.cs`
-
-**Interfaces:**
-- Consumes: `ResolvedGameSetup.DevLayoutSalts` from Task 6
-- Produces: `GameSetupResolver.Resolve()` overload for dev salts
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 5: Write failing test for GameSetupResolver with dev salts**
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -585,12 +565,12 @@ public sealed class GameSetupResolverDevSaltsTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 6: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverDevSaltsTests.cs -v`
 Expected: FAIL with "does not contain a definition for 'Resolve'"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 7: Implement GameSetupResolver overload**
 
 Add overload to `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs` after the existing `Resolve()` method:
 
@@ -606,18 +586,15 @@ public ResolvedGameSetup Resolve(
     ArgumentNullException.ThrowIfNull(difficulty);
     ArgumentNullException.ThrowIfNull(entropy);
 
-    // 1. Resolve mystery truth
     var mysteryTruth = MysteryTruthResolver.Resolve(
         seedWorld,
         entropy,
         _saltSourceFactory,
         difficulty.Difficulty);
 
-    // 2. Build the deterministic source from the seed code.
     var seedCodeText = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode);
     var source = new GameSetupDeterministicSource(seedCodeText);
 
-    // 3. Build world from seed world, passing dev salts
     var world = MapGenerator.Generate(
         seedWorld,
         source,
@@ -625,10 +602,8 @@ public ResolvedGameSetup Resolve(
         mysteryTruth.SaltSource,
         devLayoutSalts);
 
-    // 4. Resolve starting town
     var startingTownId = StartingTownPolicy.ResolveStartingTown(world, playerChosenStartingTownId);
 
-    // 5. Build case file
     var isCanonical = seedWorld.IsCanonical;
     var caseFile = isCanonical
         ? SeedCaseBuilder.CreateCanonicalCaseFile(
@@ -642,18 +617,14 @@ public ResolvedGameSetup Resolve(
             mysteryTruth.ResolvedCulpritIndex,
             mysteryTruth.ResolvedAccusationIndex);
 
-    // 6. Compute final cash
     var finalCash = difficulty.StartingCash + mysteryTruth.AppliedCashBonus;
 
-    // 7. Build inventory
     var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(
         difficulty.TravelRules,
         difficulty);
 
-    // 8. Build wallet
     var startingWallet = SeedInventoryBuilder.CreateStartingWallet(finalCash);
 
-    // 9. Compute starting health
     var startingHealth = StartingHealthFor(difficulty.Difficulty);
 
     return new ResolvedGameSetup(
@@ -673,31 +644,12 @@ public ResolvedGameSetup Resolve(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 8: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverDevSaltsTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.GameContent/NewGame/GameSetupResolver.cs tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverDevSaltsTests.cs
-git commit -m "feat: add GameSetupResolver overload for dev layout salts"
-```
-
----
-
-### Task 8: Update MapGenerator to Accept Dev Salts
-
-**Files:**
-- Modify: `src/WildBunch.GameContent/NewGame/MapGenerator.cs`
-- Test: `tests/WildBunch.GameContent.Tests/NewGame/MapGeneratorTests.cs`
-
-**Interfaces:**
-- Consumes: `GameSetupResolver.Resolve()` overload from Task 7
-- Produces: Updated `MapGenerator.Generate()` signature
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 9: Write failing test for MapGenerator with dev salts**
 
 ```csharp
 using WildBunch.Domain.Game;
@@ -729,16 +681,16 @@ public sealed class MapGeneratorDevSaltsTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 10: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/MapGeneratorDevSaltsTests.cs -v`
 Expected: FAIL with "does not contain a constructor that takes 5 arguments"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 11: Implement MapGenerator dev salts parameter**
 
 Modify `src/WildBunch.GameContent/NewGame/MapGenerator.cs`:
 
-Update the signature at line 20:
+Update signature:
 
 ```csharp
 public static World Generate(
@@ -749,7 +701,7 @@ public static World Generate(
     LayoutSalts? devLayoutSalts)
 ```
 
-Update the call to `LayoutSaltDeriver.DeriveLayoutSalts()` at line 114:
+Update the call to `LayoutSaltDeriver.DeriveLayoutSalts()` to pass devLayoutSalts:
 
 ```csharp
 layoutSalts: LayoutSaltDeriver.DeriveLayoutSalts(
@@ -761,32 +713,52 @@ layoutSalts: LayoutSaltDeriver.DeriveLayoutSalts(
     devLayoutSalts),
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 12: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.GameContent.Tests/NewGame/MapGeneratorDevSaltsTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
-git add src/WildBunch.GameContent/NewGame/MapGenerator.cs tests/WildBunch.GameContent.Tests/NewGame/MapGeneratorDevSaltsTests.cs
-git commit -m "feat: update MapGenerator to accept dev layout salts"
+git add src/WildBunch.GameContent/NewGame/ResolvedGameSetup.cs src/WildBunch.GameContent/NewGame/GameSetupResolver.cs src/WildBunch.GameContent/NewGame/MapGenerator.cs tests/WildBunch.GameContent.Tests/NewGame/ResolvedGameSetupLayoutSaltsTests.cs tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverDevSaltsTests.cs tests/WildBunch.GameContent.Tests/NewGame/MapGeneratorDevSaltsTests.cs
+git commit -m "feat: add dev salts pipeline integration (ResolvedGameSetup, GameSetupResolver, MapGenerator)"
 ```
 
 ---
 
-### Task 9: Add PrepGameSession Command and Handler
+### Task 4: Add Prep and Start Session Commands
 
 **Files:**
 - Create: `src/WildBunch.Application/Games/Commands/PrepGameSessionCommand.cs`
 - Create: `src/WildBunch.Application/Games/Commands/PrepGameSessionHandler.cs`
+- Create: `src/WildBunch.Application/Games/Commands/StartGameSessionCommand.cs`
+- Create: `src/WildBunch.Application/Games/Commands/StartGameSessionHandler.cs`
+- Modify: `src/WildBunch.Api/GamesEndpoints.cs`
 - Test: `tests/WildBunch.Application.Tests/Games/Commands/PrepGameSessionHandlerTests.cs`
+- Test: `tests/WildBunch.Application.Tests/Games/Commands/StartGameSessionHandlerTests.cs`
 
 **Interfaces:**
-- Consumes: `GameSession.StartPrepped()` from Task 2
-- Produces: `PrepGameSessionCommand` and handler for API
+- Consumes: `GameSession.StartPrepped()` from Task 1, `GameSetupResolver` overload from Task 3
+- Produces: `PrepGameSessionCommand`, `StartGameSessionCommand`, API endpoints
 
-- [ ] **Step 1: Write the failing test**
+**Test Kind:** Unit tests (isolated command handler logic)
+
+**Implementation guidance:**
+- `PrepGameSessionCommand`: record with SeedCode, GameDifficulty, GameEntropy
+- `PrepGameSessionHandler`: calls `GameSession.StartPrepped()`, stores session, returns session ID
+- `StartGameSessionCommand`: record with GameSessionId
+- `StartGameSessionHandler`: loads prepped session, reads `DevLayoutSalts`, calls `GameSetupResolver` with dev salts, starts session
+- Register endpoints in `GamesEndpoints.cs`: `POST /api/games/prep`, `POST /api/games/{id}/start`
+- Follow existing command handler patterns (inherit from `GameSessionCommandHandler` where appropriate)
+- Use `INewGameFactory` for world resolution in StartGameSessionHandler
+- Return `GameSessionDto` from StartGameSessionHandler
+
+**Verification:**
+- Unit test verifies PrepGameSessionHandler creates prepped session
+- Unit test verifies StartGameSessionHandler starts prepped session with dev salts
+
+- [ ] **Step 1: Write failing test for PrepGameSessionHandler**
 
 ```csharp
 using WildBunch.Application.Games.Commands;
@@ -818,7 +790,7 @@ public sealed class PrepGameSessionHandlerTests
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Commands/PrepGameSessionHandlerTests.cs -v`
 Expected: FAIL with "type or namespace 'PrepGameSessionCommand' could not be found"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Implement PrepGameSessionCommand**
 
 Create `src/WildBunch.Application/Games/Commands/PrepGameSessionCommand.cs`:
 
@@ -831,6 +803,8 @@ public sealed record PrepGameSessionCommand(
     GameEntropy GameEntropy);
 ```
 
+- [ ] **Step 4: Implement PrepGameSessionHandler**
+
 Create `src/WildBunch.Application/Games/Commands/PrepGameSessionHandler.cs`:
 
 ```csharp
@@ -839,11 +813,6 @@ using WildBunch.Domain.Game;
 
 namespace WildBunch.Application.Games.Commands;
 
-/// <summary>
-/// Handler for PrepGameSessionCommand. Creates a minimal game session
-/// in the prepped phase (before world generation) for the multi-phase
-/// setup flow. Dev injections can happen before the start phase.
-/// </summary>
 public sealed class PrepGameSessionHandler
 {
     private readonly IGameSessionRepository _repository;
@@ -879,32 +848,12 @@ public sealed class PrepGameSessionHandler
 public sealed record PrepGameSessionResult(string GameSessionId);
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Commands/PrepGameSessionHandlerTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.Application/Games/Commands/PrepGameSessionCommand.cs src/WildBunch.Application/Games/Commands/PrepGameSessionHandler.cs tests/WildBunch.Application.Tests/Games/Commands/PrepGameSessionHandlerTests.cs
-git commit -m "feat: add PrepGameSession command and handler"
-```
-
----
-
-### Task 10: Add StartGameSession Command and Handler
-
-**Files:**
-- Create: `src/WildBunch.Application/Games/Commands/StartGameSessionCommand.cs`
-- Create: `src/WildBunch.Application/Games/Commands/StartGameSessionHandler.cs`
-- Test: `tests/WildBunch.Application.Tests/Games/Commands/StartGameSessionHandlerTests.cs`
-
-**Interfaces:**
-- Consumes: `GameSetupResolver.Resolve()` overload from Task 7, `GameSession.StartPrepped()` from Task 2
-- Produces: `StartGameSessionCommand` and handler for API
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 6: Write failing test for StartGameSessionHandler**
 
 ```csharp
 using WildBunch.Application.Games.Commands;
@@ -925,7 +874,6 @@ public sealed class StartGameSessionHandlerTests
         var newGameFactory = new SeededNewGameFactory();
         var handler = new StartGameSessionHandler(repository, unitOfWork, newGameFactory);
         
-        // First prep a session
         var prepped = GameSession.StartPrepped("test-seed", GameDifficulty.Standard, GameEntropy.Classic);
         await repository.StoreAsync(prepped, Guid.NewGuid(), CancellationToken.None);
         
@@ -938,12 +886,12 @@ public sealed class StartGameSessionHandlerTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 7: Run test to verify it fails**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Commands/StartGameSessionHandlerTests.cs -v`
 Expected: FAIL with "type or namespace 'StartGameSessionCommand' could not be found"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 8: Implement StartGameSessionCommand**
 
 Create `src/WildBunch.Application/Games/Commands/StartGameSessionCommand.cs`:
 
@@ -952,6 +900,8 @@ namespace WildBunch.Application.Games.Commands;
 
 public sealed record StartGameSessionCommand(string GameSessionId);
 ```
+
+- [ ] **Step 9: Implement StartGameSessionHandler**
 
 Create `src/WildBunch.Application/Games/Commands/StartGameSessionHandler.cs`:
 
@@ -966,11 +916,6 @@ using WildBunch.GameContent.Abstractions;
 
 namespace WildBunch.Application.Games.Commands;
 
-/// <summary>
-/// Handler for StartGameSessionCommand. Starts a prepped game session
-/// by running the game setup pipeline and generating the world.
-/// Uses dev salts if they were set during the prepped phase.
-/// </summary>
 public sealed class StartGameSessionHandler : GameSessionCommandHandler
 {
     private readonly INewGameFactory _newGameFactory;
@@ -1010,17 +955,14 @@ public sealed class StartGameSessionHandler : GameSessionCommandHandler
             throw new InvalidOperationException("Session must be in Prepped status to start");
         }
 
-        // Load dev salts from session if set
         var devLayoutSalts = session.DevLayoutSalts;
 
-        // Resolve world and case file using dev salts
         var (world, caseFile, seedCodeText, saltSource) = _newGameFactory.ResolveWorld(
             "Player",
             session.GameDifficulty,
             session.SeedCode,
             session.GameEntropy);
 
-        // Create a new session with the world (StartSetup pattern)
         var newSession = GameSession.StartSetup(
             "Player",
             world,
@@ -1037,7 +979,6 @@ public sealed class StartGameSessionHandler : GameSessionCommandHandler
         await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         newSession.MarkEventsCommitted();
 
-        // Return the DTO
         var dto = GameSessionMapper.ToDto(newSession);
         var events = await GameSessionRepository.GetEventStreamAsync(
             newSession.Id, 0, cancellationToken).ConfigureAwait(false);
@@ -1049,34 +990,16 @@ public sealed class StartGameSessionHandler : GameSessionCommandHandler
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 10: Run test to verify it passes**
 
 Run: `dotnet test tests/WildBunch.Application.Tests/Games/Commands/StartGameSessionHandlerTests.cs -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/WildBunch.Application/Games/Commands/StartGameSessionCommand.cs src/WildBunch.Application/Games/Commands/StartGameSessionHandler.cs tests/WildBunch.Application.Tests/Games/Commands/StartGameSessionHandlerTests.cs
-git commit -m "feat: add StartGameSession command and handler"
-```
-
----
-
-### Task 11: Register New Endpoints
-
-**Files:**
-- Modify: `src/WildBunch.Api/GamesEndpoints.cs`
-
-**Interfaces:**
-- Consumes: `PrepGameSessionHandler` from Task 9, `StartGameSessionHandler` from Task 10
-- Produces: API endpoints for frontend
-
-- [ ] **Step 1: Add endpoints to GamesEndpoints.cs**
+- [ ] **Step 11: Register endpoints in GamesEndpoints.cs**
 
 Modify `src/WildBunch.Api/GamesEndpoints.cs`:
 
-Add after the existing endpoints:
+Add endpoint handlers:
 
 ```csharp
 private static async Task<IResult> PrepGameSessionAsync(
@@ -1098,7 +1021,7 @@ private static async Task<IResult> StartGameSessionAsync(
 }
 ```
 
-Add to the endpoint registration:
+Add to endpoint registration:
 
 ```csharp
 group.MapPost("/prep", (PrepGameSessionCommand command, PrepGameSessionHandler handler, CancellationToken ct) =>
@@ -1108,29 +1031,68 @@ group.MapPost("/{id}/start", (StartGameSessionCommand command, StartGameSessionH
     StartGameSessionAsync(command, handler, ct));
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
-git add src/WildBunch.Api/GamesEndpoints.cs
-git commit -m "feat: register prep and start game session endpoints"
+git add src/WildBunch.Application/Games/Commands/PrepGameSessionCommand.cs src/WildBunch.Application/Games/Commands/PrepGameSessionHandler.cs src/WildBunch.Application/Games/Commands/StartGameSessionCommand.cs src/WildBunch.Application/Games/Commands/StartGameSessionHandler.cs src/WildBunch.Api/GamesEndpoints.cs tests/WildBunch.Application.Tests/Games/Commands/PrepGameSessionHandlerTests.cs tests/WildBunch.Application.Tests/Games/Commands/StartGameSessionHandlerTests.cs
+git commit -m "feat: add prep and start game session commands and endpoints"
 ```
 
 ---
 
-### Task 12: Add Frontend API Functions
+### Task 5: Add Frontend API Functions
 
 **Files:**
 - Modify: `src/WildBunch.Web/src/api/wildBunchApi.ts`
 
 **Interfaces:**
-- Consumes: New endpoints from Task 11
+- Consumes: New endpoints from Task 4
 - Produces: Frontend API functions for UI
 
-- [ ] **Step 1: Add API functions**
+**Test Kind:** Frontend unit tests (API function tests)
+
+**Implementation guidance:**
+- Add `prepGameSession(seed: string, difficulty: GameDifficulty, entropy: GameEntropy)` function
+- Add `startGameSession(gameSessionId: string)` function
+- Follow existing API function patterns in `wildBunchApi.ts`
+- Use `requestJson` helper for HTTP calls
+
+**Verification:**
+- Frontend test verifies prepGameSession calls correct endpoint
+- Frontend test verifies startGameSession calls correct endpoint
+
+- [ ] **Step 1: Write failing test for prepGameSession**
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+import { prepGameSession } from "../api/wildBunchApi";
+
+describe("prepGameSession", () => {
+  it("should call POST /api/games/prep with correct body", async () => {
+    const requestJson = vi.fn().mockResolvedValue({ gameSessionId: "test-id" });
+    vi.mock("../api/wildBunchApi", () => ({
+      requestJson,
+      prepGameSession: (seed: string, difficulty: number, entropy: number) =>
+        requestJson("/api/games/prep", {
+          method: "POST",
+          body: JSON.stringify({ seedCode: seed, gameDifficulty: difficulty, gameEntropy: entropy }),
+        }),
+    }));
+
+    const result = await prepGameSession("test-seed", 0, 0);
+    expect(result.gameSessionId).toBe("test-id");
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run src/WildBunch.Web/src/tests/wildBunchApi.test.ts`
+Expected: FAIL with "prepGameSession is not defined"
+
+- [ ] **Step 3: Implement prepGameSession**
 
 Modify `src/WildBunch.Web/src/api/wildBunchApi.ts`:
-
-Add after the existing functions:
 
 ```typescript
 export function prepGameSession(seed: string, difficulty: GameDifficulty, entropy: GameEntropy) {
@@ -1139,7 +1101,44 @@ export function prepGameSession(seed: string, difficulty: GameDifficulty, entrop
     body: JSON.stringify({ seedCode: seed, gameDifficulty: difficulty, gameEntropy: entropy }),
   });
 }
+```
 
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `npx vitest run src/WildBunch.Web/src/tests/wildBunchApi.test.ts`
+Expected: PASS
+
+- [ ] **Step 5: Write failing test for startGameSession**
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+import { startGameSession } from "../api/wildBunchApi";
+
+describe("startGameSession", () => {
+  it("should call POST /api/games/{id}/start", async () => {
+    const requestJson = vi.fn().mockResolvedValue({ id: "test-id" });
+    vi.mock("../api/wildBunchApi", () => ({
+      requestJson,
+      startGameSession: (gameSessionId: string) =>
+        requestJson(`/api/games/${gameSessionId}/start`, { method: "POST" }),
+    }));
+
+    const result = await startGameSession("test-id");
+    expect(result.id).toBe("test-id");
+  });
+});
+```
+
+- [ ] **Step 6: Run test to verify it fails**
+
+Run: `npx vitest run src/WildBunch.Web/src/tests/wildBunchApi.test.ts`
+Expected: FAIL with "startGameSession is not defined"
+
+- [ ] **Step 7: Implement startGameSession**
+
+Modify `src/WildBunch.Web/src/api/wildBunchApi.ts`:
+
+```typescript
 export function startGameSession(gameSessionId: string) {
   return requestJson<GameSessionDto>(`/api/games/${gameSessionId}/start`, {
     method: "POST",
@@ -1147,37 +1146,82 @@ export function startGameSession(gameSessionId: string) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 8: Run test to verify it passes**
+
+Run: `npx vitest run src/WildBunch.Web/src/tests/wildBunchApi.test.ts`
+Expected: PASS
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/WildBunch.Web/src/api/wildBunchApi.ts
+git add src/WildBunch.Web/src/api/wildBunchApi.ts src/WildBunch.Web/src/tests/wildBunchApi.test.ts
 git commit -m "feat: add prep and start game session API functions"
 ```
 
 ---
 
-### Task 13: Update Game Setup Screen for Three-Phase Flow
+### Task 6: Update Frontend for Three-Phase Flow
 
 **Files:**
 - Modify: `src/WildBunch.Web/src/components/StartGameOptionsForm.tsx`
+- Modify: `src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx`
+- Test: `src/WildBunch.Web/src/tests/StartGameOptionsForm.test.tsx`
+- Test: `src/WildBunch.Web/src/tests/TownLayoutDevPanel.test.tsx`
 
 **Interfaces:**
-- Consumes: Frontend API functions from Task 12
-- Produces: Updated game setup flow
+- Consumes: Frontend API functions from Task 5, `TownLayoutDto.LayoutSalts` from Task 2
+- Produces: Updated game setup flow, updated dev panel
 
-- [ ] **Step 1: Update StartGameOptionsForm to orchestrate three-phase flow**
+**Test Kind:** Frontend unit tests (component tests)
+
+**Implementation guidance:**
+- Update `StartGameOptionsForm` to call `prepGameSession` on mount, store session ID in state
+- If dev panel has salts set, call `setTownLayoutSalts` before start
+- Change form submission to call `startGameSession` instead of existing API
+- Update `TownLayoutDevPanel` to read salts from `TownLayout.LayoutSalts` instead of `GameSession.DevLayoutSalts`
+- Follow existing frontend patterns (styled-components, no inline styles)
+- Use `useEffect` for side effects
+
+**Verification:**
+- Frontend test verifies StartGameOptionsForm calls prepGameSession on mount
+- Frontend test verifies StartGameOptionsForm calls startGameSession on submit
+- Frontend test verifies TownLayoutDevPanel reads from TownLayout.LayoutSalts
+
+- [ ] **Step 1: Write failing test for StartGameOptionsForm prep flow**
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { usePrepGameSession } from "../components/StartGameOptionsForm";
+
+describe("usePrepGameSession", () => {
+  it("should call prepGameSession on mount", async () => {
+    const prepGameSession = vi.fn().mockResolvedValue({ gameSessionId: "test-id" });
+    const { result } = renderHook(() => usePrepGameSession("test-seed", 0, 0, prepGameSession));
+    
+    await act(async () => {
+      await result.current.prep();
+    });
+    
+    expect(prepGameSession).toHaveBeenCalledWith("test-seed", 0, 0);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run src/WildBunch.Web/src/tests/StartGameOptionsForm.test.tsx`
+Expected: FAIL with "usePrepGameSession is not defined"
+
+- [ ] **Step 3: Implement StartGameOptionsForm prep flow**
 
 Modify `src/WildBunch.Web/src/components/StartGameOptionsForm.tsx`:
 
-Add state for gameSessionId:
+Add state and effect:
 
 ```typescript
 const [gameSessionId, setGameSessionId] = useState<string | null>(null);
-```
 
-Add useEffect to prep session on mount:
-
-```typescript
 useEffect(() => {
   const prepSession = async () => {
     const result = await prepGameSession(seedDraft, gameDifficulty, GameEntropy.Classic);
@@ -1187,7 +1231,7 @@ useEffect(() => {
 }, [seedDraft, gameDifficulty]);
 ```
 
-Update the form submission to call startGameSession instead of completeGameSetup (assuming there's an onSubmit handler):
+Update form submission:
 
 ```typescript
 const handleSubmit = async () => {
@@ -1197,29 +1241,52 @@ const handleSubmit = async () => {
 };
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 4: Run test to verify it passes**
 
-```bash
-git add src/WildBunch.Web/src/components/StartGameOptionsForm.tsx
-git commit -m "feat: update game setup screen for three-phase flow"
+Run: `npx vitest run src/WildBunch.Web/src/tests/StartGameOptionsForm.test.tsx`
+Expected: PASS
+
+- [ ] **Step 5: Write failing test for TownLayoutDevPanel reading from TownLayout**
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { TownLayoutDevPanel } from "../dev/panels/TownLayoutDevPanel";
+
+describe("TownLayoutDevPanel", () => {
+  it("should read salts from TownLayout.LayoutSalts", () => {
+    const mockSession = {
+      world: {
+        towns: [
+          {
+            layout: {
+              layoutSalts: {
+                buildingsSalt: "buildings",
+                roadsSalt: "roads",
+                dirtSalt: "dirt",
+                propsSalt: "props",
+              },
+            },
+          },
+        ],
+      },
+    };
+    render(<TownLayoutDevPanel session={mockSession} />);
+    expect(screen.getByText("buildings")).toBeInTheDocument();
+  });
+});
 ```
 
----
+- [ ] **Step 6: Run test to verify it fails**
 
-### Task 14: Update Dev Panel to Read from TownLayout
+Run: `npx vitest run src/WildBunch.Web/src/tests/TownLayoutDevPanel.test.tsx`
+Expected: FAIL with "layoutSalts not found"
 
-**Files:**
-- Modify: `src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx`
-
-**Interfaces:**
-- Consumes: `TownLayoutDto.LayoutSalts` from Task 5
-- Produces: Updated dev panel to read from TownLayout
-
-- [ ] **Step 1: Update TownLayoutDevPanel to read from TownLayout**
+- [ ] **Step 7: Implement TownLayoutDevPanel reading from TownLayout**
 
 Modify `src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx`:
 
-Update the useEffect to read from TownLayout instead of GameSession:
+Update the useEffect to read from TownLayout:
 
 ```typescript
 useEffect(() => {
@@ -1228,7 +1295,6 @@ useEffect(() => {
   const loadSalts = async () => {
     setIsLoading(true);
     try {
-      // Read from TownLayout in the session instead of GameSession.DevLayoutSalts
       const session = await getGameSession(gameId);
       const townLayout = session.world?.towns?.[0]?.layout;
       if (townLayout?.layoutSalts) {
@@ -1251,107 +1317,50 @@ useEffect(() => {
 }, [gameId]);
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 8: Run test to verify it passes**
+
+Run: `npx vitest run src/WildBunch.Web/src/tests/TownLayoutDevPanel.test.tsx`
+Expected: PASS
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx
-git commit -m "feat: update dev panel to read salts from TownLayout"
+git add src/WildBunch.Web/src/components/StartGameOptionsForm.tsx src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx src/WildBunch.Web/src/tests/StartGameOptionsForm.test.tsx src/WildBunch.Web/src/tests/TownLayoutDevPanel.test.tsx
+git commit -m "feat: update frontend for three-phase game setup flow"
 ```
 
 ---
 
-### Task 15: Add Integration Tests
+## Execution Confidence Assessment
 
-**Files:**
-- Create: `tests/WildBunch.Integration.Tests/Dev/DevLayoutSaltsIntegrationTests.cs`
+**Confidence Rating: 8/10**
 
-**Interfaces:**
-- Consumes: All previous tasks
-- Produces: Integration tests for full flow
+**Verified:**
+- ✅ GameStatus enum location and pattern verified
+- ✅ GameSession constructor signature verified (15 parameters)
+- ✅ GameSession.StartSetup pattern verified (factory method, uses private constructor)
+- ✅ TownLayout record signature verified (7 parameters)
+- ✅ TownLayoutGenerator.GenerateLayout signature verified (8 parameters)
+- ✅ ResolvedGameSetup record signature verified (13 parameters)
+- ✅ GameSetupResolver.Resolve signature verified (4 parameters)
+- ✅ MapGenerator.Generate signature verified (4 parameters)
+- ✅ Frontend API pattern verified (requestJson helper)
+- ✅ Frontend component patterns verified (styled-components, useState, useEffect)
 
-- [ ] **Step 1: Write integration test**
+**Potential Issues:**
+- ⚠️ StartGameSessionHandler implementation assumes `INewGameFactory.ResolveWorld` signature - not fully verified
+- ⚠️ Frontend test mocks may need adjustment based on actual test infrastructure
+- ⚠️ TownLayoutDevPanel reading from TownLayout assumes session DTO structure - not fully verified
 
-Create `tests/WildBunch.Integration.Tests/Dev/DevLayoutSaltsIntegrationTests.cs`:
+**Mitigation:**
+- Subagents should verify signatures against actual source before implementing
+- If signature mismatches are found, subagents should report back for plan adjustment
+- Frontend tests may need mock adjustment based on actual test infrastructure
 
-```csharp
-using WildBunch.Application.Games.Commands;
-using WildBunch.Application.Dev.Commands;
-using WildBunch.Application.Dev.Models;
-using WildBunch.Domain.Game;
-using WildBunch.Domain.World;
-using Xunit;
+**Task Independence:**
+- ✅ Tasks 1-3 are independent (domain and game-content changes)
+- ⚠️ Task 4 depends on Task 1 (uses GameSession.StartPrepped) and Task 3 (uses GameSetupResolver overload)
+- ⚠️ Task 5 depends on Task 4 (uses new endpoints)
+- ⚠️ Task 6 depends on Task 5 (uses new API functions) and Task 2 (uses TownLayoutDto.LayoutSalts)
 
-namespace WildBunch.Integration.Tests.Dev;
-
-public sealed class DevLayoutSaltsIntegrationTests
-{
-    [Fact]
-    public async Task FullFlow_PrepInjectStart_UsesDevSalts()
-    {
-        // This test requires full integration test infrastructure
-        // For now, skip as it requires Testcontainers and full setup
-        Assert.True(true, "Integration test infrastructure needed");
-    }
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add tests/WildBunch.Integration.Tests/Dev/DevLayoutSaltsIntegrationTests.cs
-git commit -m "test: add dev layout salts integration test placeholder"
-```
-
----
-
-### Task 16: Add Frontend Tests
-
-**Files:**
-- Create: `src/WildBunch.Web/src/tests/DevLayoutSaltsFlow.test.tsx`
-
-**Interfaces:**
-- Consumes: Frontend changes from Tasks 12-14
-- Produces: Frontend tests for the flow
-
-- [ ] **Step 1: Write frontend test**
-
-Create `src/WildBunch.Web/src/tests/DevLayoutSaltsFlow.test.tsx`:
-
-```typescript
-import { describe, it, expect, vi } from "vitest";
-
-describe("Dev Layout Salts Flow", () => {
-  it("should prep session before game start", () => {
-    // This test requires full frontend test infrastructure
-    // For now, skip as it requires test setup
-    expect(true).toBe(true);
-  });
-});
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/WildBunch.Web/src/tests/DevLayoutSaltsFlow.test.tsx
-git commit -m "test: add dev layout salts flow test placeholder"
-```
-
----
-
-## Self-Review
-
-**Spec coverage:** All spec requirements are covered:
-- Multi-phase setup flow (prep → inject → start) - Tasks 9-11
-- Dev salts flow through pipeline - Tasks 6-8
-- Layout salts persistence - Tasks 3-5
-- Dev-only API contract - Task 9 (dev-only check in SetTownLayoutSaltsHandler already exists)
-- Frontend orchestration - Tasks 12-14
-
-**Placeholder scan:** No placeholders found. All steps have complete code.
-
-**Type consistency:** All types match across tasks:
-- `LayoutSalts` consistent throughout
-- `GameStatus.Prepped` added and used
-- `GameSession.StartPrepped()` signature consistent
-- `ResolvedGameSetup.DevLayoutSalts` matches consumption
-- `TownLayout.LayoutSalts` matches DTO mapping
+**Recommendation:** Execute tasks sequentially 1-6, not in parallel, due to dependencies.
