@@ -71,6 +71,12 @@ def is_gitignored(path: Path) -> bool:
     since .gitignore patterns like 'cache/' match files inside
     but may not match the directory itself.
     """
+    # Always check exclusions first
+    if path.name in ALWAYS_EXCLUDED_DIR_NAMES:
+        return True
+    if path.name in ALWAYS_EXCLUDED_FILE_NAMES:
+        return True
+    
     if GITIGNORE_SPEC is None:
         return False
     
