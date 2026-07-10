@@ -130,8 +130,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> GetSessionAuditAsync(
         Guid id,
-        DevRoleGuard guard,
-        GetSessionAuditHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] GetSessionAuditHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -152,8 +152,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> GetTravelDevContextAsync(
         Guid id,
-        DevRoleGuard guard,
-        GetTravelDevContextHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] GetTravelDevContextHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -174,9 +174,9 @@ public static class DevEndpoints
 
     private static async Task<IResult> ForceTravelOverrideAsync(
         Guid id,
-        DevRoleGuard guard,
-        ForceTravelOverrideHandler handler,
-        ForceTravelOverrideRequestDto request,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] ForceTravelOverrideHandler handler,
+        [FromBody] ForceTravelOverrideRequestDto request,
         CancellationToken cancellationToken)
     {
         try
@@ -212,8 +212,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> ClearTravelOverrideAsync(
         Guid id,
-        DevRoleGuard guard,
-        ClearTravelOverrideHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] ClearTravelOverrideHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -234,8 +234,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> GetSaloonDevContextAsync(
         Guid id,
-        DevRoleGuard guard,
-        GetSaloonDevContextHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] GetSaloonDevContextHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -256,9 +256,9 @@ public static class DevEndpoints
 
     private static async Task<IResult> ForceSaloonOverrideAsync(
         Guid id,
-        DevRoleGuard guard,
-        ForceSaloonOverrideHandler handler,
-        ForceSaloonOverrideRequestDto request,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] ForceSaloonOverrideHandler handler,
+        [FromBody] ForceSaloonOverrideRequestDto request,
         CancellationToken cancellationToken)
     {
         try
@@ -293,8 +293,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> ClearSaloonOverrideAsync(
         Guid id,
-        DevRoleGuard guard,
-        ClearSaloonOverrideHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] ClearSaloonOverrideHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -315,8 +315,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> GetSessionDevContextAsync(
         Guid id,
-        DevRoleGuard guard,
-        GetSessionDevContextHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] GetSessionDevContextHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -391,9 +391,9 @@ public static class DevEndpoints
 
     private static async Task<IResult> ForceDevDifficultyAsync(
         Guid id,
-        DevRoleGuard guard,
-        ForceDevDifficultyHandler handler,
-        ForceDevDifficultyRequestDto? request,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] ForceDevDifficultyHandler handler,
+        [FromBody] ForceDevDifficultyRequestDto? request,
         CancellationToken cancellationToken)
     {
         try
@@ -429,9 +429,9 @@ public static class DevEndpoints
 
     private static async Task<IResult> SetDevEntropyAsync(
         Guid id,
-        DevRoleGuard guard,
-        SetDevEntropyHandler handler,
-        SetDevEntropyRequestDto? request,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] SetDevEntropyHandler handler,
+        [FromBody] SetDevEntropyRequestDto? request,
         CancellationToken cancellationToken)
     {
         try
@@ -467,8 +467,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> GetTownLayoutSaltsAsync(
         Guid id,
-        DevRoleGuard guard,
-        GetTownLayoutSaltsHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] GetTownLayoutSaltsHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -489,9 +489,9 @@ public static class DevEndpoints
 
     private static async Task<IResult> SetTownLayoutSaltsAsync(
         Guid id,
-        DevRoleGuard guard,
-        SetTownLayoutSaltsHandler handler,
-        TownLayoutSaltsDto request,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] SetTownLayoutSaltsHandler handler,
+        [FromBody] TownLayoutSaltsDto request,
         CancellationToken cancellationToken)
     {
         try
@@ -518,8 +518,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> GenerateRandomTownLayoutSaltsAsync(
         Guid id,
-        DevRoleGuard guard,
-        GenerateRandomTownLayoutSaltsHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] GenerateRandomTownLayoutSaltsHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -540,8 +540,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> PrepGameSessionAsync(
         [FromBody] PrepGameSessionCommand command,
-        DevRoleGuard guard,
-        PrepGameSessionHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] PrepGameSessionHandler handler,
         CancellationToken cancellationToken)
     {
         try
@@ -558,8 +558,8 @@ public static class DevEndpoints
 
     private static async Task<IResult> StartGameSessionAsync(
         Guid id,
-        DevRoleGuard guard,
-        StartGameSessionHandler handler,
+        [FromServices] DevRoleGuard guard,
+        [FromServices] StartGameSessionHandler handler,
         CancellationToken cancellationToken)
     {
         try
