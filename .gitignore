@@ -495,6 +495,8 @@ $RECYCLE.BIN/
 # Tool/MCP output dirs (agent-generated, not tracked)
 .codex/
 .playwright-mcp/
-# .agents/superpowers/sdd/ is intentionally NOT ignored so SDD progress
-# ledgers, task briefs, and reports can be published with the PR.
-# (User-directed un-ignore for BUNCH-75.)
+
+# Superpowers directories
+.superpowers/
+.agents/superpowers/output/
+.agents/superpowers/sdd/
