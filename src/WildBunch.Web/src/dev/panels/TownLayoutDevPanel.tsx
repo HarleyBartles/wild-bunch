@@ -159,7 +159,7 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
                 placeholder="Props salt"
               />
             </Row>
-            {statusMessage && (
+            {statusMessage && statusType && (
               <StatusMessage $type={statusType}>{statusMessage}</StatusMessage>
             )}
             <ButtonRow>
