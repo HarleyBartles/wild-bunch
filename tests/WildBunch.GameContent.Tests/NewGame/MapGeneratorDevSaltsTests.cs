@@ -1,3 +1,4 @@
+using System.Linq;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -52,12 +53,12 @@ public sealed class MapGeneratorDevSaltsTests
             GameEntropy.Classic,
             null);
         
-        Assert.Equal(world1.Towns.Length, world2.Towns.Length);
+        Assert.Equal(world1.Towns.Count, world2.Towns.Count);
         
-        for (var i = 0; i < world1.Towns.Length; i++)
+        for (var i = 0; i < world1.Towns.Count; i++)
         {
-            var layout1 = world1.Towns[i].Layout;
-            var layout2 = world2.Towns[i].Layout;
+            var layout1 = world1.Towns.ElementAt(i).Layout;
+            var layout2 = world2.Towns.ElementAt(i).Layout;
             
             Assert.Equal(layout1.Buildings, layout2.Buildings);
             Assert.Equal(layout1.LayoutSalts, layout2.LayoutSalts);
@@ -84,8 +85,8 @@ public sealed class MapGeneratorDevSaltsTests
             new LayoutSalts("different-buildings", "roads", "dirt", "props"));
         
         // Building views should differ due to different buildings salt
-        var layout1 = world1.Towns[0].Layout;
-        var layout2 = world2.Towns[0].Layout;
+        var layout1 = world1.Towns.ElementAt(0).Layout;
+        var layout2 = world2.Towns.ElementAt(0).Layout;
         
         Assert.NotEqual(layout1.Buildings, layout2.Buildings);
     }
@@ -111,14 +112,14 @@ public sealed class MapGeneratorDevSaltsTests
             null);
         
         // Dev salts should be on the layout
-        var layoutWithDev = worldWithDev.Towns[0].Layout;
+        var layoutWithDev = worldWithDev.Towns.ElementAt(0).Layout;
         Assert.Equal("dev-buildings", layoutWithDev.LayoutSalts.BuildingsSalt);
         Assert.Equal("dev-roads", layoutWithDev.LayoutSalts.RoadsSalt);
         Assert.Equal("dev-dirt", layoutWithDev.LayoutSalts.DirtSalt);
         Assert.Equal("dev-props", layoutWithDev.LayoutSalts.PropsSalt);
         
         // Layouts should differ
-        var layoutWithoutDev = worldWithoutDev.Towns[0].Layout;
+        var layoutWithoutDev = worldWithoutDev.Towns.ElementAt(0).Layout;
         Assert.NotEqual(layoutWithDev.Buildings, layoutWithoutDev.Buildings);
     }
 
@@ -134,7 +135,7 @@ public sealed class MapGeneratorDevSaltsTests
             GameEntropy.Classic,
             null);
         
-        var layout = world.Towns[0].Layout;
+        var layout = world.Towns.ElementAt(0).Layout;
         
         // Layout should have the derived salts, not null
         Assert.NotNull(layout.LayoutSalts);
@@ -144,9 +145,9 @@ public sealed class MapGeneratorDevSaltsTests
         Assert.NotNull(layout.LayoutSalts.PropsSalt);
         
         // Salts should be different for different towns (deterministic partitioning)
-        if (world.Towns.Length > 1)
+        if (world.Towns.Count > 1)
         {
-            var layout2 = world.Towns[1].Layout;
+            var layout2 = world.Towns.ElementAt(1).Layout;
             Assert.NotEqual(layout.LayoutSalts.BuildingsSalt, layout2.LayoutSalts.BuildingsSalt);
         }
     }

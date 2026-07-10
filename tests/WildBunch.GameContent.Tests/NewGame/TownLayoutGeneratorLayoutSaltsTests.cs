@@ -8,7 +8,7 @@ namespace WildBunch.GameContent.Tests.NewGame;
 public sealed class TownLayoutGeneratorLayoutSaltsTests
 {
     [Fact]
-    public void GenerateLayout_WithUsedLayoutSalts_PersistsSalts()
+    public void GenerateLayout_WithLayoutSalts_PersistsSalts()
     {
         var townId = new TownId("town-1");
         var source = new GameSetupDeterministicSource("test-seed");
@@ -22,8 +22,7 @@ public sealed class TownLayoutGeneratorLayoutSaltsTests
             source,
             layoutSalts: salts,
             BuildingLayoutPalette.NoSpurs_SpreadEvenly,
-            "1.0.0",
-            usedLayoutSalts: salts);
+            "1.0.0");
 
         Assert.Equal(salts, layout.LayoutSalts);
     }
