@@ -112,13 +112,20 @@ internal static class MapGenerator
                     town.Id,
                     index,
                     devLayoutSalts);
+                
+                var layoutSource = new LayoutDeterministicSource(
+                    seedWorld.SeedCode.ToString(),
+                    town.Id,
+                    index,
+                    "1.0.0",
+                    derivedSalts);
+                
                 return town with { Layout = TownLayoutGenerator.GenerateLayout(
                     town.Services,
                     town.Prosperity,
                     town.Id,
                     index,
-                    source,
-                    layoutSalts: derivedSalts,
+                    layoutSource,
                     seedWorld.BuildingLayoutPalette,
                     resolverVersion: "1.0.0") };
             }).ToArray();

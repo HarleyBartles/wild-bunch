@@ -11,16 +11,15 @@ public sealed class TownLayoutGeneratorLayoutSaltsTests
     public void GenerateLayout_WithLayoutSalts_PersistsSalts()
     {
         var townId = new TownId("town-1");
-        var source = new GameSetupDeterministicSource("test-seed");
         var salts = new LayoutSalts("buildings", "roads", "dirt", "props");
+        var layoutSource = new LayoutDeterministicSource("test-seed", townId, 0, "1.0.0", salts);
 
         var layout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph,
             TownProsperity.Prosperous,
             townId,
             0,
-            source,
-            layoutSalts: salts,
+            layoutSource,
             BuildingLayoutPalette.NoSpurs_SpreadEvenly,
             "1.0.0");
 

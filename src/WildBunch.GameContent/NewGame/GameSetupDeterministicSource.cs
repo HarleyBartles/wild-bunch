@@ -20,11 +20,8 @@ internal sealed class GameSetupDeterministicSource
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         
-        // Include layout salts in the hash when available for deterministic layout control
-        var hashInput = LayoutSalts is not null
-            ? $"{SeedCode}|{LayoutSalts.BuildingsSalt}|{LayoutSalts.RoadsSalt}|{LayoutSalts.DirtSalt}|{LayoutSalts.PropsSalt}|{label}"
-            : $"{SeedCode}|{label}";
-            
+        // Hash includes only seed code and label - layout salts are handled by LayoutDeterministicSource
+        var hashInput = $"{SeedCode}|{label}";
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(hashInput));
         return BitConverter.ToUInt64(bytes, 0);
     }

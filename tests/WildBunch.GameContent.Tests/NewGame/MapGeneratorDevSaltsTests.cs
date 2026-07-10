@@ -66,25 +66,31 @@ public sealed class MapGeneratorDevSaltsTests
     }
 
     [Fact]
-    public void Generate_ChangingBuildingsSalt_ChangesBuildingResolution()
+    public void Generate_DerivedSalts_AffectLayoutGeneration()
     {
+        // This test proves that derived salts (not manually injected into global source)
+        // actually affect layout generation through the layout-scoped source.
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString();
         
+        // Generate with normal derived salts (no dev override)
         var world1 = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode),
             GameEntropy.Classic,
             null);
         
+        // Generate with dev override that changes buildings salt
+        var devSalts = new LayoutSalts("different-buildings", "roads", "dirt", "props");
         var world2 = MapGenerator.Generate(
             seedWorld,
-            new GameSetupDeterministicSource(seedCode, new LayoutSalts("different-buildings", "roads", "dirt", "props")),
+            new GameSetupDeterministicSource(seedCode), // Global source has NO layout salts
             GameEntropy.Classic,
             null,
-            new LayoutSalts("different-buildings", "roads", "dirt", "props"));
+            devSalts); // Dev salts are passed separately to MapGenerator
         
         // Building views should differ due to different buildings salt
+        // This proves that the layout-scoped source correctly uses the salts
         var layout1 = world1.Towns.ElementAt(0).Layout;
         var layout2 = world2.Towns.ElementAt(0).Layout;
         
@@ -100,10 +106,10 @@ public sealed class MapGeneratorDevSaltsTests
         
         var worldWithDev = MapGenerator.Generate(
             seedWorld,
-            new GameSetupDeterministicSource(seedCode, devSalts),
+            new GameSetupDeterministicSource(seedCode), // Global source has NO layout salts
             GameEntropy.Classic,
             null,
-            devSalts);
+            devSalts); // Dev salts are passed separately to MapGenerator
         
         var worldWithoutDev = MapGenerator.Generate(
             seedWorld,
