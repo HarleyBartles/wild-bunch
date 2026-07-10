@@ -86,40 +86,64 @@ The game setup is split into three phases orchestrated by the UI:
 
 ### Domain Changes
 
+**Add GameStatus.Prepped**
+- Add `Prepped = 4` to `GameStatus` enum
+- This status indicates a session has been prepped but not yet started
+- Distinguishes from `Active` which indicates a fully initialized session
+
+**Add GameSession.StartPrepped() factory method**
+- Add static factory method to `GameSession.cs`: `public static GameSession StartPrepped(string seedCode, GameDifficulty gameDifficulty, GameEntropy gameEntropy)`
+- Creates minimal GameSession with only seed/difficulty/entropy, no world yet
+- Sets Status to `GameStatus.Prepped`
+- Stores seedCode, gameDifficulty, gameEntropy
+- Returns session with ID for later start
+- Pattern follows existing `GameSession.StartSetup()` factory method
+
 **Add LayoutSalts to TownLayout**
-- Add `LayoutSalts? LayoutSalts` field to `TownLayout` record
+- Add `LayoutSalts? LayoutSalts` field to `TownLayout` record (after `ResolverVersion`)
+- Update `TownLayoutGenerator.GenerateLayout()` to accept `LayoutSalts? usedLayoutSalts` parameter
+- Pass `usedLayoutSalts` to the TownLayout constructor at line 163
 - This persists the salts that were actually used in layout generation
 - Allows dev overlay to view the salts that were used
 
 **Update TownLayoutDto**
-- Add `LayoutSaltsDto? LayoutSalts` field to `TownLayoutDto`
-- Include in `TownLayoutMapper.ToDto()`
+- Add `LayoutSaltsDto? LayoutSalts` field to `TownLayoutDto` (after `ResolverVersion`)
+- Update `TownLayoutMapper.ToDto()` to map `TownLayout.LayoutSalts` to `TownLayoutDto.LayoutSalts`
 
 **Update ResolvedGameSetup**
 - Add `LayoutSalts? DevLayoutSalts` field to `ResolvedGameSetup` record
 - GameSetupResolver reads from GameSession and passes through
 
 **Update GameSetupResolver**
-- Accept `GameSession` parameter (or accept dev salts directly)
-- Read `GameSession.DevLayoutSalts` if session provided
-- Pass dev salts through to MapGenerator
+- Add overload: `public ResolvedGameSetup Resolve(SeedWorld seedWorld, DifficultyEnvelope difficulty, EntropyPolicy entropy, LayoutSalts? devLayoutSalts, TownId? playerChosenStartingTownId = null)`
+- Keep existing signature for backward compatibility
+- Pass devLayoutSalts to MapGenerator
+- This approach avoids coupling to GameSession while still supporting dev salts
 
 **Update MapGenerator**
-- Accept `LayoutSalts? devLayoutSalts` parameter
-- Pass to `LayoutSaltDeriver.DeriveLayoutSalts()`
-- Remove hardcoded `devLayoutSalts: null`
+- Change signature from `public static World Generate(SeedWorld seedWorld, GameSetupDeterministicSource source, GameEntropy entropy, SaltSource? saltSource)` to include `LayoutSalts? devLayoutSalts` parameter
+- Pass devLayoutSalts to `LayoutSaltDeriver.DeriveLayoutSalts()` call
+- Remove hardcoded `devLayoutSalts: null` at line 120
 
 ### Frontend Changes
 
-**Game Setup Screen**
-- Add call to `prepGameSession` before showing game options
-- Store `gameSessionId` in state
-- If dev panel has salts set, call `injectDevSalts` before start
-- Call `startGameSession` when player clicks start
+**Add API Functions**
+- Add `prepGameSession(seed: string, difficulty: GameDifficulty, entropy: GameEntropy)` to `src/api/wildBunchApi.ts`
+- Add `startGameSession(gameSessionId: string)` to `src/api/wildBunchApi.ts`
+- Existing `setTownLayoutSalts(gameSessionId: string, salts: TownLayoutSalts)` already exists in `src/dev/devApi.ts`
 
-**Dev Panel**
+**Update Game Setup Screen**
+- Game setup form is in `src/components/StartGameOptionsForm.tsx`
+- Add call to `prepGameSession()` before showing game options (when player navigates to setup screen)
+- Store `gameSessionId` in component state
+- If dev panel has salts set, call `setTownLayoutSalts()` before start
+- Change existing `completeGameSetup()` call to `startGameSession(gameSessionId)` when player clicks start
+- Note: Existing API is `/api/games/setup` which calls `CompletePlayerSetupHandler` - this should be kept for normal players
+
+**Update Dev Panel**
+- Dev panel is in `src/dev/panels/TownLayoutDevPanel.tsx`
 - Update to work with prep'd session (set salts before game start)
-- Read salts from `TownLayout.LayoutSalts` after game started
+- Update `getTownLayoutSalts()` to read from `TownLayout.LayoutSalts` after game started (currently reads from GameSession.DevLayoutSalts)
 - Show the salts that were actually used (dev or derived)
 
 ## Data Flow
@@ -155,17 +179,24 @@ UI → POST /api/sessions/{id}/start → GameSetupResolver → MapGenerator → 
 
 ## Implementation Order
 
-1. Add LayoutSalts to TownLayout and TownLayoutDto
-2. Add LayoutSalts to ResolvedGameSetup
-3. Update GameSetupResolver to accept GameSession and read DevLayoutSalts
-4. Update MapGenerator to accept devLayoutSalts parameter
-5. Add prepGameSession API
-6. Add startGameSession API
-7. Update existing setTownLayoutSalts to work on prep'd session
-8. Frontend: update game setup screen to orchestrate three-phase flow
-9. Frontend: update dev panel to read from TownLayout
-10. Add integration tests
-11. Add frontend tests
+1. Add `GameStatus.Prepped` to `src/WildBunch.Domain/Game/GameStatus.cs`
+2. Add `GameSession.StartPrepped()` factory method to `src/WildBunch.Domain/Game/GameSession.cs`
+3. Add `LayoutSalts` field to `TownLayout` in `src/WildBunch.Domain/World/TownLayout.cs`
+4. Update `TownLayoutGenerator.GenerateLayout()` in `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs` to accept and use `usedLayoutSalts` parameter
+5. Add `LayoutSalts` field to `TownLayoutDto` in `src/WildBunch.Application/Games/Models/TownLayoutDto.cs`
+6. Update `TownLayoutMapper.ToDto()` in `src/WildBunch.Application/Games/Mapping/TownLayoutMapper.cs` to map LayoutSalts
+7. Add `DevLayoutSalts` field to `ResolvedGameSetup` in `src/WildBunch.GameContent/NewGame/ResolvedGameSetup.cs`
+8. Add overload to `GameSetupResolver.Resolve()` in `src/WildBunch.GameContent/NewGame/GameSetupResolver.cs` to accept devLayoutSalts
+9. Update `MapGenerator.Generate()` in `src/WildBunch.GameContent/NewGame/MapGenerator.cs` to accept devLayoutSalts parameter
+10. Add `PrepGameSessionCommand` and `PrepGameSessionHandler` in `src/WildBunch.Application/Games/Commands/`
+11. Add `StartGameSessionCommand` and `StartGameSessionHandler` in `src/WildBunch.Application/Games/Commands/`
+12. Register new endpoints in `src/WildBunch.Api/GamesEndpoints.cs`
+13. Add API functions to `src/WildBunch.Web/src/api/wildBunchApi.ts`
+14. Update `src/WildBunch.Web/src/components/StartGameOptionsForm.tsx` to orchestrate three-phase flow
+15. Update `src/WildBunch.Web/src/dev/panels/TownLayoutDevPanel.tsx` to read from TownLayout
+16. Add unit tests for new domain changes
+17. Add integration tests for full flow
+18. Add frontend tests
 
 ## Design Decisions
 
@@ -177,3 +208,20 @@ UI → POST /api/sessions/{id}/start → GameSetupResolver → MapGenerator → 
 
 **Q3: Should other dev injections use this multi-phase pattern?**
 **A:** Out of scope for this design. The multi-phase pattern is intentionally extensible for future dev injections (difficulty, entropy, etc.), but this design only addresses layout salts.
+
+## Existing API Reference
+
+**Current Game Creation API:**
+- Endpoint: `POST /api/games/setup`
+- Handler: `CompletePlayerSetupHandler` in `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs`
+- Creates fully initialized GameSession with world in one call
+- Calls `GameSession.StartSetup()` factory method
+- Archives existing active sessions (one-active-playthrough invariant)
+- Returns `GameSessionDto` with HUD and Diary projections
+- This API should be kept for normal players and not modified in this implementation
+
+**Current Dev Salts API:**
+- Endpoint: `POST /api/dev/sessions/{id}/town-layout/set-salts`
+- Handler: `SetTownLayoutSaltsHandler` in `src/WildBunch.Application/Dev/Commands/SetTownLayoutSaltsHandler.cs`
+- Sets `GameSession.DevLayoutSalts` via `DevLayoutSaltsForced` event
+- This API already exists and should work on prep'd sessions (status check may be needed)
