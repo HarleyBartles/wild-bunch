@@ -162,3 +162,11 @@ export interface ForceDevDifficultyRequestDto {
 export interface SetDevEntropyRequestDto {
   entropy: string;
 }
+
+export interface TownLayoutSalts {
+  resolverVersion: string;
+  buildingsSalt: string;
+  roadsSalt: string;
+  dirtSalt: string;
+  propsSalt: string;
+}
