@@ -87,7 +87,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
         // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
         // the ledger itself is the parity source of truth.
-        var unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+        // During prepped phase (StartPrepped), caseFile is null; use a no-op ledger.
+        var unrelatedCriminalLedger = caseFile is not null
+            ? BuildUnrelatedCriminalLedger(caseFile)
+            : new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
 
         _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
 
@@ -911,6 +914,46 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         session.Apply(caseFileEvent);
         session._uncommittedEvents.Add(caseFileEvent);
+
+        return session;
+    }
+
+    /// <summary>
+    /// Creates a minimal game session in the prepped phase (before world generation).
+    /// The session has seed, difficulty, and entropy but no world yet.
+    /// Used for the multi-phase setup flow where dev injections happen before world generation.
+    /// </summary>
+    public static GameSession StartPrepped(
+        string seedCode,
+        GameDifficulty gameDifficulty,
+        GameEntropy gameEntropy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
+
+        var placeholderPlayer = new Player(
+            "Prepped",
+            currentTownId: null,
+            health: 1000,
+            WildBunch.Domain.Economy.Wallet.Starting(0m),
+            DomainInventory.Empty());
+
+        var session = new GameSession(
+            GameSessionId.New(),
+            placeholderPlayer,
+            world: null,
+            caseFile: null,
+            new PursuitState(),
+            new GameClock(),
+            GameStatus.Prepped,
+            journey: null,
+            gameDifficulty,
+            SaltSource.CreateRuntime(),
+            gameEntropy,
+            currentTownVisit: null,
+            Array.Empty<TravelJourneySnapshot>(),
+            Array.Empty<WantedSuspectPresenceEntry>());
+
+        session.SeedCode = seedCode;
 
         return session;
     }
