@@ -243,3 +243,118 @@ class TestHasSkillDirs:
                 assert result is False
             finally:
                 install_agent_skills.SKILLS_ROOT = original_path
+
+
+class TestRegressionNoPruneUnchangedSkills:
+    """Regression test for the bug where unchanged skills were incorrectly pruned.
+    
+    This test ensures that when skills are already synced and the script runs again
+    without --force, unchanged skills are NOT pruned from the synced skills list.
+    This prevents the failure mode where skills from installed plugins disappear
+    on subsequent sync runs.
+    """
+
+    def test_unchanged_skills_not_pruned_on_re_sync(self):
+        """Should NOT prune unchanged skills when re-syncing without --force.
+        
+        Regression test for the bug where skills were only added to synced_skill_names
+        if they were actually copied, causing unchanged skills to be pruned on subsequent runs.
+        """
+        with TemporaryDirectory() as tmpdir:
+            # Setup mock directory structure
+            repo_root = Path(tmpdir) / "repo"
+            repo_root.mkdir()
+            
+            marketplace_json = repo_root / ".agents" / "plugins" / "marketplace.json"
+            marketplace_json.parent.mkdir(parents=True, exist_ok=True)
+            
+            submodule_root = repo_root / ".agents" / "plugins" / "marketplace-source"
+            submodule_root.mkdir(parents=True, exist_ok=True)
+            
+            plugins_root = submodule_root / "codex-marketplace" / "plugins"
+            plugins_root.mkdir(parents=True, exist_ok=True)
+            
+            skills_root = repo_root / ".agents" / "skills"
+            skills_root.mkdir(parents=True, exist_ok=True)
+            
+            provenance_path = skills_root / ".provenance.json"
+            
+            # Create marketplace.json with one plugin
+            marketplace_data = {
+                "plugins": [
+                    {
+                        "name": "test-plugin",
+                        "policy": {"installation": "INSTALLED_BY_DEFAULT"}
+                    }
+                ]
+            }
+            with open(marketplace_json, "w") as f:
+                json.dump(marketplace_data, f)
+            
+            # Create plugin skills directory with one skill
+            plugin_skills_dir = plugins_root / "test-plugin" / "skills"
+            plugin_skills_dir.mkdir(parents=True, exist_ok=True)
+            
+            skill_dir = plugin_skills_dir / "test-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("# Test Skill")
+            
+            # Create initial provenance with the skill already synced
+            provenance_data = {
+                "sha": "initial-sha",
+                "syncedAt": "2026-07-10T00:00:00Z",
+                "syncedPlugins": ["test-plugin"],
+                "syncedSkills": 1
+            }
+            with open(provenance_path, "w") as f:
+                json.dump(provenance_data, f)
+            
+            # Copy the skill to skills root (simulating previous sync)
+            dest_skill_dir = skills_root / "test-skill"
+            shutil.copytree(skill_dir, dest_skill_dir)
+            
+            # Mock the paths in the module
+            import install_agent_skills
+            original_paths = {
+                "REPO_ROOT": install_agent_skills.REPO_ROOT,
+                "MARKETPLACE_JSON_PATH": install_agent_skills.MARKETPLACE_JSON_PATH,
+                "SUBMODULE_ROOT": install_agent_skills.SUBMODULE_ROOT,
+                "PLUGINS_ROOT": install_agent_skills.PLUGINS_ROOT,
+                "SKILLS_ROOT": install_agent_skills.SKILLS_ROOT,
+                "PROVENANCE_PATH": install_agent_skills.PROVENANCE_PATH,
+            }
+            
+            install_agent_skills.REPO_ROOT = repo_root
+            install_agent_skills.MARKETPLACE_JSON_PATH = marketplace_json
+            install_agent_skills.SUBMODULE_ROOT = submodule_root
+            install_agent_skills.PLUGINS_ROOT = plugins_root
+            install_agent_skills.SKILLS_ROOT = skills_root
+            install_agent_skills.PROVENANCE_PATH = provenance_path
+            
+            try:
+                # Mock _get_submodule_sha to return a different SHA (simulating submodule update)
+                original_get_sha = install_agent_skills._get_submodule_sha
+                install_agent_skills._get_submodule_sha = lambda: "new-sha"
+                
+                # Run sync without force
+                skills_synced, plugins_synced, changes_made = install_agent_skills._sync_skills(
+                    force=False,
+                    check_mode=False
+                )
+                
+                # Restore original function
+                install_agent_skills._get_submodule_sha = original_get_sha
+                
+                # The skill should still be in the skills directory (not pruned)
+                assert dest_skill_dir.exists(), "Unchanged skill was incorrectly pruned"
+                assert (dest_skill_dir / "SKILL.md").exists()
+                
+                # The skill should be tracked in the new provenance
+                new_provenance = _load_provenance()
+                assert new_provenance is not None
+                assert new_provenance.get("syncedSkills") >= 1, "Skill count dropped below expected"
+                
+            finally:
+                # Restore original paths
+                for key, value in original_paths.items():
+                    setattr(install_agent_skills, key, value)
