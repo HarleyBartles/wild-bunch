@@ -56,10 +56,10 @@ describe("TownLayoutDevPanel", () => {
     renderPanel();
     
     await waitFor(() => {
-      expect(screen.getByText(/buildings-salt/i)).toBeInTheDocument();
-      expect(screen.getByText(/roads-salt/i)).toBeInTheDocument();
-      expect(screen.getByText(/dirt-salt/i)).toBeInTheDocument();
-      expect(screen.getByText(/props-salt/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("buildings-salt")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("roads-salt")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("dirt-salt")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("props-salt")).toBeInTheDocument();
     });
   });
 
@@ -157,15 +157,15 @@ describe("TownLayoutDevPanel", () => {
     renderPanel();
     
     await waitFor(() => {
-      expect(screen.getByText(/buildings-salt/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("buildings-salt")).toBeInTheDocument();
     });
     
     const generateButton = screen.getByText(/generate random/i);
     generateButton.click();
     
     await waitFor(() => {
-      expect(screen.getByText(/random-buildings/i)).toBeInTheDocument();
-      expect(screen.getByText(/random-roads/i)).toBeInTheDocument();
+      expect(screen.getByDisplayValue("random-buildings")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("random-roads")).toBeInTheDocument();
     });
   });
 });

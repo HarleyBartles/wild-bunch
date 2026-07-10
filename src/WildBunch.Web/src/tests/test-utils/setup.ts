@@ -23,4 +23,13 @@ vi.mock("../dev/devApi", () => ({
   getTownLayoutSalts: vi.fn(),
   setTownLayoutSalts: vi.fn(),
   generateRandomTownLayoutSalts: vi.fn(),
+  getSessionAudit: vi.fn(),
+  getTravelDevContext: vi.fn(),
+  forceTravelOverride: vi.fn(),
+  clearTravelOverride: vi.fn(),
+  getSaloonDevContext: vi.fn(),
+  forceSaloonOverride: vi.fn(),
+  getSessionDevContext: vi.fn(),
+  forceDevDifficulty: vi.fn(),
+  setDevEntropy: vi.fn(),
 }));
