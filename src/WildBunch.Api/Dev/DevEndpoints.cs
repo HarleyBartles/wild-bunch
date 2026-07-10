@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Dev.Queries;
@@ -538,7 +539,7 @@ public static class DevEndpoints
     }
 
     private static async Task<IResult> PrepGameSessionAsync(
-        PrepGameSessionCommand command,
+        [FromBody] PrepGameSessionCommand command,
         DevRoleGuard guard,
         PrepGameSessionHandler handler,
         CancellationToken cancellationToken)

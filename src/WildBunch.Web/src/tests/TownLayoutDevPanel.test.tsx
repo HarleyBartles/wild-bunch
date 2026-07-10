@@ -65,7 +65,7 @@ describe("TownLayoutDevPanel", () => {
 
   it("shows no salts loaded message when API returns null", async () => {
     seedGameId("test-game-3");
-    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(null);
+    vi.spyOn(devApi, "getTownLayoutSalts").mockResolvedValue(undefined as any);
     
     renderPanel();
     
