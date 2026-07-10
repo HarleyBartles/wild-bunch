@@ -2,6 +2,7 @@ using System;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
+using Xunit;
 
 namespace WildBunch.Application.Tests.Games.Mapping;
 
@@ -23,7 +24,8 @@ public sealed class TownLayoutMapperTests
             50,
             TownProsperity.Prosperous,
             Array.Empty<PathSegment>(),
-            null);
+            null,
+            "1.0.0");
 
         var dto = TownLayoutMapper.ToDto(layout);
 
@@ -50,7 +52,8 @@ public sealed class TownLayoutMapperTests
             50,
             TownProsperity.Prosperous,
             Array.Empty<PathSegment>(),
-            null);
+            null,
+            "1.0.0");
 
         var dto = TownLayoutMapper.ToDto(layout);
 
@@ -75,7 +78,8 @@ public sealed class TownLayoutMapperTests
                 0,
                 TownProsperity.Prosperous,
                 Array.Empty<PathSegment>(),
-                null);
+                null,
+                "1.0.0");
 
             var dto = TownLayoutMapper.ToDto(layout);
 
@@ -100,5 +104,23 @@ public sealed class TownLayoutMapperTests
         Assert.Equal(expectedView, actual.View);
         Assert.Equal(expectedWidth, actual.Width);
         Assert.Equal(expectedHeight, actual.Height);
+    }
+
+    [Fact]
+    public void ToDto_WithResolverVersion_MapsResolverVersion()
+    {
+        var layout = new TownLayout(
+            [],
+            50,
+            50,
+            TownProsperity.Prosperous,
+            [],
+            null,
+            "1.0.0");
+
+        var dto = TownLayoutMapper.ToDto(layout);
+
+        Assert.NotNull(dto);
+        Assert.Equal("1.0.0", dto.ResolverVersion);
     }
 }

@@ -2,6 +2,14 @@
 
 Use this reference when creating agent artifacts, managing screenshots/evidence, or working with unslop profiles.
 
+## Scratch Artifacts
+- **CRITICAL**: Scratch files (code reviews, temporary notes, draft documents, session artifacts) must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>` where `<branch-name>` matches the worktree/branch name
+- This scratch space is disposable and not persistent beyond the agent's session
+- Agents must clean up their scratch folder when cleaning up their worktree
+- **Never commit scratch artifacts to the repo root** - files like `*-review*.md`, `*-scratch*.md`, `COMMIT_MSG.txt`, `PR_BODY.md` are scratch artifacts that pollute the tree
+- If a worker finds scratch artifacts committed to the repo, remove them as part of self-healing
+- Examples of scratch artifacts: code review notes, temporary analysis documents, draft ADRs, session busters, worker reports
+
 ## Agent-Generated Outputs
 - All agent-generated non-work outputs (plans, evidence, screenshots, doctrine notes, unslop profiles, session artifacts) must live under the `.agents/` subtree — never at repo root, under `docs/`, or in product source folders.
 - Do not create loose files at repo root for agent use (no `COMMIT_MSG.txt`, `PR_BODY.md`, scratch notes, etc.). These are worker artifacts that pollute the tree and the generated index mesh.

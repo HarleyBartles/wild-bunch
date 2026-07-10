@@ -2,6 +2,8 @@
 
 Use this reference when writing code, deciding scope boundaries, or refactoring.
 
+**Artifact Placement**: Before creating any files (scratch notes, code reviews, temporary documents), read `.agents/docs/artifact-policy.md` for guidance on where to place agent-generated artifacts. Scratch files must go in `Z:\_agent-scratch\wild-bunch\<branch-name>`, never in the repo root.
+
 ## Scope Discipline
 - Do only the requested slice.
 - No opportunistic broad refactors.

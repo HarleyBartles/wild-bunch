@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using WildBunch.Domain.World;
 
 namespace WildBunch.GameContent.NewGame;
 
@@ -16,7 +17,10 @@ internal sealed class GameSetupDeterministicSource
     public ulong Roll(string label)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{SeedCode}|{label}"));
+        
+        // Hash includes only seed code and label - layout salts are handled by LayoutDeterministicSource
+        var hashInput = $"{SeedCode}|{label}";
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(hashInput));
         return BitConverter.ToUInt64(bytes, 0);
     }
 

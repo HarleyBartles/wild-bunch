@@ -87,7 +87,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
         // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
         // the ledger itself is the parity source of truth.
-        var unrelatedCriminalLedger = BuildUnrelatedCriminalLedger(caseFile);
+        // During prepped phase (StartPrepped), caseFile is null; use a no-op ledger.
+        var unrelatedCriminalLedger = caseFile is not null
+            ? BuildUnrelatedCriminalLedger(caseFile)
+            : new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
 
         _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
 
@@ -136,6 +139,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _actionContextTracker.RestoreState(context, townId);
     }
 
+    /// <summary>
+    /// Restores dev layout salts during snapshot rehydration.
+    /// The salts are reconstructed from event replay via Apply(DevLayoutSaltsForced).
+    /// Both paths (snapshot load + event replay) must produce the same values.
+    /// See BUNCH-147.
+    /// </summary>
+    internal void RestoreDevLayoutSalts(WildBunch.Domain.World.LayoutSalts layoutSalts)
+    {
+        DevLayoutSalts = layoutSalts;
+    }
+
     public GameStatus Status { get; private set; }
 
     /// <summary>
@@ -164,6 +178,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public SaltSource SaltSource { get; private set; }
 
     public string? SeedCode { get; private set; }
+
+    /// <summary>
+    /// Dev-controlled layout salts for town hub layout generation.
+    /// When set, these salts override the derived layout salts for reproducible
+    /// layout generation. Dev-only state. See BUNCH-147.
+    /// </summary>
+    public LayoutSalts? DevLayoutSalts { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown
         ?? throw new InvalidOperationException("No town has been selected yet. The current town is only available after GameStarted.");
@@ -423,11 +444,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case DevSaltSourceCleared dsc:
                 Apply(dsc);
                 break;
+            case DevLayoutSaltsForced dlsf:
+                Apply(dlsf);
+                break;
             case DevDifficultyForced ddf:
                 Apply(ddf);
                 break;
             case DevEntropyChanged dec:
                 Apply(dec);
+                break;
+            case WorldGenerated wg:
+                Apply(wg);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -776,6 +803,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Applies a DevLayoutSaltsForced event. Sets the dev layout salts for town layout generation.
+    /// Dev-only event. See BUNCH-147.
+    /// </summary>
+    internal void Apply(DevLayoutSaltsForced e)
+    {
+        DevLayoutSalts = e.DevLayoutSalts;
+        _version++;
+    }
+
+    /// <summary>
     /// Applies a DevDifficultyForced event. Changes the session difficulty,
     /// which changes the derived TravelRules profile. Dev-only event — does
     /// not affect starting health/cash or any other gameplay state directly.
@@ -850,12 +887,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SeedCode = seedCode
         };
 
+        var caseFileSnapshot = WildBunch.Domain.Cases.CaseFileSnapshot.FromDomain(caseFile);
         var worldEvent = new WorldGenerated
         {
             SeedCode = seedCode,
             SaltSource = saltSource,
             GameEntropy = gameEntropy,
-            World = WorldSnapshot.FromDomain(world)
+            World = WorldSnapshot.FromDomain(world),
+            CaseFile = caseFileSnapshot
         };
 
         var placeholderPlayer = new Player(
@@ -893,6 +932,46 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         session.Apply(caseFileEvent);
         session._uncommittedEvents.Add(caseFileEvent);
+
+        return session;
+    }
+
+    /// <summary>
+    /// Creates a minimal game session in the prepped phase (before world generation).
+    /// The session has seed, difficulty, and entropy but no world yet.
+    /// Used for the multi-phase setup flow where dev injections happen before world generation.
+    /// </summary>
+    public static GameSession StartPrepped(
+        string seedCode,
+        GameDifficulty gameDifficulty,
+        GameEntropy gameEntropy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
+
+        var placeholderPlayer = new Player(
+            "Prepped",
+            currentTownId: null,
+            health: 1000,
+            WildBunch.Domain.Economy.Wallet.Starting(0m),
+            DomainInventory.Empty());
+
+        var session = new GameSession(
+            GameSessionId.New(),
+            placeholderPlayer,
+            world: null,
+            caseFile: null,
+            new PursuitState(),
+            new GameClock(),
+            GameStatus.Prepped,
+            journey: null,
+            gameDifficulty,
+            SaltSource.CreateRuntime(),
+            gameEntropy,
+            currentTownVisit: null,
+            Array.Empty<TravelJourneySnapshot>(),
+            Array.Empty<WantedSuspectPresenceEntry>());
+
+        session.SeedCode = seedCode;
 
         return session;
     }
@@ -1095,6 +1174,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(WorldGenerated e)
     {
         World = e.World.ToDomain();
+        CaseFile = e.CaseFile.ToDomain();
         SaltSource = e.SaltSource;
         GameEntropy = e.GameEntropy;
         _version++;
@@ -1386,6 +1466,56 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             NewEntropy = entropy
         });
+    }
+
+    /// <summary>
+    /// Dev command: forces layout salts for town hub layout generation.
+    /// Stores dev-controlled layout salts for reproducible layout generation.
+    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-147.
+    /// </summary>
+    public void SetDevLayoutSalts(LayoutSalts layoutSalts)
+    {
+        ArgumentNullException.ThrowIfNull(layoutSalts);
+        ProduceEvent(new DevLayoutSaltsForced(layoutSalts));
+    }
+
+    /// <summary>
+    /// Transitions a prepped session to active phase by generating the world
+    /// with the provided world, case file, and salt source. Used by the three-phase
+    /// dev-enabled action pattern (prep → inject dev salts → start). See BUNCH-147.
+    /// </summary>
+    public void StartFromPrepped(
+        DomainWorld world,
+        CaseFile caseFile,
+        string seedCodeText,
+        SaltSource saltSource)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(caseFile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedCodeText);
+        ArgumentNullException.ThrowIfNull(saltSource);
+
+        if (Status != GameStatus.Prepped)
+        {
+            throw new InvalidOperationException("Session must be in Prepped status to start from prepped.");
+        }
+
+        World = world;
+        CaseFile = caseFile;
+        SeedCode = seedCodeText;
+        SaltSource = saltSource;
+        Status = GameStatus.Active;
+
+        var caseFileSnapshot = WildBunch.Domain.Cases.CaseFileSnapshot.FromDomain(caseFile);
+        var worldEvent = new WorldGenerated
+        {
+            SeedCode = seedCodeText,
+            SaltSource = saltSource,
+            GameEntropy = GameEntropy,
+            World = WorldSnapshot.FromDomain(world),
+            CaseFile = caseFileSnapshot
+        };
+        ProduceEvent(worldEvent);
     }
 
     private void RefreshTownVisit(TownId townId)
@@ -2490,3 +2620,4 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
 }
+

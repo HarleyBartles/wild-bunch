@@ -18,7 +18,7 @@ internal static class MapGenerator
     private const int MapHeight = 500;
 
     public static World Generate(SeedWorld seedWorld, GameSetupDeterministicSource source,
-        GameEntropy entropy, SaltSource? saltSource)
+        GameEntropy entropy, SaltSource? saltSource, LayoutSalts? devLayoutSalts = null)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
@@ -103,15 +103,32 @@ internal static class MapGenerator
         // World is a sealed class (not a record) — construct a new World with the modified
         // towns and the existing trails. Layouts are gameplay-only: the canonical start-screen
         // world (CreateCanonicalWorld) does not go through MapGenerator and needs no layouts.
+        var entropyPolicy = EntropyPolicy.For(entropy);
         var townsWithLayouts = world.Towns.Select((town, index) =>
-            town with { Layout = TownLayoutGenerator.GenerateLayout(
-                town.Services,
-                town.Prosperity,
-                town.Id,
-                index,
-                source,
-                saltSource,
-                seedWorld.BuildingLayoutPalette) }).ToArray();
+            {
+                var derivedSalts = LayoutSaltDeriver.DeriveLayoutSalts(
+                    seedWorld,
+                    entropyPolicy,
+                    town.Id,
+                    index,
+                    devLayoutSalts);
+                
+                var layoutSource = new LayoutDeterministicSource(
+                    seedWorld.SeedCode.ToString(),
+                    town.Id,
+                    index,
+                    "1.0.0",
+                    derivedSalts);
+                
+                return town with { Layout = TownLayoutGenerator.GenerateLayout(
+                    town.Services,
+                    town.Prosperity,
+                    town.Id,
+                    index,
+                    layoutSource,
+                    seedWorld.BuildingLayoutPalette,
+                    resolverVersion: "1.0.0") };
+            }).ToArray();
 
         return new World(townsWithLayouts, world.Trails);
     }

@@ -9,6 +9,9 @@ namespace WildBunch.Domain.World;
 /// Prosperity drives which asset tier (boomtown/prosperous/poor/destitute) to use
 /// for sprite selection. Produced by town layout generation and consumed by the
 /// frontend Phaser surface for rendering and click-to-navigate routing.
+/// The resolver version identifies the algorithm version used to generate the layout,
+/// supporting migration when the resolver algorithm changes.
+/// Layout salts are the salts used during layout generation, persisted for reproducibility.
 /// </summary>
 public sealed record TownLayout(
     IReadOnlyList<BuildingPlacement> Buildings,
@@ -16,4 +19,6 @@ public sealed record TownLayout(
     int PlayerSpawnY,
     TownProsperity Prosperity,
     IReadOnlyList<PathSegment> Paths,
-    int[][]? TileGrid = null);
+    int[][]? TileGrid = null,
+    string ResolverVersion = "1.0.0",
+    LayoutSalts? LayoutSalts = null);

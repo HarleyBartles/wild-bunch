@@ -1,3 +1,4 @@
+using WildBunch.Application.Dev.Models;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Application.Games.Models;
@@ -16,4 +17,6 @@ public sealed record TownLayoutDto(
     int PlayerSpawnY,
     TownProsperity Prosperity,
     IReadOnlyList<PathSegmentDto> Paths,
-    int[][]? TileGrid);
+    int[][]? TileGrid,
+    string ResolverVersion = "1.0.0",
+    TownLayoutSaltsDto? LayoutSalts = null);

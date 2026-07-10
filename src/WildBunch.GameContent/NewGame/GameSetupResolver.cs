@@ -104,6 +104,74 @@ internal sealed class GameSetupResolver
             seedCodeText);
     }
 
+    public ResolvedGameSetup Resolve(
+        SeedWorld seedWorld,
+        DifficultyEnvelope difficulty,
+        EntropyPolicy entropy,
+        LayoutSalts? devLayoutSalts,
+        TownId? playerChosenStartingTownId = null)
+    {
+        ArgumentNullException.ThrowIfNull(seedWorld);
+        ArgumentNullException.ThrowIfNull(difficulty);
+        ArgumentNullException.ThrowIfNull(entropy);
+
+        var mysteryTruth = MysteryTruthResolver.Resolve(
+            seedWorld,
+            entropy,
+            _saltSourceFactory,
+            difficulty.Difficulty);
+
+        var seedCodeText = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode);
+        var source = new GameSetupDeterministicSource(seedCodeText);
+
+        var world = MapGenerator.Generate(
+            seedWorld,
+            source,
+            entropy.GameEntropy,
+            mysteryTruth.SaltSource,
+            devLayoutSalts);
+
+        var startingTownId = StartingTownPolicy.ResolveStartingTown(world, playerChosenStartingTownId);
+
+        var isCanonical = seedWorld.IsCanonical;
+        var caseFile = isCanonical
+            ? SeedCaseBuilder.CreateCanonicalCaseFile(
+                source,
+                world,
+                mysteryTruth.ResolvedCulpritIndex,
+                mysteryTruth.ResolvedAccusationIndex)
+            : SeedCaseBuilder.CreateCaseFile(
+                source,
+                world,
+                mysteryTruth.ResolvedCulpritIndex,
+                mysteryTruth.ResolvedAccusationIndex);
+
+        var finalCash = difficulty.StartingCash + mysteryTruth.AppliedCashBonus;
+
+        var startingInventory = SeedInventoryBuilder.CreateStartingLoadout(
+            difficulty.TravelRules,
+            difficulty);
+
+        var startingWallet = SeedInventoryBuilder.CreateStartingWallet(finalCash);
+
+        var startingHealth = StartingHealthFor(difficulty.Difficulty);
+
+        return new ResolvedGameSetup(
+            seedWorld,
+            difficulty.Difficulty,
+            entropy.GameEntropy,
+            world,
+            startingTownId,
+            caseFile,
+            startingWallet,
+            startingInventory,
+            startingHealth,
+            difficulty.TravelRules,
+            mysteryTruth.SaltSource,
+            seedCodeText,
+            devLayoutSalts);
+    }
+
     private static int StartingHealthFor(GameDifficulty gameDifficulty)
         => gameDifficulty switch
         {

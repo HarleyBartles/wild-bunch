@@ -18,3 +18,18 @@ vi.mock("phaser", () => {
   const Scale = { FIT: 0, CENTER_BOTH: 0 };
   return { default: { Game, Scene, Scale }, Game, Scene, Scale };
 });
+
+vi.mock("../dev/devApi", () => ({
+  getTownLayoutSalts: vi.fn(),
+  setTownLayoutSalts: vi.fn(),
+  generateRandomTownLayoutSalts: vi.fn(),
+  getSessionAudit: vi.fn(),
+  getTravelDevContext: vi.fn(),
+  forceTravelOverride: vi.fn(),
+  clearTravelOverride: vi.fn(),
+  getSaloonDevContext: vi.fn(),
+  forceSaloonOverride: vi.fn(),
+  getSessionDevContext: vi.fn(),
+  forceDevDifficulty: vi.fn(),
+  setDevEntropy: vi.fn(),
+}));

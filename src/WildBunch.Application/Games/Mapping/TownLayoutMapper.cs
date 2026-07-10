@@ -1,4 +1,5 @@
 using System;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.World;
 
@@ -30,7 +31,14 @@ public static class TownLayoutMapper
             layout.PlayerSpawnY,
             layout.Prosperity,
             layout.Paths.Select(ToDto).ToArray(),
-            layout.TileGrid);
+            layout.TileGrid,
+            layout.ResolverVersion,
+            layout.LayoutSalts is null ? null : new TownLayoutSaltsDto(
+                layout.ResolverVersion,
+                layout.LayoutSalts.BuildingsSalt,
+                layout.LayoutSalts.RoadsSalt,
+                layout.LayoutSalts.DirtSalt,
+                layout.LayoutSalts.PropsSalt));
     }
 
     private static BuildingPlacementDto ToDto(BuildingPlacement placement)

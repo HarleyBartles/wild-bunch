@@ -1,5 +1,5 @@
 import { requestJson } from "../api/httpClient";
-import type { ForceDevDifficultyRequestDto, ForceSaloonOverrideRequestDto, ForceTravelOverrideRequestDto, LockRngRequestDto, SaloonDevContextDto, SessionAuditDto, SessionDevContextDto, SetDevEntropyRequestDto, TravelDevContextDto } from "./types";
+import type { ForceDevDifficultyRequestDto, ForceSaloonOverrideRequestDto, ForceTravelOverrideRequestDto, LockRngRequestDto, SaloonDevContextDto, SessionAuditDto, SessionDevContextDto, SetDevEntropyRequestDto, TownLayoutSalts, TravelDevContextDto } from "./types";
 
 export function getSessionAudit(gameId: string) {
   return requestJson<SessionAuditDto>(`/api/dev/sessions/${gameId}/audit`);
@@ -67,5 +67,22 @@ export function setDevEntropy(gameId: string, request: SetDevEntropyRequestDto) 
   return requestJson<void>(`/api/dev/sessions/${gameId}/session/set-entropy`, {
     method: "POST",
     body: JSON.stringify(request),
+  });
+}
+
+export function getTownLayoutSalts(gameId: string) {
+  return requestJson<TownLayoutSalts>(`/api/dev/sessions/${gameId}/town-layout/salts`);
+}
+
+export function setTownLayoutSalts(gameId: string, salts: TownLayoutSalts) {
+  return requestJson<void>(`/api/dev/sessions/${gameId}/town-layout/set-salts`, {
+    method: "POST",
+    body: JSON.stringify(salts),
+  });
+}
+
+export function generateRandomTownLayoutSalts(gameId: string) {
+  return requestJson<TownLayoutSalts>(`/api/dev/sessions/${gameId}/town-layout/generate-random`, {
+    method: "POST",
   });
 }

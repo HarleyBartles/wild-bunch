@@ -12,13 +12,14 @@
 
 **Worktree and Scratch locations**: 
 - Worktrees for this repo should be placed in `Z:\_agent-worktrees\wild-bunch` (centralized location outside the repo). This is a declared preference that should be respected by the using-git-worktrees skill.
-- Scratch files for this repo should be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>` where `<branch-name>` matches the worktree/branch name. This scratch space is disposable and not persistent beyond the agent's session. Agents must clean up their scratch folder when cleaning up their worktree.
+- **⚠️ CRITICAL: Scratch files must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>`** where `<branch-name>` matches the worktree/branch name. This scratch space is disposable and not persistent beyond the agent's session. Agents must clean up their scratch folder when cleaning up their worktree. **Never commit scratch artifacts to the repo root** - see `.agents/docs/artifact-policy.md` for details.
 
 **Scripts are first-class surfaces. Before reporting environmental issues (PostgreSQL not running, dev servers not started, etc.), read `scripts/AGENTS.md` and use the provided scripts.**
 
 - **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — **MUST read before running ad-hoc commands or reporting environmental issues**. Scripts handle PostgreSQL setup, dev server management, and other repo operations idempotently.
 - Architecture-sensitive work: `.agents/INDEX.md`, `.agents/docs/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
 - **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
+- **Dev-enabled action pattern (must read before implementing dev controls that affect play actions)**: `docs/adr/ADR-0036-dev-enabled-action-pattern.md`
 - **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
 - **Frontend standards (must read before implementing or reviewing frontend work)**: `.agents/docs/frontend-standards.md`
 - **Validation policy (must read before writing or reviewing tests)**: `.agents/docs/validation-policy.md`

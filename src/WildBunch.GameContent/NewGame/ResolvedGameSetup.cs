@@ -28,4 +28,5 @@ internal sealed record ResolvedGameSetup(
     int StartingHealth,
     TravelRulesProfile TravelRulesProfile,
     SaltSource SaltSource,
-    string SeedCodeText);
+    string SeedCodeText,
+    LayoutSalts? DevLayoutSalts = null);

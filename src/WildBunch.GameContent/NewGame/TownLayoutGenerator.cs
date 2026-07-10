@@ -54,11 +54,11 @@ internal static class TownLayoutGenerator
         TownProsperity prosperity,
         TownId townId,
         int townSlotIndex,
-        GameSetupDeterministicSource source,
-        SaltSource? saltSource,
-        BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.NoSpurs_SpreadEvenly)
+        LayoutDeterministicSource layoutSource,
+        BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.NoSpurs_SpreadEvenly,
+        string resolverVersion = "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(layoutSource);
 
         var paletteSpec = BuildingLayoutCatalog.GetPaletteSpec(layoutPalette);
         var grid = BuildTileGrid(paletteSpec);
@@ -138,7 +138,7 @@ internal static class TownLayoutGenerator
 
                 // Select building view
                 var viewLabel = $"town-{townId.Value}-slot-{townSlotIndex}-building-{kind.ToString().ToLowerInvariant()}-view";
-                var view = SelectBuildingView(isOnSpur, isOnLeftSide, source, viewLabel);
+                var view = SelectBuildingView(isOnSpur, isOnLeftSide, layoutSource, viewLabel);
 
                 buildings.Add(new BuildingPlacement(kind, baseX, baseY, view, BuildingWidth, BuildingHeight));
                 buildingIndex++;
@@ -159,7 +159,7 @@ internal static class TownLayoutGenerator
             }
         }
 
-        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths, tileGrid);
+        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths, tileGrid, resolverVersion, layoutSource.LayoutSalts);
     }
 
     private static TileType[,] BuildTileGrid(PaletteSpec paletteSpec)
@@ -224,13 +224,15 @@ internal static class TownLayoutGenerator
     private static BuildingView SelectBuildingView(
         bool isOnSpur,
         bool isOnLeftSide,
-        GameSetupDeterministicSource source,
+        LayoutDeterministicSource layoutSource,
         string label)
     {
+        ArgumentNullException.ThrowIfNull(layoutSource);
+        
         if (isOnSpur)
         {
             // Equal weight between Front, FrontOblique, and mirrored FrontOblique
-            var viewIndex = source.PickIndex($"{label}-view", 3);
+            var viewIndex = layoutSource.PickIndex($"{label}-view", LayoutConcern.Buildings, 3);
             return viewIndex switch
             {
                 0 => BuildingView.Front,
@@ -242,7 +244,7 @@ internal static class TownLayoutGenerator
         else
         {
             // Major road: 75% FrontOblique, 25% Profile
-            var viewIndex = source.PickIndex($"{label}-view", 4);
+            var viewIndex = layoutSource.PickIndex($"{label}-view", LayoutConcern.Buildings, 4);
             return viewIndex < 3 ? BuildingView.FrontOblique : BuildingView.Profile;
         }
     }
