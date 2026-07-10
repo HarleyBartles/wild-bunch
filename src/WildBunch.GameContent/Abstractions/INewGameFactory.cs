@@ -23,6 +23,17 @@ public interface INewGameFactory
         GameEntropy gameEntropy);
 
     /// <summary>
+    /// Resolves the world and case file from the seed code with optional dev layout salts.
+    /// Used by the dev flow to create a setup-phase session with deterministic layout overrides.
+    /// </summary>
+    (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
+        string playerName,
+        GameDifficulty gameDifficulty,
+        string? setupSeedCode,
+        GameEntropy gameEntropy,
+        LayoutSalts? devLayoutSalts);
+
+    /// <summary>
     /// Resolves the starting wallet and inventory for a given difficulty.
     /// Used by the complete-game-start flow to provide difficulty-owned starting resources.
     /// </summary>

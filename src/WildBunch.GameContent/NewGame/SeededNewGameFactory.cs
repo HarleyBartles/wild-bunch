@@ -44,6 +44,27 @@ public sealed class SeededNewGameFactory : INewGameFactory
         return (resolvedSetup.World, resolvedSetup.CaseFile, resolvedSetup.SeedCodeText, resolvedSetup.SaltSource);
     }
 
+    public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
+        string playerName,
+        GameDifficulty gameDifficulty,
+        string? setupSeedCode,
+        GameEntropy gameEntropy,
+        LayoutSalts? devLayoutSalts)
+    {
+        var seed = ParseOrGenerateSeed(setupSeedCode);
+        var seedWorld = SeedWorldResolver.Resolve(seed);
+        var difficulty = DifficultyEnvelope.For(gameDifficulty);
+        var entropy = EntropyPolicy.For(gameEntropy);
+        var resolvedSetup = _setupResolver.Resolve(
+            seedWorld,
+            difficulty,
+            entropy,
+            devLayoutSalts,
+            playerChosenStartingTownId: null);
+
+        return (resolvedSetup.World, resolvedSetup.CaseFile, resolvedSetup.SeedCodeText, resolvedSetup.SaltSource);
+    }
+
     public (Wallet Wallet, DomainInventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)
     {
         var difficulty = DifficultyEnvelope.For(gameDifficulty);
