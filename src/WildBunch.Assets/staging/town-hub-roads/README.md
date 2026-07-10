@@ -6,4 +6,4 @@ This subtree holds reviewable staging output for the town-hub road tile track.
 - The matching source custody lives in
   `src/WildBunch.Assets/source/town-hub-roads/`.
 - Final shipped tile copies live in
-  `src/WildBunch.Assets/sprites/town-hub-roads/`.
+  `src/WildBunch.Assets/production/tiles/town-hub-roads/`.

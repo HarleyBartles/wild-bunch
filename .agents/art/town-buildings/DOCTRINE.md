@@ -1,6 +1,6 @@
 # Town Building Doctrine
 
-Use this file as the agent-facing control surface for town-building sprite work. Keep it operational. The human-facing source of truth is the town-building style bible and asset spec in `docs/art/town-buildings/`; use those files for canonical vocabulary, footprint terms, and family names. Do not restate the whole style bible here.
+Use this file as the agent-facing control surface for town-building sprite work. Keep it operational. The human-facing source of truth is the town-building master bible and asset spec in `src/WildBunch.Assets/docs/bibles/buildings/` and `src/WildBunch.Assets/docs/`; use those files for canonical vocabulary, footprint terms, and family names. Do not restate the whole style bible here.
 
 The town-hub asset split is:
 
@@ -92,6 +92,6 @@ visually secondary to the named town buildings.
 
 ## Asset pipeline pointer
 
-- For cut and normalization, use `.agents/docs/asset-pipeline/selection-cut-normalization.md` and the generic `scripts/image_asset_pipeline.py` helper.
+- For cut and normalization, use `.agents/docs/asset-pipeline/selection-cut-normalization.md` and the asset-local `src/WildBunch.Assets/scripts/image_asset_pipeline.py` helper, with the repo-root wrapper kept only for compatibility.
 - Keep town-building notes focused on family-specific selection and camera rules, not on the shared image pipeline mechanics.
 - For roads and ground, prefer seam-safe copy promotion over sprite cutting.

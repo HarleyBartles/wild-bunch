@@ -6,7 +6,8 @@ Current layout:
 
 - `source/` - custody of the full-size source assets for each track
 - `staging/` - reviewable scratch, cut, and normalization output
-- `sprites/` - final promoted sprite assets
+- `production/` - final custody root, with `sprites/` and `tiles/` beneath it
+- `scripts/` - asset-local helper scripts for staging and promotion
 
 The current town-hub tracks are `town-hub-buildings`, `town-hub-roads`, and
 `town-hub-ground`. The buildings track holds the filler-building families;
@@ -19,5 +20,5 @@ asset.
 The web project consumes shipped assets after promotion. It is not the place
 to keep working asset files.
 
-When sprites are ready to ship, the web bundle/publish step copies them into
-`src/WildBunch.Web/public/assets/` as delivery output only.
+When sprites or tiles are ready to ship, the web bundle/publish step copies
+them into `src/WildBunch.Web/public/assets/` as delivery output only.

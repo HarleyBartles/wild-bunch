@@ -6,4 +6,4 @@ This subtree holds reviewable staging output for the town-hub building track.
 - The matching source custody lives in
   `src/WildBunch.Assets/source/town-hub-buildings/`.
 - Final promoted sprites live in
-  `src/WildBunch.Assets/sprites/town-hub-buildings/`.
+  `src/WildBunch.Assets/production/sprites/town-hub-buildings/`.
