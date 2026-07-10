@@ -425,4 +425,75 @@ public static class DevEndpoints
             return Results.BadRequest(ex.Message);
         }
     }
+
+    private static IResult GetTownLayoutSaltsAsync(
+        Guid id,
+        DevRoleGuard guard,
+        GetTownLayoutSaltsHandler handler)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            var result = handler.Handle(new GetTownLayoutSaltsQuery(id));
+            return Results.Ok(result);
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static async Task<IResult> SetTownLayoutSaltsAsync(
+        Guid id,
+        DevRoleGuard guard,
+        SetTownLayoutSaltsHandler handler,
+        TownLayoutSaltsDto request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            await handler.HandleAsync(new SetTownLayoutSaltsCommand(
+                id,
+                request.BuildingsSalt,
+                request.RoadsSalt,
+                request.DirtSalt,
+                request.PropsSalt),
+                cancellationToken);
+            return Results.NoContent();
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
+
+    private static IResult GenerateRandomTownLayoutSaltsAsync(
+        Guid id,
+        DevRoleGuard guard,
+        GenerateRandomTownLayoutSaltsHandler handler)
+    {
+        try
+        {
+            guard.EnsureDevAccess();
+            var result = handler.Handle(new GenerateRandomTownLayoutSaltsCommand(id));
+            return Results.Ok(result);
+        }
+        catch (DevAccessDeniedException)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
+    }
 }
