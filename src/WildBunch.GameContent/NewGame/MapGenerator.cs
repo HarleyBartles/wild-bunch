@@ -18,7 +18,7 @@ internal static class MapGenerator
     private const int MapHeight = 500;
 
     public static World Generate(SeedWorld seedWorld, GameSetupDeterministicSource source,
-        GameEntropy entropy, SaltSource? saltSource)
+        GameEntropy entropy, SaltSource? saltSource, LayoutSalts? devLayoutSalts = null)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
@@ -117,7 +117,7 @@ internal static class MapGenerator
                     town.Id,
                     index,
                     source,
-                    devLayoutSalts: null),
+                    devLayoutSalts),
                 seedWorld.BuildingLayoutPalette,
                 resolverVersion: "1.0.0") }).ToArray();
 
