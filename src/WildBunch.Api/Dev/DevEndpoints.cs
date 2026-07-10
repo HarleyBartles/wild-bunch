@@ -88,6 +88,25 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest);
 
+        dev.MapGet("/sessions/{id:guid}/town-layout/salts", GetTownLayoutSaltsAsync)
+            .WithName("GetTownLayoutSalts")
+            .Produces<TownLayoutSaltsDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
+        dev.MapPost("/sessions/{id:guid}/town-layout/set-salts", SetTownLayoutSaltsAsync)
+            .WithName("SetTownLayoutSalts")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
+
+        dev.MapPost("/sessions/{id:guid}/town-layout/generate-random", GenerateRandomTownLayoutSaltsAsync)
+            .WithName("GenerateRandomTownLayoutSalts")
+            .Produces<TownLayoutSaltsDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
         return app;
     }
 
@@ -227,12 +246,13 @@ public static class DevEndpoints
         try
         {
             guard.EnsureDevAccess();
-            if (string.IsNullOrWhiteSpace(request.ForcedKind))
+            if (string.IsNullOrWhiteSpace(request.ForcedCategory))
             {
-                return Results.BadRequest("ForcedKind is required.");
+                return Results.BadRequest("ForcedCategory is required.");
             }
             await handler.HandleAsync(new ForceSaloonOverrideCommand(
-                id, request.ForcedKind, request.ForcedSuspectId, request.ForcedCitizenRoleKey),
+                id, request.ForcedCategory, request.FoeSpeed,
+                request.FoeFightStrength, request.FoeMinimumBribe, request.EncounterMessage),
                 cancellationToken);
             return Results.NoContent();
         }
@@ -246,7 +266,7 @@ public static class DevEndpoints
         }
         catch (ArgumentException)
         {
-            return Results.BadRequest("Invalid ForcedKind value.");
+            return Results.BadRequest("Invalid ForcedCategory value.");
         }
         catch (InvalidOperationException ex)
         {
@@ -301,17 +321,13 @@ public static class DevEndpoints
     private static async Task<IResult> LockRngAsync(
         Guid id,
         DevRoleGuard guard,
-        ForceDevSaltSourceHandler handler,
-        LockRngRequestDto? request,
+        LockRngHandler handler,
         CancellationToken cancellationToken)
     {
         try
         {
             guard.EnsureDevAccess();
-            // Salt contract: null/empty/whitespace → handler generates a fresh fixed salt.
-            // Non-empty string → handler trims and uses verbatim.
-            var salt = request?.Salt;
-            await handler.HandleAsync(new ForceDevSaltSourceCommand(id, salt), cancellationToken);
+            await handler.HandleAsync(new LockRngCommand(id), cancellationToken);
             return Results.NoContent();
         }
         catch (DevAccessDeniedException)
@@ -322,22 +338,18 @@ public static class DevEndpoints
         {
             return Results.NotFound();
         }
-        catch (ArgumentException ex)
-        {
-            return Results.BadRequest(ex.Message);
-        }
     }
 
     private static async Task<IResult> ClearRngAsync(
         Guid id,
         DevRoleGuard guard,
-        ClearDevSaltSourceHandler handler,
+        ClearRngHandler handler,
         CancellationToken cancellationToken)
     {
         try
         {
             guard.EnsureDevAccess();
-            await handler.HandleAsync(new ClearDevSaltSourceCommand(id), cancellationToken);
+            await handler.HandleAsync(new ClearRngCommand(id), cancellationToken);
             return Results.NoContent();
         }
         catch (DevAccessDeniedException)
