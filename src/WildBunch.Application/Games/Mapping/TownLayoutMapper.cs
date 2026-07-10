@@ -30,7 +30,8 @@ public static class TownLayoutMapper
             layout.PlayerSpawnY,
             layout.Prosperity,
             layout.Paths.Select(ToDto).ToArray(),
-            layout.TileGrid);
+            layout.TileGrid,
+            layout.ResolverVersion);
     }
 
     private static BuildingPlacementDto ToDto(BuildingPlacement placement)
