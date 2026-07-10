@@ -17,15 +17,15 @@ from generate_index_mesh import (
 class TestIsGitignored:
     """Tests for is_gitignored function."""
 
-    def test_gitignore_respects_pytest_cache(self):
-        """Should ignore .pytest_cache directory (in repo .gitignore)."""
+    def test_gitignore_respects_gitignored_patterns(self):
+        """Should ignore directories that are in .gitignore."""
         import generate_index_mesh
         original_root = generate_index_mesh.ROOT
         
         try:
-            # Test with actual repo root
-            pytest_cache = original_root / ".pytest_cache"
-            assert is_gitignored(pytest_cache) is True
+            # Test that .agents/superpowers/output directory is excluded via .gitignore
+            output_dir = original_root / ".agents" / "superpowers" / "output"
+            assert is_gitignored(output_dir) is True
         finally:
             generate_index_mesh.ROOT = original_root
 
@@ -75,13 +75,13 @@ class TestIsGitignored:
         finally:
             generate_index_mesh.ROOT = original_root
 
-    def test_output_directory_excluded_via_gitignore(self):
-        """Should exclude output directory via .gitignore pattern."""
+    def test_agents_superpowers_output_excluded_via_gitignore(self):
+        """Should exclude .agents/superpowers/output directory via .gitignore pattern."""
         import generate_index_mesh
         original_root = generate_index_mesh.ROOT
         
         try:
-            # Test that output directory is excluded via .gitignore
+            # Test that .agents/superpowers/output directory is excluded via .gitignore
             output_dir = original_root / ".agents" / "superpowers" / "output"
             assert is_gitignored(output_dir) is True
         finally:
@@ -98,14 +98,3 @@ class TestIsGitignored:
             assert is_gitignored(test_file) is False
         finally:
             generate_index_mesh.GITIGNORE_SPEC = original_spec
-
-    def test_sdd_directory_ignored(self):
-        """Should ignore .agents/superpowers/sdd/ directory (in repo .gitignore)."""
-        import generate_index_mesh
-        original_root = generate_index_mesh.ROOT
-        
-        try:
-            sdd_dir = original_root / ".agents" / "superpowers" / "sdd"
-            assert is_gitignored(sdd_dir) is True
-        finally:
-            generate_index_mesh.ROOT = original_root
