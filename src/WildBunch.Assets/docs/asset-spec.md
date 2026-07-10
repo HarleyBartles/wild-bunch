@@ -80,7 +80,7 @@ to their source cut.
   copy promotion must preserve the canvas, not crop, trim, or rescale it.
 - Dirt tiles tile with other dirt tiles on all sides, and mirrored dirt tiles
   still need to tile cleanly.
-- Props are normalized to 60x50 canvas for consistency with building sprites and promoted to production/sprites/town-hub-ground/props/.
+- Props are normalized to 80x50 canvas to match the dirt tile grid and promoted to production/sprites/town-hub-ground/props/. Source files are full-size large versions (1024x1024) to enable future scaling to different output file sizes.
 
 ## Naming
 

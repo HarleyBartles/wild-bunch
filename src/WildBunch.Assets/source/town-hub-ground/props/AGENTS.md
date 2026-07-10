@@ -18,6 +18,6 @@ correction.
 Do not add new naming branches here; keep prop naming inside the existing
 ground bible family and routing tables.
 
-Keep source custody here, intermediate work in
+Keep source custody here (full-size 1024x1024 for future scaling), intermediate work in
 `src/WildBunch.Assets/staging/town-hub-ground/props/`, and promoted props
-in `src/WildBunch.Assets/production/sprites/town-hub-ground/props/`.
+in `src/WildBunch.Assets/production/sprites/town-hub-ground/props/` (normalized to 80x50 canvas).
