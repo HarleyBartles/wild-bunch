@@ -1,0 +1,12 @@
+interface:
+  display_name: Wild Bunch Domain Modeling
+  short_description: Apply Wild Bunch domain guidance for gameplay state and travel
+  default_prompt: Model Wild Bunch gameplay state with the project's own aggregate
+    and inventory language.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

@@ -1,0 +1,12 @@
+interface:
+  display_name: Wild Bunch .NET Architecture
+  short_description: Apply Wild Bunch .NET architecture guardrails
+  default_prompt: Keep Wild Bunch domain rules protected while choosing a pragmatic
+    .NET architecture.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

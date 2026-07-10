@@ -1,0 +1,9 @@
+interface:
+  display_name: Unslop+
+  short_description: Anti-slop profiles for software development workflows
+  default_prompt: Use $unslop-plus to apply the appropriate anti-slop profile for
+    your current workflow from thirteen portable profiles covering writing, technical-writing,
+    implementation-plans, code-review, worker-returns, debugging, frontend-react,
+    frontend-ui, api-design, architecture, testing, security-review, and cleanup-custody.
+policy:
+  allow_implicit_invocation: true

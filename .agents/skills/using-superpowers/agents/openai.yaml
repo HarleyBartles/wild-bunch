@@ -1,0 +1,7 @@
+version: 1
+metadata:
+  skill_name: using-superpowers
+  plugin: superpowers
+  source_category: third_party
+  upstream_version: v6.1.0
+  adaptation_overlay: adapters/codex/superpowers-plus/using-superpowers

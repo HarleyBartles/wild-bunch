@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Resolve and ensure the working-tree directory SDD uses for its short-lived
+# artifacts: task briefs, implementer reports, review packages, and the
+# progress ledger. Print the directory's absolute path.
+#
+# The workspace lives in the working tree (not under .git/) because Claude Code
+# treats .git/ as a protected path and denies agent writes there â€” which blocks
+# an implementer subagent from writing its report file. A self-ignoring
+# .gitignore keeps the workspace out of `git status` and out of accidental
+# commits without modifying any tracked file.
+#
+# Single source of truth for the workspace location, so task-brief and
+# review-package cannot drift to different directories.
+#
+# Usage: sdd-workspace [PLAN_FILE]
+set -euo pipefail
+
+root=$(git rev-parse --show-toplevel)
+dir="$root/.agents/superpowers/sdd"
+mkdir -p "$dir"
+printf '*\n' > "$dir/.gitignore"
+
+plan_file=${1:-}
+current_plan="$dir/current-plan.txt"
+plan_stem=""
+
+get_plan_stem() {
+  local path="$1"
+  local resolved stem
+  resolved="$(cd "$(dirname "$path")" && pwd)/$(basename "$path")"
+  stem="${resolved##*/}"
+  stem="${stem%.*}"
+  if [[ -z "$stem" ]]; then
+    echo "plan file name must not be blank" >&2
+    exit 1
+  fi
+  stem="${stem//[\\/:*?\"<>|]/-}"
+  printf '%s\n' "$stem"
+}
+
+if [[ -n "$plan_file" ]]; then
+  plan_stem="$(get_plan_stem "$plan_file")"
+  printf '%s\n' "$plan_stem" > "$current_plan"
+elif [[ -f "$current_plan" ]]; then
+  plan_stem="$(tr -d '\r\n' < "$current_plan")"
+fi
+
+if [[ -z "$plan_stem" ]]; then
+  printf '%s\n' "$dir"
+  exit 0
+fi
+
+mkdir -p "$dir/$plan_stem"
+printf '%s\n' "$dir/$plan_stem"

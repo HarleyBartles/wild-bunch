@@ -1,0 +1,13 @@
+interface:
+  display_name: Context Safety
+  short_description: Use when large or context-heavy text writes need 200-line chunking, compaction boundaries, and atomic replacement.
+  default_prompt: Use /context-safety when a text write may exceed the safe threshold, when inline composition itself would risk consuming the remaining context, or when tool-call boundaries should be used as checkpoints. Estimate line count and byte size before writing, treat 200 lines per chunk as the target and 400 lines per chunk as the absolute red limit, split writes expected to land around 300 lines or more into smaller chunks before composing, preserve durable state before `/compact`, use a clean-context worker/subagent or bounded append path for risky writes, validate the completed temp file, and atomically replace the target only after validation.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
+dependencies:
+  tools: []
