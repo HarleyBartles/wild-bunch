@@ -26,4 +26,10 @@
     <ProjectReference Include="..\..\src\WildBunch.GameContent\WildBunch.GameContent.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
