@@ -343,10 +343,6 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-.pytest_cache/
-
-# Session-specific directory (SDD) artifacts
-.agents/superpowers/sdd/
 
 # Cake - Uncomment if you are using it
 # tools/**
@@ -495,12 +491,16 @@ $RECYCLE.BIN/
 *.swp
 
 .superpowers/
-# .agents/superpowers/output/ INDEX.md is tracked, but binary content is ignored
-.agents/superpowers/output/*
-!.agents/superpowers/output/INDEX.md
+.agents/superpowers/output/
 # Tool/MCP output dirs (agent-generated, not tracked)
 .codex/
 .playwright-mcp/
-# .agents/superpowers/sdd/ is intentionally NOT ignored so SDD progress
+
+# Session-specific directory (SDD) artifacts - gitignored to avoid cluttering git
+# Original comment said "intentionally NOT ignored" but we're ignoring it for cleanliness
+.agents/superpowers/sdd/
+
+# Superpowers output directory (binary artifacts)
+.agents/superpowers/output/
 # ledgers, task briefs, and reports can be published with the PR.
 # (User-directed un-ignore for BUNCH-75.)
