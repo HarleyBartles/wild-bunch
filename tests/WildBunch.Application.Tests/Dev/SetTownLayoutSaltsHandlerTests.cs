@@ -109,4 +109,47 @@ public sealed class SetTownLayoutSaltsHandlerTests
             () => handler.HandleAsync(command, CancellationToken.None));
         Assert.Contains("Prepped status", exception.Message);
     }
+
+    [Fact]
+    public async Task HandleAsync_WithPartialUpdate_MergesWithExistingSalts()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new SetTownLayoutSaltsHandler(repository, repository);
+
+        // Create a prepped session
+        var session = GameSession.StartPrepped(
+            SeedWorldResolver.CreateCanonicalSeedCode().ToString(),
+            GameDifficulty.Standard,
+            GameEntropy.Classic);
+        await repository.StoreAsync(session, Guid.NewGuid(), CancellationToken.None);
+        await repository.CommitAsync(CancellationToken.None);
+        session.MarkEventsCommitted();
+
+        // Set initial dev layout salts
+        var command1 = new SetTownLayoutSaltsCommand(
+            session.Id.Value,
+            "buildings-1",
+            "roads-1",
+            "dirt-1",
+            "props-1");
+        await handler.HandleAsync(command1, CancellationToken.None);
+
+        // Partial update: only change buildings salt
+        var command2 = new SetTownLayoutSaltsCommand(
+            session.Id.Value,
+            "buildings-2",
+            null,
+            null,
+            null);
+        await handler.HandleAsync(command2, CancellationToken.None);
+
+        // Verify only buildings salt changed, others preserved
+        var updated = await repository.GetByIdAsync(session.Id, CancellationToken.None);
+        Assert.NotNull(updated);
+        Assert.NotNull(updated.DevLayoutSalts);
+        Assert.Equal("buildings-2", updated.DevLayoutSalts.BuildingsSalt);
+        Assert.Equal("roads-1", updated.DevLayoutSalts.RoadsSalt);
+        Assert.Equal("dirt-1", updated.DevLayoutSalts.DirtSalt);
+        Assert.Equal("props-1", updated.DevLayoutSalts.PropsSalt);
+    }
 }

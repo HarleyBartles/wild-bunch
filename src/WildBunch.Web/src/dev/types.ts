@@ -164,9 +164,9 @@ export interface SetDevEntropyRequestDto {
 }
 
 export interface TownLayoutSalts {
-  resolverVersion: string;
-  buildingsSalt: string;
-  roadsSalt: string;
-  dirtSalt: string;
-  propsSalt: string;
+  resolverVersion: string | null;
+  buildingsSalt: string | null;
+  roadsSalt: string | null;
+  dirtSalt: string | null;
+  propsSalt: string | null;
 }

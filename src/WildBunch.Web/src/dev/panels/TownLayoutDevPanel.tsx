@@ -4,11 +4,11 @@ import { useGameSession } from "../../state/useGameSession";
 import { getTownLayoutSalts, setTownLayoutSalts, generateRandomTownLayoutSalts } from "../devApi";
 
 interface TownLayoutSalts {
-  resolverVersion: string;
-  buildingsSalt: string;
-  roadsSalt: string;
-  dirtSalt: string;
-  propsSalt: string;
+  resolverVersion: string | null;
+  buildingsSalt: string | null;
+  roadsSalt: string | null;
+  dirtSalt: string | null;
+  propsSalt: string | null;
 }
 
 interface TownLayoutDevPanelProps {
@@ -19,17 +19,23 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
   const { gameId } = useGameSession();
   const [salts, setSalts] = useState<TownLayoutSalts | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusType, setStatusType] = useState<"success" | "error" | null>(null);
 
   useEffect(() => {
     if (!gameId) return;
 
     const loadSalts = async () => {
       setIsLoading(true);
+      setStatusMessage(null);
+      setStatusType(null);
       try {
         const loadedSalts = await getTownLayoutSalts(gameId);
         setSalts(loadedSalts);
       } catch (error) {
         console.error("Failed to load town layout salts:", error);
+        setStatusMessage("Failed to load salts");
+        setStatusType("error");
       } finally {
         setIsLoading(false);
       }
@@ -42,15 +48,31 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
     if (!salts) return;
     const bundle = JSON.stringify(salts, null, 2);
     navigator.clipboard.writeText(bundle);
+    setStatusMessage("Bundle copied to clipboard");
+    setStatusType("success");
+    setTimeout(() => {
+      setStatusMessage(null);
+      setStatusType(null);
+    }, 2000);
   };
 
   const handleSetSalts = async () => {
     if (!salts || !gameId) return;
     setIsLoading(true);
+    setStatusMessage(null);
+    setStatusType(null);
     try {
       await setTownLayoutSalts(gameId, salts);
+      setStatusMessage("Salts set successfully");
+      setStatusType("success");
+      setTimeout(() => {
+        setStatusMessage(null);
+        setStatusType(null);
+      }, 2000);
     } catch (error) {
       console.error("Failed to set town layout salts:", error);
+      setStatusMessage("Failed to set salts - check session status");
+      setStatusType("error");
     } finally {
       setIsLoading(false);
     }
@@ -59,13 +81,29 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
   const handleGenerateRandom = async () => {
     if (!gameId) return;
     setIsLoading(true);
+    setStatusMessage(null);
+    setStatusType(null);
     try {
       const randomSalts = await generateRandomTownLayoutSalts(gameId);
       setSalts(randomSalts);
+      setStatusMessage("Random salts generated");
+      setStatusType("success");
+      setTimeout(() => {
+        setStatusMessage(null);
+        setStatusType(null);
+      }, 2000);
     } catch (error) {
       console.error("Failed to generate random town layout salts:", error);
+      setStatusMessage("Failed to generate random salts");
+      setStatusType("error");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaltChange = (field: keyof TownLayoutSalts, value: string) => {
+    if (salts) {
+      setSalts({ ...salts, [field]: value });
     }
   };
 
@@ -83,32 +121,55 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
           <>
             <Row>
               <Label>Resolver Version:</Label>
-              <Value>{salts.resolverVersion}</Value>
+              <Value>{salts.resolverVersion || "Not set"}</Value>
             </Row>
             <Row>
               <Label>Buildings Salt:</Label>
-              <Value>{salts.buildingsSalt}</Value>
+              <Input
+                type="text"
+                value={salts.buildingsSalt || ""}
+                onChange={(e) => handleSaltChange("buildingsSalt", e.target.value)}
+                placeholder="Buildings salt"
+              />
             </Row>
             <Row>
               <Label>Roads Salt:</Label>
-              <Value>{salts.roadsSalt}</Value>
+              <Input
+                type="text"
+                value={salts.roadsSalt || ""}
+                onChange={(e) => handleSaltChange("roadsSalt", e.target.value)}
+                placeholder="Roads salt"
+              />
             </Row>
             <Row>
               <Label>Dirt Salt:</Label>
-              <Value>{salts.dirtSalt}</Value>
+              <Input
+                type="text"
+                value={salts.dirtSalt || ""}
+                onChange={(e) => handleSaltChange("dirtSalt", e.target.value)}
+                placeholder="Dirt salt"
+              />
             </Row>
             <Row>
               <Label>Props Salt:</Label>
-              <Value>{salts.propsSalt}</Value>
+              <Input
+                type="text"
+                value={salts.propsSalt || ""}
+                onChange={(e) => handleSaltChange("propsSalt", e.target.value)}
+                placeholder="Props salt"
+              />
             </Row>
+            {statusMessage && (
+              <StatusMessage $type={statusType}>{statusMessage}</StatusMessage>
+            )}
             <ButtonRow>
               <Button type="button" onClick={handleCopyBundle}>
                 Copy Bundle
               </Button>
-              <Button type="button" onClick={handleSetSalts}>
+              <Button type="button" onClick={handleSetSalts} disabled={isLoading}>
                 Set Salts
               </Button>
-              <Button type="button" onClick={handleGenerateRandom}>
+              <Button type="button" onClick={handleGenerateRandom} disabled={isLoading}>
                 Generate Random
               </Button>
             </ButtonRow>
@@ -141,6 +202,7 @@ const Row = styled.div`
   display: flex;
   gap: 8px;
   font-size: 0.82rem;
+  align-items: center;
 `;
 
 const Label = styled.span`
@@ -151,6 +213,30 @@ const Label = styled.span`
 
 const Value = styled.span`
   color: var(--text);
+`;
+
+const Input = styled.input`
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  min-width: 0;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+`;
+
+const StatusMessage = styled.div<{ $type: "success" | "error" }>`
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: ${props => props.$type === "success" ? "rgba(76, 175, 80, 0.1)" : "rgba(244, 67, 54, 0.1)"};
+  color: ${props => props.$type === "success" ? "#4caf50" : "#f44336"};
 `;
 
 const ButtonRow = styled.div`

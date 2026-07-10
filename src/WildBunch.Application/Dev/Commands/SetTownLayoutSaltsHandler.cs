@@ -27,11 +27,6 @@ public sealed class SetTownLayoutSaltsHandler : GameSessionCommandHandler
         ArgumentNullException.ThrowIfNull(command);
 
         var sessionId = new GameSessionId(command.GameId);
-        var layoutSalts = new LayoutSalts(
-            command.BuildingsSalt,
-            command.RoadsSalt,
-            command.DirtSalt,
-            command.PropsSalt);
 
         await ExecuteWithRetryAsync(sessionId, (session, ct) =>
         {
@@ -42,6 +37,14 @@ public sealed class SetTownLayoutSaltsHandler : GameSessionCommandHandler
                 throw new InvalidOperationException(
                     "Dev layout salts can only be set on sessions in Prepped status.");
             }
+
+            // Merge new salts with existing dev salts (partial updates supported)
+            var existingSalts = session.DevLayoutSalts;
+            var layoutSalts = new LayoutSalts(
+                command.BuildingsSalt ?? existingSalts?.BuildingsSalt ?? "",
+                command.RoadsSalt ?? existingSalts?.RoadsSalt ?? "",
+                command.DirtSalt ?? existingSalts?.DirtSalt ?? "",
+                command.PropsSalt ?? existingSalts?.PropsSalt ?? "");
 
             session.SetDevLayoutSalts(layoutSalts);
             return Task.FromResult(true);

@@ -49,7 +49,8 @@ public sealed class TownLayoutDevIntegrationTests
         Assert.Equal(HttpStatusCode.OK, saltsResponse.StatusCode);
         var saltsDto = await saltsResponse.Content.ReadFromJsonAsync<TownLayoutSaltsDto>();
         Assert.NotNull(saltsDto);
-        Assert.Equal("dev-buildings", saltsDto!.BuildingsSalt);
+        Assert.Equal("1.0.0", saltsDto!.ResolverVersion);
+        Assert.Equal("dev-buildings", saltsDto.BuildingsSalt);
         Assert.Equal("dev-roads", saltsDto.RoadsSalt);
         Assert.Equal("dev-dirt", saltsDto.DirtSalt);
         Assert.Equal("dev-props", saltsDto.PropsSalt);

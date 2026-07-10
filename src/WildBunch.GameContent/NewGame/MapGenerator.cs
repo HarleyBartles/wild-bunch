@@ -105,21 +105,23 @@ internal static class MapGenerator
         // world (CreateCanonicalWorld) does not go through MapGenerator and needs no layouts.
         var entropyPolicy = EntropyPolicy.For(entropy);
         var townsWithLayouts = world.Towns.Select((town, index) =>
-            town with { Layout = TownLayoutGenerator.GenerateLayout(
-                town.Services,
-                town.Prosperity,
-                town.Id,
-                index,
-                source,
-                layoutSalts: LayoutSaltDeriver.DeriveLayoutSalts(
+            {
+                var derivedSalts = LayoutSaltDeriver.DeriveLayoutSalts(
                     seedWorld,
                     entropyPolicy,
                     town.Id,
                     index,
+                    devLayoutSalts);
+                return town with { Layout = TownLayoutGenerator.GenerateLayout(
+                    town.Services,
+                    town.Prosperity,
+                    town.Id,
+                    index,
                     source,
-                    devLayoutSalts),
-                seedWorld.BuildingLayoutPalette,
-                resolverVersion: "1.0.0") }).ToArray();
+                    layoutSalts: derivedSalts,
+                    seedWorld.BuildingLayoutPalette,
+                    resolverVersion: "1.0.0") };
+            }).ToArray();
 
         return new World(townsWithLayouts, world.Trails);
     }

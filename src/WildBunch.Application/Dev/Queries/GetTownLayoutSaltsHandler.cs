@@ -7,11 +7,12 @@ using WildBunch.Domain.World;
 namespace WildBunch.Application.Dev.Queries;
 
 /// <summary>
-/// Handler for GetTownLayoutSaltsQuery. Returns the current layout salts
-/// from the game session, or defaults if none are set.
+/// Handler for GetTownLayoutSaltsQuery. Returns the current dev layout salts
+/// from the game session, or null values if no dev salts are set.
 /// </summary>
 public sealed class GetTownLayoutSaltsHandler
 {
+    private const string ResolverVersion = "1.0.0";
     private readonly IGameSessionRepository _repository;
 
     public GetTownLayoutSaltsHandler(IGameSessionRepository repository)
@@ -28,17 +29,14 @@ public sealed class GetTownLayoutSaltsHandler
             throw new GameSessionNotFoundException(sessionId);
         }
 
-        var salts = session.DevLayoutSalts ?? new LayoutSalts(
-            "default-buildings",
-            "default-roads",
-            "default-dirt",
-            "default-props");
-
+        var devSalts = session.DevLayoutSalts;
+        
+        // Return null values when no dev salts are set, to distinguish from actual dev salts
         return new TownLayoutSaltsDto(
-            "1.0.0",
-            salts.BuildingsSalt,
-            salts.RoadsSalt,
-            salts.DirtSalt,
-            salts.PropsSalt);
+            ResolverVersion,
+            devSalts?.BuildingsSalt,
+            devSalts?.RoadsSalt,
+            devSalts?.DirtSalt,
+            devSalts?.PropsSalt);
     }
 }

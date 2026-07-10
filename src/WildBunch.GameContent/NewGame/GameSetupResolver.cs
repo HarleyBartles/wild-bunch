@@ -48,7 +48,7 @@ internal sealed class GameSetupResolver
 
         // 2. Build the deterministic source from the seed code.
         var seedCodeText = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode);
-        var source = new GameSetupDeterministicSource(seedCodeText);
+        var source = new GameSetupDeterministicSource(seedCodeText, null);
 
         // 3. Build world from seed world. The seed owns the map; it does NOT
         //    choose the starting town. Wild entropy may trim outlier towns.
@@ -122,7 +122,7 @@ internal sealed class GameSetupResolver
             difficulty.Difficulty);
 
         var seedCodeText = SeedWorldResolver.FormatSeedCode(seedWorld.SeedCode);
-        var source = new GameSetupDeterministicSource(seedCodeText);
+        var source = new GameSetupDeterministicSource(seedCodeText, devLayoutSalts);
 
         var world = MapGenerator.Generate(
             seedWorld,

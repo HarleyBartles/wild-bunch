@@ -17,12 +17,10 @@ internal static class LayoutSaltDeriver
         EntropyPolicy entropyPolicy,
         TownId townId,
         int townSlotIndex,
-        GameSetupDeterministicSource source,
         LayoutSalts? devLayoutSalts)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(entropyPolicy);
-        ArgumentNullException.ThrowIfNull(source);
         
         // If dev salts are set, use them directly (dev control overrides derivation)
         if (devLayoutSalts is not null)
@@ -32,14 +30,8 @@ internal static class LayoutSaltDeriver
         
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
         
-        // When entropy policy is Fixed mode, use a fixed salt for all layout salts
-        if (entropyPolicy.SaltSourceMode == SaltSourceMode.Fixed)
-        {
-            var fixedSalt = SaltSource.CreateFixed("fixed-layout-salt").Salt;
-            return new LayoutSalts(fixedSalt, fixedSalt, fixedSalt, fixedSalt);
-        }
-        
         // Derive each salt from seed + town context + entropy policy
+        // Fixed mode still preserves deterministic partitioning by seed, town, slot, and concern
         var buildingsSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "buildings", entropyPolicy.SaltSourceMode);
         var roadsSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "roads", entropyPolicy.SaltSourceMode);
         var dirtSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "dirt", entropyPolicy.SaltSourceMode);
