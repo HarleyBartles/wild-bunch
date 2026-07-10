@@ -47,6 +47,9 @@
 - Unit test verifies `StartPrepped` creates session with Prepped status, seed, difficulty, entropy
 - Unit test verifies session has null world and null case file
 
+**Expected Interim State:**
+- No interim build breaks. Each step leaves the build in a passing state.
+
 - [ ] **Step 1: Write failing test for GameStatus.Prepped**
 
 ```csharp
@@ -211,6 +214,9 @@ git commit -m "feat: add prepped session infrastructure (GameStatus.Prepped, Gam
 - Unit test verifies TownLayout with LayoutSalts creates successfully
 - Unit test verifies TownLayoutGenerator with usedLayoutSalts persists salts
 - Unit test verifies TownLayoutMapper maps LayoutSalts to DTO
+
+**Expected Interim State:**
+- No interim build breaks. Each step leaves the build in a passing state.
 
 - [ ] **Step 1: Write failing test for TownLayout with LayoutSalts**
 
@@ -464,6 +470,9 @@ git commit -m "feat: add LayoutSalts persistence to TownLayout and DTO"
 - GameContent test verifies ResolvedGameSetup with DevLayoutSalts creates successfully
 - GameContent test verifies GameSetupResolver overload passes dev salts to MapGenerator
 - GameContent test verifies MapGenerator with dev salts passes to LayoutSaltDeriver
+
+**Expected Interim State:**
+- No interim build breaks. Each step leaves the build in a passing state.
 
 - [ ] **Step 1: Write failing test for ResolvedGameSetup with DevLayoutSalts**
 
@@ -757,6 +766,9 @@ git commit -m "feat: add dev salts pipeline integration (ResolvedGameSetup, Game
 **Verification:**
 - Unit test verifies PrepGameSessionHandler creates prepped session
 - Unit test verifies StartGameSessionHandler starts prepped session with dev salts
+
+**Expected Interim State:**
+- No interim build breaks. Each step leaves the build in a passing state.
 
 - [ ] **Step 1: Write failing test for PrepGameSessionHandler**
 
@@ -1061,6 +1073,9 @@ git commit -m "feat: add prep and start game session commands and endpoints"
 - Frontend test verifies prepGameSession calls correct endpoint
 - Frontend test verifies startGameSession calls correct endpoint
 
+**Expected Interim State:**
+- No interim build breaks. Each step leaves the build in a passing state.
+
 - [ ] **Step 1: Write failing test for prepGameSession**
 
 ```typescript
@@ -1186,6 +1201,9 @@ git commit -m "feat: add prep and start game session API functions"
 - Frontend test verifies StartGameOptionsForm calls prepGameSession on mount
 - Frontend test verifies StartGameOptionsForm calls startGameSession on submit
 - Frontend test verifies TownLayoutDevPanel reads from TownLayout.LayoutSalts
+
+**Expected Interim State:**
+- No interim build breaks. Each step leaves the build in a passing state.
 
 - [ ] **Step 1: Write failing test for StartGameOptionsForm prep flow**
 
@@ -1333,7 +1351,7 @@ git commit -m "feat: update frontend for three-phase game setup flow"
 
 ## Execution Confidence Assessment
 
-**Confidence Rating: 8/10**
+**Confidence Rating: 9/10**
 
 **Verified:**
 - ✅ GameStatus enum location and pattern verified
@@ -1346,6 +1364,7 @@ git commit -m "feat: update frontend for three-phase game setup flow"
 - ✅ MapGenerator.Generate signature verified (4 parameters)
 - ✅ Frontend API pattern verified (requestJson helper)
 - ✅ Frontend component patterns verified (styled-components, useState, useEffect)
+- ✅ Interim state documented for all tasks (no build breaks expected)
 
 **Potential Issues:**
 - ⚠️ StartGameSessionHandler implementation assumes `INewGameFactory.ResolveWorld` signature - not fully verified
