@@ -433,6 +433,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case DevSaltSourceCleared dsc:
                 Apply(dsc);
                 break;
+            case DevLayoutSaltsForced dlsf:
+                Apply(dlsf);
+                break;
             case DevDifficultyForced ddf:
                 Apply(ddf);
                 break;
@@ -786,6 +789,16 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
+    /// Applies a DevLayoutSaltsForced event. Sets the dev layout salts for town layout generation.
+    /// Dev-only event. See BUNCH-147.
+    /// </summary>
+    internal void Apply(DevLayoutSaltsForced e)
+    {
+        DevLayoutSalts = e.ForcedLayoutSalts;
+        _version++;
+    }
+
+    /// <summary>
     /// Applies a DevDifficultyForced event. Changes the session difficulty,
     /// which changes the derived TravelRules profile. Dev-only event — does
     /// not affect starting health/cash or any other gameplay state directly.
@@ -806,17 +819,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(DevEntropyChanged e)
     {
         GameEntropy = e.NewEntropy;
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies a DevLayoutSaltsForced event. Stores the forced layout salts
-    /// in the session for use in layout generation. Dev-only event.
-    /// See BUNCH-147.
-    /// </summary>
-    internal void Apply(DevLayoutSaltsForced e)
-    {
-        DevLayoutSalts = e.ForcedLayoutSalts;
         _version++;
     }
 
