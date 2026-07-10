@@ -1,5 +1,6 @@
 using System;
 using WildBunch.Domain.World;
+using Xunit;
 
 namespace WildBunch.Domain.Tests.World;
 
@@ -65,5 +66,20 @@ public sealed class TownLayoutTests
         Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.Rear));
         Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.FrontOblique));
         Assert.True(Enum.IsDefined(typeof(BuildingView), BuildingView.RearOblique));
+    }
+
+    [Fact]
+    public void TownLayout_WithResolverVersion_CreatesSuccessfully()
+    {
+        var layout = new TownLayout(
+            [],
+            50,
+            50,
+            TownProsperity.Prosperous,
+            [],
+            null,
+            "1.0.0");
+
+        Assert.Equal("1.0.0", layout.ResolverVersion);
     }
 }
