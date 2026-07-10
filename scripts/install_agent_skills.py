@@ -206,7 +206,7 @@ def _sync_skills(
             
             # Collision handling
             if skill_name in synced_skill_names:
-                print(f"Warning: Skill '{skill_name}' (from plugin '{pluginName}') collides with already-synced skill; keeping first copy.")
+                print(f"Warning: Skill '{skill_name}' (from plugin '{plugin_name}') collides with already-synced skill; keeping first copy.")
                 continue
             
             # Check if copy is needed
@@ -215,16 +215,17 @@ def _sync_skills(
                 if not _files_identical(skill_dir, dest_skill_dir):
                     needs_copy = True
             
+            # Always track the skill as synced (prevents pruning unchanged skills)
+            synced_skill_names.add(skill_name)
+            
             if check_mode:
                 if needs_copy or not dest_skill_dir.exists():
                     print(f"  CHECK: Would copy skill: {skill_name}")
                     changes_made = True
-                    synced_skill_names.add(skill_name)
                     plugin_skill_count += 1
             else:
                 if needs_copy or not dest_skill_dir.exists():
                     _copy_skill_directory(skill_dir, dest_skill_dir)
-                    synced_skill_names.add(skill_name)
                     plugin_skill_count += 1
                     changes_made = True
             
