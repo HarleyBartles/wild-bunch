@@ -58,22 +58,24 @@ Layout resolution flows from seed + entropy → derived salts → versioned reso
 
 ### 4. Dev Overlay UI Shape
 
-**Approach:** Compact read-only display of salts + version with "Copy Bundle" and "Freeze" buttons.
+**Approach:** Setup-time salt control with "Copy Bundle" and "Set Salts" buttons for controlling world generation.
 
 **Implementation:**
 - Compact mode: Single block showing:
   - Resolver version (e.g., "1.0.0")
-  - Buildings salt (hex string, truncated if long)
-  - Roads salt (hex string, truncated if long)
-  - Dirt salt (hex string, truncated if long)
-  - Props salt (hex string, truncated if long)
+  - Buildings salt (hex string, editable text field)
+  - Roads salt (hex string, editable text field)
+  - Dirt salt (hex string, editable text field)
+  - Props salt (hex string, editable text field)
 - Buttons:
-  - "Copy Bundle" - copies all salts + version as JSON to clipboard
-  - "Freeze" - locks current salts by setting entropy policy to Fixed mode with current salt values
-- Expanded mode: Shows full salt values and additional layout inspection (tile grid preview, building list)
-- Salt values are opaque hex strings — no need for expandable sections per salt
+  - "Copy Bundle" - copies all salts + version as JSON to clipboard for saving
+  - "Set Salts" - applies the entered salt values to the entropy policy for the next world generation
+  - "Generate Random" - fills all 4 salt fields with new random values for exploration
+- Expanded mode: Shows full salt values and additional layout inspection (tile grid preview, building list) after generation
+- Salt values are opaque hex strings — editable text fields allow dev to paste saved values
+- Salts are set at setup time before world generation, not changed mid-game
 
-**Rationale:** Satisfies issue requirement for "inspect, copy, and freeze", salts are opaque so detailed inspection adds little value, compact display fits doctrine, Freeze button is primary testing tool for determinism verification.
+**Rationale:** Satisfies issue requirement for "inspect, copy, and freeze" (interpreted as set/save), salts are opaque so detailed inspection adds little value, compact display fits doctrine, setup-time salt control allows devs to reproduce specific world layouts by setting salts before generation.
 
 ### 5. Salt Storage and Derivation
 
@@ -107,9 +109,10 @@ Layout resolution flows from seed + entropy → derived salts → versioned reso
 
 **Dev overlay flow:**
 - Town Layout dev panel shows current `LayoutSalts` + `ResolverVersion`
-- "Copy Bundle" serializes salts + version as JSON
-- "Freeze" sets entropy policy to Fixed mode with current salt values
-- Revisiting town with frozen salts produces identical layout
+- "Copy Bundle" serializes salts + version as JSON for saving
+- "Set Salts" applies entered salt values to entropy policy before world generation
+- "Generate Random" fills salt fields with new random values for exploration
+- Setting salts at setup time produces reproducible world layouts
 
 **Rationale:** Clear separation of concerns, deterministic by construction, frontend is pure renderer, dev overlay can inspect and control the generation inputs.
 
@@ -159,9 +162,11 @@ Layout resolution flows from seed + entropy → derived salts → versioned reso
 **New Dev Endpoints:**
 - `GET /api/dev/town-layout/salts` - Returns current layout salts for the active town
   - Response: `{ resolverVersion: string, buildingsSalt: string, roadsSalt: string, dirtSalt: string, propsSalt: string }`
-- `POST /api/dev/town-layout/freeze` - Freezes current layout salts by setting entropy policy to Fixed mode
+- `POST /api/dev/town-layout/set-salts` - Sets layout salts for the next world generation
   - Request: `{ buildingsSalt: string, roadsSalt: string, dirtSalt: string, propsSalt: string }`
   - Response: Success/failure confirmation
+- `POST /api/dev/town-layout/generate-random` - Generates random salt values for exploration
+  - Response: `{ buildingsSalt: string, roadsSalt: string, dirtSalt: string, propsSalt: string }`
 - `GET /api/dev/town-layout/layout` - Returns the current resolved layout for inspection
   - Response: `TownLayoutDto` with resolver version
 
@@ -169,7 +174,8 @@ Layout resolution flows from seed + entropy → derived salts → versioned reso
 - New controller: `src/WildBunch.Web/Controllers/DevTownLayoutController.cs`
 - Endpoints are dev-only (require dev mode or authenticated dev user)
 - Endpoints use the existing dev command infrastructure (ForceDevSaltSourceCommand pattern)
-- Freeze endpoint uses the existing entropy policy mutation surface
+- Set-salts endpoint updates the entropy policy to Fixed mode with the provided salt values before world generation
+- Generate-random endpoint creates new random salt values and returns them for the dev to review before setting
 
 ### Integration with Existing Town Entry Flow
 
@@ -199,13 +205,14 @@ Layout resolution flows from seed + entropy → derived salts → versioned reso
 - Layout salt derivation uses the existing entropy policy salt mode
 - When SaltSourceMode is Fixed, the fixed salt value is used for all 4 layout salts
 - When SaltSourceMode is Runtime, salts are derived from seed + town context
-- Dev overlay freeze works by setting the entropy policy to Fixed mode with the current layout salt values
+- Dev overlay set-salts works by setting the entropy policy to Fixed mode with the provided salt values before world generation
 
-**Freeze Implementation:**
-- Dev overlay "Freeze" button calls the freeze endpoint with current layout salts
+**Set-Salts Implementation:**
+- Dev overlay "Set Salts" button calls the set-salts endpoint with the entered salt values
 - Backend creates a new `SaltSource` with Fixed mode and a combined salt value
 - The entropy policy is updated to use this fixed salt source
-- Subsequent layout derivations use the fixed salt values, producing identical layouts
+- Subsequent world generation uses the fixed salt values, producing reproducible layouts
+- This happens at setup time before world generation, not mid-game
 
 ## Guardrails
 
