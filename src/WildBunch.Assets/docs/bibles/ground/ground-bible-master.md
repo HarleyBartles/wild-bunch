@@ -50,6 +50,14 @@ place only.
 - Keep props separate from ground plates unless a family bible explicitly says
   otherwise.
 
+## Source size and pipeline scaling
+
+- Source files should be generated at large size (1024x1024) to enable future scaling to different output file sizes.
+- The asset pipeline handles scaling from large source files to the target canvas size.
+- Dirt tiles: scaled to 80x50 canvas (full tile grid)
+- Props: scaled to 80x50 canvas (to match dirt tile grid)
+- Always generate source files at large size first, then use the asset pipeline for normalization and scaling.
+
 ## Prompt-ready guardrails
 
 - Do: Keep the art rooted in the same dusty western terrain language across all

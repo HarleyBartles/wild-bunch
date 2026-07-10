@@ -12,6 +12,18 @@ dirt. These assets are separate transparent sprites, not dirt-baked tiles.
 - Texture: weathered wood, dry plant matter, stone, or worn utility material as
   appropriate to the prop.
 - Background: no dirt plate, no full terrain chunk, no scene backdrop.
+- Footprint: normalized to 80x50 canvas to match the dirt tile grid. Source files are full-size large versions (1024x1024) to enable future scaling to different output file sizes.
+
+## Prop types
+
+The current prop set includes:
+- **cactus**: Small desert cactus, weathered green with dusty texture
+- **fence-piece**: Wooden fence section, weathered wood texture
+- **tumbleweed**: Dry plant matter, dusty brown texture
+- **barrel**: Small wooden barrel, worn and sun-baked
+- **water-trough**: Wooden water trough, worn utility material
+
+All props follow the same western ground palette and material logic.
 
 ## Prop family rules
 

@@ -16,7 +16,7 @@ The split is three asset tracks:
 
 - `town-hub-buildings`
 - `town-hub-roads`
-- `town-hub-ground`
+- `town-hub-ground` (includes dirt tiles and standalone prop sprites)
 
 Prosperity tiering is part of the building contract: `poor` sits between
 `destitute` and `prosperous`, and tier differences should come from finish and
@@ -27,7 +27,7 @@ What belongs in git:
 
 - the human-facing docs in `src/WildBunch.Assets/docs/`
 - generated indexes
-- final sprite output in `src/WildBunch.Assets/production/sprites/town-hub-buildings/`, `src/WildBunch.Assets/production/tiles/town-hub-roads/`, and `src/WildBunch.Assets/production/tiles/town-hub-ground/`
+- final sprite output in `src/WildBunch.Assets/production/sprites/town-hub-buildings/`, `src/WildBunch.Assets/production/tiles/town-hub-roads/`, `src/WildBunch.Assets/production/tiles/town-hub-ground/`, and `src/WildBunch.Assets/production/sprites/town-hub-ground/props/`
 - intermediate work in `src/WildBunch.Assets/staging/town-hub-buildings/`, `src/WildBunch.Assets/staging/town-hub-roads/`, and `src/WildBunch.Assets/staging/town-hub-ground/` when it is intentionally kept for review or reuse
 - full-size source custody in `src/WildBunch.Assets/source/town-hub-buildings/`, `src/WildBunch.Assets/source/town-hub-roads/`, and `src/WildBunch.Assets/source/town-hub-ground/`
 
@@ -48,6 +48,18 @@ How to review outputs:
 - keep the review focused on shape, readability, seam safety, and contract match
 
 Promotion into `src/WildBunch.Assets/production/sprites/town-hub-buildings/` is handled by `python src/WildBunch.Assets/scripts/image_asset_pipeline.py promote-sprites --input-root src/WildBunch.Assets/staging/town-hub-buildings --out-root src/WildBunch.Assets/production/sprites/town-hub-buildings`.
+
+Props follow the same sprite promotion path from staging to production/sprites/town-hub-ground/props/.
+
+## Scaling workflow
+
+Ground assets follow a scaling workflow from large source files to target canvas sizes:
+
+1. Generate source files at large size (1024x1024)
+2. Use `normalize` command with canvas size parameters to scale to target size
+3. Promote through staging to production
+
+This enables future scaling to different output sizes without regenerating source art.
 
 Road and ground tiles stay tile-safe through copy promotion from `staging/` to
 `production/tiles/` after seam checks. Their contract is about edge matching
