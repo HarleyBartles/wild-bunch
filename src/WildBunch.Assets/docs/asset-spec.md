@@ -15,7 +15,8 @@ This document defines the repo-facing contract for town-hub asset art.
 - Final sprites:
   - `src/WildBunch.Assets/production/sprites/town-hub-buildings/`
   - `src/WildBunch.Assets/production/tiles/town-hub-roads/`
-  - `src/WildBunch.Assets/production/tiles/town-hub-ground/`
+  - `src/WildBunch.Assets/production/tiles/town-hub-ground/` (dirt tiles)
+  - `src/WildBunch.Assets/production/sprites/town-hub-ground/props/` (standalone prop sprites)
 
 The `sprites/` tree is the shippable output home. The `staging/` tree is for
 working files, studies, and other intermediate art that is not ready to ship.
@@ -67,17 +68,19 @@ to their source cut.
 
 ### `town-hub-ground`
 
-- The `town-hub-ground` track holds dirt and landform tiles.
+- The `town-hub-ground` track holds dirt tiles, landform tiles, and standalone prop sprites.
 - Dirt variation comes from base textures, prop-baked tiles, and the larger
   landform set.
+- Props are standalone transparent sprites that sit over dirt tiles, not baked into ground plates.
 - Dirt tiles do not use prosperity tiers.
 - Keep the dirt set tile-safe and seam-safe through source, staging, and
-  sprites.
+  production/tiles.
 - Keep every dirt tile at the full 80x50 canvas in source, staging, and
   production/tiles;
   copy promotion must preserve the canvas, not crop, trim, or rescale it.
 - Dirt tiles tile with other dirt tiles on all sides, and mirrored dirt tiles
   still need to tile cleanly.
+- Props are normalized to 60x50 canvas for consistency with building sprites and promoted to production/sprites/town-hub-ground/props/.
 
 ## Naming
 

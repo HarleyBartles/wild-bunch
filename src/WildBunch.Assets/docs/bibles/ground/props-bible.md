@@ -12,6 +12,7 @@ dirt. These assets are separate transparent sprites, not dirt-baked tiles.
 - Texture: weathered wood, dry plant matter, stone, or worn utility material as
   appropriate to the prop.
 - Background: no dirt plate, no full terrain chunk, no scene backdrop.
+- Footprint: normalized to 60x50 canvas for consistency with building sprites.
 
 ## Prop family rules
 

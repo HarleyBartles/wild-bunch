@@ -20,5 +20,6 @@ Do not add new naming branches here; keep dirt, road, spur, path, and props
 naming inside the existing ground bible family and routing tables.
 
 Keep source custody here, intermediate work in
-`src/WildBunch.Assets/staging/town-hub-ground/`, and promoted tiles or props
-in `src/WildBunch.Assets/production/tiles/town-hub-ground/`.
+`src/WildBunch.Assets/staging/town-hub-ground/`, promoted tiles in
+`src/WildBunch.Assets/production/tiles/town-hub-ground/`, and promoted props
+in `src/WildBunch.Assets/production/sprites/town-hub-ground/props/`.
