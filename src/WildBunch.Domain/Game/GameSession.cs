@@ -1457,10 +1457,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public void SetDevLayoutSalts(LayoutSalts layoutSalts)
     {
         ArgumentNullException.ThrowIfNull(layoutSalts);
-        ProduceEvent(new DevLayoutSaltsForced
-        {
-            ForcedLayoutSalts = layoutSalts
-        });
+        ProduceEvent(new DevLayoutSaltsForced(layoutSalts));
     }
 
     private void RefreshTownVisit(TownId townId)
@@ -2565,3 +2562,4 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
 }
+

@@ -21,7 +21,7 @@ public sealed class GetTownLayoutSaltsHandler
 
     public async Task<TownLayoutSaltsDto> HandleAsync(GetTownLayoutSaltsQuery query, CancellationToken cancellationToken = default)
     {
-        var sessionId = new GameSessionId(query.SessionId);
+        var sessionId = new GameSessionId(query.GameId);
         var session = await _repository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
         if (session is null)
         {

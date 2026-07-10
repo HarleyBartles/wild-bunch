@@ -57,7 +57,8 @@ internal static class TownLayoutGenerator
         GameSetupDeterministicSource source,
         LayoutSalts? layoutSalts,
         BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.NoSpurs_SpreadEvenly,
-        string resolverVersion = "1.0.0")
+        string resolverVersion = "1.0.0",
+        LayoutSalts? usedLayoutSalts = null)
     {
         ArgumentNullException.ThrowIfNull(source);
 
@@ -160,7 +161,7 @@ internal static class TownLayoutGenerator
             }
         }
 
-        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths, tileGrid, resolverVersion);
+        return new TownLayout(buildings, PlayerSpawnX, PlayerSpawnY, prosperity, paths, tileGrid, resolverVersion, usedLayoutSalts);
     }
 
     private static TileType[,] BuildTileGrid(PaletteSpec paletteSpec)

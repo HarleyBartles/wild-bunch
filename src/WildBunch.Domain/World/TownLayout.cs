@@ -11,6 +11,7 @@ namespace WildBunch.Domain.World;
 /// frontend Phaser surface for rendering and click-to-navigate routing.
 /// The resolver version identifies the algorithm version used to generate the layout,
 /// supporting migration when the resolver algorithm changes.
+/// Layout salts are the salts used during layout generation, persisted for reproducibility.
 /// </summary>
 public sealed record TownLayout(
     IReadOnlyList<BuildingPlacement> Buildings,
@@ -19,4 +20,5 @@ public sealed record TownLayout(
     TownProsperity Prosperity,
     IReadOnlyList<PathSegment> Paths,
     int[][]? TileGrid = null,
-    string ResolverVersion = "1.0.0");
+    string ResolverVersion = "1.0.0",
+    LayoutSalts? LayoutSalts = null);
