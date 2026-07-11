@@ -14,6 +14,24 @@ Use this reference when running validation, debugging CI failures, or deciding t
 - If PostgreSQL port `5434` is closed or connection setup fails, report the exact command and output after running the repo-local setup/status lane instead of treating it as a product regression.
 - Report warnings separately from failures.
 
+## CI Preflight (run locally before marking a PR ready)
+
+Before moving a PR out of draft, run the local CI preflight:
+
+```powershell
+.\scripts\ci-preflight.ps1
+```
+
+This mirrors the `ci.yml` workflow:
+
+- Backend: `dotnet restore`, `dotnet build --configuration Release`, `dotnet tool restore`, `dotnet ef migrations list`, and `dotnet test --configuration Release` via the shared PostgreSQL service.
+- Frontend: `npm ci`, `npm run typecheck`, `npm run test`, and `npm run build` in `src/WildBunch.Web`.
+- Index mesh: `generate_index_mesh --check`.
+
+If the script fails, fix the issue and re-run before marking the PR ready. Use `-SkipBackend`, `-SkipFrontend`, or `-SkipIndexMesh` to narrow the run when iterating.
+
+For changes that affect persistence, `.\scripts\postgres-dev.ps1 validate` remains the focused PostgreSQL validation lane.
+
 ## Index Mesh CI Failures
 
 The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_mesh.py --check` on a clean Linux checkout. It fails when the committed INDEX.md files don't match what the generator produces from the CI tree. Common causes and fixes:
