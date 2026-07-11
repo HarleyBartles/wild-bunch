@@ -188,7 +188,7 @@ Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, 
 - `docs/adr/ADR-0007-hidden-culprit-truth-and-hidden-progress-boundaries.md`
 - `docs/adr/ADR-0014-use-ddd-onion-cqrs-repositories-and-first-class-unit-of-work.md`
 - `docs/adr/ADR-0020-aggregate-domain-authority-and-root-persistence-posture.md`
-- `.agents/architecture-hygiene.md`
+- `.agents/docs/architecture-hygiene.md`
 - `src/WildBunch.Domain/Game/GameSession.cs` (the aggregate root; modified in Step 2)
 - Future: `src/WildBunch.Domain/Events/` (Step 1), `src/WildBunch.Application/Projections/` (Step 4), `src/WildBunch.Persistence/EventStore/` (Step 3)
 
@@ -206,4 +206,4 @@ This ADR is doctrine-only on landing. Proof is the ADR file itself plus the READ
 
 ## Historical Notes
 
-BUNCH-67 (refactor GameSession into domain aggregates), BUNCH-68 (map GameSession responsibility slices and aggregate candidates), and BUNCH-72 (introduce bounty loop aggregate candidate inside GameSession) are closed as historical/superseded. The concrete child-component extraction pattern established by BUNCH-112 (`BountyLoop`), BUNCH-119 (`JourneyLoop`), and BUNCH-120 (`InvestigationLoop` + `ActionContextTracker` + `StoreLoop`) supersedes the earlier "future sub-aggregate splits" language referenced in this ADR. The references to BUNCH-67 above (lines 27, 57, 124, 140, 161, 202) are retained as part of the ADR's reasoning record but should be read as historical context, not as open future work. The current child-component inventory and lawful boundary rules are recorded in `.agents/docs/game-session-decomposition-audit.md` and the root `AGENTS.md` "GameSession child-component boundaries" subsection. Do not reopen the BUNCH-67/68/72 tracks.
+BUNCH-67 (refactor GameSession into domain aggregates), BUNCH-68 (map GameSession responsibility slices and aggregate candidates), and BUNCH-72 (introduce bounty loop aggregate candidate inside GameSession) are closed as historical/superseded. The concrete child-component extraction pattern established by BUNCH-112 (`BountyLoop`), BUNCH-119 (`JourneyLoop`), and BUNCH-120 (`InvestigationLoop` + `ActionContextTracker` + `StoreLoop`) supersedes the earlier "future sub-aggregate splits" language referenced in this ADR. The references to BUNCH-67 above (lines 27, 57, 124, 140, 161, 202) are retained as part of the ADR's reasoning record but should be read as historical context, not as open future work. The current child-component inventory and lawful boundary rules are recorded in `.agents/docs/game-session-decomposition-audit.md`. Do not reopen the BUNCH-67/68/72 tracks.
