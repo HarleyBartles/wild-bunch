@@ -2,8 +2,7 @@
 
 This subtree is the source-custody root for town-hub road tiles.
 
-Before editing, generating, or promoting any town-hub road assets in this
-subtree, read:
+## Must Read When
 
 - `src/WildBunch.Assets/docs/asset-operations.md` — project-level layout, required reading, and rules
 - `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`

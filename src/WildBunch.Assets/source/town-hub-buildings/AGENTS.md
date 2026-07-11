@@ -2,8 +2,7 @@
 
 This subtree is the source-custody root for town-hub building assets.
 
-Before editing, generating, or promoting any town-hub building assets in this
-subtree, read the appropriate style bible(s) first:
+## Must Read When
 
 - `src/WildBunch.Assets/docs/asset-operations.md` — project-level layout, required reading, and rules
 - `src/WildBunch.Assets/docs/bibles/buildings/buildings-bible-master.md`

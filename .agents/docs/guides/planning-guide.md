@@ -32,7 +32,7 @@ Every implementation plan in this repo must contain:
 
 ## Plan Artifact Placement
 
-Plans go in `.agents/superpowers/plans/` with a descriptive filename (e.g. `2026-07-05-bunch-124-implementation.md`). See `.agents/superpowers/AGENTS.md` for full artifact placement rules.
+Plans go in `.agents/superpowers/plans/` with a descriptive filename (e.g. `2026-07-05-bunch-124-implementation.md`). See `.agents/docs/artifact-policy.md` for full artifact placement rules.
 
 Session artifacts (task briefs, reports, review diffs) go in `.agents/superpowers/sdd/<plan-name>/`.
 

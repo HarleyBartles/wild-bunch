@@ -2,8 +2,7 @@
 
 This subtree is the source-custody root for town-hub prop sprites.
 
-Before editing, generating, or promoting any town-hub prop assets in this
-subtree, read the controlling style bible set first:
+## Must Read When
 
 - `src/WildBunch.Assets/docs/asset-operations.md` — project-level layout, required reading, and rules
 - `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`
