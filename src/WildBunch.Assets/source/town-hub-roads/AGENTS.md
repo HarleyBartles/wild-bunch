@@ -5,13 +5,14 @@ This subtree is the source-custody root for town-hub road tiles.
 Before editing, generating, or promoting any town-hub road assets in this
 subtree, read:
 
-- `src/WildBunch.Assets/docs/bibles/AGENTS.md`
+- `src/WildBunch.Assets/docs/asset-operations.md` — project-level layout, required reading, and rules
 - `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`
 - `src/WildBunch.Assets/docs/bibles/ground/road-bible.md`
 - `src/WildBunch.Assets/docs/bibles/ground/spur-bible.md`
 - `src/WildBunch.Assets/docs/bibles/ground/path-bible.md`
-- `.agents/art/town-hub-ground/DOCTRINE.md`
-- `src/WildBunch.Assets/AGENTS.md`
+- `src/WildBunch.Assets/docs/asset-spec.md`
+- `.agents/docs/art/town-hub-ground-art-doctrine.md`
+- `.agents/docs/asset-pipeline/selection-cut-normalization.md`
 
 Keep source custody here, review copies in
 `src/WildBunch.Assets/staging/town-hub-roads/`, and final tile copies in

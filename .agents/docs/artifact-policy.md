@@ -12,7 +12,7 @@ Use this reference when creating agent artifacts, managing screenshots/evidence,
 
 ## Superpowers Artifact Placement
 
-All agent-generated non-work outputs (plans, evidence, screenshots, doctrine notes, unslop profiles, session artifacts) must live under the `.agents/` subtree — never at repo root, under `docs/`, or in product source folders.
+All agent-generated non-work outputs (plans, specs, evidence, screenshots, doctrine notes, unslop profiles, session artifacts) must live under the `.agents/` subtree — never at repo root, under `docs/`, or in product source folders.
 
 When executing superpowers workflows, direct all tracked artifacts to the appropriate subdirectory under `.agents/superpowers/`:
 
@@ -38,6 +38,12 @@ When executing superpowers workflows, direct all tracked artifacts to the approp
 - **Content**: Screenshots, browser evidence, and other binary artifacts
 - **Status**: Git-ignored (see `.gitignore` in that directory)
 - **Note**: PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system if needed, but must not add them as repo files.
+
+### Specs
+- **Location**: `.agents/superpowers/specs/`
+- **Content**: Design specs produced by the brainstorming/design workflow
+- **Status**: Tracked in git, committed with the design PR
+- **Note**: See `.agents/docs/guides/design-guide.md` for the design-spec workflow and handoff expectations.
 
 ### Prohibited Locations
 - Do not create loose files at repo root (no `COMMIT_MSG.txt`, `PR_BODY.md`, scratch notes, etc.)

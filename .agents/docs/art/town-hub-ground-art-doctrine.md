@@ -1,4 +1,4 @@
-# Town Hub Ground Doctrine
+# Town Hub Ground Art Doctrine
 
 Use this file as the agent-facing control surface for town-hub ground work. Keep
 it operational. The human-facing source of truth is the ground bible set in
@@ -14,9 +14,7 @@ palette, seam, and family rules. Do not restate the whole style bible here.
   - `src/WildBunch.Assets/docs/bibles/ground/spur-bible.md`
   - `src/WildBunch.Assets/docs/bibles/ground/path-bible.md`
   - `src/WildBunch.Assets/docs/bibles/ground/props-bible.md`
-- If a task touches the source custody root, also read
-  `src/WildBunch.Assets/source/town-hub-ground/AGENTS.md` and
-  `src/WildBunch.Assets/AGENTS.md`.
+
 
 ## Working rules
 

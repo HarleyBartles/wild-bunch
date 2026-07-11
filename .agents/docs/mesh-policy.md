@@ -1,6 +1,6 @@
 # Mesh Policy
 
-This is the agent-facing contract for the three documentation/navigation surfaces in this repo. It is the detailed companion to the binding summary in [../../AGENTS.md](../../AGENTS.md). When the two disagree, root `AGENTS.md` wins and this doc must be repaired in the same PR.
+This is the agent-facing contract for the three documentation/navigation surfaces in this repo. It is the detailed companion to the binding summary in root `AGENTS.md`. When the two disagree, root `AGENTS.md` wins and this doc must be repaired in the same PR.
 
 ## 1. `AGENTS.md` mesh
 
@@ -21,9 +21,30 @@ This is the agent-facing contract for the three documentation/navigation surface
 - Pointers ensure discoverability (the agent sees what's available) without forcing consumption (the agent reads only what's relevant).
 - Single source of truth: doctrine lives in one document, not duplicated across AGENTS.md files and docs.
 
+### How auto-injection works
+
+`AGENTS.md` files are automatically injected into the context of every agent working in this repo. The injection follows the directory hierarchy from repo root to the agent's current working directory:
+
+- Root `AGENTS.md` is always injected.
+- Every scoped `AGENTS.md` on the path from root to the current directory is injected, from root outward.
+- The nearest scoped `AGENTS.md` applies first to the subtree the agent is working in.
+- A scoped `AGENTS.md` inherits root law unless it explicitly adds a local delta that overrides or extends it.
+- When the root `AGENTS.md` and a scoped `AGENTS.md` give different guidance for the same subtree, the scoped file wins for that subtree.
+- `AGENTS.md` files are routing surfaces; doctrine lives in `.agents/docs/` and `docs/` and is read on demand.
+- Agents do not need to search or click for the right `AGENTS.md`; the closest one is already in context.
+
+### Link direction (one-way)
+
+`AGENTS.md` files point *outward* to READMEs, docs, scripts, and other files. Non-`AGENTS.md` files (READMEs, `.agents/docs/*.md`, `docs/*.md`, project `docs/*.md`, bibles, ADRs, etc.) must not link back to `AGENTS.md` or list `AGENTS.md` as required reading. The only exceptions are:
+
+- Generated `INDEX.md` directory listings (which are not authored references).
+- Explicit human-facing mention that "agent law is in `AGENTS.md`" without a hyperlink.
+- A parent `AGENTS.md` linking to a child scoped `AGENTS.md` that governs a sub-tree.
+
+If a doc finds itself saying "see `AGENTS.md` for the rule", move the rule into the doc and have the relevant `AGENTS.md` point to that doc.
+
 ### Other rules
 
-- The nearest scoped `AGENTS.md` applies to the subtree an agent is working in, with root law inherited unless a nearer node adds a local delta.
 - Add or update scoped `AGENTS.md` nodes only at meaningful law-boundary nodes — not every folder needs one.
 - No `AGENTS.md` should be siloed; scoped nodes must be understandable from root agent law and the upstream nodes between here and root.
 - Do not add `AGENTS.md` files inside individual skill roots or generated plugin skill roots; skill roots use `SKILL.md` as the entrypoint.
@@ -55,7 +76,7 @@ README files are human-facing. They are not a mesh.
 
 - Do not put operative agent law only in README.
 - If a README is stale or contains agent law, repair it or move the law into the agents mesh.
-- The root `README.md` is a human discoverability entrypoint that points at `AGENTS.md` for agent law and `INDEX.md` for navigation.
+- The root `README.md` is a human discoverability entrypoint that points at `INDEX.md` for navigation and may mention `AGENTS.md` as the auto-injected agent law file, but must not link back to it.
 
 ## 5. Mesh self-healing
 

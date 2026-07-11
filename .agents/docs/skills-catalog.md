@@ -1,6 +1,6 @@
 # Skills Catalog
 
-Essential repo workflow routing skills. See root AGENTS.md for critical skills that must be invoked before relevant work.
+Essential repo workflow routing skills.
 
 ## Specialist Skill Discovery
 

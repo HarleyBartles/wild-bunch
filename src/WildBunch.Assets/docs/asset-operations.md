@@ -18,16 +18,13 @@ The current track split is `town-hub-buildings`, `town-hub-roads`, and
 
 Before editing or promoting assets in this project, read:
 
-- `src/WildBunch.Assets/docs/bibles/AGENTS.md`
 - `src/WildBunch.Assets/docs/bibles/buildings/buildings-bible-master.md`
-- `src/WildBunch.Assets/docs/asset-spec.md`
-- `.agents/art/town-buildings/DOCTRINE.md`
 - `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`
-- the matching family bible under `src/WildBunch.Assets/docs/bibles/ground/` for dirt,
-  road, spur, path, or props work
-- `.agents/art/town-hub-ground/DOCTRINE.md`
+- the matching family bible under `src/WildBunch.Assets/docs/bibles/buildings/` or `src/WildBunch.Assets/docs/bibles/ground/` for the asset you are working on
+- `src/WildBunch.Assets/docs/asset-spec.md`
+- `.agents/docs/art/town-hub-buildings-art-doctrine.md` (for building work)
+- `.agents/docs/art/town-hub-ground-art-doctrine.md` (for ground, road, or prop work)
 - `.agents/docs/asset-pipeline/selection-cut-normalization.md`
-- `src/WildBunch.Assets/scripts/AGENTS.md`
 
 ## Rules
 
