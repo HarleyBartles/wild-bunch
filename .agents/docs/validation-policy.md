@@ -14,12 +14,31 @@ Use this reference when running validation, debugging CI failures, or deciding t
 - If PostgreSQL port `5434` is closed or connection setup fails, report the exact command and output after running the repo-local setup/status lane instead of treating it as a product regression.
 - Report warnings separately from failures.
 
+## CI Preflight (run locally before marking a PR ready)
+
+Before moving a PR out of draft, run the local CI preflight:
+
+```powershell
+.\scripts\ci-preflight.ps1
+```
+
+This mirrors the `ci.yml` workflow:
+
+- Backend: `dotnet restore`, `dotnet build --configuration Release`, `dotnet tool restore`, `dotnet ef migrations list`, and `dotnet test --configuration Release` via the shared PostgreSQL service.
+- Frontend: `npm ci`, `npm run typecheck`, `npm run test`, and `npm run build` in `src/WildBunch.Web`.
+- Index mesh: `generate_index_mesh --check` and `marketplace.json` validation.
+- Python: `pathspec` (from `scripts/requirements.txt`) is required for `.gitignore` parsing; the wrapper installs it automatically if missing.
+
+If the script fails, fix the issue and re-run before marking the PR ready. Use `-SkipBackend`, `-SkipFrontend`, or `-SkipIndexMesh` to narrow the run when iterating.
+
+For changes that affect persistence, `.\scripts\postgres-dev.ps1 validate` remains the focused PostgreSQL validation lane.
+
 ## Index Mesh CI Failures
 
 The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_mesh.py --check` on a clean Linux checkout. It fails when the committed INDEX.md files don't match what the generator produces from the CI tree. Common causes and fixes:
 
 - **Stale INDEX.md after file rename/add/delete:** Regenerate with `python scripts/generate_index_mesh.py` (or `.\scripts\generate_index_mesh.ps1`) and commit the updated INDEX.md files. The generator walks the live tree, so any renamed/added/deleted file or directory needs an index refresh.
-- **`TestResults` directory (gitignored test output):** `TestResults/` is a gitignored directory created by `dotnet test` runs. It contains dynamic GUID-named subdirectories. The generator respects .gitignore and will automatically exclude gitignored directories. If a new gitignored output directory appears, add it to .gitignore and the generator will automatically exclude it. Do NOT commit INDEX.md files inside gitignored output directories.
+- **`TestResults` directory (gitignored test output):** `TestResults/` is a gitignored directory created by `dotnet test` runs. It contains dynamic GUID-named subdirectories. The generator respects `.gitignore` when `pathspec` is installed (from `scripts/requirements.txt`) and will automatically exclude gitignored directories. If a new gitignored output directory appears, add it to `.gitignore`; if `pathspec` is not available, add its directory name to `ALWAYS_EXCLUDED_DIR_NAMES` in `scripts/generate_index_mesh.py` as a fallback. Do NOT commit INDEX.md files inside gitignored output directories.
 - **PowerShell pipe encoding corrupts `git cat-file` output:** When debugging blob contents on Windows, do NOT pipe `git cat-file -p` through PowerShell `|` or `>` — PowerShell converts stdout to UTF-16LE, adding a `\xff\xfe` BOM and wide characters that look like file corruption. Use `git cat-file -p <sha> | python -c "import sys; ..."` with `sys.stdin.buffer.read()` to inspect raw bytes, or write to a file with `git cat-file -p <sha> -o <file>`.
 - **`core.autocrlf=true` on Windows:** The repo uses `autocrlf=true` on Windows. Git stores INDEX.md blobs as LF (the generator writes with `newline="\n"`), and autocrlf normalizes on checkout. This is fine — the generator's `normalize_text` strips CRLF before comparing. The CI check is not a line-ending issue; it is a content/tree-structure mismatch.
 
