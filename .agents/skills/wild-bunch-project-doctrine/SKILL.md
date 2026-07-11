@@ -46,12 +46,13 @@ metadata:
   - Use when chat summaries, session busters, worker reports, or issue comments might
     be mistaken for live repo truth.
   do_not_use_when:
-  - Do not use when Do not use for ordinary chat or questions that do not touch repo-sensitive
+  - Do not use when this skill is used for ordinary chat or questions that do not
+    touch repo-sensitive work.
+  - Do not use when this skill is used as a substitute for the specialist skill that
+    owns the actual task (wild-bunch-dotnet-architecture, wild-bunch-domain-modeling,
+    wild-bunch-browser-game, ddd, cqrs-event-sourcing, ef-core, clean-architecture,
+    etc.). Establish posture with this skill, then invoke the specialist for the domain-specific
     work.
-  - Do not use when Do not use as a substitute for the specialist skill that owns
-    the actual task (wild-bunch-dotnet-architecture, wild-bunch-domain-modeling, wild-bunch-browser-game,
-    ddd, cqrs-event-sourcing, ef-core, clean-architecture, etc.). Establish posture
-    with this skill, then invoke the specialist for the domain-specific work.
 license: MIT
 ---
 
