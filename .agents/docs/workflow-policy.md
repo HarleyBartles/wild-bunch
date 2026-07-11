@@ -4,18 +4,28 @@ Use this reference when managing git workflow, claiming completion, publishing P
 
 ## Branch + PR Workflow
 - Workers branch from current `main`.
-- Workers push a branch and open or return a PR.
+- Workers push a branch and **open or return a PR as draft** while work is in progress.
+- A PR is not marked ready for review until work is complete, the branch is current with `origin/main`, and the local CI preflight (`.\scripts\ci-preflight.ps1`) passes.
 - The PR is the normal publication surface.
 - Direct pushes to `main` require explicit latest-turn authorization.
 - `GREEN` means PR-ready with validation and evidence, not direct-main landing.
 - Merge and landing verification are separate GPT or human steps after PR review and merge.
+
+## Draft PR CI gating
+- CI runs on `push` to `main` and on non-draft `pull_request` events.
+- CI does not run on draft PRs.
+- When a draft PR is marked ready for review, CI is triggered as the final gate.
+- Use the local CI preflight (`.\scripts\ci-preflight.ps1`) to catch failures before moving a PR out of draft.
 
 ## GREEN Checklist
 
 Before claiming work is complete or requesting review, verify:
 
 - [ ] Work pushed to branch
-- [ ] PR raised
+- [ ] PR raised as draft
+- [ ] Branch is current with `origin/main`
+- [ ] Local CI preflight passed (`.\scripts\ci-preflight.ps1`)
+- [ ] PR is marked ready for review
 - [ ] PR body fresh (matches actual implementation, not stale plan)
 - [ ] Linear issue fresh (updated with current status if applicable)
 - [ ] CI passing (all relevant checks green)
