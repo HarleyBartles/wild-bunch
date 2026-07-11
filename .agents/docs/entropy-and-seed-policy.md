@@ -1,6 +1,6 @@
 # Entropy and Seed/Test Policy
 
-This document is durable agent-facing guidance for work touching game setup, entropy, travel variance, seeded setup, dev-overlay controls, or tests that need deterministic game scenarios. It is the companion to the entropy ladder implemented in BUNCH-93 and the seed codec policy in root `AGENTS.md`.
+This document is durable agent-facing guidance for work touching game setup, entropy, travel variance, seeded setup, dev-overlay controls, or tests that need deterministic game scenarios. It is the companion to the entropy ladder implemented in BUNCH-93 and the seed codec policy in `.agents/docs/architecture-guardrails.md`.
 
 ## Entropy Ladder
 
@@ -58,7 +58,7 @@ Tests that need deterministic game scenarios must follow these rules. Tests that
 
 ## References
 
-- Root `AGENTS.md` — UUID Seed Codec section (seed-owned vs pressure-owned vs entropy-owned)
+- `.agents/docs/architecture-guardrails.md` — UUID Seed Codec section (seed-owned vs pressure-owned vs entropy-owned)
 - `src/WildBunch.GameContent/AGENTS.md` — game setup pipeline and seed-owned vs pressure-owned boundary
 - `.agents/docs/dev-overlay-doctrine.md` — dev overlay state/action boundary
 - `TravelTestSeedCatalog.cs` — canonical seed world entries for travel tests
