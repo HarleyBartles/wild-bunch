@@ -188,7 +188,7 @@ Wild Bunch's backend architecture is Onion-structured with DDD aggregate roots, 
 - `docs/adr/ADR-0007-hidden-culprit-truth-and-hidden-progress-boundaries.md`
 - `docs/adr/ADR-0014-use-ddd-onion-cqrs-repositories-and-first-class-unit-of-work.md`
 - `docs/adr/ADR-0020-aggregate-domain-authority-and-root-persistence-posture.md`
-- `.agents/architecture-hygiene.md`
+- `.agents/docs/architecture-hygiene.md`
 - `src/WildBunch.Domain/Game/GameSession.cs` (the aggregate root; modified in Step 2)
 - Future: `src/WildBunch.Domain/Events/` (Step 1), `src/WildBunch.Application/Projections/` (Step 4), `src/WildBunch.Persistence/EventStore/` (Step 3)
 

@@ -14,6 +14,10 @@ subtree, read:
 - `.agents/docs/art/town-hub-ground-art-doctrine.md`
 - `.agents/docs/asset-pipeline/selection-cut-normalization.md`
 
+If a style bible, asset spec, or doctrine looks stale, misleading, incomplete, or wrong while you are
+working, fix it as part of the same task instead of deferring the
+correction.
+
 Keep source custody here, review copies in
 `src/WildBunch.Assets/staging/town-hub-roads/`, and final tile copies in
 `src/WildBunch.Assets/production/tiles/town-hub-roads/`.
