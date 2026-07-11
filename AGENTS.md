@@ -12,6 +12,9 @@
 - `/wild-bunch-project-doctrine` — MUST invoke before any repo-sensitive work.
   This skill carries all required reading, skill routing rules, script discovery,
   policy references, and working-knowledge directives for this repo.
+- Do not add new `MUST` directives or doctrine sections to this file. Route new
+  repo-wide rules through `/wild-bunch-project-doctrine` or place them in
+  `.agents/docs/` and update the skill's reference docs.
 
 ## Bootstrap Skills
 

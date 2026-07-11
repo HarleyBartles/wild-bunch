@@ -59,7 +59,7 @@ Tests that need deterministic game scenarios must follow these rules. Tests that
 ## References
 
 - `.agents/docs/architecture-guardrails.md` — UUID Seed Codec section (seed-owned vs pressure-owned vs entropy-owned)
-- `src/WildBunch.GameContent/AGENTS.md` — game setup pipeline and seed-owned vs pressure-owned boundary
+- `.agents/docs/game-content-seed-pipeline.md` — game setup pipeline and seed-owned vs pressure-owned boundary
 - `.agents/docs/dev-overlay-doctrine.md` — dev overlay state/action boundary
 - `TravelTestSeedCatalog.cs` — canonical seed world entries for travel tests
 - BUNCH-93 — entropy setup and controls implementation
