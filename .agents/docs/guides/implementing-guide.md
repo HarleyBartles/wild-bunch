@@ -4,7 +4,7 @@ Use this reference when implementing work in the Wild Bunch repo â€” whethe
 
 ## Before You Begin: Read the Standards
 
-Read these standards documents before writing any code. The root `AGENTS.md` lists them under Required Working Knowledge â€” they are injected into your context automatically, but you must actually read them:
+Read these standards documents before writing any code. The `/wild-bunch-project-doctrine` skill carries the full required-reading routing table — invoke it first, then read the docs relevant to your task:
 
 - **[`.agents/docs/coding-discipline.md`](../coding-discipline.md)** â€” scope discipline, architecture stack discipline (DDD/CQRS/event-sourcing is mandatory, not optional), refactoring rules. Read before writing any code.
 - **[`.agents/docs/frontend-standards.md`](../frontend-standards.md)** â€” styling stack, play-surface UI, source truth, dev overlay, routing conventions. Read before any frontend work.
