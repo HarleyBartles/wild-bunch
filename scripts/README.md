@@ -119,6 +119,18 @@ and files. Also checks ADR freshness in `docs/adr/`.
 **Use after** creating new source files, test files, or directories to keep
 the index mesh current. The INDEX.md files are tracked in git.
 
+### ci-preflight.ps1
+**Use when** you need to run the same checks CI runs before marking a PR ready for review.
+
+- `.\scripts\ci-preflight.ps1` - run all local CI preflight checks
+- `.\scripts\ci-preflight.ps1 -SkipBackend` - skip the .NET/PostgreSQL checks
+- `.\scripts\ci-preflight.ps1 -SkipFrontend` - skip the Vite/TypeScript checks
+- `.\scripts\ci-preflight.ps1 -SkipIndexMesh` - skip the index mesh validation
+
+This mirrors the `ci.yml` workflow locally: `dotnet restore`, `dotnet build --configuration Release`, `dotnet ef migrations list`, `dotnet test --configuration Release` via the shared PostgreSQL service, the frontend `npm ci` / typecheck / test / build pipeline, and the `generate_index_mesh.py --check` validation.
+
+**Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
+
 ## Conventions
 
 - All PowerShell scripts use `Set-StrictMode -Version Latest` and
