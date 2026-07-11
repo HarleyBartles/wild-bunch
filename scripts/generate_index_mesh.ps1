@@ -47,6 +47,16 @@ if (-not $pythonLauncher) {
     throw "No Python launcher found. Tried: $($pythonLaunchers -join ', '). Please install Python 3.12+ and ensure it's in your PATH."
 }
 
+# Ensure pathspec is available (needed for .gitignore parsing in generate_index_mesh.py)
+$pathspecCheck = & $pythonLauncher -c "import pathspec" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "pathspec not found; installing from $ScriptDir/requirements.txt"
+    & $pythonLauncher -m pip install -r (Join-Path $ScriptDir 'requirements.txt')
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install pathspec from requirements.txt"
+    }
+}
+
 # Build arguments
 $arguments = @($pythonLauncher, $PythonScript)
 
@@ -55,7 +65,7 @@ if ($Check) {
 }
 
 # Call the Python script
-$process = Start-Process -FilePath $pythonLauncher -ArgumentList $arguments[1..($arguments.Length - 1)] -Wait -PassThru
+$process = Start-Process -FilePath $pythonLauncher -ArgumentList $arguments[1..($arguments.Length - 1)] -Wait -PassThru -NoNewWindow
 
 # Exit with the Python script's exit code
 exit $process.ExitCode

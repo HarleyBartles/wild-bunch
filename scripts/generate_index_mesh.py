@@ -19,7 +19,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parents[1]
 # Always exclude these regardless of .gitignore (e.g., .git itself, submodules, output dirs)
-ALWAYS_EXCLUDED_DIR_NAMES = {".git", "marketplace-source", "output", "bin", "obj", "dist"}
+ALWAYS_EXCLUDED_DIR_NAMES = {".git", "marketplace-source", "output", "bin", "obj", "dist", "node_modules", "sdd", "__pycache__", ".pytest_cache"}
 ALWAYS_EXCLUDED_FILE_NAMES = {".git"}
 
 

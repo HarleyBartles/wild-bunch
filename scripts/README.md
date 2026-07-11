@@ -112,9 +112,11 @@ need to regenerate the repo-wide `INDEX.md` mesh.
 
 The PowerShell wrapper is a thin convenience layer that calls the Python script.
 
-Generates `INDEX.md` files in every directory (excluding build artifacts,
-node_modules, etc., and respecting .gitignore) with links to child directories
-and files. Also checks ADR freshness in `docs/adr/`.
+Requires `pathspec` (from `scripts/requirements.txt`) for `.gitignore` parsing;
+the wrapper installs it automatically if missing. Generates `INDEX.md` files in
+every directory (excluding build artifacts, node_modules, etc., and respecting
+.gitignore) with links to child directories and files. Also checks ADR freshness
+in `docs/adr/`.
 
 **Use after** creating new source files, test files, or directories to keep
 the index mesh current. The INDEX.md files are tracked in git.
@@ -127,7 +129,7 @@ the index mesh current. The INDEX.md files are tracked in git.
 - `.\scripts\ci-preflight.ps1 -SkipFrontend` - skip the Vite/TypeScript checks
 - `.\scripts\ci-preflight.ps1 -SkipIndexMesh` - skip the index mesh validation
 
-This mirrors the `ci.yml` workflow locally: `dotnet restore`, `dotnet build --configuration Release`, `dotnet ef migrations list`, `dotnet test --configuration Release` via the shared PostgreSQL service, the frontend `npm ci` / typecheck / test / build pipeline, and the `generate_index_mesh.py --check` validation.
+This mirrors the `ci.yml` workflow locally: `dotnet restore`, `dotnet build --configuration Release`, `dotnet ef migrations list`, `dotnet test --configuration Release` via the shared PostgreSQL service, the frontend `npm ci` / typecheck / test / build pipeline, the `generate_index_mesh.py --check` validation, and the `marketplace.json` plugin manifest check.
 
 **Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
 
