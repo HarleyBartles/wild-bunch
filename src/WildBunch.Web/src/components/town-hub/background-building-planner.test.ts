@@ -54,15 +54,18 @@ describe("background building planner", () => {
     );
   });
 
-  it("excludes the two side slots beside a trailhead from background placement", () => {
+  it("excludes the immediate east and west slots beside both trailheads from background placement", () => {
     const grid = createGrid();
-    grid[1][4] = 1;
-    grid[1][5] = 1;
+    grid[0][4] = 1;
+    grid[0][5] = 1;
+    grid[9][4] = 1;
+    grid[9][5] = 1;
 
     const layout = createLayout({
       tileGrid: grid,
       buildings: [
-        { kind: BuildingKind.Trailhead, view: BuildingView.Profile, x: 52, y: 12, width: 8, height: 10 },
+        { kind: BuildingKind.Trailhead, view: BuildingView.Profile, x: 50, y: 5, width: 20, height: 10 },
+        { kind: BuildingKind.Trailhead, view: BuildingView.Profile, x: 50, y: 95, width: 20, height: 10 },
       ],
     });
 
@@ -70,8 +73,10 @@ describe("background building planner", () => {
 
     expect(slots).not.toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ row: 1, col: 4 }),
-        expect.objectContaining({ row: 1, col: 6 }),
+        expect.objectContaining({ row: 0, col: 3 }),
+        expect.objectContaining({ row: 0, col: 6 }),
+        expect.objectContaining({ row: 9, col: 3 }),
+        expect.objectContaining({ row: 9, col: 6 }),
       ]),
     );
   });
