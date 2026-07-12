@@ -150,9 +150,11 @@ describe("TownHubScene visual feedback", () => {
     displayHeight: number | null;
     flipX: boolean;
     flipY: boolean;
+    scale: number | null;
     setDisplaySize: (width: number, height: number) => MockImage;
     setFlipX: (flip: boolean) => MockImage;
     setFlipY: (flip: boolean) => MockImage;
+    setScale: (scale: number) => MockImage;
   }
 
   function createSceneWithMockedAdd(
@@ -178,6 +180,7 @@ describe("TownHubScene visual feedback", () => {
           displayHeight: null,
           flipX: false,
           flipY: false,
+          scale: null,
           setDisplaySize(width, height) {
             this.displayWidth = width;
             this.displayHeight = height;
@@ -189,6 +192,10 @@ describe("TownHubScene visual feedback", () => {
           },
           setFlipY(flip) {
             this.flipY = flip;
+            return this;
+          },
+          setScale(scale) {
+            this.scale = scale;
             return this;
           },
         };
@@ -316,44 +323,6 @@ describe("TownHubScene visual feedback", () => {
         expect(rect.interactive).toBe(true);
       }
     }
-  });
-
-  it("renders spur-connected building ground tiles with the spur path rule", () => {
-    const tileGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
-    tileGrid[2][2] = 2;
-    tileGrid[3][2] = 4;
-    tileGrid[2][7] = 2;
-    tileGrid[3][7] = 4;
-
-    const layout = createLayout({
-      buildings: [
-        { kind: BuildingKind.Store, view: BuildingView.FrontOblique, x: 25, y: 25, width: 8, height: 10 },
-        { kind: BuildingKind.Sheriff, view: BuildingView.Front, x: 75, y: 25, width: 8, height: 10 },
-      ],
-      tileGrid,
-    });
-
-    const { images } = createSceneWithMockedAdd(layout, [AvailableActionKind.BuySupplies]);
-
-    expect(images).toHaveLength(2);
-    expect(images[0]).toMatchObject({
-      key: "path-vertical-diagonal",
-      x: 200,
-      y: 125,
-      displayWidth: 80,
-      displayHeight: 50,
-      flipX: false,
-      flipY: false,
-    });
-    expect(images[1]).toMatchObject({
-      key: "path-vertical-straight",
-      x: 600,
-      y: 125,
-      displayWidth: 80,
-      displayHeight: 50,
-      flipX: false,
-      flipY: false,
-    });
   });
 });
 

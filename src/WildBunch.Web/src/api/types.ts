@@ -349,6 +349,14 @@ export interface PathSegmentDto {
   endY: number;
 }
 
+export interface TownLayoutSaltsDto {
+  resolverVersion: string | null;
+  buildingsSalt: string | null;
+  roadsSalt: string | null;
+  dirtSalt: string | null;
+  propsSalt: string | null;
+}
+
 export interface TownLayoutDto {
   buildings: BuildingPlacementDto[];
   playerSpawnX: number;
@@ -357,6 +365,7 @@ export interface TownLayoutDto {
   paths: PathSegmentDto[];
   tileGrid?: number[][]; // 10x10 grid: 0=Empty, 1=Road, 2=BuildingZone, 3=SpurStart, 4=SpurRoad
   resolverVersion?: string;
+  layoutSalts?: TownLayoutSaltsDto | null;
 }
 
 export interface TownDto {
