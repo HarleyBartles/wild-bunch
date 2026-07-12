@@ -16,6 +16,7 @@
 - [GameSettingsOverlay.test.tsx](GameSettingsOverlay.test.tsx)
 - [gameSetupSeedCodec.test.ts](gameSetupSeedCodec.test.ts)
 - [JournalSurface.test.tsx](JournalSurface.test.tsx)
+- [path-loader.test.ts](path-loader.test.ts)
 - [PhaserMapHost.test.tsx](PhaserMapHost.test.tsx)
 - [PhaserTownHubHost.test.tsx](PhaserTownHubHost.test.tsx)
 - [README.md](README.md)

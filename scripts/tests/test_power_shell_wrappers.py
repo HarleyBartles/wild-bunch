@@ -71,3 +71,14 @@ class TestPowerShellWrappers:
         
         # Should not crash (exit code may be 0 or 1)
         # We're just verifying it's invokable
+
+    def test_dev_servers_script_builds_and_uses_health_endpoint(self):
+        """Dev-server script should build before startup and probe the health endpoint."""
+        script = SCRIPTS_DIR / "dev-servers.ps1"
+        contents = script.read_text(encoding="utf-8")
+
+        assert "--no-build" not in contents
+        assert "/health" in contents
+        assert "dotnet build" in contents
+        assert "npm.cmd run build" in contents
+        assert "2, 4, 8, 16, 32" in contents

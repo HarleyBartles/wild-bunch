@@ -142,11 +142,25 @@ describe("TownHubScene visual feedback", () => {
     setScale: (s: number) => MockRect;
   }
 
+  interface MockImage {
+    key: string;
+    x: number;
+    y: number;
+    displayWidth: number | null;
+    displayHeight: number | null;
+    flipX: boolean;
+    flipY: boolean;
+    setDisplaySize: (width: number, height: number) => MockImage;
+    setFlipX: (flip: boolean) => MockImage;
+    setFlipY: (flip: boolean) => MockImage;
+  }
+
   function createSceneWithMockedAdd(
     layout: TownLayoutDto,
     availableActions: AvailableActionKind[],
-  ): { scene: TownHubScene; rects: MockRect[] } {
+  ): { scene: TownHubScene; rects: MockRect[]; images: MockImage[] } {
     const rects: MockRect[] = [];
+    const images: MockImage[] = [];
     const onBuildingSelected = vi.fn();
 
     const scene = new TownHubScene(layout, availableActions, onBuildingSelected) as TownHubScene & {
@@ -155,6 +169,32 @@ describe("TownHubScene visual feedback", () => {
     };
 
     scene.add = {
+      image: (x: number, y: number, key: string) => {
+        const image: MockImage = {
+          key,
+          x,
+          y,
+          displayWidth: null,
+          displayHeight: null,
+          flipX: false,
+          flipY: false,
+          setDisplaySize(width, height) {
+            this.displayWidth = width;
+            this.displayHeight = height;
+            return this;
+          },
+          setFlipX(flip) {
+            this.flipX = flip;
+            return this;
+          },
+          setFlipY(flip) {
+            this.flipY = flip;
+            return this;
+          },
+        };
+        images.push(image);
+        return image;
+      },
       rectangle: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
         const rect: MockRect = {
           kind: rects.length as BuildingKind,
@@ -186,6 +226,8 @@ describe("TownHubScene visual feedback", () => {
       text: () => ({ setOrigin: () => {} }),
       circle: () => {},
       graphics: () => ({
+        fillStyle: () => ({}),
+        fillRect: () => ({}),
         lineStyle: () => ({}),
         moveTo: () => ({}),
         lineTo: () => ({}),
@@ -208,7 +250,7 @@ describe("TownHubScene visual feedback", () => {
       rects[i].kind = layout.buildings[i].kind;
     }
 
-    return { scene, rects };
+    return { scene, rects, images };
   }
 
   it("renders available buildings with full opacity and white border highlight", () => {
@@ -274,6 +316,44 @@ describe("TownHubScene visual feedback", () => {
         expect(rect.interactive).toBe(true);
       }
     }
+  });
+
+  it("renders spur-connected building ground tiles with the spur path rule", () => {
+    const tileGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+    tileGrid[2][2] = 2;
+    tileGrid[3][2] = 4;
+    tileGrid[2][7] = 2;
+    tileGrid[3][7] = 4;
+
+    const layout = createLayout({
+      buildings: [
+        { kind: BuildingKind.Store, view: BuildingView.FrontOblique, x: 25, y: 25, width: 8, height: 10 },
+        { kind: BuildingKind.Sheriff, view: BuildingView.Front, x: 75, y: 25, width: 8, height: 10 },
+      ],
+      tileGrid,
+    });
+
+    const { images } = createSceneWithMockedAdd(layout, [AvailableActionKind.BuySupplies]);
+
+    expect(images).toHaveLength(2);
+    expect(images[0]).toMatchObject({
+      key: "path-vertical-diagonal",
+      x: 200,
+      y: 125,
+      displayWidth: 80,
+      displayHeight: 50,
+      flipX: false,
+      flipY: false,
+    });
+    expect(images[1]).toMatchObject({
+      key: "path-vertical-straight",
+      x: 600,
+      y: 125,
+      displayWidth: 80,
+      displayHeight: 50,
+      flipX: false,
+      flipY: false,
+    });
   });
 });
 

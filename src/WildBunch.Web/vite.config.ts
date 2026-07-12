@@ -10,6 +10,18 @@ export default defineConfig({
         {
           src: '../WildBunch.Assets/production/sprites/town-hub-buildings/**/*',
           dest: 'assets/town-hub-buildings'
+        },
+        {
+          src: '../WildBunch.Assets/production/tiles/town-hub-roads/**/*',
+          dest: 'assets/town-hub-roads'
+        },
+        {
+          src: '../WildBunch.Assets/production/tiles/town-hub-ground/**/*',
+          dest: 'assets/town-hub-ground'
+        },
+        {
+          src: '../WildBunch.Assets/production/sprites/town-hub-ground/props/**/*',
+          dest: 'assets/town-hub-ground/props'
         }
       ]
     })

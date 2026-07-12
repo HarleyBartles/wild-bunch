@@ -12,6 +12,8 @@ app.UseExceptionHandler();
 
 app.Services.ApplyWildBunchMigrations();
 
+app.MapGet("/health", () => Results.Ok());
+
 if (app.Environment.IsDevelopment())
 {
     app.UseCors("ViteDevClient");

@@ -35,6 +35,10 @@ The API runs on port 5275, Vite on port 5173. The script resolves the
 worktree root via `git rev-parse` so it works correctly from git worktrees.
 The PostgreSQL connection string is pinned to the shared dev instance at
 `localhost:5434`.
+Startup probes use the dedicated API health endpoint and exponential backoff so
+the script retries quickly at first, then backs off to avoid flakey waits.
+Each `ensure` run rebuilds the API and web bundle before launch, and the script
+will recycle stale or unhealthy recorded state instead of trusting it blindly.
 
 **Use before** running integration tests that need a live API, or before
 playtesting the browser game locally. **Use `stop`** when you need to free

@@ -1,7 +1,8 @@
 import Phaser from "phaser";
-import { AvailableActionKind } from "../../api/types";
+import { AvailableActionKind, BuildingView } from "../../api/types";
 import { BuildingKind } from "./types";
-import type { TownLayoutDto } from "./types";
+import type { BuildingPlacementDto, TownLayoutDto } from "./types";
+import { getPathTileUrl, type PathTileName } from "./path-loader";
 import { getSpriteUrl } from "./sprite-loader";
 
 const BUILDING_COLORS: Record<BuildingKind, number> = {
@@ -68,6 +69,15 @@ export class TownHubScene extends Phaser.Scene {
     // Load all building sprites based on the layout's prosperity tier
     const prosperity = this.layout.prosperity;
 
+    for (const pathTile of [
+      "path-horizontal-diagonal",
+      "path-horizontal-straight",
+      "path-vertical-diagonal",
+      "path-vertical-straight",
+    ] as const) {
+      this.load.image(pathTile, getPathTileUrl(pathTile));
+    }
+
     for (const building of this.layout.buildings) {
       const spriteUrl = getSpriteUrl(building.kind, building.view, prosperity);
       if (spriteUrl) {
@@ -90,6 +100,7 @@ export class TownHubScene extends Phaser.Scene {
 
     // Render tile grid first (behind buildings)
     this.renderTileGrid(layout, sx, sy);
+    this.renderBuildingGroundTiles(layout, sx, sy);
 
     for (const building of layout.buildings) {
       const px = building.x * sx;
@@ -206,5 +217,78 @@ export class TownHubScene extends Phaser.Scene {
         }
       }
     }
+  }
+
+  private renderBuildingGroundTiles(layout: TownLayoutDto, sx: number, sy: number): void {
+    if (!layout.tileGrid || layout.tileGrid.length === 0) {
+      return;
+    }
+
+    for (const building of layout.buildings) {
+      const tile = this.getBuildingGroundTile(layout, building);
+      if (!tile) {
+        continue;
+      }
+
+      const image = this.add.image(building.x * sx, building.y * sy, tile.name);
+      image.setDisplaySize(10 * sx, 10 * sy);
+
+      if (tile.flipX) {
+        image.setFlipX(true);
+      }
+
+      if (tile.flipY) {
+        image.setFlipY(true);
+      }
+    }
+  }
+
+  private getBuildingGroundTile(
+    layout: TownLayoutDto,
+    building: BuildingPlacementDto,
+  ): { name: PathTileName; flipX: boolean; flipY: boolean } | null {
+    const tileGrid = layout.tileGrid;
+    if (!tileGrid || tileGrid.length === 0) {
+      return null;
+    }
+
+    const tileRow = Math.floor(building.y / 10);
+    const tileCol = Math.floor(building.x / 10);
+
+    if (!this.isSpurConnectedBuilding(tileGrid, tileRow, tileCol)) {
+      return null;
+    }
+
+    if (building.view === BuildingView.Front) {
+      return { name: "path-vertical-straight", flipX: false, flipY: false };
+    }
+
+    if (building.view === BuildingView.FrontOblique || building.view === BuildingView.RearOblique) {
+      const isMirroredBuilding = building.x < 50;
+      // The source path art is stored in the mirrored canonical orientation,
+      // so the rendered tile must only flip when the building is in the
+      // non-mirrored state.
+      return {
+        name: "path-vertical-diagonal",
+        flipX: !isMirroredBuilding,
+        flipY: false,
+      };
+    }
+
+    return null;
+  }
+
+  private isSpurConnectedBuilding(tileGrid: number[][], row: number, col: number): boolean {
+    if (row < 0 || row >= tileGrid.length) {
+      return false;
+    }
+
+    const currentRow = tileGrid[row];
+    if (!currentRow || col < 0 || col >= currentRow.length) {
+      return false;
+    }
+
+    const tileBelow = tileGrid[row + 1]?.[col];
+    return tileBelow === 3 || tileBelow === 4;
   }
 }
