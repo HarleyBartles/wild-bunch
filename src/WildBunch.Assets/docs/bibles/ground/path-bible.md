@@ -1,8 +1,8 @@
 # Town Hub Path Style Bible
 
 The path family is the target thin connector set that will run from buildings to
-roads or spurs. It should stay visibly lighter and narrower than road or spur
-art.
+roads or spurs. It should stay visibly lighter and narrower than spur art, with
+a clear read as a walked-in trail rather than a paved surface.
 
 For seam rules, use `src/WildBunch.Assets/docs/bibles/tiling-bible.md`.
 
@@ -10,6 +10,8 @@ For seam rules, use `src/WildBunch.Assets/docs/bibles/tiling-bible.md`.
 
 - Surface: worn footpath or light dirt trail with minimal paving.
 - Strength: lighter and less dominant than the main road and the spur family.
+- Color read: the path should remain the lighter connector tone in the family,
+  clearly distinct from the browner spur track.
 - Edge behavior: path pieces should still blend into dirt and road-adjacent
   surfaces without a hard seam.
 - Keep the path width consistent at the join edge so a matching path tile can
@@ -33,3 +35,7 @@ For seam rules, use `src/WildBunch.Assets/docs/bibles/tiling-bible.md`.
 - Do: Keep the surface subtle enough that it can sit inside larger dirt
   compositions without stealing focus.
 - Do not: Do not add heavy paving, broad striping, or any seam-breaking border.
+
+- Do: Keep the path visually lighter than the spur family and lighter than any
+  spur-path-cross junction that uses it.
+- Do not: Do not let the path inherit the darker browner spur tone.
