@@ -80,6 +80,10 @@ function candidateScore(seed: string, row: number, col: number, attachesTo: Back
   return hashString(seedForCell(seed, row, col, attachesTo));
 }
 
+function isTrailheadBufferRow(row: number): boolean {
+  return row <= 1 || row >= TileGridHeight - 2;
+}
+
 function getBudgetRange(
   prosperity: TownProsperity,
   eligibleCount: number,
@@ -146,7 +150,7 @@ function pickFlipX(col: number, attachesTo: BackgroundSlot["attachesTo"], view: 
 }
 
 function pickFlipY(attachesTo: BackgroundSlot["attachesTo"]): boolean {
-  return attachesTo === "spur-below";
+  return false;
 }
 
 export function collectForegroundOccupiedSlots(layout: TownLayoutDto): Set<string> {
@@ -201,6 +205,10 @@ export function collectEligibleBackgroundSlots(layout: TownLayoutDto): Backgroun
   const seen = new Map<string, SlotCandidate>();
 
   const addCandidate = (slot: BackgroundSlot) => {
+    if (isTrailheadBufferRow(slot.row)) {
+      return;
+    }
+
     const key = getSlotKey(slot.row, slot.col);
     if (trailheadExcluded.has(key)) {
       return;
