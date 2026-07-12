@@ -14,6 +14,7 @@
 - Use the existing prosperity ladder only: `Boomtown`, `Prosperous`, `Poor`, `Destitute`.
 - Use the existing five-view turnaround contract for all town buildings: `front`, `profile`, `rear`, `front-oblique`, `rear-oblique`.
 - Use the existing support families only: `background-house` and `background-shop`.
+- Treat `spur-path-cross` as a required art preflight dependency for Task 3; if the generated tile is not present when implementation starts, stop and block rather than inventing a fallback.
 - Preserve the current path-underlay rules already used for main-road and spur-adjacent buildings.
 - Support below-spur placement in addition to the current above-spur placement.
 - Background and foreground buildings are a semantic distinction, not a renderer layer distinction; they may not overlap because they occupy different tiles.
@@ -186,11 +187,24 @@ export function collectForegroundOccupiedSlots(layout: TownLayoutDto): Set<strin
 ```
 
 The implementation should:
-- scan the 10x10 tile grid for the same eligible plot shapes the foreground buildings already use
-- exclude plots already claimed by foreground buildings
-- apply the prosperity budget exactly as documented in the spec
-- choose slots in deterministic seeded order
+- scan the 10x10 tile grid for these exact eligible plot shapes:
+  - west main-road slot: tile `row,col=3` when `row,col=4` is a road tile and the slot is empty
+  - east main-road slot: tile `row,col=6` when `row,col=5` is a road tile and the slot is empty
+  - above-spur slot: tile `row,col` when `row+1,col` is the spur road tile and the slot is empty
+  - below-spur slot: tile `row,col` when `row-1,col` is the spur road tile and the slot is empty
+- exclude plots already claimed by foreground buildings, where foreground occupancy is the exact set of tile cells used by `layout.buildings`
+- apply the prosperity budget exactly as documented in the spec, with this deterministic fallback for small slot counts:
+  - Destitute: `min(2, max(1, floor(eligibleCount / 4)))`
+  - Poor: `max(1, floor((eligibleCount - 1) / 2))`
+  - Prosperous: `min(eligibleCount - 1, max(2, floor(eligibleCount * 0.70)))`
+  - Boomtown: `eligibleCount - min(2, eligibleCount)`
+- choose slots in deterministic seeded order by sorting on a stable hash of the layout seed plus row, column, and attachment type, then taking the first `budget` slots
 - choose a background family and view from the existing support-building turnaround contract
+- apply mirroring as direct reuse of the existing building rules:
+  - road-adjacent background buildings reuse the current main-road underlay rules exactly
+  - above-spur background buildings reuse the current spur rules exactly and only select from `front` or `front-oblique` views
+  - below-spur background buildings reuse the current spur rules with a horizontal-axis mirror only and only select from `rear` or `rear-oblique` views
+  - when the mirrored below-spur case is used, the horizontal-axis mirror toggles `flipY` relative to the above-spur rule set while preserving the side-based `flipX` decision
 - record a spur cross tile when the same spur has paired above/below background buildings
 
 - [ ] **Step 4: Run the planner tests until they pass**
@@ -285,6 +299,7 @@ The integration should:
 - keep path-underlay logic unchanged except where below-spur placements need to use it
 - keep background buildings non-interactive
 - keep the new spur-path-cross tile path isolated to the paired-spur case
+- load `spur-path-cross` only after the art preflight task has produced the tile; if the loader path is missing, the implementation must stop and report the missing dependency instead of guessing at a substitute
 
 - [ ] **Step 4: Run the targeted scene tests until they pass**
 
