@@ -337,11 +337,11 @@ describe("TownHubScene tile rendering", () => {
 
     expect(imageCalls).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ key: "spur-road-straight", x: 440, y: 175, flipX: false, flipY: false }),
-        expect.objectContaining({ key: "spur-road-path", x: 520, y: 175, flipX: false, flipY: false }),
-        expect.objectContaining({ key: "spur-road-end-cap", x: 600, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "spur-road-cross", x: 280, y: 175, flipX: true, flipY: false }),
         expect.objectContaining({ key: "spur-road-straight", x: 360, y: 175, flipX: true, flipY: false }),
-        expect.objectContaining({ key: "spur-road-path", x: 280, y: 175, flipX: true, flipY: false }),
+        expect.objectContaining({ key: "spur-road-straight", x: 440, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "spur-road-cross", x: 520, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "spur-road-end-cap", x: 600, y: 175, flipX: false, flipY: false }),
         expect.objectContaining({ key: "spur-road-end-cap", x: 200, y: 175, flipX: true, flipY: false }),
       ]),
     );

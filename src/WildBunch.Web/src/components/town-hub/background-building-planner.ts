@@ -310,26 +310,32 @@ export function planSpurCrossTiles(
     return [];
   }
 
+  const foregroundPlacements = collectForegroundOccupiedSlots(layout);
+  const backgroundOccupied = new Set(backgroundPlacements.map((placement) => getSlotKey(placement.row, placement.col)));
+  const hasPlacementAt = (row: number, col: number): boolean => {
+    const key = getSlotKey(row, col);
+    return foregroundPlacements.has(key) || backgroundOccupied.has(key);
+  };
+
   const crossings = new Map<string, { row: number; col: number; above: boolean; below: boolean }>();
 
-  for (const placement of backgroundPlacements) {
-    if (isInsideGrid(placement.row + 1, placement.col) && getCell(layout, placement.row + 1, placement.col) === 4) {
-      const key = getSlotKey(placement.row + 1, placement.col);
-      const existing = crossings.get(key) ?? { row: placement.row + 1, col: placement.col, above: false, below: false };
-      existing.above = true;
-      crossings.set(key, existing);
-    }
+  for (let row = 0; row < TileGridHeight; row++) {
+    for (let col = 0; col < TileGridWidth; col++) {
+      if (getCell(layout, row, col) !== 4) {
+        continue;
+      }
 
-    if (isInsideGrid(placement.row - 1, placement.col) && getCell(layout, placement.row - 1, placement.col) === 4) {
-      const key = getSlotKey(placement.row - 1, placement.col);
-      const existing = crossings.get(key) ?? { row: placement.row - 1, col: placement.col, above: false, below: false };
-      existing.below = true;
-      crossings.set(key, existing);
+      const above = isInsideGrid(row - 1, col) && hasPlacementAt(row - 1, col);
+      const below = isInsideGrid(row + 1, col) && hasPlacementAt(row + 1, col);
+      if (!above || !below) {
+        continue;
+      }
+
+      crossings.set(getSlotKey(row, col), { row, col, above, below });
     }
   }
 
   return [...crossings.values()]
-    .filter((crossing) => crossing.above && crossing.below)
     .sort((left, right) => (left.row === right.row ? left.col - right.col : left.row - right.row))
     .map((crossing) => ({
       row: crossing.row,
