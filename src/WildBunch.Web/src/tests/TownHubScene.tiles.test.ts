@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuildingKind, BuildingView, TownProsperity } from "../api/types";
 import type { TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
+import { getBackgroundSpriteKey, getBackgroundSpriteUrl } from "../components/town-hub/sprite-loader";
 
 vi.mock("phaser", () => {
   class Game {
@@ -22,7 +23,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function createLayout(): TownLayoutDto {
+function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   const grid = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0));
   grid[0][4] = 1;
   grid[0][5] = 1;
@@ -52,6 +53,7 @@ function createLayout(): TownLayoutDto {
       dirtSalt: "dirt-salt",
       propsSalt: "props-salt",
     },
+    ...overrides,
   };
 }
 
@@ -67,6 +69,7 @@ describe("TownHubScene tile rendering", () => {
     expect(scene.load.image).toHaveBeenCalledWith("dirt-1", "/assets/town-hub-ground/dirt/dirt-1.png");
     expect(scene.load.image).toHaveBeenCalledWith("road-main-flat", "/assets/town-hub-roads/main-road/road-flat-edge.png");
     expect(scene.load.image).toHaveBeenCalledWith("spur-road-end-cap", "/assets/town-hub-roads/spur-road/spur-end-cap.png");
+    expect(scene.load.image).toHaveBeenCalledWith("spur-road-cross", "/assets/town-hub-roads/spur-road/spur-path-cross.png");
     expect(scene.load.image).toHaveBeenCalledWith("path-vertical-diagonal", "/assets/town-hub-roads/path/path-vertical-diagonal.png");
     expect(scene.load.image).toHaveBeenCalledWith("prop-cactus", "/assets/town-hub-ground/props/cactus-normalized.png");
   });
@@ -340,6 +343,146 @@ describe("TownHubScene tile rendering", () => {
         expect.objectContaining({ key: "spur-road-straight", x: 360, y: 175, flipX: true, flipY: false }),
         expect.objectContaining({ key: "spur-road-path", x: 280, y: 175, flipX: true, flipY: false }),
         expect.objectContaining({ key: "spur-road-end-cap", x: 200, y: 175, flipX: true, flipY: false }),
+      ]),
+    );
+  });
+
+  it("preloads and renders background buildings and spur cross tiles", () => {
+    const grid = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0));
+    grid[4][6] = 4;
+
+    const layout = createLayout({
+      buildings: [],
+      tileGrid: grid,
+      prosperity: TownProsperity.Boomtown,
+    });
+
+    const scene = new TownHubScene(layout, [], vi.fn()) as TownHubScene & {
+      add: any;
+      load: { image: ReturnType<typeof vi.fn> };
+      backgroundPlacements: Array<{
+        row: number;
+        col: number;
+        family: "background-house" | "background-shop";
+        view: BuildingView;
+        flipX: boolean;
+        flipY: boolean;
+        side: "east" | "west";
+        attachesTo: "road" | "spur-above" | "spur-below";
+      }>;
+      spurCrossTiles: Array<{ row: number; col: number; flipX: boolean; flipY: boolean }>;
+      spurCrossTileKeys: Set<string>;
+    };
+
+    scene.backgroundPlacements = [
+      {
+        row: 2,
+        col: 3,
+        family: "background-house",
+        view: BuildingView.FrontOblique,
+        flipX: true,
+        flipY: false,
+        side: "west",
+        attachesTo: "road",
+      },
+      {
+        row: 5,
+        col: 6,
+        family: "background-shop",
+        view: BuildingView.Rear,
+        flipX: false,
+        flipY: true,
+        side: "east",
+        attachesTo: "spur-below",
+      },
+    ];
+    scene.spurCrossTiles = [{ row: 4, col: 6, flipX: false, flipY: false }];
+    scene.spurCrossTileKeys = new Set(["4:6"]);
+    (scene as any).load = { image: vi.fn() };
+    (scene as any).textures = { exists: () => false };
+
+    const imageCalls: Array<{ key: string; x: number; y: number; flipX: boolean; flipY: boolean }> = [];
+    scene.add = {
+      image: (x: number, y: number, key: string) => {
+        const record = { key, x, y, flipX: false, flipY: false };
+        imageCalls.push(record);
+        return {
+          setDisplaySize() {
+            return this;
+          },
+          setFlipX(value: boolean) {
+            record.flipX = value;
+            return this;
+          },
+          setFlipY(value: boolean) {
+            record.flipY = value;
+            return this;
+          },
+          setScale() {
+            return this;
+          },
+          setAlpha() {
+            return this;
+          },
+          setInteractive() {
+            return this;
+          },
+          on() {
+            return this;
+          },
+        };
+      },
+      rectangle: () => ({
+        setAlpha: () => ({
+          setStrokeStyle: () => ({
+            setInteractive: () => ({
+              on: () => ({
+                setScale: () => {},
+              }),
+            }),
+          }),
+        }),
+      }),
+      text: () => ({ setOrigin: () => ({}) }),
+      circle: () => ({}),
+      graphics: () => ({
+        fillStyle: () => ({}),
+        fillRect: () => ({}),
+        lineStyle: () => ({}),
+        moveTo: () => ({}),
+        lineTo: () => ({}),
+        strokePath: () => ({}),
+      }),
+    };
+
+    scene.preload();
+    expect(scene.load.image).toHaveBeenCalledWith(
+      getBackgroundSpriteKey("background-house", BuildingView.FrontOblique, TownProsperity.Boomtown),
+      getBackgroundSpriteUrl("background-house", BuildingView.FrontOblique, TownProsperity.Boomtown),
+    );
+    expect(scene.load.image).toHaveBeenCalledWith("spur-road-cross", "/assets/town-hub-roads/spur-road/spur-path-cross.png");
+
+    scene.create();
+
+    expect(imageCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "path-horizontal-diagonal", x: 280, y: 125, flipX: true, flipY: false }),
+        expect.objectContaining({
+          key: getBackgroundSpriteKey("background-house", BuildingView.FrontOblique, TownProsperity.Boomtown),
+          x: 256,
+          y: 125,
+          flipX: true,
+          flipY: false,
+        }),
+        expect.objectContaining({ key: "path-vertical-straight", x: 520, y: 275, flipX: false, flipY: true }),
+        expect.objectContaining({
+          key: getBackgroundSpriteKey("background-shop", BuildingView.Rear, TownProsperity.Boomtown),
+          x: 520,
+          y: 290,
+          flipX: false,
+          flipY: true,
+        }),
+        expect.objectContaining({ key: "spur-road-cross", x: 520, y: 225, flipX: false, flipY: false }),
       ]),
     );
   });

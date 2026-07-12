@@ -2,7 +2,11 @@ import Phaser from "phaser";
 import { AvailableActionKind, BuildingView } from "../../api/types";
 import { BuildingKind } from "./types";
 import type { BuildingPlacementDto, TownLayoutDto } from "./types";
-import { getSpriteUrl } from "./sprite-loader";
+import {
+  getBackgroundSpriteKey,
+  getBackgroundSpriteUrl,
+  getSpriteUrl,
+} from "./sprite-loader";
 import {
   getDirtTileUrl,
   getPathTileUrl,
@@ -15,6 +19,13 @@ import {
   pickPropKind,
   shouldPlaceProp,
 } from "./ground-loader";
+import {
+  collectForegroundOccupiedSlots,
+  planBackgroundBuildings,
+  planSpurCrossTiles,
+  type PlannedBackgroundBuilding,
+  type SpurCrossTile,
+} from "./background-building-planner";
 
 const BUILDING_COLORS: Record<BuildingKind, number> = {
   [BuildingKind.Store]: 0x8b6914,
@@ -39,7 +50,7 @@ const TilePixelHeight = 50;
 const BuildingNudgeRatio = 0.3;
 
 type RoadVariant = "flat" | "path" | "spur";
-type SpurVariant = "straight" | "path" | "end-cap";
+type SpurVariant = "straight" | "path" | "end-cap" | "cross";
 type PathOrientation = "horizontal" | "vertical";
 type PathVariant = "straight" | "diagonal";
 
@@ -98,6 +109,9 @@ export class TownHubScene extends Phaser.Scene {
   public readonly layout: TownLayoutDto;
   private readonly availableActions: AvailableActionKind[] = [];
   private readonly onBuildingSelected: (kind: BuildingKind) => void;
+  public backgroundPlacements: PlannedBackgroundBuilding[];
+  public spurCrossTiles: SpurCrossTile[];
+  public spurCrossTileKeys: Set<string>;
 
   // Canvas dimensions in pixels. The play surface is a 10x10 tile grid at 80x50 each.
   private static readonly CanvasWidth = TileGridWidth * TilePixelWidth;
@@ -112,6 +126,10 @@ export class TownHubScene extends Phaser.Scene {
     this.layout = layout;
     this.availableActions = availableActions;
     this.onBuildingSelected = onBuildingSelected;
+    const occupiedSlots = collectForegroundOccupiedSlots(layout);
+    this.backgroundPlacements = planBackgroundBuildings(layout, occupiedSlots);
+    this.spurCrossTiles = planSpurCrossTiles(layout, this.backgroundPlacements);
+    this.spurCrossTileKeys = new Set(this.spurCrossTiles.map((tile) => `${tile.row}:${tile.col}`));
   }
 
   preload(): void {
@@ -135,6 +153,18 @@ export class TownHubScene extends Phaser.Scene {
     this.load.image("spur-road-straight", getSpurTileUrl("straight"));
     this.load.image("spur-road-path", getSpurTileUrl("path"));
     this.load.image("spur-road-end-cap", getSpurTileUrl("end-cap"));
+    this.load.image("spur-road-cross", getSpurTileUrl("cross"));
+
+    const backgroundTileLoads = new Map<string, string>();
+    for (const placement of this.backgroundPlacements) {
+      backgroundTileLoads.set(
+        getBackgroundSpriteKey(placement.family, placement.view, prosperity),
+        getBackgroundSpriteUrl(placement.family, placement.view, prosperity),
+      );
+    }
+    for (const [spriteKey, spriteUrl] of backgroundTileLoads) {
+      this.load.image(spriteKey, spriteUrl);
+    }
 
     this.load.image("path-horizontal-straight", getPathTileUrl("horizontal", "straight"));
     this.load.image("path-horizontal-diagonal", getPathTileUrl("horizontal", "diagonal"));
@@ -162,7 +192,9 @@ export class TownHubScene extends Phaser.Scene {
     this.renderRoadTiles();
     this.renderSpurTiles();
     this.renderSpurEndCapTiles();
+    this.renderBackgroundBuildingGroundTiles();
     this.renderPropTiles();
+    this.renderBackgroundBuildings();
     this.renderBuildings();
     this.add.circle(this.layout.playerSpawnX * 8, this.layout.playerSpawnY * 5, 12, 0xffd700);
   }
@@ -220,7 +252,16 @@ export class TownHubScene extends Phaser.Scene {
         }
 
         const side = col < 5 ? "west" : "east";
-        const variant: SpurVariant = tileType === 3 ? "straight" : this.hasBuildingAboveSpur(row, col) ? "path" : "straight";
+        const above = this.hasPlacementAboveSpur(row, col);
+        const below = this.hasPlacementBelowSpur(row, col);
+        const variant: SpurVariant =
+          tileType === 4 && this.spurCrossTileKeys.has(`${row}:${col}`)
+            ? "cross"
+            : tileType === 3
+              ? "straight"
+              : above || below
+                ? "path"
+                : "straight";
         const sprite = this.add
           .image(
             col * TilePixelWidth + TilePixelWidth / 2,
@@ -294,7 +335,7 @@ export class TownHubScene extends Phaser.Scene {
         if (getCell(this.layout, row, col) !== 0) {
           continue;
         }
-        if (!shouldPlaceProp(seed, row, col, this.isBlockedByBuildingPlacement(row, col))) {
+        if (!shouldPlaceProp(seed, row, col, this.isBlockedByAnyBuildingPlacement(row, col))) {
           continue;
         }
 
@@ -308,6 +349,41 @@ export class TownHubScene extends Phaser.Scene {
           )
           .setScale(placement.scale);
       }
+    }
+  }
+
+  private renderBackgroundBuildingGroundTiles(): void {
+    for (const placement of this.backgroundPlacements) {
+      const groundTile = this.getBackgroundPlacementGroundTile(placement);
+      if (!groundTile) {
+        continue;
+      }
+
+      this.add
+        .image(
+          placement.col * TilePixelWidth + TilePixelWidth / 2,
+          placement.row * TilePixelHeight + TilePixelHeight / 2,
+          groundTile.key,
+        )
+        .setDisplaySize(TilePixelWidth, TilePixelHeight)
+        .setFlipX(groundTile.flipX)
+        .setFlipY(groundTile.flipY);
+    }
+  }
+
+  private renderBackgroundBuildings(): void {
+    for (const placement of this.backgroundPlacements) {
+      const spriteKey = getBackgroundSpriteKey(placement.family, placement.view, this.layout.prosperity);
+      const offset = this.getBackgroundPlacementOffset(placement);
+      this.add
+        .image(
+          placement.col * TilePixelWidth + TilePixelWidth / 2 + offset.x,
+          placement.row * TilePixelHeight + TilePixelHeight / 2 + offset.y,
+          spriteKey,
+        )
+        .setDisplaySize(TilePixelWidth, TilePixelHeight)
+        .setFlipX(placement.flipX)
+        .setFlipY(placement.flipY);
     }
   }
 
@@ -414,7 +490,13 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private getSpurKey(variant: SpurVariant): string {
-    return variant === "straight" ? "spur-road-straight" : variant === "path" ? "spur-road-path" : "spur-road-end-cap";
+    return variant === "straight"
+      ? "spur-road-straight"
+      : variant === "path"
+        ? "spur-road-path"
+        : variant === "end-cap"
+          ? "spur-road-end-cap"
+          : "spur-road-cross";
   }
 
   private getPathKey(orientation: PathOrientation, variant: PathVariant): string {
@@ -477,8 +559,8 @@ export class TownHubScene extends Phaser.Scene {
     return { x: 0, y: 0 };
   }
 
-  private isBlockedByBuildingPlacement(row: number, col: number): boolean {
-    return this.layout.buildings.some((building) => {
+  private isBlockedByAnyBuildingPlacement(row: number, col: number): boolean {
+    const blocksForeground = this.layout.buildings.some((building) => {
       const tile = logicalToTileCell(building.x, building.y);
       const offset = this.getBuildingOffset(tile.row, tile.col);
       if (offset.x === 0 && offset.y === 0) {
@@ -488,6 +570,21 @@ export class TownHubScene extends Phaser.Scene {
       const blockedRow = tile.row + Math.sign(offset.y);
       const blockedCol = tile.col + Math.sign(offset.x);
       return (tile.row === row && tile.col === col) || (blockedRow === row && blockedCol === col);
+    });
+
+    if (blocksForeground) {
+      return true;
+    }
+
+    return this.backgroundPlacements.some((placement) => {
+      const offset = this.getBackgroundPlacementOffset(placement);
+      if (offset.x === 0 && offset.y === 0) {
+        return placement.row === row && placement.col === col;
+      }
+
+      const blockedRow = placement.row + Math.sign(offset.y);
+      const blockedCol = placement.col + Math.sign(offset.x);
+      return (placement.row === row && placement.col === col) || (blockedRow === row && blockedCol === col);
     });
   }
 
@@ -502,11 +599,22 @@ export class TownHubScene extends Phaser.Scene {
     });
   }
 
-  private hasBuildingAboveSpur(row: number, col: number): boolean {
-    return this.layout.buildings.some((building) => {
-      const tile = logicalToTileCell(building.x, building.y);
-      return tile.row === row - 1 && tile.col === col;
-    });
+  private hasPlacementAboveSpur(row: number, col: number): boolean {
+    return this.hasPlacementAt(row - 1, col);
+  }
+
+  private hasPlacementBelowSpur(row: number, col: number): boolean {
+    return this.hasPlacementAt(row + 1, col);
+  }
+
+  private hasPlacementAt(row: number, col: number): boolean {
+    return (
+      this.layout.buildings.some((building) => {
+        const tile = logicalToTileCell(building.x, building.y);
+        return tile.row === row && tile.col === col;
+      }) ||
+      this.backgroundPlacements.some((placement) => placement.row === row && placement.col === col)
+    );
   }
 
   private getBuildingGroundTile(
@@ -516,7 +624,7 @@ export class TownHubScene extends Phaser.Scene {
     col: number,
   ): { key: string; flipX: boolean; flipY: boolean } | null {
     if (this.hasSpurBelow(row, col)) {
-      return this.getSpurBuildingGroundTile(building.view, building.x);
+      return this.getSpurBuildingGroundTile(building.view, building.x < 50 ? "west" : "east");
     }
 
     if (col === 3 && getCell(layout, row, 4) === 1) {
@@ -530,19 +638,51 @@ export class TownHubScene extends Phaser.Scene {
     return null;
   }
 
-  private getSpurBuildingGroundTile(view: BuildingView, x: number): { key: string; flipX: boolean; flipY: boolean } {
-    const mirrored = x < 50;
+  private getSpurBuildingGroundTile(
+    view: BuildingView,
+    side: "east" | "west",
+    flipY = false,
+  ): { key: string; flipX: boolean; flipY: boolean } {
+    const mirrored = side === "west";
     switch (view) {
       case BuildingView.Front:
       case BuildingView.Profile:
       case BuildingView.Rear:
-        return { key: "path-vertical-straight", flipX: false, flipY: false };
+        return { key: "path-vertical-straight", flipX: false, flipY };
       case BuildingView.FrontOblique:
       case BuildingView.RearOblique:
-        return { key: "path-vertical-diagonal", flipX: mirrored, flipY: false };
+        return { key: "path-vertical-diagonal", flipX: mirrored, flipY };
       default:
-        return { key: "path-vertical-straight", flipX: false, flipY: false };
+        return { key: "path-vertical-straight", flipX: false, flipY };
     }
+  }
+
+  private getBackgroundPlacementOffset(placement: PlannedBackgroundBuilding): { x: number; y: number } {
+    if (placement.attachesTo === "road") {
+      return {
+        x: placement.side === "west" ? -(TilePixelWidth * BuildingNudgeRatio) : TilePixelWidth * BuildingNudgeRatio,
+        y: 0,
+      };
+    }
+
+    return {
+      x: 0,
+      y: placement.attachesTo === "spur-below" ? TilePixelHeight * BuildingNudgeRatio : -(TilePixelHeight * BuildingNudgeRatio),
+    };
+  }
+
+  private getBackgroundPlacementGroundTile(
+    placement: PlannedBackgroundBuilding,
+  ): { key: string; flipX: boolean; flipY: boolean } | null {
+    if (placement.attachesTo === "road") {
+      return this.getMainRoadBuildingGroundTile(placement.view, placement.side);
+    }
+
+    return this.getSpurBuildingGroundTile(
+      placement.view,
+      placement.side,
+      placement.attachesTo === "spur-below",
+    );
   }
 
   private getMainRoadBuildingGroundTile(

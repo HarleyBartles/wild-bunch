@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fill eligible empty town plots with prosperity-scaled background houses and shops, support below-spur plots, and emit spur-path-cross tiles when paired background buildings face each other across a spur.
+**Goal:** Fill eligible empty town plots with prosperity-scaled background houses and shops, support below-spur plots for background buildings only, and emit spur-path-cross tiles when paired background buildings face each other across a spur.
 
 **Architecture:** Keep the current town hub scene as the render entrypoint, but move the background-placement logic into a small helper module so the scene stays readable. The helper will scan eligible plots, apply foreground occupancy first, derive a deterministic background budget from prosperity, and return background sprite placements plus any spur cross tiles. `TownHubScene` then renders the returned placements with the existing ground/path/road underlays and the existing foreground buildings.
 
@@ -16,7 +16,7 @@
 - Use the existing support families only: `background-house` and `background-shop`.
 - Treat `spur-path-cross` as a required art preflight dependency for Task 3; if the generated tile is not present when implementation starts, stop and block rather than inventing a fallback.
 - Preserve the current path-underlay rules already used for main-road and spur-adjacent buildings.
-- Support below-spur placement in addition to the current above-spur placement.
+- Support below-spur placement in addition to the current above-spur placement for background buildings only.
 - Background and foreground buildings are a semantic distinction, not a renderer layer distinction; they may not overlap because they occupy different tiles.
 - Keep the feature deterministic for a given layout and seed-derived town state.
 - Keep scope limited to the town-hub renderer and its helper/tests unless a file boundary must change to keep the scene small.
@@ -140,7 +140,7 @@ describe("background building planner", () => {
   });
 
   it("pushes boomtown coverage to near full occupancy while leaving one or two slots empty", () => {
-    // A boomtown should consume all but one or two eligible plots.
+    // A boomtown should leave one or two eligible plots empty.
   });
 
   it("produces a spur cross tile only when paired background buildings face each other across the same spur", () => {
@@ -194,17 +194,18 @@ The implementation should:
   - below-spur slot: tile `row,col` when `row-1,col` is the spur road tile and the slot is empty
 - exclude plots already claimed by foreground buildings, where foreground occupancy is the exact set of tile cells used by `layout.buildings`
 - apply the prosperity budget exactly as documented in the spec, with this deterministic fallback for small slot counts:
-  - Destitute: `min(2, max(1, floor(eligibleCount / 4)))`
-  - Poor: `max(1, floor((eligibleCount - 1) / 2))`
-  - Prosperous: `min(eligibleCount - 1, max(2, floor(eligibleCount * 0.70)))`
-  - Boomtown: `eligibleCount - min(2, eligibleCount)`
+  - Destitute: choose a deterministic count from `0..min(2, eligibleCount)`
+  - Poor: choose a deterministic count from `ceil(eligibleCount * 0.20)..floor(eligibleCount * 0.40)`
+  - Prosperous: choose a deterministic count from `ceil(eligibleCount * 0.60)..floor(eligibleCount * 0.80)`
+  - Boomtown: choose a deterministic count from `max(0, eligibleCount - 2)..eligibleCount`
 - choose slots in deterministic seeded order by sorting on a stable hash of the layout seed plus row, column, and attachment type, then taking the first `budget` slots
 - choose a background family and view from the existing support-building turnaround contract
 - apply mirroring as direct reuse of the existing building rules:
   - road-adjacent background buildings reuse the current main-road underlay rules exactly
   - above-spur background buildings reuse the current spur rules exactly and only select from `front` or `front-oblique` views
-  - below-spur background buildings reuse the current spur rules with a horizontal-axis mirror only and only select from `rear` or `rear-oblique` views
-  - when the mirrored below-spur case is used, the horizontal-axis mirror toggles `flipY` relative to the above-spur rule set while preserving the side-based `flipX` decision
+  - below-spur background buildings reuse the current spur rules with a vertical mirror and only select from `rear` or `rear-oblique` views
+  - below-spur path underlays mirror the above-spur path direction rules while preserving the side-based horizontal mirror decision
+  - when the mirrored below-spur case is used, the vertical mirror toggles `flipY` relative to the above-spur rule set while preserving the side-based `flipX` decision
 - record a spur cross tile when the same spur has paired above/below background buildings
 
 - [ ] **Step 4: Run the planner tests until they pass**

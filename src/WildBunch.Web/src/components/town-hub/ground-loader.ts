@@ -3,7 +3,7 @@ const PROP_KINDS = ["barrel", "cactus", "fence-piece", "tumbleweed", "water-trou
 
 type Side = "east" | "west";
 type RoadVariant = "flat" | "path" | "spur";
-type SpurVariant = "straight" | "path" | "end-cap";
+type SpurVariant = "straight" | "path" | "end-cap" | "cross";
 type PathOrientation = "horizontal" | "vertical";
 type PathVariant = "straight" | "diagonal";
 type PropKind = (typeof PROP_KINDS)[number];
@@ -52,7 +52,13 @@ export function getRoadTileUrl(variant: RoadVariant): string {
 
 export function getSpurTileUrl(variant: SpurVariant): string {
   const fileName =
-    variant === "straight" ? "spur-straight" : variant === "path" ? "spur-path-edge" : "spur-end-cap";
+    variant === "straight"
+      ? "spur-straight"
+      : variant === "path"
+        ? "spur-path-edge"
+        : variant === "end-cap"
+          ? "spur-end-cap"
+          : "spur-path-cross";
   return `/assets/town-hub-roads/spur-road/${fileName}.png`;
 }
 

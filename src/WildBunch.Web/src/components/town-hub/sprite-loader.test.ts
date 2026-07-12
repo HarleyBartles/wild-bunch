@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BuildingKind, TownProsperity } from "../../api/types";
-import { getSpriteUrl } from "./sprite-loader";
+import { getBackgroundSpriteKey, getBackgroundSpriteUrl, getSpriteUrl } from "./sprite-loader";
 
 describe("getSpriteUrl", () => {
   it("returns the correct URL for a prosperous store front-oblique view", () => {
@@ -40,5 +40,17 @@ describe("getSpriteUrl", () => {
       const url = getSpriteUrl(BuildingKind.Store, view, TownProsperity.Prosperous);
       expect(url).toBe(`/assets/town-hub-buildings/prosperous/general-store/${viewNames[i]}.png`);
     });
+  });
+
+  it("maps background building families to the shipped urls and keys", () => {
+    expect(getBackgroundSpriteKey("background-house", 3, TownProsperity.Prosperous)).toBe(
+      "background-house-prosperous-front-oblique",
+    );
+    expect(getBackgroundSpriteUrl("background-house", 3, TownProsperity.Prosperous)).toBe(
+      "/assets/town-hub-buildings/prosperous/background-house/front-oblique.png",
+    );
+    expect(getBackgroundSpriteUrl("background-shop", 4, TownProsperity.Boomtown)).toBe(
+      "/assets/town-hub-buildings/boomtown/background-shop/rear-oblique.png",
+    );
   });
 });

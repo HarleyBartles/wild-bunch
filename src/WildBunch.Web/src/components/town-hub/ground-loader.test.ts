@@ -29,6 +29,7 @@ describe("ground-loader", () => {
     expect(getSpurTileUrl("straight")).toBe("/assets/town-hub-roads/spur-road/spur-straight.png");
     expect(getSpurTileUrl("path")).toBe("/assets/town-hub-roads/spur-road/spur-path-edge.png");
     expect(getSpurTileUrl("end-cap")).toBe("/assets/town-hub-roads/spur-road/spur-end-cap.png");
+    expect(getSpurTileUrl("cross")).toBe("/assets/town-hub-roads/spur-road/spur-path-cross.png");
   });
 
   it("maps path tile variants to the shipped path tile urls", () => {

@@ -12,7 +12,7 @@ The new behavior must:
 - Use the same prosperity-matched sprite selection family as the foreground town buildings
 - Fill only eligible empty building plots beside roads or above/below spurs
 - Respect prosperity-based density targets
-- Support below-spur placement in addition to the current above-spur placement
+- Support below-spur placement for background buildings only in addition to the current above-spur placement
 - Use deterministic side/view/mirroring choices so the town stays stable for a given layout
 - Treat background buildings as decorative only, not clickable
 - Render a spur-path-cross tile when two background buildings face each other across a spur
@@ -44,6 +44,7 @@ Eligible plots include:
 
 The scanner should ignore already occupied building tiles and should only consider spaces that the current town topology actually exposes.
 Foreground buildings claim the canonical action-bearing eligible plots first. Background buildings only consume the remaining eligible plots after foreground occupancy has been resolved.
+Foreground buildings today stay above spurs; below-spur slots are reserved for background buildings in this phase.
 
 ### Foreground Occupancy
 
@@ -57,16 +58,14 @@ The occupancy model should:
 
 ### Background Prosperity Budget
 
-Background building count should vary by prosperity:
+Background building count should vary by prosperity and stay within these deterministic ranges:
 
-- Destitute: `max(1, floor(eligibleCount * 0.20))`, capped at 2
-- Poor: `floor(eligibleCount * 0.40)`
-- Prosperous: `floor(eligibleCount * 0.70)`
-- Boomtown: `eligibleCount - min(2, eligibleCount)`
+- Destitute: 0 to 2 filler buildings
+- Poor: 20% to 40% of eligible filler slots
+- Prosperous: 60% to 80% of eligible filler slots
+- Boomtown: leave 0 to 2 eligible spaces empty
 
-Round down after the percentage math. If the formula yields 0 while eligible plots exist, place 1 background building for destitute towns and 2 for the other tiers.
-
-The exact count should be deterministic for a given town layout and should be derived from the same seeded town state used elsewhere in the hub.
+Interpret the percentage tiers as inclusive count bands after rounding to whole buildings. Pick a deterministic count within the band from the seeded town state, then clamp it to the available eligible slots.
 
 ### Background Sprite Selection
 
@@ -84,6 +83,7 @@ The selection contract should mirror the main building sprite logic:
 - use mirrored variants where needed to keep the sprite facing the road or spur
 
 The design should prefer a small variety of deterministic turnaround choices rather than expanding the asset set immediately. If the current pool looks too repetitive, new background assets can be added later without changing the placement contract.
+For this phase, only background buildings may occupy below-spur slots.
 
 ### Spur Cross Tile
 
@@ -104,6 +104,12 @@ Every background building must still sit on a path underlay tile that matches th
 - west side of a road uses the same variants mirrored around the vertical axis
 - rear-oblique views use the mirrored/turned path variant that matches the building face direction
 - below-spur placements should use the same path-underlay family with the updated view/mirroring rules
+
+Below-spur background placement keeps the same east/west path-side mirroring as above-spur placement, but the building face and path direction are flipped vertically:
+- above-spur background buildings use `front` or `front-oblique`
+- below-spur background buildings use `rear` or `rear-oblique`
+- below-spur path underlays mirror the above-spur path direction rules
+- `rear-oblique` below-spur placements use the same side-based horizontal mirror choice as above-spur placements, then apply the vertical mirror so the sprite reads as the underside companion of the above-spur case
 
 ## Rendering Rules
 
@@ -128,10 +134,10 @@ To keep planning and implementation aligned, the fill algorithm should use this 
 
 1. Build the eligible plot list from the foreground placement rules first.
 2. Remove any plot already claimed by a foreground building.
-3. Apply the prosperity budget to the remaining plots.
+3. Apply the prosperity budget to the remaining plots, using the phase-specific range for the current prosperity tier.
 4. Choose the plots in deterministic seeded order.
 5. Assign `background-house` and `background-shop` using the seeded family selector.
-6. Assign the directional variant from the same attachment-side logic used for foreground buildings.
+6. Assign the directional variant from the same attachment-side logic used for foreground buildings, with below-spur placements restricted to the below-spur view set.
 7. If a paired above/below spur background placement exists, emit the spur-path-cross tile between the pair.
 
 ## Non-Goals
