@@ -43,6 +43,7 @@ Eligible plots include:
 - Tiles below spurs
 
 The scanner should ignore already occupied building tiles and should only consider spaces that the current town topology actually exposes.
+Foreground buildings claim the canonical action-bearing eligible plots first. Background buildings only consume the remaining eligible plots after foreground occupancy has been resolved.
 
 ### Foreground Occupancy
 
@@ -58,10 +59,12 @@ The occupancy model should:
 
 Background building count should vary by prosperity:
 
-- Destitute: 1 to 2 background buildings max
-- Poor: more than destitute, but still more than 50% of eligible spaces remain empty
-- Prosperous: less than 50% of eligible spaces remain empty, but not full
-- Boomtown: near full coverage, with 1 to 2 empty spaces max
+- Destitute: `max(1, floor(eligibleCount * 0.20))`, capped at 2
+- Poor: `floor(eligibleCount * 0.40)`
+- Prosperous: `floor(eligibleCount * 0.70)`
+- Boomtown: `eligibleCount - min(2, eligibleCount)`
+
+Round down after the percentage math. If the formula yields 0 while eligible plots exist, place 1 background building for destitute towns and 2 for the other tiers.
 
 The exact count should be deterministic for a given town layout and should be derived from the same seeded town state used elsewhere in the hub.
 
@@ -70,6 +73,10 @@ The exact count should be deterministic for a given town layout and should be de
 Background buildings should use the prosperity-matched background sprite families:
 - `background-house`
 - `background-shop`
+
+The planner should assume the canonical asset paths already established by the filler-assets contract:
+- `src/WildBunch.Assets/source/town-hub-buildings/{boomtown,prosperous,poor,destitute}/background-house/{front,profile,rear,front-oblique,rear-oblique}.png`
+- `src/WildBunch.Assets/source/town-hub-buildings/{boomtown,prosperous,poor,destitute}/background-shop/{front,profile,rear,front-oblique,rear-oblique}.png`
 
 The selection contract should mirror the main building sprite logic:
 - match prosperity tier
@@ -87,6 +94,8 @@ Rules:
 - If both sides are occupied, render the spur-path-cross tile in the spur cell between them
 - The cross tile is a special spur tile, not a new road system
 - The cross tile must preserve the existing spur path connection rules
+
+For this spec, a spur-path-cross is only produced when the paired background buildings occupy the tiles immediately above and below the same spur row during the same layout pass. The cross tile replaces the intermediate spur tile only for that paired case.
 
 ### Path Underlays
 
@@ -113,6 +122,18 @@ Add focused regression coverage for:
 - spur-path-cross placement when two background buildings face each other across a spur
 - existing town-hub tile rendering and build checks remain green
 
+## Deterministic Selection Contract
+
+To keep planning and implementation aligned, the fill algorithm should use this fixed precedence:
+
+1. Build the eligible plot list from the foreground placement rules first.
+2. Remove any plot already claimed by a foreground building.
+3. Apply the prosperity budget to the remaining plots.
+4. Choose the plots in deterministic seeded order.
+5. Assign `background-house` and `background-shop` using the seeded family selector.
+6. Assign the directional variant from the same attachment-side logic used for foreground buildings.
+7. If a paired above/below spur background placement exists, emit the spur-path-cross tile between the pair.
+
 ## Non-Goals
 
 - New building interior logic
@@ -120,4 +141,3 @@ Add focused regression coverage for:
 - New prosperity tiers
 - New gameplay actions for background buildings
 - Expanding the asset set unless the current variety proves insufficient
-
