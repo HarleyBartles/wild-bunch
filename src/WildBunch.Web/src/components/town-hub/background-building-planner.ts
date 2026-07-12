@@ -32,7 +32,7 @@ interface SlotCandidate extends BackgroundSlot {
 const TileGridWidth = 10;
 const TileGridHeight = 10;
 
-const ROAD_VIEWS = [BuildingView.Front, BuildingView.Profile, BuildingView.Rear, BuildingView.FrontOblique, BuildingView.RearOblique] as const;
+const ROAD_VIEWS = [BuildingView.Profile, BuildingView.FrontOblique] as const;
 const SPUR_ABOVE_VIEWS = [BuildingView.Front, BuildingView.FrontOblique] as const;
 const SPUR_BELOW_VIEWS = [BuildingView.Rear, BuildingView.RearOblique] as const;
 

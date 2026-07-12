@@ -184,6 +184,40 @@ describe("background building planner", () => {
     }
   });
 
+  it("restricts road-adjacent background buildings to profile and front-oblique views", () => {
+    const grid = createGrid();
+    for (let row = 0; row < 10; row++) {
+      grid[row][4] = 1;
+      grid[row][5] = 1;
+    }
+
+    const allowedViews = [BuildingView.Profile, BuildingView.FrontOblique] as const;
+    const forbiddenViews = [BuildingView.Front, BuildingView.Rear, BuildingView.RearOblique] as const;
+
+    for (let seedIndex = 0; seedIndex < 64; seedIndex++) {
+      const layout = createLayout({
+        prosperity: TownProsperity.Boomtown,
+        tileGrid: grid.map((row) => [...row]),
+        layoutSalts: {
+          resolverVersion: "1.0.0",
+          buildingsSalt: `road-view-seed-${seedIndex}`,
+          roadsSalt: "roads-salt",
+          dirtSalt: "dirt-salt",
+          propsSalt: "props-salt",
+        },
+      });
+
+      const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
+      const roadPlacements = placements.filter((placement) => placement.attachesTo === "road");
+
+      expect(roadPlacements.length).toBeGreaterThan(0);
+      for (const placement of roadPlacements) {
+        expect(allowedViews).toContain(placement.view);
+        expect(forbiddenViews).not.toContain(placement.view);
+      }
+    }
+  });
+
   it("uses rear views for below-spur placements", () => {
     const grid = createGrid();
     grid[4][6] = 4;
