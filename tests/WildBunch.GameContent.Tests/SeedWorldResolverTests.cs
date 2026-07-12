@@ -45,6 +45,23 @@ public sealed class SeedWorldResolverTests
     }
 
     [Fact]
+    public void SeedWorldResolution_DecodesAllProsperityPaletteValues()
+    {
+        foreach (ProsperityPalette palette in Enum.GetValues<ProsperityPalette>())
+        {
+            var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld() with
+            {
+                ProsperityPalette = palette,
+            };
+
+            var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
+            var resolved = SeedWorldResolver.Resolve(seedCode);
+
+            Assert.Equal(palette, resolved.ProsperityPalette);
+        }
+    }
+
+    [Fact]
     public void SeedWorldResolutionIsIndependentOfDifficultyAndEntropy()
     {
         var seedCode = SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode());
