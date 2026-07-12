@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BuildingKind, TownProsperity } from "../api/types";
+import { BuildingKind, BuildingView, TownProsperity } from "../api/types";
 import type { TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
 
@@ -144,5 +144,203 @@ describe("TownHubScene tile rendering", () => {
     expect(imageCalls.some((call) => call.key === "spur-road-straight" || call.key === "spur-road-path" || call.key === "spur-road-end-cap")).toBe(true);
     expect(imageCalls.some((call) => call.key === "path-horizontal-straight" || call.key === "path-horizontal-diagonal" || call.key === "path-vertical-straight" || call.key === "path-vertical-diagonal")).toBe(true);
     expect(imageCalls.some((call) => call.key.startsWith("prop-"))).toBe(true);
+  });
+
+  it("renders main-road building underlay tiles with east and west view mirroring rules", () => {
+    const grid = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0));
+    grid[2][4] = 1;
+    grid[2][5] = 1;
+    grid[3][4] = 1;
+    grid[3][5] = 1;
+    grid[4][4] = 1;
+    grid[4][5] = 1;
+
+    const layout: TownLayoutDto = {
+      buildings: [
+        { kind: BuildingKind.Store, view: BuildingView.Profile, x: 65, y: 25, width: 8, height: 10 },
+        { kind: BuildingKind.Sheriff, view: BuildingView.FrontOblique, x: 65, y: 35, width: 8, height: 10 },
+        { kind: BuildingKind.Saloon, view: BuildingView.RearOblique, x: 65, y: 45, width: 8, height: 10 },
+        { kind: BuildingKind.Telegraph, view: BuildingView.Profile, x: 35, y: 25, width: 8, height: 10 },
+        { kind: BuildingKind.Store, view: BuildingView.FrontOblique, x: 35, y: 35, width: 8, height: 10 },
+        { kind: BuildingKind.Sheriff, view: BuildingView.RearOblique, x: 35, y: 45, width: 8, height: 10 },
+      ],
+      playerSpawnX: 50,
+      playerSpawnY: 50,
+      prosperity: TownProsperity.Prosperous,
+      paths: [],
+      tileGrid: grid,
+      layoutSalts: {
+        resolverVersion: "1.0.0",
+        buildingsSalt: "buildings-salt",
+        roadsSalt: "roads-salt",
+        dirtSalt: "dirt-salt",
+        propsSalt: "props-salt",
+      },
+    };
+
+    const imageCalls: Array<{ key: string; x: number; y: number; flipX: boolean; flipY: boolean }> = [];
+    const scene = new TownHubScene(layout, [], vi.fn()) as TownHubScene & { add: any; textures: any };
+    scene.add = {
+      image: (x: number, y: number, key: string) => {
+        const record = { key, x, y, flipX: false, flipY: false };
+        imageCalls.push(record);
+        return {
+          setDisplaySize() {
+            return this;
+          },
+          setFlipX(value: boolean) {
+            record.flipX = value;
+            return this;
+          },
+          setFlipY(value: boolean) {
+            record.flipY = value;
+            return this;
+          },
+          setScale() {
+            return this;
+          },
+          setAlpha() {
+            return this;
+          },
+          setInteractive() {
+            return this;
+          },
+          on() {
+            return this;
+          },
+        };
+      },
+      rectangle: () => ({
+        setAlpha: () => ({
+          setStrokeStyle: () => ({
+            setInteractive: () => ({
+              on: () => ({
+                setScale: () => {},
+              }),
+            }),
+          }),
+        }),
+      }),
+      text: () => ({ setOrigin: () => ({}) }),
+      circle: () => ({}),
+      graphics: () => ({
+        fillStyle: () => ({}),
+        fillRect: () => ({}),
+        lineStyle: () => ({}),
+        moveTo: () => ({}),
+        lineTo: () => ({}),
+        strokePath: () => ({}),
+      }),
+    };
+    (scene as any).textures = { exists: () => false };
+
+    scene.create();
+
+    expect(imageCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "path-horizontal-straight", x: 520, y: 125, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "path-horizontal-diagonal", x: 520, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "path-horizontal-diagonal", x: 520, y: 225, flipX: false, flipY: true }),
+        expect.objectContaining({ key: "path-horizontal-straight", x: 280, y: 125, flipX: true, flipY: false }),
+        expect.objectContaining({ key: "path-horizontal-diagonal", x: 280, y: 175, flipX: true, flipY: false }),
+        expect.objectContaining({ key: "path-horizontal-diagonal", x: 280, y: 225, flipX: true, flipY: true }),
+      ]),
+    );
+  });
+
+  it("renders spur end caps one tile beyond east and west spur ends", () => {
+    const grid = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0));
+    grid[3][5] = 3;
+    grid[3][6] = 4;
+    grid[3][4] = 3;
+    grid[3][3] = 4;
+
+    const layout: TownLayoutDto = {
+      buildings: [
+        { kind: BuildingKind.Store, view: BuildingView.Profile, x: 65, y: 25, width: 8, height: 10 },
+        { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 35, y: 25, width: 8, height: 10 },
+      ],
+      playerSpawnX: 50,
+      playerSpawnY: 50,
+      prosperity: TownProsperity.Prosperous,
+      paths: [],
+      tileGrid: grid,
+      layoutSalts: {
+        resolverVersion: "1.0.0",
+        buildingsSalt: "buildings-salt",
+        roadsSalt: "roads-salt",
+        dirtSalt: "dirt-salt",
+        propsSalt: "props-salt",
+      },
+    };
+
+    const imageCalls: Array<{ key: string; x: number; y: number; flipX: boolean; flipY: boolean }> = [];
+    const scene = new TownHubScene(layout, [], vi.fn()) as TownHubScene & { add: any; textures: any };
+    scene.add = {
+      image: (x: number, y: number, key: string) => {
+        const record = { key, x, y, flipX: false, flipY: false };
+        imageCalls.push(record);
+        return {
+          setDisplaySize() {
+            return this;
+          },
+          setFlipX(value: boolean) {
+            record.flipX = value;
+            return this;
+          },
+          setFlipY(value: boolean) {
+            record.flipY = value;
+            return this;
+          },
+          setScale() {
+            return this;
+          },
+          setAlpha() {
+            return this;
+          },
+          setInteractive() {
+            return this;
+          },
+          on() {
+            return this;
+          },
+        };
+      },
+      rectangle: () => ({
+        setAlpha: () => ({
+          setStrokeStyle: () => ({
+            setInteractive: () => ({
+              on: () => ({
+                setScale: () => {},
+              }),
+            }),
+          }),
+        }),
+      }),
+      text: () => ({ setOrigin: () => ({}) }),
+      circle: () => ({}),
+      graphics: () => ({
+        fillStyle: () => ({}),
+        fillRect: () => ({}),
+        lineStyle: () => ({}),
+        moveTo: () => ({}),
+        lineTo: () => ({}),
+        strokePath: () => ({}),
+      }),
+    };
+    (scene as any).textures = { exists: () => false };
+
+    scene.create();
+
+    expect(imageCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "spur-road-straight", x: 440, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "spur-road-path", x: 520, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "spur-road-end-cap", x: 600, y: 175, flipX: false, flipY: false }),
+        expect.objectContaining({ key: "spur-road-straight", x: 360, y: 175, flipX: true, flipY: false }),
+        expect.objectContaining({ key: "spur-road-path", x: 280, y: 175, flipX: true, flipY: false }),
+        expect.objectContaining({ key: "spur-road-end-cap", x: 200, y: 175, flipX: true, flipY: false }),
+      ]),
+    );
   });
 });
