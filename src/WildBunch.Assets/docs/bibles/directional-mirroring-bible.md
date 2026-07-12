@@ -43,8 +43,8 @@ handles seam and tessellation behavior.
 - The spur canonical source stores the east side of the spur family unless the
   family-specific file says otherwise.
 - The canonical spur direction for the path-bearing variant is north.
-- The spur-edge main-road attachment is the version where the spur leads east
-  in source.
+- The `road-spur-edge` main-road attachment is the version where the spur leads
+  east in source.
 - The spur end cap is the eastern terminus of the spur: the spur connection is
   on the west side of the source image and the dirt fade occupies the east
   side.

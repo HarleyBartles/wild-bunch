@@ -20,15 +20,15 @@ describe("ground-loader", () => {
   });
 
   it("maps road variants to the shipped road tile urls", () => {
-    expect(getRoadTileUrl("flat")).toBe("/assets/town-hub-roads/main-road/flat-edge.png");
-    expect(getRoadTileUrl("path")).toBe("/assets/town-hub-roads/main-road/path-edge.png");
-    expect(getRoadTileUrl("spur")).toBe("/assets/town-hub-roads/main-road/spur-edge.png");
+    expect(getRoadTileUrl("flat")).toBe("/assets/town-hub-roads/main-road/road-flat-edge.png");
+    expect(getRoadTileUrl("path")).toBe("/assets/town-hub-roads/main-road/road-path-edge.png");
+    expect(getRoadTileUrl("spur")).toBe("/assets/town-hub-roads/main-road/road-spur-edge.png");
   });
 
   it("maps spur variants to the shipped east-leading tile urls", () => {
-    expect(getSpurTileUrl("straight")).toBe("/assets/town-hub-roads/spur-road/straight.png");
-    expect(getSpurTileUrl("path")).toBe("/assets/town-hub-roads/spur-road/path-edge.png");
-    expect(getSpurTileUrl("end-cap")).toBe("/assets/town-hub-roads/spur-road/end-cap.png");
+    expect(getSpurTileUrl("straight")).toBe("/assets/town-hub-roads/spur-road/spur-straight.png");
+    expect(getSpurTileUrl("path")).toBe("/assets/town-hub-roads/spur-road/spur-path-edge.png");
+    expect(getSpurTileUrl("end-cap")).toBe("/assets/town-hub-roads/spur-road/spur-end-cap.png");
   });
 
   it("maps path tile variants to the shipped path tile urls", () => {

@@ -65,8 +65,8 @@ describe("TownHubScene tile rendering", () => {
     scene.preload();
 
     expect(scene.load.image).toHaveBeenCalledWith("dirt-1", "/assets/town-hub-ground/dirt/dirt-1.png");
-    expect(scene.load.image).toHaveBeenCalledWith("road-main-flat", "/assets/town-hub-roads/main-road/flat-edge.png");
-    expect(scene.load.image).toHaveBeenCalledWith("spur-road-end-cap", "/assets/town-hub-roads/spur-road/end-cap.png");
+    expect(scene.load.image).toHaveBeenCalledWith("road-main-flat", "/assets/town-hub-roads/main-road/road-flat-edge.png");
+    expect(scene.load.image).toHaveBeenCalledWith("spur-road-end-cap", "/assets/town-hub-roads/spur-road/spur-end-cap.png");
     expect(scene.load.image).toHaveBeenCalledWith("path-vertical-diagonal", "/assets/town-hub-roads/path/path-vertical-diagonal.png");
     expect(scene.load.image).toHaveBeenCalledWith("prop-cactus", "/assets/town-hub-ground/props/cactus-normalized.png");
   });

@@ -46,13 +46,13 @@ export function getDirtTileUrl(variantIndex: number): string {
 }
 
 export function getRoadTileUrl(variant: RoadVariant): string {
-  const fileName = variant === "flat" ? "flat-edge" : variant === "path" ? "path-edge" : "spur-edge";
+  const fileName = variant === "flat" ? "road-flat-edge" : variant === "path" ? "road-path-edge" : "road-spur-edge";
   return `/assets/town-hub-roads/main-road/${fileName}.png`;
 }
 
 export function getSpurTileUrl(variant: SpurVariant): string {
   const fileName =
-    variant === "straight" ? "straight" : variant === "path" ? "path-edge" : "end-cap";
+    variant === "straight" ? "spur-straight" : variant === "path" ? "spur-path-edge" : "spur-end-cap";
   return `/assets/town-hub-roads/spur-road/${fileName}.png`;
 }
 
