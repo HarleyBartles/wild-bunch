@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Road source custody is canonical right-hand half tiles only: `flat-edge.png`, `spur-edge.png`, and `path-edge.png`.
+- Road source custody is canonical right-hand half tiles only: `road-flat-edge.png`, `road-spur-edge.png`, and `road-path-edge.png`.
 - The road slice uses a full `80x50` canvas.
 - The main road runs north-to-south with no visible cap ends in this slice.
 - Rotation-based road tiling is out of scope for this slice.
@@ -38,9 +38,9 @@ from PIL import Image
 
 root = Path(r"src/WildBunch.Assets/source/town-hub-roads/main-road")
 expected = {
-    "flat-edge.png",
-    "spur-edge.png",
-    "path-edge.png",
+    "road-flat-edge.png",
+    "road-spur-edge.png",
+    "road-path-edge.png",
 }
 
 actual = {p.name for p in root.glob("*.png")}
@@ -58,9 +58,9 @@ Expected: fail until the source custody only contains the canonical three files.
 If any stale road-half files remain, remove or de-canonize them so the source tree contains only these three files:
 
 ```text
-flat-edge.png
-spur-edge.png
-path-edge.png
+road-flat-edge.png
+road-spur-edge.png
+road-path-edge.png
 ```
 
 Do not reintroduce cap ends or rotation-based road handling.
@@ -86,7 +86,7 @@ from pathlib import Path
 from PIL import Image
 
 root = Path(r"src/WildBunch.Assets/source/town-hub-roads/main-road")
-image = Image.open(root / "flat-edge.png").convert("RGBA")
+image = Image.open(root / "road-flat-edge.png").convert("RGBA")
 mirror = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
 combo = Image.new("RGBA", (160, 50), (0, 0, 0, 0))
 combo.paste(mirror, (0, 0))
@@ -211,9 +211,9 @@ roots = [
     Path(r"src/WildBunch.Assets/sprites/town-hub-roads/main-road"),
 ]
 expected = {
-    "flat-edge.png",
-    "spur-edge.png",
-    "path-edge.png",
+    "road-flat-edge.png",
+    "road-spur-edge.png",
+    "road-path-edge.png",
 }
 for root in roots:
     actual = {p.name for p in root.glob("*.png")}

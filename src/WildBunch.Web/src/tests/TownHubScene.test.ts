@@ -142,11 +142,27 @@ describe("TownHubScene visual feedback", () => {
     setScale: (s: number) => MockRect;
   }
 
+  interface MockImage {
+    key: string;
+    x: number;
+    y: number;
+    displayWidth: number | null;
+    displayHeight: number | null;
+    flipX: boolean;
+    flipY: boolean;
+    scale: number | null;
+    setDisplaySize: (width: number, height: number) => MockImage;
+    setFlipX: (flip: boolean) => MockImage;
+    setFlipY: (flip: boolean) => MockImage;
+    setScale: (scale: number) => MockImage;
+  }
+
   function createSceneWithMockedAdd(
     layout: TownLayoutDto,
     availableActions: AvailableActionKind[],
-  ): { scene: TownHubScene; rects: MockRect[] } {
+  ): { scene: TownHubScene; rects: MockRect[]; images: MockImage[] } {
     const rects: MockRect[] = [];
+    const images: MockImage[] = [];
     const onBuildingSelected = vi.fn();
 
     const scene = new TownHubScene(layout, availableActions, onBuildingSelected) as TownHubScene & {
@@ -155,6 +171,37 @@ describe("TownHubScene visual feedback", () => {
     };
 
     scene.add = {
+      image: (x: number, y: number, key: string) => {
+        const image: MockImage = {
+          key,
+          x,
+          y,
+          displayWidth: null,
+          displayHeight: null,
+          flipX: false,
+          flipY: false,
+          scale: null,
+          setDisplaySize(width, height) {
+            this.displayWidth = width;
+            this.displayHeight = height;
+            return this;
+          },
+          setFlipX(flip) {
+            this.flipX = flip;
+            return this;
+          },
+          setFlipY(flip) {
+            this.flipY = flip;
+            return this;
+          },
+          setScale(scale) {
+            this.scale = scale;
+            return this;
+          },
+        };
+        images.push(image);
+        return image;
+      },
       rectangle: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
         const rect: MockRect = {
           kind: rects.length as BuildingKind,
@@ -186,6 +233,8 @@ describe("TownHubScene visual feedback", () => {
       text: () => ({ setOrigin: () => {} }),
       circle: () => {},
       graphics: () => ({
+        fillStyle: () => ({}),
+        fillRect: () => ({}),
         lineStyle: () => ({}),
         moveTo: () => ({}),
         lineTo: () => ({}),
@@ -208,7 +257,7 @@ describe("TownHubScene visual feedback", () => {
       rects[i].kind = layout.buildings[i].kind;
     }
 
-    return { scene, rects };
+    return { scene, rects, images };
   }
 
   it("renders available buildings with full opacity and white border highlight", () => {

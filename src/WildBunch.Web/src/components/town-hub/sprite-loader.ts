@@ -61,6 +61,43 @@ function getViewFileName(view: number): string {
   }
 }
 
+function getBackgroundProsperityDirectoryName(prosperity: TownProsperity): string {
+  switch (prosperity) {
+    case TownProsperity.Boomtown:
+      return "boomtown";
+    case TownProsperity.Prosperous:
+      return "prosperous";
+    case TownProsperity.Poor:
+      return "poor";
+    case TownProsperity.Destitute:
+      return "destitute";
+    default:
+      return "prosperous";
+  }
+}
+
+export type BackgroundBuildingFamily = "background-house" | "background-shop";
+
+export function getBackgroundSpriteUrl(
+  family: BackgroundBuildingFamily,
+  view: number,
+  prosperity: TownProsperity,
+): string {
+  const prosperityDir = getBackgroundProsperityDirectoryName(prosperity);
+  const viewFileName = getViewFileName(view);
+  return `/assets/town-hub-buildings/${prosperityDir}/${family}/${viewFileName}.png`;
+}
+
+export function getBackgroundSpriteKey(
+  family: BackgroundBuildingFamily,
+  view: number,
+  prosperity: TownProsperity,
+): string {
+  const prosperityDir = getBackgroundProsperityDirectoryName(prosperity);
+  const viewFileName = getViewFileName(view);
+  return `${family}-${prosperityDir}-${viewFileName}`;
+}
+
 /**
  * Gets the sprite URL for a building kind, view, and prosperity tier.
  * Returns null if the building has no sprite assets (e.g., Trailhead).

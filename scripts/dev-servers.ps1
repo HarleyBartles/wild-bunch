@@ -12,6 +12,7 @@ $CanonicalVitePort = 5173
 $ApiProject = 'src/WildBunch.Api'
 $WebProject = 'src/WildBunch.Web'
 $PostgresConnectionString = 'Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres'
+$HealthRetryDelaysSeconds = @(2, 4, 8, 16, 32)
 
 function Resolve-WorktreeRoot {
     $scriptDir = (Resolve-Path $PSScriptRoot).Path
@@ -77,6 +78,7 @@ function Write-State {
     )
     Ensure-StateDir
     $state = [PSCustomObject]@{
+        checkoutRoot = $WorktreeRoot
         worktreeRoot = $WorktreeRoot
         branch       = Get-WorktreeBranch
         apiPid       = $ApiPid
@@ -88,6 +90,28 @@ function Write-State {
         startedAt    = (Get-Date).ToString('o')
     }
     $state | ConvertTo-Json | Set-Content -Path $StateFile -Encoding utf8
+}
+
+function Get-ObjectValue {
+    param(
+        [Parameter(Mandatory)]$InputObject,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        return $InputObject[$Name]
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -ne $property) {
+        return $property.Value
+    }
+
+    return $null
 }
 
 function Clear-State {
@@ -146,12 +170,63 @@ function Find-FreePort {
     throw "No free port found starting from $StartPort"
 }
 
+function Invoke-DotNetBuild {
+    param([Parameter(Mandatory)][string]$ProjectPath)
+    & dotnet build $ProjectPath --nologo | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet build failed for $ProjectPath."
+    }
+}
+
+function Invoke-NpmBuild {
+    param([Parameter(Mandatory)][string]$WorkingDirectory)
+
+    Push-Location $WorkingDirectory
+    try {
+        & npm.cmd run build | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            throw "npm build failed in $WorkingDirectory."
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Wait-ForHealthy {
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][string]$Url,
+        [Parameter(Mandatory)][scriptblock]$Probe
+    )
+
+    for ($attempt = 0; $attempt -lt $HealthRetryDelaysSeconds.Count; $attempt++) {
+        try {
+            if (& $Probe) {
+                return
+            }
+        }
+        catch {}
+
+        Start-Sleep -Seconds $HealthRetryDelaysSeconds[$attempt]
+    }
+
+    try {
+        if (& $Probe) {
+            return
+        }
+    }
+    catch {}
+
+    throw "$Name server did not become healthy on $Url after retries."
+}
+
 function Test-ApiHealthy {
     param([Parameter(Mandatory)][string]$Url)
     try {
         $checkUrl = $Url -replace '://localhost:', '://127.0.0.1:'
-        $response = Invoke-RestMethod -Uri "$checkUrl/api/games/starting-towns" -Method GET -TimeoutSec 5 -ErrorAction Stop
-        return $true
+        $response = Invoke-WebRequest -Uri "$checkUrl/health" -Method GET -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
+        return $response.StatusCode -eq 200
     }
     catch {
         return $false
@@ -180,71 +255,73 @@ function Resolve-ServerPorts {
     $viteCanonicalFree = $null -eq (Get-NetTCPConnection -LocalPort $CanonicalVitePort -State Listen -ErrorAction SilentlyContinue)
 
     if ($apiCanonicalFree -and $viteCanonicalFree) {
-        return @{ ApiPort = $CanonicalApiPort; VitePort = $CanonicalVitePort; Reused = $false; Reason = 'canonical ports free' }
+        return [PSCustomObject]@{ ApiPort = $CanonicalApiPort; VitePort = $CanonicalVitePort; Reused = $false; Reason = 'canonical ports free' }
     }
 
     if (-not $apiCanonicalFree) {
         $apiOwnedHere = Test-PortOwnedByWorktree -Port $CanonicalApiPort
         if ($apiOwnedHere) {
-            return @{ ApiPort = $CanonicalApiPort; VitePort = $CanonicalVitePort; Reused = $true; Reason = 'canonical API port owned by this worktree' }
+            return [PSCustomObject]@{ ApiPort = $CanonicalApiPort; VitePort = $CanonicalVitePort; Reused = $true; Reason = 'canonical API port owned by this worktree' }
         }
     }
 
     if (-not $viteCanonicalFree) {
         $viteOwnedHere = Test-PortOwnedByWorktree -Port $CanonicalVitePort
         if ($viteOwnedHere) {
-            return @{ ApiPort = $CanonicalApiPort; VitePort = $CanonicalVitePort; Reused = $true; Reason = 'canonical Vite port owned by this worktree' }
+            return [PSCustomObject]@{ ApiPort = $CanonicalApiPort; VitePort = $CanonicalVitePort; Reused = $true; Reason = 'canonical Vite port owned by this worktree' }
         }
     }
 
     $apiPort = Find-FreePort -StartPort ($CanonicalApiPort + 1)
     $vitePort = Find-FreePort -StartPort ($CanonicalVitePort + 1)
-    return @{ ApiPort = $apiPort; VitePort = $vitePort; Reused = $false; Reason = 'canonical ports occupied by another worktree; allocated fallback ports' }
+    return [PSCustomObject]@{ ApiPort = $apiPort; VitePort = $vitePort; Reused = $false; Reason = 'canonical ports occupied by another worktree; allocated fallback ports' }
 }
 
 function Start-ApiServer {
     param([Parameter(Mandatory)][int]$Port)
 
     $apiUrl = "http://localhost:$Port"
+    Invoke-DotNetBuild -ProjectPath $ApiProject
     $env:ConnectionStrings__WildBunchPostgresDb = $PostgresConnectionString
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
 
     $process = Start-Process -FilePath 'dotnet' `
-        -ArgumentList @('run', '--project', $ApiProject, '--no-build', '--urls', $apiUrl) `
+        -ArgumentList @('run', '--project', $ApiProject, '--urls', $apiUrl) `
         -WorkingDirectory $WorktreeRoot `
         -PassThru `
         -WindowStyle Hidden
 
-    for ($attempt = 0; $attempt -lt 60; $attempt++) {
-        if (Test-ApiHealthy -Url $apiUrl) {
-            return @{ Pid = $process.Id; Url = $apiUrl }
-        }
-        Start-Sleep -Seconds 1
+    try {
+        Wait-ForHealthy -Name 'API' -Url $apiUrl -Probe { Test-ApiHealthy -Url $apiUrl }
+        return @($process.Id, $apiUrl)
     }
-
-    throw "API server did not become healthy on $apiUrl within 60 seconds."
+    catch {
+        Stop-ProcessTree -ProcessId $process.Id
+        throw
+    }
 }
 
 function Start-ViteServer {
     param([Parameter(Mandatory)][int]$Port, [Parameter(Mandatory)][string]$ApiUrl)
 
+    Invoke-NpmBuild -WorkingDirectory (Join-Path $WorktreeRoot $WebProject)
     $env:VITE_API_BASE_URL = $ApiUrl
     $viteUrl = "http://localhost:$Port"
 
-    $process = Start-Process -FilePath 'cmd' `
-        -ArgumentList @('/c', 'npm', 'run', 'dev', '--', '--port', $Port, '--strictPort') `
+    $process = Start-Process -FilePath 'npm.cmd' `
+        -ArgumentList @('run', 'dev', '--', '--port', $Port, '--strictPort') `
         -WorkingDirectory (Join-Path $WorktreeRoot $WebProject) `
         -PassThru `
         -WindowStyle Hidden
 
-    for ($attempt = 0; $attempt -lt 30; $attempt++) {
-        if (Test-ViteHealthy -Url $viteUrl) {
-            return @{ Pid = $process.Id; Url = $viteUrl }
-        }
-        Start-Sleep -Seconds 1
+    try {
+        Wait-ForHealthy -Name 'Vite' -Url $viteUrl -Probe { Test-ViteHealthy -Url $viteUrl }
+        return @($process.Id, $viteUrl)
     }
-
-    throw "Vite dev server did not become healthy on $viteUrl within 30 seconds."
+    catch {
+        Stop-ProcessTree -ProcessId $process.Id
+        throw
+    }
 }
 
 function Stop-ProcessTree {
@@ -263,25 +340,32 @@ function Invoke-Ensure {
     $state = Read-State
 
     if ($null -ne $state) {
-        $apiAlive = Test-PidAlive -ProcessId $state.apiPid
-        $viteAlive = Test-PidAlive -ProcessId $state.vitePid
+        $apiPid = Get-ObjectValue -InputObject $state -Name 'apiPid'
+        $vitePid = Get-ObjectValue -InputObject $state -Name 'vitePid'
+        $apiUrl = Get-ObjectValue -InputObject $state -Name 'apiUrl'
+        $viteUrl = Get-ObjectValue -InputObject $state -Name 'viteUrl'
+        $apiAlive = Test-PidAlive -ProcessId $apiPid
+        $viteAlive = Test-PidAlive -ProcessId $vitePid
 
         if ($apiAlive -and $viteAlive `
-            -and (Test-ApiHealthy -Url $state.apiUrl) `
-            -and (Test-ViteHealthy -Url $state.viteUrl)) {
+            -and (Test-ApiHealthy -Url $apiUrl) `
+            -and (Test-ViteHealthy -Url $viteUrl)) {
+            Write-State -ApiPid $apiPid -VitePid $vitePid -ApiPort (Get-ObjectValue -InputObject $state -Name 'apiPort') -VitePort (Get-ObjectValue -InputObject $state -Name 'vitePort') -ApiUrl $apiUrl -ViteUrl $viteUrl
             Write-Host "Dev servers already running for this worktree (reused)."
+            Write-Host "  Checkout:  $WorktreeRoot"
             Write-Host "  Worktree:  $WorktreeRoot"
+            Write-Host "  State:     $StateFile"
             Write-Host "  Branch:    $(Get-WorktreeBranch)"
-            Write-Host "  API:       $($state.apiUrl) (PID $($state.apiPid))"
-            Write-Host "  Frontend:  $($state.viteUrl) (PID $($state.vitePid))"
+            Write-Host "  API:       $apiUrl (PID $apiPid)"
+            Write-Host "  Frontend:  $viteUrl (PID $vitePid)"
             Write-Host "  Reused:    yes (state file matched live processes)"
             return
         }
 
         if (-not $apiAlive -or -not $viteAlive) {
             Write-Host "Stale dev-server state detected; cleaning up and restarting."
-            if ($apiAlive) { Stop-ProcessTree -ProcessId $state.apiPid }
-            if ($viteAlive) { Stop-ProcessTree -ProcessId $state.vitePid }
+            if ($apiAlive) { Stop-ProcessTree -ProcessId $apiPid }
+            if ($viteAlive) { Stop-ProcessTree -ProcessId $vitePid }
             Clear-State
         }
     }
@@ -289,41 +373,72 @@ function Invoke-Ensure {
     $ports = Resolve-ServerPorts
 
     if ($ports.Reused) {
-        $apiPids = @(Get-PortListenerPids -Port $ports.ApiPort)
-        $vitePids = @(Get-PortListenerPids -Port $ports.VitePort)
+        $apiPort = Get-ObjectValue -InputObject $ports -Name 'ApiPort'
+        $vitePort = Get-ObjectValue -InputObject $ports -Name 'VitePort'
+        $reason = Get-ObjectValue -InputObject $ports -Name 'Reason'
+        $apiPids = @(Get-PortListenerPids -Port $apiPort)
+        $vitePids = @(Get-PortListenerPids -Port $vitePort)
         $apiPid = if ($apiPids.Count -gt 0) { $apiPids[0] } else { 0 }
         $vitePid = if ($vitePids.Count -gt 0) { $vitePids[0] } else { 0 }
-        $apiUrl = "http://localhost:$($ports.ApiPort)"
-        $viteUrl = "http://localhost:$($ports.VitePort)"
+        $apiUrl = "http://localhost:$apiPort"
+        $viteUrl = "http://localhost:$vitePort"
 
-        Write-State -ApiPid $apiPid -VitePid $vitePid -ApiPort $ports.ApiPort -VitePort $ports.VitePort -ApiUrl $apiUrl -ViteUrl $viteUrl
-        Write-Host "Dev servers already running for this worktree (reused)."
-        Write-Host "  Worktree:  $WorktreeRoot"
-        Write-Host "  Branch:    $(Get-WorktreeBranch)"
-        Write-Host "  API:       $apiUrl (PID $apiPid)"
-        Write-Host "  Frontend:  $viteUrl (PID $vitePid)"
-        Write-Host "  Reused:    yes ($($ports.Reason))"
-        return
+        if ((Test-ApiHealthy -Url $apiUrl) -and (Test-ViteHealthy -Url $viteUrl)) {
+            Write-State -ApiPid $apiPid -VitePid $vitePid -ApiPort $apiPort -VitePort $vitePort -ApiUrl $apiUrl -ViteUrl $viteUrl
+            Write-Host "Dev servers already running for this worktree (reused)."
+            Write-Host "  Worktree:  $WorktreeRoot"
+            Write-Host "  Branch:    $(Get-WorktreeBranch)"
+            Write-Host "  API:       $apiUrl (PID $apiPid)"
+            Write-Host "  Frontend:  $viteUrl (PID $vitePid)"
+            Write-Host "  Reused:    yes ($reason)"
+            return
+        }
+
+        Write-Host "Existing dev servers for this worktree are unhealthy; restarting."
+        if ($apiPid -ne 0) { Stop-ProcessTree -ProcessId $apiPid }
+        if ($vitePid -ne 0 -and $vitePid -ne $apiPid) { Stop-ProcessTree -ProcessId $vitePid }
+        Clear-State
+        $ports = Resolve-ServerPorts
     }
 
+    $apiPort = Get-ObjectValue -InputObject $ports -Name 'ApiPort'
+    $vitePort = Get-ObjectValue -InputObject $ports -Name 'VitePort'
+    $reason = Get-ObjectValue -InputObject $ports -Name 'Reason'
     Write-Host "Starting dev servers for this worktree."
+    Write-Host "  Checkout:  $WorktreeRoot"
     Write-Host "  Worktree:  $WorktreeRoot"
+    Write-Host "  State:     $StateFile"
     Write-Host "  Branch:    $(Get-WorktreeBranch)"
-    Write-Host "  Reason:    $($ports.Reason)"
+    Write-Host "  Reason:    $reason"
 
-    $api = Start-ApiServer -Port $ports.ApiPort
-    Write-Host "  API:       $($api.Url) (PID $($api.Pid))"
+    $api = $null
+    $vite = $null
+    try {
+        $apiPid, $apiUrl = Start-ApiServer -Port $apiPort
+        Write-Host "  API:       $apiUrl (PID $apiPid)"
 
-    $vite = Start-ViteServer -Port $ports.VitePort -ApiUrl $api.Url
-    Write-Host "  Frontend:  $($vite.Url) (PID $($vite.Pid))"
+        $vitePid, $viteUrl = Start-ViteServer -Port $vitePort -ApiUrl $apiUrl
+        Write-Host "  Frontend:  $viteUrl (PID $vitePid)"
 
-    Write-State -ApiPid $api.Pid -VitePid $vite.Pid -ApiPort $ports.ApiPort -VitePort $ports.VitePort -ApiUrl $api.Url -ViteUrl $vite.Url
+        Write-State -ApiPid $apiPid -VitePid $vitePid -ApiPort $apiPort -VitePort $vitePort -ApiUrl $apiUrl -ViteUrl $viteUrl
+    }
+    catch {
+        if ($null -ne $vitePid -and $vitePid -ne 0) {
+            Stop-ProcessTree -ProcessId $vitePid
+        }
+        if ($null -ne $apiPid -and $apiPid -ne 0) {
+            Stop-ProcessTree -ProcessId $apiPid
+        }
+        Clear-State
+        throw
+    }
 
     Write-Host ""
     Write-Host "Dev servers are ready."
-    Write-Host "  API:      $($api.Url)"
-    Write-Host "  Frontend: $($vite.Url)"
-    if ($ports.ApiPort -ne $CanonicalApiPort -or $ports.VitePort -ne $CanonicalVitePort) {
+    Write-Host "  Checkout:  $WorktreeRoot"
+    Write-Host "  API:      $apiUrl"
+    Write-Host "  Frontend: $viteUrl"
+    if ($apiPort -ne $CanonicalApiPort -or $vitePort -ne $CanonicalVitePort) {
         Write-Host "  NOTE: Non-canonical ports were used because canonical ports were occupied by another worktree."
         Write-Host "  Report these actual URLs in browser-proof returns."
     }
@@ -343,16 +458,20 @@ function Invoke-Stop {
     $stoppedApi = $false
     $stoppedVite = $false
 
-    if (Test-PidAlive -ProcessId $state.apiPid) {
-        Stop-ProcessTree -ProcessId $state.apiPid
+    $apiPid = Get-ObjectValue -InputObject $state -Name 'apiPid'
+    $apiUrl = Get-ObjectValue -InputObject $state -Name 'apiUrl'
+    if (Test-PidAlive -ProcessId $apiPid) {
+        Stop-ProcessTree -ProcessId $apiPid
         $stoppedApi = $true
-        Write-Host "Stopped API server (PID $($state.apiPid)) on $($state.apiUrl)."
+        Write-Host "Stopped API server (PID $apiPid) on $apiUrl."
     }
 
-    if (Test-PidAlive -ProcessId $state.vitePid) {
-        Stop-ProcessTree -ProcessId $state.vitePid
+    $vitePid = Get-ObjectValue -InputObject $state -Name 'vitePid'
+    $viteUrl = Get-ObjectValue -InputObject $state -Name 'viteUrl'
+    if (Test-PidAlive -ProcessId $vitePid) {
+        Stop-ProcessTree -ProcessId $vitePid
         $stoppedVite = $true
-        Write-Host "Stopped Vite dev server (PID $($state.vitePid)) on $($state.viteUrl)."
+        Write-Host "Stopped Vite dev server (PID $vitePid) on $viteUrl."
     }
 
     if (-not $stoppedApi -and -not $stoppedVite) {
@@ -368,6 +487,8 @@ function Invoke-Status {
     $branch = Get-WorktreeBranch
 
     Write-Host "Worktree:  $WorktreeRoot"
+    Write-Host "Checkout:  $WorktreeRoot"
+    Write-Host "State:     $StateFile"
     Write-Host "Branch:    $branch"
 
     if ($null -eq $state) {
@@ -378,14 +499,18 @@ function Invoke-Status {
         return
     }
 
-    $apiAlive = Test-PidAlive -ProcessId $state.apiPid
-    $viteAlive = Test-PidAlive -ProcessId $state.vitePid
-    $apiHealthy = if ($apiAlive) { Test-ApiHealthy -Url $state.apiUrl } else { $false }
-    $viteHealthy = if ($viteAlive) { Test-ViteHealthy -Url $state.viteUrl } else { $false }
+    $apiPid = Get-ObjectValue -InputObject $state -Name 'apiPid'
+    $vitePid = Get-ObjectValue -InputObject $state -Name 'vitePid'
+    $apiUrl = Get-ObjectValue -InputObject $state -Name 'apiUrl'
+    $viteUrl = Get-ObjectValue -InputObject $state -Name 'viteUrl'
+    $apiAlive = Test-PidAlive -ProcessId $apiPid
+    $viteAlive = Test-PidAlive -ProcessId $vitePid
+    $apiHealthy = if ($apiAlive) { Test-ApiHealthy -Url $apiUrl } else { $false }
+    $viteHealthy = if ($viteAlive) { Test-ViteHealthy -Url $viteUrl } else { $false }
 
-    Write-Host "State:     recorded at $($state.startedAt)"
-    Write-Host "API:       $($state.apiUrl) (PID $($state.apiPid)) - $(if ($apiHealthy) { 'healthy' } elseif ($apiAlive) { 'alive but not responding' } else { 'dead' })"
-    Write-Host "Frontend:  $($state.viteUrl) (PID $($state.vitePid)) - $(if ($viteHealthy) { 'healthy' } elseif ($viteAlive) { 'alive but not responding' } else { 'dead' })"
+    Write-Host "State:     recorded at $(Get-ObjectValue -InputObject $state -Name 'startedAt')"
+    Write-Host "API:       $apiUrl (PID $apiPid) - $(if ($apiHealthy) { 'healthy' } elseif ($apiAlive) { 'alive but not responding' } else { 'dead' })"
+    Write-Host "Frontend:  $viteUrl (PID $vitePid) - $(if ($viteHealthy) { 'healthy' } elseif ($viteAlive) { 'alive but not responding' } else { 'dead' })"
 
     if (-not $apiAlive -or -not $viteAlive) {
         Write-Host ""

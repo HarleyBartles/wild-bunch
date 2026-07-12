@@ -33,6 +33,10 @@ and related tile work.
 - The canonical path-bearing spur tile must keep the path leading north.
 - The spur edge and end cap must keep their join edge centered and repeat-safe
   with the other spur pieces.
+- If a future cross-junction tile is introduced, the horizontal band must
+  remain the spur family read and the vertical band must remain the lighter
+  path family read. The spur should stay the darker browner track; the path
+  should stay the lighter worn connector.
 
 ### Path
 

@@ -30,9 +30,9 @@ This issue slice covers only the main-road half tiles and the repo docs that des
 
 The main-road source custody is the canonical right-hand half tiles only:
 
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/flat-edge.png`
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/spur-edge.png`
-- `src/WildBunch.Assets/source/town-hub-roads/main-road/path-edge.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/road-flat-edge.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/road-spur-edge.png`
+- `src/WildBunch.Assets/source/town-hub-roads/main-road/road-path-edge.png`
 
 The left-hand read is the horizontal mirror of each canonical tile and is not part of the canonical source custody set for this slice. These source files already exist and are the truth the pipeline must preserve.
 

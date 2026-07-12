@@ -101,6 +101,63 @@ public sealed class SeedWorldFactoryTests
         }
     }
 
+    [Fact]
+    public void ProsperityPaletteSweepSurfacesAllFourTownProsperityTiers()
+    {
+        var observedTiers = new HashSet<TownProsperity>();
+        var mixedWorldCount = 0;
+        var totalWorldCount = 0;
+
+        foreach (ProsperityPalette palette in Enum.GetValues<ProsperityPalette>())
+        {
+            foreach (var townCount in new[] { 5, 6, 7, 8, 9, 10 })
+            {
+                totalWorldCount++;
+
+                var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld() with
+                {
+                    TownCount = townCount,
+                    ProsperityPalette = palette,
+                };
+
+                var townNames = SeedWorldFactory.DeriveTownNames(
+                    seedWorld.WorldVariant,
+                    seedWorld.TownCount,
+                    seedWorld.AccusationIndex,
+                    seedWorld.DefaultCulpritIndex,
+                    seedWorld.CashBonus,
+                    seedWorld.ProsperityPalette,
+                    seedWorld.ServicesPalette);
+
+                var world = SeedWorldFactory.CreateWorld(
+                    seedWorld.WorldVariant,
+                    townNames,
+                    seedWorld.ServicesPalette,
+                    seedWorld.ProsperityPalette,
+                    Array.Empty<SeedWorldTrail>());
+
+                var tiers = world.Towns.Select(t => t.Prosperity).Distinct().ToArray();
+
+                foreach (var town in world.Towns)
+                {
+                    observedTiers.Add(town.Prosperity);
+                }
+
+                if (tiers.Length >= 2)
+                {
+                    mixedWorldCount++;
+                }
+            }
+        }
+
+        Assert.True(mixedWorldCount >= totalWorldCount / 2,
+            $"Expected a mixed majority of sampled seed worlds, but only {mixedWorldCount} of {totalWorldCount} worlds had multiple prosperity tiers.");
+        Assert.Contains(TownProsperity.Boomtown, observedTiers);
+        Assert.Contains(TownProsperity.Prosperous, observedTiers);
+        Assert.Contains(TownProsperity.Poor, observedTiers);
+        Assert.Contains(TownProsperity.Destitute, observedTiers);
+    }
+
     private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
         => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
 }

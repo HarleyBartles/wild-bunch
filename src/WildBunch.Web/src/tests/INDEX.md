@@ -33,6 +33,7 @@
 - [StorySoFarStep.test.tsx](StorySoFarStep.test.tsx)
 - [stylingEnforcement.test.ts](stylingEnforcement.test.ts)
 - [TownHubScene.test.ts](TownHubScene.test.ts)
+- [TownHubScene.tiles.test.ts](TownHubScene.tiles.test.ts)
 - [TownHubSurface.test.tsx](TownHubSurface.test.tsx)
 - [TownLayoutDevPanel.test.tsx](TownLayoutDevPanel.test.tsx)
 - [TrailFlowSurfaceCompleted.test.tsx](TrailFlowSurfaceCompleted.test.tsx)
