@@ -80,8 +80,20 @@ function candidateScore(seed: string, row: number, col: number, attachesTo: Back
   return hashString(seedForCell(seed, row, col, attachesTo));
 }
 
-function isTrailheadBufferRow(row: number): boolean {
-  return row <= 1 || row >= TileGridHeight - 2;
+export function getTrailheadFootprintTiles(building: BuildingPlacementDto): Array<{ row: number; col: number }> {
+  const left = Math.max(0, Math.floor((building.x - building.width / 2) / 10));
+  const right = Math.min(TileGridWidth - 1, Math.ceil((building.x + building.width / 2) / 10) - 1);
+  const top = Math.max(0, Math.floor((building.y - building.height / 2) / 10));
+  const bottom = Math.min(TileGridHeight - 1, Math.ceil((building.y + building.height / 2) / 10) - 1);
+  const tiles: Array<{ row: number; col: number }> = [];
+
+  for (let row = top; row <= bottom; row++) {
+    for (let col = left; col <= right; col++) {
+      tiles.push({ row, col });
+    }
+  }
+
+  return tiles;
 }
 
 function getBudgetRange(
@@ -157,8 +169,11 @@ export function collectForegroundOccupiedSlots(layout: TownLayoutDto): Set<strin
   const occupied = new Set<string>();
 
   for (const building of layout.buildings) {
-    const tile = logicalToTileCell(building);
-    occupied.add(getSlotKey(tile.row, tile.col));
+    const tiles =
+      building.kind === BuildingKind.Trailhead ? getTrailheadFootprintTiles(building) : [logicalToTileCell(building)];
+    for (const tile of tiles) {
+      occupied.add(getSlotKey(tile.row, tile.col));
+    }
   }
 
   return occupied;
@@ -172,22 +187,13 @@ function collectTrailheadExcludedSlots(layout: TownLayoutDto): Set<string> {
       continue;
     }
 
-    const tile = logicalToTileCell(building);
-    const inwardRow = tile.row < TileGridHeight / 2 ? tile.row + 1 : tile.row - 1;
-    if (inwardRow >= 0 && inwardRow < TileGridHeight) {
+    for (const tile of getTrailheadFootprintTiles(building)) {
       if (tile.col - 1 >= 0) {
-        excluded.add(getSlotKey(inwardRow, tile.col - 1));
+        excluded.add(getSlotKey(tile.row, tile.col - 1));
       }
       if (tile.col + 1 < TileGridWidth) {
-        excluded.add(getSlotKey(inwardRow, tile.col + 1));
+        excluded.add(getSlotKey(tile.row, tile.col + 1));
       }
-    }
-
-    if (tile.col - 1 >= 0) {
-      excluded.add(getSlotKey(tile.row, tile.col - 1));
-    }
-    if (tile.col + 1 < TileGridWidth) {
-      excluded.add(getSlotKey(tile.row, tile.col + 1));
     }
   }
 
@@ -205,10 +211,6 @@ export function collectEligibleBackgroundSlots(layout: TownLayoutDto): Backgroun
   const seen = new Map<string, SlotCandidate>();
 
   const addCandidate = (slot: BackgroundSlot) => {
-    if (isTrailheadBufferRow(slot.row)) {
-      return;
-    }
-
     const key = getSlotKey(slot.row, slot.col);
     if (trailheadExcluded.has(key)) {
       return;

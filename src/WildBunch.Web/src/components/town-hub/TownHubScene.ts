@@ -23,6 +23,7 @@ import {
   collectForegroundOccupiedSlots,
   planBackgroundBuildings,
   planSpurCrossTiles,
+  getTrailheadFootprintTiles,
   type PlannedBackgroundBuilding,
   type SpurCrossTile,
 } from "./background-building-planner";
@@ -561,6 +562,10 @@ export class TownHubScene extends Phaser.Scene {
 
   private isBlockedByAnyBuildingPlacement(row: number, col: number): boolean {
     const blocksForeground = this.layout.buildings.some((building) => {
+      if (building.kind === BuildingKind.Trailhead) {
+        return getTrailheadFootprintTiles(building).some((tile) => tile.row === row && tile.col === col);
+      }
+
       const tile = logicalToTileCell(building.x, building.y);
       const offset = this.getBuildingOffset(tile.row, tile.col);
       if (offset.x === 0 && offset.y === 0) {
@@ -610,6 +615,10 @@ export class TownHubScene extends Phaser.Scene {
   private hasPlacementAt(row: number, col: number): boolean {
     return (
       this.layout.buildings.some((building) => {
+        if (building.kind === BuildingKind.Trailhead) {
+          return getTrailheadFootprintTiles(building).some((tile) => tile.row === row && tile.col === col);
+        }
+
         const tile = logicalToTileCell(building.x, building.y);
         return tile.row === row && tile.col === col;
       }) ||
