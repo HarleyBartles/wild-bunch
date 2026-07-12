@@ -86,3 +86,4 @@
 - [2026-07-10-dev-layout-salts-integration-implementation.md](2026-07-10-dev-layout-salts-integration-implementation.md)
 - [2026-07-10-town-hub-deterministic-layout-resolver-implementation.md](2026-07-10-town-hub-deterministic-layout-resolver-implementation.md)
 - [2026-07-11-bunch-149-ci-efficiency-preflight.md](2026-07-11-bunch-149-ci-efficiency-preflight.md)
+- [2026-07-12-bunch-148-background-building-fill-implementation.md](2026-07-12-bunch-148-background-building-fill-implementation.md)
