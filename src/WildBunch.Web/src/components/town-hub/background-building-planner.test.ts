@@ -54,6 +54,28 @@ describe("background building planner", () => {
     );
   });
 
+  it("excludes the two side slots beside a trailhead from background placement", () => {
+    const grid = createGrid();
+    grid[1][4] = 1;
+    grid[1][5] = 1;
+
+    const layout = createLayout({
+      tileGrid: grid,
+      buildings: [
+        { kind: BuildingKind.Trailhead, view: BuildingView.Profile, x: 52, y: 12, width: 8, height: 10 },
+      ],
+    });
+
+    const slots = collectEligibleBackgroundSlots(layout);
+
+    expect(slots).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ row: 1, col: 4 }),
+        expect.objectContaining({ row: 1, col: 6 }),
+      ]),
+    );
+  });
+
   it("keeps destitute coverage within the expected filler range", () => {
     const grid = createGrid();
     grid[1][4] = 1;

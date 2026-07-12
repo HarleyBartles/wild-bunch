@@ -1,4 +1,4 @@
-import { BuildingView, TownProsperity, type BuildingPlacementDto, type TownLayoutDto } from "../../api/types";
+import { BuildingKind, BuildingView, TownProsperity, type BuildingPlacementDto, type TownLayoutDto } from "../../api/types";
 
 export interface BackgroundSlot {
   row: number;
@@ -160,17 +160,41 @@ export function collectForegroundOccupiedSlots(layout: TownLayoutDto): Set<strin
   return occupied;
 }
 
+function collectTrailheadExcludedSlots(layout: TownLayoutDto): Set<string> {
+  const excluded = new Set<string>();
+
+  for (const building of layout.buildings) {
+    if (building.kind !== BuildingKind.Trailhead) {
+      continue;
+    }
+
+    const tile = logicalToTileCell(building);
+    if (tile.col - 1 >= 0) {
+      excluded.add(getSlotKey(tile.row, tile.col - 1));
+    }
+    if (tile.col + 1 < TileGridWidth) {
+      excluded.add(getSlotKey(tile.row, tile.col + 1));
+    }
+  }
+
+  return excluded;
+}
+
 export function collectEligibleBackgroundSlots(layout: TownLayoutDto): BackgroundSlot[] {
   if (!layout.tileGrid) {
     return [];
   }
 
   const occupied = collectForegroundOccupiedSlots(layout);
+  const trailheadExcluded = collectTrailheadExcludedSlots(layout);
   const seed = getLayoutSeed(layout);
   const seen = new Map<string, SlotCandidate>();
 
   const addCandidate = (slot: BackgroundSlot) => {
     const key = getSlotKey(slot.row, slot.col);
+    if (trailheadExcluded.has(key)) {
+      return;
+    }
     const score = candidateScore(seed, slot.row, slot.col, slot.attachesTo);
     const candidate: SlotCandidate = { ...slot, score };
     const existing = seen.get(key);
