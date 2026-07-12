@@ -75,6 +75,10 @@ describe("background building planner", () => {
       expect.arrayContaining([
         expect.objectContaining({ row: 0, col: 3 }),
         expect.objectContaining({ row: 0, col: 6 }),
+        expect.objectContaining({ row: 1, col: 3 }),
+        expect.objectContaining({ row: 1, col: 6 }),
+        expect.objectContaining({ row: 8, col: 3 }),
+        expect.objectContaining({ row: 8, col: 6 }),
         expect.objectContaining({ row: 9, col: 3 }),
         expect.objectContaining({ row: 9, col: 6 }),
       ]),

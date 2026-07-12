@@ -169,6 +169,16 @@ function collectTrailheadExcludedSlots(layout: TownLayoutDto): Set<string> {
     }
 
     const tile = logicalToTileCell(building);
+    const inwardRow = tile.row < TileGridHeight / 2 ? tile.row + 1 : tile.row - 1;
+    if (inwardRow >= 0 && inwardRow < TileGridHeight) {
+      if (tile.col - 1 >= 0) {
+        excluded.add(getSlotKey(inwardRow, tile.col - 1));
+      }
+      if (tile.col + 1 < TileGridWidth) {
+        excluded.add(getSlotKey(inwardRow, tile.col + 1));
+      }
+    }
+
     if (tile.col - 1 >= 0) {
       excluded.add(getSlotKey(tile.row, tile.col - 1));
     }
