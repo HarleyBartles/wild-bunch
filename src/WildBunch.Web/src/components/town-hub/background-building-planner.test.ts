@@ -144,6 +144,46 @@ describe("background building planner", () => {
     expect(placements.length).toBeLessThanOrEqual(eligibleCount);
   });
 
+  it("keeps filler buildings inside the prosperity budget across a brute force seed sweep", () => {
+    const grid = createGrid();
+    for (let row = 0; row < 10; row++) {
+      grid[row][4] = 1;
+      grid[row][5] = 1;
+    }
+
+    const tierRanges = new Map<TownProsperity, { min: number; max: number }>([
+      [TownProsperity.Destitute, { min: 0, max: 2 }],
+      [TownProsperity.Poor, { min: 4, max: 8 }],
+      [TownProsperity.Prosperous, { min: 12, max: 16 }],
+      [TownProsperity.Boomtown, { min: 18, max: 20 }],
+    ]);
+
+    for (const [prosperity, range] of tierRanges) {
+      const observedCounts = new Set<number>();
+
+      for (let seedIndex = 0; seedIndex < 64; seedIndex++) {
+        const layout = createLayout({
+          prosperity,
+          tileGrid: grid.map((row) => [...row]),
+          layoutSalts: {
+            resolverVersion: "1.0.0",
+            buildingsSalt: `budget-seed-${prosperity}-${seedIndex}`,
+            roadsSalt: "roads-salt",
+            dirtSalt: "dirt-salt",
+            propsSalt: "props-salt",
+          },
+        });
+
+        const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
+        observedCounts.add(placements.length);
+        expect(placements.length).toBeGreaterThanOrEqual(range.min);
+        expect(placements.length).toBeLessThanOrEqual(range.max);
+      }
+
+      expect(observedCounts.size).toBeGreaterThan(0);
+    }
+  });
+
   it("uses rear views for below-spur placements", () => {
     const grid = createGrid();
     grid[4][6] = 4;
