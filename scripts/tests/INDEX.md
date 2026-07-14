@@ -6,3 +6,4 @@
 - [test_generate_index_mesh.py](test_generate_index_mesh.py)
 - [test_install_agent_skills.py](test_install_agent_skills.py)
 - [test_power_shell_wrappers.py](test_power_shell_wrappers.py)
+- [test_script_entrypoints.py](test_script_entrypoints.py)

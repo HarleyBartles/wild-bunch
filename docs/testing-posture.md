@@ -57,15 +57,15 @@ The repo-verified local UI route uses these targets:
 
 Before using the local browser route, make sure the repo-local PostgreSQL lane is ready:
 
-```powershell
-.\scripts\postgres-dev.ps1 install-tools
-.\scripts\postgres-dev.ps1 setup
+```bash
+bash scripts/postgres-dev.sh install-tools
+bash scripts/postgres-dev.sh setup
 ```
 
 If you want the full PostgreSQL-backed validation lane in one command, use:
 
-```powershell
-.\scripts\postgres-dev.ps1 validate
+```bash
+bash scripts/postgres-dev.sh validate
 ```
 
 The API launch profile already supplies `ConnectionStrings__WildBunchPostgresDb` for the normal local run path.

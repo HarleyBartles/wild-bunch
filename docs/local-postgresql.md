@@ -33,15 +33,15 @@ them.
 
 Check or document the pinned tooling first:
 
-```powershell
-.\scripts\postgres-dev.ps1 install-tools
+```bash
+bash scripts/postgres-dev.sh install-tools
 ```
 
 Ensure the shared local PostgreSQL service is running (starts it if down, reuses
 it if already healthy):
 
-```powershell
-.\scripts\postgres-dev.ps1 ensure
+```bash
+bash scripts/postgres-dev.sh ensure
 ```
 
 `ensure` is the normal worker entry point before PostgreSQL-dependent tests or
@@ -53,15 +53,15 @@ running cluster and the same `wildbunch_dev` app database.
 If you need the older full-provision verb (same effect when the cluster is down),
 `setup` remains available:
 
-```powershell
-.\scripts\postgres-dev.ps1 setup
+```bash
+bash scripts/postgres-dev.sh setup
 ```
 
 Run the PostgreSQL validation lane with the repo-local connection string and
 tooling setup already wired in:
 
-```powershell
-.\scripts\postgres-dev.ps1 validate
+```bash
+bash scripts/postgres-dev.sh validate
 ```
 
 The validation command provisions the persistent cluster if needed, exports
@@ -72,8 +72,8 @@ restores repo-local tools, runs `dotnet ef migrations list`, and then runs
 For a targeted PostgreSQL-backed test run, use the repo-local script wrapper.
 That is the supported path from a fresh checkout:
 
-```powershell
-.\scripts\postgres-dev.ps1 test -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
+```bash
+bash scripts/postgres-dev.sh test -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
 ```
 
 That route provisions or starts the persistent cluster, exports
@@ -100,8 +100,8 @@ Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres
 
 Check whether the local cluster is running and the app database exists:
 
-```powershell
-.\scripts\postgres-dev.ps1 status
+```bash
+bash scripts/postgres-dev.sh status
 ```
 
 ## Shared Service and Worker Cleanup
@@ -109,7 +109,7 @@ Check whether the local cluster is running and the app database exists:
 The local PostgreSQL service is a shared, long-lived developer service owned by
 the persistent main checkout. It is not per-run setup/teardown.
 
-- Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests or
+- Run `bash scripts/postgres-dev.sh ensure` before PostgreSQL-dependent tests or
   local app launch. It reuses a healthy service and only starts one when down.
 - Normal worker cleanup must **not** stop the shared service. A later worker or
   worktree expects to reuse it.
@@ -125,8 +125,8 @@ the persistent main checkout. It is not per-run setup/teardown.
 Reset is explicit and destructive to the persistent local development database
 only:
 
-```powershell
-.\scripts\postgres-dev.ps1 reset
+```bash
+bash scripts/postgres-dev.sh reset
 ```
 
 Use reset only when you intend to recreate the persistent local app database.
@@ -137,8 +137,8 @@ worker lane unless you explicitly intend to recreate the shared service.
 
 ## Local Launch Flow
 
-1. `.\scripts\postgres-dev.ps1 install-tools`
-2. `.\scripts\postgres-dev.ps1 ensure`
+1. `bash scripts/postgres-dev.sh install-tools`
+2. `bash scripts/postgres-dev.sh ensure`
 3. Launch `WildBunch.Api` via Visual Studio/F5 or:
 
 ```powershell
