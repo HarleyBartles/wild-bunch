@@ -59,5 +59,5 @@ if [[ $skip_index_mesh -eq 0 ]]; then
   bash "$script_dir/generate_index_mesh.sh" --check
 
   echo '--- Validating marketplace.json ---'
-  python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==7; assert all(p['policy']['installation']=='INSTALLED_BY_DEFAULT' for p in m['plugins']); assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack','game-studio','dotnet-kit','architecture-pack','frontend-pack'}; print('OK marketplace.json')"
+  python3 -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==7; assert all(p['policy']['installation']=='INSTALLED_BY_DEFAULT' for p in m['plugins']); assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack','game-studio','dotnet-kit','architecture-pack','frontend-pack'}; print('OK marketplace.json')"
 fi

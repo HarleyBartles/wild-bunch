@@ -92,8 +92,8 @@ normal local launch path.
 
 If you want to confirm the connection string shape explicitly, it is:
 
-```powershell
-Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres
+```bash
+export ConnectionStrings__WildBunchPostgresDb="Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres"
 ```
 
 ## Status

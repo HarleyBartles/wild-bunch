@@ -17,8 +17,9 @@ cutting/normalization via the compatibility wrapper for
 
 - `postgres-dev.ps1` requires PowerShell and the repo-local PostgreSQL 16.14
   tooling under `.local/postgresql16`.
-- `postgres-dev.sh` is the bash entrypoint for the same workflow and delegates
-  to the PowerShell implementation on Windows.
+- `postgres-dev.sh` is the Linux/bash entrypoint and requires native
+  PostgreSQL 16.14 command-line tools on `PATH` or a `POSTGRES_BIN_DIR`
+  override.
 - `image_asset_pipeline.py` is a wrapper around the asset-local implementation
   under `src/WildBunch.Assets/scripts/` and requires Python 3.11+ with Pillow
   installed in the active environment.
@@ -66,9 +67,10 @@ PostgreSQL dev database used by integration tests.
 - `.\scripts\postgres-dev.ps1 ensure` - PowerShell entrypoint with the same commands
 
 The cluster runs on port 5434 with database `wildbunch_dev`. PostgreSQL
-tooling is expected under `.local/postgresql16` (shared across worktrees).
-The script resolves the persistent main checkout root so the data directory
-is shared, not duplicated per worktree.
+tooling is expected under `.local/postgresql16` for the PowerShell path and as
+native Linux binaries on `PATH` for the bash path (or via `POSTGRES_BIN_DIR`).
+The script resolves the persistent main checkout root so the data directory is
+shared, not duplicated per worktree.
 
 **Use before** running `dotnet test` on `WildBunch.Integration.Tests` - the
 integration tests require this database to be running. Set the connection
