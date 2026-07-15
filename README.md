@@ -10,7 +10,7 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 
 ## Setup
 
-- Backend: .NET 10. See `.agents/docs/validation-policy.md` for the validation lane (`dotnet build`, `dotnet test`, `.\scripts\postgres-dev.ps1 validate`).
+- Backend: .NET 10. See `.agents/docs/validation-policy.md` for the validation lane (`dotnet build`, `dotnet test`, `bash scripts/postgres-dev.sh validate` or `.\scripts\postgres-dev.ps1 validate`).
 - Frontend: React + Vite in `src/WildBunch.Web`. See `src/WildBunch.Web/package.json` for scripts.
 
 ## Repo-local plugin posture
