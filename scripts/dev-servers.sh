@@ -66,6 +66,144 @@ raise SystemExit(1)
 PY
 }
 
+port_owned_by_worktree() {
+  local port="$1"
+  python3 - "$repo_root" "$port" <<'PY'
+from pathlib import Path
+import os
+import sys
+
+repo_root = Path(sys.argv[1]).resolve()
+port = int(sys.argv[2])
+
+def iter_listening_inodes():
+    target = f"{port:04X}"
+    for proc_net in (Path("/proc/net/tcp"), Path("/proc/net/tcp6")):
+        try:
+            with proc_net.open("r", encoding="utf-8", errors="ignore") as handle:
+                next(handle, None)
+                for line in handle:
+                    parts = line.split()
+                    if len(parts) < 10:
+                        continue
+                    local_address = parts[1]
+                    state = parts[3]
+                    inode = parts[9]
+                    if state != "0A":
+                        continue
+                    if ":" not in local_address:
+                        continue
+                    _, local_port = local_address.split(":", 1)
+                    if local_port.upper() == target:
+                        yield inode
+        except FileNotFoundError:
+            continue
+
+def pid_matches_repo(pid):
+    base = Path("/proc") / pid
+    try:
+        cwd = (base / "cwd").resolve()
+        if repo_root == cwd or repo_root in cwd.parents:
+            return True
+    except OSError:
+        pass
+
+    try:
+        cmdline = (base / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", "ignore")
+        if str(repo_root) in cmdline:
+            return True
+    except OSError:
+        pass
+
+    return False
+
+inode_to_pid = {}
+for pid_dir in Path("/proc").iterdir():
+    if not pid_dir.name.isdigit():
+        continue
+    fd_dir = pid_dir / "fd"
+    if not fd_dir.is_dir():
+        continue
+    try:
+        for fd_path in fd_dir.iterdir():
+            try:
+                target = os.readlink(fd_path)
+            except OSError:
+                continue
+            if target.startswith("socket:[") and target.endswith("]"):
+                inode_to_pid.setdefault(target[8:-1], pid_dir.name)
+    except OSError:
+        continue
+
+for inode in iter_listening_inodes():
+    pid = inode_to_pid.get(inode)
+    if pid and pid_matches_repo(pid):
+        raise SystemExit(0)
+
+raise SystemExit(1)
+PY
+}
+
+port_listener_pid() {
+  local port="$1"
+  python3 - "$port" <<'PY'
+from pathlib import Path
+import os
+import sys
+
+port = int(sys.argv[1])
+
+def iter_listening_inodes():
+    target = f"{port:04X}"
+    for proc_net in (Path("/proc/net/tcp"), Path("/proc/net/tcp6")):
+        try:
+            with proc_net.open("r", encoding="utf-8", errors="ignore") as handle:
+                next(handle, None)
+                for line in handle:
+                    parts = line.split()
+                    if len(parts) < 10:
+                        continue
+                    local_address = parts[1]
+                    state = parts[3]
+                    inode = parts[9]
+                    if state != "0A":
+                        continue
+                    if ":" not in local_address:
+                        continue
+                    _, local_port = local_address.split(":", 1)
+                    if local_port.upper() == target:
+                        yield inode
+        except FileNotFoundError:
+            continue
+
+inode_to_pid = {}
+for pid_dir in Path("/proc").iterdir():
+    if not pid_dir.name.isdigit():
+        continue
+    fd_dir = pid_dir / "fd"
+    if not fd_dir.is_dir():
+        continue
+    try:
+        for fd_path in fd_dir.iterdir():
+            try:
+                target = os.readlink(fd_path)
+            except OSError:
+                continue
+            if target.startswith("socket:[") and target.endswith("]"):
+                inode_to_pid.setdefault(target[8:-1], pid_dir.name)
+    except OSError:
+        continue
+
+for inode in iter_listening_inodes():
+    pid = inode_to_pid.get(inode)
+    if pid:
+        print(pid)
+        raise SystemExit(0)
+
+raise SystemExit(1)
+PY
+}
+
 http_ok() {
   local url="$1"
   if command -v curl >/dev/null 2>&1; then
@@ -174,6 +312,11 @@ resolve_ports() {
     return 0
   fi
 
+  if port_owned_by_worktree "$canonical_api_port" || port_owned_by_worktree "$canonical_vite_port"; then
+    reason='canonical port(s) already owned by this worktree'
+    return 0
+  fi
+
   api_port="$(find_free_port $((canonical_api_port + 1)))"
   vite_port="$(find_free_port $((canonical_vite_port + 1)))"
   reason='canonical ports occupied by another process; allocated fallback ports'
@@ -251,6 +394,35 @@ invoke_ensure() {
       stop_process "${api_pid:-0}"
       stop_process "${vite_pid:-0}"
     fi
+    clear_state
+  fi
+
+  if port_owned_by_worktree "$canonical_api_port" || port_owned_by_worktree "$canonical_vite_port"; then
+    api_port="$canonical_api_port"
+    vite_port="$canonical_vite_port"
+    api_url="http://127.0.0.1:$api_port"
+    vite_url="http://127.0.0.1:$vite_port"
+    api_pid="$(port_listener_pid "$api_port" || true)"
+    vite_pid="$(port_listener_pid "$vite_port" || true)"
+    echo "Canonical dev-server ports are already owned by this worktree."
+
+    if [[ -n "${api_pid:-}" && -n "${vite_pid:-}" ]] \
+      && api_healthy "$api_url" && vite_healthy "$vite_url"; then
+      write_state "$api_pid" "$vite_pid" "$api_port" "$vite_port" "$api_url" "$vite_url"
+      echo "Dev servers already running for this worktree (reused)."
+      echo "  Checkout:  $repo_root"
+      echo "  Worktree:  $repo_root"
+      echo "  State:     $state_file"
+      echo "  Branch:    $(git_branch)"
+      echo "  API:       $api_url (PID $api_pid)"
+      echo "  Frontend:  $vite_url (PID $vite_pid)"
+      echo "  Reused:    yes (canonical ports already owned by this worktree)"
+      return 0
+    fi
+
+    echo "Existing dev servers for this worktree are unhealthy; restarting."
+    stop_process "${api_pid:-0}"
+    stop_process "${vite_pid:-0}"
     clear_state
   fi
 
