@@ -6,7 +6,6 @@
 - [.agents](.agents/INDEX.md)
 - [.config](.config/INDEX.md)
 - [.github](.github/INDEX.md)
-- [.local](.local/INDEX.md)
 - [docs](docs/INDEX.md)
 - [scripts](scripts/INDEX.md)
 - [src](src/INDEX.md)
