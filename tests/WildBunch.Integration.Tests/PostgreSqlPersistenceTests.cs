@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using WildBunch.Application.Games.Mapping;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
@@ -61,7 +62,7 @@ public sealed class PostgreSqlPersistenceTests
         {
             await context.Database.MigrateAsync();
 
-            var repository = new EfGameSessionRepository(context, serializer);
+            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector());
             var unitOfWork = new EfGameSessionUnitOfWork(context);
 
             await repository.StoreAsync(session);
@@ -98,7 +99,7 @@ public sealed class PostgreSqlPersistenceTests
         {
             await context.Database.MigrateAsync();
 
-            var repository = new EfGameSessionRepository(context, serializer);
+            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector());
             var unitOfWork = new EfGameSessionUnitOfWork(context);
             await repository.StoreAsync(session);
             await unitOfWork.CommitAsync();

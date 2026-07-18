@@ -1,3 +1,4 @@
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
@@ -18,7 +19,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateSession(GameDifficulty.Easy, GameEntropy.Wild);
 
@@ -278,7 +279,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 
@@ -388,7 +389,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 
