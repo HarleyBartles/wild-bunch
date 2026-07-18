@@ -47,6 +47,19 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
+        // Missing-snapshot guard: the snapshot version matches the stream version, but the
+        // component rows may be missing or corrupted. In that case the fast path
+        // (LoadStoreAsync + ToAggregate) would throw on the required Player component.
+        // Fall back to the full replay path so the snapshot is never a hard requirement.
+        // See ADR-0028 and the event sourcing integrity policy.
+        var hasComponents = await _dbContext.GameSessionComponents.AsNoTracking()
+            .AnyAsync(c => c.SessionId == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (!hasComponents)
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
         // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
         return store is null ? null : ToAggregate(store);
