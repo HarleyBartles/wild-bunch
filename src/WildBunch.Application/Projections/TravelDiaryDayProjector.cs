@@ -58,6 +58,10 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     wallet += sts.BountyAmount;
                     break;
 
+                case UnrelatedCriminalTurnInSettled ucts:
+                    wallet += ucts.BountyAmount;
+                    break;
+
                 case SaloonPersonOfInterestConfronted spoc:
                     if (spoc.WalletAfter is { } walletAfter)
                         wallet = walletAfter;
@@ -94,9 +98,10 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     health += tda.HealthDelta;
                     heat = tda.PursuitHeat;
                     currentSnapshot = tda.JourneySnapshot;
+                    var trailEventForDay = tda.DayOutcome == TravelDayOutcome.Interrupted ? null : pendingTrailEvent;
                     CreateAndStoreDiaryDay(
                         currentSnapshot, dayStartingState, health, wallet, ammo, heat,
-                        pendingTrailEvent, encounterResolution, tda.DayEntries, diaryDays);
+                        trailEventForDay, encounterResolution, tda.DayEntries, diaryDays);
                     dayStartingState = CaptureBaseline(currentSnapshot, health, wallet, ammo, heat);
                     pendingTrailEvent = null;
                     encounterResolution = null;
@@ -109,6 +114,8 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     health = jer.PlayerHealth;
                     wallet = jer.WalletCash;
                     ammo -= jer.AmmoSpent;
+                    if (jer.StolenItemKind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo && jer.StolenItemQuantity > 0)
+                        ammo -= jer.StolenItemQuantity;
                     heat = jer.PursuitHeat;
                     currentSnapshot = jer.JourneySnapshot;
                     encounterResolution = new TravelDiaryEncounterResolutionState(
@@ -143,7 +150,7 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                                 currentSnapshot,
                                 dayStartingState!,
                                 CaptureResources(currentSnapshot, health, wallet, ammo, heat),
-                                trailEvent: pendingTrailEvent,
+                                trailEvent: null,
                                 pendingEncounter: currentSnapshot.PendingEncounter,
                                 encounterResolution: encounterResolution,
                                 entries: jer.DayEntries);
