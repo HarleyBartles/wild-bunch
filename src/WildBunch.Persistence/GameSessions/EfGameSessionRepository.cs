@@ -142,8 +142,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 });
             }
             entity.StreamVersion = session.Version;
-            entity.SnapshotVersion = session.Version;
         }
+
+        // The snapshot components are always written (below), so the snapshot
+        // version must always reflect the session's current version — even when
+        // no events were produced (e.g. StartPrepped sessions). Without this,
+        // SnapshotVersion stays null and GetByIdAsync routes to LoadFromEventsAsync,
+        // which returns null for sessions with no stored events.
+        entity.SnapshotVersion = session.Version;
 
         // Stage snapshot upsert (cache)
         UpsertComponent(entity.Id, GameSessionComponentNames.Player, _serializer.SerializePlayer(session.Player), now);
