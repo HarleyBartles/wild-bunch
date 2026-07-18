@@ -144,6 +144,8 @@ public sealed class FullAuditProjectorTests
                 JourneySnapshot = snapshot,
                 TrailEventKind = JourneyTrailEventKind.BadLuck,
                 TrailEventId = JourneyTrailEventId.BadLuckDustStorm,
+                Title = "Dust storm",
+                Message = "A dust storm slows the ride.",
                 WalletDelta = 0m,
                 WalletCash = 25m,
                 FoodDelta = -1,

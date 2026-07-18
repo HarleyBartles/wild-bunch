@@ -34,4 +34,5 @@ public sealed record JourneyEncounterResolved : IDomainEvent
     public required bool DayCompleted { get; init; }
     public required bool JourneyCompleted { get; init; }
     public IReadOnlyList<string> AdditionalDiaryMessages { get; init; } = [];
+    public IReadOnlyList<string> DayEntries { get; init; } = [];
 }

@@ -13,3 +13,5 @@
 - [HudProjector.cs](HudProjector.cs)
 - [IDomainEventProjector.cs](IDomainEventProjector.cs)
 - [JournalLogProjector.cs](JournalLogProjector.cs)
+- [TravelDiaryDayProjection.cs](TravelDiaryDayProjection.cs)
+- [TravelDiaryDayProjector.cs](TravelDiaryDayProjector.cs)

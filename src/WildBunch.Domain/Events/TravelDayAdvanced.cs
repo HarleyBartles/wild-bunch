@@ -22,4 +22,5 @@ public sealed record TravelDayAdvanced : IDomainEvent
     public required string DiaryMessage { get; init; }
     public required string HorseLostMessage { get; init; }
     public IReadOnlyList<string> AdditionalDiaryMessages { get; init; } = [];
+    public IReadOnlyList<string> DayEntries { get; init; } = [];
 }

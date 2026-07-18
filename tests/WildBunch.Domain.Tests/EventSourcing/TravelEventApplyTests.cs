@@ -134,6 +134,8 @@ public sealed class TravelEventApplyTests
             JourneySnapshot = snapshot,
             TrailEventKind = JourneyTrailEventKind.Lucky,
             TrailEventId = JourneyTrailEventId.LuckyCoinCache,
+            Title = "Hidden coin cache",
+            Message = "I uncovered a hidden cache of trail coins and pocketed $4.00.",
             WalletDelta = 4m,
             WalletCash = walletBefore + 4m,
             FoodDelta = -1,

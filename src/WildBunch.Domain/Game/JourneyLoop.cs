@@ -437,7 +437,8 @@ internal sealed class JourneyLoop
                 JourneySnapshot = _journey.ToSnapshot(baseContext.TravelRules),
                 DiaryMessage = runMessage,
                 DayCompleted = false,
-                JourneyCompleted = false
+                JourneyCompleted = false,
+                DayEntries = _travelDiaryDays.Count > 0 ? _travelDiaryDays[^1].Entries : dayEntries
             });
             return new JourneyEncounterResolutionResult(false, true, _journey.Status, runMessage, _journey.ToSnapshot(baseContext.TravelRules));
         }
@@ -510,7 +511,8 @@ internal sealed class JourneyLoop
                 JourneySnapshot = _journey.ToSnapshot(baseContext.TravelRules),
                 DiaryMessage = plan.Message,
                 DayCompleted = false,
-                JourneyCompleted = false
+                JourneyCompleted = false,
+                DayEntries = _travelDiaryDays.Count > 0 ? _travelDiaryDays[^1].Entries : dayEntries
             });
             return new JourneyEncounterResolutionResult(false, true, _journey.Status, plan.Message, _journey.ToSnapshot(baseContext.TravelRules));
         }
@@ -602,7 +604,8 @@ internal sealed class JourneyLoop
                 JourneySnapshot = _journey.ToSnapshot(baseContext.TravelRules),
                 DiaryMessage = plan.Message,
                 DayCompleted = false,
-                JourneyCompleted = false
+                JourneyCompleted = false,
+                DayEntries = _travelDiaryDays.Count > 0 ? _travelDiaryDays[^1].Entries : dayEntries
             });
             return new JourneyEncounterResolutionResult(false, true, _journey.Status, plan.Message, _journey.ToSnapshot(baseContext.TravelRules));
         }
@@ -647,7 +650,8 @@ internal sealed class JourneyLoop
             DiaryMessage = resolutionResult.Message,
             DayCompleted = dayCompleted,
             JourneyCompleted = journeyCompleted,
-            AdditionalDiaryMessages = resolutionResult.AdditionalDiaryMessages ?? []
+            AdditionalDiaryMessages = resolutionResult.AdditionalDiaryMessages ?? [],
+            DayEntries = _travelDiaryDays.Count > 0 ? _travelDiaryDays[^1].Entries : []
         });
     }
 
@@ -834,7 +838,8 @@ internal sealed class JourneyLoop
             DayOutcome = TravelDayOutcome.Interrupted,
             DiaryMessage = encounterMessage,
             HorseLostMessage = horseLostMessage,
-            AdditionalDiaryMessages = narrationMessages
+            AdditionalDiaryMessages = narrationMessages,
+            DayEntries = dayEntries
         });
 
         AppendTravelDiaryDay(context, runtime, interruptedSnapshot, travelDay.StartingState, pendingEncounter: pendingEncounter, entries: dayEntries);
@@ -880,7 +885,8 @@ internal sealed class JourneyLoop
             DayOutcome = TravelDayOutcome.Completed,
             DiaryMessage = arrivalMessage,
             HorseLostMessage = horseLostMessage,
-            AdditionalDiaryMessages = narrationMessages
+            AdditionalDiaryMessages = narrationMessages,
+            DayEntries = dayEntries
         });
 
         runtime.AddEvent(new JourneyCompleted
@@ -929,7 +935,8 @@ internal sealed class JourneyLoop
             DayOutcome = TravelDayOutcome.Ongoing,
             DiaryMessage = ongoingMessage,
             HorseLostMessage = horseLostMessage,
-            AdditionalDiaryMessages = narrationMessages
+            AdditionalDiaryMessages = narrationMessages,
+            DayEntries = dayEntries
         });
 
         AppendTravelDiaryDay(context, runtime, journeySnapshot, travelDay.StartingState, trailEvent: lastTrailEvent, entries: dayEntries.Count == 0 ? null : dayEntries);
@@ -1010,6 +1017,8 @@ internal sealed class JourneyLoop
             JourneySnapshot = postEventSnapshot,
             TrailEventKind = trailEvent.Kind,
             TrailEventId = trailEvent.Id,
+            Title = trailEvent.Title,
+            Message = trailEvent.Message,
             WalletDelta = trailEvent.WalletDelta,
             WalletCash = runtime.WalletCash,
             FoodDelta = trailEvent.FoodDelta,
