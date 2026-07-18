@@ -1010,6 +1010,8 @@ internal sealed class JourneyLoop
             JourneySnapshot = postEventSnapshot,
             TrailEventKind = trailEvent.Kind,
             TrailEventId = trailEvent.Id,
+            Title = trailEvent.Title,
+            Message = trailEvent.Message,
             WalletDelta = trailEvent.WalletDelta,
             WalletCash = runtime.WalletCash,
             FoodDelta = trailEvent.FoodDelta,

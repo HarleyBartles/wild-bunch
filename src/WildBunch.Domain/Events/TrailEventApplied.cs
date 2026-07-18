@@ -18,6 +18,8 @@ public sealed record TrailEventApplied : IDomainEvent
     public required TravelJourneySnapshot JourneySnapshot { get; init; }
     public required JourneyTrailEventKind TrailEventKind { get; init; }
     public required JourneyTrailEventId TrailEventId { get; init; }
+    public required string Title { get; init; }
+    public required string Message { get; init; }
     public required decimal WalletDelta { get; init; }
     public required decimal WalletCash { get; init; }
     public required int FoodDelta { get; init; }
