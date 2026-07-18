@@ -8,8 +8,9 @@ interface:
     ingress, repo/source evidence, coding dispatch, codex workers, linear issues,
     artifacts, verification, issue work, skill/package work, mutation, or publication.
     owns first classification, ordinary-chat escape hatch, bounded skill-read stop
-    rules, and routing normal coding work to /using-superpowers with the discovered
-    mode instead of legacy dispatch stacks.
+    rules, and routing repository-backed work through /repo-worker-base, the matching
+    baseline and local .agents/guides/ guide, then /using-superpowers. Do not recursively
+    invoke /work-mode-router after classification; Superpowers owns stage technique.
 policy:
   products:
   - chatgpt
