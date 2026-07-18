@@ -5,3 +5,4 @@
 ## Files
 - [JournalLogProjectorEquivalenceTests.cs](JournalLogProjectorEquivalenceTests.cs)
 - [JournalResolverTests.cs](JournalResolverTests.cs)
+- [TravelDiaryDayProjectorParityTests.cs](TravelDiaryDayProjectorParityTests.cs)
