@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Games.Mapping;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -34,7 +35,7 @@ public sealed class MigrationTests
         }
 
         await using var commandContext = new WildBunchDbContext(options);
-        var repository = new EfGameSessionRepository(commandContext, new GameSessionJsonSerializer());
+        var repository = new EfGameSessionRepository(commandContext, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
         var unitOfWork = new EfGameSessionUnitOfWork(commandContext);
         var session = CreateSession();
 

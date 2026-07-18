@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -15,15 +16,51 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
+    private readonly TravelDiaryDayProjector _travelDiaryDayProjector;
 
-    public EfGameSessionRepository(WildBunchDbContext dbContext, GameSessionJsonSerializer serializer)
+    public EfGameSessionRepository(
+        WildBunchDbContext dbContext,
+        GameSessionJsonSerializer serializer,
+        TravelDiaryDayProjector travelDiaryDayProjector)
     {
         _dbContext = dbContext;
         _serializer = serializer;
+        _travelDiaryDayProjector = travelDiaryDayProjector;
     }
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
     {
+        // Check if the session exists and whether the snapshot is current.
+        var envelope = await _dbContext.GameSessions.AsNoTracking()
+            .SingleOrDefaultAsync(session => session.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (envelope is null)
+        {
+            return null;
+        }
+
+        // Full replay path: if the snapshot version doesn't match the stream version,
+        // the snapshot is stale — use full replay. This is the event-sourcing-true path.
+        if (envelope.SnapshotVersion != envelope.StreamVersion)
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Missing-snapshot guard: the snapshot version matches the stream version, but the
+        // component rows may be missing or corrupted. In that case the fast path
+        // (LoadStoreAsync + ToAggregate) would throw on the required Player component.
+        // Fall back to the full replay path so the snapshot is never a hard requirement.
+        // See ADR-0028 and the event sourcing integrity policy.
+        var hasComponents = await _dbContext.GameSessionComponents.AsNoTracking()
+            .AnyAsync(c => c.SessionId == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (!hasComponents)
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
         return store is null ? null : ToAggregate(store);
     }
@@ -82,11 +119,15 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         entity.SeedCode = session.SeedCode;
         entity.SchemaVersion = SchemaVersion;
 
-        // Append uncommitted events to the event stream
-        if (session.UncommittedEvents.Count > 0)
+        // Append events to the event stream. For new sessions, store the full
+        // event stream (AllEvents) so the session is replayable even when
+        // MarkEventsCommitted was called before StoreAsync. For existing
+        // sessions, store only the uncommitted delta.
+        var eventsToStore = isNew ? session.AllEvents : session.UncommittedEvents;
+        if (eventsToStore.Count > 0)
         {
             var nextSequence = entity.StreamVersion + 1;
-            foreach (var e in session.UncommittedEvents)
+            foreach (var e in eventsToStore)
             {
                 _dbContext.StoredEvents.Add(new StoredEventEntity
                 {
@@ -101,8 +142,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 });
             }
             entity.StreamVersion = session.Version;
-            entity.SnapshotVersion = session.Version;
         }
+
+        // The snapshot components are always written (below), so the snapshot
+        // version must always reflect the session's current version — even when
+        // no events were produced (e.g. StartPrepped sessions). Without this,
+        // SnapshotVersion stays null and GetByIdAsync routes to LoadFromEventsAsync,
+        // which returns null for sessions with no stored events.
+        entity.SnapshotVersion = session.Version;
 
         // Stage snapshot upsert (cache)
         UpsertComponent(entity.Id, GameSessionComponentNames.Player, _serializer.SerializePlayer(session.Player), now);
@@ -262,6 +309,54 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
             postSnapshotEvents,
             allEvents);
+    }
+
+    /// <summary>
+    /// Loads a session by replaying all events from the stream through
+    /// RehydrateFromEvents. This is the full replay path that proves the
+    /// snapshot is not required. The world is reconstructed from the
+    /// WorldGenerated event. Diary days are rebuilt via TravelDiaryDayProjector.
+    /// See ADR-0028 and the event sourcing integrity policy.
+    /// </summary>
+    private async Task<GameSession?> LoadFromEventsAsync(GameSessionId id, CancellationToken cancellationToken)
+    {
+        var storedEvents = await _dbContext.StoredEvents.AsNoTracking()
+            .Where(e => e.StreamId == id.Value)
+            .OrderBy(e => e.Sequence)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (storedEvents.Length == 0)
+        {
+            return null;
+        }
+
+        var events = new IDomainEvent[storedEvents.Length];
+        for (var i = 0; i < storedEvents.Length; i++)
+        {
+            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
+        }
+
+        // Reconstruct the world from the WorldGenerated event.
+        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
+        if (worldGenerated is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot load session {id} from events: no WorldGenerated event in the stream.");
+        }
+        var world = worldGenerated.World.ToDomain();
+
+        // Rehydrate the aggregate from the full event stream.
+        var session = GameSession.RehydrateFromEvents(id, world, events);
+
+        // Rebuild diary days via the projector.
+        var diaryProjection = _travelDiaryDayProjector.Project(events);
+        session.ReplaceTravelDiaryDays(diaryProjection.Days);
+
+        // Set committed events for projection-backed read paths (JournalLogProjector etc.).
+        session.SetCommittedEvents(events);
+
+        return session;
     }
 
     private GameSession ToAggregate(GameSessionStore store)

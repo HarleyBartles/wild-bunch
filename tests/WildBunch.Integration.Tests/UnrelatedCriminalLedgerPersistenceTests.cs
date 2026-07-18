@@ -1,3 +1,4 @@
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -56,7 +57,7 @@ public sealed class UnrelatedCriminalLedgerPersistenceTests
         using var fixture = new PostgreSqlPersistenceFixture();
         var context = fixture.CreateContext();
         var unitOfWork = new EfGameSessionUnitOfWork(context);
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
 
         var session = CreateSessionWithFullLedger(gangSuspectCount: 2, unrelatedWarrantCount: 6);
 

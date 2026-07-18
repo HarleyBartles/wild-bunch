@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Dev.Models;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
@@ -493,7 +494,7 @@ public sealed class EfGameSessionRepositoryTests
     {
         var context = fixture.CreateContext();
         unitOfWork = new EfGameSessionUnitOfWork(context);
-        return new EfGameSessionRepository(context, new GameSessionJsonSerializer());
+        return new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
     }
 
     private static async Task PersistAsync(

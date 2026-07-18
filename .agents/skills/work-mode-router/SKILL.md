@@ -5,8 +5,8 @@ description: Use when cross-runtime bootstrap router for new project sessions an
   a session resumes, or a request may involve continuity ingress, repo/source evidence,
   coding dispatch, workers, issues, artifacts, verification, skill/package work, mutation,
   or publication. Owns first classification, ordinary-chat escape hatch, bounded skill-read
-  stop rules, and routing normal coding work to /using-superpowers with the discovered mode
-  instead of legacy dispatch stacks.
+  stop rules, and routing repository-backed work through /repo-worker-base before the
+  matching baseline, local guide, and /using-superpowers lane instead of legacy dispatch stacks.
 metadata:
   source-id: work-mode-router
   source-path: sources/first_party/skills/work-mode-router/SKILL.md
@@ -19,16 +19,17 @@ metadata:
     or a request may involve continuity ingress, repo/source evidence, coding dispatch,
     workers, issues, artifacts, verification, issue work, skill/package work, mutation,
     or publication. Owns first classification, ordinary-chat escape hatch, bounded skill-read
-    stop rules, and routing normal coding work to /using-superpowers with the discovered mode
-    instead of legacy dispatch stacks.
+    stop rules, and routing repository-backed work through /repo-worker-base before the
+    matching baseline, local guide, and /using-superpowers lane instead of legacy dispatch stacks.
   use_when:
   - Use when cross-runtime bootstrap router for new project sessions and workflow-sensitive
     starts after repo adoption. Use when a project context begins, a session resumes,
     or a request may involve continuity ingress, repo/source evidence, coding dispatch,
     workers, issues, artifacts, verification, issue work, skill/package work, mutation,
     or publication. Owns first classification, ordinary-chat escape hatch, bounded skill-read
-    stop rules, and routing normal coding work to /using-superpowers with the discovered mode
-    instead of legacy dispatch stacks.
+    stop rules, and routing repository-backed work through /repo-worker-base, the matching
+    baseline and local `.agents/guides/` guide, then the Superpowers lane. Do not bypass the
+    base-and-guide handoff or invoke this router recursively after classification.
   do_not_use_when:
   - Do not use when another more specific skill owns this task.
 license: MIT
@@ -48,7 +49,27 @@ Bootstrap is orientation and classification, not source inspection. A project-re
 
 **Skill invocation at session resume:** The `using-superpowers` skill's "invoke before ANY response" rule applies at session resume, not just at new session start. A continued session must still invoke bootstrap skills before substantive work — the previous session's skill invocations do not carry forward.
 
-Normal coding work now routes through the repo-backed worker flow by default. Legacy chat/YAML dispatch stacks are Plan B only. Do not load old dispatch-family skills merely because your human partner says `dispatch`; route coding work to `/using-superpowers` with the discovered mode from this skill and let `/using-superpowers` choose the implementation lane. `work-mode-router` only classifies the mode from durable evidence.
+Normal coding work now routes through the repo-backed worker flow by default. Legacy chat/YAML dispatch stacks are Plan B only. Do not load old dispatch-family skills merely because your human partner says `dispatch`.
+
+### Repository-worker handoff
+
+For repository-backed work, the mandatory handoff is:
+
+`work-mode-router` -> `repo-worker-base` -> matching baseline reference and local `.agents/guides/` guide -> Superpowers lane.
+
+The router owns first classification and durable route-state decisions. `repo-worker-base` owns portable repo hygiene, composition, source/projection, validation, and publication boundaries. The consuming repository's matching local stage guide owns only its paths, commands, exclusions, CI, and exceptions. Superpowers owns stage technique and lane execution. The downstream lane must not run from the generic base alone when a local guide exists.
+
+This pairing applies across the full repo-worker surface:
+
+- planning: `planning-baseline.md` + `.agents/guides/planning-guide.md` -> `/writing-plans`;
+- implementation: `implementation-baseline.md` + `.agents/guides/implementing-guide.md` -> `/executing-plans` or `/subagent-driven-development`;
+- source evidence: the baseline for the active stage + its local guide -> the selected evidence or implementation lane;
+- publication: `implementation-baseline.md` + `.agents/guides/implementing-guide.md` -> the publication-capable execution lane;
+- review: `code-review-baseline.md` + `.agents/guides/code-review-guide.md` -> `/requesting-code-review`.
+
+Design uses the same contract with `design-baseline.md` and `.agents/guides/design-guide.md` before `/brainstorming`. If the consuming repository has no local stage guide, `repo-worker-base` records that fallback and the baseline remains required. Once this router has classified the request, do not invoke `work-mode-router` recursively; hand the established mode to `repo-worker-base`, then continue through the paired baseline, local guide, and Superpowers lane.
+
+`work-mode-router` only classifies and hands off. It does not perform repo hygiene, select stage technique, or execute project work; `/using-superpowers` owns the downstream lane choice after the base/baseline/local-guide pairing is established.
 
 For worker starts, classify the durable route state before any implementation lane choice. A prompt such as `Pick up {{issue.identifier}} from Linear. Start with /work-mode-router.` must be enough to infer one of the worker route states below from durable Linear/repo evidence.
 
@@ -65,17 +86,17 @@ Inspect these durable markers when classifying worker route state:
 
 | Route state | Durable markers | Meaning | Action | Workflow Phase |
 | --- | --- | --- | --- | --- |
-| `worktree_isolation_needed` | No worktree exists or worktree is stale | Workspace isolation required | Route to `/using-git-worktrees` | Phase 0 |
-| `design_needed` | Ask is unclear, no spec exists, or spec is below confidence floor | Design spec needed before planning | Route to `/brainstorming` + repo design guide | Phase 1 |
+| `worktree_isolation_needed` | No worktree exists or worktree is stale | Workspace isolation required | Route to `repo-worker-base` -> `worktree-and-branch-policy.md` -> local repository policy -> `/using-git-worktrees` | Phase 0 |
+| `design_needed` | Ask is unclear, no spec exists, or spec is below confidence floor | Design spec needed before planning | Route to `repo-worker-base` -> `design-baseline.md` + local `.agents/guides/design-guide.md` -> `/brainstorming` | Phase 1 |
 | `design_signoff_pending` | Spec exists but not rated 9/10+ | Design needs sign-off before planning | Stop and request design sign-off | Phase 1a |
-| `planning_needed` | Design signed off OR ask is clear, no plan exists | Implementation plan needed | Route to `/writing-plans` + repo planning guide | Phase 2 |
+| `planning_needed` | Design signed off OR ask is clear, no plan exists | Implementation plan needed | Route to `repo-worker-base` -> `planning-baseline.md` + local `.agents/guides/planning-guide.md` -> `/writing-plans` | Phase 2 |
 | `plan_signoff_pending` | Plan exists but not approved for implementation | Plan needs sign-off before execution | Stop and request plan sign-off | Phase 2a |
-| `approved_plan_execution_ready` | Approved plan is merged to `main`, plan path/PR/commit evidence exists, staleness check passes | The approved plan is ready to execute | Hand to `/using-superpowers` with execution context | Phase 3 |
-| `implementation_in_progress` | PR exists, implementation branch active | Implementation phase active | Route to implementing guide skills | Phase 3 |
-| `code_review_needed` | PR raised, implementation complete | Code review required | Route to `/requesting-code-review` + repo code review guide | Phase 4 |
-| `preflight_needed` | (existing) Route-state block says preflight or is absent, and there is no approved plan PR, merged plan, approved plan commit, or fresh staleness evidence. | The issue still needs preflight shape. | Hand the discovered mode to `/using-superpowers` with preflight context. The worker should inspect current source, produce or repair the repo-resident plan, open a plan-only PR, update Linear route state with plan path/PR/status, and stop before implementation. `/using-superpowers` owns lane selection; `work-mode-router` must not choose the Superpowers lane itself. | Phase 1-2 |
-| `preflight_complete_pending_approval` | (existing) Plan file exists under `.agents/superpowers/plans/`, plan PR exists, route-state block says pending approval, and approval or merge evidence is absent. | The plan is ready for approval but not execution. | Stop and report pending approval. Hand the discovered mode to `/using-superpowers` only as stopping context. Do not select an implementation lane. | Phase 2a |
-| `stale_plan_repair_needed` | (existing) Approved plan exists, plan PR or merge evidence exists, and the staleness check fails but the drift is repairable inside the approved scope. | The plan is stale but repairable in the execution branch. | Hand the discovered mode to `/using-superpowers` with repair context. Repair stays in the execution branch unless the scope changes materially. | Phase 3 |
+| `approved_plan_execution_ready` | Approved plan is merged to `main`, plan path/PR/commit evidence exists, staleness check passes | The approved plan is ready to execute | Hand to `repo-worker-base` -> matching baseline + local `.agents/guides/` guide -> `/using-superpowers` with execution context | Phase 3 |
+| `implementation_in_progress` | PR exists, implementation branch active | Implementation phase active | Route to `repo-worker-base` -> `implementation-baseline.md` + local `.agents/guides/implementing-guide.md` -> implementing lane skills | Phase 3 |
+| `code_review_needed` | PR raised, implementation complete | Code review required | Route to `repo-worker-base` -> `code-review-baseline.md` + local `.agents/guides/code-review-guide.md` -> `/requesting-code-review` | Phase 4 |
+| `preflight_needed` | (existing) Route-state block says preflight or is absent, and there is no approved plan PR, merged plan, approved plan commit, or fresh staleness evidence. | The issue still needs preflight shape. | Hand the discovered mode to `repo-worker-base` -> `planning-baseline.md` + local `.agents/guides/planning-guide.md` -> `/using-superpowers` with preflight context. The worker should inspect current source, produce or repair the repo-resident plan, open a plan-only PR, update Linear route state with plan path/PR/status, and stop before implementation. | Phase 1-2 |
+| `preflight_complete_pending_approval` | (existing) Plan file exists under `.agents/superpowers/plans/`, plan PR exists, route-state block says pending approval, and approval or merge evidence is absent. | The plan is ready for approval but not execution. | Stop and report pending approval after `repo-worker-base` verifies the planning baseline and local `.agents/guides/planning-guide.md`; do not select an implementation lane. | Phase 2a |
+| `stale_plan_repair_needed` | (existing) Approved plan exists, plan PR or merge evidence exists, and the staleness check fails but the drift is repairable inside the approved scope. | The plan is stale but repairable in the execution branch. | Hand the discovered mode to `repo-worker-base` -> `implementation-baseline.md` + local `.agents/guides/implementing-guide.md` -> `/using-superpowers` with repair context. Repair stays in the execution branch unless the scope changes materially. | Phase 3 |
 | `blocked_ambiguous` | (existing) Durable markers conflict, are missing, or cannot prove approval, merge, or current staleness state. | The worker cannot route safely from durable evidence. | Stop and report blocked or ambiguous. Do not select an implementation lane. | N/A |
 
 `work-mode-router` classifies the current workflow phase and may identify the phase-appropriate workflow skill (design, planning, code review). It does not choose implementation-lane strategy (SDD, TDD, or direct implementation) where `/using-superpowers` owns that decision. Phase routing to design, planning, sign-off, or code review is workflow-phase classification, not implementation-lane selection.
@@ -88,13 +109,13 @@ When a repo has this skill installed, coding work follows this structured workfl
 
 | Phase | Purpose | Entry Condition | Exit Condition | Sign-off Gate | Superpowers Skill | Guide Reference |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 - Worktree Isolation | Isolated workspace | Starting repo work | Worktree created/verified | N/A | `/using-git-worktrees` + `/inspecting-the-environment` | N/A |
-| 1 - Design | Create spec if ask unclear | Ask is unclear or complex | Spec exists following repo design guide | Design sign-off (9/10+) | `/brainstorming` | `.agents/docs/guides/design-guide.md` |
+| 0 - Worktree Isolation | Isolated workspace | Starting repo work | Worktree created/verified | N/A | `repo-worker-base` + worktree policy/local repository policy -> `/using-git-worktrees` + `/inspecting-the-environment` | N/A |
+| 1 - Design | Create spec if ask unclear | Ask is unclear or complex | Spec exists following repo design guide | Design sign-off (9/10+) | `repo-worker-base` + `design-baseline.md` + local guide -> `/brainstorming` | `.agents/guides/design-guide.md` |
 | 1a - Design Sign-off | Rate design for planning | Design complete | 9/10+ rating achieved | Planning agent can create full plan without improvising | N/A | Design guide handoff section |
-| 2 - Planning | Write plan using repo guide | Design signed off OR ask is clear | Plan exists following repo planning guide | Plan sign-off | `/writing-plans` | `.agents/docs/guides/planning-guide.md` |
+| 2 - Planning | Write plan using repo guide | Design signed off OR ask is clear | Plan exists following repo planning guide | Plan sign-off | `repo-worker-base` + `planning-baseline.md` + local guide -> `/writing-plans` | `.agents/guides/planning-guide.md` |
 | 2a - Plan Sign-off | Rate plan for implementation | Plan complete | Passes implementation rubric | Implementing agent can follow plan without improvising | N/A | Planning guide execution confidence |
-| 3 - Implement | Follow repo implementing guide | Plan signed off | Implementation complete, PR raised | N/A | `/executing-plans` and/or `/subagent-driven-development` | `.agents/docs/guides/implementing-guide.md` |
-| 4 - Code Review | Follow repo code review guide | PR raised | Review complete, merge decision | N/A | `/requesting-code-review` | `.agents/docs/guides/code-review-guide.md` |
+| 3 - Implement | Follow repo implementing guide | Plan signed off | Implementation complete, PR raised | N/A | `repo-worker-base` + `implementation-baseline.md` + local guide -> `/executing-plans` and/or `/subagent-driven-development` | `.agents/guides/implementing-guide.md` |
+| 4 - Code Review | Follow repo code review guide | PR raised | Review complete, merge decision | N/A | `repo-worker-base` + `code-review-baseline.md` + local guide -> `/requesting-code-review` | `.agents/guides/code-review-guide.md` |
 
 ## Superpowers Workflow Mapping
 
@@ -102,19 +123,19 @@ For each workflow phase, route to the corresponding superpowers skill:
 
 | Workflow Phase | Superpowers Skill | Notes |
 | --- | --- | --- |
-| Worktree Isolation | `/using-git-worktrees` + `/inspecting-the-environment` | Use `/using-git-worktrees` for workspace isolation, `/inspecting-the-environment` for environment constraint discovery before action |
-| Design | `/brainstorming` | Use before any creative work - explores user intent, requirements and design before implementation |
-| Planning | `/writing-plans` | Use when you have a spec or requirements for a multi-step task, before touching code |
-| Execution | `/executing-plans` and/or `/subagent-driven-development` | Use `/executing-plans` for written implementation plans in separate sessions with review checkpoints. Use `/subagent-driven-development` for executing implementation plans with independent tasks in the current session |
-| Code Review | `/requesting-code-review` | Use when completing tasks, implementing major features, or before merging to verify work meets requirements |
+| Worktree Isolation | `repo-worker-base` + worktree baseline/local policy -> `/using-git-worktrees` + `/inspecting-the-environment` | Use the base and worktree policy before workspace isolation or environment discovery |
+| Design | `repo-worker-base` + `design-baseline.md` + local guide -> `/brainstorming` | Use before any creative work - explores user intent, requirements and design before implementation |
+| Planning | `repo-worker-base` + `planning-baseline.md` + local guide -> `/writing-plans` | Use when you have a spec or requirements for a multi-step task, before touching code |
+| Execution | `repo-worker-base` + `implementation-baseline.md` + local guide -> `/executing-plans` and/or `/subagent-driven-development` | Use `/executing-plans` for written implementation plans in separate sessions with review checkpoints. Use `/subagent-driven-development` for executing implementation plans with independent tasks in the current session |
+| Code Review | `repo-worker-base` + `code-review-baseline.md` + local guide -> `/requesting-code-review` | Use when completing tasks, implementing major features, or before merging to verify work meets requirements |
 
 ### General Routing Guidance
 
-For general guidance on which superpowers workflow to route a piece of work to, use `/using-superpowers`. This skill composes the workflow phase classification from work-mode-router with the appropriate superpowers lane selection.
+For general guidance on which Superpowers workflow to route a piece of work to, first establish the `repo-worker-base` + matching baseline + local guide pairing, then use `/using-superpowers` for the appropriate lane. Superpowers does not replace the base handoff.
 
 ### Repo Guide Integration
 
-Repo-specific guides (`.agents/docs/guides/design-guide.md`, `.agents/docs/guides/planning-guide.md`, etc.) may provide additional repo-specific guidance on which superpowers skills to invoke and how to adapt them to the repo's conventions. When repo guide guidance conflicts with this canonical mapping, the repo guide takes precedence for that specific repo.
+Repo-specific guides (`.agents/guides/design-guide.md`, `.agents/guides/planning-guide.md`, etc.) own only repository-specific paths, commands, exclusions, CI, and exceptions. Local guides cannot override or bypass this canonical mapping: `repo-worker-base` -> matching baseline -> local guide -> Superpowers lane.
 
 ## First classification
 
@@ -135,17 +156,18 @@ For `ordinary_chat`, answer directly. Do not inspect connectors, call tools, or 
 
 ## Routing map
 
-- `worktree_isolation_needed` -> `/using-git-worktrees` for workspace isolation
-- `design_needed` -> `/brainstorming` + repo design guide (`.agents/docs/guides/design-guide.md` if present)
+- `worktree_isolation_needed` -> `repo-worker-base` + worktree policy/local repository policy -> `/using-git-worktrees` for workspace isolation
+- `design_needed` -> `repo-worker-base` + `design-baseline.md` + local `.agents/guides/design-guide.md` -> `/brainstorming`
 - `design_signoff_pending` -> Stop and request design sign-off using design guide handoff rubric
-- `planning_needed` -> `/writing-plans` + repo planning guide (`.agents/docs/guides/planning-guide.md` if present)
+- `planning_needed` -> `repo-worker-base` + `planning-baseline.md` + local `.agents/guides/planning-guide.md` -> `/writing-plans`
 - `plan_signoff_pending` -> Stop and request plan sign-off using planning guide execution confidence assessment
-- `approved_plan_execution_ready` -> `/using-superpowers` with execution context. `/using-superpowers` owns Superpowers lane choice (SDD, TDD, or direct implementation)
-- `implementation_in_progress` -> `/executing-plans` or `/subagent-driven-development` based on plan shape, plus repo implementing guide (`.agents/docs/guides/implementing-guide.md` if present)
-- `code_review_needed` -> `/requesting-code-review` + repo code review guide (`.agents/docs/guides/code-review-guide.md` if present)
-- `repo_worker_coding` -> `/using-superpowers` with the discovered mode (existing)
+- `approved_plan_execution_ready` -> `repo-worker-base` + matching baseline/local guide -> `/using-superpowers` with execution context. `/using-superpowers` owns Superpowers lane choice (SDD, TDD, or direct implementation)
+- `implementation_in_progress` -> `repo-worker-base` + `implementation-baseline.md` + local `.agents/guides/implementing-guide.md` -> `/executing-plans` or `/subagent-driven-development` based on plan shape
+- `code_review_needed` -> `repo-worker-base` + `code-review-baseline.md` + local `.agents/guides/code-review-guide.md` -> `/requesting-code-review`
+- `repo_worker_coding` -> `repo-worker-base` + matching baseline/local guide -> `/using-superpowers` with the discovered mode (existing)
+- `repo_or_source_evidence` -> `repo-worker-base` + baseline for the active stage/local guide -> the evidence or implementation lane
 - `gpt_native_skillwork` -> `skill-creator` for authored skill content, then `writing-skills` for cross-repo wording and doctrine checks when relevant. Do not delegate GPT-native skillwork to a cloud agent unless the editable source is known to live in a worker-accessible repo and the task is explicitly repo-backed.
-- `github_proof` -> the repo/GitHub proof surface after a GitHub artifact exists. Do not use repo/GitHub proof to decide worker state or issue routing.
+- `github_proof` -> `repo-worker-base` + implementation or review baseline/local guide -> the repo/GitHub proof surface after a GitHub artifact exists. Do not use repo/GitHub proof to decide worker state or issue routing.
 - `linear_control` -> `using-linear` for connector mechanics: create/update/fetch/comment/project/status/label/document work.
 - `verification_or_reporting` -> the narrow downstream skill that owns the decision, such as the validation decision surface, `risk-gates` (feedback gate), or `base-doctrine` (report hygiene).
 - `legacy_plan_b` -> the compact legacy dispatch stack only after the default route has been rejected or unavailable.
@@ -158,7 +180,7 @@ This skill enforces the structured workflow by:
 
 1. **Phase classification**: Before any coding work, classify the current workflow phase from durable evidence (Linear route state, repo artifacts, guide existence)
 2. **Gate enforcement**: Do not proceed to the next phase without meeting the exit condition and sign-off gate
-3. **Guide discovery**: When a repo has guides in `.agents/docs/guides/`, reference them explicitly. When absent, fall back to generic workflow but still enforce the phase structure
+3. **Guide discovery**: When a repo has guides in `.agents/guides/`, reference them explicitly. When absent, fall back to generic workflow but still enforce the phase structure. A repository policy may document a retired legacy home as a migration fallback, but `.agents/guides/` remains canonical.
 4. **Sign-off rubrics**: Use the confidence floors from the guides (9/10+ for design handoff, execution confidence assessment for plan handoff)
 5. **Route state updates**: When phase transitions occur, update Linear route state to reflect the new phase
 

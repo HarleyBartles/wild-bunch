@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Events;
@@ -576,6 +577,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var services = new ServiceCollection();
         services.AddDbContext<WildBunchDbContext>(options => options.UseNpgsql(connectionString));
         services.AddSingleton<GameSessionJsonSerializer>();
+        services.AddSingleton<TravelDiaryDayProjector>();
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         var provider = services.BuildServiceProvider();

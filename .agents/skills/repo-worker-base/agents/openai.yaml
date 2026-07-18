@@ -1,12 +1,9 @@
 interface:
   display_name: Repo Worker Base
-  short_description: Thin repo hygiene entrypoint for Codex workers in Harley's workspace.
-  default_prompt: Use Repo Worker Base as the compositional repo hygiene entrypoint
-    for repo-backed work in Harley's workspace. Pair it with work-mode-router for
-    durable route classification, linear-issue-shaping for worker-ready Linear packet
-    handling, verification-before-completion for evidence-before-assertions, connector-safety for blocked or sensitive
-    writes, github-operations for publication proof, unslop-plus for anti-slop profiles,
-    and context-safety for safer large text writes, bounded composition, and atomic
-    replacement.
+  short_description: Use when repo-backed work needs portable hygiene, stage composition, or publication boundaries.
+  default_prompt: Use repo-worker-base for repo-backed work. Read the matching
+    baseline and the consuming repository's local stage guide before invoking
+    the selected Superpowers lane; use the local hygiene/layout policy for
+    repository-specific paths, commands, exclusions, CI, and exceptions.
 policy:
   allow_implicit_invocation: true

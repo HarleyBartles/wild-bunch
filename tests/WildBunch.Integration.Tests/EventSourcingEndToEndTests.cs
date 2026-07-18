@@ -32,6 +32,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         var services = new ServiceCollection();
         services.AddDbContext<WildBunchDbContext>(options => options.UseNpgsql(connectionString));
         services.AddSingleton<GameSessionJsonSerializer>();
+        services.AddSingleton<TravelDiaryDayProjector>();
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         services.AddSingleton<HudProjector>();
