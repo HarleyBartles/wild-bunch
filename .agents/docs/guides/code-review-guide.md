@@ -37,6 +37,17 @@ Reviewers must check the repo's architectural choices in `.agents/docs/architect
 
 **ADR freshness check:** If the work changes an architectural decision, the ADR log at `docs/adr/` must be updated. See `.agents/docs/workflow-policy.md` for freshness check requirements.
 
+### Event Sourcing Integrity Review
+
+When reviewing work that touches persistence, projections, event types, `Apply` methods, or the load/write paths, reviewers must check the following against [`.agents/docs/event-sourcing-integrity-policy.md`](../event-sourcing-integrity-policy.md):
+
+- **Replayability:** Is every piece of new or modified persisted state reconstructable from the event stream alone? If a new field is added to a projection, is there a projector that rebuilds it from events? If a new `Apply` method is added, does `RehydrateFromEvents` produce the same state?
+- **Projector existence:** If a new projection table or projection field is added, does the PR include the projector that rebuilds it from events? No "we'll add the projector later."
+- **Version bumps:** If an event's JSON shape changed, is there a registered upcaster? If a projection's shape changed, is the projection version bumped? Shape change without version bump is a violation.
+- **Chart staleness:** If the canonical flow diagram in the policy doc no longer matches the system (new load path, new projection type, changed snapshot behavior), the chart must be updated in the same PR.
+- **Load funnel:** Does any new code path deserialize persisted payloads directly, bypassing `PersistedPayloadLoader`? If so, that is a violation.
+- **`Apply` purity:** Do any new or modified `Apply` methods create projections, make external calls, or depend on time/random? `Apply` must be pure and set aggregate state from event fields only.
+
 ## 3. Frontend Review
 
 Reviewers must verify that frontend work aligns with the frontend standards documented in [`.agents/docs/frontend-standards.md`](../frontend-standards.md). That document covers the styling stack, play-surface UI, source truth, dev overlay, and routing conventions. Reviewers should read it before reviewing frontend work and check the diff against each applicable standard.
