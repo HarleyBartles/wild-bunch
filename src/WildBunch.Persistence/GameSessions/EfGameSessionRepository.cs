@@ -119,11 +119,15 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         entity.SeedCode = session.SeedCode;
         entity.SchemaVersion = SchemaVersion;
 
-        // Append uncommitted events to the event stream
-        if (session.UncommittedEvents.Count > 0)
+        // Append events to the event stream. For new sessions, store the full
+        // event stream (AllEvents) so the session is replayable even when
+        // MarkEventsCommitted was called before StoreAsync. For existing
+        // sessions, store only the uncommitted delta.
+        var eventsToStore = isNew ? session.AllEvents : session.UncommittedEvents;
+        if (eventsToStore.Count > 0)
         {
             var nextSequence = entity.StreamVersion + 1;
-            foreach (var e in session.UncommittedEvents)
+            foreach (var e in eventsToStore)
             {
                 _dbContext.StoredEvents.Add(new StoredEventEntity
                 {
