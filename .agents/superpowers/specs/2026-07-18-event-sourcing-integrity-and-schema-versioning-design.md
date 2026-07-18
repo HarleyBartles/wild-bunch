@@ -6,7 +6,66 @@
 
 ## Status
 
-draft — pending user review
+ready for planning
+
+## Goals
+
+1. Make event sourcing materially true: every persisted state must be
+   reconstructable from the event stream alone, and the production load path
+   must be able to load a session without the snapshot.
+2. Add schema versioning for persisted payloads so contract evolution doesn't
+   brick existing playthroughs: event upcasters for immutable history, projection
+   rebuild-on-mismatch for derived state.
+3. Establish durable agent policy that prevents future agents from re-introducing
+   non-true-event-sourcing patterns.
+
+## Non-Goals
+
+- Removing the snapshot write path. Snapshots remain as shortcut caches; they're
+  still written on every save. The change is that they're no longer *required*
+  to load.
+- Removing the command path's diary-day creation. `JourneyLoop` still creates
+  diary days as a side effect during live play. The projector is the
+  rebuild-path equivalent; both must converge (parity test). Collapsing to
+  project-on-demand is a future cleanup, not this design.
+- A global migration sweep to bring all existing playthroughs to current schema.
+  Active playthroughs converge on next save; abandoned ones stay at their old
+  version on disk.
+- Building projectors for every existing projection. Only `TravelDiaryDayProjector`
+  is in scope (it's the known violation). Other projections are audited for
+  replayability (Part 1c) but new projectors for them are only built if the
+  audit finds violations.
+- Splitting `GameSession` into sub-aggregates (BUNCH-67, closed).
+- Introducing a broker (RabbitMQ/Kafka/EventStoreDB).
+
+## Scope
+
+This spec is large and covers three implementation plans' worth of work:
+
+- **Plan A (Part 0 + Part 1c):** Event sourcing integrity policy + replayability
+  audit. Establishes the policy surface (policy doc, mermaid chart, negative
+  constraints, skill routing, guardrails/review-guide updates) and audits all
+  persisted state for replayability. Low-risk documentation/verification work
+  that lands the policy before any code changes. If the audit finds violations
+  beyond `TravelDiaryDays`, those are added to Plan B's scope.
+- **Plan B (Part 1b + Part 1a):** Make event sourcing real. Builds
+  `TravelDiaryDayProjector` (the hardest piece — new projector tracking running
+  resource state across all events), wires `RehydrateFromEvents` as a production
+  load path, and adds the full replay equality test as the completion gate. This
+  is where the high-risk code work lives. Depends on Plan A.
+- **Plan C (Part 2):** Schema versioning on top of real event sourcing. Upcaster
+  registry, projection version columns + EF migration, `PersistedPayloadLoader`
+  load funnel, write-side version stamping, 7 test categories. Depends on Plan B.
+- **Part 3** is a manual user action (branch protection), not an implementation
+  plan item. It can be done at any point but is a hard prerequisite for the
+  versioning enforcement guarantee.
+
+The planner should produce three plans, not one. Plans must land in order
+(A → B → C). The split points are explicit:
+- Plan A ends when the policy doc is committed and the audit is complete.
+- Plan B ends when `RehydrateFromEvents` + projectors reconstruct the complete
+  session (verified by the full replay equality test).
+- Plan C starts with the upcaster registry.
 
 ## Context
 
@@ -317,16 +376,25 @@ it, and it's used only when valid.
 - `EfGameSessionRepository` gains a `LoadFromEventsAsync` method that fetches all
   stored events, upcasts them (Part 2a), deserializes them, and calls
   `GameSession.RehydrateFromEvents(id, world, events)`.
-- The world is needed by `RehydrateFromEvents` but is not stored in events (it's
-  an external reference per the method's doc comment). The world is loaded from
-  the `World` component (which is a projection rebuildable from `WorldGenerated` +
-  `CaseFileGenerated` events). On the full-replay path, the world is reconstructed
-  by replaying `WorldGenerated` to get the `WorldSnapshot`, then deserializing it.
-  Alternatively, the world component is read from the snapshot if present (it's a
-  valid cache for this purpose), and rebuilt from events if the snapshot is stale.
+- **World reconstruction:** The world is needed by `RehydrateFromEvents` but is
+  not stored in events (it's an external reference per the method's doc comment).
+  On the full-replay path, the world is reconstructed from the `WorldGenerated`
+  event's `WorldSnapshot` via `WorldSnapshot.ToDomain()`. This round-trip must
+  be verified (Open Question 1). If the snapshot is present and its
+  `ComponentVersion` is current, the world MAY be read from the `World` component
+  as a cache — but the full-replay path must not *require* the snapshot, so the
+  `WorldGenerated`-based reconstruction is the canonical path. The snapshot read
+  is an optimization, not a dependency.
+- **Path selection (fast vs. full replay):** The decision is per-component, not
+  per-snapshot. For each component, if the stored `ComponentVersion` matches
+  `ProjectionVersions.ForComponent(componentName)`, use the stored JSON (fast
+  path). If any component's version is stale, or if any component row is missing,
+  use full replay for the whole session. This is a single check: if any
+  component is stale, the snapshot is not used as a fast path. The granularity is
+  "all components current → fast path; any component stale → full replay." There
+  is no per-component mixed path (that would complicate the load logic for
+  marginal benefit).
 - The existing snapshot load path (`LoadStoreAsync`) remains as the fast path.
-- A flag or version check determines which path to use: if the snapshot's
-  `SchemaVersion` matches current, use the fast path; otherwise use full replay.
 
 **What this does NOT change:** The write path (`StoreAsync`) is unchanged — it
 still writes both events and snapshot. The snapshot is still written on every
@@ -801,3 +869,64 @@ branch-protection tools, so this must be done manually.
    asserts every projection type has a version declared. The exact list of
    projection types (component names + diary days) needs to be enumerated from
    `GameSessionComponentNames` + the diary-day entity.
+
+## Handoff Confidence
+
+**8/10.** The spec is ready for planning. The contract is concrete: file names,
+type names, interface shapes, version-derivation logic, load-funnel enforcement,
+test categories, and implementation order are all specified. Source facts have
+been verified against the live repo.
+
+The two-point deduction is for the open questions, all of which are
+implementation-time verifications rather than design gaps:
+- Open Question 1 (world round-trip) could expand Plan A scope if the round-trip
+  is broken — but the fix is bounded (fix the round-trip, not redesign the load
+  path).
+- Open Question 3 (resource-tracking event set) is enumeration work, not design
+  work — the `Apply` methods are the reference.
+
+## Handoff Contract Points
+
+**Plan A (Part 0 + Part 1c) — Policy + audit:**
+- New file: `.agents/docs/event-sourcing-integrity-policy.md` (policy rules,
+  mermaid chart, negative constraints, skill routing)
+- Modified: `.agents/docs/architecture-guardrails.md` (reference new policy)
+- Modified: `.agents/docs/guides/code-review-guide.md` (ES-integrity review checks)
+- Modified: `wild-bunch-project-doctrine` skill references (route to new policy)
+- Audit: review every component in `GameSessionComponentNames` and every field on
+  `GameSessionEntity` for replayability. Known violation: `TravelDiaryDays`. Any
+  additional violations found are added to Plan B scope.
+- Cardinality: 1 new policy doc, 3 modified docs/skills, 1 audit (no code changes)
+
+**Plan B (Part 1b + Part 1a) — Make event sourcing real:**
+- New file: `src/WildBunch.Application/Projections/TravelDiaryDayProjector.cs`
+  implementing `IDomainEventProjector<IReadOnlyList<TravelDiaryDayState>>`
+- Modified: `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`
+  (add `LoadFromEventsAsync`, wire fast-path vs. full-replay selection)
+- Test: parity test proving projector output == command-path `TravelDiaryDays`
+- Test: full replay equality test (snapshot load == `RehydrateFromEvents` +
+  projectors for ALL state including `TravelDiaryDays`) — this is the completion
+  gate for Plan B
+- Cardinality: 1 new projector, 1 new load method, 2 tests (+ any violations
+  found in Plan A's audit)
+
+**Plan C (Part 2) — Schema versioning:**
+- New file: `PayloadUpcasterRegistry` + `IEventUpcaster` / `IPayloadUpcaster`
+  interfaces in `WildBunch.Persistence`
+- New file: `ProjectionVersions` static class in `WildBunch.Persistence`
+- New file: `PersistedPayloadLoader` in `WildBunch.Persistence`
+- New EF Core migration: add `SchemaVersion` column to `GameSessionDiaryDayEntity`
+  (existing rows defaulted to v1)
+- Modified: `EfGameSessionRepository.cs` (replace `const int SchemaVersion = 1`
+  with per-type version stamping; route loads through `PersistedPayloadLoader`)
+- Modified: `GameSessionReadStoreLoader.cs` (route loads through
+  `PersistedPayloadLoader`)
+- Modified: `GameSessionComponentPayloads` (route through `PersistedPayloadLoader`)
+- Modified: `GameSessionJsonSerializer` (deserialize methods become `internal`)
+- 7 test categories (see Part 2e)
+- Cardinality: 4 new types, 1 migration, 3 modified load paths, 7 test categories
+
+**Part 3 (manual, user-owned):**
+- `gh api` command to enable branch protection on `main` (exact command in spec)
+- CI job names: `backend`, `frontend`, `index-mesh` (verified against
+  `.github/workflows/ci.yml`)
