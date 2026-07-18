@@ -1,0 +1,11 @@
+interface:
+  display_name: Cleanup Custody
+  short_description: Classify whether a surface should stay live, move, or be deleted.
+  default_prompt: Use $cleanup-custody to classify whether a workspace or repository surface should stay live, move to cold store, move to governed trash, be deleted now, or block and route to an owning authority.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

@@ -78,7 +78,7 @@ This gate must appear in:
 
 ## Devin launch handoff template
 
-Use when Harley asks for a paste-ready Devin launch handoff for a repo campaign.
+Use when your human partner asks for a paste-ready Devin launch handoff for a repo campaign.
 
 ```text
 Repo: <owner/repo>

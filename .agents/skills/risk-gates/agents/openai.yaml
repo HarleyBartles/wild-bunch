@@ -1,0 +1,6 @@
+interface:
+  display_name: Risk Gates
+  short_description: Pre-action risk gates for mutations, dispatches, canon claims, analogy reliance, resolutions, and feedback verification
+  default_prompt: Use $risk-gates before an action that could mutate a durable surface, dispatch work, make a canon claim, rely on an analogy, treat a claim as resolved, or act on feedback. The routing table in the skill body tells you which gate reference docs to read.
+policy:
+  allow_implicit_invocation: true

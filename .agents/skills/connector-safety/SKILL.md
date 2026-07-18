@@ -52,7 +52,7 @@ After a block, do not retry by paraphrasing the failed payload or rebuilding it 
 
 Some connectors expose fields that change execution authority, handoff control, or who can act next. Treat those fields as high-risk side effects even when the surrounding write looks routine.
 
-For Linear, `delegate` is one such field. Only write it when Harley explicitly asks to delegate the issue to a named agent or explicitly asks for Linear native delegation on that issue.
+For Linear, `delegate` is one such field. Only write it when your human partner explicitly asks to delegate the issue to a named agent or explicitly asks for Linear native delegation on that issue.
 
 Do not infer `delegate` from `send`, `run`, `worker-ready`, `Devin-ready`, `for Devin`, `campaign-sized`, `start`, `worker`, `agent`, or similar wording.
 

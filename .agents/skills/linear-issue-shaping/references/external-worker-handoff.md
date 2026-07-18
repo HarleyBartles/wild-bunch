@@ -1,6 +1,6 @@
 # External Worker Handoff
 
-Read only when Harley explicitly asks for paste-ready worker instructions, a worker dispatch text, or a handoff that will be copied outside this chat.
+Read only when your human partner explicitly asks for paste-ready worker instructions, a worker dispatch text, or a handoff that will be copied outside this chat.
 
 This reference prepares text only. It does not launch a worker, assign a task, publish a branch, or mutate repository state.
 

@@ -13,3 +13,4 @@
 - [2026-07-10-dev-layout-salts-integration-design.md](2026-07-10-dev-layout-salts-integration-design.md)
 - [2026-07-10-town-hub-deterministic-layout-resolver-design.md](2026-07-10-town-hub-deterministic-layout-resolver-design.md)
 - [2026-07-12-bunch-148-background-building-fill-design.md](2026-07-12-bunch-148-background-building-fill-design.md)
+- [2026-07-18-event-sourcing-integrity-and-schema-versioning-design.md](2026-07-18-event-sourcing-integrity-and-schema-versioning-design.md)

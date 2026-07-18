@@ -65,7 +65,7 @@ This skill starts after the gate has produced one of these GitHub-facing questio
 - Does main now reflect the accepted work?
 - Does observable GitHub state satisfy the issue goal?
 
-If there is no GitHub artifact yet and the Linear issue has a Codex completion comment but no PR attachment/comment, the next action is the human PR gate: tell Harley to open the Codex task link from Linear and click `Create PR`. Do not look for shell Git credentials or recommend PATs as the default workaround.
+If there is no GitHub artifact yet and the Linear issue has a Codex completion comment but no PR attachment/comment, the next action is the human PR gate: tell your human partner to open the Codex task link from Linear and click `Create PR`. Do not look for shell Git credentials or recommend PATs as the default workaround.
 
 ## Core lesson
 

@@ -5,7 +5,7 @@
 # tasks intact.
 #
 # Usage: review-package BASE HEAD PLAN_FILE [OUTFILE]
-# Default OUTFILE: <repo-root>/.superpowers/sdd/<plan-stem>/review-<base7>..<head7>.diff
+# Default OUTFILE: <repo-root>/.agents/superpowers/sdd/<plan-stem>/review-<base7>..<head7>.diff
 set -euo pipefail
 
 if [ $# -lt 3 ] || [ $# -gt 4 ]; then

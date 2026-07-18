@@ -150,7 +150,7 @@ if (-not $Foreground -and -not $ForceBackground -and $env:CODEX_CI) {
 
 $SessionId = "$PID-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 if (-not [string]::IsNullOrWhiteSpace($ProjectDir)) {
-  $brainstormRoot = Join-Path $ProjectDir '.superpowers/brainstorm'
+  $brainstormRoot = Join-Path $ProjectDir '.agents/superpowers/brainstorm'
   $SessionDir = Join-Path $brainstormRoot $SessionId
   New-Item -ItemType Directory -Force -Path $brainstormRoot | Out-Null
 }
@@ -192,8 +192,8 @@ try {
     Set-ProcessEnv -Saved $SavedEnv -Name 'BRAINSTORM_TOKEN_FILE' -Value ''
   }
   else {
-    Set-ProcessEnv -Saved $SavedEnv -Name 'BRAINSTORM_PORT_FILE' -Value (Join-Path $ProjectDir '.superpowers/brainstorm/.last-port')
-    Set-ProcessEnv -Saved $SavedEnv -Name 'BRAINSTORM_TOKEN_FILE' -Value (Join-Path $ProjectDir '.superpowers/brainstorm/.last-token')
+    Set-ProcessEnv -Saved $SavedEnv -Name 'BRAINSTORM_PORT_FILE' -Value (Join-Path $ProjectDir '.agents/superpowers/brainstorm/.last-port')
+    Set-ProcessEnv -Saved $SavedEnv -Name 'BRAINSTORM_TOKEN_FILE' -Value (Join-Path $ProjectDir '.agents/superpowers/brainstorm/.last-token')
   }
 
   Set-ProcessEnv -Saved $SavedEnv -Name 'BRAINSTORM_DIR' -Value $SessionDir

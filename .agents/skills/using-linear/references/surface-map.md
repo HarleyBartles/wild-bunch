@@ -4,8 +4,6 @@ This is the at-a-glance inventory. Use the intent files for the actual tool guid
 
 ## Discover and inspect
 
-- `search`
-- `fetch`
 - `list_issues`
 - `get_issue`
 - `list_projects`
@@ -19,6 +17,8 @@ This is the at-a-glance inventory. Use the intent files for the actual tool guid
 - `get_team`
 - `list_users`
 - `get_user`
+- `list_agent_skills`
+- `get_agent_skill`
 
 ## Diff and review
 
@@ -38,6 +38,8 @@ This is the at-a-glance inventory. Use the intent files for the actual tool guid
 - `get_milestone`
 - `get_status_updates`
 - `save_status_update`
+- `list_initiative_labels`
+- `create_initiative_label`
 
 ## Create and update
 
@@ -48,11 +50,15 @@ This is the at-a-glance inventory. Use the intent files for the actual tool guid
 - `save_milestone`
 - `save_initiative`
 
-## Customers
+## Releases
 
-- `list_customers`
-- `save_customer`
-- `save_customer_need`
+- `list_release_pipelines`
+- `list_releases`
+- `get_release`
+- `save_release`
+- `list_release_notes`
+- `get_release_note`
+- `save_release_note`
 
 ## Attachments and docs help
 
@@ -68,5 +74,3 @@ This is the at-a-glance inventory. Use the intent files for the actual tool guid
 
 - `delete_status_update`
 - `delete_comment`
-- `delete_customer`
-- `delete_customer_need`

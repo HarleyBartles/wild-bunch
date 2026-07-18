@@ -44,6 +44,10 @@ This skill is not a doctrine store and does not execute project work. It does no
 
 Bootstrap is orientation and classification, not source inspection. A project-relevant bootstrap is mandatory once at new-session start when a project context is active or the first user task is project-scoped. Bootstrap must classify the current request before evidence-route, connector, mutation, artifact, worker, or downstream skill decisions.
 
+**Session resume verification:** When a session resumes from a previous conversation (continuity ingress, summary block, or inherited worktree state), verify the worktree location before proceeding with substantive work. Check whether the current worktree path matches the repo's declared canonical worktree root (e.g., `../_agent-worktrees/<repo-name>` per `AGENTS.md` or `repo-worker-base` guidance). If the worktree is in a non-canonical location, move it with `git worktree move` before continuing. Do not inherit a wrong-location worktree as a given — the previous session may have created it without invoking `using-git-worktrees`.
+
+**Skill invocation at session resume:** The `using-superpowers` skill's "invoke before ANY response" rule applies at session resume, not just at new session start. A continued session must still invoke bootstrap skills before substantive work — the previous session's skill invocations do not carry forward.
+
 Normal coding work now routes through the repo-backed worker flow by default. Legacy chat/YAML dispatch stacks are Plan B only. Do not load old dispatch-family skills merely because your human partner says `dispatch`; route coding work to `/using-superpowers` with the discovered mode from this skill and let `/using-superpowers` choose the implementation lane. `work-mode-router` only classifies the mode from durable evidence.
 
 For worker starts, classify the durable route state before any implementation lane choice. A prompt such as `Pick up {{issue.identifier}} from Linear. Start with /work-mode-router.` must be enough to infer one of the worker route states below from durable Linear/repo evidence.
@@ -117,7 +121,7 @@ Repo-specific guides (`.agents/docs/guides/design-guide.md`, `.agents/docs/guide
 Classify the current request into the smallest sufficient mode:
 
 - `ordinary_chat`: acknowledgement, ping, lightweight preference discussion, side chat, or meta that does not require source evidence.
-- `continuity_ingress`: session buster, continuity export, resume packet, or next-session block.
+- `continuity_ingress`: continuity export, resume packet, or next-session block.
 - `repo_worker_coding`: coding implementation, repo-backed worker work, issue handoff, PR-gate, PR-created, landed, or wording such as dispatch/worker/agent for coding work.
 - `gpt_native_skillwork`: create, update, validate, package, install, or troubleshoot ChatGPT-native skills in the current chat.
 - `repo_or_source_evidence`: repository, file, commit, PR, source-truth, publication, or current-state claims.
@@ -143,7 +147,7 @@ For `ordinary_chat`, answer directly. Do not inspect connectors, call tools, or 
 - `gpt_native_skillwork` -> `skill-creator` for authored skill content, then `writing-skills` for cross-repo wording and doctrine checks when relevant. Do not delegate GPT-native skillwork to a cloud agent unless the editable source is known to live in a worker-accessible repo and the task is explicitly repo-backed.
 - `github_proof` -> the repo/GitHub proof surface after a GitHub artifact exists. Do not use repo/GitHub proof to decide worker state or issue routing.
 - `linear_control` -> `using-linear` for connector mechanics: create/update/fetch/comment/project/status/label/document work.
-- `verification_or_reporting` -> the narrow downstream skill that owns the decision, such as the validation decision surface, `tps-ingress`, or `tps-reporting`.
+- `verification_or_reporting` -> the narrow downstream skill that owns the decision, such as the validation decision surface, `risk-gates` (feedback gate), or `base-doctrine` (report hygiene).
 - `legacy_plan_b` -> the compact legacy dispatch stack only after the default route has been rejected or unavailable.
 
 Use project bootstrap or project doctrine only when the active project actually matches the project wrapper and the current task needs local law.
@@ -176,9 +180,9 @@ If the target is ChatGPT-native installed skill state, account/UI settings, plug
 
 At bootstrap time, preserve workspace-reserved artifact shapes. Output form can imply authority.
 
-When the active project or workspace reserves a shape, lower workflow skills must yield to that rule. In worker-control contexts, YAML-shaped blocks are reserved for lawful send-ready legacy dispatches, session busters, and user-explicit YAML artifacts. Do not use YAML blocks for ordinary assessments, plans, buster summaries, status notes, or conversational analysis. Use prose, a small markdown table, a JSON code block, or another clearly non-dispatch shape instead.
+When the active project or workspace reserves a shape, lower workflow skills must yield to that rule. In worker-control contexts, YAML-shaped blocks are reserved for lawful send-ready legacy dispatches, continuity artifacts, and user-explicit YAML artifacts. Do not use YAML blocks for ordinary assessments, plans, gate summaries, status notes, or conversational analysis. Use prose, a small markdown table, a JSON code block, or another clearly non-dispatch shape instead.
 
-This guard is not a ban on structure. It prevents attention and copy/paste failures where a non-dispatch assessment looks like something a worker should execute, or where a non-continuity note looks like a session buster.
+This guard is not a ban on structure. It prevents attention and copy/paste failures where a non-dispatch assessment looks like something a worker should execute, or where a non-continuity note looks like a continuity artifact.
 
 ## Bounded skill-read stop rule
 
@@ -226,9 +230,9 @@ System prompts should:
 
 ## Session handoff posture
 
-When your human partner provides a session buster, continuity export, resume packet, or next-session block, run the project bootstrap first when applicable, then route the block through the relevant session-buster ingress skill. Do not act directly on recommended next actions until ingress separates verified state, fallback state, source claims, open queues, and user instructions.
+When your human partner provides a continuity export, resume packet, or next-session block, run the project bootstrap first when applicable, then route the block through the relevant continuity ingress surface. Do not act directly on recommended next actions until ingress separates verified state, fallback state, source claims, open queues, and user instructions.
 
-For coding work, prefer durable Linear issue IDs, worker state, PR IDs, and next checks over bulky packet prose. Linear, GitHub, and repo guidance are the normal continuity surfaces; session busters are fallback continuity.
+For coding work, prefer durable Linear issue IDs, worker state, PR IDs, and next checks over bulky packet prose. Linear, GitHub, and repo guidance are the normal continuity surfaces; continuity exports are fallback continuity.
 
 ## Output behavior
 

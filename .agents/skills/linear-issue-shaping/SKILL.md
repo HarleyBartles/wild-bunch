@@ -66,12 +66,12 @@ For ordinary worker issues, keep the safe default as `assignee: me`, with `deleg
 When a Linear issue is intended to become worker-send-ready for repo or code execution, always compose this stack:
 
 ```text
-work-mode-router -> /using-superpowers -> linear-issue-shaping -> boring-buster
+work-mode-router -> /using-superpowers -> linear-issue-shaping -> verification-before-completion
 ```
 
 Use this skill first to fetch or create the durable Linear issue surface, classify the lane, and preserve the Linear state convention.
 
-Use `boring-buster` to decide whether the issue is bounded, lawful, route-suitable, and boring enough for the selected worker lane.
+Use `verification-before-completion` to verify whether the issue is bounded, lawful, route-suitable, and ready for the selected worker lane.
 
 Use the route-state block and compact packet shape to check or repair the implementation-plan shape: one observable goal, likely files or source seams, small executable steps or chosen implementation route, explicit validation commands, no placeholders, and no hidden replanning requirement. Keep plan PRs and implementation PRs distinct in the packet language.
 
@@ -180,7 +180,7 @@ Do not use Linear comments, worker reports, validation summaries, local paths, o
 
 After this skill classifies the route, do not read old dispatch or issue-management skills merely for comfort. Load another skill only for a named unresolved decision that this skill does not own:
 
-- worker-send-ready boring/readiness verdict: use `boring-buster`;
+- worker-send-ready readiness verdict: use `verification-before-completion`;
 - campaign issue profile, worktree isolation gate, launch/resume templates, and self-checks: read `references/campaign-shape.md`;
 - implementation-plan shape for worker coding issues: use the compact worker issue-shape reference and keep the route-state block explicit for workflow phase classification;
 - skill creation/update/package work: use the skill-maintenance stack;

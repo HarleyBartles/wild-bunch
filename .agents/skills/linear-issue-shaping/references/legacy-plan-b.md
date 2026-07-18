@@ -1,6 +1,6 @@
 # Legacy Plan B
 
-Read only when the Linear-backed worker route is unavailable, explicitly rejected by Harley, not connected for the project, or blocked by the golden gate while a non-Linear worker handoff is still required.
+Read only when the Linear-backed worker route is unavailable, explicitly rejected by your human partner, not connected for the project, or blocked by the golden gate while a non-Linear worker handoff is still required.
 
 Plan B is compact guidance, not a parallel governance stack.
 
@@ -10,7 +10,7 @@ Plan B is compact guidance, not a parallel governance stack.
 - current cloud-agent route unavailable for the repo;
 - repo/project not connected to the current cloud-agent route;
 - external worker route that cannot read Linear;
-- Harley explicitly asks for legacy/non-Linear handoff.
+- your human partner explicitly asks for legacy/non-Linear handoff.
 
 ## Plan B shape
 

@@ -32,4 +32,3 @@ If exact repository reads are sufficient, use an available exact route and state
 Never claim a memory, issue comment, file write, repo update, skill install, plugin install, marketplace update, or artifact was saved unless a tool result, visible artifact, or user-visible confirmation supports it.
 
 When a user challenges availability, explain the precise layer that failed: UI/product setting, exposed tool namespace, connector authorization, plugin installation, source binding, indexed source scope, or runtime/tool error.
-

@@ -42,4 +42,3 @@ Do not let a plugin marketplace replace project-specific domain law or repositor
 If a rule grows, branch it into a reference, skill, plugin, repo overlay, or issue. Keep `SKILL.md` files as control planes and route maps.
 
 Do not preserve obsolete thick doctrine as an equal fallback when a product-backed workflow now owns the normal route. Keep legacy Plan B guidance compact and explicit.
-

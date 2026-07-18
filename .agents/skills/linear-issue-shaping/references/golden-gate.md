@@ -28,7 +28,7 @@ Block delegation when the work is mainly:
 - creating, updating, validating, or packaging ChatGPT native skills, unless the editable skill source is repo-backed and the issue explicitly targets that repo;
 - changing ChatGPT custom instructions, memory, project instructions, or connector settings;
 - researching docs or product behavior without repo edits;
-- asking Harley to click a UI control, install an app, grant permissions, or configure an account;
+- asking your human partner to click a UI control, install an app, grant permissions, or configure an account;
 - requiring local-only files, private desktop state, or secrets unavailable to the worker;
 - deciding broad doctrine before the doctrine has been shaped into concrete repo-backed edits.
 

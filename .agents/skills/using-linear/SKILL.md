@@ -33,9 +33,8 @@ Use this skill to pick the right Linear connector surface from the task intent, 
 | Work with diff reviews or diff threads | [`references/diffs.md`](references/diffs.md) |
 | Create or update Linear objects | [`references/mutate-save.md`](references/mutate-save.md) |
 | Work with teams, labels, statuses, cycles, milestones, or status updates | [`references/admin-metadata.md`](references/admin-metadata.md) |
-| Work with customers or customer needs | [`references/customers.md`](references/customers.md) |
 | Upload or inspect attachments, images, or docs help | [`references/attachments.md`](references/attachments.md) |
-| Archive or delete a status update, comment, attachment, customer, or customer need | [`references/destructive.md`](references/destructive.md) |
+| Archive or delete a status update, comment, or attachment | [`references/destructive.md`](references/destructive.md) |
 | Need the complete callable surface | [`references/surface-map.md`](references/surface-map.md) |
 
 ## Fast rule

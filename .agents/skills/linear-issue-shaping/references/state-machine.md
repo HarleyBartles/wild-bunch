@@ -7,8 +7,8 @@ Read when checking worker-shaped issue status, resuming a session, handling a wo
 Use this convention for MARK-style worker and tracker issues:
 
 ```text
-Worker child send-ready = Todo + assigned to Harley + WORKER label + shaped DOD/validation + no running evidence.
-Worker child active/running = In Progress + assigned to Harley + WORKER label + durable Linear comments, attachments, or links showing actual work evidence.
+Worker child send-ready = Todo + assigned to your human partner + WORKER label + shaped DOD/validation + no running evidence.
+Worker child active/running = In Progress + assigned to your human partner + WORKER label + durable Linear comments, attachments, or links showing actual work evidence.
 Parent/tracker planned = Todo when shaped but no child work is active yet.
 Parent/tracker active = In Progress when at least one child is active/running or the parent itself is actively being worked.
 ```
@@ -21,10 +21,10 @@ Never infer active/running state from send-ready wording alone. Check Linear sta
 : Linear issue exists but is not yet worker-ready. Next action: make it worker-ready or ask what should be clarified.
 
 `worker-ready`
-: Issue is shaped for a future worker, but no running evidence exists. In MARK-style child issues this normally means `Todo` + assigned to Harley + `WORKER` label + shaped DOD/validation. Next action: report that it is ready; do not claim it has been sent or started.
+: Issue is shaped for a future worker, but no running evidence exists. In MARK-style child issues this normally means `Todo` + assigned to your human partner + `WORKER` label + shaped DOD/validation. Next action: report that it is ready; do not claim it has been sent or started.
 
 `active/running`
-: Durable Linear state and event-log evidence indicate work is actually active. In MARK-style child issues this normally means `In Progress` + assigned to Harley + `WORKER` label + comments, attachments, or links showing work evidence. Next action: report observable state only.
+: Durable Linear state and event-log evidence indicate work is actually active. In MARK-style child issues this normally means `In Progress` + assigned to your human partner + `WORKER` label + comments, attachments, or links showing work evidence. Next action: report observable state only.
 
 `returned`
 : A worker report, completion note, or validation summary exists. Next action: summarize claims and identify required proof or follow-up.

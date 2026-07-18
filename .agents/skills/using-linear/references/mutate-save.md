@@ -11,8 +11,6 @@ This is the main save taxonomy. If you are searching for a write tool, search `s
 | `save_document` | Create or update a document. | Create: `title` and exactly one parent from `project`, `issue`, `initiative`, `cycle`, or `team`. Update: `id`. | `color`, `content`, `cycle`, `icon`, `initiative`, `issue`, `project`, `team` |
 | `save_initiative` | Create or update an initiative. | Create: `name`. Update: `id`. | `color`, `description`, `icon`, `owner`, `parentInitiatives`, `status`, `summary`, `targetDate` |
 | `save_milestone` | Create or update a project milestone. | Create: `name` and `project`. Update: `id`. | `description`, `targetDate` |
-| `save_customer` | Create or update a customer record. | Create: `name`. Update: `id`. | `domains`, `externalIds`, `owner`, `revenue`, `size`, `status`, `tier` |
-| `save_customer_need` | Create or update a customer need. | Create: `body`. Update: `id`. | `customer`, `issue`, `priority`, `project` |
 
 ## Rules that matter
 

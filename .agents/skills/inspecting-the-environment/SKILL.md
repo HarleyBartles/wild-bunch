@@ -51,7 +51,12 @@ dimensions that are clearly irrelevant.
 - **Filesystem and worktree state.** Am I in a git worktree? What branch? Is
   the working tree clean? Am I in the main checkout or an isolated worktree?
   This affects whether I can commit, what branch I'm on, and whether I need to
-  create a worktree first.
+  create a worktree first. **Worktree location verification:** If in a worktree,
+  check whether the worktree path matches the repo's declared canonical worktree
+  root. Look for an `AGENTS.md` or skill guidance declaring a canonical location
+  (e.g., `../_agent-worktrees/<repo-name>`). If the worktree is in a non-canonical
+  location, report the mismatch and recommend moving it before proceeding with
+  substantive work.
 - **Current repo and branch state.** What repo am I in? What's the current
   branch? Is it tracking a remote? Is the remote up to date? This affects push,
   PR creation, and mergeability.

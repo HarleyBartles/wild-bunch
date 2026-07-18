@@ -7,7 +7,7 @@ description: Use when bootstrapping the Wild Bunch repo posture before any repo-
   bootstrap, Linear/GitHub, anti-slop, planning/execution, repo-specific, architecture),
   and policy references (workflow, validation, artifact, architecture guardrails,
   coding discipline, worker environment, mesh, guides, ADR freshness). Use when chat
-  summaries, session busters, worker reports, or issue comments might be mistaken
+  summaries, continuity exports, worker reports, or issue comments might be mistaken
   for live repo truth. This skill establishes posture first, then routes to specialist
   skills (wild-bunch-dotnet-architecture, wild-bunch-domain-modeling, wild-bunch-browser-game)
   for domain-specific work.
@@ -25,7 +25,7 @@ metadata:
     bootstrap, Linear/GitHub, anti-slop, planning/execution, repo-specific, architecture),
     and policy references (workflow, validation, artifact, architecture guardrails,
     coding discipline, worker environment, mesh, guides, ADR freshness). Use when
-    chat summaries, session busters, worker reports, or issue comments might be mistaken
+    chat summaries, continuity exports, worker reports, or issue comments might be mistaken
     for live repo truth. This skill establishes posture first, then routes to specialist
     skills (wild-bunch-dotnet-architecture, wild-bunch-domain-modeling, wild-bunch-browser-game)
     for domain-specific work.
@@ -43,7 +43,7 @@ metadata:
   - Use when an agent needs policy reference routing — workflow policy, validation
     policy, artifact policy, architecture guardrails, coding discipline, worker environment,
     repo-skills policy, mesh policy, or guides.
-  - Use when chat summaries, session busters, worker reports, or issue comments might
+  - Use when chat summaries, continuity exports, worker reports, or issue comments might
     be mistaken for live repo truth.
   do_not_use_when:
   - Do not use when this skill is used for ordinary chat or questions that do not
@@ -58,7 +58,7 @@ license: MIT
 
 # Wild Bunch Project Doctrine
 
-Use this skill first when working on `HarleyBartles/wild-bunch`, or when a task needs the Wild Bunch setup doctrine. The live repo state on current `main` is the source of truth. Chat summaries, issue comments, session busters, and worker reports are support material only.
+Use this skill first when working on `HarleyBartles/wild-bunch`, or when a task needs the Wild Bunch setup doctrine. The live repo state on current `main` is the source of truth. Chat summaries, issue comments, continuity exports, and worker reports are support material only.
 
 This skill establishes posture and then routes to specialist skills for domain-specific work. It does not replace `wild-bunch-dotnet-architecture`, `wild-bunch-domain-modeling`, `wild-bunch-browser-game`, or other specialist skills — it precedes them.
 
@@ -66,7 +66,7 @@ This skill establishes posture and then routes to specialist skills for domain-s
 
 - Treat `HarleyBartles/wild-bunch` as a mainline-only C#/.NET game project.
 - Inspect live source before claiming current state.
-- GPT prepares worker packets; Harley sends them; workers execute.
+- GPT prepares worker packets; your human partner sends them; workers execute.
 - When a task touches world setup, seed identity, difficulty, entropy, random selection, or starting inventory, read `references/difficulty-entropy-seeded-world-setup.md` first and keep it as the canonical anchor.
 - Returns must include branch, commit, PR, validation, and issue-goal conformance notes.
 - Scripts in `scripts/` are first-class surfaces. Before reporting environmental issues or running ad-hoc commands, read `references/policy-references.md` for the script discovery map.

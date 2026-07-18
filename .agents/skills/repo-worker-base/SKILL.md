@@ -1,7 +1,7 @@
 ---
 name: repo-worker-base
-description: Use when thin repo hygiene entrypoint for Codex workers in Harley's workspace.
-  Use when a Codex worker is working in any repository in Harley's workspace and needs
+description: Use when thin repo hygiene entrypoint for Codex workers in your human partner's workspace.
+  Use when a Codex worker is working in any repository in your human partner's workspace and needs
   fresh-main discipline, worktree isolation, branch and PR hygiene, validation evidence,
   or publication proof.
 metadata:
@@ -11,13 +11,13 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when thin repo hygiene entrypoint for Codex workers in Harley's workspace.
-    Use when a Codex worker is working in any repository in Harley's workspace and
+  scope: Use when thin repo hygiene entrypoint for Codex workers in your human partner's workspace.
+    Use when a Codex worker is working in any repository in your human partner's workspace and
     needs fresh-main discipline, worktree isolation, branch and PR hygiene, validation
     evidence, or publication proof.
   use_when:
-  - Use when thin repo hygiene entrypoint for Codex workers in Harley's workspace.
-    Use when a Codex worker is working in any repository in Harley's workspace and
+  - Use when thin repo hygiene entrypoint for Codex workers in your human partner's workspace.
+    Use when a Codex worker is working in any repository in your human partner's workspace and
     needs fresh-main discipline, worktree isolation, branch and PR hygiene, validation
     evidence, or publication proof.
   do_not_use_when:
@@ -27,13 +27,13 @@ license: MIT
 
 # Repo Worker Base
 
-This skill is the compositional entrypoint for repo-backed worker tasks in Harley's workspace.
+This skill is the compositional entrypoint for repo-backed worker tasks in your human partner's workspace.
 
 Use it to establish the boring repo baseline, then route out to the supporting skills that own the narrower concerns:
 
 - `work-mode-router` for durable route classification before repo work begins;
 - `linear-issue-shaping` for worker-ready Linear issue shaping and route-state handling;
-- `boring-loop` for queue discipline and the next smallest safe move;
+- `verification-before-completion` for evidence-before-assertions and false-green prevention;
 - `connector-safety` for blocked, sensitive, or permission-changing connector writes;
 - `github-operations` for PR, branch, commit, status, merge, publication, and main-state proof.
 - `unslop-plus` for worker-facing anti-slop profiles when a repo task needs tighter plan, review, or return discipline;
@@ -93,7 +93,7 @@ This gate is mandatory for all Devin-backed repo tasks and must be completed bef
 
 ### Repo-specific worktree locations
 
-For repos in Harley's workspace, worktrees should be placed in the centralized location `../_agent-worktrees/<repo-name>` (relative to the repo root) where `<repo-name>` is the name of the repository (e.g., `../_agent-worktrees/wild-bunch`, `../_agent-worktrees/agent-asset-marketplace`).
+For repos in your human partner's workspace, worktrees should be placed in the centralized location `../_agent-worktrees/<repo-name>` (relative to the repo root) where `<repo-name>` is the name of the repository (e.g., `../_agent-worktrees/wild-bunch`, `../_agent-worktrees/agent-asset-marketplace`).
 
 This centralized location keeps worktrees outside the repo directories and is the preferred location for these projects. Individual repos may document this preference in their AGENTS.md as a declared preference that should be respected by the using-git-worktrees skill.
 
@@ -142,7 +142,7 @@ Normal publication path:
 3. push worker branch;
 4. open or enable a PR into `main`;
 5. return PR evidence;
-6. let GPT/Harley verify the PR and mainline state after merge.
+6. let GPT and your human partner verify the PR and mainline state after merge.
 
 Do not use shell GitHub credentials or PAT workarounds unless the task explicitly authorizes that route.
 

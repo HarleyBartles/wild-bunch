@@ -13,6 +13,10 @@ Ensure work happens in an isolated workspace. Prefer your platform's native work
 
 **Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
 
+**Mandatory pre-flight:** Invoke this skill BEFORE running `git worktree add`, not after. If you are about to create a worktree without having invoked this skill, stop and invoke it first. Creating a worktree ad hoc without consulting this skill risks placing the worktree in a non-canonical location that violates repo conventions.
+
+**Session resume check:** If you are resuming a session that inherited a worktree from a previous conversation, verify the worktree location matches the repo's declared canonical worktree root before proceeding with substantive work. If the worktree is in a non-canonical location, move it with `git worktree move` before continuing.
+
 ## Step 0: Detect Existing Isolation
 
 **Before creating anything, check if you are already in an isolated workspace.**

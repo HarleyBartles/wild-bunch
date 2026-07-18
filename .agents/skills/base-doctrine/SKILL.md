@@ -4,7 +4,7 @@ description: Use when cross-runtime doctrine store for cross-project operating i
   not owned by a more specific skill. Use when work involves system-prompt limits,
   tool/source evidence honesty, durable doctrine routing, bounded skill/reference
   read loops, correction/trust posture, canonical agent asset source truth, or output
-  artifact-shape authority such as reserved YAML, dispatch/session-buster confusion,
+  artifact-shape authority such as reserved YAML, dispatch/continuity confusion,
   worker-copy attention guards, and lower-skill format conflicts.
 metadata:
   source-id: base-doctrine
@@ -17,14 +17,14 @@ metadata:
     not owned by a more specific skill. Use when work involves system-prompt limits,
     tool/source evidence honesty, durable doctrine routing, bounded skill/reference
     read loops, correction/trust posture, canonical agent asset source truth, or output
-    artifact-shape authority such as reserved YAML, dispatch/session-buster confusion,
+    artifact-shape authority such as reserved YAML, dispatch/continuity confusion,
     worker-copy attention guards, and lower-skill format conflicts.
   use_when:
   - Use when cross-runtime doctrine store for cross-project operating invariants not
     owned by a more specific skill. Use when work involves system-prompt limits, tool/source
     evidence honesty, durable doctrine routing, bounded skill/reference read loops,
     correction/trust posture, canonical agent asset source truth, or output artifact-shape
-    authority such as reserved YAML, dispatch/session-buster confusion, worker-copy
+    authority such as reserved YAML, dispatch/continuity confusion, worker-copy
     attention guards, and lower-skill format conflicts.
   do_not_use_when:
   - Do not use when another more specific skill owns this task.
@@ -44,6 +44,7 @@ Use this skill as the cross-runtime doctrine store for cross-project operating i
 - Bounded skill/reference reading, anti-loop stop rules, or "how much should I read before acting" questions: read `references/bounded-read-loop.md`.
 - Failure, correction, and trust posture: read `references/failure-and-trust-posture.md`.
 - Output shape, reserved artifact forms, YAML-vs-non-YAML conflicts, worker-copy attention guards, or artifact authority: read `references/output-artifact-shape.md`.
+- Report partitioning, report laundering, worker returns, verification summaries, publication notes, or closure summaries: read `references/report-hygiene.md`.
 - Quick map: read `references/doctrine-index.md`.
 
 ## Core control-plane rule
@@ -56,7 +57,9 @@ Load `references/tool-surface-and-evidence.md` only when the current task actual
 
 Load `references/durable-doctrine-routing.md` when the current task asks where doctrine, skills, plugin marketplace entries, repo overlays, or agent asset source truth should live. This includes deciding whether a GPT-native skill update belongs in installed skill state, a canonical repo source, a Codex plugin marketplace, a repo overlay, Linear, GitHub, or a project repo.
 
-Load `references/output-artifact-shape.md` only when the current task involves output format authority, reserved workspace forms, dispatch/session-buster confusion, YAML-shaped content, reusable handoff shapes, or lower-skill output templates that may conflict with project/workspace conventions.
+Load `references/output-artifact-shape.md` only when the current task involves output format authority, reserved workspace forms, dispatch/continuity confusion, YAML-shaped content, reusable handoff shapes, or lower-skill output templates that may conflict with project/workspace conventions.
+
+Load `references/report-hygiene.md` only when the current task involves drafting or reviewing report-like surfaces — worker returns, verification summaries, publication notes, closure summaries, or continuity notes — where reporting language could change the authority of information.
 
 Use the most specific project skill, workflow skill, plugin, repo skill, or repo playbook when one owns the work. Use this skill only for base doctrine that crosses projects or prevents recurring GPT failure modes.
 
@@ -109,5 +112,3 @@ Agents must clean up their scratch folder when cleaning up their worktree. This 
 ### Implementation details
 
 Reference `repo-worker-base` for implementation details and usage patterns. The scratch folder architecture is designed to complement the worktree system by providing a disposable workspace for temporary outputs that should not be committed to the repository.
-
-

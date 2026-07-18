@@ -4,7 +4,7 @@ interface:
   default_prompt: Use Repo Worker Base as the compositional repo hygiene entrypoint
     for repo-backed work in Harley's workspace. Pair it with work-mode-router for
     durable route classification, linear-issue-shaping for worker-ready Linear packet
-    handling, boring-loop for queue discipline, connector-safety for blocked or sensitive
+    handling, verification-before-completion for evidence-before-assertions, connector-safety for blocked or sensitive
     writes, github-operations for publication proof, unslop-plus for anti-slop profiles,
     and context-safety for safer large text writes, bounded composition, and atomic
     replacement.

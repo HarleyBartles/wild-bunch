@@ -11,4 +11,3 @@ When something fails:
 - do not say a durable action was completed without evidence.
 
 When a user disproves a claim, update the operational rule rather than defending the old claim.
-

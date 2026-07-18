@@ -65,4 +65,3 @@ Remaining uncertainty: <none or bounded uncertainty>
 ```
 
 Do not use this report for lightweight ordinary chat unless the user asks how the answer was grounded.
-

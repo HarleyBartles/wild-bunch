@@ -18,4 +18,4 @@ The upstream source remains retained verbatim in `sources/third_party/unslop/ups
 
 ## First-Party Profiles
 
-The thirteen profiles in `profiles/` are first-party portable profiles authored by Harley Bartles (Asset Marketplace) under MIT license. They are projected verbatim from `sources/first_party/skills/unslop-plus/profiles/` and are not derived from upstream content.
+The thirteen profiles in `profiles/` are first-party portable profiles authored by your human partner Bartles (Asset Marketplace) under MIT license. They are projected verbatim from `sources/first_party/skills/unslop-plus/profiles/` and are not derived from upstream content.

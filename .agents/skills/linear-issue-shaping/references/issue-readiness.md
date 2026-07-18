@@ -32,8 +32,8 @@ Do not overgrow a small worker issue into campaign shape. Do not route GPT-nativ
 For MARK-style worker child issues, preserve this durable Linear shape:
 
 ```text
-Worker child send-ready = Todo + assigned to Harley + WORKER label + shaped DOD/validation + no running evidence.
-Worker child active/running = In Progress + assigned to Harley + WORKER label + durable Linear comments, attachments, or links showing actual work evidence.
+Worker child send-ready = Todo + assigned to your human partner + WORKER label + shaped DOD/validation + no running evidence.
+Worker child active/running = In Progress + assigned to your human partner + WORKER label + durable Linear comments, attachments, or links showing actual work evidence.
 Parent/tracker planned = Todo when shaped but no child work is active yet.
 Parent/tracker active = In Progress when at least one child is active/running or the parent itself is actively being worked.
 ```
