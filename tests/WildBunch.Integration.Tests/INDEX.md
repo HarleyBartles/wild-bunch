@@ -12,6 +12,7 @@
 - [EfGameSessionRepositoryTests.cs](EfGameSessionRepositoryTests.cs)
 - [EventSourcingEndToEndTests.cs](EventSourcingEndToEndTests.cs)
 - [EventStorePersistenceTests.cs](EventStorePersistenceTests.cs)
+- [FullReplayEqualityTests.cs](FullReplayEqualityTests.cs)
 - [GameApiActionsTests.cs](GameApiActionsTests.cs)
 - [GameApiArchiveTests.cs](GameApiArchiveTests.cs)
 - [GameApiHiddenTruthTests.cs](GameApiHiddenTruthTests.cs)
