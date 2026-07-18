@@ -14,6 +14,8 @@
 - [coding-discipline.md](coding-discipline.md)
 - [dev-overlay-doctrine.md](dev-overlay-doctrine.md)
 - [entropy-and-seed-policy.md](entropy-and-seed-policy.md)
+- [event-sourcing-integrity-policy.md](event-sourcing-integrity-policy.md)
+- [event-sourcing-replayability-audit.md](event-sourcing-replayability-audit.md)
 - [frontend-standards.md](frontend-standards.md)
 - [game-content-seed-pipeline.md](game-content-seed-pipeline.md)
 - [game-session-decomposition-audit.md](game-session-decomposition-audit.md)
