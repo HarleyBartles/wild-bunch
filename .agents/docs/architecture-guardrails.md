@@ -42,6 +42,7 @@ This repo's architecture stack is DDD + CQRS + Event Sourcing. These patterns ar
 - Command-path state and replay-path state must converge. This is verified by parity tests (`RehydrateFromEvents_Replay_Matches_Command_Path_State`). If a command mutates state directly, the corresponding `Apply` method must produce the same state from the event.
 - Do not add direct state mutations outside the event-sourced route. If you need to change state, produce an event and let `Apply` do the work.
 - Do not introduce a separate event-store interface, broker, EventStoreDB, or normalized live-session table split unless the issue explicitly scopes it.
+- **See [`.agents/docs/event-sourcing-integrity-policy.md`](event-sourcing-integrity-policy.md)** for the full event sourcing integrity policy: design principles, canonical flow diagram, negative constraints, projection rebuild rules, and version enforcement. That policy is the primary operational surface; this guardrails section is the summary.
 
 ### Setup Phase and Nullable State
 - During setup phase (`StartFlowPhase < GameStarted`), the player has not chosen a starting town. `Player.CurrentTownId` is `null`. `_currentTown` is `null`. `CurrentTownVisit` is `null`.
