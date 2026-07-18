@@ -87,3 +87,8 @@
 - [2026-07-10-town-hub-deterministic-layout-resolver-implementation.md](2026-07-10-town-hub-deterministic-layout-resolver-implementation.md)
 - [2026-07-11-bunch-149-ci-efficiency-preflight.md](2026-07-11-bunch-149-ci-efficiency-preflight.md)
 - [2026-07-12-bunch-148-background-building-fill-implementation.md](2026-07-12-bunch-148-background-building-fill-implementation.md)
+- [2026-07-18-es-integrity-plan-a-policy-and-audit.md](2026-07-18-es-integrity-plan-a-policy-and-audit.md)
+- [2026-07-18-es-integrity-plan-b-travel-diary-day-projector.md](2026-07-18-es-integrity-plan-b-travel-diary-day-projector.md)
+- [2026-07-18-es-integrity-plan-c-rehydrate-load-path.md](2026-07-18-es-integrity-plan-c-rehydrate-load-path.md)
+- [2026-07-18-es-integrity-plan-d-event-upcaster-registry.md](2026-07-18-es-integrity-plan-d-event-upcaster-registry.md)
+- [2026-07-18-es-integrity-plan-e-projection-versions-and-load-funnel.md](2026-07-18-es-integrity-plan-e-projection-versions-and-load-funnel.md)
