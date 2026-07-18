@@ -30,6 +30,24 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
     {
+        // Check if the session exists and whether the snapshot is current.
+        var envelope = await _dbContext.GameSessions.AsNoTracking()
+            .SingleOrDefaultAsync(session => session.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (envelope is null)
+        {
+            return null;
+        }
+
+        // Full replay path: if the snapshot version doesn't match the stream version,
+        // the snapshot is stale — use full replay. This is the event-sourcing-true path.
+        if (envelope.SnapshotVersion != envelope.StreamVersion)
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
         return store is null ? null : ToAggregate(store);
     }
