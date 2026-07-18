@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
@@ -15,11 +16,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
+    private readonly TravelDiaryDayProjector _travelDiaryDayProjector;
 
-    public EfGameSessionRepository(WildBunchDbContext dbContext, GameSessionJsonSerializer serializer)
+    public EfGameSessionRepository(
+        WildBunchDbContext dbContext,
+        GameSessionJsonSerializer serializer,
+        TravelDiaryDayProjector travelDiaryDayProjector)
     {
         _dbContext = dbContext;
         _serializer = serializer;
+        _travelDiaryDayProjector = travelDiaryDayProjector;
     }
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
@@ -262,6 +268,54 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
             postSnapshotEvents,
             allEvents);
+    }
+
+    /// <summary>
+    /// Loads a session by replaying all events from the stream through
+    /// RehydrateFromEvents. This is the full replay path that proves the
+    /// snapshot is not required. The world is reconstructed from the
+    /// WorldGenerated event. Diary days are rebuilt via TravelDiaryDayProjector.
+    /// See ADR-0028 and the event sourcing integrity policy.
+    /// </summary>
+    private async Task<GameSession?> LoadFromEventsAsync(GameSessionId id, CancellationToken cancellationToken)
+    {
+        var storedEvents = await _dbContext.StoredEvents.AsNoTracking()
+            .Where(e => e.StreamId == id.Value)
+            .OrderBy(e => e.Sequence)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (storedEvents.Length == 0)
+        {
+            return null;
+        }
+
+        var events = new IDomainEvent[storedEvents.Length];
+        for (var i = 0; i < storedEvents.Length; i++)
+        {
+            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
+        }
+
+        // Reconstruct the world from the WorldGenerated event.
+        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
+        if (worldGenerated is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot load session {id} from events: no WorldGenerated event in the stream.");
+        }
+        var world = worldGenerated.World.ToDomain();
+
+        // Rehydrate the aggregate from the full event stream.
+        var session = GameSession.RehydrateFromEvents(id, world, events);
+
+        // Rebuild diary days via the projector.
+        var diaryProjection = _travelDiaryDayProjector.Project(events);
+        session.ReplaceTravelDiaryDays(diaryProjection.Days);
+
+        // Set committed events for projection-backed read paths (JournalLogProjector etc.).
+        session.SetCommittedEvents(events);
+
+        return session;
     }
 
     private GameSession ToAggregate(GameSessionStore store)
