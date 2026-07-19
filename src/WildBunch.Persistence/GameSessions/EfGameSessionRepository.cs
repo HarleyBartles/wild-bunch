@@ -259,12 +259,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return Array.Empty<IDomainEvent>();
         }
 
-        var events = new IDomainEvent[storedEvents.Length];
-        for (var i = 0; i < storedEvents.Length; i++)
-        {
-            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
-        }
-        return events;
+        return _payloadLoader.LoadEvents(storedEvents);
     }
 
     private async Task<GameSessionStore?> LoadStoreAsync(GameSessionId id, CancellationToken cancellationToken)
@@ -280,10 +275,9 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToDictionaryAsync(component => component.ComponentName, cancellationToken)
             .ConfigureAwait(false);
 
-        var diaryDays = await _dbContext.GameSessionDiaryDays.AsNoTracking()
+        var diaryDayEntities = await _dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
             .OrderBy(day => day.Sequence)
-            .Select(day => day.PayloadJson)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -296,11 +290,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var allEvents = new IDomainEvent[allStoredEvents.Length];
-        for (var i = 0; i < allStoredEvents.Length; i++)
-        {
-            allEvents[i] = _serializer.DeserializeEvent(allStoredEvents[i].EventType, allStoredEvents[i].PayloadJson);
-        }
+        var allEvents = _payloadLoader.LoadEvents(allStoredEvents);
 
         // Post-snapshot events for state replay (subset of allEvents).
         IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();
@@ -311,10 +301,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 .ToArray();
         }
 
+        var diaryDays = _payloadLoader.LoadDiaryDays(diaryDayEntities, allEvents);
         return new GameSessionStore(
             envelope,
             components,
-            diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
+            diaryDays,
             postSnapshotEvents,
             allEvents);
     }
