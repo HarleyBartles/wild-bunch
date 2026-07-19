@@ -15,5 +15,6 @@
 - [GameSessionEntity.cs](GameSessionEntity.cs)
 - [GameSessionEntityConfiguration.cs](GameSessionEntityConfiguration.cs)
 - [GameSessionReadStoreLoader.cs](GameSessionReadStoreLoader.cs)
+- [SessionRebuilder.cs](SessionRebuilder.cs)
 - [StoredEventEntity.cs](StoredEventEntity.cs)
 - [StoredEventEntityConfiguration.cs](StoredEventEntityConfiguration.cs)
