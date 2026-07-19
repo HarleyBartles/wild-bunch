@@ -510,14 +510,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             {
                 SessionId = sessionId,
                 ComponentName = componentName,
-                ComponentVersion = SchemaVersion,
+                ComponentVersion = ProjectionVersions.ForComponent(componentName),
                 PayloadJson = payloadJson,
                 UpdatedAtUtc = now
             });
             return;
         }
 
-        component.ComponentVersion = SchemaVersion;
+        component.ComponentVersion = ProjectionVersions.ForComponent(componentName);
         component.PayloadJson = payloadJson;
         component.UpdatedAtUtc = now;
     }
@@ -549,6 +549,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 current.PayloadJson = desiredJson;
                 current.RecordedAtUtc = DateTime.UtcNow;
             }
+            current.SchemaVersion = ProjectionVersions.DiaryDay;
         }
 
         for (var index = existing.Count; index < travelDiaryDays.Count; index++)
@@ -558,7 +559,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 SessionId = sessionId,
                 Sequence = index,
                 PayloadJson = _serializer.SerializeTravelDiaryDay(travelDiaryDays[index]),
-                RecordedAtUtc = DateTime.UtcNow
+                RecordedAtUtc = DateTime.UtcNow,
+                SchemaVersion = ProjectionVersions.DiaryDay
             });
         }
 
