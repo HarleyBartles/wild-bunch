@@ -6,6 +6,7 @@
 - [GameSessions](GameSessions/INDEX.md)
 - [Migrations](Migrations/INDEX.md)
 - [Serialization](Serialization/INDEX.md)
+- [Versioning](Versioning/INDEX.md)
 
 ## Files
 - [DependencyInjection.cs](DependencyInjection.cs)
