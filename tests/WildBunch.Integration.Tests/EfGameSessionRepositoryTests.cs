@@ -17,6 +17,7 @@ using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using System.Text.Json;
 
 namespace WildBunch.Integration.Tests;
@@ -494,7 +495,7 @@ public sealed class EfGameSessionRepositoryTests
     {
         var context = fixture.CreateContext();
         unitOfWork = new EfGameSessionUnitOfWork(context);
-        return new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
+        return new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
     }
 
     private static async Task PersistAsync(

@@ -6,6 +6,7 @@ using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
 using Trail = WildBunch.Domain.World.Trail;
@@ -57,7 +58,7 @@ public sealed class UnrelatedCriminalLedgerPersistenceTests
         using var fixture = new PostgreSqlPersistenceFixture();
         var context = fixture.CreateContext();
         var unitOfWork = new EfGameSessionUnitOfWork(context);
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
 
         var session = CreateSessionWithFullLedger(gangSuspectCount: 2, unrelatedWarrantCount: 6);
 

@@ -13,6 +13,7 @@ using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
@@ -40,6 +41,7 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
         services.AddSingleton<DiaryProjector>();
         services.AddSingleton<FullAuditProjector>();
         services.AddSingleton<TravelDiaryDayProjector>();
+        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));
         var provider = services.BuildServiceProvider();
 
         using var scope = provider.CreateScope();
