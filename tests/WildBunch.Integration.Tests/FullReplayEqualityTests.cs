@@ -314,6 +314,44 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
     }
 
     /// <summary>
+    /// Proves that a stale snapshot (SnapshotVersion != StreamVersion) triggers
+    /// full replay even when all component rows are present and current. This
+    /// tests the envelope-level version check at LoadAsync line 82, distinct
+    /// from the component-level missing-snapshot guard.
+    /// </summary>
+    [Fact]
+    public async Task FullReplay_StaleSnapshotWithCurrentComponents_LoadsFromEvents()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+        // Create and store
+        var session = CreateSessionWithJourney();
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+        session.MarkEventsCommitted();
+
+        // Corrupt the SnapshotVersion so it doesn't match StreamVersion.
+        // Components are left intact — this tests the envelope-level check,
+        // not the component-level missing-snapshot guard.
+        await using var db = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+        await db.GameSessions
+            .Where(s => s.Id == session.Id.Value)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.SnapshotVersion, x => x.StreamVersion - 1),
+                cancellationToken: default);
+        await db.SaveChangesAsync();
+
+        // Load — should fall back to full replay because SnapshotVersion != StreamVersion
+        var fromEvents = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(fromEvents);
+        Assert.Equal("Ranger Vale", fromEvents!.Player.Name);
+        Assert.Equal(session.Version, fromEvents.Version);
+    }
+
+    /// <summary>
     /// Proves that the UnrelatedCriminalLedger is correctly reconstructed by the
     /// full replay path. The constructor builds the ledger from a placeholder CaseFile
     /// (0 suspects), and Apply(CaseFileGenerated) only sets CaseFile — it does not

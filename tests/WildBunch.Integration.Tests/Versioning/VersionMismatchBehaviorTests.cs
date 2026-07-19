@@ -23,6 +23,8 @@ namespace WildBunch.Integration.Tests.Versioning;
 /// </summary>
 public sealed class VersionMismatchBehaviorTests
 {
+    private const int StaleTestVersion = 99;  // Any value > current (v1) proves staleness.
+
     [Fact]
     public void LoadEvent_FutureVersion_Throws()
     {
@@ -52,7 +54,7 @@ public sealed class VersionMismatchBehaviorTests
             registry, serializer, projector,
             _ => throw new InvalidOperationException("Should not be called for diary days."));
 
-        // A diary day entity with a stale version (v99 — current is v1) and
+        // A diary day entity with a stale version and
         // garbage JSON that would throw if the current-version path were taken.
         var staleDays = new[]
         {
@@ -61,7 +63,7 @@ public sealed class VersionMismatchBehaviorTests
                 SessionId = Guid.NewGuid(),
                 Sequence = 0,
                 PayloadJson = "THIS_IS_GARBAGE_NOT_VALID_JSON_FOR_DIARY_DAY",
-                SchemaVersion = 99  // stale — use v99 to ensure it's stale (current is v1)
+                SchemaVersion = StaleTestVersion  // stale (current is v1)
             }
         };
 
@@ -90,7 +92,7 @@ public sealed class VersionMismatchBehaviorTests
             registry, serializer, projector,
             _ => throw new InvalidOperationException("Should not be called for diary days."));
 
-        // Mix of current (v1) and stale (v99) diary days.
+        // Mix of current (v1) and stale diary days.
         // The loader uses All() — if ANY are stale, ALL are discarded and rebuilt.
         // The current day has valid JSON, but the stale day has garbage JSON.
         // If the current path were taken for the current day, it would succeed,
@@ -122,7 +124,7 @@ public sealed class VersionMismatchBehaviorTests
                 SessionId = Guid.NewGuid(),
                 Sequence = 1,
                 PayloadJson = "GARBAGE_JSON_WOULD_THROW_IF_DESERIALIZED",
-                SchemaVersion = 99  // stale
+                SchemaVersion = StaleTestVersion  // stale
             }
         };
 
@@ -208,7 +210,7 @@ public sealed class VersionMismatchBehaviorTests
             registry, serializer, projector,
             rebuildSessionFromEvents: evts => SessionRebuilder.RebuildFromEvents(evts, serializer));
 
-        // Create a stale Player component (v99 — current is v1).
+        // Create a stale Player component (current is v1).
         var staleComponents = new Dictionary<string, GameSessionComponentEntity>
         {
             [GameSessionComponentNames.Player] = new()
@@ -216,7 +218,7 @@ public sealed class VersionMismatchBehaviorTests
                 SessionId = Guid.NewGuid(),
                 ComponentName = GameSessionComponentNames.Player,
                 PayloadJson = "{}",
-                ComponentVersion = 99  // stale
+                ComponentVersion = StaleTestVersion  // stale
             }
         };
 
@@ -276,6 +278,36 @@ public sealed class VersionMismatchBehaviorTests
         var result = loader.LoadComponentPayload(emptyComponents, GameSessionComponentNames.Player, Array.Empty<IDomainEvent>());
 
         Assert.Null(result);
+    }
+
+    /// <summary>
+    /// Verifies the invariant that SessionRebuilder.RebuildFromEvents (without id)
+    /// produces the same component JSON regardless of the placeholder session ID.
+    /// The rebuild callback in PersistedPayloadLoader uses this overload, and the
+    /// invariant "no component includes the session ID in its serialized form"
+    /// must hold — otherwise component rebuild would produce wrong data.
+    /// </summary>
+    [Fact]
+    public void SessionRebuilder_ComponentJson_IsIndependentOfSessionId()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var session = CreateSessionWithEvents();
+        var events = session.UncommittedEvents.ToList();
+
+        // Rebuild with two different placeholder session IDs.
+        var id1 = GameSessionId.New();
+        var id2 = GameSessionId.New();
+        Assert.NotEqual(id1, id2);
+
+        var rebuilt1 = SessionRebuilder.RebuildFromEvents(id1, events, serializer);
+        var rebuilt2 = SessionRebuilder.RebuildFromEvents(id2, events, serializer);
+
+        // All component JSON must be identical regardless of the session ID used.
+        Assert.Equal(serializer.SerializePlayer(rebuilt1.Player), serializer.SerializePlayer(rebuilt2.Player));
+        Assert.Equal(serializer.SerializeWorld(rebuilt1.World), serializer.SerializeWorld(rebuilt2.World));
+        Assert.Equal(serializer.SerializeCaseFile(rebuilt1.CaseFile), serializer.SerializeCaseFile(rebuilt2.CaseFile));
+        Assert.Equal(serializer.SerializeClock(rebuilt1.Clock), serializer.SerializeClock(rebuilt2.Clock));
+        Assert.Equal(serializer.SerializePursuitState(rebuilt1.PursuitState), serializer.SerializePursuitState(rebuilt2.PursuitState));
     }
 
     private static GameSession CreateSessionWithEvents()
