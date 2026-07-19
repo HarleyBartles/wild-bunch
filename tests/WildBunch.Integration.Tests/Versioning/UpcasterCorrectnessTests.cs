@@ -69,10 +69,37 @@ public sealed class UpcasterCorrectnessTests
             new PayloadUpcasterRegistry([badUpcaster]));
     }
 
+    [Fact]
+    public void Upcast_MultiStepChain_V1ToV3ThroughV2()
+    {
+        var registry = new PayloadUpcasterRegistry([
+            new TestEventV1ToV2Upcaster(),
+            new TestEventV2ToV3Upcaster()
+        ]);
+
+        var v1Json = """{"existingField":"value"}""";
+        var v3Json = registry.Upcast("TestEvent", storedVersion: 1, v1Json);
+
+        Assert.Contains("\"newField\":\"added\"", v3Json);
+        Assert.Contains("\"anotherField\":\"added\"", v3Json);
+        Assert.Contains("\"existingField\":\"value\"", v3Json);
+    }
+
+    [Fact]
+    public void CurrentVersion_WithTwoUpcasters_Returns3()
+    {
+        var registry = new PayloadUpcasterRegistry([
+            new TestEventV1ToV2Upcaster(),
+            new TestEventV2ToV3Upcaster()
+        ]);
+        Assert.Equal(3, registry.CurrentVersion("TestEvent"));
+    }
+
     private sealed class TestEventV2ToV3Upcaster : IEventUpcaster
     {
         public string PayloadType => "TestEvent";
         public int FromVersion => 2;
-        public string Upcast(string payloadJson) => payloadJson;
+        public string Upcast(string payloadJson)
+            => payloadJson.Replace("}", ",\"anotherField\":\"added\"}");
     }
 }

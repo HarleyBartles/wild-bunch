@@ -62,4 +62,13 @@ public sealed class UpcasterChainCompletenessTests
         Assert.Throws<InvalidOperationException>(() =>
             registry.Upcast("GameStarted", storedVersion: 2, """{"test":"value"}"""));
     }
+
+    [Fact]
+    public void Registry_UnknownTypeWithStoredVersionNot1_Throws()
+    {
+        var registry = new PayloadUpcasterRegistry([]);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            registry.Upcast("UnknownEventType", storedVersion: 2, """{"test":"value"}"""));
+    }
 }
