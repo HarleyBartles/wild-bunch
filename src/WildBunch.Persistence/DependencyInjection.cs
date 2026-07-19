@@ -5,6 +5,7 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Persistence;
 
@@ -13,6 +14,19 @@ public static class DependencyInjection
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<GameSessionJsonSerializer>();
+
+        // Event upcaster registry. No upcasters registered yet (greenfield repo, all events at v1).
+        // When the first event shape change happens, write an IEventUpcaster and add it here.
+        // The build-time completeness test (Plan D Task 6) asserts every IEventUpcaster in the
+        // assembly is registered here.
+        services.AddSingleton<PayloadUpcasterRegistry>(sp =>
+        {
+            var upcasters = new List<IPayloadUpcaster>();
+            // No upcasters yet. Add upcasters here as they're written:
+            // upcasters.Add(new GameStartedV1ToV2Upcaster());
+            return new PayloadUpcasterRegistry(upcasters);
+        });
+
         services.AddSingleton<TravelDiaryDayProjector>();
         services.AddDbContext<WildBunchDbContext>((_, options) => PersistenceDbContextOptions.Configure(options, configuration));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();

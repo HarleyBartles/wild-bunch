@@ -8,6 +8,7 @@ using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using System.Text.Json.Nodes;
 
 namespace WildBunch.Integration.Tests;
@@ -19,7 +20,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateSession(GameDifficulty.Easy, GameEntropy.Wild);
 
@@ -279,7 +280,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 
@@ -389,7 +390,7 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
+        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 

@@ -15,6 +15,7 @@ using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
@@ -578,6 +579,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         services.AddDbContext<WildBunchDbContext>(options => options.UseNpgsql(connectionString));
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddSingleton<TravelDiaryDayProjector>();
+        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         var provider = services.BuildServiceProvider();

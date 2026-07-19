@@ -6,6 +6,7 @@
 - [Acceptance](Acceptance/INDEX.md)
 - [Dev](Dev/INDEX.md)
 - [TestInfrastructure](TestInfrastructure/INDEX.md)
+- [Versioning](Versioning/INDEX.md)
 
 ## Files
 - [DevDifficultyForcedSerializerTests.cs](DevDifficultyForcedSerializerTests.cs)

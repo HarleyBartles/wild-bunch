@@ -14,6 +14,7 @@ using WildBunch.Domain.World;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
@@ -62,7 +63,7 @@ public sealed class PostgreSqlPersistenceTests
         {
             await context.Database.MigrateAsync();
 
-            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector());
+            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
             var unitOfWork = new EfGameSessionUnitOfWork(context);
 
             await repository.StoreAsync(session);
@@ -99,7 +100,7 @@ public sealed class PostgreSqlPersistenceTests
         {
             await context.Database.MigrateAsync();
 
-            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector());
+            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
             var unitOfWork = new EfGameSessionUnitOfWork(context);
             await repository.StoreAsync(session);
             await unitOfWork.CommitAsync();

@@ -8,6 +8,7 @@ using WildBunch.Domain.World;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 using Npgsql;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
@@ -35,7 +36,7 @@ public sealed class MigrationTests
         }
 
         await using var commandContext = new WildBunchDbContext(options);
-        var repository = new EfGameSessionRepository(commandContext, new GameSessionJsonSerializer(), new TravelDiaryDayProjector());
+        var repository = new EfGameSessionRepository(commandContext, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
         var unitOfWork = new EfGameSessionUnitOfWork(commandContext);
         var session = CreateSession();
 

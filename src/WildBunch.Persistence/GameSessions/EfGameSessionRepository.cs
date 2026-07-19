@@ -7,6 +7,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.Persistence.Serialization;
+using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Persistence.GameSessions;
 
@@ -17,15 +18,18 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
     private readonly TravelDiaryDayProjector _travelDiaryDayProjector;
+    private readonly PayloadUpcasterRegistry _eventUpcasters;
 
     public EfGameSessionRepository(
         WildBunchDbContext dbContext,
         GameSessionJsonSerializer serializer,
-        TravelDiaryDayProjector travelDiaryDayProjector)
+        TravelDiaryDayProjector travelDiaryDayProjector,
+        PayloadUpcasterRegistry eventUpcasters)
     {
         _dbContext = dbContext;
         _serializer = serializer;
         _travelDiaryDayProjector = travelDiaryDayProjector;
+        _eventUpcasters = eventUpcasters;
     }
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
@@ -129,16 +133,17 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             var nextSequence = entity.StreamVersion + 1;
             foreach (var e in eventsToStore)
             {
+                var eventType = e.GetType().Name;
                 _dbContext.StoredEvents.Add(new StoredEventEntity
                 {
                     StreamId = entity.Id,
                     Sequence = nextSequence++,
                     EventId = Guid.NewGuid(),
                     OccurredAtUtc = now,
-                    EventType = e.GetType().Name,
+                    EventType = eventType,
                     PayloadJson = _serializer.SerializeEvent(e),
                     CorrelationId = correlationId,
-                    SchemaVersion = SchemaVersion
+                    SchemaVersion = _eventUpcasters.CurrentVersion(eventType)
                 });
             }
             entity.StreamVersion = session.Version;
