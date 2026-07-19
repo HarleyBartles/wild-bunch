@@ -47,6 +47,8 @@ public static class DependencyInjection
                 rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
         });
 
+        services.AddSingleton<GameSessionReadStoreLoader>();
+
         services.AddDbContext<WildBunchDbContext>((_, options) => PersistenceDbContextOptions.Configure(options, configuration));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();

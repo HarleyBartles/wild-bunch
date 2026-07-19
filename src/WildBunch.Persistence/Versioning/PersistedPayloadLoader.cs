@@ -16,7 +16,7 @@ namespace WildBunch.Persistence.Versioning;
 /// GameSessionJsonSerializer's deserialize methods directly — this loader
 /// is the only sanctioned surface. See the event sourcing integrity policy.
 /// </summary>
-internal sealed class PersistedPayloadLoader
+public sealed class PersistedPayloadLoader
 {
     private readonly PayloadUpcasterRegistry _eventUpcasters;
     private readonly GameSessionJsonSerializer _serializer;
