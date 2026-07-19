@@ -23,7 +23,6 @@ Use these reference files when working in specific areas:
 - **`.agents/docs/validation-policy.md`** — Use when running validation, debugging CI failures, or deciding test coverage scope. Documents the repo's five test kinds (unit, integration, game-content, API, brute-force) and when to use each.
 - **`.agents/docs/artifact-policy.md`** — Use when creating agent artifacts, managing screenshots/evidence, or working with unslop profiles.
 - **`.agents/docs/architecture-guardrails.md`** — Use when making architecture decisions, touching GameSession, modifying persistence, or working with seed codecs.
-- **`.agents/docs/event-sourcing-integrity-policy.md`** — Use when working with event sourcing, persistence load/write paths, projections, snapshot cache, or payload versioning. The primary operational surface for event sourcing integrity: design principles, policy rules, canonical flow diagram, negative constraints, skill routing, and enforcement mechanisms.
 - **`.agents/docs/coding-discipline.md`** — Use when writing code, deciding scope boundaries, or refactoring.
 - **`.agents/docs/worker-environment.md`** — Use when working with connectors, handling images, running dev services, or managing worker cleanup.
 - **`.agents/docs/repo-skills-policy.md`** — Use when syncing marketplace skills or working with the skill vendoring system.

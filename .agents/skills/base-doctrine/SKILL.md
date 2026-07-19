@@ -43,6 +43,7 @@ Use this skill as the cross-runtime doctrine store for cross-project operating i
 - Deciding where durable doctrine belongs, canonical source truth, installed-skill versus repo-source boundaries, or agent asset marketplace routing: read `references/durable-doctrine-routing.md`.
 - Bounded skill/reference reading, anti-loop stop rules, or "how much should I read before acting" questions: read `references/bounded-read-loop.md`.
 - Failure, correction, and trust posture: read `references/failure-and-trust-posture.md`.
+- Worker and subagent continuity, dispatch lifecycle, or evidence-based stall handling: read `references/worker-continuity.md`.
 - Output shape, reserved artifact forms, YAML-vs-non-YAML conflicts, worker-copy attention guards, or artifact authority: read `references/output-artifact-shape.md`.
 - Report partitioning, report laundering, worker returns, verification summaries, publication notes, or closure summaries: read `references/report-hygiene.md`.
 - Quick map: read `references/doctrine-index.md`.
