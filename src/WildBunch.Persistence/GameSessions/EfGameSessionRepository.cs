@@ -19,17 +19,20 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     private readonly GameSessionJsonSerializer _serializer;
     private readonly TravelDiaryDayProjector _travelDiaryDayProjector;
     private readonly PayloadUpcasterRegistry _eventUpcasters;
+    private readonly PersistedPayloadLoader _payloadLoader;
 
-    public EfGameSessionRepository(
+    internal EfGameSessionRepository(
         WildBunchDbContext dbContext,
         GameSessionJsonSerializer serializer,
         TravelDiaryDayProjector travelDiaryDayProjector,
-        PayloadUpcasterRegistry eventUpcasters)
+        PayloadUpcasterRegistry eventUpcasters,
+        PersistedPayloadLoader payloadLoader)
     {
         _dbContext = dbContext;
         _serializer = serializer;
         _travelDiaryDayProjector = travelDiaryDayProjector;
         _eventUpcasters = eventUpcasters;
+        _payloadLoader = payloadLoader;
     }
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
@@ -342,17 +345,9 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
         }
 
-        // Reconstruct the world from the WorldGenerated event.
-        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
-        if (worldGenerated is null)
-        {
-            throw new InvalidOperationException(
-                $"Cannot load session {id} from events: no WorldGenerated event in the stream.");
-        }
-        var world = worldGenerated.World.ToDomain();
-
-        // Rehydrate the aggregate from the full event stream.
-        var session = GameSession.RehydrateFromEvents(id, world, events);
+        // Rehydrate the aggregate from the full event stream via the shared
+        // SessionRebuilder (also used by PersistedPayloadLoader's rebuild callback).
+        var session = SessionRebuilder.RebuildFromEvents(id, events, _serializer);
 
         // Rebuild diary days via the projector.
         var diaryProjection = _travelDiaryDayProjector.Project(events);

@@ -28,6 +28,25 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<TravelDiaryDayProjector>();
+
+        // PersistedPayloadLoader: the single funnel that turns persisted rows into
+        // domain objects. The rebuild callback is used when a component's stored
+        // version is stale — it rehydrates the full session from events and
+        // extracts the component. See ADR-0028 and the event sourcing integrity
+        // policy. The callback uses SessionRebuilder so the rebuild logic is
+        // shared with LoadFromEventsAsync.
+        services.AddSingleton<PersistedPayloadLoader>(sp =>
+        {
+            var eventUpcasters = sp.GetRequiredService<PayloadUpcasterRegistry>();
+            var serializer = sp.GetRequiredService<GameSessionJsonSerializer>();
+            var diaryDayProjector = sp.GetRequiredService<TravelDiaryDayProjector>();
+            return new PersistedPayloadLoader(
+                eventUpcasters,
+                serializer,
+                diaryDayProjector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        });
+
         services.AddDbContext<WildBunchDbContext>((_, options) => PersistenceDbContextOptions.Configure(options, configuration));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
