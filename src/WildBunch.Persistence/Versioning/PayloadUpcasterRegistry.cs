@@ -9,7 +9,7 @@ namespace WildBunch.Persistence.Versioning;
 /// an upcaster. The act of bumping IS the act of writing the upcaster.
 /// See the event sourcing integrity policy and ADR-0028.
 /// </summary>
-internal sealed class PayloadUpcasterRegistry
+public sealed class PayloadUpcasterRegistry
 {
     private readonly Dictionary<(PayloadKind, string), SortedDictionary<int, IPayloadUpcaster>> _upcasters = new();
 

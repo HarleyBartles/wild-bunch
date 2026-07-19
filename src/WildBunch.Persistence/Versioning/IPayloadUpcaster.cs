@@ -17,7 +17,7 @@ internal enum PayloadKind
 /// v1 to currentVersion is validated at startup. See the event sourcing
 /// integrity policy.
 /// </summary>
-internal interface IPayloadUpcaster
+public interface IPayloadUpcaster
 {
     string PayloadType { get; }
     int FromVersion { get; }      // transforms FromVersion -> FromVersion + 1
@@ -28,4 +28,4 @@ internal interface IPayloadUpcaster
 /// Marker interface for event upcasters. Used for DI filtering and
 /// build-time completeness tests. See the event sourcing integrity policy.
 /// </summary>
-internal interface IEventUpcaster : IPayloadUpcaster { }
+public interface IEventUpcaster : IPayloadUpcaster { }
