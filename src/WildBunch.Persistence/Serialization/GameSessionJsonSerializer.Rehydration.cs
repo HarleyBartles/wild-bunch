@@ -8,7 +8,7 @@ namespace WildBunch.Persistence.Serialization;
 
 public sealed partial class GameSessionJsonSerializer
 {
-    public GameSession RehydrateGameSession(
+    internal GameSession RehydrateGameSession(
         Guid id,
         GameStatus status,
         GameDifficulty gameDifficulty,

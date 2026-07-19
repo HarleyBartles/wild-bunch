@@ -11,7 +11,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(ledger.ToSnapshot(), Options);
     }
 
-    public UnrelatedCriminalLedger DeserializeUnrelatedCriminalLedger(string json)
+    internal UnrelatedCriminalLedger DeserializeUnrelatedCriminalLedger(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = JsonSerializer.Deserialize<UnrelatedCriminalLedgerSnapshot>(json, Options)

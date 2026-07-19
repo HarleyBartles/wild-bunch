@@ -58,7 +58,13 @@ public sealed class UnrelatedCriminalLedgerPersistenceTests
         using var fixture = new PostgreSqlPersistenceFixture();
         var context = fixture.CreateContext();
         var unitOfWork = new EfGameSessionUnitOfWork(context);
-        var repository = new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
+        var serializer = new GameSessionJsonSerializer();
+        var payloadLoader = new PersistedPayloadLoader(
+            new PayloadUpcasterRegistry([]),
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
 
         var session = CreateSessionWithFullLedger(gangSuspectCount: 2, unrelatedWarrantCount: 6);
 

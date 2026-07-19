@@ -21,7 +21,7 @@ public sealed partial class GameSessionJsonSerializer
     /// Deserializes a stored event payload back to a typed domain event.
     /// Throws if the event type is unknown.
     /// </summary>
-    public IDomainEvent DeserializeEvent(string eventType, string payloadJson)
+    internal IDomainEvent DeserializeEvent(string eventType, string payloadJson)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
         ArgumentException.ThrowIfNullOrWhiteSpace(payloadJson);

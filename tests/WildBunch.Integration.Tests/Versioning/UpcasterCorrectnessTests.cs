@@ -102,4 +102,42 @@ public sealed class UpcasterCorrectnessTests
         public string Upcast(string payloadJson)
             => payloadJson.Replace("}", ",\"anotherField\":\"added\"}");
     }
+
+    /// <summary>
+    /// Verifies the runtime guard in Upcast() (line 100-104) is defense-in-depth
+    /// behind the construction-time contiguous chain validation. The construction
+    /// check makes the runtime guard unreachable for event upcasters — if someone
+    /// removes the construction check, this test documents that the runtime guard
+    /// is still present and tested.
+    /// We bypass the construction check via reflection to reach the runtime guard.
+    /// </summary>
+    [Fact]
+    public void Upcast_MissingUpcasterInChain_ThrowsAtRuntime()
+    {
+        // Build a valid registry with v1->v2, then use reflection to add a
+        // v3 upcaster without a v2->v3, creating a gap the construction check
+        // would normally reject. This lets us reach the runtime guard.
+        var registry = new PayloadUpcasterRegistry([new TestEventV1ToV2Upcaster()]);
+
+        // Use reflection to inject a v3 FromVersion upcaster (skipping v2->v3),
+        // bypassing the construction-time contiguous chain validation.
+        var upcastersField = typeof(PayloadUpcasterRegistry)
+            .GetField("_upcasters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        var upcasters = (System.Collections.Generic.Dictionary<(PayloadKind, string), SortedDictionary<int, IPayloadUpcaster>>)upcastersField.GetValue(registry)!;
+        var chain = upcasters[(PayloadKind.Event, "TestEvent")];
+        chain[3] = new TestEventV3ToV4Upcaster();  // gap: v3 present, v2 missing
+
+        // CurrentVersion is now 4 (max FromVersion + 1 = 3 + 1).
+        // Upcast from v1 should run v1->v2, then fail at v2 (no upcaster for v2->v3).
+        Assert.Throws<InvalidOperationException>(() =>
+            registry.Upcast("TestEvent", storedVersion: 1, """{"existingField":"value"}"""));
+    }
+
+    private sealed class TestEventV3ToV4Upcaster : IEventUpcaster
+    {
+        public string PayloadType => "TestEvent";
+        public int FromVersion => 3;
+        public string Upcast(string payloadJson)
+            => payloadJson.Replace("}", ",\"v4Field\":\"added\"}");
+    }
 }

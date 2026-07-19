@@ -12,7 +12,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(presenceEntries.Select(WantedSuspectPresenceSnapshot.FromDomain).ToArray(), Options);
     }
 
-    public IReadOnlyList<WantedSuspectPresenceEntry> DeserializeWantedSuspectPresenceLedger(string? json)
+    internal IReadOnlyList<WantedSuspectPresenceEntry> DeserializeWantedSuspectPresenceLedger(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {

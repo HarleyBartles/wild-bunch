@@ -1,21 +1,20 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
-using WildBunch.Persistence.Serialization;
 
 namespace WildBunch.Persistence.GameSessions;
 
 public sealed class EfGameSessionReadRepository : IGameSessionReadRepository
 {
     private readonly WildBunchDbContext _dbContext;
-    private readonly GameSessionJsonSerializer _serializer;
+    private readonly GameSessionReadStoreLoader _readStoreLoader;
 
-    public EfGameSessionReadRepository(WildBunchDbContext dbContext, GameSessionJsonSerializer serializer)
+    public EfGameSessionReadRepository(WildBunchDbContext dbContext, GameSessionReadStoreLoader readStoreLoader)
     {
         _dbContext = dbContext;
-        _serializer = serializer;
+        _readStoreLoader = readStoreLoader;
     }
 
     public Task<GameSessionReadModel?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
-        => GameSessionReadStoreLoader.LoadGameSessionReadModelAsync(_dbContext, _serializer, id, cancellationToken);
+        => _readStoreLoader.LoadGameSessionReadModelAsync(_dbContext, id, cancellationToken);
 }

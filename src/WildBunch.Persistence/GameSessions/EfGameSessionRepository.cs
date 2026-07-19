@@ -19,20 +19,53 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     private readonly GameSessionJsonSerializer _serializer;
     private readonly TravelDiaryDayProjector _travelDiaryDayProjector;
     private readonly PayloadUpcasterRegistry _eventUpcasters;
+    private readonly PersistedPayloadLoader _payloadLoader;
 
     public EfGameSessionRepository(
         WildBunchDbContext dbContext,
         GameSessionJsonSerializer serializer,
         TravelDiaryDayProjector travelDiaryDayProjector,
-        PayloadUpcasterRegistry eventUpcasters)
+        PayloadUpcasterRegistry eventUpcasters,
+        PersistedPayloadLoader payloadLoader)
     {
         _dbContext = dbContext;
         _serializer = serializer;
         _travelDiaryDayProjector = travelDiaryDayProjector;
         _eventUpcasters = eventUpcasters;
+        _payloadLoader = payloadLoader;
     }
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
+        => await LoadAsync(id, cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
+    {
+        var sessionIds = await _dbContext.GameSessions.AsNoTracking()
+            .Where(entity => entity.Status == status.ToString())
+            .Select(entity => entity.Id)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var sessions = new List<GameSession>(sessionIds.Length);
+        foreach (var id in sessionIds)
+        {
+            var session = await LoadAsync(new GameSessionId(id), cancellationToken).ConfigureAwait(false);
+            if (session is not null)
+            {
+                sessions.Add(session);
+            }
+        }
+        return sessions;
+    }
+
+    /// <summary>
+    /// Centralized load routing shared by <see cref="GetByIdAsync"/> and
+    /// <see cref="GetByStatusAsync"/>. The snapshot is a shortcut cache, not a
+    /// requirement — if the snapshot is stale or components are missing, the
+    /// full replay path (<see cref="LoadFromEventsAsync"/>) is used.
+    /// See ADR-0028 and the event sourcing integrity policy.
+    /// </summary>
+    private async Task<GameSession?> LoadAsync(GameSessionId id, CancellationToken cancellationToken)
     {
         // Check if the session exists and whether the snapshot is current.
         var envelope = await _dbContext.GameSessions.AsNoTracking()
@@ -53,13 +86,23 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // Missing-snapshot guard: the snapshot version matches the stream version, but the
         // component rows may be missing or corrupted. In that case the fast path
-        // (LoadStoreAsync + ToAggregate) would throw on the required Player component.
-        // Fall back to the full replay path so the snapshot is never a hard requirement.
+        // (LoadStoreAsync + ToAggregate) would throw on GetRequiredPayload for a
+        // missing component. Fall back to the full replay path so the snapshot is
+        // never a hard requirement. Check that all required components are present,
+        // not just any row — partial corruption must also fall back.
         // See ADR-0028 and the event sourcing integrity policy.
-        var hasComponents = await _dbContext.GameSessionComponents.AsNoTracking()
-            .AnyAsync(c => c.SessionId == id.Value, cancellationToken)
+        var requiredComponents = new[]
+        {
+            GameSessionComponentNames.Player,
+            GameSessionComponentNames.World,
+            GameSessionComponentNames.CaseFile,
+            GameSessionComponentNames.Clock,
+            GameSessionComponentNames.PursuitState
+        };
+        var presentComponentCount = await _dbContext.GameSessionComponents.AsNoTracking()
+            .CountAsync(c => c.SessionId == id.Value && requiredComponents.Contains(c.ComponentName), cancellationToken)
             .ConfigureAwait(false);
-        if (!hasComponents)
+        if (presentComponentCount < requiredComponents.Length)
         {
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
@@ -67,26 +110,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
         return store is null ? null : ToAggregate(store);
-    }
-
-    public async Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
-    {
-        var sessionIds = await _dbContext.GameSessions.AsNoTracking()
-            .Where(entity => entity.Status == status.ToString())
-            .Select(entity => entity.Id)
-            .ToArrayAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var sessions = new List<GameSession>(sessionIds.Length);
-        foreach (var id in sessionIds)
-        {
-            var store = await LoadStoreAsync(new GameSessionId(id), cancellationToken).ConfigureAwait(false);
-            if (store is not null)
-            {
-                sessions.Add(ToAggregate(store));
-            }
-        }
-        return sessions;
     }
 
     public async Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
@@ -256,12 +279,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return Array.Empty<IDomainEvent>();
         }
 
-        var events = new IDomainEvent[storedEvents.Length];
-        for (var i = 0; i < storedEvents.Length; i++)
-        {
-            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
-        }
-        return events;
+        return _payloadLoader.LoadEvents(storedEvents);
     }
 
     private async Task<GameSessionStore?> LoadStoreAsync(GameSessionId id, CancellationToken cancellationToken)
@@ -277,10 +295,9 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToDictionaryAsync(component => component.ComponentName, cancellationToken)
             .ConfigureAwait(false);
 
-        var diaryDays = await _dbContext.GameSessionDiaryDays.AsNoTracking()
+        var diaryDayEntities = await _dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
             .OrderBy(day => day.Sequence)
-            .Select(day => day.PayloadJson)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -293,11 +310,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var allEvents = new IDomainEvent[allStoredEvents.Length];
-        for (var i = 0; i < allStoredEvents.Length; i++)
-        {
-            allEvents[i] = _serializer.DeserializeEvent(allStoredEvents[i].EventType, allStoredEvents[i].PayloadJson);
-        }
+        var allEvents = _payloadLoader.LoadEvents(allStoredEvents);
 
         // Post-snapshot events for state replay (subset of allEvents).
         IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();
@@ -308,10 +321,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 .ToArray();
         }
 
+        var diaryDays = _payloadLoader.LoadDiaryDays(diaryDayEntities, allEvents);
         return new GameSessionStore(
             envelope,
             components,
-            diaryDays.Select(_serializer.DeserializeTravelDiaryDay).ToArray(),
+            diaryDays,
             postSnapshotEvents,
             allEvents);
     }
@@ -336,23 +350,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return null;
         }
 
-        var events = new IDomainEvent[storedEvents.Length];
-        for (var i = 0; i < storedEvents.Length; i++)
-        {
-            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
-        }
+        var events = _payloadLoader.LoadEvents(storedEvents);
 
-        // Reconstruct the world from the WorldGenerated event.
-        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
-        if (worldGenerated is null)
-        {
-            throw new InvalidOperationException(
-                $"Cannot load session {id} from events: no WorldGenerated event in the stream.");
-        }
-        var world = worldGenerated.World.ToDomain();
-
-        // Rehydrate the aggregate from the full event stream.
-        var session = GameSession.RehydrateFromEvents(id, world, events);
+        // Rehydrate the aggregate from the full event stream via the shared
+        // SessionRebuilder (also used by PersistedPayloadLoader's rebuild callback).
+        var session = SessionRebuilder.RebuildFromEvents(id, events, _serializer);
 
         // Rebuild diary days via the projector.
         var diaryProjection = _travelDiaryDayProjector.Project(events);
@@ -366,28 +368,28 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private GameSession ToAggregate(GameSessionStore store)
     {
-        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player));
-        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World));
-        var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile));
-        var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock));
-        var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState));
-        var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup);
+        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
+        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
+        var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents));
+        var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents));
+        var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents));
+        var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
         var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
-        var saltSourceJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.SaltSource);
+        var saltSourceJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.SaltSource, _payloadLoader, store.AllEvents);
         var saltSource = saltSourceJson is null ? SaltSource.CreateRuntime() : _serializer.DeserializeSaltSource(saltSourceJson);
-        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState);
+        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
         var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
-        var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey);
+        var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents);
         var journey = journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson);
-        var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CompletedJourneyHistory);
+        var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CompletedJourneyHistory, _payloadLoader, store.AllEvents);
         var completedJourneyHistory = completedJourneyHistoryJson is null
             ? Array.Empty<TravelJourneySnapshot>()
             : _serializer.DeserializeCompletedJourneyHistory(completedJourneyHistoryJson);
-        var wantedSuspectPresenceLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.WantedSuspectPresenceLedger);
+        var wantedSuspectPresenceLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.WantedSuspectPresenceLedger, _payloadLoader, store.AllEvents);
         var wantedSuspectPresenceEntries = wantedSuspectPresenceLedgerJson is null
             ? Array.Empty<WantedSuspectPresenceEntry>()
             : _serializer.DeserializeWantedSuspectPresenceLedger(wantedSuspectPresenceLedgerJson);
-        var currentActionContextJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CurrentActionContext);
+        var currentActionContextJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CurrentActionContext, _payloadLoader, store.AllEvents);
         TownActionContext currentActionContext;
         TownId? currentActionContextTownId;
         if (currentActionContextJson is null)
@@ -465,7 +467,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Set PendingDevTravelOverride from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(DevTravelOverrideForced/Cleared/Consumed).
         // When the snapshot is current, this restores the persisted dev override. See BUNCH-89.
-        var devOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevTravelOverride);
+        var devOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevTravelOverride, _payloadLoader, store.AllEvents);
         var pendingDevOverride = _serializer.DeserializePendingDevTravelOverride(devOverrideJson);
         if (pendingDevOverride is not null)
         {
@@ -475,10 +477,10 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Restore BountyLoop-owned state from snapshot (dev saloon override + unrelated
         // criminal ledger). The constructor builds a fresh BountyLoop; this overwrites
         // the owned state with persisted values. See BUNCH-90, BUNCH-107, BUNCH-112.
-        var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride);
+        var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride, _payloadLoader, store.AllEvents);
         var pendingDevSaloonOverride = _serializer.DeserializePendingDevSaloonOverride(devSaloonOverrideJson);
 
-        var unrelatedCriminalLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.UnrelatedCriminalLedger);
+        var unrelatedCriminalLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.UnrelatedCriminalLedger, _payloadLoader, store.AllEvents);
         WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger = null;
         if (unrelatedCriminalLedgerJson is not null)
         {
@@ -493,7 +495,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Restore dev layout salts from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(DevLayoutSaltsForced).
         // When the snapshot is current, this restores the persisted dev salts. See BUNCH-147.
-        var devLayoutSaltsJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.DevLayoutSalts);
+        var devLayoutSaltsJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.DevLayoutSalts, _payloadLoader, store.AllEvents);
         var devLayoutSalts = _serializer.DeserializeDevLayoutSalts(devLayoutSaltsJson);
         if (devLayoutSalts is not null)
         {
@@ -524,14 +526,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             {
                 SessionId = sessionId,
                 ComponentName = componentName,
-                ComponentVersion = SchemaVersion,
+                ComponentVersion = ProjectionVersions.ForComponent(componentName),
                 PayloadJson = payloadJson,
                 UpdatedAtUtc = now
             });
             return;
         }
 
-        component.ComponentVersion = SchemaVersion;
+        component.ComponentVersion = ProjectionVersions.ForComponent(componentName);
         component.PayloadJson = payloadJson;
         component.UpdatedAtUtc = now;
     }
@@ -563,6 +565,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 current.PayloadJson = desiredJson;
                 current.RecordedAtUtc = DateTime.UtcNow;
             }
+            current.SchemaVersion = ProjectionVersions.DiaryDay;
         }
 
         for (var index = existing.Count; index < travelDiaryDays.Count; index++)
@@ -572,7 +575,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 SessionId = sessionId,
                 Sequence = index,
                 PayloadJson = _serializer.SerializeTravelDiaryDay(travelDiaryDays[index]),
-                RecordedAtUtc = DateTime.UtcNow
+                RecordedAtUtc = DateTime.UtcNow,
+                SchemaVersion = ProjectionVersions.DiaryDay
             });
         }
 

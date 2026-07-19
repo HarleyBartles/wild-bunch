@@ -1,4 +1,5 @@
 using System.Reflection;
+using WildBunch.Persistence;
 using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Integration.Tests.Versioning;
@@ -13,25 +14,32 @@ public sealed class UpcasterChainCompletenessTests
     [Fact]
     public void AllEventUpcastersInAssembly_AreRegisteredInDi()
     {
-        // The DI registration in DependencyInjection.cs explicitly lists upcasters.
-        // This test asserts that every IEventUpcaster class in the WildBunch.Persistence
-        // assembly is referenced by that registration.
-        //
-        // Since no upcasters exist yet, this test asserts that the assembly contains
-        // zero IEventUpcaster implementations. When the first upcaster is written,
-        // this test will fail until it's registered in DependencyInjection.cs.
-
-        var upcasterType = typeof(IEventUpcaster);
+        // Scan the assembly for all concrete IEventUpcaster implementations.
+        var interfaceType = typeof(IEventUpcaster);
         var assembly = typeof(PayloadUpcasterRegistry).Assembly;
 
-        var allUpcasters = assembly.GetTypes()
-            .Where(t => upcasterType.IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false })
+        var allUpcastersInAssembly = assembly.GetTypes()
+            .Where(t => interfaceType.IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false })
             .ToList();
 
-        // No upcasters exist yet. When upcasters are added, the DI registration
-        // in DependencyInjection.cs must reference them. This test will need to
-        // be updated to verify the registration list matches the assembly scan.
-        Assert.Empty(allUpcasters);
+        // Call the same method that DI uses to build the registry.
+        var registeredUpcasters = DependencyInjection.CreateDefaultUpcasters();
+
+        // Every upcaster in the assembly must appear in the DI registration list.
+        // This catches the case where a new upcaster class is added to the assembly
+        // but forgotten in CreateDefaultUpcasters().
+        var registeredTypes = registeredUpcasters.Select(u => u.GetType()).ToHashSet();
+        foreach (var upcasterTypeInAssembly in allUpcastersInAssembly)
+        {
+            Assert.Contains(upcasterTypeInAssembly, registeredTypes);
+        }
+
+        // If there are upcasters, verify the registry accepts them (chain validation).
+        if (allUpcastersInAssembly.Count > 0)
+        {
+            var registry = new PayloadUpcasterRegistry(registeredUpcasters);
+            Assert.NotEmpty(registry.RegisteredPayloadTypes);
+        }
     }
 
     [Fact]

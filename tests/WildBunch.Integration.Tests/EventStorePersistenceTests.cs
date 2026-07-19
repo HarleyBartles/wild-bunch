@@ -580,6 +580,17 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddSingleton<TravelDiaryDayProjector>();
         services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));
+        services.AddSingleton<PersistedPayloadLoader>(sp =>
+        {
+            var eventUpcasters = sp.GetRequiredService<PayloadUpcasterRegistry>();
+            var serializer = sp.GetRequiredService<GameSessionJsonSerializer>();
+            var diaryDayProjector = sp.GetRequiredService<TravelDiaryDayProjector>();
+            return new PersistedPayloadLoader(
+                eventUpcasters,
+                serializer,
+                diaryDayProjector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        });
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         var provider = services.BuildServiceProvider();

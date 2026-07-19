@@ -10,5 +10,7 @@ public sealed class GameSessionDiaryDayEntity
 
     public DateTime RecordedAtUtc { get; set; }
 
+    public int SchemaVersion { get; set; }
+
     public GameSessionEntity Session { get; set; } = null!;
 }

@@ -1,3 +1,6 @@
+using WildBunch.Domain.Events;
+using WildBunch.Persistence.Versioning;
+
 namespace WildBunch.Persistence.GameSessions;
 
 /// <summary>
@@ -34,13 +37,18 @@ internal static class GameSessionComponentNames
 
 internal static class GameSessionComponentPayloads
 {
-    internal static string GetRequiredPayload(IReadOnlyDictionary<string, GameSessionComponentEntity> components, string componentName)
-        => components.TryGetValue(componentName, out var component)
-            ? component.PayloadJson
-            : throw new InvalidOperationException($"Missing required game session component '{componentName}'.");
+    internal static string GetRequiredPayload(
+        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
+        string componentName,
+        PersistedPayloadLoader payloadLoader,
+        IReadOnlyList<IDomainEvent> events)
+        => payloadLoader.LoadComponentPayload(components, componentName, events)
+            ?? throw new InvalidOperationException($"Missing required game session component '{componentName}'.");
 
-    internal static string? GetOptionalPayload(IReadOnlyDictionary<string, GameSessionComponentEntity> components, string componentName)
-        => components.TryGetValue(componentName, out var component)
-            ? component.PayloadJson
-            : null;
+    internal static string? GetOptionalPayload(
+        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
+        string componentName,
+        PersistedPayloadLoader payloadLoader,
+        IReadOnlyList<IDomainEvent> events)
+        => payloadLoader.LoadComponentPayload(components, componentName, events);
 }

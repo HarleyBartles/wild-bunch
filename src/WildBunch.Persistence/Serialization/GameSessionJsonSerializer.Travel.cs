@@ -12,7 +12,7 @@ public sealed partial class GameSessionJsonSerializer
     public string SerializeJourneySnapshot(TravelJourneySnapshot? journey)
         => journey is null ? string.Empty : JsonSerializer.Serialize(JourneySnapshot.FromDomain(journey), Options);
 
-    public TravelJourneySnapshot? DeserializeJourneySnapshot(string? json)
+    internal TravelJourneySnapshot? DeserializeJourneySnapshot(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -28,7 +28,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(completedJourneys.Select(JourneySnapshot.FromDomain).ToArray(), Options);
     }
 
-    public IReadOnlyList<TravelJourneySnapshot> DeserializeCompletedJourneyHistory(string? json)
+    internal IReadOnlyList<TravelJourneySnapshot> DeserializeCompletedJourneyHistory(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -44,7 +44,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(TravelDiaryDaySnapshot.FromDomain(day), Options);
     }
 
-    public TravelDiaryDayState DeserializeTravelDiaryDay(string json)
+    internal TravelDiaryDayState DeserializeTravelDiaryDay(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return Deserialize<TravelDiaryDaySnapshot>(json).ToDomain();

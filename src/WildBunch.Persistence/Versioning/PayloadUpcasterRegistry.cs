@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-
 namespace WildBunch.Persistence.Versioning;
 
 /// <summary>
@@ -13,7 +11,7 @@ public sealed class PayloadUpcasterRegistry
 {
     private readonly Dictionary<(PayloadKind, string), SortedDictionary<int, IPayloadUpcaster>> _upcasters = new();
 
-    public PayloadUpcasterRegistry(IEnumerable<IPayloadUpcaster> upcasters)
+    internal PayloadUpcasterRegistry(IEnumerable<IPayloadUpcaster> upcasters)
     {
         ArgumentNullException.ThrowIfNull(upcasters);
 
@@ -46,11 +44,19 @@ public sealed class PayloadUpcasterRegistry
     }
 
     /// <summary>
+    /// The set of (PayloadKind, payloadType) pairs that have at least one
+    /// registered upcaster. Used by the chain completeness test to verify
+    /// that every IEventUpcaster in the assembly is registered in DI.
+    /// </summary>
+    internal IReadOnlySet<(PayloadKind Kind, string PayloadType)> RegisteredPayloadTypes
+        => _upcasters.Keys.ToHashSet();
+
+    /// <summary>
     /// Returns the current version for the given payload type.
     /// Derived from the count of registered upcasters: no upcasters -> v1;
     /// N upcasters -> v(N+1). There is no other API to declare a version.
     /// </summary>
-    public int CurrentVersion(string payloadType)
+    internal int CurrentVersion(string payloadType)
     {
         var key = (PayloadKind.Event, payloadType);
         return _upcasters.TryGetValue(key, out var chain)
@@ -63,7 +69,7 @@ public sealed class PayloadUpcasterRegistry
     /// Fails closed if storedVersion > current (code is older than data)
     /// or if the chain is non-contiguous (missing upcaster for a transition).
     /// </summary>
-    public string Upcast(string payloadType, int storedVersion, string payloadJson)
+    internal string Upcast(string payloadType, int storedVersion, string payloadJson)
     {
         var current = CurrentVersion(payloadType);
 

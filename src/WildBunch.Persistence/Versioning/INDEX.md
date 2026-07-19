@@ -5,3 +5,5 @@
 ## Files
 - [IPayloadUpcaster.cs](IPayloadUpcaster.cs)
 - [PayloadUpcasterRegistry.cs](PayloadUpcasterRegistry.cs)
+- [PersistedPayloadLoader.cs](PersistedPayloadLoader.cs)
+- [ProjectionVersions.cs](ProjectionVersions.cs)

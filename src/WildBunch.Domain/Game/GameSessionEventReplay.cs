@@ -108,6 +108,20 @@ public sealed partial class GameSession
             ApplyEvent(session, e);
         }
 
+        // Rebuild the UnrelatedCriminalLedger from the final CaseFile state.
+        // The constructor builds the ledger from a placeholder CaseFile (0 suspects),
+        // and Apply(CaseFileGenerated) only sets CaseFile — it does not rebuild the
+        // BountyLoop. Without this, the full replay path produces a no-op ledger
+        // while the snapshot path correctly restores it via RestoreBountyLoopState.
+        // BuildUnrelatedCriminalLedger replays persisted gang take-ins from
+        // caseFile.SheriffTurnInSettlements, and post-snapshot take-ins are already
+        // replayed via Apply(SheriffTurnInSettled). See ADR-0028.
+        if (session.CaseFile is not null)
+        {
+            var rebuiltLedger = BuildUnrelatedCriminalLedger(session.CaseFile);
+            session.RestoreBountyLoopState(rebuiltLedger, pendingDevSaloonOverride: null);
+        }
+
         // Loaded events are committed history, not uncommitted
         session.MarkEventsCommitted();
         return session;

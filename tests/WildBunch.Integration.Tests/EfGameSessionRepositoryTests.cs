@@ -459,8 +459,15 @@ public sealed class EfGameSessionRepositoryTests
 
         await PersistAsync(commandRepository, unitOfWork, loaded);
 
-        var readRepository = new EfGameSessionReadRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
-        var journalRepository = new EfGameJournalReadRepository(fixture.CreateContext(), new GameSessionJsonSerializer());
+        var serializer = new GameSessionJsonSerializer();
+        var payloadLoader = new PersistedPayloadLoader(
+            new PayloadUpcasterRegistry([]),
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: _ => throw new InvalidOperationException("Rebuild not expected in greenfield tests."));
+        var readStoreLoader = new GameSessionReadStoreLoader(payloadLoader, serializer);
+        var readRepository = new EfGameSessionReadRepository(fixture.CreateContext(), readStoreLoader);
+        var journalRepository = new EfGameJournalReadRepository(fixture.CreateContext(), readStoreLoader);
 
         var sessionRead = await readRepository.GetByIdAsync(session.Id);
         var journalRead = await journalRepository.GetByIdAsync(session.Id, take: 2);
@@ -495,7 +502,13 @@ public sealed class EfGameSessionRepositoryTests
     {
         var context = fixture.CreateContext();
         unitOfWork = new EfGameSessionUnitOfWork(context);
-        return new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
+        var serializer = new GameSessionJsonSerializer();
+        var payloadLoader = new PersistedPayloadLoader(
+            new PayloadUpcasterRegistry([]),
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        return new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
     }
 
     private static async Task PersistAsync(

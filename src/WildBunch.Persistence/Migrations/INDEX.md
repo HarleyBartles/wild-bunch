@@ -19,4 +19,6 @@
 - [20260628062535_RenameTravelDifficultyToGameDifficulty.Designer.cs](20260628062535_RenameTravelDifficultyToGameDifficulty.Designer.cs)
 - [20260628153853_AddSeedCodeToGameSession.cs](20260628153853_AddSeedCodeToGameSession.cs)
 - [20260628153853_AddSeedCodeToGameSession.Designer.cs](20260628153853_AddSeedCodeToGameSession.Designer.cs)
+- [20260719061600_AddDiaryDaySchemaVersion.cs](20260719061600_AddDiaryDaySchemaVersion.cs)
+- [20260719061600_AddDiaryDaySchemaVersion.Designer.cs](20260719061600_AddDiaryDaySchemaVersion.Designer.cs)
 - [WildBunchDbContextModelSnapshot.cs](WildBunchDbContextModelSnapshot.cs)

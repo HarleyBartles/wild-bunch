@@ -1,19 +1,18 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
-using WildBunch.Persistence.Serialization;
 
 namespace WildBunch.Persistence.GameSessions;
 
 public sealed class EfGameJournalReadRepository : IGameJournalReadRepository
 {
     private readonly WildBunchDbContext _dbContext;
-    private readonly GameSessionJsonSerializer _serializer;
+    private readonly GameSessionReadStoreLoader _readStoreLoader;
 
-    public EfGameJournalReadRepository(WildBunchDbContext dbContext, GameSessionJsonSerializer serializer)
+    public EfGameJournalReadRepository(WildBunchDbContext dbContext, GameSessionReadStoreLoader readStoreLoader)
     {
         _dbContext = dbContext;
-        _serializer = serializer;
+        _readStoreLoader = readStoreLoader;
     }
 
     public Task<JournalSnapshot?> GetByIdAsync(
@@ -21,5 +20,5 @@ public sealed class EfGameJournalReadRepository : IGameJournalReadRepository
         int skip = 0,
         int? take = null,
         CancellationToken cancellationToken = default)
-        => GameSessionReadStoreLoader.LoadJournalSnapshotAsync(_dbContext, _serializer, id, skip, take, cancellationToken);
+        => _readStoreLoader.LoadJournalSnapshotAsync(_dbContext, id, skip, take, cancellationToken);
 }
