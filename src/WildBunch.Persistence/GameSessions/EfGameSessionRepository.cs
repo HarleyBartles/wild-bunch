@@ -350,11 +350,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return null;
         }
 
-        var events = new IDomainEvent[storedEvents.Length];
-        for (var i = 0; i < storedEvents.Length; i++)
-        {
-            events[i] = _serializer.DeserializeEvent(storedEvents[i].EventType, storedEvents[i].PayloadJson);
-        }
+        var events = _payloadLoader.LoadEvents(storedEvents);
 
         // Rehydrate the aggregate from the full event stream via the shared
         // SessionRebuilder (also used by PersistedPayloadLoader's rebuild callback).

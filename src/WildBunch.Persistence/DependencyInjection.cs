@@ -16,16 +16,11 @@ public static class DependencyInjection
         services.AddSingleton<GameSessionJsonSerializer>();
 
         // Event upcaster registry. No upcasters registered yet (greenfield repo, all events at v1).
-        // When the first event shape change happens, write an IEventUpcaster and add it here.
-        // The build-time completeness test (Plan D Task 6) asserts every IEventUpcaster in the
-        // assembly is registered here.
-        services.AddSingleton<PayloadUpcasterRegistry>(sp =>
-        {
-            var upcasters = new List<IPayloadUpcaster>();
-            // No upcasters yet. Add upcasters here as they're written:
-            // upcasters.Add(new GameStartedV1ToV2Upcaster());
-            return new PayloadUpcasterRegistry(upcasters);
-        });
+        // When the first event shape change happens, write an IEventUpcaster and add it to
+        // CreateDefaultUpcasters() below. The build-time completeness test
+        // (UpcasterChainCompletenessTests) asserts every IEventUpcaster in the assembly
+        // is returned by CreateDefaultUpcasters().
+        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry(CreateDefaultUpcasters()));
 
         services.AddSingleton<TravelDiaryDayProjector>();
 
@@ -64,5 +59,20 @@ public static class DependencyInjection
         var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
         dbContext.Database.Migrate();
         return services;
+    }
+
+    /// <summary>
+    /// Returns the list of upcasters that the DI registration uses to construct
+    /// PayloadUpcasterRegistry. Extracted as a separate internal method so the
+    /// build-time completeness test (UpcasterChainCompletenessTests) can call it
+    /// directly and verify every IEventUpcaster in the assembly is registered.
+    /// When adding a new upcaster, add it to this method's list.
+    /// </summary>
+    internal static IReadOnlyList<IPayloadUpcaster> CreateDefaultUpcasters()
+    {
+        var upcasters = new List<IPayloadUpcaster>();
+        // No upcasters yet. Add upcasters here as they're written:
+        // upcasters.Add(new GameStartedV1ToV2Upcaster());
+        return upcasters;
     }
 }

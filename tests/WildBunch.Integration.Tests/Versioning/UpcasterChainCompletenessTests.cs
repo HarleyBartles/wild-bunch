@@ -1,5 +1,5 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
+using WildBunch.Persistence;
 using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Integration.Tests.Versioning;
@@ -15,41 +15,31 @@ public sealed class UpcasterChainCompletenessTests
     public void AllEventUpcastersInAssembly_AreRegisteredInDi()
     {
         // Scan the assembly for all concrete IEventUpcaster implementations.
-        var upcasterType = typeof(IEventUpcaster);
+        var interfaceType = typeof(IEventUpcaster);
         var assembly = typeof(PayloadUpcasterRegistry).Assembly;
 
-        var allUpcasters = assembly.GetTypes()
-            .Where(t => upcasterType.IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false })
+        var allUpcastersInAssembly = assembly.GetTypes()
+            .Where(t => interfaceType.IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false })
             .ToList();
 
-        if (allUpcasters.Count == 0)
+        // Call the same method that DI uses to build the registry.
+        var registeredUpcasters = DependencyInjection.CreateDefaultUpcasters();
+
+        // Every upcaster in the assembly must appear in the DI registration list.
+        // This catches the case where a new upcaster class is added to the assembly
+        // but forgotten in CreateDefaultUpcasters().
+        var registeredTypes = registeredUpcasters.Select(u => u.GetType()).ToHashSet();
+        foreach (var upcasterTypeInAssembly in allUpcastersInAssembly)
         {
-            // Greenfield: no upcasters exist yet. This is the expected state.
-            // When the first upcaster is written, it must be registered in
-            // DependencyInjection.cs's AddPersistence method.
-            return;
+            Assert.Contains(upcasterTypeInAssembly, registeredTypes);
         }
 
-        // Build the DI provider and resolve the registry to see what's actually registered.
-        var services = new ServiceCollection();
-        // The registry factory in AddPersistence creates the list of upcasters.
-        // We can't call AddPersistence (it needs IConfiguration), so we replicate
-        // the registration here. If the DI registration changes, this test will
-        // need updating — but that's the point: the test forces awareness.
-        // Instead, instantiate each upcaster and check the registry would accept it.
-        var registeredTypes = new PayloadUpcasterRegistry(
-            allUpcasters.Select(t => (IPayloadUpcaster)Activator.CreateInstance(t)!))
-            .RegisteredPayloadTypes;
-
-        // Every upcaster's PayloadType must appear in the registry.
-        // This proves the chain is valid. The real DI registration check is:
-        // does AddPersistence's factory lambda include all these types?
-        // Since the lambda is code (not introspectable), we assert that the
-        // assembly scan matches what a fully-registered registry would look like.
-        // If a new upcaster is added to the assembly but not to DI, the test
-        // still passes here — but the UpcasterCorrectnessTests pattern and the
-        // DI factory's explicit list serve as the human review checkpoint.
-        Assert.NotEmpty(registeredTypes);
+        // If there are upcasters, verify the registry accepts them (chain validation).
+        if (allUpcastersInAssembly.Count > 0)
+        {
+            var registry = new PayloadUpcasterRegistry(registeredUpcasters);
+            Assert.NotEmpty(registry.RegisteredPayloadTypes);
+        }
     }
 
     [Fact]

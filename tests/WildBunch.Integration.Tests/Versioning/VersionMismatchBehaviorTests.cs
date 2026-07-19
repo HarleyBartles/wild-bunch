@@ -43,7 +43,7 @@ public sealed class VersionMismatchBehaviorTests
     }
 
     [Fact]
-    public void LoadDiaryDays_StaleVersion_TriggersRebuild()
+    public void LoadDiaryDays_StaleVersion_TriggersRebuildFromEvents()
     {
         var registry = new PayloadUpcasterRegistry([]);
         var serializer = new GameSessionJsonSerializer();
@@ -52,25 +52,93 @@ public sealed class VersionMismatchBehaviorTests
             registry, serializer, projector,
             _ => throw new InvalidOperationException("Should not be called for diary days."));
 
-        // A diary day entity with a stale version (v99 — current is v1).
-        // The loader should discard it and rebuild from events via the projector.
+        // A diary day entity with a stale version (v99 — current is v1) and
+        // garbage JSON that would throw if the current-version path were taken.
         var staleDays = new[]
         {
             new GameSessionDiaryDayEntity
             {
                 SessionId = Guid.NewGuid(),
                 Sequence = 0,
-                PayloadJson = "{}",
+                PayloadJson = "THIS_IS_GARBAGE_NOT_VALID_JSON_FOR_DIARY_DAY",
+                SchemaVersion = 99  // stale — use v99 to ensure it's stale (current is v1)
+            }
+        };
+
+        // Use a real event stream so the projector has something to project.
+        var session = CreateSessionWithEvents();
+        var events = session.UncommittedEvents.ToList();
+
+        // If the stale path is taken: the garbage JSON is discarded, the projector
+        // runs on the events, and returns its output (empty for non-journey events).
+        // If the current path were taken: deserializing the garbage JSON would throw.
+        var result = loader.LoadDiaryDays(staleDays, events);
+
+        // The result must match what the projector produces directly — proving
+        // the rebuild path was taken, not the stored-JSON path.
+        var expectedDays = projector.Project(events).Days;
+        Assert.Equal(expectedDays.Count, result.Count);
+    }
+
+    [Fact]
+    public void LoadDiaryDays_MixedStaleAndCurrent_TriggersFullRebuild()
+    {
+        var registry = new PayloadUpcasterRegistry([]);
+        var serializer = new GameSessionJsonSerializer();
+        var projector = new TravelDiaryDayProjector();
+        var loader = new PersistedPayloadLoader(
+            registry, serializer, projector,
+            _ => throw new InvalidOperationException("Should not be called for diary days."));
+
+        // Mix of current (v1) and stale (v99) diary days.
+        // The loader uses All() — if ANY are stale, ALL are discarded and rebuilt.
+        // The current day has valid JSON, but the stale day has garbage JSON.
+        // If the current path were taken for the current day, it would succeed,
+        // but the stale day would throw. The All() check prevents this — all
+        // days are discarded and rebuilt from events.
+        var mixedDays = new[]
+        {
+            new GameSessionDiaryDayEntity
+            {
+                SessionId = Guid.NewGuid(),
+                Sequence = 0,
+                PayloadJson = serializer.SerializeTravelDiaryDay(new TravelDiaryDayState(
+                    1, "Pinecross", "Dry Fork", TravelMode.Mounted, TravelMode.Mounted,
+                    JourneyStatus.Active, 3m, 3m, 4, 4, null, null, null, null, null,
+                    null, null, null, Entries: Array.Empty<string>(),
+                    HealthDelta: 0, WalletDelta: 0m, FoodDelta: 0,
+                    HorseFeedDelta: 0, CanteenChargeDelta: 0, AmmoSpent: 0,
+                    HorseHungerDelta: 0, HorseThirstDelta: 0, HorseExhaustionDelta: 0,
+                    DelayDays: 0, HeatIncrease: 0, CurrentHealth: 1000, CurrentWallet: 25m,
+                    CurrentFood: 3, CurrentHorseFeed: 0, CurrentCanteenCharges: 2,
+                    CurrentAmmo: 0, CurrentHeat: 0, Warnings: Array.Empty<string>())
+                {
+                    Terrain = TrailTerrain.OpenRange, RouteWaterSecure = true, CanteenChargesPerDay = 0
+                }),
+                SchemaVersion = ProjectionVersions.DiaryDay  // current
+            },
+            new GameSessionDiaryDayEntity
+            {
+                SessionId = Guid.NewGuid(),
+                Sequence = 1,
+                PayloadJson = "GARBAGE_JSON_WOULD_THROW_IF_DESERIALIZED",
                 SchemaVersion = 99  // stale
             }
         };
 
-        var events = Array.Empty<IDomainEvent>();  // no events -> empty diary days
+        var session = CreateSessionWithEvents();
+        var events = session.UncommittedEvents.ToList();
 
-        var result = loader.LoadDiaryDays(staleDays, events);
+        // If the All() check works: all days discarded, projector runs, returns its output.
+        // If the All() check were broken (e.g., changed to Any()): the current day would
+        // be deserialized from stored JSON, and the stale day would throw.
+        var result = loader.LoadDiaryDays(mixedDays, events);
 
-        // With no events, the projector returns an empty list.
-        Assert.Empty(result);
+        // All days should be discarded and rebuilt from events.
+        var expectedDays = projector.Project(events).Days;
+        Assert.Equal(expectedDays.Count, result.Count);
+        // The current day's stored data should NOT appear in the result (it was discarded).
+        Assert.DoesNotContain(result, d => d.OriginTownName == "Pinecross" && d.DestinationTownName == "Dry Fork");
     }
 
     [Fact]

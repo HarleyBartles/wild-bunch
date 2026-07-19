@@ -278,6 +278,42 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
     }
 
     /// <summary>
+    /// Proves that partial component corruption (some required components missing)
+    /// triggers the full replay fallback. The missing-snapshot guard checks for all
+    /// 5 required components (Player, World, CaseFile, Clock, PursuitState) — if any
+    /// are missing, the snapshot is considered incomplete and full replay is used.
+    /// </summary>
+    [Fact]
+    public async Task FullReplay_PartialComponentCorruption_LoadsFromEvents()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+        // Create and store
+        var session = CreateSessionWithJourney();
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+        session.MarkEventsCommitted();
+
+        // Delete only the Player component (simulate partial corruption)
+        await using var db = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+        await db.GameSessionComponents
+            .Where(c => c.SessionId == session.Id.Value
+                && c.ComponentName == GameSessionComponentNames.Player)
+            .ExecuteDeleteAsync(cancellationToken: default);
+        await db.SaveChangesAsync();
+
+        // Load — should fall back to full replay because Player is missing
+        var fromEvents = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(fromEvents);
+        Assert.Equal("Ranger Vale", fromEvents!.Player.Name);
+        Assert.Equal(session.Version, fromEvents.Version);
+    }
+
+    /// <summary>
     /// Proves that the UnrelatedCriminalLedger is correctly reconstructed by the
     /// full replay path. The constructor builds the ledger from a placeholder CaseFile
     /// (0 suspects), and Apply(CaseFileGenerated) only sets CaseFile — it does not
