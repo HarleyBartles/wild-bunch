@@ -21,7 +21,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(PlayerSnapshot.FromDomain(player), Options);
     }
 
-    public Player DeserializePlayer(string json)
+    internal Player DeserializePlayer(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<PlayerSnapshot>(json);
@@ -34,7 +34,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(global::WildBunch.Domain.World.WorldSnapshot.FromDomain(world), Options);
     }
 
-    public World DeserializeWorld(string json)
+    internal World DeserializeWorld(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<global::WildBunch.Domain.World.WorldSnapshot>(json);
@@ -47,7 +47,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(CaseFileSnapshot.FromDomain(caseFile), Options);
     }
 
-    public CaseFile DeserializeCaseFile(string json)
+    internal CaseFile DeserializeCaseFile(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<CaseFileSnapshot>(json);
@@ -60,7 +60,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(GameClockSnapshot.FromDomain(clock), Options);
     }
 
-    public GameClock DeserializeClock(string json)
+    internal GameClock DeserializeClock(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<GameClockSnapshot>(json);
@@ -73,7 +73,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(PursuitStateSnapshot.FromDomain(pursuitState), Options);
     }
 
-    public PursuitState DeserializePursuitState(string json)
+    internal PursuitState DeserializePursuitState(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<PursuitStateSnapshot>(json);
@@ -86,7 +86,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(SaltSourceSnapshot.FromDomain(saltSource), Options);
     }
 
-    public SaltSource DeserializeSaltSource(string json)
+    internal SaltSource DeserializeSaltSource(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<SaltSourceSnapshot>(json);
@@ -99,7 +99,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(TownVisitStateSnapshot.FromDomain(townVisitState), Options);
     }
 
-    public TownVisitState DeserializeTownVisitState(string json)
+    internal TownVisitState DeserializeTownVisitState(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<TownVisitStateSnapshot>(json);
@@ -109,7 +109,7 @@ public sealed partial class GameSessionJsonSerializer
     public string SerializeCurrentActionContext(TownActionContext context, TownId? townId)
         => JsonSerializer.Serialize(new CurrentActionContextSnapshot(context, townId?.Value), Options);
 
-    public (TownActionContext context, TownId? townId) DeserializeCurrentActionContext(string json)
+    internal (TownActionContext context, TownId? townId) DeserializeCurrentActionContext(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<CurrentActionContextSnapshot>(json);
@@ -122,19 +122,19 @@ public sealed partial class GameSessionJsonSerializer
     public string? SerializePendingDevTravelOverride(DevTravelOverride? overrideValue)
         => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
 
-    public DevTravelOverride? DeserializePendingDevTravelOverride(string? json)
+    internal DevTravelOverride? DeserializePendingDevTravelOverride(string? json)
         => json is null ? null : Deserialize<DevTravelOverride>(json);
 
     public string? SerializePendingDevSaloonOverride(DevSaloonOverride? overrideValue)
         => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
 
-    public DevSaloonOverride? DeserializePendingDevSaloonOverride(string? json)
+    internal DevSaloonOverride? DeserializePendingDevSaloonOverride(string? json)
         => json is null ? null : Deserialize<DevSaloonOverride>(json);
 
     public string? SerializeDevLayoutSalts(LayoutSalts? layoutSalts)
         => layoutSalts is null ? null : JsonSerializer.Serialize(LayoutSaltsSnapshot.FromDomain(layoutSalts), Options);
 
-    public LayoutSalts? DeserializeDevLayoutSalts(string? json)
+    internal LayoutSalts? DeserializeDevLayoutSalts(string? json)
         => json is null ? null : Deserialize<LayoutSaltsSnapshot>(json)?.ToDomain();
 
     private sealed record LayoutSaltsSnapshot(

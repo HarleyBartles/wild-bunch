@@ -14,7 +14,7 @@ public sealed partial class GameSessionJsonSerializer
         return JsonSerializer.Serialize(GameSessionSnapshot.FromDomain(session), Options);
     }
 
-    public GameSession Deserialize(string stateJson)
+    internal GameSession Deserialize(string stateJson)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(stateJson);
 

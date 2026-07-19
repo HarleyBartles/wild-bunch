@@ -8,7 +8,7 @@ public sealed partial class GameSessionJsonSerializer
     public string SerializeSetup(GameEntropy entropy)
         => JsonSerializer.Serialize(SetupSnapshot.FromDomain(entropy), Options);
 
-    public GameEntropy DeserializeSetup(string json)
+    internal GameEntropy DeserializeSetup(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return Deserialize<SetupSnapshot>(json).ToDomain();
