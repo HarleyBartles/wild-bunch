@@ -16,5 +16,8 @@ public sealed class GameSessionDiaryDayEntityConfiguration : IEntityTypeConfigur
 
         builder.Property(e => e.RecordedAtUtc)
             .IsRequired();
+
+        builder.Property(e => e.SchemaVersion)
+            .IsRequired();
     }
 }
