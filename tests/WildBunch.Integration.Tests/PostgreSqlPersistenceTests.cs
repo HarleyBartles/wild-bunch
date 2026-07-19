@@ -63,7 +63,7 @@ public sealed class PostgreSqlPersistenceTests
         {
             await context.Database.MigrateAsync();
 
-            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
+            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), BuildPayloadLoader(serializer));
             var unitOfWork = new EfGameSessionUnitOfWork(context);
 
             await repository.StoreAsync(session);
@@ -100,7 +100,7 @@ public sealed class PostgreSqlPersistenceTests
         {
             await context.Database.MigrateAsync();
 
-            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
+            var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), BuildPayloadLoader(serializer));
             var unitOfWork = new EfGameSessionUnitOfWork(context);
             await repository.StoreAsync(session);
             await unitOfWork.CommitAsync();
@@ -302,5 +302,14 @@ public sealed class PostgreSqlPersistenceTests
         await using var cleanupContext = new WildBunchDbContext(options);
         cleanupContext.GameSessions.Remove(new GameSessionEntity { Id = sessionId });
         await cleanupContext.SaveChangesAsync();
+    }
+
+    private static PersistedPayloadLoader BuildPayloadLoader(GameSessionJsonSerializer serializer)
+    {
+        return new PersistedPayloadLoader(
+            new PayloadUpcasterRegistry([]),
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
     }
 }

@@ -42,6 +42,17 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
         services.AddSingleton<FullAuditProjector>();
         services.AddSingleton<TravelDiaryDayProjector>();
         services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));
+        services.AddSingleton<PersistedPayloadLoader>(sp =>
+        {
+            var eventUpcasters = sp.GetRequiredService<PayloadUpcasterRegistry>();
+            var serializer = sp.GetRequiredService<GameSessionJsonSerializer>();
+            var diaryDayProjector = sp.GetRequiredService<TravelDiaryDayProjector>();
+            return new PersistedPayloadLoader(
+                eventUpcasters,
+                serializer,
+                diaryDayProjector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        });
         var provider = services.BuildServiceProvider();
 
         using var scope = provider.CreateScope();

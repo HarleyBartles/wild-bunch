@@ -36,7 +36,13 @@ public sealed class MigrationTests
         }
 
         await using var commandContext = new WildBunchDbContext(options);
-        var repository = new EfGameSessionRepository(commandContext, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
+        var serializer = new GameSessionJsonSerializer();
+        var payloadLoader = new PersistedPayloadLoader(
+            new PayloadUpcasterRegistry([]),
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        var repository = new EfGameSessionRepository(commandContext, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
         var unitOfWork = new EfGameSessionUnitOfWork(commandContext);
         var session = CreateSession();
 

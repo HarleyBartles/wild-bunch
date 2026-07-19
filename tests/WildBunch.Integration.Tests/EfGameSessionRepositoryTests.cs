@@ -502,7 +502,13 @@ public sealed class EfGameSessionRepositoryTests
     {
         var context = fixture.CreateContext();
         unitOfWork = new EfGameSessionUnitOfWork(context);
-        return new EfGameSessionRepository(context, new GameSessionJsonSerializer(), new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]));
+        var serializer = new GameSessionJsonSerializer();
+        var payloadLoader = new PersistedPayloadLoader(
+            new PayloadUpcasterRegistry([]),
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        return new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
     }
 
     private static async Task PersistAsync(
