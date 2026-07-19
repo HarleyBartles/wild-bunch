@@ -73,6 +73,11 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     dayStartingState = CaptureBaseline(currentSnapshot, health, wallet, ammo, heat);
                     pendingTrailEvent = null;
                     encounterResolution = null;
+                    // JourneyLoop.Apply(JourneyStarted) clears _travelDiaryDays — the
+                    // projector must match so rebuilds from events stay consistent with
+                    // the aggregate. Without this, starting a second journey leaves
+                    // stale diary days from the first journey in the projection.
+                    diaryDays.Clear();
                     break;
 
                 case TrailEventApplied tea:

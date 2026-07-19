@@ -21,7 +21,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     private readonly PayloadUpcasterRegistry _eventUpcasters;
     private readonly PersistedPayloadLoader _payloadLoader;
 
-    internal EfGameSessionRepository(
+    public EfGameSessionRepository(
         WildBunchDbContext dbContext,
         GameSessionJsonSerializer serializer,
         TravelDiaryDayProjector travelDiaryDayProjector,
@@ -36,6 +36,36 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     }
 
     public async Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
+        => await LoadAsync(id, cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
+    {
+        var sessionIds = await _dbContext.GameSessions.AsNoTracking()
+            .Where(entity => entity.Status == status.ToString())
+            .Select(entity => entity.Id)
+            .ToArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var sessions = new List<GameSession>(sessionIds.Length);
+        foreach (var id in sessionIds)
+        {
+            var session = await LoadAsync(new GameSessionId(id), cancellationToken).ConfigureAwait(false);
+            if (session is not null)
+            {
+                sessions.Add(session);
+            }
+        }
+        return sessions;
+    }
+
+    /// <summary>
+    /// Centralized load routing shared by <see cref="GetByIdAsync"/> and
+    /// <see cref="GetByStatusAsync"/>. The snapshot is a shortcut cache, not a
+    /// requirement — if the snapshot is stale or components are missing, the
+    /// full replay path (<see cref="LoadFromEventsAsync"/>) is used.
+    /// See ADR-0028 and the event sourcing integrity policy.
+    /// </summary>
+    private async Task<GameSession?> LoadAsync(GameSessionId id, CancellationToken cancellationToken)
     {
         // Check if the session exists and whether the snapshot is current.
         var envelope = await _dbContext.GameSessions.AsNoTracking()
@@ -56,13 +86,23 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // Missing-snapshot guard: the snapshot version matches the stream version, but the
         // component rows may be missing or corrupted. In that case the fast path
-        // (LoadStoreAsync + ToAggregate) would throw on the required Player component.
-        // Fall back to the full replay path so the snapshot is never a hard requirement.
+        // (LoadStoreAsync + ToAggregate) would throw on GetRequiredPayload for a
+        // missing component. Fall back to the full replay path so the snapshot is
+        // never a hard requirement. Check that all required components are present,
+        // not just any row — partial corruption must also fall back.
         // See ADR-0028 and the event sourcing integrity policy.
-        var hasComponents = await _dbContext.GameSessionComponents.AsNoTracking()
-            .AnyAsync(c => c.SessionId == id.Value, cancellationToken)
+        var requiredComponents = new[]
+        {
+            GameSessionComponentNames.Player,
+            GameSessionComponentNames.World,
+            GameSessionComponentNames.CaseFile,
+            GameSessionComponentNames.Clock,
+            GameSessionComponentNames.PursuitState
+        };
+        var presentComponentCount = await _dbContext.GameSessionComponents.AsNoTracking()
+            .CountAsync(c => c.SessionId == id.Value && requiredComponents.Contains(c.ComponentName), cancellationToken)
             .ConfigureAwait(false);
-        if (!hasComponents)
+        if (presentComponentCount < requiredComponents.Length)
         {
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
@@ -70,26 +110,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
         return store is null ? null : ToAggregate(store);
-    }
-
-    public async Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default)
-    {
-        var sessionIds = await _dbContext.GameSessions.AsNoTracking()
-            .Where(entity => entity.Status == status.ToString())
-            .Select(entity => entity.Id)
-            .ToArrayAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var sessions = new List<GameSession>(sessionIds.Length);
-        foreach (var id in sessionIds)
-        {
-            var store = await LoadStoreAsync(new GameSessionId(id), cancellationToken).ConfigureAwait(false);
-            if (store is not null)
-            {
-                sessions.Add(ToAggregate(store));
-            }
-        }
-        return sessions;
     }
 
     public async Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
