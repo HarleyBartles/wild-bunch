@@ -1,0 +1,24 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Event Sourcing
+  canonical_url: https://martinfowler.com/eaaDev/EventSourcing.html
+  pinned_source_url: https://martinfowler.com/eaaDev/EventSourcing.html
+  latest_check_url: https://martinfowler.com/eaaDev/EventSourcing.html
+  revision: current
+  retrieved_at: "2026-07-20"
+  content_sha256: 57dfa47cbf6395aee7321ac23f39c595266994a07c25959a841a939d4cd738f0
+  license: Multiple; see CITATIONS.md
+  license_url: https://martinfowler.com/eaaDev/EventSourcing.html
+decomposition:
+  reconciled_against: 57dfa47cbf6395aee7321ac23f39c595266994a07c25959a841a939d4cd738f0
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Martin Fowler Event Sourcing
+    - Greg Young CQRS/Event Sourcing
+    - Microsoft Event Sourcing pattern
+    load_when:
+    - Use when event-sourcing operational guidance is needed.
+    content_mode: first_party_synthesis

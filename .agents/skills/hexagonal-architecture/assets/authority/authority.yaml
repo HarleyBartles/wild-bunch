@@ -1,0 +1,21 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: "Hexagonal Architecture"
+  canonical_url: https://alistair.cockburn.us/hexagonal-architecture/
+  pinned_source_url: https://alistair.cockburn.us/hexagonal-architecture/
+  latest_check_url: https://alistair.cockburn.us/hexagonal-architecture/
+  revision: current
+  retrieved_at: "2026-07-20"
+  content_sha256: 67913f873a9a3cf72980ad7c2f10ede401dd568404e7d35a8df8124b174e54dc
+  license: "Multiple; see CITATIONS.md"
+  license_url: https://alistair.cockburn.us/hexagonal-architecture/
+decomposition:
+  reconciled_against: 67913f873a9a3cf72980ad7c2f10ede401dd568404e7d35a8df8124b174e54dc
+  references:
+  - path: references/operational-guidance.md
+    source_sections: ["Alistair Cockburn Hexagonal Architecture", "Robert C. Martin Clean Architecture", "Jeffrey Palermo Onion Architecture"]
+    load_when:
+    - Use when hexagonal-architecture operational guidance is needed.
+    content_mode: first_party_synthesis

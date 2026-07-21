@@ -1,0 +1,13 @@
+version: 1
+metadata:
+  skill_name: dotnet
+  plugin: dotnet-pack
+  source_category: first_party
+interface:
+  display_name: Dotnet
+  short_description: Use when building or reviewing .NET ecosystem applications, C# language
+    patterns, ASP.NET Core APIs, and common library choices.
+  default_prompt: Use /dotnet when building or reviewing .NET ecosystem applications, C#
+    language patterns, ASP.NET Core APIs, and common library choices.
+policy:
+  allow_implicit_invocation: true

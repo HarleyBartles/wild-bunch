@@ -61,12 +61,12 @@
       "category": "Productivity"
     },
     {
-      "name": "dotnet-kit",
+      "name": "dotnet-pack",
       "source": {
         "source": "github",
         "owner": "HarleyBartles",
         "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/dotnet-kit"
+        "path": "codex-marketplace/plugins/dotnet-pack"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",

@@ -1,0 +1,11 @@
+version: 1
+metadata:
+  skill_name: cqrs
+  plugin: architecture-pack
+  source_category: first_party
+interface:
+  display_name: CQRS
+  short_description: Use when separating read and write models in a distributed or high-scale system, or when event sourcing is under consideration. Do not use when simple CRUD or single-model consistency is sufficient.
+  default_prompt: Use when separating read and write models in a distributed or high-scale system, or when event sourcing is under consideration. Do not use when simple CRUD or single-model consistency is sufficient.
+policy:
+  allow_implicit_invocation: true

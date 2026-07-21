@@ -1,0 +1,11 @@
+version: 1
+metadata:
+  skill_name: wcag
+  plugin: frontend-pack
+  source_category: first_party
+interface:
+  display_name: WCAG
+  short_description: Use when auditing web content accessibility against WCAG 2.2 or mapping success criteria to a verification plan.
+  default_prompt: Use /wcag when auditing web content accessibility against WCAG 2.2 or mapping success criteria to a verification plan.
+policy:
+  allow_implicit_invocation: true

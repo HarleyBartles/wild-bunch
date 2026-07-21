@@ -1,0 +1,14 @@
+schema_version: 1
+reconciled_against: 965383a2f89ff3308cb75f1bbaf6b2cbd6dc24ec83e6f7b5fedb3802c49ac055
+references:
+  - path: references/operational-guidance.md
+    source_sections:
+      - CSS Modules
+      - Sass
+      - Less
+      - styled-components
+      - CSS-in-JS vs preprocessed CSS
+    content_mode: first_party_synthesis
+    load_when:
+      - choosing a CSS approach
+      - refactoring styles across frameworks

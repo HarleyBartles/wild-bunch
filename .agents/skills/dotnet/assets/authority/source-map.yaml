@@ -1,0 +1,19 @@
+schema_version: 1
+reconciled_against: "94c3fc669eb2a8138954773476809ff6310ad6e2c958ea53d9ab40fa91909f3e"
+references:
+- path: references/operational-guidance.md
+  source_sections:
+  - C# language
+  - .NET runtime
+  - ASP.NET Core
+  - Data access and testing
+  - Architecture patterns
+  content_mode: first_party_synthesis
+  load_when:
+  - Use when building or reviewing .NET ecosystem applications in C#.
+  - Use when choosing C# language patterns such as records, pattern matching, async/await,
+    and nullable reference types.
+  - Use when configuring ASP.NET Core APIs with minimal APIs, middleware, routing, or validation.
+  - Use when deciding on common .NET runtime concerns such as dependency injection, logging,
+    and configuration.
+  - Use when selecting data access or testing approaches for .NET projects.

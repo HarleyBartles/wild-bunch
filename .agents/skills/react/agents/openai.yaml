@@ -1,0 +1,13 @@
+version: 1
+metadata:
+  skill_name: react
+  plugin: frontend-pack
+  source_category: first_party
+interface:
+  display_name: React
+  short_description: Use when building or reviewing React component architecture, hooks usage,
+    and performance patterns.
+  default_prompt: Use when building or reviewing React component architecture, hooks usage,
+    and performance patterns.
+policy:
+  allow_implicit_invocation: true

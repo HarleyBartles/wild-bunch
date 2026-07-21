@@ -1,0 +1,13 @@
+schema_version: 1
+reconciled_against: "8aad8974f31adaad0908030711357671c826bac9817be88f6a51ac1cd0e75270"
+references:
+  - path: "references/operational-guidance.md"
+    source_sections:
+      - "Thinking in React"
+      - "State and lifecycle"
+      - "Hooks"
+      - "Performance"
+    content_mode: "first_party_synthesis"
+    load_when:
+      - "Adapting React component, hooks, and performance guidance"
+      - "Designing state, effects, and composition patterns"

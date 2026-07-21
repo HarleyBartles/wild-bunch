@@ -1,0 +1,8 @@
+schema_version: 1
+reconciled_against: 41e3d4048d59e039f7972cf85a70313c8d0612357e0bf19f08a537f7e622f9a8
+references:
+- path: references/operational-guidance.md
+  source_sections: ["Robert C. Martin Clean Architecture", "Alistair Cockburn Hexagonal Architecture", "Jeffrey Palermo Onion Architecture"]
+  load_when:
+  - Use when clean-architecture operational guidance is needed.
+  content_mode: first_party_synthesis

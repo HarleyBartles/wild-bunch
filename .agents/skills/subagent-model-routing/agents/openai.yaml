@@ -1,0 +1,6 @@
+interface:
+  display_name: Subagent Model Routing
+  short_description: Use when choosing a child subagent model, reasoning level, context tier, or paid route.
+  default_prompt: Use /subagent-model-routing before choosing a child subagent model, reasoning level, context tier, or paid route. Detect the runtime, load the shared policy and exactly one matching profile, then return the cheapest adequate included route.
+policy:
+  allow_implicit_invocation: true

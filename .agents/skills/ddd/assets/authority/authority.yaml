@@ -1,0 +1,25 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-source
+authority:
+  title: DDD
+  canonical_url: https://www.domainlanguage.com/ddd/reference/
+  pinned_source_url: https://www.domainlanguage.com/ddd/reference/
+  latest_check_url: https://www.domainlanguage.com/ddd/reference/
+  revision: current
+  retrieved_at: "2026-07-20"
+  content_sha256: b7638db7a6addbeeea90182b1b015068648eb86e570779a3f23f4b188b9f7da8
+  license: Copyright Eric Evans / Domain Language; reference extraction
+  license_url: https://www.domainlanguage.com/ddd/reference/
+decomposition:
+  reconciled_against: b7638db7a6addbeeea90182b1b015068648eb86e570779a3f23f4b188b9f7da8
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Strategic Design
+    - Tactical Design
+    - Building Blocks
+    content_mode: licensed_adaptation
+    load_when:
+    - Use when applying DDD strategic or tactical patterns.
+    - Use when the operational guidance needs source-grounded detail.

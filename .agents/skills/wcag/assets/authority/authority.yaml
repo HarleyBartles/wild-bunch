@@ -1,0 +1,27 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-source
+authority:
+  title: WCAG
+  canonical_url: https://www.w3.org/TR/WCAG22/
+  pinned_source_url: https://www.w3.org/TR/WCAG22/
+  latest_check_url: https://www.w3.org/TR/WCAG22/
+  revision: current
+  retrieved_at: "2026-07-20"
+  content_sha256: 6e3c5fe397257cae509a2fb4752b73062cf8cbeb92c2cec618989b17e4cf7057
+  license: W3C Document License
+  license_url: https://www.w3.org/Consortium/Legal/2015/doc-license
+decomposition:
+  reconciled_against: 6e3c5fe397257cae509a2fb4752b73062cf8cbeb92c2cec618989b17e4cf7057
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Perceivable
+    - Operable
+    - Understandable
+    - Robust
+    content_mode: licensed_adaptation
+    load_when:
+    - auditing accessibility
+    - mapping success criteria
+    - evaluating conformance

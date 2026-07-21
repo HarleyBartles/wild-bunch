@@ -1,0 +1,11 @@
+schema_version: 1
+reconciled_against: 57dfa47cbf6395aee7321ac23f39c595266994a07c25959a841a939d4cd738f0
+references:
+- path: references/operational-guidance.md
+  source_sections:
+  - Martin Fowler Event Sourcing
+  - Greg Young CQRS/Event Sourcing
+  - Microsoft Event Sourcing pattern
+  load_when:
+  - Use when event-sourcing operational guidance is needed.
+  content_mode: first_party_synthesis

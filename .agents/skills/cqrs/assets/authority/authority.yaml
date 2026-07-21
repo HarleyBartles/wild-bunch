@@ -1,0 +1,24 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: CQRS
+  canonical_url: https://martinfowler.com/bliki/CQRS.html
+  pinned_source_url: https://martinfowler.com/bliki/CQRS.html
+  latest_check_url: https://martinfowler.com/bliki/CQRS.html
+  revision: current
+  retrieved_at: "2026-07-20"
+  content_sha256: 65d263717dc2d40c91bb7a3ccd5734d13f7e86fd84e9ab44cca99e181cacaef5
+  license: Multiple; see CITATIONS.md
+  license_url: https://martinfowler.com/bliki/CQRS.html
+decomposition:
+  reconciled_against: 65d263717dc2d40c91bb7a3ccd5734d13f7e86fd84e9ab44cca99e181cacaef5
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Martin Fowler CQRS
+    - Greg Young CQRS/Event Sourcing
+    - Microsoft CQRS pattern
+    load_when:
+    - Use when cqrs operational guidance is needed.
+    content_mode: first_party_synthesis

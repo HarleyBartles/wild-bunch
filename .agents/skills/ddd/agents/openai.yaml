@@ -1,0 +1,13 @@
+version: 1
+metadata:
+  skill_name: ddd
+  plugin: architecture-pack
+  source_category: first_party
+interface:
+  display_name: DDD
+  short_description: Use when modeling a complex business domain, defining bounded
+    contexts, or choosing tactical DDD patterns.
+  default_prompt: Use when modeling a complex business domain, defining bounded contexts,
+    or choosing tactical DDD patterns.
+policy:
+  allow_implicit_invocation: true

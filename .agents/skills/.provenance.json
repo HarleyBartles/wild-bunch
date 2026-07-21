@@ -1,16 +1,16 @@
 {
-  "sha": "0404c71aa38b475f5e0e2f94cdcd1006bdc901ab",
-  "syncedAt": "2026-07-19T19:32:56.776982+00:00",
+  "sha": "e62475b5bd0b89e651a4deee8a5766c76382f554",
+  "syncedAt": "2026-07-21T05:52:51.024366+00:00",
   "syncedPlugins": [
     "repo-worker-pack",
     "superpowers-plus",
     "wild-bunch-project-pack",
     "game-studio",
-    "dotnet-kit",
+    "dotnet-pack",
     "architecture-pack",
     "frontend-pack"
   ],
-  "syncedSkills": 54,
+  "syncedSkills": 56,
   "source": "HarleyBartles/agent-asset-marketplace",
   "sourcePath": ".agents/plugins/marketplace-source/codex-marketplace/plugins",
   "marketplaceFile": ".agents/plugins/marketplace.json"
