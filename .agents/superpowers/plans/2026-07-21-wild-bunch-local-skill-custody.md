@@ -406,7 +406,7 @@
 
   Run the Task 4 validation set after the final review fix. Record the branch SHA, submodule SHA, local-skill count, and provenance count in the PR body; do not claim marketplace removal until its gitlink is actually updated here.
 
-- [ ] **Step 3: Publish a draft PR.**
+- [x] **Step 3: Publish a draft PR.**
 
   ```powershell
   git push -u origin codex/wild-bunch-local-skill-custody
