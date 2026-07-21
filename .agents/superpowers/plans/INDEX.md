@@ -92,3 +92,4 @@
 - [2026-07-18-es-integrity-plan-c-rehydrate-load-path.md](2026-07-18-es-integrity-plan-c-rehydrate-load-path.md)
 - [2026-07-18-es-integrity-plan-d-event-upcaster-registry.md](2026-07-18-es-integrity-plan-d-event-upcaster-registry.md)
 - [2026-07-18-es-integrity-plan-e-projection-versions-and-load-funnel.md](2026-07-18-es-integrity-plan-e-projection-versions-and-load-funnel.md)
+- [2026-07-21-wild-bunch-local-skill-custody.md](2026-07-21-wild-bunch-local-skill-custody.md)

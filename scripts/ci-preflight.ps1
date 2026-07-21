@@ -57,8 +57,15 @@ try {
 
     if (-not $SkipIndexMesh) {
         Write-Host '--- Index mesh preflight ---'
+        python -m pip install -r "$ScriptDir/requirements.txt"
+        Assert-LastExitCode 'python script requirements installation failed'
+
         & "$ScriptDir/generate_index_mesh.ps1" -Check
         Assert-LastExitCode 'generate_index_mesh -Check failed'
+
+        Write-Host '--- Validating repo-local skills ---'
+        python "$ScriptDir/validate_repo_local_skills.py"
+        Assert-LastExitCode 'repo-local skill validation failed'
 
         Write-Host '--- Validating marketplace plugin sync ---'
         python "$ScriptDir/validate_marketplace_plugin_sync.py"
