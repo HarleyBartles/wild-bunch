@@ -15,4 +15,4 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 
 ## Repo-local plugin posture
 
-This repo default-installs seven Codex plugins from [HarleyBartles/agent-asset-marketplace](https://github.com/HarleyBartles/agent-asset-marketplace): `repo-worker-pack`, `superpowers-plus`, `wild-bunch-project-pack`, `game-studio`, `dotnet-kit`, `architecture-pack`, and `frontend-pack`. See [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json).
+This repo default-installs Codex plugins from [HarleyBartles/agent-asset-marketplace](https://github.com/HarleyBartles/agent-asset-marketplace). Their canonical configuration is [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json); vendored skills and provenance are generated from it.

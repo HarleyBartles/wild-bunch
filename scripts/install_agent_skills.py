@@ -9,6 +9,7 @@ sync-skills.ps1 PowerShell-only implementation.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -56,12 +57,101 @@ def _load_provenance() -> dict[str, Any] | None:
         return None
 
 
-def _has_skill_dirs() -> bool:
-    """Check if there are any skill directories."""
+def _has_skill_dirs(expected_skill_names: set[str] | None = None) -> bool:
+    """Check whether any or all expected skill directories exist."""
     if not SKILLS_ROOT.exists():
         return False
-    
-    return any(SKILLS_ROOT.iterdir())
+
+    if expected_skill_names is not None:
+        return all(
+            (SKILLS_ROOT / skill_name / "SKILL.md").is_file()
+            for skill_name in expected_skill_names
+        )
+
+    return any(path.is_dir() for path in SKILLS_ROOT.iterdir())
+
+
+def _expected_skill_names(default_plugins: list[dict[str, Any]]) -> set[str]:
+    """Return the skill directories the configured marketplace plugins provide."""
+    skill_names: set[str] = set()
+    for plugin in default_plugins:
+        plugin_name = plugin.get("name", "unknown")
+        plugin_dir = PLUGINS_ROOT / plugin_name
+        if not plugin_dir.is_dir():
+            raise ValueError(
+                f"Configured default plugin '{plugin_name}' is missing from {PLUGINS_ROOT}"
+            )
+
+        plugin_skills_dir = plugin_dir / "skills"
+        if plugin_skills_dir.is_dir():
+            for skill_dir in plugin_skills_dir.iterdir():
+                if not skill_dir.is_dir():
+                    continue
+                if not (skill_dir / "SKILL.md").is_file():
+                    raise ValueError(
+                        f"Source skill '{skill_dir.name}' from plugin '{plugin_name}' "
+                        "is missing SKILL.md"
+                    )
+                skill_names.add(skill_dir.name)
+
+    return skill_names
+
+
+def _expected_skill_hashes(default_plugins: list[dict[str, Any]]) -> dict[str, str]:
+    """Return source hashes for generated skills, preserving collision precedence."""
+    skill_hashes: dict[str, str] = {}
+    for plugin in default_plugins:
+        plugin_name = plugin.get("name", "unknown")
+        plugin_skills_dir = PLUGINS_ROOT / plugin_name / "skills"
+        if not plugin_skills_dir.is_dir():
+            continue
+        for skill_dir in plugin_skills_dir.iterdir():
+            if skill_dir.is_dir() and skill_dir.name not in skill_hashes:
+                skill_hashes[skill_dir.name] = _skill_directory_hash(skill_dir)
+    return skill_hashes
+
+
+def _can_skip_sync(
+    provenance: dict[str, Any],
+    submodule_sha: str,
+    default_plugin_names: list[str],
+    expected_skill_names: set[str],
+    expected_skill_hashes: dict[str, str],
+) -> bool:
+    """Return whether provenance already matches the source and configuration."""
+    synced_skill_names = provenance.get("syncedSkillNames")
+    synced_skill_hashes = provenance.get("syncedSkillHashes")
+    return (
+        provenance.get("sha") == submodule_sha
+        and provenance.get("syncedPlugins") == default_plugin_names
+        and isinstance(synced_skill_names, list)
+        and synced_skill_names == sorted(expected_skill_names)
+        and provenance.get("syncedSkills") == len(expected_skill_names)
+        and synced_skill_hashes == expected_skill_hashes
+    )
+
+
+def _projection_matches_source(default_plugins: list[dict[str, Any]]) -> bool:
+    """Return whether each generated skill is byte-for-byte current from source."""
+    seen_skill_names: set[str] = set()
+    for plugin in default_plugins:
+        plugin_name = plugin.get("name", "unknown")
+        plugin_skills_dir = PLUGINS_ROOT / plugin_name / "skills"
+        if not plugin_skills_dir.is_dir():
+            continue
+
+        for source_skill_dir in plugin_skills_dir.iterdir():
+            if not source_skill_dir.is_dir() or source_skill_dir.name in seen_skill_names:
+                continue
+
+            seen_skill_names.add(source_skill_dir.name)
+            if not _files_identical(
+                source_skill_dir,
+                SKILLS_ROOT / source_skill_dir.name,
+            ):
+                return False
+
+    return True
 
 
 def _files_identical(dir1: Path, dir2: Path) -> bool:
@@ -105,6 +195,25 @@ def _files_identical(dir1: Path, dir2: Path) -> bool:
     return True
 
 
+def _skill_directory_hash(skill_dir: Path) -> str:
+    """Return a deterministic content hash for one generated skill directory."""
+    digest = hashlib.sha256()
+    for file_path in sorted(
+        (path for path in skill_dir.rglob("*") if path.is_file()),
+        key=lambda path: path.relative_to(skill_dir).as_posix(),
+    ):
+        digest.update(file_path.relative_to(skill_dir).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        file_bytes = file_path.read_bytes()
+        try:
+            file_bytes = file_bytes.decode("utf-8").replace("\r\n", "\n").encode("utf-8")
+        except UnicodeDecodeError:
+            pass
+        digest.update(file_bytes)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _copy_skill_directory(source: Path, dest: Path) -> None:
     """Copy a skill directory from source to destination."""
     if dest.exists():
@@ -140,28 +249,46 @@ def _sync_skills(
     
     # Get submodule SHA
     submodule_sha = _get_submodule_sha()
-    
-    # Check provenance for skip
-    existing_provenance = _load_provenance()
-    has_skill_dirs = _has_skill_dirs()
-    
-    if not force and existing_provenance:
-        if existing_provenance.get("sha") == submodule_sha and has_skill_dirs:
-            synced_plugins = existing_provenance.get("syncedPlugins", [])
-            synced_skills = existing_provenance.get("syncedSkills", 0)
-            print(f"Skills already synced at submodule SHA {submodule_sha}. Use --force to re-copy.")
-            print(f"Synced skills: {synced_skills} from {len(synced_plugins)} plugins.")
-            return synced_skills, len(synced_plugins), False
-    
-    # Load marketplace configuration
+
+    # Load the canonical plugin configuration before deciding whether sync can skip.
     marketplace = _load_json(MARKETPLACE_JSON_PATH)
     default_plugins = [
         p for p in marketplace.get("plugins", [])
         if p.get("policy", {}).get("installation") == "INSTALLED_BY_DEFAULT"
     ]
-    
+
     if not default_plugins:
         raise ValueError("No INSTALLED_BY_DEFAULT plugins found in marketplace.json")
+
+    default_plugin_names = [p.get("name", "unknown") for p in default_plugins]
+    expected_skill_names = _expected_skill_names(default_plugins)
+    expected_skill_hashes = _expected_skill_hashes(default_plugins)
+    
+    # Check provenance for skip
+    existing_provenance = _load_provenance()
+    has_skill_dirs = _has_skill_dirs(expected_skill_names)
+    provenance_needs_refresh = (
+        existing_provenance is None
+        or not _can_skip_sync(
+            existing_provenance,
+            submodule_sha,
+            default_plugin_names,
+            expected_skill_names,
+            expected_skill_hashes,
+        )
+    )
+    
+    if not force and existing_provenance:
+        if (
+            not provenance_needs_refresh
+            and has_skill_dirs
+            and _projection_matches_source(default_plugins)
+        ):
+            synced_plugins = existing_provenance.get("syncedPlugins", [])
+            synced_skills = existing_provenance.get("syncedSkills", 0)
+            print(f"Skills already synced at submodule SHA {submodule_sha}. Use --force to re-copy.")
+            print(f"Synced skills: {synced_skills} from {len(synced_plugins)} plugins.")
+            return synced_skills, len(synced_plugins), False
     
     print(f"Syncing skills from {len(default_plugins)} default-installed plugins (submodule SHA {submodule_sha})...")
     
@@ -171,10 +298,13 @@ def _sync_skills(
     
     # Track synced skills
     synced_skill_names = set()
-    synced_plugin_names = []
-    changes_made = False
+    synced_plugin_names = default_plugin_names.copy()
+    changes_made = provenance_needs_refresh
     total_skills = 0
     skills_processed = 0
+
+    if check_mode and provenance_needs_refresh:
+        print("  CHECK: Would update marketplace skill provenance")
     
     # Count total skills for progress reporting
     for plugin in default_plugins:
@@ -197,7 +327,6 @@ def _sync_skills(
             print(f"Plugin '{plugin_name}' skills/ is empty; skipping.")
             continue
         
-        synced_plugin_names.append(plugin_name)
         plugin_skill_count = 0
         
         for skill_dir in skill_dirs:
@@ -238,9 +367,23 @@ def _sync_skills(
             print(f"  {plugin_name} : {plugin_skill_count} skill(s)")
     
     # Prune stale skill directories
+    previous_synced_skill_names: set[str] = set()
+    if existing_provenance:
+        recorded_skill_names = existing_provenance.get("syncedSkillNames", [])
+        if isinstance(recorded_skill_names, list):
+            previous_synced_skill_names = {
+                skill_name
+                for skill_name in recorded_skill_names
+                if isinstance(skill_name, str)
+            }
+
     stale_dirs = [
         d for d in SKILLS_ROOT.iterdir()
-        if d.is_dir() and d.name not in synced_skill_names
+        if (
+            d.is_dir()
+            and d.name in previous_synced_skill_names
+            and d.name not in synced_skill_names
+        )
     ]
     
     for stale in stale_dirs:
@@ -259,12 +402,17 @@ def _sync_skills(
             "syncedAt": datetime.now(timezone.utc).isoformat(),
             "syncedPlugins": synced_plugin_names,
             "syncedSkills": len(synced_skill_names),
+            "syncedSkillNames": sorted(synced_skill_names),
+            "syncedSkillHashes": {
+                skill_name: _skill_directory_hash(SKILLS_ROOT / skill_name)
+                for skill_name in sorted(synced_skill_names)
+            },
             "source": "HarleyBartles/agent-asset-marketplace",
             "sourcePath": ".agents/plugins/marketplace-source/codex-marketplace/plugins",
             "marketplaceFile": ".agents/plugins/marketplace.json"
         }
         
-        with open(PROVENANCE_PATH, "w", encoding="utf-8") as f:
+        with open(PROVENANCE_PATH, "w", encoding="utf-8", newline="\n") as f:
             json.dump(provenance, f, indent=2)
     
     print(f"\nSynced {len(synced_skill_names)} skill(s) from {len(synced_plugin_names)} plugin(s) into .agents/skills/.")

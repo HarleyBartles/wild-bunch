@@ -60,9 +60,13 @@ try {
         & "$ScriptDir/generate_index_mesh.ps1" -Check
         Assert-LastExitCode 'generate_index_mesh -Check failed'
 
-        Write-Host '--- Validating marketplace.json ---'
-        python -c "import json; m=json.load(open('.agents/plugins/marketplace.json')); assert m['name']=='wild-bunch'; assert len(m['plugins'])==7; assert all(p['policy']['installation']=='INSTALLED_BY_DEFAULT' for p in m['plugins']); assert {p['name'] for p in m['plugins']}=={'repo-worker-pack','superpowers-plus','wild-bunch-project-pack','game-studio','dotnet-kit','architecture-pack','frontend-pack'}; print('OK marketplace.json')"
-        Assert-LastExitCode 'marketplace.json validation failed'
+        Write-Host '--- Validating marketplace plugin sync ---'
+        python "$ScriptDir/validate_marketplace_plugin_sync.py"
+        Assert-LastExitCode 'marketplace plugin sync validation failed'
+
+        Write-Host '--- Validating marketplace skill projection ---'
+        python "$ScriptDir/install_agent_skills.py" --check
+        Assert-LastExitCode 'marketplace skill projection validation failed'
     }
 }
 finally {
