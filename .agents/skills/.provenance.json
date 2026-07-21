@@ -1,6 +1,6 @@
 {
   "sha": "e62475b5bd0b89e651a4deee8a5766c76382f554",
-  "syncedAt": "2026-07-21T11:44:51.507633+00:00",
+  "syncedAt": "2026-07-21T13:55:26.497224+00:00",
   "syncedPlugins": [
     "repo-worker-pack",
     "superpowers-plus",
@@ -10,7 +10,7 @@
     "architecture-pack",
     "frontend-pack"
   ],
-  "syncedSkills": 56,
+  "syncedSkills": 52,
   "syncedSkillNames": [
     "base-doctrine",
     "brainstorming",
@@ -60,10 +60,6 @@
     "web-game-foundations",
     "web-styling",
     "webapp-testing",
-    "wild-bunch-browser-game",
-    "wild-bunch-domain-modeling",
-    "wild-bunch-dotnet-architecture",
-    "wild-bunch-project-doctrine",
     "work-mode-router",
     "writing-plans",
     "writing-skills",
@@ -118,10 +114,6 @@
     "web-game-foundations": "c7309e5220f48d6235d1b6571b22f178f22d16b2d9fd8fcf4f1c4d28d7552be6",
     "web-styling": "48fe50eb83e7196f6e586a215c42e541978f70ee1b7f171f59a0e3b6c494e799",
     "webapp-testing": "149c3cbe8e32fb7479d852ac88da0523b4d13d20a91148f3c2e86815ba8ca46e",
-    "wild-bunch-browser-game": "d6430f253de0736c7f2dddc2459d51db8dc86f9aecffa80634825c6dbfe79ab8",
-    "wild-bunch-domain-modeling": "c19801bb4edf8b6d6317f68fc3ee24176c0208a715748b9907e41f74864f9c6f",
-    "wild-bunch-dotnet-architecture": "bd472d13bd60c956c7c6d57600035a47aa177b1bef931f36be7f3937bf1455a2",
-    "wild-bunch-project-doctrine": "c4ac6061b1d40c2fbf85bbfd995e7d932c91724e1866ac006af4c2d9478d3353",
     "work-mode-router": "6fd9fec4b5900757cac47f6520e285b9a18ec0122970859df75baa15294791df",
     "writing-plans": "e55c2fadc291924c39695dd7471099da04bc70adc0990708023512c2d5f10266",
     "writing-skills": "8ad7d93e8093941228676d1581c93fce1de06e9744a7a3bbc78b9d18fcab7f54",

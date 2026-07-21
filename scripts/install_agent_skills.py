@@ -24,6 +24,11 @@ SUBMODULE_ROOT = REPO_ROOT / ".agents" / "plugins" / "marketplace-source"
 PLUGINS_ROOT = SUBMODULE_ROOT / "codex-marketplace" / "plugins"
 SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 PROVENANCE_PATH = SKILLS_ROOT / ".provenance.json"
+REPO_LOCAL_SKILL_PREFIX = "wild-bunch-"
+
+
+def _is_repo_local_skill_name(skill_name: str) -> bool:
+    return skill_name.startswith(REPO_LOCAL_SKILL_PREFIX)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -92,6 +97,8 @@ def _expected_skill_names(default_plugins: list[dict[str, Any]]) -> set[str]:
                         f"Source skill '{skill_dir.name}' from plugin '{plugin_name}' "
                         "is missing SKILL.md"
                     )
+                if _is_repo_local_skill_name(skill_dir.name):
+                    continue
                 skill_names.add(skill_dir.name)
 
     return skill_names
@@ -106,7 +113,11 @@ def _expected_skill_hashes(default_plugins: list[dict[str, Any]]) -> dict[str, s
         if not plugin_skills_dir.is_dir():
             continue
         for skill_dir in plugin_skills_dir.iterdir():
-            if skill_dir.is_dir() and skill_dir.name not in skill_hashes:
+            if (
+                skill_dir.is_dir()
+                and not _is_repo_local_skill_name(skill_dir.name)
+                and skill_dir.name not in skill_hashes
+            ):
                 skill_hashes[skill_dir.name] = _skill_directory_hash(skill_dir)
     return skill_hashes
 
@@ -141,7 +152,11 @@ def _projection_matches_source(default_plugins: list[dict[str, Any]]) -> bool:
             continue
 
         for source_skill_dir in plugin_skills_dir.iterdir():
-            if not source_skill_dir.is_dir() or source_skill_dir.name in seen_skill_names:
+            if (
+                not source_skill_dir.is_dir()
+                or _is_repo_local_skill_name(source_skill_dir.name)
+                or source_skill_dir.name in seen_skill_names
+            ):
                 continue
 
             seen_skill_names.add(source_skill_dir.name)
@@ -311,7 +326,13 @@ def _sync_skills(
         plugin_name = plugin.get("name", "unknown")
         plugin_skills_dir = PLUGINS_ROOT / plugin_name / "skills"
         if plugin_skills_dir.exists():
-            total_skills += len([d for d in plugin_skills_dir.iterdir() if d.is_dir()])
+            total_skills += len(
+                [
+                    d
+                    for d in plugin_skills_dir.iterdir()
+                    if d.is_dir() and not _is_repo_local_skill_name(d.name)
+                ]
+            )
     
     # Copy each plugin's skill directories
     for plugin in default_plugins:
@@ -322,7 +343,10 @@ def _sync_skills(
             print(f"Plugin '{plugin_name}' has no skills/ directory; skipping.")
             continue
         
-        skill_dirs = [d for d in plugin_skills_dir.iterdir() if d.is_dir()]
+        skill_dirs = [
+            d for d in plugin_skills_dir.iterdir()
+            if d.is_dir() and not _is_repo_local_skill_name(d.name)
+        ]
         if not skill_dirs:
             print(f"Plugin '{plugin_name}' skills/ is empty; skipping.")
             continue
@@ -375,6 +399,7 @@ def _sync_skills(
                 skill_name
                 for skill_name in recorded_skill_names
                 if isinstance(skill_name, str)
+                and not _is_repo_local_skill_name(skill_name)
             }
 
     stale_dirs = [
