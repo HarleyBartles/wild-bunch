@@ -1,0 +1,52 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-source
+authority:
+  title: The Elements of Style (1918)
+  canonical_url: https://github.com/obra/the-elements-of-style
+  pinned_source_url: https://raw.githubusercontent.com/obra/the-elements-of-style/main/elements-of-style.html
+  latest_check_url: https://github.com/obra/the-elements-of-style
+  revision: 6099c505c2a8eb066f3777f83a97d9d828f7954c
+  retrieved_at: '2026-07-20'
+  content_sha256: e5ad6a6cbc5f8562d1171c743ac468c60c92329532cd351d3b9f7ad9e582e89b
+  license: Public Domain
+  license_url: https://github.com/obra/the-elements-of-style/blob/main/LICENSE
+decomposition:
+  reconciled_against: e5ad6a6cbc5f8562d1171c743ac468c60c92329532cd351d3b9f7ad9e582e89b
+  references:
+    - path: references/sentence-mechanics.md
+      source_sections:
+        - Rules 1-7
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when correcting sentence-level mechanics.
+    - path: references/composition-and-flow.md
+      source_sections:
+        - Rules 8-9 and 14-18
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when improving paragraph and document flow.
+    - path: references/clarity-and-concision.md
+      source_sections:
+        - Rules 10-13 and Rule 18
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when making prose clearer and more concise.
+    - path: references/usage-and-word-choice.md
+      source_sections:
+        - Chapter V
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when resolving word choice or usage questions.
+    - path: references/format-and-markup.md
+      source_sections:
+        - Chapters IV and VI
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when formatting Markdown, UI, or structured copy.
+    - path: references/final-edit.md
+      source_sections:
+        - Rules 8-18 as a review lens
+      content_mode: first_party_synthesis
+      load_when:
+        - Use when performing a final review pass.

@@ -1,0 +1,12 @@
+[
+  {
+    "issue": "MARK-226",
+    "source_id": "using-github-v1",
+    "source_path": "sources/first_party/skills/using-github",
+    "public_name": "using-github",
+    "provenance_name": "MARK-226 canonical first-party source for using-github",
+    "import_state": "canonical",
+    "scope": "GitHub surface selection, MCP/gh/REST/GraphQL/git routing, and publication proof",
+    "notes": "Canonical first-party source for using-github. Renamed from github-operations and restructured as a router skill. Projects into House Skills and repo-worker-pack; House Skills is a projection surface only."
+  }
+]

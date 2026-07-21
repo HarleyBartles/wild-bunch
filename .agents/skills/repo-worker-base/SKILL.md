@@ -39,6 +39,7 @@ hygiene/layout policy and stage guides.
 | Running or changing a mutation script | [mutation-script-safety.md](references/mutation-script-safety.md) |
 | Creating an agent-facing script | [script-entrypoint-contract.md](references/script-entrypoint-contract.md) |
 | Changing README, AGENTS.md, INDEX.md, doctrine, docs, plans, or mesh | [repository-layout-and-mesh.md](references/repository-layout-and-mesh.md) |
+| Working with `.agents/superpowers/` working surfaces | [superpowers-directory-hygiene.md](references/superpowers-directory-hygiene.md) |
 | Finding or creating a repository-local stage guide | [stage-guide-contract.md](references/stage-guide-contract.md) |
 | Repo-backed design | [design-baseline.md](references/design-baseline.md) |
 | Repo-backed planning | [planning-baseline.md](references/planning-baseline.md) |
@@ -68,7 +69,7 @@ thin: it routes to those owners instead of duplicating their stage technique.
 - linear-issue-shaping owns the Linear control plane.
 - verification-before-completion owns evidence-before-assertions.
 - connector-safety owns sensitive or blocked connector writes.
-- github-operations owns GitHub proof.
+- using-github owns GitHub proof.
 - base-doctrine owns cross-project source-truth and doctrine routing.
 
 Do not treat an installed skill, generated projection, local cache, or worker

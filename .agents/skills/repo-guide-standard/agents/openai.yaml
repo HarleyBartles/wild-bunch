@@ -1,0 +1,6 @@
+interface:
+  display_name: Repo Guide Standard
+  short_description: Use when reading, creating, updating, or aligning repo guides and their workflow order.
+  default_prompt: Read references/repository-guide-standard.md, then the repo's .agents/docs/repo-guide-policy.md, then the specific local guide. Use repo-worker-base for worktree, branch, validation, and publication. Route to the matching Superpowers skill for the stage.
+policy:
+  allow_implicit_invocation: true
