@@ -48,7 +48,7 @@
 
 **Produces:** An isolated `codex/wild-bunch-local-skill-custody` branch for all implementation commits and the eventual PR.
 
-- [ ] **Step 1: Verify and create the worktree.**
+- [x] **Step 1: Verify and create the worktree.**
 
   Run:
 
@@ -75,7 +75,7 @@
 
 **Produces:** A single canonical policy with the reserved namespace and discovery rule used by the installer and validator.
 
-- [ ] **Step 1: Write the contract’s acceptance examples before changing policy text.**
+- [x] **Step 1: Write the contract’s acceptance examples before changing policy text.**
 
   Add these executable examples to the policy under `Authoring gate`:
 
@@ -86,7 +86,7 @@
   - Renaming or adding a `wild-bunch-*` directory requires no inventory edit; discovery follows the prefix.
   ```
 
-- [ ] **Step 2: Write `.agents/docs/skill-authoring-policy.md`.**
+- [x] **Step 2: Write `.agents/docs/skill-authoring-policy.md`.**
 
   Require: qualification before creation; `name` matching the directory; a `Use when...` trigger-only description; local `metadata.status`, `metadata.scope`, `metadata.use_when`, and `metadata.do_not_use_when`; a compact body with references for detailed facts; no marketplace `source-id`, `source-path`, `provenance-name`, `source-category`, or `owner` identity fields; and no `agents/openai.yaml` unless a future task explicitly prepares a marketplace projection.
 
@@ -100,19 +100,19 @@
 
   Include the Adventures-style disposition record: source/revision, local use case, disposition, overlapping owner, stale claims, pressure scenario, and final local path or retirement reason.
 
-- [ ] **Step 3: Replace temporary custody language with permanent namespace custody.**
+- [x] **Step 3: Replace temporary custody language with permanent namespace custody.**
 
   In `mesh-policy.md`, replace section 7’s temporary/uncovered-skill rule and its `_None_` inventory with a rule that `wild-bunch-*` is permanently repo-local, is discovered from the directory prefix, is excluded from marketplace provenance, and is protected by both installer and validator. Keep the existing single-source rule for `.agents/plugins/marketplace.json` unchanged.
 
-- [ ] **Step 4: Route to the contract without adding root doctrine.**
+- [x] **Step 4: Route to the contract without adding root doctrine.**
 
   Add `.agents/docs/skill-authoring-policy.md` to the doctrine reference map and the repo-skills policy. Replace the four manual Wild Bunch rows in `skills-catalog.md` with one sentence directing agents to discover `.agents/skills/wild-bunch-*/SKILL.md`; retain the root `AGENTS.md` requirement for `/wild-bunch-project-doctrine` unchanged.
 
-- [ ] **Step 5: Review policy scope.**
+- [x] **Step 5: Review policy scope.**
 
   Confirm the contract does not prescribe marketplace authoring, plugin membership, a worker workflow, or a duplicate skill list. It must govern only local Wild Bunch skills and their interaction with the refresh boundary.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
   ```powershell
   git add .agents/docs/skill-authoring-policy.md .agents/docs/mesh-policy.md .agents/docs/repo-skills-policy.md .agents/docs/skills-catalog.md .agents/skills/wild-bunch-project-doctrine/references/policy-references.md
@@ -129,7 +129,7 @@
 
 **Produces:** Marketplace projection logic that never copies, hashes, validates, records, overwrites, or prunes reserved local skills.
 
-- [ ] **Step 1: Write a failing regression test for the real removal sequence.**
+- [x] **Step 1: Write a failing regression test for the real removal sequence.**
 
   Add `test_sync_cli_does_not_overwrite_reserved_local_skill_from_marketplace`. Its temporary fixture must include both a marketplace `wild-bunch-project-doctrine/SKILL.md` containing `# Marketplace doctrine` and a destination `wild-bunch-project-doctrine/SKILL.md` containing `# Local doctrine`. Run `main()` and assert the destination is unchanged and the name is absent from `syncedSkillNames`.
 
@@ -153,7 +153,7 @@
 
   Run `main()`, then assert the local `SKILL.md` remains `# Local doctrine`, `syncedSkillNames == ["vendored-skill"]`, and a following `--check` returns `0`.
 
-- [ ] **Step 2: Run the focused test to verify RED.**
+- [x] **Step 2: Run the focused test to verify RED.**
 
   Run:
 
@@ -163,7 +163,7 @@
 
   Expected: FAIL because the current installer overwrites a reserved name while it still exists upstream, then stale pruning removes it once the marketplace copy disappears.
 
-- [ ] **Step 3: Add one prefix predicate and apply it at every marketplace boundary.**
+- [x] **Step 3: Add one prefix predicate and apply it at every marketplace boundary.**
 
   In `scripts/install_agent_skills.py`, add:
 
@@ -176,7 +176,7 @@
 
   Use the predicate to exclude reserved names from `_expected_skill_names`, `_expected_skill_hashes`, `_projection_matches_source`, source-copy iteration/progress counts, and `stale_dirs`. Preserve normal behavior for every non-reserved skill. Do not add a list of individual Wild Bunch skill names.
 
-- [ ] **Step 4: Run focused GREEN and the installer suite.**
+- [x] **Step 4: Run focused GREEN and the installer suite.**
 
   Run:
 
@@ -186,7 +186,7 @@
 
   Expected: PASS. The new test proves a formerly marketplace-recorded reserved skill survives both normal refresh and the next check.
 
-- [ ] **Step 5: Refresh generated provenance through the script.**
+- [x] **Step 5: Refresh generated provenance through the script.**
 
   Run:
 
@@ -197,7 +197,7 @@
 
   Expected: the four `wild-bunch-*` names are absent from `.agents/skills/.provenance.json`; the second command reports current projections. Do not edit `.provenance.json` directly.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
   ```powershell
   git add scripts/install_agent_skills.py scripts/tests/test_install_agent_skills.py .agents/skills/.provenance.json
@@ -217,11 +217,11 @@
 
 **Produces:** A deterministic Python validation lane that discovers the local skill roots and fails on contract drift.
 
-- [ ] **Step 1: Write failing unit tests for valid and invalid local skill roots.**
+- [x] **Step 1: Write failing unit tests for valid and invalid local skill roots.**
 
   Test `validate_repo_local_skills(skills_root: Path) -> list[str]` with temporary directories. Cover a valid `wild-bunch-valid/SKILL.md`, then assert failures for: a name/directory mismatch; a description not beginning `Use when`; missing each required local metadata field; marketplace provenance fields; `agents/openai.yaml`; malformed YAML; and a broken relative Markdown reference. Include a control `other-skill/` directory and assert it is ignored.
 
-- [ ] **Step 2: Run RED.**
+- [x] **Step 2: Run RED.**
 
   Run:
 
@@ -231,7 +231,7 @@
 
   Expected: collection failure until the validator module exists.
 
-- [ ] **Step 3: Implement the validator with parsed YAML, not string heuristics.**
+- [x] **Step 3: Implement the validator with parsed YAML, not string heuristics.**
 
   Add `PyYAML>=6.0` to `scripts/requirements.txt`. Implement:
 
@@ -248,7 +248,7 @@
 
   Discover only immediate directories beginning with the prefix and containing `SKILL.md`. Parse the first YAML frontmatter block with `yaml.safe_load`; verify the name, trigger description, metadata mapping, required keys, forbidden keys, body word limit (500), absence of `agents/openai.yaml`, and local links in Markdown. Return sorted errors; `main()` prints each error and exits `1`, otherwise prints the validated skill count and exits `0`.
 
-- [ ] **Step 4: Run GREEN and repository-local validation.**
+- [x] **Step 4: Run GREEN and repository-local validation.**
 
   Run:
 
@@ -259,7 +259,7 @@
 
   Expected: tests pass; the repository validator initially identifies every current marketplace-custody violation, which Task 4 resolves.
 
-- [ ] **Step 5: Wire the same deterministic check into both CI routes.**
+- [x] **Step 5: Wire the same deterministic check into both CI routes.**
 
   Add this CI step after Python setup and requirements installation in the `index-mesh` job:
 
@@ -273,7 +273,7 @@
 
   In `scripts/ci-preflight.ps1`, invoke `python "$ScriptDir/validate_repo_local_skills.py"` in the existing index-mesh block and pass its result through `Assert-LastExitCode 'repo-local skill validation failed'`.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
   ```powershell
   git add scripts/validate_repo_local_skills.py scripts/tests/test_validate_repo_local_skills.py scripts/requirements.txt .github/workflows/ci.yml scripts/ci-preflight.ps1
@@ -309,11 +309,11 @@
 
 **Produces:** Four concise, valid, repo-owned skills with current routes and reference facts.
 
-- [ ] **Step 1: Record pressure scenarios and run them against the existing skills.**
+- [x] **Step 1: Record pressure scenarios and run them against the existing skills.**
 
   Use four prompts: (1) a domain travel command change, (2) a persistence/event-snapshot change, (3) a Phaser HUD/playtest change, and (4) a repo-sensitive planning task. Record the existing ambiguity: marketplace custody claims, stale unavailable names (`cqrs-event-sourcing`, `ef-core`), and the old seed-identity assertion that makes difficulty/entropy part of the seed. Reclassify nothing: all four have active, distinct, recurring owned decisions.
 
-- [ ] **Step 2: Rewrite frontmatter and trigger descriptions.**
+- [x] **Step 2: Rewrite frontmatter and trigger descriptions.**
 
   For each skill, retain only local metadata required by the contract and use a description shaped like:
 
@@ -333,13 +333,13 @@
 
   Apply the same concise, trigger-only pattern to browser delivery, .NET architecture, and project doctrine. Remove every marketplace provenance field and all plugin-wrapper files listed above.
 
-- [ ] **Step 3: Refresh factual content from live source.**
+- [x] **Step 3: Refresh factual content from live source.**
 
   Keep the current verified facts: React 18, Phaser 3, TypeScript, and Vite in the browser skill; `GameSession` as aggregate root; typed event streams plus component snapshot cache; and the existing `BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, and `ActionContextTracker` ownership model.
 
   In the doctrine references, remove the `a65ca6c2` snapshot claims and unavailable route names. Route architecture discovery through currently installed `ddd`, `cqrs`, `event-sourcing`, `event-driven-architecture`, `clean-architecture`, `dotnet`, and the three `wild-bunch-*` specialists. Replace the marketplace `sources/first_party/...` placement target with the local repository path. Reconcile seeded-world wording with the current difficulty/entropy implementation before retaining it; do not leave the assertion that difficulty and entropy are part of seed identity if current source disproves it.
 
-- [ ] **Step 4: Run the local contract validator to verify GREEN.**
+- [x] **Step 4: Run the local contract validator to verify GREEN.**
 
   Run:
 
@@ -349,7 +349,7 @@
 
   Expected: `OK: validated 4 repo-local Wild Bunch skill(s)` with no marketplace metadata, stale wrapper files, invalid references, or body-limit violations.
 
-- [ ] **Step 5: Regenerate navigation and run focused infrastructure validation.**
+- [x] **Step 5: Regenerate navigation and run focused infrastructure validation.**
 
   Run:
 
@@ -364,7 +364,7 @@
 
   Expected: mesh is current; the local contract and installer tests pass; marketplace provenance validates while excluding the four local skills; refresh check is clean; and no whitespace errors appear.
 
-- [ ] **Step 6: Run the full relevant preflight and post-removal handoff check.**
+- [x] **Step 6: Run the full relevant preflight and post-removal handoff check.**
 
   Run:
 
@@ -382,7 +382,7 @@
 
   Expected: all four local skills remain byte-for-byte local, none re-enter provenance, and the refresh converges without special-case name edits.
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
   ```powershell
   git add .agents/skills .agents/docs/skills-catalog.md
@@ -398,7 +398,7 @@
 
 **Produces:** A reviewable draft PR whose final head is validated against the compatible marketplace state.
 
-- [ ] **Step 1: Perform a fresh-eyes review focused on custody failure modes.**
+- [x] **Step 1: Perform a fresh-eyes review focused on custody failure modes.**
 
   Check that no `wild-bunch-*` directory remains in `.provenance.json`; the installer has no list of individual local names; every local skill passes the validator; no deleted `agents/openai.yaml` or icon is referenced; and all direct references point to installed/current names.
 
