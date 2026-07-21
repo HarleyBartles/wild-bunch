@@ -23,7 +23,7 @@ Invoke only installed skills and load the smallest set that owns the task.
 ## External evidence and safety
 
 - `using-linear` and `linear-issue-shaping` — Linear issue and project work.
-- `github-operations` — GitHub branch, PR, review, check, and merge proof.
+- `using-github` — GitHub branch, PR, review, check, and merge work.
 - `connector-safety` and `risk-gates` — sensitive or consequential mutations.
 - `unslop-plus` — task-specific quality profiles.
 

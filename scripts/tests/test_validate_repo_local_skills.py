@@ -64,6 +64,29 @@ def test_accepts_a_valid_reserved_local_skill_and_ignores_other_skill_directorie
     assert validate_repo_local_skills(skills_root) == []
 
 
+def test_rejects_reserved_local_skill_directory_without_an_entrypoint(tmp_path: Path):
+    skills_root = tmp_path / "skills"
+    (skills_root / "wild-bunch-missing-entrypoint").mkdir(parents=True)
+
+    assert validate_repo_local_skills(skills_root) == [
+        "wild-bunch-missing-entrypoint: SKILL.md is required"
+    ]
+
+
+def test_rejects_reserved_local_skill_directory_without_lowercase_hyphen_name(
+    tmp_path: Path,
+):
+    skills_root = tmp_path / "skills"
+    skill_dir = _write_skill(skills_root, "wild-bunch-Invalid_Name")
+    references_dir = skill_dir / "references"
+    references_dir.mkdir()
+    (references_dir / "notes.md").write_text("reference", encoding="utf-8")
+
+    assert validate_repo_local_skills(skills_root) == [
+        "wild-bunch-Invalid_Name: directory name must use lowercase-hyphen format"
+    ]
+
+
 @pytest.mark.parametrize(
     ("directory_name", "name", "expected_error"),
     [

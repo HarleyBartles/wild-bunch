@@ -74,6 +74,14 @@ try {
         Write-Host '--- Validating marketplace skill projection ---'
         python "$ScriptDir/install_agent_skills.py" --check
         Assert-LastExitCode 'marketplace skill projection validation failed'
+
+        Write-Host '--- Running installer and validator regression tests ---'
+        python -m pytest `
+            "$ScriptDir/tests/test_install_agent_skills.py" `
+            "$ScriptDir/tests/test_validate_repo_local_skills.py" `
+            "$ScriptDir/tests/test_validate_marketplace_plugin_sync.py" `
+            -q
+        Assert-LastExitCode 'installer and validator regression tests failed'
     }
 }
 finally {

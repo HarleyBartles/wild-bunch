@@ -106,6 +106,21 @@ def test_rejects_invalid_generated_skill_provenance():
         )
 
 
+def test_rejects_repo_local_skill_recorded_in_matching_marketplace_provenance():
+    marketplace = _marketplace("only-plugin")
+    provenance = _provenance(["only-plugin"])
+    provenance["syncedSkillNames"] = ["wild-bunch-local-skill"]
+    provenance["syncedSkillHashes"] = {"wild-bunch-local-skill": "expected-hash"}
+
+    with pytest.raises(ValueError, match="repo-local skill"):
+        validate_marketplace_plugin_sync(
+            marketplace,
+            provenance,
+            "a" * 40,
+            {"wild-bunch-local-skill": "expected-hash"},
+        )
+
+
 def test_installed_skill_hashes_require_a_skill_entrypoint(monkeypatch, tmp_path):
     import validate_marketplace_plugin_sync as plugin_sync
 

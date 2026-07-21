@@ -29,7 +29,7 @@ For architecture specifically, inspect the repo's canonical architecture decisio
 |-------|----------|
 | `/using-linear` | Use when working with the Linear connector surface, choosing the right tool call, or finding create/update tools exposed under `save_*` rather than `create_*` or `update_*` |
 | `/linear-issue-shaping` | Use when Linear-backed issue, project, and document shaping: create or update worker-ready Linear issues, inspect Linear comments/attachments/state, prepare paste-ready worker handoffs when explicitly requested, and route GitHub PR proof after a PR exists |
-| `/github-operations` | Use when verify GitHub repository evidence without taking over coding workflow routing. Use after a Linear/Codex task has a GitHub PR, branch, commit, review, merge, status, or file-state question; when checking publication proof, PR diff scope, mergeability, CI/status evidence, final main state, or GitHub-specific closure proof |
+| `/using-github` | Use when choosing the right GitHub or Git surface for repository, branch, commit, pull request, review, check, or merge work |
 
 ## Anti-Slop & Quality
 
@@ -62,7 +62,7 @@ for `/wild-bunch-project-doctrine` remains in the root `AGENTS.md`.
 
 **Note**: For Linear/GitHub/architecture/anti-slop routing, use direct skills and repo-local doctrine instead of compositional middlemen:
 - Linear work routes through `/using-linear`, `/linear-issue-shaping`, and repo doctrine/source-truth guidance
-- GitHub/PR proof routes through `/github-operations`, `/repo-worker-base`, and Wild Bunch source-truth doctrine
+- GitHub/PR work routes through `/using-github`, `/repo-worker-base`, and Wild Bunch source-truth doctrine
 - Anti-slop work routes to relevant `.agents/unslop/` profiles and direct review/verification skills
 - Architecture work tells workers to inspect current source and canonical repo decisions, then use `/using-superpowers` or skill discovery to invoke the smallest relevant specialist skill
 

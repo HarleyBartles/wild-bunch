@@ -121,8 +121,9 @@ separate inventory.
   projection without classifying `wild-bunch-*` skills as missing vendored
   skills or marketplace-derived content.
 - The `.agents/skills/INDEX.md` for this folder is generated navigation. It
-  lists both vendored and repo-local skill directories as links to their
-  `SKILL.md` entrypoints and does not carry the custody explanation.
+  currently lists `.provenance.json`; it does not enumerate skill directories
+  because skill roots are excluded from the index mesh. It does not carry the
+  custody explanation.
 - When a local capability later becomes a marketplace projection, complete that
   migration in a dedicated task instead of pre-encoding plugin membership here.
 

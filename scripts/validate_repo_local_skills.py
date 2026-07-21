@@ -14,6 +14,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 REPO_LOCAL_SKILL_PREFIX = "wild-bunch-"
+REPO_LOCAL_SKILL_NAME_PATTERN = re.compile(r"wild-bunch-[a-z0-9]+(?:-[a-z0-9]+)*")
 REQUIRED_METADATA_KEYS = {"status", "scope", "use_when", "do_not_use_when"}
 FORBIDDEN_MARKETPLACE_METADATA_KEYS = {
     "source-id",
@@ -30,9 +31,7 @@ def _reserved_skill_dirs(skills_root: Path) -> list[Path]:
     return sorted(
         path
         for path in skills_root.iterdir()
-        if path.is_dir()
-        and path.name.startswith(REPO_LOCAL_SKILL_PREFIX)
-        and (path / "SKILL.md").is_file()
+        if path.is_dir() and path.name.startswith(REPO_LOCAL_SKILL_PREFIX)
     )
 
 
@@ -121,6 +120,15 @@ def _validate_reserved_skill(skill_dir: Path) -> list[str]:
     errors: list[str] = []
     skill_path = skill_dir / "SKILL.md"
 
+    if not REPO_LOCAL_SKILL_NAME_PATTERN.fullmatch(skill_dir.name):
+        errors.append(
+            f"{skill_dir.name}: directory name must use lowercase-hyphen format"
+        )
+
+    if not skill_path.is_file():
+        errors.append(f"{skill_dir.name}: SKILL.md is required")
+        return errors
+
     try:
         frontmatter, body = _load_frontmatter(skill_path)
     except (OSError, UnicodeDecodeError, ValueError) as error:
@@ -154,7 +162,7 @@ def _validate_reserved_skill(skill_dir: Path) -> list[str]:
 
 
 def validate_repo_local_skills(skills_root: Path) -> list[str]:
-    """Return stable contract errors for every reserved local skill root."""
+    """Return stable contract errors for every reserved local skill directory."""
     errors: list[str] = []
     for skill_dir in _reserved_skill_dirs(skills_root):
         errors.extend(_validate_reserved_skill(skill_dir))
