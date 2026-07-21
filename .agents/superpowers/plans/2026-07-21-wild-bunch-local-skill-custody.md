@@ -402,7 +402,7 @@
 
   Check that no `wild-bunch-*` directory remains in `.provenance.json`; the installer has no list of individual local names; every local skill passes the validator; no deleted `agents/openai.yaml` or icon is referenced; and all direct references point to installed/current names.
 
-- [ ] **Step 2: Verify exact-head checks.**
+- [x] **Step 2: Verify exact-head checks.**
 
   Run the Task 4 validation set after the final review fix. Record the branch SHA, submodule SHA, local-skill count, and provenance count in the PR body; do not claim marketplace removal until its gitlink is actually updated here.
 
