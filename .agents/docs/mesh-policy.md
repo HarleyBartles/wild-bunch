@@ -87,6 +87,12 @@ README files are human-facing. They are not a mesh.
 ## 6. Plugin posture
 
 - Default-installed plugins are declared in `.agents/plugins/marketplace.json`.
+- Treat that file as the single authored plugin inventory. Do not repeat its
+  names, count, or membership in CI, preflight scripts, tests, README files, or
+  other doctrine. Generated skill and provenance surfaces are projections;
+  validate them against the configuration instead. When the installed-plugin
+  configuration changes, refresh the projection and update only the canonical
+  configuration.
 - `house-skills` is not default-installed in this repo.
 - Plugin skills are sourced from `HarleyBartles/agent-asset-marketplace`.
 - Devin CLI discovers repo skills only from local `.agents/skills/<name>/SKILL.md` directories; it has no Codex-marketplace plugin install path. Plugin skills are therefore vendored into `.agents/skills/` from the marketplace source so they are invocable and discoverable by any agent working in this repo.

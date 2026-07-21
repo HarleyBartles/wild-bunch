@@ -11,11 +11,19 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from install_agent_skills import (
+    _can_skip_sync,
     _load_json,
     _files_identical,
     _load_provenance,
     _has_skill_dirs,
 )
+
+
+def test_configured_plugins_are_part_of_the_sync_skip_condition():
+    provenance = {"sha": "a" * 40, "syncedPlugins": ["old-plugin"]}
+
+    assert _can_skip_sync(provenance, "a" * 40, ["old-plugin"])
+    assert not _can_skip_sync(provenance, "a" * 40, ["replacement-plugin"])
 
 
 class TestLoadJson:

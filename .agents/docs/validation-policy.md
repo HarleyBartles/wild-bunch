@@ -26,7 +26,7 @@ This mirrors the `ci.yml` workflow:
 
 - Backend: `dotnet restore`, `dotnet build --configuration Release`, `dotnet tool restore`, `dotnet ef migrations list`, and `dotnet test --configuration Release` via the shared PostgreSQL service.
 - Frontend: `npm ci`, `npm run typecheck`, `npm run test`, and `npm run build` in `src/WildBunch.Web`.
-- Index mesh: `generate_index_mesh --check` and `marketplace.json` validation.
+- Index mesh: `generate_index_mesh --check` and marketplace plugin sync validation.
 - Python: `pathspec` (from `scripts/requirements.txt`) is required for `.gitignore` parsing; the wrapper installs it automatically if missing.
 
 If the script fails, fix the issue and re-run before marking the PR ready. Use `-SkipBackend`, `-SkipFrontend`, or `-SkipIndexMesh` to narrow the run when iterating.

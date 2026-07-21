@@ -24,3 +24,4 @@
 - [postgres-dev.sh](postgres-dev.sh)
 - [README.md](README.md)
 - [requirements.txt](requirements.txt)
+- [validate_marketplace_plugin_sync.py](validate_marketplace_plugin_sync.py)

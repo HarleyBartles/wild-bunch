@@ -90,7 +90,10 @@ The Python implementation provides content comparison to reduce file churn and s
 
 Reads `.agents/plugins/marketplace.json` and copies skill folders from the
 submodule into `.agents/skills/`. Provenance is tracked in
-`.agents/skills/.provenance.json`.
+`.agents/skills/.provenance.json`. The configuration file is the only authored
+plugin list; validate the generated projection with
+`python scripts/validate_marketplace_plugin_sync.py` instead of duplicating
+plugin names in another check or document.
 
 **Use after** `git submodule update --remote .agents/plugins/marketplace-source`
 to pull in upstream skill updates.
@@ -144,7 +147,7 @@ the index mesh current. The INDEX.md files are tracked in git.
 - `bash scripts/ci-preflight.sh --skip-index-mesh` - skip the index mesh validation
 - `.\scripts\ci-preflight.ps1` - PowerShell wrapper with the same skip switches
 
-This mirrors the `ci.yml` workflow locally: `dotnet restore`, `dotnet build --configuration Release`, `dotnet ef migrations list`, `dotnet test --configuration Release` via the shared PostgreSQL service, the frontend `npm ci` / typecheck / test / build pipeline, the `generate_index_mesh.sh --check` validation, and the `marketplace.json` plugin manifest check.
+This mirrors the `ci.yml` workflow locally: `dotnet restore`, `dotnet build --configuration Release`, `dotnet ef migrations list`, `dotnet test --configuration Release` via the shared PostgreSQL service, the frontend `npm ci` / typecheck / test / build pipeline, the `generate_index_mesh.sh --check` validation, and the marketplace plugin sync validation.
 
 **Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
 

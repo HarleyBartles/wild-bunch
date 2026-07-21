@@ -64,6 +64,18 @@ def _has_skill_dirs() -> bool:
     return any(SKILLS_ROOT.iterdir())
 
 
+def _can_skip_sync(
+    provenance: dict[str, Any],
+    submodule_sha: str,
+    default_plugin_names: list[str],
+) -> bool:
+    """Return whether provenance already matches the source and configuration."""
+    return (
+        provenance.get("sha") == submodule_sha
+        and provenance.get("syncedPlugins") == default_plugin_names
+    )
+
+
 def _files_identical(dir1: Path, dir2: Path) -> bool:
     """Compare two directories byte-by-byte for content equality.
     
@@ -140,28 +152,30 @@ def _sync_skills(
     
     # Get submodule SHA
     submodule_sha = _get_submodule_sha()
+
+    # Load the canonical plugin configuration before deciding whether sync can skip.
+    marketplace = _load_json(MARKETPLACE_JSON_PATH)
+    default_plugins = [
+        p for p in marketplace.get("plugins", [])
+        if p.get("policy", {}).get("installation") == "INSTALLED_BY_DEFAULT"
+    ]
+
+    if not default_plugins:
+        raise ValueError("No INSTALLED_BY_DEFAULT plugins found in marketplace.json")
+
+    default_plugin_names = [p.get("name", "unknown") for p in default_plugins]
     
     # Check provenance for skip
     existing_provenance = _load_provenance()
     has_skill_dirs = _has_skill_dirs()
     
     if not force and existing_provenance:
-        if existing_provenance.get("sha") == submodule_sha and has_skill_dirs:
+        if _can_skip_sync(existing_provenance, submodule_sha, default_plugin_names) and has_skill_dirs:
             synced_plugins = existing_provenance.get("syncedPlugins", [])
             synced_skills = existing_provenance.get("syncedSkills", 0)
             print(f"Skills already synced at submodule SHA {submodule_sha}. Use --force to re-copy.")
             print(f"Synced skills: {synced_skills} from {len(synced_plugins)} plugins.")
             return synced_skills, len(synced_plugins), False
-    
-    # Load marketplace configuration
-    marketplace = _load_json(MARKETPLACE_JSON_PATH)
-    default_plugins = [
-        p for p in marketplace.get("plugins", [])
-        if p.get("policy", {}).get("installation") == "INSTALLED_BY_DEFAULT"
-    ]
-    
-    if not default_plugins:
-        raise ValueError("No INSTALLED_BY_DEFAULT plugins found in marketplace.json")
     
     print(f"Syncing skills from {len(default_plugins)} default-installed plugins (submodule SHA {submodule_sha})...")
     
@@ -171,7 +185,7 @@ def _sync_skills(
     
     # Track synced skills
     synced_skill_names = set()
-    synced_plugin_names = []
+    synced_plugin_names: list[str] = []
     changes_made = False
     total_skills = 0
     skills_processed = 0
