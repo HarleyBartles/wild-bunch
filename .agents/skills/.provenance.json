@@ -1,6 +1,6 @@
 {
   "sha": "e62475b5bd0b89e651a4deee8a5766c76382f554",
-  "syncedAt": "2026-07-21T09:43:12.766710+00:00",
+  "syncedAt": "2026-07-21T11:43:32.236305+00:00",
   "syncedPlugins": [
     "repo-worker-pack",
     "superpowers-plus",
@@ -78,7 +78,7 @@
     "context-safety": "f342e57aef5ac7b08b1bedc6dc43479f26873644007e22005b8bd1122ed0c63f",
     "cqrs": "45fdccb72eeebf21a6e4171b4785cb8959fdcb6547fe5a00c5a9b97ed9812037",
     "database-design-patterns": "8ebe47d02fba2c799896b832572632af510d1d12eaecd60c2326e80bec32d5cc",
-    "ddd": "f89ca15605eeccd084bedfe20b2294ceaaf4f45032b798d252d3682189d188af",
+    "ddd": "3b92388efedcd1022359eea4a49c55a34a57b2a47667f16ec3b83c3f413435d3",
     "dispatching-parallel-agents": "375d7445c2b7fb800f526e5cf486d9eb90b1258b0a0efd55eb4eeb0a41deb05e",
     "dotnet": "f76ed0360e56e5ee41a27ba2627eb74890ef38b639c4a4c0a1e753a803afd31f",
     "event-driven-architecture": "83b93b5f093b3d763a650a9ef86813cbbd856ba9e82801fc3f91ea5e35fd29c8",

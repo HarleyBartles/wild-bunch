@@ -201,7 +201,12 @@ def _skill_directory_hash(skill_dir: Path) -> str:
     for file_path in sorted(path for path in skill_dir.rglob("*") if path.is_file()):
         digest.update(file_path.relative_to(skill_dir).as_posix().encode("utf-8"))
         digest.update(b"\0")
-        digest.update(file_path.read_bytes())
+        file_bytes = file_path.read_bytes()
+        try:
+            file_bytes = file_bytes.decode("utf-8").replace("\r\n", "\n").encode("utf-8")
+        except UnicodeDecodeError:
+            pass
+        digest.update(file_bytes)
         digest.update(b"\0")
     return digest.hexdigest()
 
