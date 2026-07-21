@@ -198,7 +198,10 @@ def _files_identical(dir1: Path, dir2: Path) -> bool:
 def _skill_directory_hash(skill_dir: Path) -> str:
     """Return a deterministic content hash for one generated skill directory."""
     digest = hashlib.sha256()
-    for file_path in sorted(path for path in skill_dir.rglob("*") if path.is_file()):
+    for file_path in sorted(
+        (path for path in skill_dir.rglob("*") if path.is_file()),
+        key=lambda path: path.relative_to(skill_dir).as_posix(),
+    ):
         digest.update(file_path.relative_to(skill_dir).as_posix().encode("utf-8"))
         digest.update(b"\0")
         file_bytes = file_path.read_bytes()
