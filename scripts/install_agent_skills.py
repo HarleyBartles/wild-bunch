@@ -92,13 +92,13 @@ def _expected_skill_names(default_plugins: list[dict[str, Any]]) -> set[str]:
             for skill_dir in plugin_skills_dir.iterdir():
                 if not skill_dir.is_dir():
                     continue
+                if _is_repo_local_skill_name(skill_dir.name):
+                    continue
                 if not (skill_dir / "SKILL.md").is_file():
                     raise ValueError(
                         f"Source skill '{skill_dir.name}' from plugin '{plugin_name}' "
                         "is missing SKILL.md"
                     )
-                if _is_repo_local_skill_name(skill_dir.name):
-                    continue
                 skill_names.add(skill_dir.name)
 
     return skill_names
