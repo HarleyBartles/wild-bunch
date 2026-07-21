@@ -29,7 +29,8 @@ Reviewers must invoke the architecture skills before reviewing work that touches
 - `/wild-bunch-domain-modeling` â€” GameSession boundaries, player wallet/inventory, travel rules, clue/journal flows, hidden culprit truth
 - `/wild-bunch-dotnet-architecture` â€” GameSession as aggregate root, event-sourced command flows, JSON snapshot cache, persistence boundaries
 - `/ddd` â€” aggregates, value objects, domain events, strongly-typed IDs
-- `/cqrs-event-sourcing` â€” command/query separation, events as source of truth, projections
+- `/cqrs` â€” command/query separation
+- `/event-sourcing` â€” events as source of truth, replay, and projections
 - `/event-driven-architecture` â€” domain events and projections
 - `/clean-architecture` â€” Domain/Application/Infrastructure/Api layering, dependency inversion
 
@@ -367,6 +368,5 @@ PR comments are NOT for:
 - Duplicating the full structured output (that goes in the session response)
 - Posting findings that the reviewer has already fixed (fixed findings are noted in the structured output, not posted as PR comments)
 - Generic progress notes or chat â€” use the structured output for that
-
 
 

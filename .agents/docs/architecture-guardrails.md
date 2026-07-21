@@ -2,7 +2,7 @@
 
 Use this reference when making architecture decisions, touching GameSession, modifying persistence, or working with seed codecs.
 
-**This repo uses DDD, CQRS, and Event Sourcing as its architecture stack. These are not optional or aspirational — they are the established patterns. Hand-rolling non-DDD, non-CQRS, or non-event-sourced solutions is not acceptable. When in doubt, invoke the `/ddd`, `/cqrs-event-sourcing`, `/wild-bunch-dotnet-architecture`, and `/wild-bunch-domain-modeling` skills and follow their guidance.**
+**This repo uses DDD, CQRS, and Event Sourcing as its architecture stack. These are not optional or aspirational — they are the established patterns. Hand-rolling non-DDD, non-CQRS, or non-event-sourced solutions is not acceptable. When in doubt, invoke the `/ddd`, `/cqrs`, `/event-sourcing`, `/wild-bunch-dotnet-architecture`, and `/wild-bunch-domain-modeling` skills and follow their guidance.**
 
 ## Core Architecture Rules
 - `GameSession` is the live-play aggregate root.

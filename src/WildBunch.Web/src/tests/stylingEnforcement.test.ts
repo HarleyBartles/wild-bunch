@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
@@ -7,9 +7,43 @@ import fs from "node:fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildLegacyClassPattern(classes: readonly string[]): string {
+  const alternatives = classes.map(escapeRegex).join("|");
+  return `className=["'](?:[^"']*\\s)?(?:${alternatives})(?:\\s|["'])`;
+}
+
+function findMatches(command: string, arguments_: string[]): string {
+  try {
+    return execFileSync(command, arguments_, { encoding: "utf8" });
+  } catch (error: unknown) {
+    if (
+      typeof error === "object"
+      && error !== null
+      && "status" in error
+      && error.status === 1
+    ) {
+      return "";
+    }
+
+    throw error;
+  }
+}
+
 describe("Styling Enforcement", () => {
   const srcDir = path.resolve(__dirname, "..");
   const webRoot = path.resolve(srcDir, "..");
+
+  it("builds one literal className matcher for every forbidden class", () => {
+    const matcher = new RegExp(buildLegacyClassPattern(["panel", "action-row"]));
+
+    expect(matcher.test('className="panel action-row"')).toBe(true);
+    expect(matcher.test('className="other-panel"')).toBe(false);
+    expect(matcher.test('className="action-row-extra"')).toBe(false);
+  });
 
   it("ensures src/styles.css does not exist", () => {
     const stylesCssPath = path.resolve(srcDir, "styles.css");
@@ -69,21 +103,17 @@ describe("Styling Enforcement", () => {
       "trail-lock-banner",
     ];
 
-    const violations: string[] = [];
-    
-    for (const cls of forbiddenClasses) {
-      try {
-        const pattern = `className=["'][^"']*\\b${cls}\\b[^"']*["']`;
-        const result = execSync(`rg -l "${pattern}" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`, { encoding: "utf8" });
-        if (result) {
-          violations.push(`Class "${cls}" found in:\n${result}`);
-        }
-      } catch {
-        // no matches
-      }
-    }
+    const result = findMatches("rg", [
+      "-n",
+      buildLegacyClassPattern(forbiddenClasses),
+      srcDir,
+      "--glob",
+      "*.tsx",
+      "--glob",
+      "!tests/**",
+    ]);
 
-    expect(violations, `Found legacy CSS class violations:\n${violations.join("\n")}`).toHaveLength(0);
+    expect(result, `Found legacy CSS class violations:\n${result}`).toBe("");
   });
 
   it("ensures no inline style props remain in migrated component files", () => {
