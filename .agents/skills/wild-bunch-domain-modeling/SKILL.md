@@ -1,78 +1,44 @@
 ---
 name: wild-bunch-domain-modeling
-description: Use when applying Wild Bunch project-scoped domain guidance for DDD
-  tactical modeling, GameSession boundaries, player wallet or inventory, clue or
-  journal flows, hidden culprit truth, horse and saddle rules, water handling, or
-  JourneyLoop and trail-day progression.
+description: Use when Wild Bunch work changes GameSession boundaries, gameplay invariants, player state, investigation truth, or trail-day travel rules.
 metadata:
-  source-id: wild-bunch-domain-modeling
-  source-path: sources/first_party/skills/wild-bunch-domain-modeling/SKILL.md
-  provenance-name: Wild Bunch Domain Modeling first-party skill
-  source-category: first_party
   status: active
-  owner: Harley Bartles
-  scope: Use when apply Wild Bunch project-scoped domain guidance when work touches
-    DDD tactical modeling, GameSession Aggregate Root boundaries, player wallet or
-    inventory, clue or journal flows, wanted posters, hidden culprit truth, horse
-    and saddle rules, water handling, town or trail travel, journey state, or trail-day
-    progression. Use to keep C#/.NET game-domain modeling aligned with live repo source
-    and to prevent policy, service, database, or travel abstractions from flattening
-    Wild Bunch-specific design.
+  scope: Wild Bunch gameplay domain decisions.
   use_when:
-  - Use when apply Wild Bunch project-scoped domain guidance when work touches DDD
-    tactical modeling, GameSession Aggregate Root boundaries, player wallet or inventory,
-    clue or journal flows, wanted posters, hidden culprit truth, horse and saddle
-    rules, water handling, town or trail travel, journey state, or trail-day progression.
-    Use to keep C#/.NET game-domain modeling aligned with live repo source and to
-    prevent policy, service, database, or travel abstractions from flattening Wild
-    Bunch-specific design.
+    - Use when a task changes live-play domain rules or aggregate ownership.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
-license: MIT
+    - Do not use for generic C# structure without Wild Bunch gameplay rules.
 ---
 
 # Wild Bunch Domain Modeling
 
-## Overview
+## Owned decision
 
-Use this skill when the task touches live gameplay state or Wild Bunch domain language.
-Keep the model close to current source, use DDD tactical terms, and avoid generic
-game abstractions that flatten the project-specific design.
+Place Wild Bunch gameplay state and invariants inside the `GameSession` aggregate boundary without flattening them into handlers, persistence services, or UI code.
 
-## Rules
+## Current model
 
-- Treat `GameSession` as the live-play Aggregate Root.
-- External live-play commands mutate through `GameSession`.
-- `GameSession` owns `BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`,
-  and `ActionContextTracker`; child components receive narrow context and return
-  outcomes or events-to-produce.
-- Owned aggregate/component files under the root may own cohesive state, behavior, invariants, and lifecycle transitions.
-- Policy/coordinator/resolver extraction is not aggregate extraction unless a DDD aggregate/component owns responsibility.
-- Use `JourneyLoop`, `TravelJourney`, diary, completed-history, dev override, and
-  encounter-resolution routes for current travel work.
-- Use Aggregate Root terminology; do not fall back to route-metaphor wording.
-- Keep Wallet and Inventory as concrete player state; do not reintroduce generic supplies.
-- Keep hidden culprit truth internal.
-- Keep clue, journal, and wanted-poster flows stable unless the current task directly changes them.
-- Keep horse and saddle as separate inventory concepts.
-- Use the horse condition vocabulary: Healthy, Hungry, Exhausted, Lame, Dead.
-- Require a living, non-lame horse plus saddle for mounted travel.
-- Do not make water an ordinary stackable inventory good unless the design is explicitly revised.
-- Treat travel as the active `JourneyLoop` / trail-day loop under `GameSession`,
-  not a single immediate multi-day town leap.
-- Do not add direct travel mutations outside the event-sourced aggregate route.
-- Model journey state with origin, destination, route profile, remaining days or distance,
-  travel mode, player and horse condition, resources, and pending encounter state
-  when the slice needs that detail.
-- Advance travel one trail day at a time and pause when player choice is needed.
-- When gameplay decision loops or initial world state are in play, classify difficulty, entropy, and seeded setup as in scope, explicitly deferred, or irrelevant before choosing structure.
-- Use the installed `wild-bunch-project-doctrine` skill reference when domain modeling needs the world-start identity or randomness boundary.
+- `GameSession` is the live-play aggregate root and external command boundary.
+- It owns `BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, and `ActionContextTracker`.
+- Child components own cohesive state and rules. They receive narrow context, return outcomes or events-to-produce, and do not mutate sibling owners.
+- Wallet and inventory remain concrete player state. Horse and saddle remain separate concepts; water is not a generic stackable good.
+- Hidden culprit truth stays internal. Expose only player-known clues, journal entries, warrants, and investigation results.
+- Travel is an active `JourneyLoop` that advances one trail day at a time and pauses for player choice. Do not replace it with an immediate multi-day town jump.
+- Gameplay mutations follow the aggregate's typed-event route; do not add direct state changes outside event production and `Apply`.
 
-## Reference trigger
+## Workflow
 
-Read `references/domain-model.md` when a task needs the compact domain anchor list for implementation, issue shaping, review, or validation. Do not reread the reference repeatedly after the relevant domain constraints have been extracted.
-Consult the installed `wild-bunch-project-doctrine` skill reference when a task touches initial world state, difficulty envelopes, entropy, or seed identity.
+1. Inspect the live aggregate, event, and test source for the rule being changed.
+2. Identify the owning aggregate or child component.
+3. Keep cross-component orchestration in `GameSession`; keep cohesive rules with their child owner.
+4. Verify command-path and replay-path state converge.
 
-## Composition
+## Reference
 
-Use repository or GitHub evidence for current source truth before claiming live code state. This skill supplies domain constraints only; it does not verify branches, commits, PRs, tests, package state, issue closure, or worker reports.
+Read [Domain model](references/domain-model.md) for ownership and travel checks. For world setup, difficulty, or entropy, also read the project doctrine's difficulty and seeded-setup reference.
+
+## Stop conditions
+
+- Do not invent a new aggregate, service, or generic abstraction without an owned recurring invariant.
+- Do not expose hidden investigation truth to read models or browser state.
+- Use `wild-bunch-dotnet-architecture` when the decision crosses application or persistence boundaries.

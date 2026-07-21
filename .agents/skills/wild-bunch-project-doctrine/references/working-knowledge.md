@@ -1,29 +1,33 @@
 # Working Knowledge
 
-Consolidated from the Wild Bunch repo root `AGENTS.md` at commit `a65ca6c2`. All paths are relative to the wild-bunch repo root.
+All paths are relative to the repository root unless shown as absolute.
 
-## Worktree and Scratch locations
+## Workspace
 
-- Worktrees for this repo should be placed in `Z:\_agent-worktrees\wild-bunch` (centralized location outside the repo). This is a declared preference that should be respected by the using-git-worktrees skill.
-- **CRITICAL: Scratch files must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>`** where `<branch-name>` matches the worktree/branch name. This scratch space is disposable and not persistent beyond the agent's session. Agents must clean up their scratch folder when cleaning up their worktree. **Never commit scratch artifacts to the repo root** — see `.agents/docs/artifact-policy.md` for details.
+- Linked worktrees: `Z:\_agent-worktrees\wild-bunch\<task-name>`.
+- Disposable scratch: `Z:\_agent-scratch\wild-bunch\<branch-name>`.
+- Never commit scratch output or create nested worktrees.
+- Verify locations with Git; do not infer them from a script path or process directory.
 
-## Scripts are first-class surfaces
+## Script discovery
 
-Before reporting environmental issues (PostgreSQL not running, dev servers not started, etc.), read `scripts/AGENTS.md` and use the provided scripts.
+Read `scripts/AGENTS.md` and `scripts/README.md` before running ad hoc environment commands. Repository scripts own development servers, PostgreSQL, skill refresh, index mesh generation, image processing, and CI preflight.
 
-- **Deterministic workflow scripts (dev servers, PostgreSQL, skill sync, index mesh)**: `scripts/AGENTS.md` — **MUST read before running ad-hoc commands or reporting environmental issues**. Scripts handle PostgreSQL setup, dev server management, and other repo operations idempotently.
+## Read by task
 
-## Required reading before specific work types
+| Task | Required local references |
+| --- | --- |
+| Any implementation | `.agents/docs/coding-discipline.md`, `.agents/docs/guides/implementing-guide.md` |
+| Architecture, domain, or persistence | `.agents/docs/architecture-guardrails.md`, `.agents/docs/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md` |
+| Tests or CI | `.agents/docs/validation-policy.md` |
+| Frontend | `.agents/docs/frontend-standards.md`, `src/WildBunch.Web/AGENTS.md` |
+| Player-facing browser UI | `src/WildBunch.Web/.agents/unslop/play-surface-ui.md` |
+| Dev overlay | `.agents/docs/dev-overlay-doctrine.md`, `.agents/unslop/dev-overlay.md` |
+| Dev-enabled actions | `docs/adr/ADR-0036-dev-enabled-action-pattern.md` |
+| Design | `.agents/docs/guides/design-guide.md` |
+| Planning | `.agents/docs/guides/planning-guide.md` |
+| Review | `.agents/docs/guides/code-review-guide.md` |
+| Agent artifacts | `.agents/docs/artifact-policy.md` |
+| Repo-local skills | `.agents/docs/skill-authoring-policy.md`, `.agents/docs/repo-skills-policy.md` |
 
-- Architecture-sensitive work: `.agents/INDEX.md`, `.agents/docs/architecture-hygiene.md`, `.agents/unslop/backend-architecture.md`
-- **Architecture guardrails (must read before touching GameSession, persistence, or domain logic)**: `.agents/docs/architecture-guardrails.md`
-- **Dev-enabled action pattern (must read before implementing dev controls that affect play actions)**: `docs/adr/ADR-0036-dev-enabled-action-pattern.md`
-- **Coding discipline (must read before writing code)**: `.agents/docs/coding-discipline.md`
-- **Frontend standards (must read before implementing or reviewing frontend work)**: `.agents/docs/frontend-standards.md`
-- **Validation policy (must read before writing or reviewing tests)**: `.agents/docs/validation-policy.md`
-- **Design guide (must read before brainstorming or writing a design spec)**: `.agents/docs/guides/design-guide.md`
-- **Implementing guide (must read before implementing or dispatching implementer subagents)**: `.agents/docs/guides/implementing-guide.md`
-- **Planning guide (must read before planning multi-step work)**: `.agents/docs/guides/planning-guide.md`
-- **Code review guide (must read for code reviewers)**: `.agents/docs/guides/code-review-guide.md`
-- Web UI/play-surface work: `src/WildBunch.Web/AGENTS.md`, `src/WildBunch.Web/.agents/unslop/play-surface-ui.md`
-- Dev overlay work: `.agents/docs/dev-overlay-doctrine.md`, `.agents/unslop/dev-overlay.md`
+Inspect each path and the live source it governs before retaining current-state claims.
