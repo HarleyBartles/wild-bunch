@@ -5,4 +5,5 @@
 ## Files
 - [factories.ts](factories.ts)
 - [renderHelpers.tsx](renderHelpers.tsx)
+- [setup.test.ts](setup.test.ts)
 - [setup.ts](setup.ts)

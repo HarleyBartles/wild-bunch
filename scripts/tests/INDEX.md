@@ -8,3 +8,4 @@
 - [test_power_shell_wrappers.py](test_power_shell_wrappers.py)
 - [test_script_entrypoints.py](test_script_entrypoints.py)
 - [test_validate_marketplace_plugin_sync.py](test_validate_marketplace_plugin_sync.py)
+- [test_validate_repo_local_skills.py](test_validate_repo_local_skills.py)

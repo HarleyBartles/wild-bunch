@@ -187,8 +187,8 @@ When working in event sourcing, persistence, or projection code:
   event-stream plus snapshot-cache state, and framework leakage guardrails.
 - Invoke `/wild-bunch-domain-modeling` for DDD tactical modeling, GameSession
   boundaries, and domain event design.
-- Invoke `/cqrs-event-sourcing` for command/query separation, events as source of
-  truth, and projection patterns.
+- Invoke `/cqrs` for command/query separation and `/event-sourcing` for events
+  as source of truth, replay, and projection patterns.
 - Invoke `/event-driven-architecture` for domain events and projections.
 - Invoke `/ddd` for aggregate root, value object, and domain event modeling.
 

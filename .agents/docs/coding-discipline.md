@@ -15,7 +15,7 @@ Use this reference when writing code, deciding scope boundaries, or refactoring.
 - Do not hand-roll non-DDD solutions: no anemic domain models, no services that mutate aggregates from outside, no bypassing the aggregate root for gameplay mutations.
 - Do not hand-roll non-CQRS solutions: no mixing read logic into command handlers, no mixing mutation logic into query handlers, no scraping aggregate state for reads instead of using projections.
 - Do not hand-roll non-event-sourced solutions: no direct state mutations outside the event-sourced route, no skipping `Apply` methods, no adding mutable state that isn't restored from events.
-- When unsure how to apply these patterns, invoke the `/ddd`, `/cqrs-event-sourcing`, `/event-driven-architecture`, `/wild-bunch-dotnet-architecture`, and `/wild-bunch-domain-modeling` skills. They are the reference sources for correct patterns, not the repo's current code (which may have legacy residue).
+- When unsure how to apply these patterns, invoke the `/ddd`, `/cqrs`, `/event-sourcing`, `/event-driven-architecture`, `/wild-bunch-dotnet-architecture`, and `/wild-bunch-domain-modeling` skills. They are the reference sources for correct patterns, not the repo's current code (which may have legacy residue).
 - Do not assume the repo's current code is the pattern to follow. The skills and ADRs are the authority. If code and skills disagree, the skills win.
 - Do not create placeholder state. If a value is not yet known, make the field nullable and set it when the value becomes known. Placeholder values that get silently replaced are an anti-pattern.
 

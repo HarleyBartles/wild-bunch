@@ -25,3 +25,4 @@
 - [README.md](README.md)
 - [requirements.txt](requirements.txt)
 - [validate_marketplace_plugin_sync.py](validate_marketplace_plugin_sync.py)
+- [validate_repo_local_skills.py](validate_repo_local_skills.py)

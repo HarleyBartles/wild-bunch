@@ -131,7 +131,7 @@ it does not execute the work itself.
 
 This skill discovers and records the operating environment. It does not:
 - authorize mutations (that's `connector-safety`);
-- prove GitHub state (that's `github-operations`);
+- prove GitHub state (that's `using-github`);
 - shape Linear issues (that's `linear-issue-shaping`);
 - implement code or execute workflows (that's the specialist workflow's job);
 - replace source-of-truth verification (that's `verification-before-completion`).

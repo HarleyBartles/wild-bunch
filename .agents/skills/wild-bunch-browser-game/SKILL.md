@@ -1,67 +1,46 @@
 ---
 name: wild-bunch-browser-game
-description: Use when bridge Wild Bunch to browser-game implementation and QA when
-  work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays,
-  playtest evidence, dev-server checks, screenshot QA, or installed browser verification tooling.
-  Use to keep browser rendering as a presentation adapter over authoritative Wild
-  Bunch game state, compose with web-game-foundations, phaser-2d-game, game-ui-frontend,
-  and game-playtest, and avoid turning UI or renderer code into domain truth.
+description: Use when Wild Bunch work changes browser delivery, React or Phaser integration, player HUDs, DOM overlays, playtesting, or browser QA evidence.
 metadata:
-  source-id: wild-bunch-browser-game
-  source-path: sources/first_party/skills/wild-bunch-browser-game/SKILL.md
-  provenance-name: Wild Bunch Browser Game first-party skill
-  source-category: first_party
   status: active
-  owner: Harley Bartles
-  scope: Use when bridge Wild Bunch to browser-game implementation and QA when work
-    touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest
-    evidence, dev-server checks, screenshot QA, or installed browser verification tooling. Use
-    to keep browser rendering as a presentation adapter over authoritative Wild Bunch
-    game state, compose with web-game-foundations, phaser-2d-game, game-ui-frontend,
-    and game-playtest, and avoid turning UI or renderer code into domain truth.
+  scope: Wild Bunch browser delivery and verification decisions.
   use_when:
-  - Use when bridge Wild Bunch to browser-game implementation and QA when work touches
-    browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence,
-    dev-server checks, screenshot QA, or installed browser verification tooling. Use to keep browser
-    rendering as a presentation adapter over authoritative Wild Bunch game state,
-    compose with web-game-foundations, phaser-2d-game, game-ui-frontend, and game-playtest,
-    and avoid turning UI or renderer code into domain truth.
+    - Use when a task changes the web game, player-facing browser UI, or browser validation route.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
-license: MIT
+    - Do not use for backend-only gameplay or persistence work.
 ---
 
 # Wild Bunch Browser Game
 
-Use this skill when Wild Bunch work touches browser delivery, HUD design, browser playtesting, dev-server verification, screenshot QA, or the browser-game marketplace stack.
+## Owned decision
 
-## Core posture
+Keep the browser as a presentation and input adapter over backend-authoritative game state, then select the smallest browser implementation or QA route that fits the task.
 
-- Default the browser route to Phaser, TypeScript, and Vite with a DOM HUD unless the issue explicitly chooses another stack.
-- Treat browser rendering as a presentation adapter over authoritative game state and command intent.
-- Do not let the renderer, HUD, or frontend state become Wild Bunch domain truth.
-- Keep simulation and game-state authority in the domain/application route defined by the current repo source.
-- Preserve Wild Bunch domain constraints from project skills when browser work touches wallet, inventory, clues, wanted posters, horse state, travel, journey state, or culprit truth.
+## Current posture
 
-## Composition
+- The web app uses React 18, Phaser 3, TypeScript, and Vite.
+- Render player-known backend state. Do not make React, Phaser, or client stores authoritative for gameplay facts or hidden investigation truth.
+- Send player intent through the established command/API boundary.
+- Keep the player HUD and play surfaces useful in-world; keep developer controls in the dev overlay.
+- Preserve domain rules for travel, inventory, wallet, horse state, clues, and culprit truth when adapting them for the browser.
 
-Use these supporting skills or marketplace-derived capabilities when the current task specifically needs them:
+## Route by need
 
-- `game-studio` for the primary browser-game reference pack.
-- `web-game-foundations` for simulation, render, UI, and save boundaries.
-- `phaser-2d-game` for the 2D Phaser implementation shape.
-- `game-ui-frontend` for HUD, menu, overlay, and frontend interaction direction.
-- `game-playtest` for browser playtest expectations and evidence.
-- browser verification tooling for dev-server verification and screenshot-based QA where installed.
+- Use `react` for React component and hook structure.
+- Use `phaser-2d-game` for Phaser scene, lifecycle, camera, or input work.
+- Use `game-ui-frontend` and `interaction-design` for HUD and player-flow decisions.
+- Use `game-playtest` for browser playtests and evidence.
+- Use `webapp-testing` for local browser automation and route checks.
+- Use `web-styling` plus `.agents/docs/frontend-standards.md` for styling decisions.
 
-Do not read supporting skills just because this skill is active. Load only the specific adjacent surface that owns the unresolved browser-game decision.
+Load only the adjacent skill that owns the unresolved decision.
 
-## Reference trigger
+## Reference
 
-Read `references/browser-game-stack.md` when a task needs the stack map, supporting-skill composition cues, or browser verification route. After reading it once for the current task, do not reread it unless the task changes or the browser route is contradicted by live repo evidence.
+Read [Browser game stack](references/browser-game-stack.md) for the verified stack, authority boundary, and focused QA route.
 
-## Stop rules
+## Stop conditions
 
-- Do not mutate source, dispatch workers, post comments, or claim browser QA completion from this skill alone.
-- Do not treat screenshot existence as issue-goal conformance; compare browser evidence against the requested behavior.
-- Do not override Wild Bunch domain-modeling or .NET architecture guidance when browser code adapts domain state.
+- Inspect `src/WildBunch.Web/package.json` and live source before changing stack claims.
+- Do not accept a screenshot alone as behavior proof.
+- Route gameplay-rule changes through `wild-bunch-domain-modeling` and backend structure changes through `wild-bunch-dotnet-architecture`.

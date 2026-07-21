@@ -29,7 +29,7 @@ For architecture specifically, inspect the repo's canonical architecture decisio
 |-------|----------|
 | `/using-linear` | Use when working with the Linear connector surface, choosing the right tool call, or finding create/update tools exposed under `save_*` rather than `create_*` or `update_*` |
 | `/linear-issue-shaping` | Use when Linear-backed issue, project, and document shaping: create or update worker-ready Linear issues, inspect Linear comments/attachments/state, prepare paste-ready worker handoffs when explicitly requested, and route GitHub PR proof after a PR exists |
-| `/github-operations` | Use when verify GitHub repository evidence without taking over coding workflow routing. Use after a Linear/Codex task has a GitHub PR, branch, commit, review, merge, status, or file-state question; when checking publication proof, PR diff scope, mergeability, CI/status evidence, final main state, or GitHub-specific closure proof |
+| `/using-github` | Use when choosing the right GitHub or Git surface for repository, branch, commit, pull request, review, check, or merge work |
 
 ## Anti-Slop & Quality
 
@@ -54,15 +54,15 @@ For architecture specifically, inspect the repo's canonical architecture decisio
 
 | Skill | Use When |
 |-------|----------|
-| `/wild-bunch-project-doctrine` | Use when bootstrapping the Wild Bunch repo posture before any repo-sensitive change. Establishes source-truth posture, worker dispatch and return verification, issue-goal conformance, world setup, seeded identity, difficulty, entropy, working knowledge (worktree/scratch locations, script discovery), skill routing, and policy references. Use when chat summaries, session busters, worker reports, or issue comments might be mistaken for live repo truth. Routes to specialist skills for domain-specific work. |
 | `/repo-worker-base` | Use when thin repo hygiene entrypoint for Codex workers in Harley's workspace. Use when a Codex worker is working in any repository in Harley's workspace and needs fresh-main discipline, worktree isolation, branch and PR hygiene, validation evidence, or publication proof |
-| `/wild-bunch-dotnet-architecture` | Use when applying Wild Bunch .NET architecture guardrails for C#/.NET repo work touching GameSession live-play flows, application orchestration, infrastructure persistence, CQRS/read models, event-stream plus snapshot-cache state, database-table pressure, or framework leakage |
-| `/wild-bunch-domain-modeling` | Use when applying Wild Bunch project-scoped domain guidance for DDD tactical modeling, GameSession boundaries, player wallet or inventory, clue or journal flows, hidden culprit truth, horse and saddle rules, water handling, or JourneyLoop and trail-day progression |
-| `/wild-bunch-browser-game` | Use when bridge Wild Bunch to browser-game implementation and QA when work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence, dev-server checks, screenshot QA, or installed browser verification tooling |
+
+Discover Wild Bunch repo-local skills from `.agents/skills/wild-bunch-*/SKILL.md`
+instead of maintaining a manual list here. The binding MUST INVOKE requirement
+for `/wild-bunch-project-doctrine` remains in the root `AGENTS.md`.
 
 **Note**: For Linear/GitHub/architecture/anti-slop routing, use direct skills and repo-local doctrine instead of compositional middlemen:
 - Linear work routes through `/using-linear`, `/linear-issue-shaping`, and repo doctrine/source-truth guidance
-- GitHub/PR proof routes through `/github-operations`, `/repo-worker-base`, and Wild Bunch source-truth doctrine
+- GitHub/PR work routes through `/using-github`, `/repo-worker-base`, and Wild Bunch source-truth doctrine
 - Anti-slop work routes to relevant `.agents/unslop/` profiles and direct review/verification skills
 - Architecture work tells workers to inspect current source and canonical repo decisions, then use `/using-superpowers` or skill discovery to invoke the smallest relevant specialist skill
 

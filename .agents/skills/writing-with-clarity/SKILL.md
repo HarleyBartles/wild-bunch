@@ -38,11 +38,10 @@ Do not load every reference by default. The short references are the normal
 operational guidance and include source-basis pointers for the historical
 material.
 
-Do not read `references/source/elements-of-style-1918.html` during ordinary use.
+Do not read `assets/authority/reference-source/elements-of-style-1918.html` during ordinary use.
 Read it only when a shorter reference leaves an unresolved question about an
 exception, rationale, or original example, and then read only the relevant
-section. Use
-`references/source/source-map.md` to locate that section. The historical source
+section. Use `assets/authority/source-map.yaml` to locate that section. The historical source
 is context and provenance, not current style authority.
 
 ## Authority and boundaries

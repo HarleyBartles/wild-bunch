@@ -16,6 +16,7 @@ MARKETPLACE_PATH = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
 PROVENANCE_PATH = REPO_ROOT / ".agents" / "skills" / ".provenance.json"
 SKILLS_ROOT = PROVENANCE_PATH.parent
 SUBMODULE_PATH = ".agents/plugins/marketplace-source"
+REPO_LOCAL_SKILL_PREFIX = "wild-bunch-"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -101,6 +102,17 @@ def validate_marketplace_plugin_sync(
     if provenance.get("syncedSkills") != len(synced_skill_names):
         raise ValueError(
             "installed-skill provenance syncedSkills does not match syncedSkillNames"
+        )
+
+    repo_local_skill_names = sorted(
+        skill_name
+        for skill_name in synced_skill_names
+        if skill_name.startswith(REPO_LOCAL_SKILL_PREFIX)
+    )
+    if repo_local_skill_names:
+        raise ValueError(
+            "installed-skill provenance must not record repo-local skill names: "
+            f"{', '.join(repo_local_skill_names)}"
         )
 
     missing_skill_names = sorted(set(synced_skill_names) - set(installed_skill_hashes))

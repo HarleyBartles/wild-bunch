@@ -1,0 +1,18 @@
+{
+  "issue": "MARK-226",
+  "skill": "using-github",
+  "canonical_source_path": "sources/first_party/skills/using-github",
+  "public_name": "using-github",
+  "provenance_name": "MARK-226 canonical first-party source for using-github",
+  "scope": [
+    "GitHub surface selection",
+    "MCP, gh, REST, GraphQL, and git routing",
+    "publication proof"
+  ],
+  "projected_paths": [
+    "sources/first_party/skills/using-github",
+    "sources/first_party/skills/using-github"
+  ],
+  "gpt_overlay": "direct export by default",
+  "notes": "Renamed from github-operations and restructured as a router skill mirroring using-linear. House Skills and repo-worker-pack are projection surfaces only."
+}

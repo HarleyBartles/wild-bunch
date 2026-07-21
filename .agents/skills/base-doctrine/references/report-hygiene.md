@@ -12,7 +12,7 @@ The failure mode is report laundering: a smooth report turns a worker claim, Lin
 
 Use for report drafts, worker returns, verifier summaries, publication notes, issue comments, receipt summaries, proof pointers, validation receipts, continuity notes, or closure summaries when reporting language could change the authority of information.
 
-Do not use this reference to dispatch workers, poll Linear, verify GitHub, run validation, mutate source evidence, close issues, or update repositories. Use `linear-issue-shaping` for Linear/Codex state, `github-operations` for GitHub proof, and `verification-before-completion` for completion readiness.
+Do not use this reference to dispatch workers, poll Linear, verify GitHub, run validation, mutate source evidence, close issues, or update repositories. Use `linear-issue-shaping` for Linear/Codex state, `using-github` for GitHub proof, and `verification-before-completion` for completion readiness.
 
 Use project-specific reporting wrappers only when local actor/domain law matters. Wrong-project wrappers are noise.
 

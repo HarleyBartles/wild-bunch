@@ -603,6 +603,169 @@ def test_sync_cli_preserves_custody_skills_while_repairing_vendored_projection(m
         assert custody_skill.is_dir()
 
 
+def test_sync_cli_does_not_overwrite_reserved_local_skill_from_marketplace(monkeypatch):
+    with TemporaryDirectory() as tmpdir:
+        repo_root = Path(tmpdir) / "repo"
+        marketplace_path = repo_root / ".agents" / "plugins" / "marketplace.json"
+        marketplace_path.parent.mkdir(parents=True)
+        marketplace_path.write_text(
+            json.dumps(
+                {
+                    "plugins": [
+                        {
+                            "name": "marketplace-plugin",
+                            "policy": {"installation": "INSTALLED_BY_DEFAULT"},
+                        }
+                    ]
+                }
+            )
+        )
+
+        submodule_root = repo_root / ".agents" / "plugins" / "marketplace-source"
+        plugins_root = submodule_root / "codex-marketplace" / "plugins"
+        source_skill = (
+            plugins_root
+            / "marketplace-plugin"
+            / "skills"
+            / "wild-bunch-project-doctrine"
+        )
+        source_skill.mkdir(parents=True)
+        (source_skill / "SKILL.md").write_text("# Marketplace doctrine")
+
+        skills_root = repo_root / ".agents" / "skills"
+        local_skill = skills_root / "wild-bunch-project-doctrine"
+        local_skill.mkdir(parents=True)
+        (local_skill / "SKILL.md").write_text("# Local doctrine")
+        provenance_path = skills_root / ".provenance.json"
+
+        import install_agent_skills
+
+        monkeypatch.setattr(install_agent_skills, "REPO_ROOT", repo_root)
+        monkeypatch.setattr(install_agent_skills, "MARKETPLACE_JSON_PATH", marketplace_path)
+        monkeypatch.setattr(install_agent_skills, "SUBMODULE_ROOT", submodule_root)
+        monkeypatch.setattr(install_agent_skills, "PLUGINS_ROOT", plugins_root)
+        monkeypatch.setattr(install_agent_skills, "SKILLS_ROOT", skills_root)
+        monkeypatch.setattr(install_agent_skills, "PROVENANCE_PATH", provenance_path)
+        monkeypatch.setattr(install_agent_skills, "_get_submodule_sha", lambda: "marketplace-sha")
+        monkeypatch.setattr(sys, "argv", ["install_agent_skills.py"])
+
+        assert main() == 0
+        assert (local_skill / "SKILL.md").read_text() == "# Local doctrine"
+        assert "wild-bunch-project-doctrine" not in json.loads(
+            provenance_path.read_text()
+        )["syncedSkillNames"]
+
+
+def test_sync_cli_preserves_reserved_local_skill_after_marketplace_removal(monkeypatch):
+    with TemporaryDirectory() as tmpdir:
+        repo_root = Path(tmpdir) / "repo"
+        marketplace_path = repo_root / ".agents" / "plugins" / "marketplace.json"
+        marketplace_path.parent.mkdir(parents=True)
+        marketplace_path.write_text(
+            json.dumps(
+                {
+                    "plugins": [
+                        {
+                            "name": "marketplace-plugin",
+                            "policy": {"installation": "INSTALLED_BY_DEFAULT"},
+                        }
+                    ]
+                }
+            )
+        )
+
+        submodule_root = repo_root / ".agents" / "plugins" / "marketplace-source"
+        plugins_root = submodule_root / "codex-marketplace" / "plugins"
+        source_skill = plugins_root / "marketplace-plugin" / "skills" / "vendored-skill"
+        source_skill.mkdir(parents=True)
+        (source_skill / "SKILL.md").write_text("# Vendored skill")
+
+        skills_root = repo_root / ".agents" / "skills"
+        local_skill = skills_root / "wild-bunch-project-doctrine"
+        local_skill.mkdir(parents=True)
+        local_skill.joinpath("SKILL.md").write_text("# Local doctrine")
+        provenance_path = skills_root / ".provenance.json"
+        provenance = {
+            "sha": "marketplace-sha",
+            "syncedPlugins": ["marketplace-plugin"],
+            "syncedSkillNames": ["vendored-skill", "wild-bunch-project-doctrine"],
+            "syncedSkills": 2,
+            "syncedSkillHashes": {
+                "vendored-skill": "old-vendored-hash",
+                "wild-bunch-project-doctrine": "old-marketplace-hash",
+            },
+        }
+        provenance_path.write_text(json.dumps(provenance))
+
+        import install_agent_skills
+
+        monkeypatch.setattr(install_agent_skills, "REPO_ROOT", repo_root)
+        monkeypatch.setattr(install_agent_skills, "MARKETPLACE_JSON_PATH", marketplace_path)
+        monkeypatch.setattr(install_agent_skills, "SUBMODULE_ROOT", submodule_root)
+        monkeypatch.setattr(install_agent_skills, "PLUGINS_ROOT", plugins_root)
+        monkeypatch.setattr(install_agent_skills, "SKILLS_ROOT", skills_root)
+        monkeypatch.setattr(install_agent_skills, "PROVENANCE_PATH", provenance_path)
+        monkeypatch.setattr(install_agent_skills, "_get_submodule_sha", lambda: "marketplace-sha")
+        monkeypatch.setattr(sys, "argv", ["install_agent_skills.py"])
+
+        assert main() == 0
+        assert local_skill.joinpath("SKILL.md").read_text() == "# Local doctrine"
+        assert json.loads(provenance_path.read_text())["syncedSkillNames"] == [
+            "vendored-skill"
+        ]
+
+        monkeypatch.setattr(sys, "argv", ["install_agent_skills.py", "--check"])
+        assert main() == 0
+
+
+def test_sync_cli_ignores_reserved_upstream_directory_without_entrypoint(monkeypatch):
+    with TemporaryDirectory() as tmpdir:
+        repo_root = Path(tmpdir) / "repo"
+        marketplace_path = repo_root / ".agents" / "plugins" / "marketplace.json"
+        marketplace_path.parent.mkdir(parents=True)
+        marketplace_path.write_text(
+            json.dumps(
+                {
+                    "plugins": [
+                        {
+                            "name": "marketplace-plugin",
+                            "policy": {"installation": "INSTALLED_BY_DEFAULT"},
+                        }
+                    ]
+                }
+            )
+        )
+
+        submodule_root = repo_root / ".agents" / "plugins" / "marketplace-source"
+        plugins_root = submodule_root / "codex-marketplace" / "plugins"
+        reserved_upstream_skill = (
+            plugins_root / "marketplace-plugin" / "skills" / "wild-bunch-project-doctrine"
+        )
+        reserved_upstream_skill.mkdir(parents=True)
+        source_skill = plugins_root / "marketplace-plugin" / "skills" / "vendored-skill"
+        source_skill.mkdir(parents=True)
+        (source_skill / "SKILL.md").write_text("# Vendored skill")
+
+        skills_root = repo_root / ".agents" / "skills"
+        provenance_path = skills_root / ".provenance.json"
+
+        import install_agent_skills
+
+        monkeypatch.setattr(install_agent_skills, "REPO_ROOT", repo_root)
+        monkeypatch.setattr(install_agent_skills, "MARKETPLACE_JSON_PATH", marketplace_path)
+        monkeypatch.setattr(install_agent_skills, "SUBMODULE_ROOT", submodule_root)
+        monkeypatch.setattr(install_agent_skills, "PLUGINS_ROOT", plugins_root)
+        monkeypatch.setattr(install_agent_skills, "SKILLS_ROOT", skills_root)
+        monkeypatch.setattr(install_agent_skills, "PROVENANCE_PATH", provenance_path)
+        monkeypatch.setattr(install_agent_skills, "_get_submodule_sha", lambda: "marketplace-sha")
+        monkeypatch.setattr(sys, "argv", ["install_agent_skills.py"])
+
+        assert main() == 0
+        assert (skills_root / "vendored-skill" / "SKILL.md").read_text() == "# Vendored skill"
+        assert not (skills_root / "wild-bunch-project-doctrine").exists()
+        assert json.loads(provenance_path.read_text())["syncedSkillNames"] == ["vendored-skill"]
+
+
 class TestLoadJson:
     """Tests for _load_json function."""
 

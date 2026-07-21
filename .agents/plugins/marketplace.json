@@ -33,20 +33,6 @@
       "category": "Coding"
     },
     {
-      "name": "wild-bunch-project-pack",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/wild-bunch-project-pack"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    },
-    {
       "name": "game-studio",
       "source": {
         "source": "github",
@@ -106,7 +92,7 @@
   "notes": [
     "Repo-local Codex plugin marketplace for HarleyBartles/wild-bunch.",
     "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace.",
-    "wild-bunch-project-pack is thin: only Wild Bunch native/bridge skills.",
+    "wild-bunch-* skills are repository-local and are not supplied by a marketplace plugin.",
     "house-skills is intentionally not default-installed."
   ]
 }

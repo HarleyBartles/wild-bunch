@@ -1,15 +1,87 @@
 import { describe, expect, it } from "vitest";
-import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { tmpdir } from "node:os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildLegacyClassPattern(classes: readonly string[]): string {
+  const alternatives = classes.map(escapeRegex).join("|");
+  return `className=["'](?:[^"']*\\s)?(?:${alternatives})(?:\\s|["'])`;
+}
+
+function findMatchesInTsxFiles(directory: string, matcher: RegExp): string {
+  return findMatchingLines(directory, matcher).join("\n");
+}
+
+function findMatchingLines(directory: string, matcher: RegExp): string[] {
+  return fs.readdirSync(directory, { withFileTypes: true })
+    .flatMap((entry) => {
+      const entryPath = path.join(directory, entry.name);
+
+      if (entry.isDirectory()) {
+        return entry.name === "tests" ? [] : findMatchingLines(entryPath, matcher);
+      }
+
+      if (!entry.isFile() || !entry.name.endsWith(".tsx")) {
+        return [];
+      }
+
+      return fs.readFileSync(entryPath, "utf8")
+        .split("\n")
+        .flatMap((line, index) => matcher.test(line) ? [`${entryPath}:${index + 1}:${line}`] : []);
+    });
+}
+
 describe("Styling Enforcement", () => {
   const srcDir = path.resolve(__dirname, "..");
   const webRoot = path.resolve(srcDir, "..");
+
+  it("builds one literal className matcher for every forbidden class", () => {
+    const matcher = new RegExp(buildLegacyClassPattern(["panel", "action-row"]));
+
+    expect(matcher.test('className="panel action-row"')).toBe(true);
+    expect(matcher.test('className="other-panel"')).toBe(false);
+    expect(matcher.test('className="action-row-extra"')).toBe(false);
+  });
+
+  it("finds matching lines without requiring an external search executable", () => {
+    const fixtureDirectory = fs.mkdtempSync(path.join(tmpdir(), "wild-bunch-styling-"));
+    const fixturePath = path.join(fixtureDirectory, "Example.tsx");
+
+    try {
+      fs.writeFileSync(fixturePath, 'export const Example = () => <div className="panel" />;\n');
+
+      const matches = findMatchesInTsxFiles(fixtureDirectory, /className="panel"/);
+
+      expect(matches).toContain("Example.tsx:1:");
+    } finally {
+      fs.rmSync(fixtureDirectory, { force: true, recursive: true });
+    }
+  });
+
+  it("does not report blank matches from nested directories", () => {
+    const fixtureDirectory = fs.mkdtempSync(path.join(tmpdir(), "wild-bunch-styling-"));
+    const nestedDirectory = path.join(fixtureDirectory, "components", "shared");
+    const siblingDirectory = path.join(fixtureDirectory, "hooks");
+
+    try {
+      fs.mkdirSync(nestedDirectory, { recursive: true });
+      fs.mkdirSync(siblingDirectory);
+      fs.writeFileSync(path.join(nestedDirectory, "Example.tsx"), "export const Example = () => null;\n");
+      fs.writeFileSync(path.join(siblingDirectory, "useExample.tsx"), "export const useExample = () => null;\n");
+
+      expect(findMatchesInTsxFiles(fixtureDirectory, /className="panel"/)).toBe("");
+    } finally {
+      fs.rmSync(fixtureDirectory, { force: true, recursive: true });
+    }
+  });
 
   it("ensures src/styles.css does not exist", () => {
     const stylesCssPath = path.resolve(srcDir, "styles.css");
@@ -23,14 +95,9 @@ describe("Styling Enforcement", () => {
   });
 
   it("ensures no .css imports remain in TSX files", () => {
-    try {
-      const result = execSync(`rg "import\\s+['\\"].*\\.css['\\"]" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`, { encoding: "utf8" });
-      if (result) {
-        expect.fail(`Found .css imports in TSX files:\n${result}`);
-      }
-    } catch {
-      // rg returns non-zero if no matches
-    }
+    const result = findMatchesInTsxFiles(srcDir, /import\s+['"].*\.css['"]/);
+
+    expect(result, `Found .css imports in TSX files:\n${result}`).toBe("");
   });
 
   it("ensures no legacy plain CSS classes from styles.css are used", () => {
@@ -69,21 +136,12 @@ describe("Styling Enforcement", () => {
       "trail-lock-banner",
     ];
 
-    const violations: string[] = [];
-    
-    for (const cls of forbiddenClasses) {
-      try {
-        const pattern = `className=["'][^"']*\\b${cls}\\b[^"']*["']`;
-        const result = execSync(`rg -l "${pattern}" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`, { encoding: "utf8" });
-        if (result) {
-          violations.push(`Class "${cls}" found in:\n${result}`);
-        }
-      } catch {
-        // no matches
-      }
-    }
+    const result = findMatchesInTsxFiles(
+      srcDir,
+      new RegExp(buildLegacyClassPattern(forbiddenClasses)),
+    );
 
-    expect(violations, `Found legacy CSS class violations:\n${violations.join("\n")}`).toHaveLength(0);
+    expect(result, `Found legacy CSS class violations:\n${result}`).toBe("");
   });
 
   it("ensures no inline style props remain in migrated component files", () => {
@@ -91,16 +149,8 @@ describe("Styling Enforcement", () => {
     // All static layout/spacing/typography must live in styled components.
     // The only allowed exception is for genuinely dynamic values that cannot
     // be known at styling time — those should use transient $props instead.
-    try {
-      const result = execSync(
-        `rg "style=\\{\\{" "${srcDir}" --glob "*.tsx" --glob "!tests/**"`,
-        { encoding: "utf8" },
-      );
-      if (result) {
-        expect.fail(`Found inline style={{ ... }} props in TSX files:\n${result}`);
-      }
-    } catch {
-      // rg returns non-zero if no matches — this is the expected pass case
-    }
+    const result = findMatchesInTsxFiles(srcDir, /style=\{\{/);
+
+    expect(result, `Found inline style={{ ... }} props in TSX files:\n${result}`).toBe("");
   });
 });

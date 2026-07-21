@@ -56,11 +56,22 @@ fi
 
 if [[ $skip_index_mesh -eq 0 ]]; then
   echo '--- Index mesh preflight ---'
+  python3 -m pip install -r "$script_dir/requirements.txt"
   bash "$script_dir/generate_index_mesh.sh" --check
+
+  echo '--- Validating repo-local skills ---'
+  python3 "$script_dir/validate_repo_local_skills.py"
 
   echo '--- Validating marketplace plugin sync ---'
   python3 "$script_dir/validate_marketplace_plugin_sync.py"
 
   echo '--- Validating marketplace skill projection ---'
   python3 "$script_dir/install_agent_skills.py" --check
+
+  echo '--- Running installer and validator regression tests ---'
+  python3 -m pytest \
+    "$script_dir/tests/test_install_agent_skills.py" \
+    "$script_dir/tests/test_validate_repo_local_skills.py" \
+    "$script_dir/tests/test_validate_marketplace_plugin_sync.py" \
+    -q
 fi

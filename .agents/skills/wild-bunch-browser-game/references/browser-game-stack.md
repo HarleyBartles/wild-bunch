@@ -1,12 +1,25 @@
-# Browser Game Stack Notes
+# Browser Game Stack
 
-Use these notes when Wild Bunch work needs browser implementation or verification routing.
+## Verified stack
 
-- Use the `game-studio` plugin as the primary browser-game reference pack.
-- Default to Phaser, TypeScript, and Vite with a DOM HUD unless the scoped issue chooses another stack.
-- Keep the renderer authoritative only for presentation.
-- Keep simulation and game-state truth in the domain/application route defined by current Wild Bunch source.
-- Browser code should adapt authoritative game state and emit player commands, not own game invariants.
-- Use `web-game-foundations`, `phaser-2d-game`, `game-ui-frontend`, and `game-playtest` as supporting local patterns when their specific surface is needed.
-- Use installed browser verification tooling for dev-server verification and screenshot-based QA when it is available.
-- Pair screenshot evidence with behavior checks; screenshots alone do not prove issue-goal conformance.
+`src/WildBunch.Web/package.json` currently declares React 18, Phaser 3, TypeScript, and Vite. Check that file before retaining version or dependency claims.
+
+## Authority boundary
+
+- The backend owns gameplay state, rules, command legality, and hidden truth.
+- React and Phaser render player-known state and emit player intent.
+- Player-facing surfaces belong in the game shell or relevant route. Developer controls belong in the dev overlay.
+- Follow `.agents/docs/frontend-standards.md` for styling, routing, source-truth, play-surface, and dev-overlay rules.
+
+## Focused routes
+
+| Need | Route |
+| --- | --- |
+| React structure | `react` |
+| Phaser runtime | `phaser-2d-game` |
+| HUD or interaction flow | `game-ui-frontend`, `interaction-design` |
+| Styling | `web-styling` |
+| Playtest | `game-playtest` |
+| Browser automation | `webapp-testing` |
+
+Pair visual evidence with behavior checks through the real client-to-server path. A screenshot proves appearance at one moment, not command handling or backend state changes.

@@ -1,0 +1,60 @@
+schema_version: 1
+reconciled_against: e7dd4f76ae8a42ac8ef13880a737c2dbef469c45c1c4b1fcf097d4ab1184e3da
+references:
+  - path: references/operational-guidance.md
+    source_sections:
+      - 'Preface and Part I: Introduction'
+    content_mode: first_party_synthesis
+    load_when:
+      - Use when selecting a topic or reviewing the design pattern landscape.
+  - path: references/data-modeling.md
+    source_sections:
+      - 'Chapter 1: The Database Design Process'
+      - 'Chapter 2: Data Models'
+    content_mode: licensed_adaptation
+    load_when:
+      - Use when modeling conceptual, logical, or physical data.
+  - path: references/normalization.md
+    source_sections:
+      - 'Chapter 4: Functional Dependencies and Normalization'
+      - 'Chapter 5: Normal Forms'
+    content_mode: licensed_adaptation
+    load_when:
+      - Use when normalizing tables or analyzing dependencies.
+  - path: references/keys-and-constraints.md
+    source_sections:
+      - 'Chapter 6: Data Integrity and Constraints'
+      - 'Chapter 7: Keys and Relationships'
+    content_mode: licensed_adaptation
+    load_when:
+      - Use when choosing or reviewing keys and constraints.
+  - path: references/views-and-programmability.md
+    source_sections:
+      - 'Chapter 8: Views'
+      - 'Chapter 9: Stored Procedures and Functions'
+      - 'Chapter 10: Triggers'
+    content_mode: licensed_adaptation
+    load_when:
+      - Use when creating views, procedures, functions, or triggers.
+  - path: references/transactions-and-concurrency.md
+    source_sections:
+      - 'Chapter 11: Transactions and Concurrency Control'
+      - 'Chapter 12: Locking and Deadlock'
+    content_mode: licensed_adaptation
+    load_when:
+      - Use when handling transactions, isolation, locking, or deadlocks.
+  - path: references/indexing-and-query-tuning.md
+    source_sections:
+      - 'Chapter 13: Indexing and Query Plans'
+      - Use The Index, Luke (CC BY-NC-ND)
+      - Readings in Database Systems / Red Book (CC BY-NC-SA)
+    content_mode: first_party_synthesis
+    load_when:
+      - Use when planning indexes or tuning queries.
+  - path: references/partitioning-and-sharding.md
+    source_sections:
+      - 'Chapter 14: Partitioning and Sharding'
+      - Readings in Database Systems / Red Book (CC BY-NC-SA)
+    content_mode: first_party_synthesis
+    load_when:
+      - Use when planning partitioning or sharding.

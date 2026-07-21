@@ -22,6 +22,7 @@
 - [mesh-policy.md](mesh-policy.md)
 - [modular-player-excitement.md](modular-player-excitement.md)
 - [repo-skills-policy.md](repo-skills-policy.md)
+- [skill-authoring-policy.md](skill-authoring-policy.md)
 - [skills-catalog.md](skills-catalog.md)
 - [test-patterns.md](test-patterns.md)
 - [tracked-items.md](tracked-items.md)
