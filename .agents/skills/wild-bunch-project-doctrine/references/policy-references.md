@@ -25,6 +25,7 @@ Use these reference files when working in specific areas:
 - **`.agents/docs/architecture-guardrails.md`** — Use when making architecture decisions, touching GameSession, modifying persistence, or working with seed codecs.
 - **`.agents/docs/coding-discipline.md`** — Use when writing code, deciding scope boundaries, or refactoring.
 - **`.agents/docs/worker-environment.md`** — Use when working with connectors, handling images, running dev services, or managing worker cleanup.
+- **`.agents/docs/skill-authoring-policy.md`** — Use when classifying, creating, renaming, reviewing, migrating, or retiring repo-local `wild-bunch-*` skills and when checking how they interact with the marketplace refresh boundary.
 - **`.agents/docs/repo-skills-policy.md`** — Use when syncing marketplace skills or working with the skill vendoring system.
 - **`.agents/docs/mesh-policy.md`** — Use when working with the documentation mesh (AGENTS.md, INDEX.md, README files).
 - **`.agents/docs/guides/implementing-guide.md`** — **Must read for implementers.** Standards to read before coding, skills to invoke, TDD discipline, pre-completion verification, PR/Linear/plan honesty, and subagent dispatch guidance.

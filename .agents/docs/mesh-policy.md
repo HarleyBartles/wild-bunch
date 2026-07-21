@@ -99,17 +99,32 @@ README files are human-facing. They are not a mesh.
 - The marketplace source is pinned as a git submodule at `.agents/plugins/marketplace-source/`. Vendored skills are synced from the submodule by `scripts/install_agent_skills.py` (or `scripts/install_agent_skills.ps1`), which reads `marketplace.json`, copies each default-installed plugin's `skills/<name>/` directories into `.agents/skills/<name>/`, and records provenance (source commit SHA plus generated plugin and skill names) in `.agents/skills/.provenance.json`.
 - To refresh vendored skills after upstream plugin updates: `git submodule update --remote .agents/plugins/marketplace-source`, then `.\scripts\install_agent_skills.ps1` (or `python scripts/install_agent_skills.py`). The sync script is idempotent and skips work only when the submodule HEAD, configured default-plugin names, generated skill metadata, and byte-for-byte vendored skill contents match recorded provenance.
 - Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync.
-- Genuinely uncovered skills (no marketplace plugin home) may also live in `.agents/skills/` as temporary project custody — see section 7.
+- Repo-local Wild Bunch skills may also live in `.agents/skills/` under the
+  reserved `wild-bunch-*` namespace — see section 7.
 
-## 7. Temporary project-custody skills
+## 7. Repo-local Wild Bunch skills
 
-`.agents/skills/` may also retain genuinely uncovered skills that have no current marketplace plugin home. These are temporary Wild Bunch project custody, distinct from vendored plugin copies.
+`.agents/skills/` may contain vendored marketplace projections and permanent
+repo-local Wild Bunch skills. A repo-local Wild Bunch skill is identified by
+the `wild-bunch-` directory prefix, is discovered from the matching
+`.agents/skills/wild-bunch-*/SKILL.md` directories, and is not tracked in a
+separate inventory.
 
-- Each retained custody skill must have a named reason: why no current plugin covers it, whether it should later move into a marketplace plugin, and a proposed follow-up MARK issue category.
-- The `.agents/skills/INDEX.md` for this folder is generated navigation (owned by `scripts/generate_index_mesh.py`). It lists all skill folders (vendored and custody) as links to their `SKILL.md` entrypoints. It does not carry the custody explanation — that lives here.
-- When a retained custody skill gains a marketplace plugin home, remove the custody copy and re-sync from the plugin in the same PR.
-- Do not duplicate a vendored plugin skill as a custody skill. If a skill is covered by a default-installed or AVAILABLE marketplace pack, it belongs in the vendored set, not in local custody.
+- `wild-bunch-*` skills are permanently repo-local, even when adjacent
+  marketplace skills exist in the same folder tree.
+- `wild-bunch-*` skills are excluded from marketplace provenance in
+  `.agents/skills/.provenance.json`.
+- `scripts/install_agent_skills.py` and `scripts/install_agent_skills.ps1` must
+  preserve `wild-bunch-*` skills during refresh instead of pruning or
+  overwriting them.
+- `scripts/validate_marketplace_plugin_sync.py` must validate the marketplace
+  projection without classifying `wild-bunch-*` skills as missing vendored
+  skills or marketplace-derived content.
+- The `.agents/skills/INDEX.md` for this folder is generated navigation. It
+  lists both vendored and repo-local skill directories as links to their
+  `SKILL.md` entrypoints and does not carry the custody explanation.
+- When a local capability later becomes a marketplace projection, complete that
+  migration in a dedicated task instead of pre-encoding plugin membership here.
 
-### Current retained project-custody skills
-
-_None. All repo skills are vendored from default-installed marketplace plugins via `scripts/install_agent_skills.py` (or `scripts/install_agent_skills.ps1`)._
+The authoring contract for these local skills lives in
+`.agents/docs/skill-authoring-policy.md`.

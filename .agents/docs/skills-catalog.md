@@ -54,11 +54,11 @@ For architecture specifically, inspect the repo's canonical architecture decisio
 
 | Skill | Use When |
 |-------|----------|
-| `/wild-bunch-project-doctrine` | Use when bootstrapping the Wild Bunch repo posture before any repo-sensitive change. Establishes source-truth posture, worker dispatch and return verification, issue-goal conformance, world setup, seeded identity, difficulty, entropy, working knowledge (worktree/scratch locations, script discovery), skill routing, and policy references. Use when chat summaries, session busters, worker reports, or issue comments might be mistaken for live repo truth. Routes to specialist skills for domain-specific work. |
 | `/repo-worker-base` | Use when thin repo hygiene entrypoint for Codex workers in Harley's workspace. Use when a Codex worker is working in any repository in Harley's workspace and needs fresh-main discipline, worktree isolation, branch and PR hygiene, validation evidence, or publication proof |
-| `/wild-bunch-dotnet-architecture` | Use when applying Wild Bunch .NET architecture guardrails for C#/.NET repo work touching GameSession live-play flows, application orchestration, infrastructure persistence, CQRS/read models, event-stream plus snapshot-cache state, database-table pressure, or framework leakage |
-| `/wild-bunch-domain-modeling` | Use when applying Wild Bunch project-scoped domain guidance for DDD tactical modeling, GameSession boundaries, player wallet or inventory, clue or journal flows, hidden culprit truth, horse and saddle rules, water handling, or JourneyLoop and trail-day progression |
-| `/wild-bunch-browser-game` | Use when bridge Wild Bunch to browser-game implementation and QA when work touches browser delivery, HUD design, Phaser/TypeScript/Vite, DOM overlays, playtest evidence, dev-server checks, screenshot QA, or installed browser verification tooling |
+
+Discover Wild Bunch repo-local skills from `.agents/skills/wild-bunch-*/SKILL.md`
+instead of maintaining a manual list here. The binding MUST INVOKE requirement
+for `/wild-bunch-project-doctrine` remains in the root `AGENTS.md`.
 
 **Note**: For Linear/GitHub/architecture/anti-slop routing, use direct skills and repo-local doctrine instead of compositional middlemen:
 - Linear work routes through `/using-linear`, `/linear-issue-shaping`, and repo doctrine/source-truth guidance
