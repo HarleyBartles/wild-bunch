@@ -24,14 +24,22 @@ def _marketplace(*plugin_names: str) -> dict[str, object]:
 
 
 def _provenance(plugin_names: list[str], sha: str = "a" * 40) -> dict[str, object]:
-    return {"syncedPlugins": plugin_names, "sha": sha}
+    return {
+        "syncedPlugins": plugin_names,
+        "syncedSkillNames": ["installed-skill"],
+        "syncedSkills": 1,
+        "syncedSkillHashes": {"installed-skill": "expected-hash"},
+        "sha": sha,
+    }
 
 
 def test_accepts_provenance_that_matches_default_plugin_configuration():
     marketplace = _marketplace("first-plugin", "second-plugin")
     provenance = _provenance(["first-plugin", "second-plugin"])
 
-    assert validate_marketplace_plugin_sync(marketplace, provenance, "a" * 40) == [
+    assert validate_marketplace_plugin_sync(
+        marketplace, provenance, "a" * 40, {"installed-skill": "expected-hash"}
+    ) == [
         "first-plugin",
         "second-plugin",
     ]
@@ -42,7 +50,9 @@ def test_rejects_stale_provenance_when_the_configured_plugin_changes():
     provenance = _provenance(["first-plugin", "removed-plugin"])
 
     with pytest.raises(ValueError, match="syncedPlugins"):
-        validate_marketplace_plugin_sync(marketplace, provenance, "a" * 40)
+        validate_marketplace_plugin_sync(
+            marketplace, provenance, "a" * 40, {"installed-skill": "expected-hash"}
+        )
 
 
 def test_rejects_duplicate_default_plugin_names():
@@ -50,7 +60,9 @@ def test_rejects_duplicate_default_plugin_names():
     provenance = _provenance(["duplicate-plugin", "duplicate-plugin"])
 
     with pytest.raises(ValueError, match="unique"):
-        validate_marketplace_plugin_sync(marketplace, provenance, "a" * 40)
+        validate_marketplace_plugin_sync(
+            marketplace, provenance, "a" * 40, {"installed-skill": "expected-hash"}
+        )
 
 
 def test_rejects_provenance_from_a_different_submodule_commit():
@@ -58,7 +70,9 @@ def test_rejects_provenance_from_a_different_submodule_commit():
     provenance = _provenance(["only-plugin"], sha="a" * 40)
 
     with pytest.raises(ValueError, match="gitlink"):
-        validate_marketplace_plugin_sync(marketplace, provenance, "b" * 40)
+        validate_marketplace_plugin_sync(
+            marketplace, provenance, "b" * 40, {"installed-skill": "expected-hash"}
+        )
 
 
 def test_rejects_a_manifest_for_a_different_repository():
@@ -67,4 +81,49 @@ def test_rejects_a_manifest_for_a_different_repository():
     provenance = _provenance(["only-plugin"])
 
     with pytest.raises(ValueError, match="wild-bunch"):
-        validate_marketplace_plugin_sync(marketplace, provenance, "a" * 40)
+        validate_marketplace_plugin_sync(
+            marketplace, provenance, "a" * 40, {"installed-skill": "expected-hash"}
+        )
+
+
+def test_rejects_missing_or_unrecorded_generated_skill_provenance():
+    marketplace = _marketplace("only-plugin")
+    provenance = _provenance(["only-plugin"])
+    provenance["syncedSkillNames"] = ["missing-skill"]
+
+    with pytest.raises(ValueError, match="missing-skill"):
+        validate_marketplace_plugin_sync(marketplace, provenance, "a" * 40, set())
+
+
+def test_rejects_invalid_generated_skill_provenance():
+    marketplace = _marketplace("only-plugin")
+    provenance = _provenance(["only-plugin"])
+    del provenance["syncedSkillNames"]
+
+    with pytest.raises(ValueError, match="syncedSkillNames"):
+        validate_marketplace_plugin_sync(
+            marketplace, provenance, "a" * 40, {"installed-skill": "expected-hash"}
+        )
+
+
+def test_installed_skill_hashes_require_a_skill_entrypoint(monkeypatch, tmp_path):
+    import validate_marketplace_plugin_sync as plugin_sync
+
+    skills_root = tmp_path / "skills"
+    (skills_root / "invalid-skill").mkdir(parents=True)
+    valid_skill = skills_root / "valid-skill"
+    valid_skill.mkdir()
+    (valid_skill / "SKILL.md").write_text("# Valid skill")
+    monkeypatch.setattr(plugin_sync, "SKILLS_ROOT", skills_root)
+
+    assert set(plugin_sync._installed_skill_hashes()) == {"valid-skill"}
+
+
+def test_rejects_changed_generated_skill_content():
+    marketplace = _marketplace("only-plugin")
+    provenance = _provenance(["only-plugin"])
+
+    with pytest.raises(ValueError, match="content"):
+        validate_marketplace_plugin_sync(
+            marketplace, provenance, "a" * 40, {"installed-skill": "changed-hash"}
+        )

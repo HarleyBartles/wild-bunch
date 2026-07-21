@@ -63,6 +63,10 @@ try {
         Write-Host '--- Validating marketplace plugin sync ---'
         python "$ScriptDir/validate_marketplace_plugin_sync.py"
         Assert-LastExitCode 'marketplace plugin sync validation failed'
+
+        Write-Host '--- Validating marketplace skill projection ---'
+        python "$ScriptDir/install_agent_skills.py" --check
+        Assert-LastExitCode 'marketplace skill projection validation failed'
     }
 }
 finally {

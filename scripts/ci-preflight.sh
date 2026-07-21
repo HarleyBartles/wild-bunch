@@ -60,4 +60,7 @@ if [[ $skip_index_mesh -eq 0 ]]; then
 
   echo '--- Validating marketplace plugin sync ---'
   python3 "$script_dir/validate_marketplace_plugin_sync.py"
+
+  echo '--- Validating marketplace skill projection ---'
+  python3 "$script_dir/install_agent_skills.py" --check
 fi

@@ -81,12 +81,12 @@ string environment variable:
 **Use when** you have updated the agent-asset-marketplace submodule and need
 to sync vendored skills into `.agents/skills/`.
 
-- `bash scripts/install_agent_skills.sh` - sync if provenance SHA changed (no-op if already synced)
+- `bash scripts/install_agent_skills.sh` - sync if the marketplace SHA, configured default-plugin names, generated skill metadata, or byte-for-byte vendored projection differs from provenance (no-op only when all four match)
 - `bash scripts/install_agent_skills.sh --force` - re-copy all skill directories regardless of provenance
-- `bash scripts/install_agent_skills.sh --check` - check mode: report what would change without making changes (CI validation)
+- `bash scripts/install_agent_skills.sh --check` - source-aware local check mode: report what would change without making changes
 - `.\scripts\install_agent_skills.ps1` - PowerShell wrapper (same flags: -Check, -Force)
 
-The Python implementation provides content comparison to reduce file churn and supports --check mode for CI validation. Both wrappers call the Python script.
+The Python implementation provides content comparison to reduce file churn and supports source-aware `--check` mode for local preflight. CI deliberately avoids fetching the private submodule; it validates the committed provenance and generated content hashes with `validate_marketplace_plugin_sync.py`. Both wrappers call the Python script.
 
 Reads `.agents/plugins/marketplace.json` and copies skill folders from the
 submodule into `.agents/skills/`. Provenance is tracked in
