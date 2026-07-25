@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -25,6 +26,20 @@ PLUGINS_ROOT = SUBMODULE_ROOT / "codex-marketplace" / "plugins"
 SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 PROVENANCE_PATH = SKILLS_ROOT / ".provenance.json"
 REPO_LOCAL_SKILL_PREFIX = "wild-bunch-"
+
+
+def _stripped_env() -> dict[str, str]:
+    """Return an env dict with GIT_DIR/WORK_TREE/INDEX_FILE removed.
+
+    This prevents git subprocess calls from picking up the caller's git
+    environment (e.g. a pre-commit hook that sets GIT_DIR to the common .git
+    directory) and operating on the wrong repository.
+    """
+    env = os.environ.copy()
+    env.pop("GIT_DIR", None)
+    env.pop("GIT_WORK_TREE", None)
+    env.pop("GIT_INDEX_FILE", None)
+    return env
 
 
 def _is_repo_local_skill_name(skill_name: str) -> bool:
@@ -46,7 +61,8 @@ def _get_submodule_sha() -> str:
         ["git", "-C", str(SUBMODULE_ROOT), "rev-parse", "HEAD"],
         capture_output=True,
         text=True,
-        check=True
+        check=True,
+        env=_stripped_env(),
     )
     return result.stdout.strip()
 
