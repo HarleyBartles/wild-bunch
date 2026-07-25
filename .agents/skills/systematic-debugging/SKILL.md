@@ -1,6 +1,31 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+description: "Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes"
+metadata:
+  source_category: "third_party"
+  upstream_name: "systematic-debugging"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/systematic-debugging"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/systematic-debugging/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Kept the bash helper as the primary surface, added a sibling PowerShell version, and normalized marketplace frontmatter metadata."
+  use_when:
+    - "Use when encountering a bug, test failure, or unexpected behavior before proposing fixes."
+    - "Use when the root cause is unknown."
+    - "Use especially when time pressure makes guessing tempting."
+  do_not_use_when:
+    - "Do not use when the fix is already verified."
+    - "Do not use as a substitute for testing or verification."
+    - "Do not use to justify a pre-selected fix."
+  use_after: [using-superpowers]
+  use_before: [executing-plans, subagent-driven-development, test-driven-development]
+  use_with: [test-driven-development]
+  related_skills: [test-driven-development, executing-plans, subagent-driven-development, using-superpowers]
 ---
 
 # Systematic Debugging

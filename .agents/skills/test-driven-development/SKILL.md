@@ -1,6 +1,31 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: "Use when implementing any feature or bugfix, before writing implementation code"
+metadata:
+  source_category: "third_party"
+  upstream_name: "test-driven-development"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/test-driven-development"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/test-driven-development/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  use_when:
+    - "Use when implementing any feature or bugfix before writing implementation code."
+    - "Use when starting a red-green-refactor cycle."
+    - "Use when behavior needs a failing test to define correctness."
+  do_not_use_when:
+    - "Do not use for throwaway prototypes unless the partner approves."
+    - "Do not use when the codebase or language cannot be tested."
+    - "Do not use as a substitute for writing-plans."
+  use_after: [brainstorming, writing-plans]
+  use_before: [executing-plans, subagent-driven-development]
+  use_with: [writing-skills]
+  related_skills: [brainstorming, writing-plans, executing-plans, subagent-driven-development, writing-skills]
 ---
 
 # Test-Driven Development (TDD)

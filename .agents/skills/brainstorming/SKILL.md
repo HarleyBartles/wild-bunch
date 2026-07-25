@@ -1,6 +1,31 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: "Use when starting any creative work such as creating features, building components, adding functionality, or modifying behavior."
+metadata:
+  source_category: "third_party"
+  upstream_name: "brainstorming"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/brainstorming"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/brainstorming/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Repointed Superpowers path references to the `.agents/superpowers/` convention, added a spec-readiness handoff gate, and normalized marketplace frontmatter metadata."
+  use_when:
+    - "Use when starting any new feature, component, or modification."
+    - "Use when the human frames a creative or build goal and no approved spec exists."
+    - "Use when a project needs intent, constraints, and approach clarified before implementation."
+  do_not_use_when:
+    - "Do not use when an approved spec or plan already exists and is ready for execution."
+    - "Do not use as a substitute for writing-plans or executing-plans."
+    - "Do not use when the task is pure execution without design decisions."
+  use_after: [using-superpowers]
+  use_before: [handoff-gates, writing-plans]
+  use_with: [working-with-epics]
+  related_skills: [using-superpowers, handoff-gates, writing-plans, working-with-epics]
 ---
 
 # Brainstorming Ideas Into Designs
@@ -29,7 +54,8 @@ You MUST create a task for each of these items and complete them in order:
 6. **Write design doc** — save to `.agents/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+9. **Spec readiness gate** — use `handoff-gates` spec-readiness lane. Rate the spec (8/10 floor, 9/10 target). Report the final rating.
+10. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 

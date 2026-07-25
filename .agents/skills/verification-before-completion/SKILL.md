@@ -1,6 +1,31 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: "Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always"
+metadata:
+  source_category: "third_party"
+  upstream_name: "verification-before-completion"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/verification-before-completion"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/verification-before-completion/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  use_when:
+    - "Use when about to claim work is complete, fixed, or passing, before committing or creating PRs."
+    - "Use when a verification command can prove the claim."
+    - "Use before any completion claim that should be backed by fresh evidence."
+  do_not_use_when:
+    - "Do not use when no verification command exists for the claim."
+    - "Do not use to override fresh evidence with confidence."
+    - "Do not use as a substitute for running the actual verification."
+  use_after: [executing-plans, subagent-driven-development]
+  use_before: [requesting-code-review, finishing-a-development-branch]
+  use_with: [test-driven-development]
+  related_skills: [executing-plans, subagent-driven-development, requesting-code-review, finishing-a-development-branch, test-driven-development]
 ---
 
 # Verification Before Completion

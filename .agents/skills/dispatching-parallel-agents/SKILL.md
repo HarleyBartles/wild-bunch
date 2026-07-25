@@ -1,6 +1,31 @@
 ---
 name: dispatching-parallel-agents
-description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+description: "Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies"
+metadata:
+  source_category: "third_party"
+  upstream_name: "dispatching-parallel-agents"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/dispatching-parallel-agents"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/dispatching-parallel-agents/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  use_when:
+    - "Use when facing 2+ independent tasks or failures that can be worked on without shared state."
+    - "Use when multiple test files fail with different root causes."
+    - "Use when each problem can be understood without context from the others."
+  do_not_use_when:
+    - "Do not use when failures are related or share state."
+    - "Do not use when a single agent needs full system context."
+    - "Do not use when tasks have sequential dependencies."
+  use_after: [using-superpowers, systematic-debugging, executing-plans, subagent-driven-development]
+  use_before: [executing-plans, subagent-driven-development]
+  use_with: [executing-plans, subagent-driven-development]
+  related_skills: [systematic-debugging, executing-plans, subagent-driven-development, test-driven-development]
 ---
 
 # Dispatching Parallel Agents

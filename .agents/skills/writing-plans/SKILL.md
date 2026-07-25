@@ -1,6 +1,31 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: "Use when you have a spec or requirements for a multi-step task, before touching code"
+metadata:
+  source_category: "third_party"
+  upstream_name: "writing-plans"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/writing-plans"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/writing-plans/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Adjusted plan-path guidance to the repo-local `.agents/superpowers/plans/` convention for Codex projections and normalized marketplace frontmatter metadata."
+  use_when:
+    - "Use when an approved spec exists for a multi-step task."
+    - "Use when the goal fits a single tight implementation plan."
+    - "Use before touching implementation code."
+  do_not_use_when:
+    - "Do not use when the spec covers multiple independent subsystems; use working-with-epics or brainstorm first."
+    - "Do not use when implementation has already started."
+    - "Do not use as a substitute for brainstorming."
+  use_after: [brainstorming, handoff-gates]
+  use_before: [handoff-gates, executing-plans, subagent-driven-development]
+  use_with: [handoff-gates, working-with-epics]
+  related_skills: [brainstorming, handoff-gates, executing-plans, subagent-driven-development, working-with-epics]
 ---
 
 # Writing Plans
@@ -164,6 +189,8 @@ After saving the plan, offer execution choice:
 **2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
 
 **Which approach?"**
+
+**Before choosing an execution option, use `handoff-gates` plan-readiness lane.** Rate the plan for execution confidence (8/10 floor, 9/10 target). Report the final rating in the handoff. Do not execute below 8/10.
 
 **If Subagent-Driven chosen:**
 - **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development

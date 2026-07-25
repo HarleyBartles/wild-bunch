@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: generating-agent-mesh
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
+interface:
+  display_name: Generating Agent Mesh
+  short_description: Use when the repo-wide INDEX.md mesh is stale or agent-mesh validation is needed.
+  default_prompt: Use generating-agent-mesh when the repo-wide INDEX.md mesh is stale or when validating the agent mesh.
+policy:
+  allow_implicit_invocation: false

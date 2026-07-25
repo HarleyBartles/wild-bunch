@@ -1,15 +1,29 @@
 ---
 name: using-superpowers
-description: Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions
+description: "Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions"
 metadata:
-  origin: Obra AI
-  source_author: Obra AI
-  source_license: MIT
-  source_repo: https://github.com/obra/superpowers
-  source_path: sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/using-superpowers/SKILL.md
-  content_mode: adapted
-  adapted_author: Harley Bartles
-  adaptation_note: Trimmed to core Superpowers plus environment inspection only.
+  source_category: "third_party"
+  upstream_name: "using-superpowers"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/using-superpowers"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/using-superpowers/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Trimmed to core Superpowers plus environment inspection only and normalized marketplace frontmatter metadata."
+  use_when:
+    - "Use when starting any conversation to find and invoke the right skill."
+    - "Use when unsure whether a skill applies to the current task."
+    - "Use before any response or action when a workflow skill might be relevant."
+  do_not_use_when:
+    - "Do not use when dispatched as a subagent with a specific task."
+    - "Do not use when user instructions explicitly override skill selection."
+    - "Do not use as a substitute for reading the chosen skill."
+  use_before: [brainstorming, systematic-debugging, writing-plans, executing-plans, subagent-driven-development, using-git-worktrees, test-driven-development, verification-before-completion, finishing-a-development-branch, requesting-code-review]
+  related_skills: [brainstorming, systematic-debugging, writing-plans, executing-plans, subagent-driven-development, using-git-worktrees, test-driven-development, verification-before-completion, finishing-a-development-branch, requesting-code-review, receiving-code-review, writing-skills]
 ---
 
 <SUBAGENT-STOP>

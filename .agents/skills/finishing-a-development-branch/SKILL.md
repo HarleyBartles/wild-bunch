@@ -1,6 +1,30 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: "Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup"
+metadata:
+  source_category: "third_party"
+  upstream_name: "finishing-a-development-branch"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/finishing-a-development-branch"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/finishing-a-development-branch/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  use_when:
+    - "Use when implementation is complete, tests pass, and you need to decide how to integrate the work."
+    - "Use after executing-plans or subagent-driven-development."
+    - "Use when the branch needs merge, PR, keep, or discard."
+  do_not_use_when:
+    - "Do not use when tests are failing."
+    - "Do not use when the work is incomplete."
+    - "Do not use as a substitute for code review."
+  use_after: [executing-plans, subagent-driven-development, requesting-code-review]
+  use_with: [receiving-code-review]
+  related_skills: [executing-plans, subagent-driven-development, requesting-code-review, using-git-worktrees, receiving-code-review]
 ---
 
 # Finishing a Development Branch

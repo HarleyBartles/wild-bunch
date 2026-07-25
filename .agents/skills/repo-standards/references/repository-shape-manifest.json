@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "surfaces": [
+    {
+      "id": "marketplace-source-submodule",
+      "path": ".agents/plugins/marketplace-source",
+      "kind": "submodule",
+      "source": null,
+      "optional": false
+    },
+    {
+      "id": "marketplace-json",
+      "path": ".agents/plugins/marketplace.json",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_marketplace_json.py",
+      "optional": false
+    },
+    {
+      "id": "ci-preflight-ps1",
+      "path": "scripts/ci-preflight.ps1",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_ci_preflight.py",
+      "optional": false
+    },
+    {
+      "id": "ci-preflight-sh",
+      "path": "scripts/ci-preflight.sh",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_ci_preflight.py",
+      "optional": false
+    },
+    {
+      "id": "pre-commit-hook",
+      "path": ".git/hooks/pre-commit",
+      "kind": "hook",
+      "source": "templates/pre-commit",
+      "optional": false
+    },
+    {
+      "id": "repo-guide-policy",
+      "path": ".agents/docs/repo-guide-policy.md",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_repo_guide_policy.py",
+      "optional": false
+    },
+    {
+      "id": "root-agents-md",
+      "path": "AGENTS.md",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_agents_md.py",
+      "optional": false
+    },
+    {
+      "id": "guides-agents-md",
+      "path": ".agents/guides/AGENTS.md",
+      "kind": "file",
+      "source": null,
+      "optional": true
+    },
+    {
+      "id": "review-entry",
+      "path": "REVIEW.md",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_review.py",
+      "optional": false
+    },
+    {
+      "id": "contributing-entry",
+      "path": "CONTRIBUTING.md",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_contributing.py",
+      "optional": false
+    },
+    {
+      "id": "root-gitignore",
+      "path": ".gitignore",
+      "kind": "file",
+      "source": null,
+      "scaffold": "scaffold_gitignore.py",
+      "optional": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Handoff Gates
+  canonical_url: https://github.com/HarleyBartles/agent-asset-marketplace
+  pinned_source_url: https://github.com/HarleyBartles/agent-asset-marketplace
+  latest_check_url: https://github.com/HarleyBartles/agent-asset-marketplace
+  revision: '2026-07-25'
+  retrieved_at: '2026-07-25'
+  content_sha256: 82a1c050fdf69df1473f44ca07074e9af07b8890e6acd4b7e7992b0308e98b9a
+  license: MIT
+  license_url: https://github.com/HarleyBartles/agent-asset-marketplace/blob/main/LICENSE
+decomposition:
+  reconciled_against: 82a1c050fdf69df1473f44ca07074e9af07b8890e6acd4b7e7992b0308e98b9a
+  references:
+  - path: references/scope-notes.md
+    source_sections:
+    - Scope boundaries
+    load_when:
+    - Use when expanding scope boundaries beyond the main SKILL.md guidance.
+    content_mode: first_party_synthesis

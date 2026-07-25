@@ -1,6 +1,31 @@
 ---
 name: writing-skills
-description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+description: "Use when creating new skills, editing existing skills, or verifying skills work before deployment"
+metadata:
+  source_category: "third_party"
+  upstream_name: "writing-skills"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/writing-skills"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/writing-skills/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  use_when:
+    - "Use when creating, editing, or verifying a skill before deployment."
+    - "Use when turning a learned technique into reusable guidance."
+    - "Use when a skill needs pressure-tested process documentation."
+  do_not_use_when:
+    - "Do not use for one-off solutions."
+    - "Do not use for project-specific conventions."
+    - "Do not use when mechanical validation or regex suffices."
+  use_after: [test-driven-development]
+  use_before: [requesting-code-review, verification-before-completion]
+  use_with: [writing-with-clarity]
+  related_skills: [test-driven-development, requesting-code-review, verification-before-completion, writing-with-clarity]
 ---
 
 # Writing Skills

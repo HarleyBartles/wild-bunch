@@ -196,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         refresh_script = _find_refresh_script(worktree_root)
         if refresh_script:
             result = subprocess.run(
-                [sys.executable, str(refresh_script)],
+                [sys.executable, str(refresh_script), "--allow-shared-checkout"],
                 cwd=worktree_root,
                 env=_stripped_env(),
             )

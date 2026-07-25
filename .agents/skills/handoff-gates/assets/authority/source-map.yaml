@@ -1,0 +1,9 @@
+schema_version: 1
+reconciled_against: 82a1c050fdf69df1473f44ca07074e9af07b8890e6acd4b7e7992b0308e98b9a
+references:
+  - path: references/scope-notes.md
+    source_sections:
+    - Scope boundaries
+    load_when:
+    - Use when expanding scope boundaries beyond the main SKILL.md guidance.
+    content_mode: first_party_synthesis

@@ -1,6 +1,31 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+description: "Use when you have a written implementation plan to execute in a separate session with review checkpoints"
+metadata:
+  source_category: "third_party"
+  upstream_name: "executing-plans"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/executing-plans"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/executing-plans/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Added handoff-gates composition metadata and completion-readiness step to the execution workflow."
+  use_when:
+    - "Use when a written implementation plan exists and the work stays in the current session."
+    - "Use when tasks are sequential or tightly coupled."
+    - "Use when subagent support is unavailable or not desired."
+  do_not_use_when:
+    - "Do not use when tasks are independent and subagents are available; prefer subagent-driven-development."
+    - "Do not use without an approved plan."
+    - "Do not use when the plan has critical gaps or unresolved blockers."
+  use_after: [handoff-gates, writing-plans]
+  use_before: [handoff-gates, finishing-a-development-branch, requesting-code-review]
+  use_with: [handoff-gates]
+  related_skills: [handoff-gates, writing-plans, subagent-driven-development, finishing-a-development-branch, requesting-code-review]
 ---
 
 # Executing Plans
@@ -32,6 +57,7 @@ For each task:
 ### Step 3: Complete Development
 
 After all tasks complete and verified:
+  - Run `handoff-gates` completion-readiness lane. Rate the completed work against the plan and the repo code review guide (9/10 target). Report the final rating. Do not hand off below 9/10.
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice

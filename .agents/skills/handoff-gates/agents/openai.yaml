@@ -1,0 +1,17 @@
+version: 1
+metadata:
+  skill_name: handoff-gates
+  source_category: first_party
+  plugin: superpowers-plus
+  projection_plugin: superpowers-plus
+interface:
+  display_name: Handoff Gates
+  short_description: Use when a stage-boundary artifact needs a readiness check before handoff.
+  default_prompt: Use /handoff-gates when a stage-boundary artifact (spec, plan, or completed work) needs a readiness check before handoff. Use when a spec is ready to move from brainstorming to planning, a plan is ready to move from writing-plans to execution, or completed work is ready to move from executing-plans to code review. Do not use as a substitute for risk-gates.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

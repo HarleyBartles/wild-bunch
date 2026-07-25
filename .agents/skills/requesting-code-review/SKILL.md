@@ -1,6 +1,31 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: "Use when completing tasks, implementing major features, or before merging to verify work meets requirements"
+metadata:
+  source_category: "third_party"
+  upstream_name: "requesting-code-review"
+  upstream_version: "v6.1.0"
+  adaptation_overlay: "adapters/codex/superpowers-plus/requesting-code-review"
+  projection_plugin: "superpowers-plus"
+  source_author: "obra"
+  source_license: "MIT"
+  source_repo: "https://github.com/obra/superpowers"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/requesting-code-review/SKILL.md"
+  content_mode: "adapted"
+  adapted_author: "Harley Bartles"
+  adaptation_note: "Adjusted the plan-reference path to the repo-local `.agents/superpowers/plans/` convention for Codex projections."
+  use_when:
+    - "Use when completing a task or major feature, or before merging."
+    - "Use after subagent-driven-development per-task review."
+    - "Use when a fresh reviewer perspective will catch issues before they cascade."
+  do_not_use_when:
+    - "Do not use before tests pass."
+    - "Do not use when no changes exist to review."
+    - "Do not use as a substitute for self-review."
+  use_after: [executing-plans, subagent-driven-development]
+  use_before: [receiving-code-review, finishing-a-development-branch]
+  use_with: [receiving-code-review]
+  related_skills: [receiving-code-review, finishing-a-development-branch, subagent-driven-development, executing-plans]
 ---
 
 # Requesting Code Review

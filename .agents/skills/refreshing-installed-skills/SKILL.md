@@ -8,22 +8,22 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Install or refresh .agents/skills/ from the plugin source and regenerate the index mesh.
+  scope: Install or refresh .agents/skills/ from the plugin source and regenerate the agent mesh.
   use_when:
   - Use when creating a new worktree.
   - Use after updating the marketplace-source submodule.
   - Use when .agents/skills/ appears stale.
   do_not_use_when:
-  - Do not use when only the INDEX.md mesh is stale without any skill changes; use generating-index-mesh instead.
+  - Do not use when only the INDEX.md mesh is stale without any skill changes; use generating-agent-mesh instead.
   related_skills:
-  - generating-index-mesh
+  - generating-agent-mesh
   - using-git-worktrees
 license: MIT
 ---
 
 # Refreshing Installed Skills
 
-Install or refresh `.agents/skills/` from the plugin source, then regenerate the index mesh.
+Install or refresh `.agents/skills/` from the plugin source, then regenerate the agent mesh.
 
 ## When to Use
 
@@ -38,4 +38,4 @@ py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skill
 py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check
 ```
 
-This skill discovers the repo's `tools/install_agent_skills.py` (source repo) or `scripts/install_agent_skills.py` (consumer repo), runs it, then runs `generating-index-mesh`. If changes were made, it commits them with the message `chore: refresh installed skills and regenerate index mesh`.
+This skill runs the bundled `refresh_installed_skills.py` core, which installs/refreshes `.agents/skills/` from the plugins declared in `.agents/plugins/marketplace.json`, rolls the optional `marketplace-source` submodule to `origin/main`, and regenerates the agent mesh. If changes were made, it commits them with the message `chore: refresh installed skills and regenerate agent mesh`.

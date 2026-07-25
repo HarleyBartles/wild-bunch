@@ -1,0 +1,22 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Working With Epics
+  canonical_url: https://github.com/HarleyBartles/agent-asset-marketplace
+  pinned_source_url: https://github.com/HarleyBartles/agent-asset-marketplace
+  latest_check_url: https://github.com/HarleyBartles/agent-asset-marketplace
+  revision: '2026-07-25'
+  retrieved_at: '2026-07-25'
+  content_sha256: 5d0b17d0ced31c5f7e5fa196e088c525c816ea74dce35f0688075e81e789e14e
+  license: MIT
+  license_url: https://github.com/HarleyBartles/agent-asset-marketplace/blob/main/LICENSE
+decomposition:
+  reconciled_against: 5d0b17d0ced31c5f7e5fa196e088c525c816ea74dce35f0688075e81e789e14e
+  references:
+  - path: references/scope-notes.md
+    source_sections:
+    - Scope boundaries
+    load_when:
+    - Use when expanding scope boundaries beyond the main SKILL.md guidance.
+    content_mode: first_party_synthesis

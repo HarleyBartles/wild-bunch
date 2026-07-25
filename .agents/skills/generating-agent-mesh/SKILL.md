@@ -1,0 +1,54 @@
+---
+name: generating-agent-mesh
+description: Use when the repo-wide INDEX.md mesh or agent-mesh validation is stale, or as a CI/pre-commit gate.
+metadata:
+  source-id: generating-agent-mesh
+  source-path: sources/first_party/skills/generating-agent-mesh/SKILL.md
+  provenance-name: Generating Agent Mesh first-party skill
+  source-category: first_party
+  status: active
+  owner: Harley Bartles
+  scope: Run the repository's generate_index_mesh.py and validate_agent_mesh.py commands.
+  use_when:
+  - Use when INDEX.md files are stale after skill, plugin, or source changes.
+  - Use when verifying the navigation mesh, local markdown links, and doctrine routing in CI or as a pre-commit gate.
+  do_not_use_when:
+  - Do not use when installing or refreshing skills from the plugin source.
+  related_skills:
+  - repo-standards
+  - refreshing-installed-skills
+license: MIT
+---
+
+# Generating Agent Mesh
+
+Run the repository's index mesh generator and agent mesh validator.
+
+## When to Use
+
+- After changing skill, plugin, or source files that affect generated `INDEX.md` navigation.
+- In CI or as a pre-commit hook to verify the mesh and local markdown links are current.
+
+## Usage
+
+```bash
+# Generate or check the INDEX.md mesh
+py -3 .agents/skills/generating-agent-mesh/scripts/generate_index_mesh.py
+py -3 .agents/skills/generating-agent-mesh/scripts/generate_index_mesh.py --check
+
+# Validate the agent mesh (local links + doctrine routing)
+py -3 .agents/skills/generating-agent-mesh/scripts/validate_agent_mesh.py --check
+py -3 .agents/skills/generating-agent-mesh/scripts/validate_agent_mesh.py --check --changed-from HEAD
+```
+
+The wrapper commands `generate-index-mesh` and `validate-agent-mesh` in the same directory call these bundled Python cores and are the form used by `repo-standards` preflight.
+
+`generate-index-mesh` writes the repo-wide `INDEX.md` mesh and `repo-index/repo-index.json` from `git ls-files`; `validate-agent-mesh` checks local markdown links and doctrine routing. It does not commit; the caller decides whether to commit regenerated or validated state.
+
+## Repo-specific validation extensions
+
+`validate-agent-mesh` runs an optional extra hook if one exists:
+- `scripts/validate_agent_mesh_extra.sh` -- bash script; receives `--check` and optional `--changed-from <ref>`.
+- `scripts/validate_agent_mesh_extra.ps1` -- PowerShell script; must declare `param([switch]$Check, [string]$ChangedFrom)`.
+
+The hook should print findings as `DRIFT: <message>` and exit non-zero on failure. Any stdout/stderr not prefixed with `DRIFT:` is reported as an extra-hook error.
