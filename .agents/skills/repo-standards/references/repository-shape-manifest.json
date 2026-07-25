@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "surfaces": [
+    {
+      "id": "marketplace-source-submodule",
+      "path": ".agents/plugins/marketplace-source",
+      "kind": "submodule",
+      "source": null,
+      "optional": false
+    },
+    {
+      "id": "marketplace-json",
+      "path": ".agents/plugins/marketplace.json",
+      "kind": "file",
+      "source": null,
+      "optional": false
+    },
+    {
+      "id": "ci-preflight-ps1",
+      "path": "scripts/ci-preflight.ps1",
+      "kind": "file",
+      "source": "templates/ci-preflight.ps1",
+      "optional": false
+    },
+    {
+      "id": "ci-preflight-sh",
+      "path": "scripts/ci-preflight.sh",
+      "kind": "file",
+      "source": "templates/ci-preflight.sh",
+      "optional": false
+    },
+    {
+      "id": "pre-commit-hook",
+      "path": ".git/hooks/pre-commit",
+      "kind": "hook",
+      "source": "templates/pre-commit",
+      "optional": false
+    },
+    {
+      "id": "repo-guide-policy",
+      "path": ".agents/docs/repo-guide-policy.md",
+      "kind": "file",
+      "source": null,
+      "optional": false
+    }
+  ]
+}

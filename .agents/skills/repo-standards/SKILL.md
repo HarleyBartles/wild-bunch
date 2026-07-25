@@ -1,10 +1,10 @@
 ---
-name: repo-guide-standard
-description: Use when reading, creating, updating, or aligning repo guides; when determining guide workflow order and handoffs.
+name: repo-standards
+description: Use when reading, creating, updating, or aligning repo standards; when determining repo shape, guide layout, workflow order, and handoff requirements.
 metadata:
-  source-id: repo-guide-standard
-  source-path: sources/first_party/skills/repo-guide-standard/SKILL.md
-  provenance-name: Repo Guide Standard first-party skill
+  source-id: repo-standards
+  source-path: sources/first_party/skills/repo-standards/SKILL.md
+  provenance-name: Repo Standards first-party skill
   source-category: first_party
   status: active
   owner: Harley Bartles
@@ -17,6 +17,7 @@ metadata:
   - Do not use for generic repo hygiene such as worktree, branch, source custody, or publication boundaries — defer to repo-worker-base for those.
   use_with:
   - repo-worker-base
+  - inspecting-the-environment
   - work-mode-router
   - brainstorming
   - writing-plans
@@ -26,7 +27,7 @@ metadata:
 license: MIT
 ---
 
-# Repo Guide Standard
+# Repo Standards
 
 This skill is the portable baseline for repo-local guides. It defines the cross-repo layout of root `AGENTS.md` headings, root pointer files, the `.agents/guides/` set, and the workflow order and Superpowers routing for each stage.
 
@@ -37,6 +38,7 @@ Each repo supplies a thin overlay at `.agents/docs/repo-guide-policy.md` that ma
 | Need | Read |
 | --- | --- |
 | How a repo's guides should be laid out | [references/repository-guide-standard.md](references/repository-guide-standard.md) |
+| How a repo's shape should be checked/applied | [references/repository-shape-manifest.json](references/repository-shape-manifest.json) |
 | The repo's local guide mappings | `.agents/docs/repo-guide-policy.md` in the consuming repo |
 | Repo hygiene (worktree, branch, validation, publication) | `/repo-worker-base` |
 
@@ -45,10 +47,10 @@ Each repo supplies a thin overlay at `.agents/docs/repo-guide-policy.md` that ma
 For any guide work, use:
 
 ```text
-repo-guide-standard -> repo-worker-base -> local guide -> selected Superpowers lane
+repo-standards -> repo-worker-base -> local guide -> selected Superpowers lane
 ```
 
-`repo-guide-standard` supplies the universal guide standard and workflow order. `repo-worker-base` supplies worktree, branch, validation, and publication boundaries. The local guide supplies repo-specific details. The Superpowers lane supplies stage technique.
+`repo-standards` supplies the universal guide standard and workflow order. `repo-worker-base` supplies worktree, branch, validation, and publication boundaries. The local guide supplies repo-specific details. The Superpowers lane supplies stage technique.
 
 ## Required root surfaces
 
@@ -99,7 +101,7 @@ design -> planning -> implementing -> review
 
 For each stage:
 
-1. Invoke `/repo-guide-standard` and read `references/repository-guide-standard.md`.
+1. Invoke `/repo-standards` and read `references/repository-guide-standard.md`.
 2. Invoke `/repo-worker-base` for worktree, branch, validation, and publication boundaries.
 3. Read the repo's `.agents/docs/repo-guide-policy.md` to find the local guide path.
 4. Read the repo-local guide for that stage.

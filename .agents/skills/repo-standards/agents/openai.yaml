@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: repo-standards
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
+interface:
+  display_name: Repo Standards
+  short_description: Use /repo-standards when reading, creating, updating, or aligning repo standards and their workflow order.
+  default_prompt: Read references/repository-guide-standard.md, then the repo's .agents/docs/repo-guide-policy.md, then the specific local guide. Use /repo-standards for repo shape, guide layout, workflow order, and handoff requirements. Use repo-worker-base for worktree, branch, validation, and publication. Route to the matching Superpowers skill for the stage.
+policy:
+  allow_implicit_invocation: true

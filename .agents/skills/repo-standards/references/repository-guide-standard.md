@@ -1,4 +1,4 @@
-# Repository Guide Standard
+# Repo Standards
 
 This file is the portable cross-repo standard for repo-local guides and agent-facing routing surfaces.
 
@@ -48,7 +48,7 @@ Additional `<topic>-guide.md` files may live in `.agents/guides/`. They must be 
 
 Each repo keeps `.agents/docs/repo-guide-policy.md`. It must:
 
-- State that the repo follows `repo-guide-standard`.
+- State that the repo follows `repo-standards`.
 - Map standard guide names to local paths.
 - List existing and missing guides.
 - Note any repo-specific exceptions.
@@ -75,4 +75,4 @@ At each stage:
 
 ## Relationship to repo-worker-base
 
-`repo-guide-standard` owns guide layout, invocation, and workflow order. `repo-worker-base` owns repo-worker hygiene, stage baselines, and publication boundaries. Use both together for every repo-backed stage.
+`repo-standards` owns guide layout, invocation, and workflow order. `repo-worker-base` owns repo-worker hygiene, stage baselines, and publication boundaries. Use both together for every repo-backed stage.
