@@ -1,15 +1,12 @@
 version: 1
 metadata:
   skill_name: database-design-patterns
-  plugin: architecture-pack
   source_category: first_party
+  plugin: architecture-pack
+  projection_plugin: architecture-pack
 interface:
   display_name: Database Design Patterns
-  short_description: Use when designing relational database schemas, normalizing
-    data, choosing keys and constraints, or applying transactions, indexing, and
-    partitioning patterns.
-  default_prompt: Use when designing relational database schemas, normalizing
-    data, choosing keys and constraints, or applying transactions, indexing, and
-    partitioning patterns.
+  short_description: Use when designing relational database schemas, normalizing data, choosing keys and constraints, or applying transactions, indexing, and partitioning patterns.
+  default_prompt: Use when designing relational database schemas, normalizing data, choosing keys and constraints, or applying transactions, indexing, and partitioning patterns.
 policy:
   allow_implicit_invocation: true

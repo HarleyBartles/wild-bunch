@@ -15,12 +15,23 @@
 # Usage: sdd-workspace [PLAN_FILE]
 set -euo pipefail
 
-root=$(git rev-parse --show-toplevel)
+plan_file=${1:-}
+
+# Resolve repo root. If an absolute plan file is given, use its working tree
+# (so a worktree plan uses the worktree root, not the main checkout root).
+# Otherwise resolve relative to the current directory's repo.
+if [[ -n "$plan_file" && "$plan_file" == /* ]]; then
+  root=$(cd "$(dirname "$plan_file")" && git rev-parse --show-toplevel)
+else
+  root=$(git rev-parse --show-toplevel)
+  if [[ -n "$plan_file" ]]; then
+    plan_file="$root/$plan_file"
+  fi
+fi
+
 dir="$root/.agents/superpowers/sdd"
 mkdir -p "$dir"
 printf '*\n' > "$dir/.gitignore"
-
-plan_file=${1:-}
 current_plan="$dir/current-plan.txt"
 plan_stem=""
 

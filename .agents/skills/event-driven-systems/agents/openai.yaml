@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: event-driven-systems
+  source_category: first_party
+  plugin: architecture-pack
+  projection_plugin: architecture-pack
+interface:
+  display_name: Event Driven Systems
+  short_description: Use when designing, reviewing, or operating event-driven systems with asynchronous communication.
+  default_prompt: Use event-driven-systems when designing, reviewing, or operating event-driven systems with asynchronous communication.
+policy:
+  allow_implicit_invocation: true

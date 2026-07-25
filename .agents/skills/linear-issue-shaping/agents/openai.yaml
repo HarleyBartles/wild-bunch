@@ -1,12 +1,13 @@
+version: 1
+metadata:
+  skill_name: linear-issue-shaping
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
 interface:
   display_name: Linear Codex Dispatch
-  short_description: Route coding requests through Linear and the worker gate with
-    a golden gate before delegation.
-  default_prompt: 'Use /linear-issue-shaping to shape Linear-backed worker issues,
-    inspect issue state and attachments, and keep worker-ready packets compact: issue
-    body as control surface, dense docs attached, and Preflight limited to investigation
-    seams and understanding questions. Read references/compact-issue-shape.md when
-    preparing a worker-ready issue packet.'
+  short_description: Route coding requests through Linear and the worker gate with a golden gate before delegation.
+  default_prompt: 'Use /linear-issue-shaping to shape Linear-backed worker issues, inspect issue state and attachments, and keep worker-ready packets compact: issue body as control surface, dense docs attached, and Preflight limited to investigation seams and understanding questions. Read references/compact-issue-shape.md when preparing a worker-ready issue packet.'
 policy:
   products:
   - chatgpt

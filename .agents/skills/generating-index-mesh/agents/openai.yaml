@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: generating-index-mesh
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
+interface:
+  display_name: Generating Index Mesh
+  short_description: Use when the repo-wide INDEX.md mesh is stale or as a CI/pre-commit gate.
+  default_prompt: Use generating-index-mesh when the repo-wide INDEX.md mesh is stale or as a CI/pre-commit gate.
+policy:
+  allow_implicit_invocation: false

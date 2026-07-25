@@ -14,6 +14,13 @@ fi
 
 plan=$1
 n=$2
+
+# Resolve relative plan paths against the repo root of the current directory.
+if [[ "$plan" != /* ]]; then
+  root=$(git rev-parse --show-toplevel)
+  plan="$root/$plan"
+fi
+
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"

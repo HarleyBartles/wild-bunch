@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: playwright-testing
+  source_category: first_party
+  plugin: frontend-pack
+  projection_plugin: frontend-pack
+interface:
+  display_name: Playwright Testing
+  short_description: Use when writing, reviewing, or debugging Playwright end-to-end tests.
+  default_prompt: Use playwright-testing when writing, reviewing, or debugging Playwright end-to-end tests.
+policy:
+  allow_implicit_invocation: true

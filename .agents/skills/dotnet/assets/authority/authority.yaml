@@ -8,11 +8,11 @@ authority:
   latest_check_url: https://github.com/dotnet/docs
   revision: main
   retrieved_at: "2026-07-20"
-  content_sha256: "94c3fc669eb2a8138954773476809ff6310ad6e2c958ea53d9ab40fa91909f3e"
+  content_sha256: "b275207f3fe6838514d1dc9bc8ce636ef943678d0eb9fdc347fd349fc79c0d22"
   license: CC-BY-4.0
   license_url: https://github.com/dotnet/docs/blob/main/LICENSE
 decomposition:
-  reconciled_against: "94c3fc669eb2a8138954773476809ff6310ad6e2c958ea53d9ab40fa91909f3e"
+  reconciled_against: "b275207f3fe6838514d1dc9bc8ce636ef943678d0eb9fdc347fd349fc79c0d22"
   references:
   - path: references/operational-guidance.md
     source_sections:

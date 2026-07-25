@@ -27,6 +27,7 @@ metadata:
     by a proposed move.
   - Use when about to rely on an analogy, metaphor, comparison, or frame to make a
     durable decision.
+  - Use when about to run a destructive operation (delete, drop, rewrite history, bulk mutation) that could cause data loss or exceed authority.
   do_not_use_when:
   - Do not use when the action is ordinary, unconstrained, and has no protected surfaces
     or required workflow steps.
@@ -90,6 +91,7 @@ Read only the gate reference docs whose use-when matches the current action. Ski
 | invariant-gate | About to take an action, answer, plan, dispatch, or durable mutation where binding constraints (authority, scope, source hierarchy, workflow law, data/schema, provenance/license, canon/doctrine, safety/privacy) may be violated. | No binding invariants are implicated — the action is ordinary, unconstrained, and has no protected surfaces or required workflow steps. | `references/gates/invariant-gate.md` |
 | analogy-gate | About to rely on an analogy, metaphor, comparison, role model, frame, or project-specific shorthand to answer, plan, dispatch, or make a durable decision. | No analogy is doing evidentiary or decision work — the reasoning is source-grounded without metaphorical scaffolding. | `references/gates/analogy-gate.md` |
 | feedback-gate | Review, verifier, worker, issue, PR, automated-check, or external feedback appears and could become action, scope, evidence, closure posture, or a worker instruction before current source reality and lawful ownership are checked. | The feedback is ordinary conversation, already verified against current source, or does not affect the immediate safe next step. | `references/gates/feedback-gate.md` |
+| safety-gate | About to run a destructive operation, delete/truncate/drop, rewrite history, or bulk-mutate a durable surface where the cost of a mistake is high. | The operation is ordinary, reversible, or already protected by an explicit user confirmation in the destination workflow. | `references/gates/safety-gate.md` |
 
 ## Project-specific overlays
 

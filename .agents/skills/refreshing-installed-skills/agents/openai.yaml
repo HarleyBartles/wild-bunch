@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: refreshing-installed-skills
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
+interface:
+  display_name: Refreshing Installed Skills
+  short_description: Use when a worktree is initialized or .agents/skills/ is stale from the plugin source.
+  default_prompt: Use refreshing-installed-skills when a worktree is initialized or .agents/skills/ is stale from the plugin source.
+policy:
+  allow_implicit_invocation: false

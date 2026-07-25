@@ -1,0 +1,12 @@
+schema_version: 1
+reconciled_against: bda879fbafa33283742dc09fa4ae545c692f0285625934178b65bd9102cd7119
+references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Component and layout patterns
+    - Accessibility
+    - Interaction design
+    - UX review
+    load_when:
+    - Use when frontend-ux operational guidance is needed.
+    content_mode: first_party_synthesis

@@ -1,0 +1,27 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Event Driven Systems
+  canonical_url: https://kafka.apache.org/documentation/
+  pinned_source_url: https://kafka.apache.org/documentation/
+  latest_check_url: https://kafka.apache.org/documentation/
+  revision: current
+  retrieved_at: "2026-07-21"
+  content_sha256: bc1ae8dc6b7e7071be5a0d743575c55955eb8bd6a0c1f3a8caeb888c8008f640
+  license: "Multiple; see CITATIONS.md"
+  license_url: https://kafka.apache.org/documentation/
+decomposition:
+  reconciled_against: bc1ae8dc6b7e7071be5a0d743575c55955eb8bd6a0c1f3a8caeb888c8008f640
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Events vs messages
+    - Brokers
+    - Choreography and orchestration
+    - Sagas
+    - Idempotency and delivery
+    - Schema versioning
+    load_when:
+    - Use when event-driven-systems operational guidance is needed.
+    content_mode: first_party_synthesis

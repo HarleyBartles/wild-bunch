@@ -1,0 +1,25 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Playwright Testing
+  canonical_url: https://playwright.dev/
+  pinned_source_url: https://playwright.dev/
+  latest_check_url: https://playwright.dev/
+  revision: 'latest'
+  retrieved_at: '2026-07-21'
+  content_sha256: 6650e972ca39cf710e7446790085eb8cca96d0b050a2d5655d049b3ebd1c9545
+  license: MIT
+  license_url: https://opensource.org/licenses/MIT
+decomposition:
+  reconciled_against: 6650e972ca39cf710e7446790085eb8cca96d0b050a2d5655d049b3ebd1c9545
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Selectors
+    - Fixtures
+    - Retries
+    - Reporting
+    load_when:
+    - Use when playwright-testing operational guidance is needed.
+    content_mode: first_party_synthesis

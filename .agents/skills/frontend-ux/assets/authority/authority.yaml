@@ -1,0 +1,25 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Frontend UX
+  canonical_url: https://www.w3.org/TR/WCAG22/
+  pinned_source_url: https://www.w3.org/TR/WCAG22/
+  latest_check_url: https://www.w3.org/TR/WCAG22/
+  revision: 'WCAG 2.2'
+  retrieved_at: '2026-07-21'
+  content_sha256: bda879fbafa33283742dc09fa4ae545c692f0285625934178b65bd9102cd7119
+  license: MIT
+  license_url: https://opensource.org/licenses/MIT
+decomposition:
+  reconciled_against: bda879fbafa33283742dc09fa4ae545c692f0285625934178b65bd9102cd7119
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Component and layout patterns
+    - Accessibility
+    - Interaction design
+    - UX review
+    load_when:
+    - Use when frontend-ux operational guidance is needed.
+    content_mode: first_party_synthesis

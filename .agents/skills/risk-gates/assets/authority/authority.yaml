@@ -1,0 +1,23 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: Risk Gates
+  canonical_url: https://direct.mit.edu/books/oa-monograph/2908/Engineering-a-Safer-WorldSystems-Thinking-Applied
+  pinned_source_url: https://direct.mit.edu/books/oa-monograph/2908/Engineering-a-Safer-WorldSystems-Thinking-Applied
+  latest_check_url: https://direct.mit.edu/books/oa-monograph/2908/Engineering-a-Safer-WorldSystems-Thinking-Applied
+  revision: '2012'
+  retrieved_at: '2026-07-21'
+  content_sha256: 45dcf935dee5e4ffdce94c8f5e0c68617e695c8cb1c61b07b26d654a3d6c5dfc
+  license: Multiple; see CITATIONS.md
+  license_url: https://direct.mit.edu/books/oa-monograph/2908/Engineering-a-Safer-WorldSystems-Thinking-Applied
+decomposition:
+  reconciled_against: 45dcf935dee5e4ffdce94c8f5e0c68617e695c8cb1c61b07b26d654a3d6c5dfc
+  references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Risk gate usage
+    - Safety gate
+    load_when:
+    - Use when risk-gates operational guidance is needed.
+    content_mode: first_party_synthesis

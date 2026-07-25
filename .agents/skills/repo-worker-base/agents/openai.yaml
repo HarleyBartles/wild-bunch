@@ -1,9 +1,12 @@
+version: 1
+metadata:
+  skill_name: repo-worker-base
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
 interface:
   display_name: Repo Worker Base
   short_description: Use when repo-backed work needs portable hygiene, stage composition, or publication boundaries.
-  default_prompt: Use repo-worker-base for repo-backed work. Read the matching
-    baseline and the consuming repository's local stage guide before invoking
-    the selected Superpowers lane; use the local hygiene/layout policy for
-    repository-specific paths, commands, exclusions, CI, and exceptions.
+  default_prompt: Use repo-worker-base for repo-backed work. Read the matching baseline and the consuming repository's local stage guide before invoking the selected Superpowers lane; use the local hygiene/layout policy for repository-specific paths, commands, exclusions, CI, and exceptions.
 policy:
   allow_implicit_invocation: true

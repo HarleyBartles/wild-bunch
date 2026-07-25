@@ -1,3 +1,9 @@
+version: 1
+metadata:
+  skill_name: cleanup-custody
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
 interface:
   display_name: Cleanup Custody
   short_description: Classify whether a surface should stay live, move, or be deleted.

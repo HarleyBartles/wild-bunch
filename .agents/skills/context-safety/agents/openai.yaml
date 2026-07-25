@@ -1,3 +1,9 @@
+version: 1
+metadata:
+  skill_name: context-safety
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
 interface:
   display_name: Context Safety
   short_description: Use when large or context-heavy text writes need 200-line chunking, compaction boundaries, and atomic replacement.

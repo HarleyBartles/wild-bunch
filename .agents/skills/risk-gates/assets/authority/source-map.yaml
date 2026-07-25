@@ -1,0 +1,10 @@
+schema_version: 1
+reconciled_against: 45dcf935dee5e4ffdce94c8f5e0c68617e695c8cb1c61b07b26d654a3d6c5dfc
+references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Risk gate usage
+    - Safety gate
+    load_when:
+    - Use when risk-gates operational guidance is needed.
+    content_mode: first_party_synthesis

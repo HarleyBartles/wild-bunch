@@ -18,9 +18,8 @@
 ## Attribution
 
 - .NET documentation and ASP.NET Core documentation used under CC-BY-4.0.
-- Additional .NET ecosystem patterns were synthesized from the `dotnet-claude-kit` upstream
-  skills (modern-csharp, ef-core, testing, clean-architecture, ddd, vertical-slice) and are
-  represented as original operational guidance rather than verbatim copies.
+- Additional .NET ecosystem patterns are represented as original operational guidance
+  rather than verbatim copies.
 
 ## Human review
 

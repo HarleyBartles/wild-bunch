@@ -1,3 +1,9 @@
+version: 1
+metadata:
+  skill_name: repo-guide-standard
+  source_category: first_party
+  plugin: repo-worker-pack
+  projection_plugin: repo-worker-pack
 interface:
   display_name: Repo Guide Standard
   short_description: Use when reading, creating, updating, or aligning repo guides and their workflow order.

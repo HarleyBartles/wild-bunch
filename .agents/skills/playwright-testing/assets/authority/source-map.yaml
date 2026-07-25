@@ -1,0 +1,12 @@
+schema_version: 1
+reconciled_against: 6650e972ca39cf710e7446790085eb8cca96d0b050a2d5655d049b3ebd1c9545
+references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Selectors
+    - Fixtures
+    - Retries
+    - Reporting
+    load_when:
+    - Use when playwright-testing operational guidance is needed.
+    content_mode: first_party_synthesis

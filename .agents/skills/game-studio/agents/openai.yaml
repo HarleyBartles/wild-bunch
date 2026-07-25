@@ -1,4 +1,7 @@
 interface:
-  display_name: "Game Studio"
-  short_description: "Route browser-game work to the right path"
-  default_prompt: "Help me choose the right browser-game stack and workflow before implementation starts."
+  display_name: Game Studio
+  short_description: Route browser-game work to the right path
+  default_prompt: Help me choose the right browser-game stack and workflow before implementation starts.
+metadata:
+  plugin: game-studio
+  projection_plugin: game-studio
