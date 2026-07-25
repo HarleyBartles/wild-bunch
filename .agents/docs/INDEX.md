@@ -5,7 +5,6 @@
 ## Directories
 - [art](art/INDEX.md)
 - [asset-pipeline](asset-pipeline/INDEX.md)
-- [guides](guides/INDEX.md)
 
 ## Files
 - [architecture-guardrails.md](architecture-guardrails.md)
@@ -21,6 +20,7 @@
 - [game-session-decomposition-audit.md](game-session-decomposition-audit.md)
 - [mesh-policy.md](mesh-policy.md)
 - [modular-player-excitement.md](modular-player-excitement.md)
+- [repo-guide-policy.md](repo-guide-policy.md)
 - [repo-skills-policy.md](repo-skills-policy.md)
 - [skill-authoring-policy.md](skill-authoring-policy.md)
 - [skills-catalog.md](skills-catalog.md)

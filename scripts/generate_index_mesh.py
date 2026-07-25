@@ -163,9 +163,12 @@ def render_index(path: Path) -> str:
         if entry.name == "INDEX.md":
             continue
         if entry.is_dir():
-            if not should_descend(entry):
+            if is_skill_root(entry):
+                dirs.append(entry)
+            elif should_descend(entry):
+                dirs.append(entry)
+            else:
                 continue
-            dirs.append(entry)
         else:
             if entry.name in ALWAYS_EXCLUDED_FILE_NAMES:
                 continue

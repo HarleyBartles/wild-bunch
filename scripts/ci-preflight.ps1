@@ -2,7 +2,9 @@
 param(
     [switch]$SkipBackend,
     [switch]$SkipFrontend,
-    [switch]$SkipIndexMesh
+    [switch]$SkipIndexMesh,
+    [switch]$Check,
+    [string]$ChangedFrom
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +15,11 @@ function Assert-LastExitCode {
     if ($LASTEXITCODE -ne 0) {
         throw $Message
     }
+}
+
+if ($Check) {
+    $SkipBackend = $true
+    $SkipFrontend = $true
 }
 
 $ScriptDir = (Resolve-Path $PSScriptRoot).Path

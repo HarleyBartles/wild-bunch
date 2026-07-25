@@ -4,6 +4,12 @@
 
 ## Files
 - [code-review-guide.md](code-review-guide.md)
+- [code-style-guide.md](code-style-guide.md)
 - [design-guide.md](design-guide.md)
 - [implementing-guide.md](implementing-guide.md)
+- [marketplace-generation-guide.md](marketplace-generation-guide.md)
 - [planning-guide.md](planning-guide.md)
+- [pr-guide.md](pr-guide.md)
+- [security-guide.md](security-guide.md)
+- [skill-authoring-guide.md](skill-authoring-guide.md)
+- [testing-guide.md](testing-guide.md)

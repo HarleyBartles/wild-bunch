@@ -501,3 +501,9 @@ $RECYCLE.BIN/
 .superpowers/
 .agents/superpowers/output/
 .agents/superpowers/sdd/
+
+# Superpowers sdd/ is a local-only session workspace.
+# Track only the directory scaffold (.gitignore); ignore all session contents at any depth.
+# plans/ and specs/ are fully repo resident and not governed by this block.
+.agents/superpowers/sdd/**
+!.agents/superpowers/sdd/.gitignore

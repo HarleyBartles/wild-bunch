@@ -16,5 +16,7 @@
 - [.gitignore](.gitignore)
 - [.gitmodules](.gitmodules)
 - [AGENTS.md](AGENTS.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
 - [README.md](README.md)
+- [REVIEW.md](REVIEW.md)
 - [WildBunch.sln](WildBunch.sln)

@@ -123,3 +123,11 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - When a test needs a particular generated travel outcome, use an explicit deterministic seed that produces that shape on the first relevant turn.
 - Use the existing no-salt trail option where it makes the scenario stable and direct.
 - Do not loop, retry, or search arbitrary seeds until the desired generated journey appears.
+
+## Security considerations
+
+- Do not commit secrets, credentials, or connection strings to the repository.
+- Keep database connection strings and API keys in user secrets or environment variables.
+- Invoke `/connector-safety` before any mutating tool or connector call.
+- Follow the tool-safety and verification boundaries in the sections above.
+- Report any suspected exposure of sensitive data immediately and rotate the affected credential.

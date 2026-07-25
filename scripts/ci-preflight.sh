@@ -7,6 +7,7 @@ repo_root="$(git -C "$script_dir" rev-parse --show-toplevel)"
 skip_backend=0
 skip_frontend=0
 skip_index_mesh=0
+changed_from=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -19,9 +20,17 @@ while [[ $# -gt 0 ]]; do
     --skip-index-mesh)
       skip_index_mesh=1
       ;;
+    --check)
+      skip_backend=1
+      skip_frontend=1
+      ;;
+    --changed-from)
+      shift
+      changed_from="$1"
+      ;;
     -h|--help)
       cat <<'EOF'
-Usage: scripts/ci-preflight.sh [--skip-backend] [--skip-frontend] [--skip-index-mesh]
+Usage: scripts/ci-preflight.sh [--check] [--skip-backend] [--skip-frontend] [--skip-index-mesh] [--changed-from <ref>]
 EOF
       exit 0
       ;;
