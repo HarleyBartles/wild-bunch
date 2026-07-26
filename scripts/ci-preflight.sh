@@ -59,10 +59,15 @@ VALIDATE_ARGS=()
 [ -n "$CHANGED_FROM" ] && VALIDATE_ARGS+=("--changed-from" "$CHANGED_FROM")
 "$VALIDATE" "${VALIDATE_ARGS[@]}"
 
-REFRESH_ARGS=()
-[ -n "$CHECK" ] && REFRESH_ARGS+=("--check")
-[ -z "$CHECK" ] && REFRESH_ARGS+=("--allow-shared-checkout")
-"$REFRESH" "${REFRESH_ARGS[@]}"
+MARKETPLACE_SOURCE="$REPO_ROOT/.agents/plugins/marketplace-source"
+if [ -d "$MARKETPLACE_SOURCE" ] && [ -e "$MARKETPLACE_SOURCE/.git" ]; then
+  REFRESH_ARGS=()
+  [ -n "$CHECK" ] && REFRESH_ARGS+=("--check")
+  [ -z "$CHECK" ] && REFRESH_ARGS+=("--allow-shared-checkout")
+  "$REFRESH" "${REFRESH_ARGS[@]}"
+else
+  echo "marketplace-source submodule not initialized; skipping installed-skills refresh"
+fi
 
 EXTRA="$SCRIPT_DIR/ci-preflight-extra.sh"
 if [ -f "$EXTRA" ]; then

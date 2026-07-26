@@ -32,4 +32,4 @@ This repo follows the `repo-standards` skill. Invoke `/repo-standards` before re
 
 ## Exceptions
 
-None.
+- marketplace-source-submodule -- CI runners do not initialize the marketplace-source submodule; the installed skill projection is validated locally by `refresh-installed-skills` when the submodule is present.
