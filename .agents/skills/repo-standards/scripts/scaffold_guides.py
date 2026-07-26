@@ -132,7 +132,8 @@ exit codes:
             missing.append(local_path.as_posix())
             continue
         guide_path.parent.mkdir(parents=True, exist_ok=True)
-        guide_path.write_text(_guide_content(standard_name), encoding="utf-8", newline="\n")
+        with guide_path.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(_guide_content(standard_name))
         written.append(local_path.as_posix())
 
     if args.check:

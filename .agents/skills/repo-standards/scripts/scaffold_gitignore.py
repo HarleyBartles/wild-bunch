@@ -93,7 +93,8 @@ exit codes:
             return 1
         new_content = SDD_RULE + "\n"
 
-    gitignore_path.write_text(new_content, encoding="utf-8", newline="\n")
+    with gitignore_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(new_content)
     print(f"wrote {gitignore_path.relative_to(repo_root).as_posix()}")
     return 0
 

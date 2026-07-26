@@ -92,7 +92,7 @@ def _check(path: Path) -> list[str]:
         findings.append(".agents/plugins/marketplace.json missing")
         return findings
     try:
-        data = json.loads(path.read_text(encoding="utf-8", newline="\n"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         findings.append(f"invalid JSON in marketplace.json: {exc}")
         return findings
@@ -144,26 +144,20 @@ exit codes:
 
     if marketplace.is_file() and not args.force:
         try:
-            data = json.loads(marketplace.read_text(encoding="utf-8", newline="\n"))
+            data = json.loads(marketplace.read_text(encoding="utf-8"))
             if not isinstance(data, dict):
                 data = {}
         except (json.JSONDecodeError, OSError):
             data = {}
         normalized = _migrate(data)
-        marketplace.write_text(
-            json.dumps(normalized, indent=2) + "\n",
-            encoding="utf-8",
-            newline="\n",
-        )
+        with marketplace.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(normalized, indent=2) + "\n")
         print("migrated marketplace.json")
         return 0
 
     marketplace.parent.mkdir(parents=True, exist_ok=True)
-    marketplace.write_text(
-        json.dumps(MINIMAL, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    with marketplace.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(MINIMAL, indent=2) + "\n")
     print("wrote marketplace.json")
     return 0
 

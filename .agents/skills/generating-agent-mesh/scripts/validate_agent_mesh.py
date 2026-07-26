@@ -168,7 +168,7 @@ def _collect_link_findings(repo_root: Path, files: list[Path]) -> list[str]:
             continue
         rel = path.relative_to(repo_root)
         try:
-            content = path.read_text(encoding="utf-8", newline="\n")
+            content = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
         for _label, raw_target in LINK_PATTERN.findall(content):
@@ -188,7 +188,7 @@ def _is_active_doctrine(path: Path) -> bool:
     if path.suffix.lower() not in {".md", ".markdown"}:
         return False
     try:
-        content = path.read_text(encoding="utf-8", newline="\n")
+        content = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return False
     match = FRONTMATTER_PATTERN.match(content)
@@ -199,7 +199,7 @@ def _is_active_doctrine(path: Path) -> bool:
 
 def _links_from(index_file: Path, repo_root: Path) -> set[Path]:
     try:
-        content = index_file.read_text(encoding="utf-8", newline="\n")
+        content = index_file.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return set()
     targets: set[Path] = set()
@@ -251,7 +251,7 @@ def _collect_retired_token_findings(
             if not _should_examine(path, repo_root):
                 continue
             try:
-                content = path.read_text(encoding="utf-8", newline="\n")
+                content = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
             if token in content:

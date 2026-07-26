@@ -99,9 +99,8 @@ exit codes:
         print("DRIFT: CONTRIBUTING.md missing")
         return 1
 
-    contributing_path.write_text(
-        template.read_text(encoding="utf-8"), encoding="utf-8", newline="\n"
-    )
+    with contributing_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(template.read_text(encoding="utf-8"))
     print(f"wrote {contributing_path.relative_to(repo_root).as_posix()}")
     return 0
 

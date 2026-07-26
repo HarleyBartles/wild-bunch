@@ -37,7 +37,7 @@ def _skill_root() -> Path:
 
 def _template() -> str:
     template = _skill_root() / "templates" / "AGENTS.md"
-    return template.read_text(encoding="utf-8", newline="\n")
+    return template.read_text(encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -82,7 +82,8 @@ exit codes:
         print("AGENTS.md already exists; use --force to overwrite")
         return 0
 
-    agents_path.write_text(_template(), encoding="utf-8", newline="\n")
+    with agents_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(_template())
     print("wrote AGENTS.md")
     return 0
 

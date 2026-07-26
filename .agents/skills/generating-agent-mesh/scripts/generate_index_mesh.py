@@ -416,7 +416,7 @@ def main(argv: list[str] | None = None) -> int:
 
     link_failures: list[str] = []
     for target in targets:
-        current = target.path.read_text(encoding="utf-8", newline="\n")
+        current = target.path.read_text(encoding="utf-8")
         link_failures.extend(validate_rendered_links(target.path, current))
     if link_failures:
         raise ValueError("INDEX mesh produced broken links:\n" + "\n".join(link_failures))
