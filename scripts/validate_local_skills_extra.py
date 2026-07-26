@@ -200,9 +200,6 @@ def main(argv: list[str] | None = None) -> int:
         for error in errors:
             print(error, file=sys.stderr)
         return 1
-
-    validated_count = len(_reserved_skill_dirs(args.skills_root, args.prefixes))
-    print(f"OK: validated {validated_count} repo-local skill(s)")
     return 0
 
 

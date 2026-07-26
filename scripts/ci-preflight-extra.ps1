@@ -8,10 +8,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $ScriptDir = (Resolve-Path $PSScriptRoot).Path
-$RepoRoot = & git -C $ScriptDir rev-parse --show-toplevel
-if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($RepoRoot)) {
-    throw 'Could not determine repository root from git rev-parse.'
-}
+$RepoRoot = (Resolve-Path (Join-Path $ScriptDir '..')).Path
 
 function Test-LastExitCode {
     param([string]$Message)
@@ -25,6 +22,8 @@ try {
     Write-Host '--- Repo-local skill validation ---'
     & py -3 "$ScriptDir\validate_local_skills_extra.py" --check "$RepoRoot\.agents\skills" wild-bunch-
     Test-LastExitCode 'repo-local skill validation failed'
+    $localSkillCount = (Get-ChildItem -Path "$RepoRoot\.agents\skills" -Directory -Filter 'wild-bunch-*').Count
+    Write-Host "OK: validated $localSkillCount repo-local skill(s)"
 
     if ($Check) {
         Write-Host '--- Repo-specific preflight: -Check mode, skipping heavy build/test ---'
