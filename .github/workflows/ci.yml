@@ -111,6 +111,11 @@ jobs:
       - name: Install Python script requirements
         run: python -m pip install -r scripts/requirements.txt
 
+      - name: Stage pre-commit hook for repo shape check
+        run: |
+          mkdir -p .git/hooks
+          cp .agents/skills/repo-standards/templates/pre-commit .git/hooks/pre-commit
+
       - name: Check repo standards shape
         run: bash .agents/skills/repo-standards/scripts/repo-standards.sh --check
 
