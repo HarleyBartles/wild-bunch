@@ -12,7 +12,7 @@ find_skill_script() {
   local mp_source="$REPO_ROOT/.agents/plugins/marketplace-source/codex-marketplace/plugins"
   if [ -d "$mp_source" ]; then
     local found
-    found=$(find "$mp_source" -path "*/skills/$skill/scripts/$core.sh" -maxdepth 4 -print -quit 2>/dev/null)
+    found=$(find "$mp_source" -maxdepth 5 -path "*/skills/$skill/scripts/$core.sh" -print -quit 2>/dev/null)
     if [ -n "$found" ]; then echo "$found"; return; fi
   fi
   echo "$skill $core wrapper not found" >&2; exit 1
