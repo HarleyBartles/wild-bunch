@@ -102,6 +102,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -111,19 +113,8 @@ jobs:
       - name: Install Python script requirements
         run: python -m pip install -r scripts/requirements.txt
 
-      - name: Validate repo-local skills
-        run: python scripts/validate_repo_local_skills.py
+      - name: Run repo mechanical preflight
+        run: bash scripts/ci-preflight.sh --check
 
-      - name: Validate marketplace plugin sync
-        run: python scripts/validate_marketplace_plugin_sync.py
-
-      - name: Run installer and validator regression tests
-        run: >-
-          python -m pytest
-          scripts/tests/test_install_agent_skills.py
-          scripts/tests/test_validate_repo_local_skills.py
-          scripts/tests/test_validate_marketplace_plugin_sync.py
-          -q
-
-      - name: Validate INDEX.md mesh
-        run: python scripts/generate_index_mesh.py --check
+      - name: Run script regression tests
+        run: python -m pytest scripts/tests -q
