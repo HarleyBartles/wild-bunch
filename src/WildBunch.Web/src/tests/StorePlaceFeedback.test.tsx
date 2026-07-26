@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
@@ -74,6 +74,12 @@ const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
+
+beforeAll(async () => {
+  // Preload the lazy store component so the route resolves quickly during
+  // full-suite runs where the module has not been imported by another test.
+  await import("../flow/places/StorePlace");
+});
 
 afterEach(() => {
   cleanup();
@@ -269,7 +275,7 @@ describe("Store purchase feedback", () => {
     // The store surface should render with the buy button.
     // StorePlace is lazy-loaded via React.lazy, so under full-suite load
     // it may take longer than the default 1000ms findByRole timeout.
-    const buyButton = await screen.findByRole("button", { name: /^buy$/i }, { timeout: 5000 });
+    const buyButton = await screen.findByRole("button", { name: /^buy$/i }, { timeout: 10000 });
     await user.click(buyButton);
 
     // The purchase confirmation notice should appear.

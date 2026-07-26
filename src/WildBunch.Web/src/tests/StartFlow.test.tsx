@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -63,6 +63,12 @@ const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetPrologue = vi.mocked(getPrologue);
 const mockedGetStartingTowns = vi.mocked(getStartingTowns);
 const mockedGetStartingTownMap = vi.mocked(getStartingTownMap);
+
+beforeAll(async () => {
+  // Preload the lazy town-selection step so it resolves quickly during
+  // full-suite runs where the module has not been imported by another test.
+  await import("../components/start-flow/StartingTownStep");
+});
 
 afterEach(() => {
   cleanup();
@@ -223,9 +229,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     // Select a town through the Phaser map
     await waitFor(() => {
@@ -257,9 +263,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
 
   it("shows entropy description for selected entropy", async () => {
@@ -314,9 +320,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     // Select a town through the Phaser map
     await waitFor(() => {
@@ -348,9 +354,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     // Select a town through the Phaser map
     await waitFor(() => {
@@ -380,9 +386,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
@@ -402,9 +408,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     await waitFor(() => {
       expect(phaserMockState.games.length).toBeGreaterThan(0);
@@ -435,9 +441,9 @@ describe("StartFlow", () => {
 
     await user.click(screen.getByRole("button", { name: /ride on/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /pick a starting town/i })).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     await waitFor(() => {
       expect(phaserMockState.games.length).toBeGreaterThan(0);
