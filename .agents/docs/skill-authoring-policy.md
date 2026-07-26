@@ -1,4 +1,4 @@
-# Skill Authoring Policy
+﻿# Skill Authoring Policy
 
 Status: active policy
 Owner: Wild Bunch repository
@@ -20,6 +20,10 @@ source.
 - Marketplace-derived skills are refreshed from the pinned
   `.agents/plugins/marketplace-source` submodule and remain separate from local
   Wild Bunch custody.
+- A plugin may be vendored locally under `.agents/plugins/<name>/` and declared
+  in `.agents/plugins/marketplace.json` with `"source": "local"`. Its skills are
+  installed into `.agents/skills/<name>/` under their original names and are not
+  `wild-bunch-*` repo-local skills.
 - The deterministic installer and validator must preserve repo-local
   `wild-bunch-*` skills and must not classify them as marketplace-derived.
 - Do not add `agents/openai.yaml` to a repo-local skill unless a future task
