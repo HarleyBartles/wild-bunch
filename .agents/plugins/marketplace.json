@@ -35,10 +35,8 @@
     {
       "name": "game-studio",
       "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/game-studio"
+        "source": "local",
+        "path": ".agents/plugins/game-studio"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",
@@ -91,7 +89,7 @@
   ],
   "notes": [
     "Repo-local Codex plugin marketplace for HarleyBartles/wild-bunch.",
-    "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace.",
+    "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace, except game-studio which is vendored locally under .agents/plugins/game-studio/.",
     "wild-bunch-* skills are repository-local and are not supplied by a marketplace plugin.",
     "house-skills is intentionally not default-installed."
   ],

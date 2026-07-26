@@ -26,14 +26,15 @@ For vendored marketplace projections, follow the refresh boundary below:
 
 - Marketplace plugin skills are vendored into `.agents/skills/` so any agent working in this repo can invoke and discover them. Devin CLI discovers repo skills only from local `.agents/skills/<name>/SKILL.md` directories; it has no Codex-marketplace plugin install path.
 - Source: `HarleyBartles/agent-asset-marketplace` pinned as a git submodule at `.agents/plugins/marketplace-source/`. Provenance (submodule HEAD SHA) is recorded in `.agents/skills/.provenance.json`.
-- Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync.
-- To refresh vendored skills after upstream plugin updates, run:
+- A plugin may also be vendored locally under `.agents/plugins/<name>/` and declared in `.agents/plugins/marketplace.json` with `"source": "local"`. Local plugin skills are copied into `.agents/skills/<name>/` using their original names and are not marketplace-derived.
+- Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync. Edit local plugin skills in `.agents/plugins/<name>/skills/` and re-run the refresh skill.
+- To refresh vendored skills after upstream plugin updates or local plugin changes, run:
   ```powershell
   git submodule update --remote .agents/plugins/marketplace-source
   py -3 .agents/skills/refreshing-installed-skills/scripts/refresh-installed-skills.py
   # or: .agents/skills/refreshing-installed-skills/scripts/refresh-installed-skills.ps1
   ```
-  The bundled `refreshing-installed-skills` skill is idempotent: it no-ops only when the submodule HEAD, ordered default-plugin names, generated skill metadata, and byte-for-byte vendored skill contents match `.agents/skills/.provenance.json` (pass `--force` to re-copy regardless). Do not look for or invent other skill-sync paths.
+  The bundled `refreshing-installed-skills` skill is idempotent: it no-ops only when the source, ordered default-plugin names, generated skill metadata, and byte-for-byte vendored skill contents match `.agents/skills/.provenance.json` (pass `--force` to re-copy regardless). Do not look for or invent other skill-sync paths.
 - Regenerate the `INDEX.md` mesh afterwards by running:
   ```powershell
   py -3 .agents/skills/generating-agent-mesh/scripts/generate-index-mesh.py

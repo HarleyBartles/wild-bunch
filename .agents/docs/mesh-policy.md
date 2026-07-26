@@ -94,21 +94,23 @@ README files are human-facing. They are not a mesh.
   configuration changes, refresh the projection and update only the canonical
   configuration.
 - `house-skills` is not default-installed in this repo.
-- Plugin skills are sourced from `HarleyBartles/agent-asset-marketplace`.
-- Devin CLI discovers repo skills only from local `.agents/skills/<name>/SKILL.md` directories; it has no Codex-marketplace plugin install path. Plugin skills are therefore vendored into `.agents/skills/` from the marketplace source so they are invocable and discoverable by any agent working in this repo.
-- The marketplace source is pinned as a git submodule at `.agents/plugins/marketplace-source/`. Vendored skills are synced from the submodule by the bundled `refreshing-installed-skills` skill (`.agents/skills/refreshing-installed-skills/scripts/refresh-installed-skills.py` or `.ps1`), which reads `marketplace.json`, copies each default-installed plugin's `skills/<name>/` directories into `.agents/skills/<name>/`, and records provenance (submodule HEAD SHA plus installed plugin names and skill count) in `.agents/skills/.provenance.json`.
-- To refresh vendored skills after upstream plugin updates: `git submodule update --remote .agents/plugins/marketplace-source`, then `py -3 .agents/skills/refreshing-installed-skills/scripts/refresh-installed-skills.py` (or the `.ps1` wrapper). The skill is idempotent and skips work when the submodule HEAD, configured default-plugin names, generated skill metadata, and byte-for-byte vendored skill contents match recorded provenance. Use `--force` to re-copy regardless.
-- Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync.
+- Plugin skills are normally sourced from `HarleyBartles/agent-asset-marketplace`.
+- A plugin may also be vendored locally under `.agents/plugins/<name>/` and declared in `.agents/plugins/marketplace.json` with `"source": "local"`. Local plugin skills are copied into `.agents/skills/<name>/` and are not marketplace-derived.
+- Devin CLI discovers repo skills only from local `.agents/skills/<name>/SKILL.md` directories; it has no Codex-marketplace plugin install path. Plugin skills are therefore vendored into `.agents/skills/` from the configured source so they are invocable and discoverable by any agent working in this repo.
+- The marketplace source is pinned as a git submodule at `.agents/plugins/marketplace-source/`. Vendored skills are synced from the configured source by the bundled `refreshing-installed-skills` skill (`.agents/skills/refreshing-installed-skills/scripts/refresh-installed-skills.py` or `.ps1`), which reads `marketplace.json`, copies each default-installed plugin's `skills/<name>/` directories into `.agents/skills/<name>/`, and records provenance (submodule HEAD SHA plus installed plugin names and skill count) in `.agents/skills/.provenance.json`.
+- To refresh vendored skills after upstream plugin updates or local plugin changes: `git submodule update --remote .agents/plugins/marketplace-source`, then `py -3 .agents/skills/refreshing-installed-skills/scripts/refresh-installed-skills.py` (or the `.ps1` wrapper). The skill is idempotent and skips work when the source, configured default-plugin names, generated skill metadata, and byte-for-byte vendored skill contents match recorded provenance. Use `--force` to re-copy regardless.
+- Do not hand-edit vendored skill files. Edit upstream in `agent-asset-marketplace` and re-sync. Edit local plugin skills in `.agents/plugins/<name>/skills/` and re-run the refresh skill.
 - Repo-local Wild Bunch skills may also live in `.agents/skills/` under the
   reserved `wild-bunch-*` namespace — see section 7.
 
 ## 7. Repo-local Wild Bunch skills
 
-`.agents/skills/` may contain vendored marketplace projections and permanent
-repo-local Wild Bunch skills. A repo-local Wild Bunch skill is identified by
-the `wild-bunch-` directory prefix, is discovered from the matching
-`.agents/skills/wild-bunch-*/SKILL.md` directories, and is not tracked in a
-separate inventory.
+`.agents/skills/` may contain vendored marketplace projections, local plugin
+projections, and permanent repo-local Wild Bunch skills. A repo-local Wild
+Bunch skill is identified by the `wild-bunch-` directory prefix, is discovered
+from the matching `.agents/skills/wild-bunch-*/SKILL.md` directories, and is
+not tracked in a separate inventory. A local plugin skill uses its original
+name under `.agents/skills/<name>/`.
 
 - `wild-bunch-*` skills are permanently repo-local, even when adjacent
   marketplace skills exist in the same folder tree.

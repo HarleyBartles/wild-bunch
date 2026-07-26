@@ -31,8 +31,8 @@ export default defineConfig({
     setupFiles: ["./src/tests/test-utils/setup.ts"],
     css: true,
     globals: false,
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
   server: {
     host: "0.0.0.0",

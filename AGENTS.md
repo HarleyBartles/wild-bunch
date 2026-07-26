@@ -18,8 +18,8 @@ Work is published through a dedicated linked worktree, a task branch, and a pull
 - `dotnet build`
 - `dotnet test`
 - `npm ci && npm run typecheck && npm run test && npm run build` in `src/WildBunch.Web`
-- `python scripts/generate_index_mesh.py` to regenerate `INDEX.md` files
-- `python scripts/install_agent_skills.py --check` to validate marketplace skill projection
+- `python .agents/skills/generating-agent-mesh/scripts/generate-index-mesh.py` to regenerate `INDEX.md` files
+- `python .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check` to validate marketplace skill projection
 - `python .agents/skills/repo-standards/scripts/repo_standards.py --check` to validate repo-standards shape
 
 ## Routing pointers
