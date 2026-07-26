@@ -6,7 +6,7 @@ metadata:
   projection_plugin: repo-worker-pack
 interface:
   display_name: Generating Agent Mesh
-  short_description: Use when the repo-wide INDEX.md mesh is stale or agent-mesh validation is needed.
-  default_prompt: Use generating-agent-mesh when the repo-wide INDEX.md mesh is stale or when validating the agent mesh.
+  short_description: Use when the repo-wide INDEX.md mesh is stale or agent-mesh validation is needed. Supports a repo-specific scripts/generate_index_mesh_extra hook for repo-specific INDEX.md content.
+  default_prompt: Use generating-agent-mesh when the repo-wide INDEX.md mesh is stale or when validating the agent mesh. It generates or checks the repo-wide INDEX.md mesh, supports an optional scripts/generate_index_mesh_extra hook for repo-specific content, and runs validate-agent-mesh for link and doctrine checks.
 policy:
   allow_implicit_invocation: false

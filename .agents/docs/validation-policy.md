@@ -22,25 +22,30 @@ Before moving a PR out of draft, run the local CI preflight:
 .\scripts\ci-preflight.ps1
 ```
 
-This covers the `ci.yml` workflow and adds source-aware marketplace validation:
+This runs the bundled `repo-standards` `ci-preflight` template, which in turn runs:
 
-- Backend: `dotnet restore`, `dotnet build --configuration Release`, `dotnet tool restore`, `dotnet ef migrations list`, and `dotnet test --configuration Release` via the shared PostgreSQL service.
-- Frontend: `npm ci`, `npm run typecheck`, `npm run test`, and `npm run build` in `src/WildBunch.Web`.
-- Index mesh: `generate_index_mesh --check` and committed-only marketplace provenance/content-hash validation. Local preflight additionally runs `install_agent_skills --check` against the initialized private marketplace submodule; CI deliberately does not fetch that submodule.
-- Python: `pathspec` (from `scripts/requirements.txt`) is required for `.gitignore` parsing; the wrapper installs it automatically if missing.
+- `repo-standards` checks
+- `scaffold-all` checks
+- `generating-agent-mesh` `generate-index-mesh --check` (including the `scripts/generate_index_mesh_extra` hook)
+- `generating-agent-mesh` `validate-agent-mesh --check`
+- `refreshing-installed-skills` `--check` against the initialized private marketplace submodule (CI deliberately does not fetch the submodule)
+- `scripts/ci-preflight-extra` for backend/frontend build and test lanes
 
-If the script fails, fix the issue and re-run before marking the PR ready. Use `-SkipBackend`, `-SkipFrontend`, or `-SkipIndexMesh` to narrow the run when iterating.
+Backend: `dotnet restore`, `dotnet build --configuration Release`, `dotnet tool restore`, `dotnet ef migrations list`, and `dotnet test --configuration Release` via the shared PostgreSQL service.
+Frontend: `npm ci`, `npm run typecheck`, `npm run test`, and `npm run build` in `src/WildBunch.Web`.
+
+If the script fails, fix the issue and re-run before marking the PR ready. Iterate on individual lanes directly if you need a narrower loop.
 
 For changes that affect persistence, `.\scripts\postgres-dev.ps1 validate` remains the focused PostgreSQL validation lane.
 
 ## Index Mesh CI Failures
 
-The "Index mesh + plugin manifest" CI job runs `python scripts/generate_index_mesh.py --check` on a clean Linux checkout. It fails when the committed INDEX.md files don't match what the generator produces from the CI tree. Common causes and fixes:
+The "Index mesh" CI job runs the bundled `generating-agent-mesh` skill in check mode. It fails when the committed `INDEX.md` files don't match what the skill produces from the CI tree. Common causes and fixes:
 
-- **Stale INDEX.md after file rename/add/delete:** Regenerate with `python scripts/generate_index_mesh.py` (or `.\scripts\generate_index_mesh.ps1`) and commit the updated INDEX.md files. The generator walks the live tree, so any renamed/added/deleted file or directory needs an index refresh.
-- **`TestResults` directory (gitignored test output):** `TestResults/` is a gitignored directory created by `dotnet test` runs. It contains dynamic GUID-named subdirectories. The generator respects `.gitignore` when `pathspec` is installed (from `scripts/requirements.txt`) and will automatically exclude gitignored directories. If a new gitignored output directory appears, add it to `.gitignore`; if `pathspec` is not available, add its directory name to `ALWAYS_EXCLUDED_DIR_NAMES` in `scripts/generate_index_mesh.py` as a fallback. Do NOT commit INDEX.md files inside gitignored output directories.
+- **Stale INDEX.md after file rename/add/delete:** Regenerate with `py -3 .agents/skills/generating-agent-mesh/scripts/generate-index-mesh.py` (or `.agents/skills/generating-agent-mesh/scripts/generate-index-mesh.ps1`) and commit the updated `INDEX.md` files. The skill walks the live tree, so any renamed/added/deleted file or directory needs an index refresh.
+- **`TestResults` directory (gitignored test output):** `TestResults/` is a gitignored directory created by `dotnet test` runs. It contains dynamic GUID-named subdirectories. The skill uses `git check-ignore` and its own `EXCLUDED_DIR_NAMES` set; if a new gitignored output directory appears, add it to `.gitignore`.
 - **PowerShell pipe encoding corrupts `git cat-file` output:** When debugging blob contents on Windows, do NOT pipe `git cat-file -p` through PowerShell `|` or `>` — PowerShell converts stdout to UTF-16LE, adding a `\xff\xfe` BOM and wide characters that look like file corruption. Use `git cat-file -p <sha> | python -c "import sys; ..."` with `sys.stdin.buffer.read()` to inspect raw bytes, or write to a file with `git cat-file -p <sha> -o <file>`.
-- **`core.autocrlf=true` on Windows:** The repo uses `autocrlf=true` on Windows. Git stores INDEX.md blobs as LF (the generator writes with `newline="\n"`), and autocrlf normalizes on checkout. This is fine — the generator's `normalize_text` strips CRLF before comparing. The CI check is not a line-ending issue; it is a content/tree-structure mismatch.
+- **Line endings:** The bundled generators write LF (`newline="\n"`). The check normalizes CRLF before comparing. A mismatch is a content or tree-structure issue, not a line-ending issue.
 
 ## Testing Posture
 - New or updated real application behavior should normally include test coverage in the same slice.

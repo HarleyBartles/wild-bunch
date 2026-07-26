@@ -19,10 +19,10 @@ metadata:
     - "Use when the goal fits a single tight implementation plan."
     - "Use before touching implementation code."
   do_not_use_when:
-    - "Do not use when the spec covers multiple independent subsystems; use working-with-epics or brainstorm first."
+    - "Do not use when the spec covers multiple independent subsystems; invoke working-with-epics to create a roadmap before writing plans."
     - "Do not use when implementation has already started."
     - "Do not use as a substitute for brainstorming."
-  use_after: [brainstorming, handoff-gates]
+  use_after: [brainstorming, handoff-gates, working-with-epics]
   use_before: [handoff-gates, executing-plans, subagent-driven-development]
   use_with: [handoff-gates, working-with-epics]
   related_skills: [brainstorming, handoff-gates, executing-plans, subagent-driven-development, working-with-epics]
@@ -45,7 +45,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 ## Scope Check
 
-If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
+If the spec covers multiple independent subsystems, invoke `working-with-epics` to create a sequenced roadmap before writing any plan. If brainstorming already produced a roadmap, write Plan 1 from the roadmap and leave remaining subsystems as pending future plans. Each plan should produce working, testable software on its own.
 
 ## File Structure
 

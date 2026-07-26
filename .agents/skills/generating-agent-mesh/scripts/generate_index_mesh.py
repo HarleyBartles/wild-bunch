@@ -1,9 +1,19 @@
 import argparse
 import os
 import re
+import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+
+def _stripped_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env.pop("GIT_DIR", None)
+    env.pop("GIT_WORK_TREE", None)
+    env.pop("GIT_INDEX_FILE", None)
+    return env
 
 
 def _repo_root() -> Path:
@@ -11,8 +21,62 @@ def _repo_root() -> Path:
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         capture_output=True, text=True, check=True,
+        env=_stripped_env(),
     )
     return Path(result.stdout.strip())
+
+
+def _powershell_cmd() -> list[str]:
+    for name in ("pwsh", "powershell"):
+        if shutil.which(name):
+            return [name, "-NoProfile", "-File"]
+    return ["powershell", "-NoProfile", "-File"]
+
+
+def _run_index_mesh_extra_hook(repo_root: Path, check: bool) -> list[str]:
+    """Run the repo-supplied INDEX.md extra hook if one exists.
+
+    The hook receives the repo root and, in check mode, --check:
+        scripts/generate_index_mesh_extra.sh [--check] <repo-root>
+    It may post-process or append content to specific INDEX.md files.
+    """
+    hook_sh = repo_root / "scripts" / "generate_index_mesh_extra.sh"
+    hook_ps1 = repo_root / "scripts" / "generate_index_mesh_extra.ps1"
+
+    # Prefer .ps1 on Windows and .sh elsewhere, but allow fallback.
+    if sys.platform == "win32" and hook_ps1.is_file():
+        cmd = _powershell_cmd() + [str(hook_ps1)]
+        if check:
+            cmd.append("-Check")
+    elif hook_sh.is_file():
+        cmd = ["bash", str(hook_sh)]
+        if check:
+            cmd.append("--check")
+    elif hook_ps1.is_file():
+        cmd = _powershell_cmd() + [str(hook_ps1)]
+        if check:
+            cmd.append("-Check")
+    else:
+        return []
+
+    cmd.append(str(repo_root))
+
+    result = subprocess.run(
+        cmd,
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        env=_stripped_env(),
+    )
+    errors: list[str] = []
+    for line in (result.stdout + result.stderr).splitlines():
+        line = line.strip()
+        if line:
+            errors.append(line)
+    if result.returncode != 0:
+        if not errors:
+            errors.append("repo-specific INDEX.md hook failed")
+    return errors
 
 
 # Set at import from git. Use configure_root() or --repo-root to override before any work runs.
@@ -33,6 +97,7 @@ def _load_tracked() -> tuple[set[Path], set[Path]]:
         capture_output=True,
         text=True,
         check=True,
+        env=_stripped_env(),
     )
     tracked_dirs: set[Path] = set()
     tracked_files: set[Path] = set()
@@ -68,6 +133,7 @@ def _load_ignored_index_paths(tracked_dirs: set[Path]) -> set[str]:
         input=input_bytes,
         cwd=ROOT,
         capture_output=True,
+        env=_stripped_env(),
     )
     if result.returncode not in (0, 1):
         raise subprocess.CalledProcessError(
@@ -280,6 +346,7 @@ def main(argv: list[str] | None = None) -> int:
     result = subprocess.run(
         ["git", "rev-parse", "--show-superproject-working-tree"],
         cwd=ROOT, capture_output=True, text=True,
+        env=_stripped_env(),
     )
     if result.returncode == 0 and result.stdout.strip():
         raise RuntimeError("This script must not run inside a git submodule")
@@ -311,13 +378,19 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             current = raw.decode("utf-8")
             rendered = "\n".join(target.lines).rstrip() + "\n"
-            if current != rendered:
+            # The optional repo-specific extra hook may append content, so the
+            # generated mesh is treated as the required prefix of the file.
+            if not current.startswith(rendered):
                 mismatches.append(f"stale: {target.path.relative_to(ROOT)}")
-            mismatches.extend(validate_rendered_links(target.path, rendered))
+            mismatches.extend(validate_rendered_links(target.path, current))
         if unexpected:
             mismatches.extend(f"unexpected: {path.relative_to(ROOT)}" for path in unexpected)
         if missing:
             mismatches.extend(f"missing: {path.relative_to(ROOT)}" for path in missing)
+        mismatches.extend(
+            f"ERROR: generate_index_mesh_extra hook: {msg}"
+            for msg in _run_index_mesh_extra_hook(ROOT, check=True)
+        )
         if mismatches:
             raise ValueError("INDEX mesh is stale or inconsistent:\n" + "\n".join(mismatches))
         print(f"OK index mesh: {len(targets)} indexes current")
@@ -334,10 +407,17 @@ def main(argv: list[str] | None = None) -> int:
     obsolete = sorted(path for path in actual_paths if path not in expected_paths)
     for path in obsolete:
         path.unlink()
+
+    # Run the repo-specific hook after writing the generated mesh but before
+    # link validation, so any appended/post-processed content is validated too.
+    hook_errors = _run_index_mesh_extra_hook(ROOT, check=False)
+    if hook_errors:
+        raise ValueError("ERROR: generate_index_mesh_extra hook failed:\n" + "\n".join(hook_errors))
+
     link_failures: list[str] = []
     for target in targets:
-        rendered = "\n".join(target.lines).rstrip() + "\n"
-        link_failures.extend(validate_rendered_links(target.path, rendered))
+        current = target.path.read_text(encoding="utf-8")
+        link_failures.extend(validate_rendered_links(target.path, current))
     if link_failures:
         raise ValueError("INDEX mesh produced broken links:\n" + "\n".join(link_failures))
     print(f"Wrote index mesh: {written} files")

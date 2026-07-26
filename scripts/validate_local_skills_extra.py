@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Validate Wild Bunch repo-local skill custody rules."""
+"""Validate repo-local skills under declared prefixes.
+
+Called by the `refreshing-installed-skills` skill as:
+    scripts/validate_local_skills_extra.sh [--check] <skills-root> <prefix> ...
+"""
 
 from __future__ import annotations
 
+import argparse
 import re
-from collections.abc import Iterable, Mapping
+import sys
+from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
-REPO_LOCAL_SKILL_PREFIX = "wild-bunch-"
-REPO_LOCAL_SKILL_NAME_PATTERN = re.compile(r"wild-bunch-[a-z0-9]+(?:-[a-z0-9]+)*")
 REQUIRED_METADATA_KEYS = {"status", "scope", "use_when", "do_not_use_when"}
 FORBIDDEN_MARKETPLACE_METADATA_KEYS = {
     "source-id",
@@ -23,15 +25,18 @@ FORBIDDEN_MARKETPLACE_METADATA_KEYS = {
     "source-category",
     "owner",
 }
+REPO_LOCAL_SKILL_NAME_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 FRONTMATTER_DELIMITER = "---"
 MARKDOWN_LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 
 
-def _reserved_skill_dirs(skills_root: Path) -> list[Path]:
+def _reserved_skill_dirs(skills_root: Path, prefixes: list[str]) -> list[Path]:
+    if not skills_root.is_dir():
+        return []
     return sorted(
         path
         for path in skills_root.iterdir()
-        if path.is_dir() and path.name.startswith(REPO_LOCAL_SKILL_PREFIX)
+        if path.is_dir() and any(path.name.startswith(p) for p in prefixes)
     )
 
 
@@ -161,30 +166,40 @@ def _validate_reserved_skill(skill_dir: Path) -> list[str]:
     return errors
 
 
-def validate_repo_local_skills(skills_root: Path) -> list[str]:
-    """Return stable contract errors for every reserved local skill directory."""
+def validate_local_skills(skills_root: Path, prefixes: list[str]) -> list[str]:
+    """Return stable contract errors for every local skill directory matching prefixes."""
     errors: list[str] = []
-    for skill_dir in _reserved_skill_dirs(skills_root):
+    for skill_dir in _reserved_skill_dirs(skills_root, prefixes):
         errors.extend(_validate_reserved_skill(skill_dir))
     return sorted(errors)
 
 
-def main() -> int:
-    """Run the repository-local skill validator."""
-    try:
-        skills_root = SKILLS_ROOT
-        errors = validate_repo_local_skills(skills_root)
-    except OSError as error:
-        print(f"ERROR: repo-local skill validation failed: {error}")
-        return 1
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate repo-local skills under declared prefixes."
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Validation is read-only (already the default).",
+    )
+    parser.add_argument(
+        "skills_root",
+        type=Path,
+        help="Path to the skills root directory (e.g. .agents/skills).",
+    )
+    parser.add_argument(
+        "prefixes",
+        nargs="+",
+        help="One or more local skill prefixes (e.g. wild-bunch-).",
+    )
+    args = parser.parse_args(argv)
 
+    errors = validate_local_skills(args.skills_root, args.prefixes)
     if errors:
         for error in errors:
-            print(error)
+            print(error, file=sys.stderr)
         return 1
-
-    validated_count = len(_reserved_skill_dirs(skills_root))
-    print(f"OK: validated {validated_count} repo-local skill(s)")
     return 0
 
 

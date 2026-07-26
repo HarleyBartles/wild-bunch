@@ -91,7 +91,7 @@ def validate_agents_md(agents_path: Path, repo_root: Path) -> list[str]:
         return findings
 
     try:
-        text = agents_path.read_text(encoding="utf-8", newline="\n")
+        text = agents_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         findings.append(f"cannot read AGENTS.md: {exc}")
         return findings
@@ -120,7 +120,7 @@ def validate_agents_md(agents_path: Path, repo_root: Path) -> list[str]:
             seen.add(resolved)
             if resolved.is_file():
                 try:
-                    target_text = resolved.read_text(encoding="utf-8", newline="\n")
+                    target_text = resolved.read_text(encoding="utf-8")
                 except (OSError, UnicodeDecodeError):
                     continue
                 routed_headings.update(_heading_set(target_text))

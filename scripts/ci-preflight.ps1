@@ -1,89 +1,72 @@
+<#
+.SYNOPSIS
+  Run the repository preflight checks for local and CI use.
+#>
 [CmdletBinding()]
 param(
-    [switch]$SkipBackend,
-    [switch]$SkipFrontend,
-    [switch]$SkipIndexMesh
+    [switch]$Check,
+    [switch]$Full,
+    [string]$ChangedFrom
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-function Assert-LastExitCode {
-    param([string]$Message)
-    if ($LASTEXITCODE -ne 0) {
-        throw $Message
-    }
-}
-
 $ScriptDir = (Resolve-Path $PSScriptRoot).Path
-$RepoRoot = & git rev-parse --show-toplevel
-if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($RepoRoot)) {
-    throw 'Could not determine repository root from git rev-parse.'
+$RepoRoot = (Resolve-Path (Join-Path $ScriptDir '..')).Path
+
+function Find-SkillScript($skill, $core) {
+    $installed = Join-Path $RepoRoot ".agents/skills/$skill/scripts/$core.ps1"
+    if (Test-Path $installed) { return $installed }
+
+    $marketplaceSource = Join-Path $RepoRoot ".agents/plugins/marketplace-source/codex-marketplace/plugins"
+    if (Test-Path $marketplaceSource) {
+        $glob = Join-Path $marketplaceSource "*/skills/$skill/scripts/$core.ps1"
+        $found = @(Get-Item $glob -ErrorAction SilentlyContinue)
+        if ($found.Count -gt 0) { return $found[0].FullName }
+    }
+    throw "$skill $core wrapper not found"
 }
 
-Push-Location -LiteralPath $RepoRoot
-try {
-    if (-not $SkipBackend) {
-        Write-Host '--- Backend preflight ---'
-        dotnet restore WildBunch.sln
-        Assert-LastExitCode 'dotnet restore failed'
-        dotnet build WildBunch.sln --no-restore --configuration Release
-        Assert-LastExitCode 'dotnet build failed'
-        dotnet tool restore
-        Assert-LastExitCode 'dotnet tool restore failed'
-        & "$ScriptDir/postgres-dev.ps1" test -- dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release
-        Assert-LastExitCode 'dotnet ef migrations list failed'
-        & "$ScriptDir/postgres-dev.ps1" test -- dotnet test WildBunch.sln --no-build --no-restore --configuration Release
-        Assert-LastExitCode 'dotnet test failed'
-    }
+# Bundled skill .ps1 wrappers use ValueFromRemainingArguments and expect the
+# same --check/--changed-from flags as the underlying Python scripts.
+$commonArgs = @()
+if ($Check) { $commonArgs += '--check' }
 
-    if (-not $SkipFrontend) {
-        Write-Host '--- Frontend preflight ---'
-        Push-Location src/WildBunch.Web
-        try {
-            npm ci
-            Assert-LastExitCode 'npm ci failed'
-            npm run typecheck
-            Assert-LastExitCode 'npm run typecheck failed'
-            npm run test
-            Assert-LastExitCode 'npm run test failed'
-            npm run build
-            Assert-LastExitCode 'npm run build failed'
-        }
-        finally {
-            Pop-Location
-        }
-    }
+$standards = Find-SkillScript 'repo-standards' 'repo-standards'
+& $standards @commonArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-    if (-not $SkipIndexMesh) {
-        Write-Host '--- Index mesh preflight ---'
-        python -m pip install -r "$ScriptDir/requirements.txt"
-        Assert-LastExitCode 'python script requirements installation failed'
+$scaffold = Find-SkillScript 'repo-standards' 'scaffold-all'
+& $scaffold @commonArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-        & "$ScriptDir/generate_index_mesh.ps1" -Check
-        Assert-LastExitCode 'generate_index_mesh -Check failed'
+# generate-index-mesh reconciles the whole tracked mesh; scoped diff is
+# handled by validate-agent-mesh and the optional ci-preflight-extra hook.
+$mesh = Find-SkillScript 'generating-agent-mesh' 'generate-index-mesh'
+& $mesh @commonArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-        Write-Host '--- Validating repo-local skills ---'
-        python "$ScriptDir/validate_repo_local_skills.py"
-        Assert-LastExitCode 'repo-local skill validation failed'
+$validateArgs = @()
+if ($Check) { $validateArgs += '--check' }
+if ($ChangedFrom) { $validateArgs += '--changed-from'; $validateArgs += $ChangedFrom }
+$validate = Find-SkillScript 'generating-agent-mesh' 'validate-agent-mesh'
+& $validate @validateArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-        Write-Host '--- Validating marketplace plugin sync ---'
-        python "$ScriptDir/validate_marketplace_plugin_sync.py"
-        Assert-LastExitCode 'marketplace plugin sync validation failed'
+$refresh = Find-SkillScript 'refreshing-installed-skills' 'refresh-installed-skills'
+$refreshArgs = @()
+if ($Check) { $refreshArgs += '--check' } else { $refreshArgs += '--allow-shared-checkout' }
+& $refresh @refreshArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-        Write-Host '--- Validating marketplace skill projection ---'
-        python "$ScriptDir/install_agent_skills.py" --check
-        Assert-LastExitCode 'marketplace skill projection validation failed'
-
-        Write-Host '--- Running installer and validator regression tests ---'
-        python -m pytest `
-            "$ScriptDir/tests/test_install_agent_skills.py" `
-            "$ScriptDir/tests/test_validate_repo_local_skills.py" `
-            "$ScriptDir/tests/test_validate_marketplace_plugin_sync.py" `
-            -q
-        Assert-LastExitCode 'installer and validator regression tests failed'
-    }
+$extra = Join-Path $ScriptDir 'ci-preflight-extra.ps1'
+if (Test-Path $extra) {
+    $extraArgs = @{ }
+    if ($Check) { $extraArgs['Check'] = $true }
+    if ($ChangedFrom) { $extraArgs['ChangedFrom'] = $ChangedFrom }
+    & $extra @extraArgs
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
-finally {
-    Pop-Location
-}
+
+exit 0

@@ -6,7 +6,7 @@ metadata:
   projection_plugin: repo-worker-pack
 interface:
   display_name: Refreshing Installed Skills
-  short_description: Use when a worktree is initialized or .agents/skills/ is stale from the plugin source.
-  default_prompt: Use refreshing-installed-skills when a worktree is initialized or .agents/skills/ is stale from the plugin source.
+  short_description: Use when a worktree is initialized or .agents/skills/ is stale from the local or github plugin source. Supports a repo-specific scripts/validate_local_skills_extra hook and tracks marketplace-source provenance.
+  default_prompt: Use refreshing-installed-skills when a worktree is initialized or .agents/skills/ is stale from the local or github plugin source. It installs skills from INSTALLED_BY_DEFAULT plugins, rolls the optional marketplace-source submodule, runs an optional scripts/validate_local_skills_extra hook for repo-specific local-skill policy, and regenerates the agent mesh.
 policy:
   allow_implicit_invocation: false

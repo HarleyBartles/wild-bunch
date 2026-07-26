@@ -13,7 +13,7 @@ metadata:
   source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/brainstorming/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
-  adaptation_note: "Repointed Superpowers path references to the `.agents/superpowers/` convention, added a spec-readiness handoff gate, and normalized marketplace frontmatter metadata."
+  adaptation_note: "Repointed Superpowers path references to the `.agents/superpowers/` convention, added spec-readiness and epic-scope handoff gates, and normalized marketplace frontmatter metadata."
   use_when:
     - "Use when starting any new feature, component, or modification."
     - "Use when the human frames a creative or build goal and no approved spec exists."
@@ -23,7 +23,7 @@ metadata:
     - "Do not use as a substitute for writing-plans or executing-plans."
     - "Do not use when the task is pure execution without design decisions."
   use_after: [using-superpowers]
-  use_before: [handoff-gates, writing-plans]
+  use_before: [handoff-gates, working-with-epics, writing-plans]
   use_with: [working-with-epics]
   related_skills: [using-superpowers, handoff-gates, writing-plans, working-with-epics]
 ---
@@ -62,6 +62,8 @@ You MUST create a task for each of these items and complete them in order:
 ```dot
 digraph brainstorming {
     "Explore project context" [shape=box];
+    "Scope too large for one spec?" [shape=diamond];
+    "Invoke working-with-epics" [shape=doublecircle];
     "Ask clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
@@ -69,9 +71,12 @@ digraph brainstorming {
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
     "User reviews spec?" [shape=diamond];
+    "Spec readiness gate" [shape=box];
     "Invoke writing-plans skill" [shape=doublecircle];
 
-    "Explore project context" -> "Ask clarifying questions";
+    "Explore project context" -> "Scope too large for one spec?";
+    "Scope too large for one spec?" -> "Invoke working-with-epics" [label="yes"];
+    "Scope too large for one spec?" -> "Ask clarifying questions" [label="no"];
     "Ask clarifying questions" -> "Propose 2-3 approaches";
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
@@ -80,11 +85,12 @@ digraph brainstorming {
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
+    "User reviews spec?" -> "Spec readiness gate" [label="approved"];
+    "Spec readiness gate" -> "Invoke writing-plans skill";
 }
 ```
 
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+**The normal terminal state is invoking writing-plans.** If the project is too large for a single spec, invoke `working-with-epics` instead. Do NOT invoke frontend-design, mcp-builder, or any other implementation skill directly from brainstorming.
 
 ## The Process
 
@@ -92,7 +98,7 @@ digraph brainstorming {
 
 - Check out the current project state first (files, docs, recent commits)
 - Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
-- If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec → plan → implementation cycle.
+- If the project is too large for a single spec, stop and invoke `working-with-epics` to build a sequenced roadmap and write Plan 1. Do not brainstorm the whole epic in one pass or continue with detailed design questions until Plan 1 is approved.
 - For appropriately-scoped projects, ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple questions

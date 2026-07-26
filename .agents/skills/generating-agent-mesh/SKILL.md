@@ -45,6 +45,14 @@ The wrapper commands `generate-index-mesh` and `validate-agent-mesh` in the same
 
 `generate-index-mesh` writes the repo-wide `INDEX.md` mesh and `repo-index/repo-index.json` from `git ls-files`; `validate-agent-mesh` checks local markdown links and doctrine routing. It does not commit; the caller decides whether to commit regenerated or validated state.
 
+## Repo-specific generation extensions
+
+`generate-index-mesh` runs an optional extra hook if one exists, after writing all `INDEX.md` files and before link validation:
+- `scripts/generate_index_mesh_extra.sh` -- bash script; receives `--check` followed by `<repo-root>`.
+- `scripts/generate_index_mesh_extra.ps1` -- PowerShell script; must declare `param([switch]$Check, [string]$RepoRoot)`.
+
+In write mode the script can post-process or append content to specific `INDEX.md` files (e.g., an ADR freshness table in `docs/adr/INDEX.md`). In `--check` mode it must verify its generated content is current and exit non-zero if not. The skill fails with a clear error if the hook exits non-zero.
+
 ## Repo-specific validation extensions
 
 `validate-agent-mesh` runs an optional extra hook if one exists:

@@ -94,5 +94,10 @@
     "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace.",
     "wild-bunch-* skills are repository-local and are not supplied by a marketplace plugin.",
     "house-skills is intentionally not default-installed."
-  ]
+  ],
+  "repo": {
+    "local_skill_prefixes": [
+      "wild-bunch-"
+    ]
+  }
 }

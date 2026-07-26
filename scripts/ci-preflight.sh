@@ -1,77 +1,78 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(git -C "$script_dir" rev-parse --show-toplevel)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-skip_backend=0
-skip_frontend=0
-skip_index_mesh=0
+find_skill_script() {
+  local skill="$1" core="$2"
+  local installed="$REPO_ROOT/.agents/skills/$skill/scripts/$core.sh"
+  if [ -f "$installed" ]; then echo "$installed"; return; fi
 
-while [[ $# -gt 0 ]]; do
+  local mp_source="$REPO_ROOT/.agents/plugins/marketplace-source/codex-marketplace/plugins"
+  if [ -d "$mp_source" ]; then
+    local found
+    found=$(find "$mp_source" -path "*/skills/$skill/scripts/$core.sh" -maxdepth 4 -print -quit 2>/dev/null)
+    if [ -n "$found" ]; then echo "$found"; return; fi
+  fi
+  echo "$skill $core wrapper not found" >&2; exit 1
+}
+
+CHECK=""
+FULL=""
+CHANGED_FROM=""
+while [ $# -gt 0 ]; do
   case "$1" in
-    --skip-backend)
-      skip_backend=1
+    --check) CHECK="--check" ;;
+    --full) FULL="1" ;;
+    --changed-from)
+      shift
+      CHANGED_FROM="$1"
       ;;
-    --skip-frontend)
-      skip_frontend=1
-      ;;
-    --skip-index-mesh)
-      skip_index_mesh=1
-      ;;
-    -h|--help)
-      cat <<'EOF'
-Usage: scripts/ci-preflight.sh [--skip-backend] [--skip-frontend] [--skip-index-mesh]
-EOF
-      exit 0
-      ;;
-    *)
-      echo "Unknown argument: $1" >&2
-      exit 1
-      ;;
+    *) echo "unknown arg: $1" >&2; exit 1 ;;
   esac
   shift
 done
 
-cd "$repo_root"
+STANDARDS=$(find_skill_script repo-standards repo-standards)
+SCAFFOLD=$(find_skill_script repo-standards scaffold-all)
+MESH=$(find_skill_script generating-agent-mesh generate-index-mesh)
+VALIDATE=$(find_skill_script generating-agent-mesh validate-agent-mesh)
+REFRESH=$(find_skill_script refreshing-installed-skills refresh-installed-skills)
 
-if [[ $skip_backend -eq 0 ]]; then
-  echo '--- Backend preflight ---'
-  dotnet restore WildBunch.sln
-  dotnet build WildBunch.sln --no-restore --configuration Release
-  dotnet tool restore
-  bash "$script_dir/postgres-dev.sh" test -- dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release
-  bash "$script_dir/postgres-dev.sh" test -- dotnet test WildBunch.sln --no-build --no-restore --configuration Release
+STANDARDS_ARGS=()
+[ -n "$CHECK" ] && STANDARDS_ARGS+=("--check")
+"$STANDARDS" "${STANDARDS_ARGS[@]}"
+
+SCAFFOLD_ARGS=()
+[ -n "$CHECK" ] && SCAFFOLD_ARGS+=("--check")
+"$SCAFFOLD" "${SCAFFOLD_ARGS[@]}"
+
+MESH_ARGS=()
+[ -n "$CHECK" ] && MESH_ARGS+=("--check")
+# generate-index-mesh reconciles the whole tracked mesh; scoped diff is
+# handled by validate-agent-mesh and the optional ci-preflight-extra hook.
+"$MESH" "${MESH_ARGS[@]}"
+
+VALIDATE_ARGS=()
+[ -n "$CHECK" ] && VALIDATE_ARGS+=("--check")
+[ -n "$CHANGED_FROM" ] && VALIDATE_ARGS+=("--changed-from" "$CHANGED_FROM")
+"$VALIDATE" "${VALIDATE_ARGS[@]}"
+
+MARKETPLACE_SOURCE="$REPO_ROOT/.agents/plugins/marketplace-source"
+if [ -d "$MARKETPLACE_SOURCE" ] && [ -e "$MARKETPLACE_SOURCE/.git" ]; then
+  REFRESH_ARGS=()
+  [ -n "$CHECK" ] && REFRESH_ARGS+=("--check")
+  [ -z "$CHECK" ] && REFRESH_ARGS+=("--allow-shared-checkout")
+  "$REFRESH" "${REFRESH_ARGS[@]}"
+else
+  echo "marketplace-source submodule not initialized; skipping installed-skills refresh"
 fi
 
-if [[ $skip_frontend -eq 0 ]]; then
-  echo '--- Frontend preflight ---'
-  pushd src/WildBunch.Web >/dev/null
-  npm ci
-  npm run typecheck
-  npm run test
-  npm run build
-  popd >/dev/null
-fi
-
-if [[ $skip_index_mesh -eq 0 ]]; then
-  echo '--- Index mesh preflight ---'
-  python3 -m pip install -r "$script_dir/requirements.txt"
-  bash "$script_dir/generate_index_mesh.sh" --check
-
-  echo '--- Validating repo-local skills ---'
-  python3 "$script_dir/validate_repo_local_skills.py"
-
-  echo '--- Validating marketplace plugin sync ---'
-  python3 "$script_dir/validate_marketplace_plugin_sync.py"
-
-  echo '--- Validating marketplace skill projection ---'
-  python3 "$script_dir/install_agent_skills.py" --check
-
-  echo '--- Running installer and validator regression tests ---'
-  python3 -m pytest \
-    "$script_dir/tests/test_install_agent_skills.py" \
-    "$script_dir/tests/test_validate_repo_local_skills.py" \
-    "$script_dir/tests/test_validate_marketplace_plugin_sync.py" \
-    -q
+EXTRA="$SCRIPT_DIR/ci-preflight-extra.sh"
+if [ -f "$EXTRA" ]; then
+  EXTRA_ARGS=()
+  [ -n "$CHECK" ] && EXTRA_ARGS+=("--check")
+  [ -n "$CHANGED_FROM" ] && EXTRA_ARGS+=("--changed-from" "$CHANGED_FROM")
+  "$EXTRA" "${EXTRA_ARGS[@]}"
 fi

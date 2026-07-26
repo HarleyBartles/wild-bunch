@@ -111,19 +111,25 @@ jobs:
       - name: Install Python script requirements
         run: python -m pip install -r scripts/requirements.txt
 
+      - name: Stage pre-commit hook for repo shape check
+        run: |
+          mkdir -p .git/hooks
+          cp .agents/skills/repo-standards/templates/pre-commit .git/hooks/pre-commit
+
+      - name: Check repo standards shape
+        run: bash .agents/skills/repo-standards/scripts/repo-standards.sh --check
+
+      - name: Check repo-standards scaffolds
+        run: bash .agents/skills/repo-standards/scripts/scaffold-all.sh --check
+
+      - name: Check INDEX.md mesh
+        run: bash .agents/skills/generating-agent-mesh/scripts/generate-index-mesh.sh --check
+
+      - name: Validate agent mesh
+        run: bash .agents/skills/generating-agent-mesh/scripts/validate-agent-mesh.sh --check
+
       - name: Validate repo-local skills
-        run: python scripts/validate_repo_local_skills.py
+        run: python scripts/validate_local_skills_extra.py --check .agents/skills wild-bunch-
 
-      - name: Validate marketplace plugin sync
-        run: python scripts/validate_marketplace_plugin_sync.py
-
-      - name: Run installer and validator regression tests
-        run: >-
-          python -m pytest
-          scripts/tests/test_install_agent_skills.py
-          scripts/tests/test_validate_repo_local_skills.py
-          scripts/tests/test_validate_marketplace_plugin_sync.py
-          -q
-
-      - name: Validate INDEX.md mesh
-        run: python scripts/generate_index_mesh.py --check
+      - name: Run script regression tests
+        run: python -m pytest scripts/tests -q

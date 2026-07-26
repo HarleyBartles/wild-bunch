@@ -98,7 +98,8 @@ exit codes:
         print("DRIFT: REVIEW.md missing")
         return 1
 
-    review_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+    with review_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(template.read_text(encoding="utf-8"))
     print(f"wrote {review_path.relative_to(repo_root).as_posix()}")
     return 0
 

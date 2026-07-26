@@ -39,3 +39,31 @@ py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skill
 ```
 
 This skill runs the bundled `refresh_installed_skills.py` core, which installs/refreshes `.agents/skills/` from the plugins declared in `.agents/plugins/marketplace.json`, rolls the optional `marketplace-source` submodule to `origin/main`, and regenerates the agent mesh. If changes were made, it commits them with the message `chore: refresh installed skills and regenerate agent mesh`.
+
+## Plugin source types
+
+Each plugin entry in `.agents/plugins/marketplace.json` declares its source with `source.source`:
+
+- `local`: `source.path` is relative to the consumer repo root.
+- `github`: `source.path` is relative to the `marketplace-source` submodule root (`.agents/plugins/marketplace-source`).
+
+Both `local` and `github` sources are normalized and must resolve to a directory under their respective roots.
+
+## Local skill validation extension
+
+After the bundled core validates that local skill directories match their frontmatter names and do not collide with reserved marketplace prefixes, it calls a repo-supplied extension script if one exists:
+
+- `scripts/validate_local_skills_extra.sh` — bash script; receives `--check` followed by the skills root and any local skill prefixes.
+- `scripts/validate_local_skills_extra.ps1` — PowerShell script; must declare `param([switch]$Check, [Parameter(ValueFromRemainingArguments=$true)][string[]]$Remaining)`.
+
+Example invocation:
+
+```text
+scripts/validate_local_skills_extra.sh .agents/skills wild-bunch-
+```
+
+In `--check` mode the script must report errors and exit non-zero if invalid. In write mode it may also auto-fix or just validate. The skill fails with a clear error if the hook exits non-zero.
+
+## Provenance
+
+`.agents/skills/.provenance.json` records the marketplace-source version that was installed. When the `marketplace-source` submodule is present, `manifestSha` tracks the submodule HEAD; otherwise it falls back to the consumer repo HEAD. `syncedPlugins` lists every plugin configured as `INSTALLED_BY_DEFAULT`, in order, regardless of whether its skills needed copying on this run.

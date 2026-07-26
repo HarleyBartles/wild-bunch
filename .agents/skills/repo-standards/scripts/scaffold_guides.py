@@ -67,7 +67,14 @@ def _default_mapping() -> dict[str, Path]:
     return {name: Path(".agents/guides") / name for name in GUIDE_TITLES}
 
 
+def _template_dir() -> Path:
+    return Path(__file__).resolve().parent.parent / "templates"
+
+
 def _guide_content(name: str) -> str:
+    template = _template_dir() / name
+    if template.is_file():
+        return template.read_text(encoding="utf-8")
     title = GUIDE_TITLES.get(name, name.replace("-", " ").title())
     return (
         f"# {title}\n\n"
@@ -125,7 +132,8 @@ exit codes:
             missing.append(local_path.as_posix())
             continue
         guide_path.parent.mkdir(parents=True, exist_ok=True)
-        guide_path.write_text(_guide_content(standard_name), encoding="utf-8", newline="\n")
+        with guide_path.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(_guide_content(standard_name))
         written.append(local_path.as_posix())
 
     if args.check:

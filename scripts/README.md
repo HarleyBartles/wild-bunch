@@ -2,16 +2,13 @@
 
 This folder contains deterministic workflow scripts for the Wild Bunch repo.
 All scripts are idempotent and safe to re-run. Inspect this folder before
-running ad-hoc commands for dev server management, database setup, skill
-syncing, image processing, or index mesh generation - the scripts here are
-the canonical way to perform these operations.
+running ad-hoc commands for dev server management, database setup, or image
+processing.
 
-Treat the scripts folder as a first-class discovery surface. If there is a
-repo-local script for the task, use it before claiming the environment lacks
-the needed tooling. That includes PostgreSQL setup/validation via the
-`postgres-dev.sh` / `postgres-dev.ps1` pair and image
-cutting/normalization via the compatibility wrapper for
-`src/WildBunch.Assets/scripts/image_asset_pipeline.py`.
+Generic repo-maintenance mechanics (skill sync, index mesh generation,
+repo-standards checks) are handled by the bundled marketplace skills under
+`.agents/skills/`. These scripts are the operational and repo-specific
+extensions that remain in `scripts/`.
 
 ## Shared requirements
 
@@ -25,6 +22,26 @@ cutting/normalization via the compatibility wrapper for
   installed in the active environment.
 
 ## Scripts
+
+### ci-preflight.sh / ci-preflight.ps1
+**Use when** you need to run the same checks CI runs before marking a PR ready for review.
+
+- `bash scripts/ci-preflight.sh` - run all local CI preflight checks
+- `bash scripts/ci-preflight.sh --check` - run non-destructive pre-commit checks
+- `.\scripts\ci-preflight.ps1` - PowerShell entrypoint (`-Check` for pre-commit)
+
+This is the bundled `repo-standards` `ci-preflight` template. It runs
+repo-standards checks, scaffold checks, index mesh generation/validation,
+agent mesh validation, skill refresh validation, and then the repo-specific
+`ci-preflight-extra` hook for backend and frontend build/test lanes.
+
+**Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
+
+### ci-preflight-extra.sh / ci-preflight-extra.ps1
+Repo-specific extension script called by `ci-preflight` after the generic
+marketplace skill checks. It runs `dotnet restore/build/ef/test` and the
+`src/WildBunch.Web` `npm ci/typecheck/test/build` pipeline. In `--check` mode
+it is a no-op because those lanes are too heavy for the pre-commit hook.
 
 ### dev-servers.sh / dev-servers.ps1
 **Use when** you need to start, stop, check, or ensure the API + Vite dev
@@ -77,27 +94,6 @@ integration tests require this database to be running. Set the connection
 string environment variable:
 `$env:ConnectionStrings__WildBunchPostgresDb = "Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres"`
 
-### install_agent_skills.sh / install_agent_skills.ps1
-**Use when** you have updated the agent-asset-marketplace submodule and need
-to sync vendored skills into `.agents/skills/`.
-
-- `bash scripts/install_agent_skills.sh` - sync if the marketplace SHA, configured default-plugin names, generated skill metadata, or byte-for-byte vendored projection differs from provenance (no-op only when all four match)
-- `bash scripts/install_agent_skills.sh --force` - re-copy all skill directories regardless of provenance
-- `bash scripts/install_agent_skills.sh --check` - source-aware local check mode: report what would change without making changes
-- `.\scripts\install_agent_skills.ps1` - PowerShell wrapper (same flags: -Check, -Force)
-
-The Python implementation provides content comparison to reduce file churn and supports source-aware `--check` mode for local preflight. CI deliberately avoids fetching the private submodule; it validates the committed provenance and generated content hashes with `validate_marketplace_plugin_sync.py`. Both wrappers call the Python script.
-
-Reads `.agents/plugins/marketplace.json` and copies skill folders from the
-submodule into `.agents/skills/`. Provenance is tracked in
-`.agents/skills/.provenance.json`. The configuration file is the only authored
-plugin list; validate the generated projection with
-`python scripts/validate_marketplace_plugin_sync.py` instead of duplicating
-plugin names in another check or document.
-
-**Use after** `git submodule update --remote .agents/plugins/marketplace-source`
-to pull in upstream skill updates.
-
 ### image_asset_pipeline.sh / image_asset_pipeline.ps1
 **Use when** you need to cut a generated image away from a flat background,
 slice a turnaround sheet into individual views, normalize a building sprite
@@ -119,37 +115,17 @@ The primary backend is Pillow in Python 3.11+ with the package installed in
 the active environment. The selection and promotion note lives in
 `.agents/docs/asset-pipeline/selection-cut-normalization.md`.
 
-### generate_index_mesh.sh / generate_index_mesh.ps1
-**Use when** you have added, removed, or renamed files or directories and
-need to regenerate the repo-wide `INDEX.md` mesh.
+## Extension hooks
 
-- `bash scripts/generate_index_mesh.sh` - regenerate all INDEX.md files
-- `bash scripts/generate_index_mesh.sh --check` - validate without writing (CI mode)
-- `.\scripts\generate_index_mesh.ps1` - PowerShell wrapper (same flags: -Check)
+The following scripts are not invoked directly; they are extension points for
+the bundled marketplace skills.
 
-Both wrappers are thin convenience layers that call the Python script.
-
-Requires `pathspec` (from `scripts/requirements.txt`) for `.gitignore` parsing;
-the wrapper installs it automatically if missing. Generates `INDEX.md` files in
-every directory (excluding build artifacts, node_modules, etc., and respecting
-.gitignore) with links to child directories and files. Also checks ADR freshness
-in `docs/adr/`.
-
-**Use after** creating new source files, test files, or directories to keep
-the index mesh current. The INDEX.md files are tracked in git.
-
-### ci-preflight.sh / ci-preflight.ps1
-**Use when** you need to run the same checks CI runs before marking a PR ready for review.
-
-- `bash scripts/ci-preflight.sh` - run all local CI preflight checks
-- `bash scripts/ci-preflight.sh --skip-backend` - skip the .NET/PostgreSQL checks
-- `bash scripts/ci-preflight.sh --skip-frontend` - skip the Vite/TypeScript checks
-- `bash scripts/ci-preflight.sh --skip-index-mesh` - skip the index mesh validation
-- `.\scripts\ci-preflight.ps1` - PowerShell wrapper with the same skip switches
-
-This mirrors the `ci.yml` workflow locally: `dotnet restore`, `dotnet build --configuration Release`, `dotnet ef migrations list`, `dotnet test --configuration Release` via the shared PostgreSQL service, the frontend `npm ci` / typecheck / test / build pipeline, the `generate_index_mesh.sh --check` validation, and the marketplace plugin sync validation.
-
-**Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
+- `scripts/generate_index_mesh_extra.py` (and `.sh`/`.ps1` wrappers) is called
+  by `generating-agent-mesh` after it generates the `INDEX.md` mesh. It appends
+  the ADR freshness table to `docs/adr/INDEX.md`.
+- `scripts/validate_local_skills_extra.py` (and `.sh`/`.ps1` wrappers) is
+  called by `refreshing-installed-skills` while syncing skills. It validates
+  the `wild-bunch-*` repo-local skill directories.
 
 ## Conventions
 

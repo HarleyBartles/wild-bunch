@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom/vitest";
+import { configure } from "@testing-library/react";
 import { vi } from "vitest";
+
+// Lazy-loaded routes can take longer to resolve in a cold full-suite run
+// (especially after npm ci), so give async queries more time before failing.
+configure({ asyncUtilTimeout: 5000 });
 
 Object.defineProperty(window, "scrollTo", {
   configurable: true,

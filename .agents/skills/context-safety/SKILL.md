@@ -105,6 +105,7 @@ def iter_line_chunks(lines: list[str], chunk_lines: int = 200):
 
 
 def write_large_text(target: Path, text: str) -> None:
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = text.splitlines()
     byte_size = len(text.encode("utf-8"))
     ends_with_newline = text.endswith("\n")
@@ -123,9 +124,11 @@ def write_large_text(target: Path, text: str) -> None:
                 if not is_last_chunk or ends_with_newline:
                     handle.write("\n")
     else:
-        tmp.write_text(text, encoding="utf-8", newline="\n")
+        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
 
-    completed = tmp.read_text(encoding="utf-8")
+    with tmp.open("r", encoding="utf-8", newline="\n") as handle:
+        completed = handle.read()
     if completed != text:
         raise RuntimeError("temp file validation failed")
     if len(completed.splitlines()) != len(lines):

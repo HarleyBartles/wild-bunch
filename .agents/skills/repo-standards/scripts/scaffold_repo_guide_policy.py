@@ -98,9 +98,8 @@ exit codes:
         return 1
 
     policy_path.parent.mkdir(parents=True, exist_ok=True)
-    policy_path.write_text(
-        template.read_text(encoding="utf-8"), encoding="utf-8", newline="\n"
-    )
+    with policy_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(template.read_text(encoding="utf-8"))
     print(f"wrote {policy_path.relative_to(repo_root).as_posix()}")
     return 0
 
