@@ -4,13 +4,13 @@ description: "Use when about to claim work is complete, fixed, or passing, befor
 metadata:
   source_category: "third_party"
   upstream_name: "verification-before-completion"
-  upstream_version: "v6.1.0"
+  upstream_version: "v6.2.0"
   adaptation_overlay: "adapters/codex/superpowers-plus/verification-before-completion"
   projection_plugin: "superpowers-plus"
   source_author: "obra"
   source_license: "MIT"
   source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/verification-before-completion/SKILL.md"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/verification-before-completion/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
   adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
@@ -31,8 +31,6 @@ metadata:
 # Verification Before Completion
 
 ## Overview
-
-Claiming work is complete without verification is dishonesty, not efficiency.
 
 **Core principle:** Evidence before claims, always.
 
@@ -130,15 +128,6 @@ Skip any step = lying, not verifying
 ❌ Trust agent report
 ```
 
-## Why This Matters
-
-From 24 failure memories:
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
-
 ## When To Apply
 
 **ALWAYS before:**
@@ -154,11 +143,3 @@ From 24 failure memories:
 - Paraphrases and synonyms
 - Implications of success
 - ANY communication suggesting completion/correctness
-
-## The Bottom Line
-
-**No shortcuts for verification.**
-
-Run the command. Read the output. THEN claim the result.
-
-This is non-negotiable.

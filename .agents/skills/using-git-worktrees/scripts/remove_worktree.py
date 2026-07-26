@@ -90,6 +90,16 @@ def _resolve_worktree(repo_root: Path, target: str) -> Path:
     raise RuntimeError(f"Could not resolve worktree: {target}")
 
 
+def _is_worktree_registered(repo_root: Path, worktree: Path) -> bool:
+    """Return True if git still lists the given worktree as registered."""
+    try:
+        worktrees = _list_worktrees(repo_root)
+    except subprocess.CalledProcessError:
+        return False
+    registered_paths = {Path(path).resolve() for path in worktrees.values()}
+    return worktree.resolve() in registered_paths
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Remove a git worktree")
     parser.add_argument("target", help="branch name or absolute path of the worktree to remove")
@@ -120,8 +130,29 @@ def main(argv: list[str] | None = None) -> int:
     if args.force:
         cmd.append("--force")
 
-    result = subprocess.run(cmd, cwd=repo_root, env=_stripped_env())
+    result = subprocess.run(
+        cmd,
+        cwd=repo_root,
+        env=_stripped_env(),
+        capture_output=True,
+        text=True,
+    )
+
     if result.returncode != 0:
+        # Distinguish a locked directory (git deregistered the worktree but
+        # could not delete the folder) from a genuine git failure. Never fall
+        # back to force-deleting the directory.
+        if not _is_worktree_registered(repo_root, worktree) and worktree.exists():
+            print(
+                "file is locked for editing; stop. Don't continue trying to delete the locked directory.\n"
+                "Report to your human partner that the on disk folder can't be deleted but the worktree is deregistered.\n"
+                f"Worktree path: {worktree}",
+                file=sys.stderr,
+            )
+            return 1
+
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
         return result.returncode
 
     print(f"Removed worktree {worktree}")

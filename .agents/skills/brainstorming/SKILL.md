@@ -4,13 +4,13 @@ description: "Use when starting any creative work such as creating features, bui
 metadata:
   source_category: "third_party"
   upstream_name: "brainstorming"
-  upstream_version: "v6.1.0"
+  upstream_version: "v6.2.0"
   adaptation_overlay: "adapters/codex/superpowers-plus/brainstorming"
   projection_plugin: "superpowers-plus"
   source_author: "obra"
   source_license: "MIT"
   source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/brainstorming/SKILL.md"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/brainstorming/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
   adaptation_note: "Repointed Superpowers path references to the `.agents/superpowers/` convention, added spec-readiness and epic-scope handoff gates, and normalized marketplace frontmatter metadata."
@@ -109,6 +109,7 @@ digraph brainstorming {
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
+- YAGNI ruthlessly - remove unnecessary features from every approach and design
 
 **Presenting the design:**
 
@@ -161,15 +162,6 @@ Wait for the user's response. If they request changes, make them and re-run the 
 
 - Invoke the writing-plans skill to create a detailed implementation plan
 - Do NOT invoke any other skill. writing-plans is the next step.
-
-## Key Principles
-
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design, get approval before moving on
-- **Be flexible** - Go back and clarify when something doesn't make sense
 
 ## Visual Companion
 

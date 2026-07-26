@@ -452,15 +452,39 @@ def _clean_orphan_skills(installed_plugins: list[dict[str, Any]], check_mode: bo
     return cleaned_any
 
 
-def _write_provenance(manifest_sha: str, synced_plugins: list[str], synced_skill_count: int) -> None:
-    """Write provenance data."""
+def _write_provenance(manifest_sha: str, installed_plugins: list[dict[str, Any]], synced_skill_count: int) -> None:
+    """Write provenance data.
+
+    Distinguishes marketplace-derived plugins from repo-local plugins so the
+    provenance file does not falsely attribute local plugins to the marketplace.
+    """
+    synced_plugins = [
+        plugin.get("name", "unknown") if isinstance(plugin.get("name"), str) else "unknown"
+        for plugin in installed_plugins
+    ]
+    local_plugins: list[dict[str, Any]] = []
+    for plugin in installed_plugins:
+        source = plugin.get("source", {}) if isinstance(plugin.get("source"), dict) else {}
+        if source.get("source") == "local":
+            name = plugin.get("name", "unknown")
+            if not isinstance(name, str):
+                name = "unknown"
+            local_plugins.append({
+                "name": name,
+                "path": source.get("path"),
+                "source": "local",
+            })
+
     provenance = {
         "manifestSha": manifest_sha,
         "syncedAt": datetime.now().isoformat(),
         "syncedPlugins": synced_plugins,
         "syncedSkills": synced_skill_count,
-        "source": "HarleyBartles/agent-asset-marketplace",
-        "sourcePath": "codex-marketplace/plugins",
+        "marketplace": {
+            "source": "HarleyBartles/agent-asset-marketplace",
+            "sourcePath": "codex-marketplace/plugins",
+        },
+        "localPlugins": local_plugins,
         "marketplaceFile": ".agents/plugins/marketplace.json"
     }
     with PROVENANCE_PATH.open("w", encoding="utf-8", newline="\n") as f:
@@ -532,6 +556,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Allow running in the shared checkout with a warning",
     )
+    parser.add_argument(
+        "--roll-marketplace-source",
+        action="store_true",
+        help="Roll the marketplace-source submodule to origin/main before syncing",
+    )
     return parser.parse_args(argv)
 
 
@@ -546,7 +575,7 @@ def main(argv: list[str] | None = None) -> int:
         print("error: refusing to modify a shared checkout; use --allow-shared-checkout to override", file=sys.stderr)
         return 1
 
-    if not args.check:
+    if not args.check and args.roll_marketplace_source:
         _roll_marketplace_source(ROOT)
 
     config = _load_marketplace_config()
@@ -617,7 +646,7 @@ def main(argv: list[str] | None = None) -> int:
     # Write provenance only when the installed skill tree changed. A forced
     # byte-identical refresh must remain a no-diff operation.
     if not args.check and changes_made:
-        _write_provenance(current_manifest_sha, installed_plugin_names, len(synced_skill_names))
+        _write_provenance(current_manifest_sha, installed_plugins, len(synced_skill_names))
         print(f"\nProvenance: {current_manifest_sha} -> {PROVENANCE_PATH}")
         _regenerate_index_mesh(ROOT)
 

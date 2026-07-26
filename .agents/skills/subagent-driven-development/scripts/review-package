@@ -4,18 +4,18 @@
 # call. Using the recorded per-task BASE (not HEAD~1) keeps multi-commit
 # tasks intact.
 #
-# Usage: review-package BASE HEAD PLAN_FILE [OUTFILE]
+# Usage: review-package PLAN_FILE BASE HEAD [OUTFILE]
 # Default OUTFILE: <repo-root>/.agents/superpowers/sdd/<plan-stem>/review-<base7>..<head7>.diff
 set -euo pipefail
 
 if [ $# -lt 3 ] || [ $# -gt 4 ]; then
-  echo "usage: review-package BASE HEAD PLAN_FILE [OUTFILE]" >&2
+  echo "usage: review-package PLAN_FILE BASE HEAD [OUTFILE]" >&2
   exit 2
 fi
 
-base=$1
-head=$2
-plan=$3
+plan=$1
+base=$2
+head=$3
 
 # Resolve relative plan paths against the current directory's repo root, then
 # determine the target repo/worktree root from the plan file's location.

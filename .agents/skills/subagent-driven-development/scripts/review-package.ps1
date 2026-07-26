@@ -1,13 +1,13 @@
 #!/usr/bin/env pwsh
 param(
   [Parameter(Position = 0, Mandatory = $true)]
-  [string]$Base,
+  [string]$PlanFile,
 
   [Parameter(Position = 1, Mandatory = $true)]
-  [string]$Head,
+  [string]$Base,
 
   [Parameter(Position = 2, Mandatory = $true)]
-  [string]$PlanFile,
+  [string]$Head,
 
   [Parameter(Position = 3)]
   [string]$OutFile = ''

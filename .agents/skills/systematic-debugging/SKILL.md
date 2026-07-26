@@ -4,13 +4,13 @@ description: "Use when encountering any bug, test failure, or unexpected behavio
 metadata:
   source_category: "third_party"
   upstream_name: "systematic-debugging"
-  upstream_version: "v6.1.0"
+  upstream_version: "v6.2.0"
   adaptation_overlay: "adapters/codex/superpowers-plus/systematic-debugging"
   projection_plugin: "superpowers-plus"
   source_author: "obra"
   source_license: "MIT"
   source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/systematic-debugging/SKILL.md"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/systematic-debugging/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
   adaptation_note: "Kept the bash helper as the primary surface, added a sibling PowerShell version, and normalized marketplace frontmatter metadata."
@@ -31,8 +31,6 @@ metadata:
 # Systematic Debugging
 
 ## Overview
-
-Random fixes waste time and create new bugs. Quick patches mask underlying issues.
 
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 
@@ -213,6 +211,7 @@ You MUST complete each phase before proceeding to the next.
    - Test passes now?
    - No other tests broken?
    - Issue actually resolved?
+   - Use the `superpowers:verification-before-completion` skill before claiming success
 
 4. **If Fix Doesn't Work**
    - STOP
@@ -307,15 +306,3 @@ These techniques are part of systematic debugging and available in this director
 - **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
 - **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
-
-**Related skills:**
-- **superpowers:test-driven-development** - For creating failing test case (Phase 4, Step 1)
-- **superpowers:verification-before-completion** - Verify fix worked before claiming success
-
-## Real-World Impact
-
-From debugging sessions:
-- Systematic approach: 15-30 minutes to fix
-- Random fixes approach: 2-3 hours of thrashing
-- First-time fix rate: 95% vs 40%
-- New bugs introduced: Near zero vs common

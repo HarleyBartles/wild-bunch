@@ -6,6 +6,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote, unquote
 
 
 def _stripped_env() -> dict[str, str]:
@@ -210,17 +211,20 @@ def should_index(path: Path) -> bool:
 
 
 def rel_link(target: Path, label: str | None = None) -> str:
-    rel = target.relative_to(ROOT).as_posix()
+    rel = quote(target.relative_to(ROOT).as_posix(), safe="/#")
     return f"[{label or target.name}]({rel})"
 
 
 def dir_link(current: Path, child: Path) -> str | None:
     skill_md = child / "SKILL.md"
     if skill_md.exists():
-        return f"[{child.name}]({skill_md.relative_to(ROOT).as_posix()})"
+        target = quote(skill_md.relative_to(ROOT).as_posix(), safe="/#")
+        return f"[{child.name}]({target})"
     if should_index(child):
-        return f"[{child.name}]({child.relative_to(ROOT).as_posix()}/INDEX.md)"
-    return f"[{child.name}]({child.relative_to(ROOT).as_posix()}/)"
+        target = quote(child.relative_to(ROOT).as_posix() + "/INDEX.md", safe="/#")
+        return f"[{child.name}]({target})"
+    target = quote(child.relative_to(ROOT).as_posix() + "/", safe="/#")
+    return f"[{child.name}]({target})"
 
 
 def render_index(path: Path) -> str:
@@ -279,6 +283,7 @@ def resolve_link_target(current: Path, target: str) -> Path | None:
     clean_target = target.split("#", 1)[0]
     if not clean_target:
         return None
+    clean_target = unquote(clean_target)
     candidates = [
         (current.parent / clean_target).resolve(),
         (ROOT / clean_target).resolve(),

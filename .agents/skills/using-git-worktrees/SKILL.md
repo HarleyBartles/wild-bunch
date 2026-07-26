@@ -4,13 +4,13 @@ description: "Use when starting feature work that needs isolation from current w
 metadata:
   source_category: "third_party"
   upstream_name: "using-git-worktrees"
-  upstream_version: "v6.1.0"
+  upstream_version: "v6.2.0"
   adaptation_overlay: "adapters/codex/superpowers-plus/using-git-worktrees"
   projection_plugin: "superpowers-plus"
   source_author: "obra"
   source_license: "MIT"
   source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/using-git-worktrees/SKILL.md"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/using-git-worktrees/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
   adaptation_note: "Bundled `new-worktree`/`remove-worktree` scripts place worktrees at the repo-declared canonical sibling-folder root and auto-run `refreshing-installed-skills` after creation; otherwise honored canonical worktree roots before falling back to project-local directories. Normalized marketplace frontmatter metadata."
@@ -193,32 +193,15 @@ Ready to implement <feature-name>
 | Bundled `remove-worktree` script | Use it to remove a worktree and deinit submodules |
 | Skills need refresh after creation | `new-worktree` auto-runs `refreshing-installed-skills` |
 
-## Common Mistakes
+## Common Rationalizations
 
-### Fighting the harness
-
-- **Problem:** Using `git worktree add` when the platform already provides isolation
-- **Fix:** Step 0 detects existing isolation. Step 1a defers to native tools.
-
-### Skipping detection
-
-- **Problem:** Creating a nested worktree inside an existing one
-- **Fix:** Always run Step 0 before creating anything
-
-### Skipping ignore verification
-
-- **Problem:** Worktree contents get tracked, pollute git status
-- **Fix:** Always use `git check-ignore` before creating project-local worktree
-
-### Assuming directory location
-
-- **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: explicit instructions > existing project-local directory > default
-
-### Proceeding with failing tests
-
-- **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
+| Excuse | Reality |
+|--------|---------|
+| "I'm obviously not in a worktree — no need to check" | Run Step 0. Harness-created isolation and submodules both fool eyeballing; the detection commands settle it. |
+| "`git worktree add` is quicker than hunting for a native tool" | A native tool (e.g. `EnterWorktree`) owns placement, branching, and cleanup. Bypassing it is the #1 mistake — it creates phantom state your harness can't see or manage. |
+| "The worktree directory is surely ignored already" | Run `git check-ignore`. An unignored worktree directory commits the whole tree into the repo. |
+| "Any directory name works" | Explicit instructions beat an existing project-local directory, which beats the `.worktrees/` default. |
+| "The workspace is fresh — baseline tests can wait" | A dirty baseline makes every later failure ambiguous. Run the tests now; proceeding past failures is your human partner's call. |
 
 ## Remove a Worktree
 
@@ -230,7 +213,7 @@ When a feature branch is complete, remove the isolated worktree to avoid stale c
    # or on Windows:
    .agents/skills/using-git-worktrees/scripts/remove-worktree.ps1 <branch-name>
    ```
-   This de-initializes any submodules and removes the worktree directory.
+   If the script reports that the directory is locked, **stop immediately**. The git worktree is already deregistered; the locked on-disk folder can be deleted later once no process holds it.
 
 2. If no bundled script is available, use `git worktree remove` directly:
    ```bash
@@ -242,18 +225,5 @@ Never remove the main repository checkout with this command.
 
 ## Red Flags
 
-**Never:**
-- Create a worktree when Step 0 detects existing isolation
-- Use `git worktree add` when you have a native worktree tool (e.g., `EnterWorktree`). This is the #1 mistake — if you have it, use it.
-- Skip Step 1a by jumping straight to Step 1b's git commands
-- Create worktree without verifying it's ignored (project-local)
-- Skip baseline test verification
-- Proceed with failing tests without asking
-
-**Always:**
-- Run Step 0 detection first
-- Prefer native tools over git fallback
-- Follow directory priority: explicit instructions > existing project-local directory > default
-- Verify directory is ignored for project-local
-- Auto-detect and run project setup
-- Verify clean test baseline
+Never run `rm -rf`, `rmdir /s /q`, or `Remove-Item -Recurse -Force` on a worktree directory that `remove-worktree` failed to delete.
+A locked directory is usually another process's current working directory or an open file handle; force-deleting it can delete the wrong directory or other repositories.

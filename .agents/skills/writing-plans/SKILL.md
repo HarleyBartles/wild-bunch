@@ -4,13 +4,13 @@ description: "Use when you have a spec or requirements for a multi-step task, be
 metadata:
   source_category: "third_party"
   upstream_name: "writing-plans"
-  upstream_version: "v6.1.0"
+  upstream_version: "v6.2.0"
   adaptation_overlay: "adapters/codex/superpowers-plus/writing-plans"
   projection_plugin: "superpowers-plus"
   source_author: "obra"
   source_license: "MIT"
   source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/writing-plans/SKILL.md"
+  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/writing-plans/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
   adaptation_note: "Adjusted plan-path guidance to the repo-local `.agents/superpowers/plans/` convention for Codex projections and normalized marketplace frontmatter metadata."
@@ -159,12 +159,6 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - "Similar to Task N" (repeat the code — the engineer may be reading tasks out of order)
 - Steps that describe what to do without showing how (code blocks required for code steps)
 - References to types, functions, or methods not defined in any task
-
-## Remember
-- Exact file paths always
-- Complete code in every step — if a step changes code, show the code
-- Exact commands with expected output
-- DRY, YAGNI, TDD, frequent commits
 
 ## Self-Review
 

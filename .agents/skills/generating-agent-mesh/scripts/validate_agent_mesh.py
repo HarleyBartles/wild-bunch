@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
@@ -130,7 +131,7 @@ def _link_candidates(current_file: Path, raw_target: str, repo_root: Path) -> li
     clean = raw_target.split("#", 1)[0]
     if not clean:
         return []
-    clean = clean.lstrip("/")
+    clean = unquote(clean).lstrip("/")
     candidates: list[Path] = []
     seen: set[Path] = set()
     for base in (current_file.parent, repo_root):
