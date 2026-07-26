@@ -46,6 +46,15 @@ def _is_repo_local_skill_name(skill_name: str) -> bool:
     return skill_name.startswith(REPO_LOCAL_SKILL_PREFIX)
 
 
+def _is_ignored_artifact(path: Path) -> bool:
+    """Return True for runtime artifacts that must never affect sync or hashes."""
+    if "__pycache__" in path.parts:
+        return True
+    if path.suffix == ".pyc":
+        return True
+    return False
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     """Load and parse a JSON file."""
     if not path.exists():
@@ -204,8 +213,8 @@ def _files_identical(dir1: Path, dir2: Path) -> bool:
         return False
     
     # Get all files in both directories
-    files1 = {f.relative_to(dir1) for f in dir1.rglob("*") if f.is_file()}
-    files2 = {f.relative_to(dir2) for f in dir2.rglob("*") if f.is_file()}
+    files1 = {f.relative_to(dir1) for f in dir1.rglob("*") if f.is_file() and not _is_ignored_artifact(f)}
+    files2 = {f.relative_to(dir2) for f in dir2.rglob("*") if f.is_file() and not _is_ignored_artifact(f)}
     
     if files1 != files2:
         return False
@@ -230,7 +239,7 @@ def _skill_directory_hash(skill_dir: Path) -> str:
     """Return a deterministic content hash for one generated skill directory."""
     digest = hashlib.sha256()
     for file_path in sorted(
-        (path for path in skill_dir.rglob("*") if path.is_file()),
+        (path for path in skill_dir.rglob("*") if path.is_file() and not _is_ignored_artifact(path)),
         key=lambda path: path.relative_to(skill_dir).as_posix(),
     ):
         digest.update(file_path.relative_to(skill_dir).as_posix().encode("utf-8"))
@@ -250,7 +259,7 @@ def _copy_skill_directory(source: Path, dest: Path) -> None:
     if dest.exists():
         shutil.rmtree(dest)
     
-    shutil.copytree(source, dest)
+    shutil.copytree(source, dest, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 
 def _sync_skills(

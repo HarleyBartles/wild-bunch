@@ -19,6 +19,15 @@ SUBMODULE_PATH = ".agents/plugins/marketplace-source"
 REPO_LOCAL_SKILL_PREFIX = "wild-bunch-"
 
 
+def _is_ignored_artifact(path: Path) -> bool:
+    """Return True for runtime artifacts that must never affect sync or hashes."""
+    if "__pycache__" in path.parts:
+        return True
+    if path.suffix == ".pyc":
+        return True
+    return False
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     """Load a JSON object from disk."""
     with path.open(encoding="utf-8") as source:
@@ -154,7 +163,7 @@ def _skill_directory_hash(skill_dir: Path) -> str:
     """Return a deterministic content hash for one generated skill directory."""
     digest = hashlib.sha256()
     for file_path in sorted(
-        (path for path in skill_dir.rglob("*") if path.is_file()),
+        (path for path in skill_dir.rglob("*") if path.is_file() and not _is_ignored_artifact(path)),
         key=lambda path: path.relative_to(skill_dir).as_posix(),
     ):
         digest.update(file_path.relative_to(skill_dir).as_posix().encode("utf-8"))
