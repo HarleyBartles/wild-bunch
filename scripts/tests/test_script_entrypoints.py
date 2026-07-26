@@ -9,9 +9,7 @@ SCRIPTS_DIR = Path(__file__).parent.parent
 SCRIPT_BASES = [
     "ci-preflight",
     "dev-servers",
-    "generate_index_mesh",
     "image_asset_pipeline",
-    "install_agent_skills",
     "postgres-dev",
 ]
 

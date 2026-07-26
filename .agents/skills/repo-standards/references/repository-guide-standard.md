@@ -31,6 +31,23 @@ Every repo using this standard must have:
 - `planning-guide.md`
 - `implementing-guide.md`
 - `code-review-guide.md`
+- `pr-guide.md`
+
+## Pull request guide policy
+
+Every repo using this standard must define a PR workflow in `.agents/guides/pr-guide.md` that includes the following policy:
+
+- Open pull requests as **draft**.
+- Keep a PR in draft while iterating, running local validation, and performing self-review.
+- Only flip a PR out of draft when:
+  - self-review is complete,
+  - the relevant validation commands pass,
+  - the branch is ready for review or merge.
+- The repo's CI must not run on draft pull requests. For GitHub Actions, gate `pull_request` workflows so they run only when `github.event.pull_request.draft == false` or on `ready_for_review` activity.
+- After flipping a PR to ready, monitor CI and address failures before requesting human review.
+- The PR body must include publication proof per the repo's `AGENTS.md`.
+
+This policy reduces wasted CI minutes while a branch is still being iterated on and ensures CI only runs on PRs the author believes are ready.
 
 ## Allowed additional guides
 
@@ -39,7 +56,6 @@ Additional `<topic>-guide.md` files may live in `.agents/guides/`. They must be 
 - `security-guide.md`
 - `testing-guide.md`
 - `contributing-guide.md`
-- `pr-guide.md`
 - `code-style-guide.md`
 - `marketplace-generation-guide.md`
 - `skill-authoring-guide.md`

@@ -89,6 +89,9 @@
       "category": "Productivity"
     }
   ],
+  "repo": {
+    "local_skill_prefixes": ["wild-bunch-"]
+  },
   "notes": [
     "Repo-local Codex plugin marketplace for HarleyBartles/wild-bunch.",
     "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace.",

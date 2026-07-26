@@ -307,7 +307,7 @@ def _run_extra_hook(repo_root: Path, changed_from: str | None, check: bool) -> l
         for line in result.stdout.splitlines() + result.stderr.splitlines():
             line = line.strip()
             if line and not line.startswith("DRIFT:") and not line.startswith("drift:"):
-                findings.append(f"extra hook: {line}")
+                findings.append(f"validate_agent_mesh_extra hook: {line}")
     return findings
 
 
