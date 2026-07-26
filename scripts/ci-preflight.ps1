@@ -55,7 +55,9 @@ $validate = Find-SkillScript 'generating-agent-mesh' 'validate-agent-mesh'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $refresh = Find-SkillScript 'refreshing-installed-skills' 'refresh-installed-skills'
-& $refresh @commonArgs
+$refreshArgs = @()
+if ($Check) { $refreshArgs += '--check' } else { $refreshArgs += '--allow-shared-checkout' }
+& $refresh @refreshArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $extra = Join-Path $ScriptDir 'ci-preflight-extra.ps1'

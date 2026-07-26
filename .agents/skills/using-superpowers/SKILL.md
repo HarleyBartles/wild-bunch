@@ -13,7 +13,7 @@ metadata:
   source_path: "sources/third_party/superpowers/obra-superpowers/v6.1.0/skills/using-superpowers/SKILL.md"
   content_mode: "adapted"
   adapted_author: "Harley Bartles"
-  adaptation_note: "Trimmed to core Superpowers plus environment inspection only and normalized marketplace frontmatter metadata."
+  adaptation_note: "Trimmed to core Superpowers plus environment inspection, handoff-gates, and working-with-epics routing, and normalized marketplace frontmatter metadata."
   use_when:
     - "Use when starting any conversation to find and invoke the right skill."
     - "Use when unsure whether a skill applies to the current task."
@@ -22,8 +22,8 @@ metadata:
     - "Do not use when dispatched as a subagent with a specific task."
     - "Do not use when user instructions explicitly override skill selection."
     - "Do not use as a substitute for reading the chosen skill."
-  use_before: [brainstorming, systematic-debugging, writing-plans, executing-plans, subagent-driven-development, using-git-worktrees, test-driven-development, verification-before-completion, finishing-a-development-branch, requesting-code-review]
-  related_skills: [brainstorming, systematic-debugging, writing-plans, executing-plans, subagent-driven-development, using-git-worktrees, test-driven-development, verification-before-completion, finishing-a-development-branch, requesting-code-review, receiving-code-review, writing-skills]
+  use_before: [brainstorming, systematic-debugging, writing-plans, executing-plans, subagent-driven-development, using-git-worktrees, test-driven-development, verification-before-completion, finishing-a-development-branch, requesting-code-review, handoff-gates, working-with-epics]
+  related_skills: [brainstorming, systematic-debugging, writing-plans, executing-plans, subagent-driven-development, using-git-worktrees, test-driven-development, verification-before-completion, finishing-a-development-branch, requesting-code-review, receiving-code-review, writing-skills, handoff-gates, working-with-epics]
 ---
 
 <SUBAGENT-STOP>
@@ -83,6 +83,8 @@ If your harness appears here, read its reference file for special instructions:
 ## Asset Marketplace Routing
 
 - Environment inspection before action when constraints matter: use `inspecting-the-environment`.
+- Stage-boundary artifact (spec, plan, completed work) needs a readiness check: use `handoff-gates`.
+- Goal is too large for one writing-plans plan: use `working-with-epics` to create a sequenced roadmap.
 
 ## User Instructions
 

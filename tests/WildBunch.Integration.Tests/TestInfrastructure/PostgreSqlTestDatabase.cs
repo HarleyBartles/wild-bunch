@@ -58,6 +58,10 @@ public sealed class PostgreSqlTestDatabase : IDisposable
 
         _disposed = true;
 
+        // Close pooled connections to the test database so DROP DATABASE does not
+        // block on idle connections from the shared Npgsql pool.
+        NpgsqlConnection.ClearAllPools();
+
         var builder = new NpgsqlConnectionStringBuilder(_adminConnectionString);
         builder.Database = "postgres";
         var adminConnectionString = builder.ConnectionString;

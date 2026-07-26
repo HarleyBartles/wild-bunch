@@ -61,6 +61,7 @@ VALIDATE_ARGS=()
 
 REFRESH_ARGS=()
 [ -n "$CHECK" ] && REFRESH_ARGS+=("--check")
+[ -z "$CHECK" ] && REFRESH_ARGS+=("--allow-shared-checkout")
 "$REFRESH" "${REFRESH_ARGS[@]}"
 
 EXTRA="$SCRIPT_DIR/ci-preflight-extra.sh"
