@@ -3,7 +3,7 @@ name: event-sourcing
 description: Use when the system needs an audit log, temporal queries, or event-driven state reconstruction. Do not use when a simple relational model is enough or when strong immediate consistency is required.
 metadata:
   source-id: event-sourcing
-  source-path: sources/first_party/skills/event-sourcing/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/event-sourcing/SKILL.md
   provenance-name: Event Sourcing first-party skill
   source-category: first_party
   status: active

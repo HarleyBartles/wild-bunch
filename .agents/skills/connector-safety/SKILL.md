@@ -8,7 +8,7 @@ description: Use when use this skill to keep connector and tool-side-effect work
   up the connector discovery chain.
 metadata:
   source-id: connector-safety
-  source-path: sources/first_party/skills/connector-safety/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/connector-safety/SKILL.md
   provenance-name: Connector Safety first-party skill
   source-category: first_party
   status: active

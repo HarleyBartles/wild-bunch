@@ -6,7 +6,7 @@ description: Use when a pre-action risk gate is needed before a mutation, dispat
   docs based on the action and project context.
 metadata:
   source-id: risk-gates
-  source-path: sources/first_party/skills/risk-gates/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/risk-gates/SKILL.md
   provenance-name: Risk Gates first-party skill
   source-category: first_party
   status: active
@@ -106,6 +106,8 @@ Rooms-specific gate profiles (canon pressure, ambiguity preservation, analogy va
 5. Resolve forced decisions internally when policy, source authority, current scope, or user instruction leaves only one legitimate route.
 6. Surface only unresolved legitimate choices.
 7. Return green only when the next action has a lawful route, required authority, sufficient evidence, and the correct output surface.
+
+If a single missing fact blocks the next step, invoke `/asking-clarifying-questions` before guessing.
 
 ## Boundaries
 

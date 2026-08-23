@@ -20,7 +20,13 @@ main-checkout = parent(common-git)
 repository-name = basename(main-checkout)
 external-worktree-root = parent(main-checkout) / "_agent-worktrees" / repository-name
 external-scratch-root = parent(main-checkout) / "_agent-scratch" / repository-name / branch-name
+plan-scoped-scratch = external-scratch-root / <plan-basename>
 ~~~
+
+The top level of `_agent-scratch` is namespaced by `repository-name` so that
+multiple repositories cannot mix their scratch. Each repository folder then
+contains branch-scoped subfolders, and plan-scoped scratch lives inside the
+branch folder.
 
 Run the superproject command first from the actual start path. Any non-empty
 result is a submodule: reject it unconditionally. Do not allow a shared-checkout

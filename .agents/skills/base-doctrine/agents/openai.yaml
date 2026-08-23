@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: base-doctrine
   source_category: first_party
-  plugin: repo-worker-pack
-  projection_plugin: repo-worker-pack
 interface:
   display_name: Base Doctrine
   short_description: Cross-runtime doctrine contracts for prompt limits, tool honesty, evidence posture, doctrine routing, and output-shape authority.

@@ -17,7 +17,7 @@ Use this reference when shaping a worker-ready Linear packet for repo or code ex
 ## Route-state block
 
 - Include a compact route-state block in the issue body or an attached document for non-trivial worker implementation issues.
-- The route-state block contains workflow phase markers (design_needed, planning_needed, etc.) and is used by work-mode-router to classify the current phase.
+- The route-state block contains workflow phase markers (design_needed, planning_needed, etc.).
 - Do not put the full implementation plan, validation matrix, or dense evidence dump into the route-state block.
 - Do not use the route-state block as a readiness state or second plan.
 

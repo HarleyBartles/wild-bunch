@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: unslop-profiles
   source_category: first_party
-  plugin: repo-worker-pack
-  projection_plugin: repo-worker-pack
 interface:
   display_name: Unslop Profiles
   short_description: Use when a software development workflow would benefit from anti-slop guidance.

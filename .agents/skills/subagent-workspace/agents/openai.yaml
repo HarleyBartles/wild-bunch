@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: subagent-workspace
+  source_category: first_party
+interface:
+  display_name: Subagent Workspace
+  short_description: Resolve the off-repo scratch workspace for subagent tasks and short-lived artifacts.
+  default_prompt: Use /subagent-workspace when resolving the off-repo scratch workspace for subagent tasks and placing short-lived subagent inputs and outputs.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: false

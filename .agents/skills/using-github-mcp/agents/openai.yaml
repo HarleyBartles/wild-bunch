@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: using-github-mcp
+  source_category: first_party
+interface:
+  display_name: Using GitHub MCP
+  short_description: Pick the right GitHub or Git surface from the task intent.
+  default_prompt: Use /using-github-mcp when choosing the right GitHub or Git surface for a task, picking between the GitHub MCP server, gh CLI, REST API, GraphQL, or plain git commands.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

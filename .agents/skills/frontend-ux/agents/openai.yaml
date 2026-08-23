@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: frontend-ux
   source_category: first_party
-  plugin: frontend-pack
-  projection_plugin: frontend-pack
 interface:
   display_name: Frontend UX
   short_description: Use when designing, reviewing, or debugging frontend user interfaces.

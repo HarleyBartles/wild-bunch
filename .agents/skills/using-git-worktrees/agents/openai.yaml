@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: using-git-worktrees
+  source_category: first_party
+interface:
+  display_name: Using Git Worktrees
+  short_description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools or git worktree fallback
+  default_prompt: Use /using-git-worktrees to use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools or git worktree fallback.
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

@@ -34,7 +34,7 @@ cd wild-bunch
 
 This creates or reuses the persistent dev database on `localhost:5434` and the `wildbunch_dev` app database. It is idempotent: re-run it safely any time you are unsure.
 
-**First-run failure and status check:** on a fresh checkout the command can fail with `Missing PostgreSQL binary: .\local\postgresql16\bin\initdb.exe`. That means the PostgreSQL tooling root is missing. Download PostgreSQL 16.14 for Windows, extract it to `.\local\postgresql16`, then re-run `ensure`. After that, you can check the cluster state with `.\scripts\postgres-dev.ps1 status`.
+**First-run failure and status check:** on a fresh checkout the command can fail with `Missing PostgreSQL binary: .\.local\postgresql16\bin\initdb.exe`. That means the PostgreSQL tooling root is missing. Download PostgreSQL 16.14 for Windows, extract it to `.\.local\postgresql16`, then re-run `ensure`. After that, you can check the cluster state with `.\scripts\postgres-dev.ps1 status`.
 
 ### 4. Install dependencies
 
@@ -68,7 +68,7 @@ Use `Ctrl+C` in each terminal. The PostgreSQL service is shared and safe to leav
 
 ### Shortcuts and validation
 
-If you prefer one command to start both API and frontend, run `.\scripts\dev-servers.ps1 ensure`. For the full build/test/EF validation lane and the PostgreScript-backed CI path, see `.agents/docs/validation-policy.md`, `docs/local-postgresql.md`, and `scripts/README.md`.
+If you prefer one command to start both API and frontend, run `.\scripts\dev-servers.ps1 ensure`. For the full build/test/EF validation lane and the PostgreSQL-backed CI path, see `.agents/docs/validation-policy.md`, `docs/local-postgresql.md`, and `scripts/README.md`.
 
 ## License
 

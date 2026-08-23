@@ -35,9 +35,13 @@ Subagent (general-purpose):
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
     3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    4. If the task is a blocking/important bug fix or non-trivial behavior change, follow test-driven-development:
+       - RED: write or identify a failing test that reproduces the bug and run it. Capture the failing output in `review-log-implementer-report.md`.
+       - GREEN: implement the minimal fix, run the same test until it passes.
+       - REFACTOR: clean up only after green. Do not add behavior.
+    5. Commit your work once the targeted tests and the consumer's preflight pass
+    6. Self-review (see below)
+    7. Report back
 
     Work from: [directory]
 
@@ -102,6 +106,12 @@ Subagent (general-purpose):
     - Are tests comprehensive?
     - Is the test output pristine (no stray warnings or noise)?
 
+    **Lens-profile pre-review (required):**
+    - Read the relevant `reviewer-*.md` profiles in the Devin Desktop agents search path `## Checklist` profiles for the surfaces you touched (e.g. `reviewer-skills` for `SKILL.md` and reference files, `reviewer-marketplace` for scaffolders and generated surfaces, `reviewer-security` for secrets/PII, `reviewer-strong` for whole-branch design).
+    - Run each checklist mechanically against your diff.
+    - Fix any predictable findings before reporting back. Do not produce code you expect a reviewer to catch and fix.
+    - This pre-review is not a substitute for the `iterative-review` lens/strong dispatch on the final PR.
+
     If you find issues during self-review, fix them now before reporting.
 
     ## After Review Findings
@@ -118,9 +128,10 @@ Subagent (general-purpose):
     Write your full report to [REPORT_FILE]:
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
-    - **TDD Evidence** (if TDD was required for this task):
-      - RED: command run, relevant failing output before implementation, and why the failure was expected
-      - GREEN: command run and relevant passing output after implementation
+    - **TDD Evidence** (required when test-driven-development was used, otherwise note "not required"):
+      - RED: command, failing output, and why the failure was expected
+      - GREEN: command, passing output, and the minimal change that made it pass
+      - The test file path and the production file path changed
     - Files changed
     - Self-review findings (if any)
     - Any issues or concerns

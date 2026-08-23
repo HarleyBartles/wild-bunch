@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: event-sourcing
   source_category: first_party
-  plugin: architecture-pack
-  projection_plugin: architecture-pack
 interface:
   display_name: Event Sourcing
   short_description: Use when the system needs an audit log, temporal queries, or event-driven state reconstruction. Do not use when a simple relational model is enough or when strong immediate consistency is required.

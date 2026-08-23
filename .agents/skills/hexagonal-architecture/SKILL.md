@@ -5,7 +5,7 @@ description: Use when isolating domain logic from frameworks, UI, and databases 
   framework wrapper.
 metadata:
   source-id: hexagonal-architecture
-  source-path: sources/first_party/skills/hexagonal-architecture/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/hexagonal-architecture/SKILL.md
   provenance-name: Hexagonal Architecture first-party skill
   source-category: first_party
   status: active

@@ -3,7 +3,7 @@ name: cqrs
 description: Use when separating read and write models in a distributed or high-scale system, or when event sourcing is under consideration. Do not use when simple CRUD or single-model consistency is sufficient.
 metadata:
   source-id: cqrs
-  source-path: sources/first_party/skills/cqrs/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/cqrs/SKILL.md
   provenance-name: Cqrs first-party skill
   source-category: first_party
   status: active

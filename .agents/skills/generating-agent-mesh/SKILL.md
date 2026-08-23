@@ -3,7 +3,7 @@ name: generating-agent-mesh
 description: Use when the repo-wide INDEX.md mesh or agent-mesh validation is stale, or as a CI/pre-commit gate.
 metadata:
   source-id: generating-agent-mesh
-  source-path: sources/first_party/skills/generating-agent-mesh/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/generating-agent-mesh/SKILL.md
   provenance-name: Generating Agent Mesh first-party skill
   source-category: first_party
   status: active
@@ -33,7 +33,7 @@ Run the repository's index mesh generator and agent mesh validator.
 
 ```bash
 # Generate or check the INDEX.md mesh
-py -3 .agents/skills/generating-agent-mesh/scripts/generate_index_mesh.py
+py -3 .agents/skills/generating-agent-mesh/scripts/generate_index_mesh.py --apply
 py -3 .agents/skills/generating-agent-mesh/scripts/generate_index_mesh.py --check
 
 # Validate the agent mesh (local links + doctrine routing)
@@ -43,7 +43,7 @@ py -3 .agents/skills/generating-agent-mesh/scripts/validate_agent_mesh.py --chec
 
 The wrapper commands `generate-index-mesh` and `validate-agent-mesh` in the same directory call these bundled Python cores and are the form used by `repo-standards` preflight.
 
-`generate-index-mesh` writes the repo-wide `INDEX.md` mesh and `repo-index/repo-index.json` from `git ls-files`; `validate-agent-mesh` checks local markdown links and doctrine routing. It does not commit; the caller decides whether to commit regenerated or validated state.
+`generate-index-mesh` writes the repo-wide `INDEX.md` mesh from `git ls-files` when passed `--apply`; without `--apply` it defaults to `--check`. `validate-agent-mesh` checks local markdown links and doctrine routing. It does not commit; the caller decides whether to commit regenerated or validated state. When running from a linked worktree, add `--apply --allow-shared-checkout`.
 
 ## Repo-specific generation extensions
 

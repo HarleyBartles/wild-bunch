@@ -15,7 +15,7 @@ Before cleanup, deletion, archival, deprecation, generated-output pruning, sourc
 - Keeping obsolete files in the live tree `for provenance` when provenance belongs in Git history, source maps, attribution files, release artifacts, or cold store
 - Tombstone theatre: leaving empty wrappers or deprecated files and calling the surface cleaned
 - Replicating version control in `main` through `old`, `backup`, `archive`, `deprecated`, `final`, or `do-not-use` copies
-- Deletion laundering: deleting/moving files without checking indexes, manifests, references, generated projections, docs, package registries, or sentinels
+- Deletion laundering: deleting/moving files without checking indexes, manifests, references, generated bundles, docs, package registries, or sentinels
 - Anti-bloat as a deletion-first hammer that risks protected evidence, publication proof, receipts, active doctrine, or source-law material
 - Fake custody surfaces that have no owner, retention rule, removal condition, or discoverability purpose
 

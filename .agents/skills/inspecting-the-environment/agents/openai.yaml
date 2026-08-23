@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: inspecting-the-environment
   source_category: first_party
-  plugin: superpowers-plus
-  projection_plugin: superpowers-plus
 interface:
   display_name: Inspecting the Environment
   short_description: Discover environment constraints that can change the next action before proceeding.

@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: connector-safety
   source_category: first_party
-  plugin: repo-worker-pack
-  projection_plugin: repo-worker-pack
 interface:
   display_name: Connector Safety
   short_description: Keep connector writes safe, narrow, auditable, and verified.

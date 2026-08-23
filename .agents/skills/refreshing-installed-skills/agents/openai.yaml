@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: refreshing-installed-skills
   source_category: first_party
-  plugin: repo-worker-pack
-  projection_plugin: repo-worker-pack
 interface:
   display_name: Refreshing Installed Skills
   short_description: Use when a worktree is initialized or .agents/skills/ is stale from the local or github plugin source. Supports a repo-specific scripts/validate_local_skills_extra hook and tracks marketplace-source provenance.

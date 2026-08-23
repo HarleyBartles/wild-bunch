@@ -3,7 +3,7 @@ name: event-driven-systems
 description: Use when designing, reviewing, or operating event-driven systems with asynchronous communication.
 metadata:
   source-id: event-driven-systems
-  source-path: sources/first_party/skills/event-driven-systems/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/event-driven-systems/SKILL.md
   provenance-name: Event Driven Systems first-party skill
   source-category: first_party
   status: active

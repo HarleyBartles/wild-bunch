@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: using-discord-mcp
+  source_category: first_party
+interface:
+  display_name: Using Discord MCP
+  short_description: Pick the right Discord MCP tool and stay inside the bot's current permissions.
+  default_prompt: Use /using-discord-mcp when working with the Discord MCP server. Prefer references/authed-tool-map.md for read actions; ask the human partner before any write/moderation tool.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

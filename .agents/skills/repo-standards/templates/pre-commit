@@ -1,4 +1,49 @@
 #!/usr/bin/env bash
+# The pre-commit hook applies and verifies the repo's mechanical surfaces.
+# It is installed by the repo-standards skill into .git/hooks/pre-commit.
 set -euo pipefail
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-exec "$REPO_ROOT/scripts/ci-preflight.sh" --check
+cd "$REPO_ROOT"
+
+# Capture the working tree state before the build so we can detect any
+# generated files the staging allow-list does not cover.
+AFTER_STATUS=""
+BEFORE_STATUS=$(mktemp)
+trap 'rm -f "$BEFORE_STATUS" "$AFTER_STATUS"' EXIT
+git status --porcelain --untracked-files=all > "$BEFORE_STATUS"
+
+if command -v py >/dev/null 2>&1; then
+  py -3 tools/run.py ci --apply --allow-shared-checkout
+elif command -v python3 >/dev/null 2>&1; then
+  python3 tools/run.py ci --apply --allow-shared-checkout
+elif command -v python >/dev/null 2>&1; then
+  python tools/run.py ci --apply --allow-shared-checkout
+else
+  echo "py, python3, or python not found" >&2
+  exit 1
+fi
+
+# Stage the generated directories that tools/run.py ci --apply owns.
+git add -A -- .agents/skills/ 2>/dev/null || true
+
+# Stage canonical generated surfaces that may appear as untracked files
+# in new directories. Glob pathspecs avoid scanning the working tree.
+git add -- ':(glob)**/INDEX.md' 2>/dev/null || true
+git add -- ':(glob)**/INDEX.json' 2>/dev/null || true
+git add -- ':(glob)**/.provenance.json' 2>/dev/null || true
+git add -- .agents/plugins/marketplace.json 2>/dev/null || true
+git add -- codex-marketplace/plugin-roots.json 2>/dev/null || true
+git add -- codex-marketplace/manifest.json 2>/dev/null || true
+
+# Fail the commit if the build produced any unstaged or untracked changes
+# outside the allow-list. This prevents a clean local run from silently
+# producing a commit that fails ci --check in CI.
+AFTER_STATUS=$(mktemp)
+git status --porcelain --untracked-files=all > "$AFTER_STATUS"
+UNSTAGED=$(comm -13 <(sort "$BEFORE_STATUS") <(sort "$AFTER_STATUS") | awk 'substr($0,2,1) != " "')
+if [ -n "$UNSTAGED" ]; then
+  echo "pre-commit: build produced unstaged/tracked or untracked changes not in the staging allow-list:" >&2
+  echo "$UNSTAGED" >&2
+  exit 1
+fi

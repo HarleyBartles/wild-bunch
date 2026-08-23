@@ -3,12 +3,12 @@ name: refreshing-installed-skills
 description: Use when a worktree is initialized or .agents/skills/ is stale from the plugin source.
 metadata:
   source-id: refreshing-installed-skills
-  source-path: sources/first_party/skills/refreshing-installed-skills/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/refreshing-installed-skills/SKILL.md
   provenance-name: Refreshing Installed Skills first-party skill
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Install or refresh .agents/skills/ from the plugin source and regenerate the agent mesh.
+  scope: Install or refresh .agents/skills/ from the plugin source.
   use_when:
   - Use when creating a new worktree.
   - Use after updating the marketplace-source submodule.
@@ -23,7 +23,7 @@ license: MIT
 
 # Refreshing Installed Skills
 
-Install or refresh `.agents/skills/` from the plugin source, then regenerate the agent mesh.
+Install or refresh `.agents/skills/` from the plugin source.
 
 ## When to Use
 
@@ -34,11 +34,11 @@ Install or refresh `.agents/skills/` from the plugin source, then regenerate the
 ## Usage
 
 ```bash
-py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py
+py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --apply
 py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check
 ```
 
-This skill runs the bundled `refresh_installed_skills.py` core, which installs/refreshes `.agents/skills/` from the plugins declared in `.agents/plugins/marketplace.json`, rolls the optional `marketplace-source` submodule to `origin/main`, and regenerates the agent mesh. If changes were made, it commits them with the message `chore: refresh installed skills and regenerate agent mesh`.
+This skill runs the bundled `refresh_installed_skills.py` core, which installs/refreshes `.agents/skills/` from the plugins declared in `.agents/plugins/marketplace.json`, and rolls the optional `marketplace-source` submodule to `origin/main`. It defaults to `--check` mode; pass `--apply` to write files. When running from a linked worktree, add `--apply --allow-shared-checkout`.
 
 ## Plugin source types
 
@@ -66,4 +66,24 @@ In `--check` mode the script must report errors and exit non-zero if invalid. In
 
 ## Provenance
 
-`.agents/skills/.provenance.json` records the marketplace-source version that was installed. When the `marketplace-source` submodule is present, `manifestSha` tracks the submodule HEAD; otherwise it falls back to the consumer repo HEAD. `syncedPlugins` lists every plugin configured as `INSTALLED_BY_DEFAULT`, in order, regardless of whether its skills needed copying on this run.
+`.agents/skills/.provenance.json` records the marketplace-source version that was installed. When the `marketplace-source` submodule is present, `manifestSha` tracks the submodule HEAD; otherwise it falls back to a SHA-256 content hash of the effective marketplace configuration (`.agents/plugins/marketplace.json`). `syncedPlugins` lists every plugin configured as `INSTALLED_BY_DEFAULT`, in order, regardless of whether its skills needed copying on this run.
+
+It also records:
+
+- `localSkills`: the names of any skills installed from the consumer repo's local skill source (declared by `repo.local_skill_prefixes`).
+- `localPlugins`: the names of any plugins whose skills were installed from a `local` source.
+- `marketplace`: the source repository and source path used for the marketplace.
+- `marketplaceFile`: the path to `.agents/plugins/marketplace.json`.
+- `syncedSkills`: the count of skills copied from marketplace plugins.
+- `vendorProfiles`: an array of vendor subagent profiles installed from pack `assets/profiles/*.md`. Each entry records `plugin` (the pack name), `sourcePath` (the pack `assets/profiles` directory), and `profiles` (the list of installed `.md` profile file names).
+- `syncedAt`: the timestamp of the last refresh.
+
+## Vendor subagent profiles
+
+For each installed plugin, the core looks for `assets/profiles/*.md` inside the plugin root and delegates the actual copy and orphan removal to `repo-standards/scripts/deploy_vendor_profiles.py`. `refreshing-installed-skills` records the `vendorProfiles` provenance array (which plugin owns which profiles, source path, and file names), while `repo-standards` owns the one-shot deployment.
+
+Profiles are copied into the consumer's agent search path at `.agents/agents/<profile>.md` only when that file does not already exist. Existing files are never overwritten, so a repo that already has `reviewer.md`, `implementer.md`, etc. keeps its own copy. Orphan vendor profiles are removed in the same step.
+
+This skill does not create, write, or remove `.devin/agents/`. That directory is for repo-local user-managed overrides and is outside the marketplace installer's scope.
+
+Provenance is now rewritten when the installed plugin list, the local skill inventory, or the marketplace metadata changes, even if no marketplace skill files were copied. Because of this, `--check` may report a stale provenance file and `--apply` will update it without unnecessary skill copying.

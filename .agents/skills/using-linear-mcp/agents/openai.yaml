@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: using-linear-mcp
+  source_category: first_party
+interface:
+  display_name: Using Linear MCP
+  short_description: Route Linear connector work by intent and use the right surface.
+  default_prompt: Use /using-linear-mcp when working with the Linear connector surface. Choose the matching intent file first, and remember that create/update tools usually live under save_* rather than create_* or update_*.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

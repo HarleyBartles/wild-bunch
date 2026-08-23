@@ -27,7 +27,6 @@ EXCLUDED_DIR_NAMES = {
     "__pycache__",
     ".pytest_cache",
     ".superpowers",
-    "superpowers",  # covers .agents/superpowers/plans session-artifacts
     "marketplace-source",
     "third_party",  # retained upstream snapshots are not repo-owned mesh
 }

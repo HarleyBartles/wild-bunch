@@ -5,7 +5,7 @@ description: Use when designing testable, framework-independent applications wit
   stack and the cost of ports/adapters is unjustified.
 metadata:
   source-id: clean-architecture
-  source-path: sources/first_party/skills/clean-architecture/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/clean-architecture/SKILL.md
   provenance-name: Clean Architecture first-party skill
   source-category: first_party
   status: active

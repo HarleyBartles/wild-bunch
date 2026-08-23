@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Remove a git worktree by branch name or path."""
+"""Remove a git worktree by branch name or path.
+
+This script follows the skill-bundled CLI contract:
+- `--help` prints usage and classifies each flag.
+- `--check` (the default) reports what the script would do and exits 0 when
+  the target worktree does not exist, otherwise 1.
+- `--apply` removes the worktree.
+"""
 
 from __future__ import annotations
 
@@ -83,9 +90,7 @@ def _resolve_worktree(repo_root: Path, target: str) -> Path:
     if len(by_leaf) == 1:
         return Path(next(iter(by_leaf.values()))).resolve()
     if len(by_leaf) > 1:
-        raise RuntimeError(
-            f"branch {target!r} is ambiguous; use a full ref such as {', '.join(sorted(by_leaf))}"
-        )
+        raise RuntimeError(f"branch {target!r} is ambiguous; use a full ref such as {', '.join(sorted(by_leaf))}")
 
     raise RuntimeError(f"Could not resolve worktree: {target}")
 
@@ -100,20 +105,29 @@ def _is_worktree_registered(repo_root: Path, worktree: Path) -> bool:
     return worktree.resolve() in registered_paths
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Remove a git worktree")
-    parser.add_argument("target", help="branch name or absolute path of the worktree to remove")
-    parser.add_argument("--force", action="store_true", help="force remove the worktree")
-    args = parser.parse_args(argv)
+def _check_worktree(repo_root: Path, target: str) -> tuple[int, Path, str]:
+    """Return (exit_code, worktree_path, summary).
 
-    repo_root = _repo_root()
-    worktree = _resolve_worktree(repo_root, args.target)
+    - 0 if the worktree does not exist and no removal is needed.
+    - 1 if the worktree would be removed.
+    """
+    try:
+        worktree = _resolve_worktree(repo_root, target)
+    except RuntimeError as exc:
+        return 0, Path(""), f"OK no worktree to remove for {target!r}: {exc}"
 
+    if worktree == repo_root.resolve():
+        return 1, worktree, f"Would fail: refusing to remove the main repository checkout ({worktree})"
+
+    return 1, worktree, f"Would remove worktree {worktree} (matched by {target!r})"
+
+
+def _apply_remove(repo_root: Path, worktree: Path, force: bool) -> int:
     if worktree == repo_root.resolve():
         print("error: refusing to remove the main repository checkout", file=sys.stderr)
         return 1
 
-    if args.force:
+    if force:
         # Deinitialize submodules only when force-removing; this mutates the
         # shared git config and can affect other worktrees, so it is gated.
         try:
@@ -127,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"warning: submodule deinit failed: {exc}", file=sys.stderr)
 
     cmd = ["git", "worktree", "remove", str(worktree)]
-    if args.force:
+    if force:
         cmd.append("--force")
 
     result = subprocess.run(
@@ -145,7 +159,8 @@ def main(argv: list[str] | None = None) -> int:
         if not _is_worktree_registered(repo_root, worktree) and worktree.exists():
             print(
                 "file is locked for editing; stop. Don't continue trying to delete the locked directory.\n"
-                "Report to your human partner that the on disk folder can't be deleted but the worktree is deregistered.\n"
+                "Report to your human partner that the on disk folder can't be deleted "
+                "but the worktree is deregistered.\n"
                 f"Worktree path: {worktree}",
                 file=sys.stderr,
             )
@@ -156,7 +171,64 @@ def main(argv: list[str] | None = None) -> int:
         return result.returncode
 
     print(f"Removed worktree {worktree}")
+
     return 0
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Remove a git worktree. (mixed: supports --check and --apply)",
+        epilog="Default mode is --check. Use --apply to remove the worktree.",
+    )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="branch name or absolute path of the worktree to remove (read-only during --check)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="force remove the worktree, including submodule deinit (mutating, used with --apply)",
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--check",
+        action="store_true",
+        default=True,
+        help="report what the script would do and exit 0 if no removal is needed (default, read-only)",
+    )
+    mode.add_argument(
+        "--apply",
+        action="store_true",
+        help="remove the worktree (mutating)",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+
+    repo_root = _repo_root()
+
+    if args.apply:
+        if args.target is None:
+            print("error: target is required for --apply", file=sys.stderr)
+            return 2
+        try:
+            worktree = _resolve_worktree(repo_root, args.target)
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        return _apply_remove(repo_root, worktree, args.force)
+
+    if args.target is None:
+        print("OK pass a target to check a specific worktree")
+        return 0
+    exit_code, _, summary = _check_worktree(repo_root, args.target)
+    print(summary)
+    return exit_code
 
 
 if __name__ == "__main__":

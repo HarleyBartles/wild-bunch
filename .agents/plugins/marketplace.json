@@ -85,6 +85,20 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Productivity"
+    },
+    {
+      "name": "mcp-usage-pack",
+      "source": {
+        "source": "github",
+        "owner": "HarleyBartles",
+        "repo": "agent-asset-marketplace",
+        "path": "codex-marketplace/plugins/mcp-usage-pack"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
     }
   ],
   "notes": [
@@ -95,7 +109,10 @@
   ],
   "repo": {
     "local_skill_prefixes": [
-      "wild-bunch-"
+      "wild-bunch-browser-game",
+      "wild-bunch-domain-modeling",
+      "wild-bunch-dotnet-architecture",
+      "wild-bunch-project-doctrine"
     ]
   }
 }

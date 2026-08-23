@@ -8,4 +8,4 @@ Use this map to avoid loading all doctrine.
 - `failure-and-trust-posture.md`: correction, no handwaving, and verified-versus-inferred language.
 - `worker-continuity.md`: controller-launched worker continuity and evidence-based stall handling.
 - `output-artifact-shape.md`: output form as authority, reserved YAML shapes, dispatch/continuity confusion, and worker-copy attention guards.
-- `report-hygiene.md`: report partitioning, report laundering hard stops, compact coding report shape, and false-GREEN risks.
+- `../../writing-with-clarity/references/report-hygiene-checklist.md`: report partitioning, report laundering hard stops, compact coding report shape, and false-GREEN risks (moved to `writing-with-clarity`).

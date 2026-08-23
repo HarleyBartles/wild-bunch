@@ -6,7 +6,6 @@ None. Clean-room first-party synthesis.
 
 ## Derivation boundary
 
-- Derived: the design conversation in `.agents/superpowers/specs/2026-07-25-working-with-epics-design.md`.
 - Outside scope: specific risk assessment workflows (see risk-gates), implementation details of dependent skills.
 
 ## Attribution

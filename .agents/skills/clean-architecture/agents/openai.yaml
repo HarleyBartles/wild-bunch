@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: clean-architecture
   source_category: first_party
-  plugin: architecture-pack
-  projection_plugin: architecture-pack
 interface:
   display_name: Clean Architecture
   short_description: Use when designing testable, framework-independent applications with clear dependency rules. Do not use when the team is committed to a framework-centric stack and the cost of ports/adapters is unjustified.

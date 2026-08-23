@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: writing-with-clarity
   source_category: first_party
-  plugin: repo-worker-pack
-  projection_plugin: repo-worker-pack
 interface:
   display_name: Writing With Clarity
   short_description: Clear, direct, specific, and audience-aware guidance for all human-facing prose.

@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: risk-gates
   source_category: first_party
-  plugin: repo-worker-pack
-  projection_plugin: repo-worker-pack
 interface:
   display_name: Risk Gates
   short_description: Use when a pre-action risk gate is needed before a mutation, dispatch, canon claim, analogy, resolution, or destructive operation.

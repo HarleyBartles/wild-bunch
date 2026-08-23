@@ -5,7 +5,7 @@ description: Use when drafting, revising, or reviewing prose intended for human 
   commit messages, and pull request text.
 metadata:
   source-id: writing-with-clarity
-  source-path: sources/first_party/skills/writing-with-clarity/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/writing-with-clarity/SKILL.md
   provenance-name: Writing With Clarity first-party skill
   source-category: first_party
   status: active
@@ -38,11 +38,10 @@ Do not load every reference by default. The short references are the normal
 operational guidance and include source-basis pointers for the historical
 material.
 
-Do not read `assets/authority/reference-source/elements-of-style-1918.html` during ordinary use.
-Read it only when a shorter reference leaves an unresolved question about an
-exception, rationale, or original example, and then read only the relevant
-section. Use `assets/authority/source-map.yaml` to locate that section. The historical source
-is context and provenance, not current style authority.
+Do not read the whole source tree during ordinary use; read only the relevant chapter file when a shorter reference leaves an unresolved question about an exception, rationale, or original example. Use
+`assets/authority/source-map.yaml` to locate the chapter file and heading. Each
+`source_sections` entry is formatted as `<chapter-file>: <heading>`. The
+historical source is context and provenance, not current style authority.
 
 ## Authority and boundaries
 
@@ -63,4 +62,5 @@ is context and provenance, not current style authority.
 - Directness, specificity, and concision: `references/clarity-and-concision.md`
 - Word choice and usage: `references/usage-and-word-choice.md`
 - Markdown, UI, and structured copy: `references/format-and-markup.md`
+- Report and verification hygiene: `references/report-hygiene-checklist.md`
 - Final review: `references/final-edit.md`

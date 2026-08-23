@@ -5,7 +5,7 @@ description: Use when building or reviewing .NET ecosystem applications, C# lang
   SQL/EF deep tuning, cloud deployment, or a language other than C#/.NET.
 metadata:
   source-id: dotnet
-  source-path: sources/first_party/skills/dotnet/SKILL.md
+  source-path: codex-marketplace/plugins/dotnet-pack/skills/dotnet/SKILL.md
   provenance-name: Dotnet first-party skill
   source-category: first_party
   status: active

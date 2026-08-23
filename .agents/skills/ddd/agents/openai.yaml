@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: ddd
   source_category: first_party
-  plugin: architecture-pack
-  projection_plugin: architecture-pack
 interface:
   display_name: DDD
   short_description: Use when modeling a complex business domain, defining bounded contexts, or choosing tactical DDD patterns.

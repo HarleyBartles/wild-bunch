@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: publishing-source
+  source_category: first_party
+interface:
+  display_name: Publishing Source
+  short_description: Use when deciding how to publish source work in this repo - whether to commit, tag, release, push source, or export a pack - and which publication sequence fits the change.
+  default_prompt: Use /publishing-source when source work is finished and you must decide whether to commit, tag, release, push source, or export a pack. Run the decision checklist (validate, regenerate if source custody changed, pick the smallest sufficient surface, hand off to the owning skill, record publication proof). Do not use when the change is not yet validated (use verification-before-completion), when the task is GitHub mechanics rather than the publication decision (use using-github-mcp), or when the task is release pipeline operation (use release-engineering).
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

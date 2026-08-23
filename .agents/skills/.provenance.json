@@ -1,16 +1,33 @@
 {
-  "manifestSha": "d4b1711cae8f9dc6be5ff9f39525f703f4eae355",
-  "syncedAt": "2026-07-26T20:44:36.238977",
+  "manifestSha": "52866dfb13b257c8d7d98fbb6155f96a7a8ca07e",
   "syncedPlugins": [
     "repo-worker-pack",
     "superpowers-plus",
     "game-studio",
     "dotnet-pack",
     "architecture-pack",
-    "frontend-pack"
+    "frontend-pack",
+    "mcp-usage-pack"
   ],
-  "syncedSkills": 56,
-  "source": "HarleyBartles/agent-asset-marketplace",
-  "sourcePath": "codex-marketplace/plugins",
-  "marketplaceFile": ".agents/plugins/marketplace.json"
+  "syncedSkills": 62,
+  "localSkills": [
+    "wild-bunch-browser-game",
+    "wild-bunch-domain-modeling",
+    "wild-bunch-dotnet-architecture",
+    "wild-bunch-project-doctrine"
+  ],
+  "marketplace": {
+    "source": "HarleyBartles/agent-asset-marketplace",
+    "sourcePath": "codex-marketplace/plugins"
+  },
+  "localPlugins": [
+    {
+      "name": "game-studio",
+      "path": ".agents/plugins/game-studio",
+      "source": "local"
+    }
+  ],
+  "marketplaceFile": ".agents/plugins/marketplace.json",
+  "vendorProfiles": [],
+  "syncedAt": "2026-08-23T22:38:57.625173"
 }

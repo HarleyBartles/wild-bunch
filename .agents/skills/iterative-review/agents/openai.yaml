@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: iterative-review
+  source_category: first_party
+interface:
+  display_name: Iterative Review
+  short_description: Use when a draft PR is ready for subagent review before being marked ready for CI and human review.
+  default_prompt: Use /iterative-review when a draft PR is ready for subagent review before being marked ready for CI and human review.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
