@@ -108,7 +108,7 @@
     "house-skills is intentionally not default-installed."
   ],
   "repo": {
-    "local_skill_prefixes": [
+    "local_skills": [
       "wild-bunch-browser-game",
       "wild-bunch-domain-modeling",
       "wild-bunch-dotnet-architecture",

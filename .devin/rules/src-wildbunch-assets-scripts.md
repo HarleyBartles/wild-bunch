@@ -1,9 +1,14 @@
-# WildBunch.Assets/scripts AGENTS.md
+---
+description: "WildBunch.Assets/scripts AGENTS.md"
+trigger: glob
+globs:
+  - "src/WildBunch.Assets/scripts/**"
+---
+## Scope
 
-This folder holds asset-local workflow helpers for the Wild Bunch asset tree.
+`src/WildBunch.Assets/scripts/**`
 
-## Rules
-
+When working in this scope:
 - Keep asset-pipeline code here when it is specific to the WildBunch.Assets project.
 - Treat `image_asset_pipeline.py` here as the canonical implementation for asset staging and promotion.
 - Keep the repo-root `scripts/image_asset_pipeline.py` as a compatibility wrapper only.

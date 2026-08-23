@@ -183,7 +183,7 @@ internal static class ScenarioSeedCatalog
 
         var storeOffers = await storeOffersResponse.Content.ReadFromJsonAsync<TownStoreOffersDto>();
         Require("CanonicalStartingTownServices", "store-offers.payload", storeOffers is not null, "expected town store offers to deserialize.");
-        AssertStartingTownStoreAvailability(storeOffers!, session.Player.CurrentTownId);
+        AssertStartingTownStoreAvailability(storeOffers!, session.Player.CurrentTownId!);
     }
 
     // BUNCH-107 transitional: AssertSecondLegRoute renamed to AssertDryRoute transitively.
@@ -360,7 +360,7 @@ internal static class ScenarioSeedCatalog
         }
         var visited = new HashSet<string>();
         var queue = new Queue<string>();
-        var startTown = session.Player.CurrentTownId;
+        var startTown = session.Player.CurrentTownId!;
         queue.Enqueue(startTown);
         visited.Add(startTown);
         while (queue.Count > 0)

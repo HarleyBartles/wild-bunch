@@ -1,9 +1,14 @@
-# Wild Bunch Web
+---
+description: "Wild Bunch Web"
+trigger: glob
+globs:
+  - "src/WildBunch.Web/**"
+---
+## Scope
 
-Frontend standards for the Wild Bunch web app (`src/WildBunch.Web/`).
+`src/WildBunch.Web/**`
 
-## Must Read When
-
+When working in this scope:
 - **Before implementing or reviewing any frontend work:** [`.agents/docs/frontend-standards.md`](../../.agents/docs/frontend-standards.md) — styling stack, play-surface UI, source truth, dev overlay, and routing conventions. This is the binding standards document for the frontend.
 - **Before designing, implementing, or reviewing player-facing surfaces:** [`.agents/unslop/play-surface-ui.md`](.agents/unslop/play-surface-ui.md) — play-surface UI unslop profile.
 - **Before touching dev overlay:** [`.agents/docs/dev-overlay-doctrine.md`](../../.agents/docs/dev-overlay-doctrine.md) and [`.agents/unslop/dev-overlay.md`](../../.agents/unslop/dev-overlay.md) — binding doctrine and unslop profile for dev overlay work.

@@ -15,27 +15,20 @@ Work is published through a dedicated linked worktree, a task branch, and a pull
 
 ## Build and test commands
 
+- `py -3 tools/run.py ci --check`
 - `dotnet build`
 - `dotnet test`
 - `npm ci && npm run typecheck && npm run test && npm run build` in `src/WildBunch.Web`
-- `python .agents/skills/generating-agent-mesh/scripts/generate-index-mesh.py` to regenerate `INDEX.md` files
-- `python .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check` to validate marketplace skill projection
-- `python .agents/skills/repo-standards/scripts/repo_standards.py --check` to validate repo-standards shape
 
 ## Routing pointers
 
-- Repository purpose: [AGENTS.md](AGENTS.md)
-- Source-of-truth split: [AGENTS.md](AGENTS.md)
-- Publication proof: [AGENTS.md](AGENTS.md)
-- Build and test commands: [AGENTS.md](AGENTS.md)
+- Scoped routing: [.devin/rules/INDEX.md](.devin/rules/INDEX.md)
 - Testing instructions: [.agents/guides/testing-guide.md](.agents/guides/testing-guide.md)
 - Code style guidelines: [.agents/guides/code-style-guide.md](.agents/guides/code-style-guide.md)
 - Review guidelines: [.agents/guides/code-review-guide.md](.agents/guides/code-review-guide.md)
 - PR instructions: [.agents/guides/pr-guide.md](.agents/guides/pr-guide.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security considerations: [.agents/guides/security-guide.md](.agents/guides/security-guide.md)
-- Routing pointers: [AGENTS.md](AGENTS.md)
-- Maintenance responsibility: [AGENTS.md](AGENTS.md)
 
 ## Maintenance responsibility
 

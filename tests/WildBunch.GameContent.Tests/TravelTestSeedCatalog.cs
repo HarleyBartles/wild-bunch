@@ -215,7 +215,7 @@ internal static class TravelTestSeedCatalog
                 .Where(t => t.FromTownId == session.Player.CurrentTownId || t.ToTownId == session.Player.CurrentTownId)
                 .Select(t => $"{t.Risk}/{t.Terrain}/{t.WaterFeature}"));
             throw new InvalidOperationException(
-                $"No route from {session.Player.CurrentTownId.Value} matching {risk}/{terrain}/{water}. " +
+                $"No route from {session.Player.CurrentTownId?.Value ?? "<no town>"} matching {risk}/{terrain}/{water}. " +
                 $"Available: {available}");
         }
 

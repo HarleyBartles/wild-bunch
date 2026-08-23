@@ -42,8 +42,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private GameSession(
         GameSessionId id,
         Player player,
-        DomainWorld world,
-        CaseFile caseFile,
+        DomainWorld? world,
+        CaseFile? caseFile,
         PursuitState pursuitState,
         GameClock clock,
         GameStatus status,
@@ -57,8 +57,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         Id = id;
         Player = player;
-        World = world;
-        CaseFile = caseFile;
+        World = world!;
+        CaseFile = caseFile!;
         PursuitState = pursuitState;
         Clock = clock;
         Status = status;
@@ -70,12 +70,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         // and the player's CurrentTownId is null. Defer TownAggregate creation
         // until Apply(GameStarted) when the real starting town is known. For snapshot-based
         // loads, currentTownVisit is non-null and we create _currentTown immediately.
-        if (currentTownVisit is not null && player.CurrentTownId is not null)
+        if (currentTownVisit is not null && player.CurrentTownId is not null && world is not null)
         {
-            _currentTown = new TownAggregate(World.GetTown(player.CurrentTownId.Value), currentTownVisit);
+            _currentTown = new TownAggregate(world.GetTown(player.CurrentTownId.Value), currentTownVisit);
             if (!_currentTown.VisitState.TownId.Equals(player.CurrentTownId))
             {
-                _currentTown.EnterTown(World.GetTown(player.CurrentTownId.Value));
+                _currentTown.EnterTown(world.GetTown(player.CurrentTownId.Value));
             }
             _currentTown.PrimeCurrentTown();
         }
@@ -982,7 +982,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     public void SelectStartingTown(TownId startingTownId)
     {
-        ArgumentNullException.ThrowIfNull(startingTownId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(startingTownId.Value, nameof(startingTownId));
 
         if (StartFlowPhase == StartFlowPhase.StartingTownSelected)
             return; // Idempotent

@@ -32,8 +32,8 @@ public sealed class GetJournalHandlerTests
         Assert.Equal(session.Status, result.Status);
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
-        Assert.Equal(session.Player.CurrentTownId!.Value.Value, result.CurrentTown.Id);
-        Assert.Equal("Pinecross", result.CurrentTown.Name);
+        Assert.Equal(session.Player.CurrentTownId!.Value.Value, result.CurrentTown!.Id);
+        Assert.Equal("Pinecross", result.CurrentTown!.Name);
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.CaseFile.OpeningLead);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseFile.CaseSummary);

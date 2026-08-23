@@ -1,9 +1,14 @@
-# WildBunch.GameContent
+---
+description: "WildBunch.GameContent"
+trigger: glob
+globs:
+  - "src/WildBunch.GameContent/**"
+---
+## Scope
 
-This project contains the UUID seed codec and the game-setup pipeline.
+`src/WildBunch.GameContent/**`
 
-## Must Read When
-
+When working in this scope:
 - **Before touching the seed codec, game-setup pipeline, or starting town rules:** [`.agents/docs/game-content-seed-pipeline.md`](../../.agents/docs/game-content-seed-pipeline.md) — pipeline, seed-owned/pressure-owned/entropy-owned boundaries, seed-derived town selection, starting town rules, and update rules.
 - **Before touching the UUID seed codec, `GameSession`, or persistence:** [`.agents/docs/architecture-guardrails.md`](../../.agents/docs/architecture-guardrails.md) — architecture stack and UUID Seed Codec section.
 - **Before touching entropy, deterministic tests, or dev-overlay seed controls:** [`.agents/docs/entropy-and-seed-policy.md`](../../.agents/docs/entropy-and-seed-policy.md) — entropy ladder and seed/test policy.

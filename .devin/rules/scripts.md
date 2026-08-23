@@ -1,12 +1,14 @@
-# scripts/ AGENTS.md
+---
+description: "scripts/ AGENTS.md"
+trigger: glob
+globs:
+  - "scripts/**"
+---
+## Scope
 
-This folder contains deterministic workflow scripts for the Wild Bunch repo.
-Generic repo-maintenance mechanics (skill sync, index mesh generation,
-repo-standards checks) are handled by bundled marketplace skills under
-`.agents/skills/`.
+`scripts/**`
 
-## Must Read When
-
+When working in this scope:
 - **Use before reporting environmental issues or running ad-hoc commands:** [`scripts/README.md`](README.md) — full script catalog, requirements, and conventions.
 - **Use when you need to run CI preflight checks:** `scripts/ci-preflight.sh` or `scripts/ci-preflight.ps1`
 - **Use when you need dev servers:** `scripts/dev-servers.sh` or `scripts/dev-servers.ps1`
