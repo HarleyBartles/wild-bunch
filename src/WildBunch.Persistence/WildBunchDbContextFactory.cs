@@ -22,6 +22,6 @@ public sealed class WildBunchDbContextFactory : IDesignTimeDbContextFactory<Wild
             return connectionString;
         }
 
-        return "Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres";
+        return "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres";
     }
 }

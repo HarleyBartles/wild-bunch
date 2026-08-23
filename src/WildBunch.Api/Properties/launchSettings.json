@@ -8,7 +8,7 @@
       "applicationUrl": "http://localhost:5275",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__WildBunchPostgresDb": "Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres"
+        "ConnectionStrings__WildBunchPostgresDb": "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres"
       }
     },
     "https": {
@@ -18,7 +18,7 @@
       "applicationUrl": "https://localhost:7225;http://localhost:5275",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__WildBunchPostgresDb": "Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres"
+        "ConnectionStrings__WildBunchPostgresDb": "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres"
       }
     }
   }

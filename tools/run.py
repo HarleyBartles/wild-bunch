@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -119,6 +120,7 @@ def _build_dotnet(ctx: Ctx) -> None:
 
 
 def _test_dotnet(ctx: Ctx) -> None:
+    os.environ["ConnectionStrings__WildBunchPostgresDb"] = "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres"
     _run(_dotnet_test_cmd(), ctx)
 
 

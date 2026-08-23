@@ -31,7 +31,7 @@ public sealed class PostgreSqlPersistenceTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:WildBunchPostgresDb"] = "Host=localhost;Database=wild-bunch;Username=wild-bunch;Password=wild-bunch"
+                ["ConnectionStrings:WildBunchPostgresDb"] = "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres"
             })
             .Build();
 
