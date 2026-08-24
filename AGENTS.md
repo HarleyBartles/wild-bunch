@@ -23,12 +23,12 @@ Work is published through a dedicated linked worktree, a task branch, and a pull
 ## Routing pointers
 
 - Scoped routing: [.devin/rules/INDEX.md](.devin/rules/INDEX.md)
-- Testing instructions: [.agents/guides/testing-guide.md](.agents/guides/testing-guide.md)
-- Code style guidelines: [.agents/guides/code-style-guide.md](.agents/guides/code-style-guide.md)
-- Review guidelines: [.agents/guides/code-review-guide.md](.agents/guides/code-review-guide.md)
-- PR instructions: [.agents/guides/pr-guide.md](.agents/guides/pr-guide.md)
+- Testing instructions: [.agents/runbooks/testing.md](.agents/runbooks/testing.md)
+- Code style guidelines: [.agents/runbooks/code-style.md](.agents/runbooks/code-style.md)
+- Review guidelines: [.agents/runbooks/code-review.md](.agents/runbooks/code-review.md)
+- PR instructions: [.agents/runbooks/pr.md](.agents/runbooks/pr.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security considerations: [.agents/guides/security-guide.md](.agents/guides/security-guide.md)
+- Security considerations: [.agents/runbooks/security.md](.agents/runbooks/security.md)
 
 ## Maintenance responsibility
 

@@ -17,6 +17,8 @@ import shared_checkout
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_NAME = "tools/run"
 WEB_DIR = ROOT / "src" / "WildBunch.Web"
+BASH = shutil.which("bash") or "bash"
+SCAFFOLD_ALL = ".agents/skills/repo-standards/scripts/scaffold-all.sh"
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,21 @@ def _mesh_validate_cmd() -> list[str]:
         ".agents/skills/generating-agent-mesh/scripts/validate_agent_mesh.py",
         "--check",
     ]
+
+
+def _scaffold_cmd(mode: str) -> list[str]:
+    cmd = [BASH, SCAFFOLD_ALL]
+    if mode == "check":
+        cmd.append("--check")
+    return cmd
+
+
+def _scaffold_apply(ctx: Ctx) -> None:
+    _run(_scaffold_cmd("apply"), ctx)
+
+
+def _scaffold_check(ctx: Ctx) -> None:
+    _run(_scaffold_cmd("check"), ctx)
 
 
 def _dotnet_build_cmd() -> list[str]:
@@ -137,6 +154,7 @@ def _diff_check(ctx: Ctx) -> None:
 
 def _ci_apply(ctx: Ctx) -> None:
     _repo_standards_apply(ctx)
+    _scaffold_apply(ctx)
     _skills_apply(ctx)
     _mesh_apply(ctx)
     _build_dotnet(ctx)
@@ -147,6 +165,7 @@ def _ci_apply(ctx: Ctx) -> None:
 
 def _ci_check(ctx: Ctx) -> None:
     _repo_standards_check(ctx)
+    _scaffold_check(ctx)
     _skills_check(ctx)
     _mesh_check(ctx)
     _build_dotnet(ctx)
