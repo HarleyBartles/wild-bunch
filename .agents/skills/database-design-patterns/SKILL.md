@@ -6,7 +6,7 @@ description: Use when designing relational database schemas, normalizing data,
   or NoSQL design.
 metadata:
   source-id: database-design-patterns
-  source-path: sources/first_party/skills/database-design-patterns/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/database-design-patterns/SKILL.md
   provenance-name: Database Design Patterns first-party skill
   source-category: first_party
   status: active

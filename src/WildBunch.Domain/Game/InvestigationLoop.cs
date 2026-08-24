@@ -44,7 +44,7 @@ internal sealed class InvestigationLoop
             context.CurrentTownSlotIndex,
             context.CurrentTownVisitCount,
             context.SaltSource,
-            context.RetiredWarrantIds.Count > 0 ? context.RetiredWarrantIds : null);
+            context.RetiredWarrantIds is { Count: > 0 } ? context.RetiredWarrantIds : null);
         var clue = _clueSurfacingResolver.Resolve(
             context.CaseFile,
             InvestigationSourceKind.SheriffWarrants,

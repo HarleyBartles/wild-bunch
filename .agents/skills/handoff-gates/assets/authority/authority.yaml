@@ -8,15 +8,19 @@ authority:
   latest_check_url: https://github.com/HarleyBartles/agent-asset-marketplace
   revision: '2026-07-25'
   retrieved_at: '2026-07-25'
-  content_sha256: 82a1c050fdf69df1473f44ca07074e9af07b8890e6acd4b7e7992b0308e98b9a
+  content_sha256: d0d21ddd932c2cf4dcf9339613052007d5df5a1164ae4123649fc8d0c081b0ce
   license: MIT
   license_url: https://github.com/HarleyBartles/agent-asset-marketplace/blob/main/LICENSE
 decomposition:
-  reconciled_against: 82a1c050fdf69df1473f44ca07074e9af07b8890e6acd4b7e7992b0308e98b9a
+  reconciled_against: d0d21ddd932c2cf4dcf9339613052007d5df5a1164ae4123649fc8d0c081b0ce
   references:
-  - path: references/scope-notes.md
-    source_sections:
-    - Scope boundaries
-    load_when:
-    - Use when expanding scope boundaries beyond the main SKILL.md guidance.
-    content_mode: first_party_synthesis
+    - path: references/scope-notes.md
+      source_sections:
+        - Thin or co-designed specs
+        - Plans with external blockers
+        - Overlap with verification and review
+      load_when:
+        - Use when the artifact is intentionally thin.
+        - Use when the plan depends on an external blocker.
+        - Use when the handoff overlaps with verification-before-completion or requesting-code-review.
+      content_mode: first_party_synthesis

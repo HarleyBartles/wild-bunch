@@ -50,7 +50,7 @@ Favor minimal APIs and explicit routing over heavy controller plumbing.
 
 Keep data access high-level and test with realistic boundaries.
 
-- Use EF Core for typical CRUD and LINQ projections. Use `IEntityTypeConfiguration<T>` to keep
+- Use EF Core for typical CRUD and LINQ marketplace bundles. Use `IEntityTypeConfiguration<T>` to keep
   entity configuration separate and discoverable.
 - Project queries to DTOs with `.Select()` to avoid over-fetching and N+1 problems.
 - Use `ExecuteUpdateAsync` and `ExecuteDeleteAsync` for bulk operations that bypass change

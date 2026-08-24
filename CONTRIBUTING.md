@@ -5,8 +5,8 @@ This file is the repo's contributor entry point.
 ## Pre-contribution reading
 
 - Read root [`AGENTS.md`](./AGENTS.md) for source-of-truth and publication rules.
-- Read [`.agents/docs/repo-guide-policy.md`](./.agents/docs/repo-guide-policy.md) for this repo's mapping to the cross-repo guide standard.
-- Read [`.agents/guides/code-style-guide.md`](./.agents/guides/code-style-guide.md) for code and writing conventions.
+- Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for this repo's runbook mapping.
+- Read [`.agents/runbooks/code-style.md`](./.agents/runbooks/code-style.md) for code and writing conventions.
 
 ## PR instructions
 
@@ -25,10 +25,10 @@ Before starting work, invoke:
 
 ## Stage routing
 
-- Design: `.agents/guides/design-guide.md` -> `/brainstorming`
-- Planning: `.agents/guides/planning-guide.md` -> `/writing-plans`
-- Implementation: `.agents/guides/implementing-guide.md` -> `/executing-plans` or `/subagent-driven-development`
-- Review: `.agents/guides/code-review-guide.md` -> `/requesting-code-review`
+- Design: `.agents/runbooks/design.md` -> `/brainstorming`
+- Planning: `.agents/runbooks/planning.md` -> `/writing-plans`
+- Implementation: `.agents/runbooks/implementing.md` -> `/executing-plans` or `/subagent-driven-development`
+- Review: `.agents/runbooks/code-review.md` -> `/requesting-code-review`
 
 ## Repo-specific contribution notes
 

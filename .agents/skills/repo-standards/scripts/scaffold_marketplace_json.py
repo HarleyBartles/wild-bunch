@@ -7,12 +7,11 @@ import argparse
 import json
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 
-DEFAULT_PREFIXES = ["mark-"]
-MINIMAL = {"repo": {"local_skill_prefixes": DEFAULT_PREFIXES}, "plugins": []}
+DEFAULT_PREFIXES = []
+MINIMAL = {"repo": {"local_skills": DEFAULT_PREFIXES}, "plugins": []}
 
 
 def _stripped_env() -> dict[str, str]:
@@ -49,7 +48,7 @@ def _normalize_prefixes(value: object) -> list[str]:
 
 
 def _migrate(data: dict[str, object]) -> dict[str, object]:
-    """Return a normalized marketplace.json dict with repo.local_skill_prefixes."""
+    """Return a normalized marketplace.json dict with repo.local_skills."""
     prefixes: list[str] = []
     if "repo" in data and isinstance(data["repo"], dict):
         repo_block = dict(data["repo"])
@@ -73,7 +72,7 @@ def _migrate(data: dict[str, object]) -> dict[str, object]:
     if not prefixes:
         prefixes = list(DEFAULT_PREFIXES)
 
-    repo_block["local_skill_prefixes"] = prefixes
+    repo_block["local_skills"] = prefixes
 
     result: dict[str, object] = {}
     for key, value in data.items():
@@ -101,8 +100,8 @@ def _check(path: Path) -> list[str]:
         return findings
     normalized = _migrate(data)
     repo_block = normalized.get("repo")
-    if not isinstance(repo_block, dict) or not repo_block.get("local_skill_prefixes"):
-        findings.append("marketplace.json missing repo.local_skill_prefixes")
+    if not isinstance(repo_block, dict) or repo_block.get("local_skills") is None:
+        findings.append("marketplace.json missing repo.local_skills")
     return findings
 
 
@@ -115,14 +114,14 @@ examples:
 
 The marketplace.json file is read from .agents/plugins/marketplace.json under
 the repo root. Legacy top-level or repo-level keys named local_skill_prefixes
-or local_skills are merged into repo.local_skill_prefixes. Other blocks
-(plugins, interface, name, etc.) are preserved.
+are merged into repo.local_skills. Other blocks (plugins, interface, name, etc.)
+are preserved.
 
 exit codes:
   0  marketplace.json is valid or was written/migrated successfully
   1  drift detected or the file could not be written"""
     parser = argparse.ArgumentParser(
-        description="Scaffold, migrate, or validate .agents/plugins/marketplace.json.",
+        description="Scaffold, migrate, or validate .agents/plugins/marketplace.json. (mixed)",
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

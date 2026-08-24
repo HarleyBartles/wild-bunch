@@ -17,19 +17,20 @@
       "optional": false
     },
     {
-      "id": "ci-preflight-ps1",
-      "path": "scripts/ci-preflight.ps1",
+      "id": "tools-run",
+      "path": "tools/run.py",
       "kind": "file",
       "source": null,
-      "scaffold": "scaffold_ci_preflight.py",
+      "scaffold": null,
       "optional": false
     },
     {
-      "id": "ci-preflight-sh",
-      "path": "scripts/ci-preflight.sh",
+      "id": "tools-shared-checkout",
+      "path": "tools/shared_checkout.py",
       "kind": "file",
-      "source": null,
-      "scaffold": "scaffold_ci_preflight.py",
+      "source": "scripts/shared_checkout.py",
+      "check_content": false,
+      "scaffold": null,
       "optional": false
     },
     {
@@ -40,11 +41,11 @@
       "optional": false
     },
     {
-      "id": "repo-guide-policy",
-      "path": ".agents/docs/repo-guide-policy.md",
+      "id": "repo-runbook-policy",
+      "path": ".agents/doctrine/repo-runbook-policy.md",
       "kind": "file",
       "source": null,
-      "scaffold": "scaffold_repo_guide_policy.py",
+      "scaffold": "scaffold_repo_runbook_policy.py",
       "optional": false
     },
     {
@@ -56,8 +57,8 @@
       "optional": false
     },
     {
-      "id": "guides-agents-md",
-      "path": ".agents/guides/AGENTS.md",
+      "id": "runbooks-agents-md",
+      "path": ".agents/runbooks/AGENTS.md",
       "kind": "file",
       "source": null,
       "optional": true
@@ -84,6 +85,32 @@
       "kind": "file",
       "source": null,
       "scaffold": "scaffold_gitignore.py",
+      "optional": false
+    },
+    {
+      "id": "completed-plans-rule",
+      "path": ".devin/rules/completed-plans.md",
+      "kind": "file",
+      "source": "templates/completed-plans-rule.md",
+      "optional": false
+    },
+    {
+      "id": "completed-plans-doctrine",
+      "path": ".agents/doctrine/completed-plans.md",
+      "kind": "file",
+      "source": "templates/completed-plans.md",
+      "optional": false
+    },
+    {
+      "id": "plans-completed-dir",
+      "path": ".agents/plans/completed",
+      "kind": "directory",
+      "optional": false
+    },
+    {
+      "id": "specs-completed-dir",
+      "path": ".agents/specs/completed",
+      "kind": "directory",
       "optional": false
     }
   ]

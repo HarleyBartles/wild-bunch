@@ -73,7 +73,7 @@ User approval can resolve user preference, but it does not erase system, safety,
 Route narrowly:
 
 - Worker status, PR-gate, and Linear issue event-state questions -> `linear-issue-shaping`.
-- GitHub PR, commit, branch, status, review-thread, merge, or main proof -> `using-github`.
+- GitHub PR, commit, branch, status, review-thread, merge, or main proof -> `using-github-mcp`.
 - Validation adequacy after changed surfaces or validation claims exist -> the validation decision surface.
 - New implementation work -> Linear/Codex golden gate and issue-readiness path.
 

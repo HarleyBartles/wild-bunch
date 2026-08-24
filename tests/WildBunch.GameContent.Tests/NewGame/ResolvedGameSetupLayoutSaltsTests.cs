@@ -22,12 +22,12 @@ public sealed class ResolvedGameSetupLayoutSaltsTests
         var saltSource = SaltSource.CreateRuntime();
         
         var setup = new ResolvedGameSetup(
-            null,
+            null!,
             GameDifficulty.Standard,
             GameEntropy.Classic,
-            null,
+            null!,
             townId,
-            null,
+            null!,
             wallet,
             inventory,
             0,

@@ -1,31 +1,36 @@
 ---
 name: finishing-a-development-branch
-description: "Use when implementation is complete, all tests pass, and you need to decide how to integrate the work"
+description: Use when implementation is complete, all tests pass, and you need to
+  decide how to integrate the work
 metadata:
-  source_category: "third_party"
-  upstream_name: "finishing-a-development-branch"
-  upstream_version: "v6.2.0"
-  adaptation_overlay: "adapters/codex/superpowers-plus/finishing-a-development-branch"
-  projection_plugin: "superpowers-plus"
-  source_author: "obra"
-  source_license: "MIT"
-  source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/finishing-a-development-branch/SKILL.md"
-  content_mode: "adapted"
-  adapted_author: "Harley Bartles"
-  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  source-id: finishing-a-development-branch
+  source-path: codex-marketplace/plugins/superpowers-plus/skills/finishing-a-development-branch/SKILL.md
+  provenance-name: Finishing A Development Branch first-party skill
+  source-category: first_party
+  status: active
+  owner: Harley Bartles
+  scope: Use when implementation is complete, all tests pass, and you need to decide
+    how to integrate the work
   use_when:
-    - "Use when implementation is complete, tests pass, and you need to decide how to integrate the work."
-    - "Use after executing-plans or subagent-driven-development."
-    - "Use when the branch needs merge, PR, keep, or discard."
+  - Use when implementation is complete, tests pass, and you need to decide how to
+    integrate the work.
+  - Use after executing-plans or subagent-driven-development.
+  - Use when the branch needs merge, PR, keep, or discard.
   do_not_use_when:
-    - "Do not use when tests are failing."
-    - "Do not use when the work is incomplete."
-    - "Do not use as a substitute for code review."
-  use_after: [executing-plans, subagent-driven-development, requesting-code-review]
-  use_with: [receiving-code-review]
-  related_skills: [executing-plans, subagent-driven-development, requesting-code-review, using-git-worktrees, receiving-code-review]
+  - Do not use when tests are failing.
+  - Do not use when the work is incomplete.
+  - Do not use as a substitute for code review.
+  related_skills:
+  - executing-plans
+  - subagent-driven-development
+  - requesting-code-review
+  - using-git-worktrees
+  - receiving-code-review
+license: MIT
 ---
+## Provenance
+
+This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/finishing-a-development-branch/` for reference.
 
 # Finishing a Development Branch
 
@@ -146,6 +151,8 @@ Then create the pull/merge request against <base-branch> with the forge's
 tooling — its CLI if one is available, or the creation URL most forges
 print when you push — following the repo's PR template and conventions if
 present, and report the URL to your human partner.
+
+Before opening the PR or flipping it out of draft, consult `.agents/runbooks/pr.md` `## Draft PR policy` so the PR opens as draft and only flips to ready once the preflight passes.
 
 Keep the worktree — your human partner iterates on PR feedback there.
 

@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: asking-clarifying-questions
+  source_category: first_party
+interface:
+  display_name: Asking Clarifying Questions
+  short_description: Use when an ambiguity remains after safe internal resolution and a single answer from your human partner would unblock the next action, without needing a full design session or a pre-action risk gate.
+  default_prompt: Use /asking-clarifying-questions when an ambiguity is internally unresolved and a single human decision would unblock the immediate next step. State the next action, the ambiguity, the risk of guessing, a recommendation with options, and ask one concrete question. Do not use when the ambiguity needs a full design or spec (use brainstorming), when it could violate scope/authority/source/canon/safety/irreversible mutation (use risk-gates), or when the answer is already forced by durable source or policy.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

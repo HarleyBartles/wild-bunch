@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: test-driven-development
+  source_category: first_party
+interface:
+  display_name: Test Driven Development
+  short_description: Use when implementing any feature or bugfix, before writing implementation code
+  default_prompt: Use /test-driven-development to use when implementing any feature or bugfix, before writing implementation code
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

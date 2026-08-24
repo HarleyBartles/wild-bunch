@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Resolve and ensure the off-repo scratch directory SDD uses for short-lived
+# artifacts: task briefs, implementer reports, review packages, and the
+# progress ledger. Print the directory's absolute path.
+#
+# The workspace lives outside the working tree at:
+#   <main-checkout>/../_agent-scratch/<repo-name>/<branch>/<plan-basename>/
+# where <main-checkout> is the parent of the Git common directory.
+# This keeps scratch a sibling of the repository, never inside it,
+# and survives `git clean`.
+#
+# Single source of truth for the workspace location, so task-brief and
+# review-package cannot drift to different directories.
+#
+# Usage: sdd-workspace [PLAN_FILE]
+set -euo pipefail
+
+plan_file=${1:-}
+
+# Resolve repo root and branch. If an absolute plan file is given, use its
+# working tree so a worktree plan uses the worktree root, not the main checkout.
+if [[ -n "$plan_file" && "$plan_file" == /* ]]; then
+  root=$(cd "$(dirname "$plan_file")" && git rev-parse --show-toplevel)
+else
+  root=$(git rev-parse --show-toplevel)
+  if [[ -n "$plan_file" ]]; then
+    plan_file="$root/$plan_file"
+  fi
+fi
+
+# Use the main checkout's sibling for scratch, even from a linked worktree.
+common_dir=$(git -C "$root" rev-parse --git-common-dir)
+main_checkout=$(cd "$common_dir/.." && pwd)
+scratch_parent=$(cd "$main_checkout/.." && pwd)
+repo_name=$(basename "$main_checkout")
+branch=$(git -C "$root" rev-parse --abbrev-ref HEAD)
+branch=$(printf '%s' "$branch" | tr ':\?*"<>|/\\' '-')
+dir="$scratch_parent/_agent-scratch/$repo_name/$branch"
+
+# One-time migration: if the repo-scoped path has not been created yet but a
+# legacy flat `_agent-scratch/<branch>` exists, copy its contents into the
+# scoped path so the per-project separation takes effect immediately.
+legacy_dir="$scratch_parent/_agent-scratch/$branch"
+if [[ -d "$legacy_dir" && ! -d "$dir" ]]; then
+  mkdir -p "$scratch_parent/_agent-scratch/$repo_name"
+  cp -r "$legacy_dir" "$dir"
+fi
+
+mkdir -p "$dir"
+current_plan="$dir/current-plan.txt"
+plan_stem=""
+
+get_plan_stem() {
+  local path="$1"
+  local resolved stem
+  resolved="$(cd "$(dirname "$path")" && pwd)/$(basename "$path")"
+  stem="${resolved##*/}"
+  stem="${stem%.*}"
+  if [[ -z "$stem" ]]; then
+    echo "plan file name must not be blank" >&2
+    exit 1
+  fi
+  stem="${stem//[\\/:*?\"<>|]/-}"
+  printf '%s\n' "$stem"
+}
+
+if [[ -n "$plan_file" ]]; then
+  plan_stem="$(get_plan_stem "$plan_file")"
+  printf '%s\n' "$plan_stem" > "$current_plan"
+elif [[ -f "$current_plan" ]]; then
+  plan_stem="$(tr -d '\r\n' < "$current_plan")"
+fi
+
+if [[ -z "$plan_stem" ]]; then
+  printf '%s\n' "$dir"
+  exit 0
+fi
+
+mkdir -p "$dir/$plan_stem"
+printf '%s\n' "$dir/$plan_stem"

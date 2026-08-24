@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: react
   source_category: first_party
-  plugin: frontend-pack
-  projection_plugin: frontend-pack
 interface:
   display_name: React
   short_description: Use when building or reviewing React component architecture, hooks usage, and performance patterns.

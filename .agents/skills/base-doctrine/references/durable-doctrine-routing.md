@@ -7,6 +7,8 @@ Choose the smallest durable home for each rule or asset.
 - System prompt: tiny boot/routing invariants needed before skills load.
 - cross-runtime doctrine skill: cross-project rules and contracts not owned elsewhere.
 - Specific GPT-native skill: detailed workflow, output contract, checklist, or tool procedure.
+- `.agents/doctrine/*.md`: repo-local operative doctrine that is too large or
+  too dynamic for `AGENTS.md`/`.devin/rules` triggers; loaded by `using-superpowers-plus`.
 - Canonical agent asset repo: versioned source truth for GPT-native skill sources, Codex plugin marketplaces, repo overlays, provenance, package evidence, and rollout metadata.
 - Codex plugin marketplace: generic worker capabilities that Codex can install natively, especially GitHub, Linear, review, CI, debugging, planning, and other reusable workflow plugins.
 - Repo overlay / repo-resident skills: project-specific domain anchors, validation lanes, local runtime expectations, and protected surfaces that generic plugins cannot know.

@@ -14,7 +14,7 @@ competing implementations. Make behavior deterministic, support --check for
 safe inspection where meaningful, and test the core plus each entrypoint.
 
 Do not make an installer prune authored local skills, local guides, or other
-declared source custody. Installation and projection are runtime concerns;
+declared source custody. Installation and marketplace bundle are runtime concerns;
 authored content remains in its canonical repository home. Scripts must not
 import installed skill trees or user caches as source.
 

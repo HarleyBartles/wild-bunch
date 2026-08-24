@@ -22,7 +22,7 @@ retired legacy homes are forbidden for new authored content.
 ## Custody and proof
 
 Local authored skills remain in their canonical repository source home.
-Installers, projections, and caches are runtime surfaces and must not prune or
+Installers, marketplace bundles, and caches are runtime surfaces and must not prune or
 replace authored custody. Cleanup removes stale disposable or generated
 surfaces only after proving their source and publication requirements survive.
 

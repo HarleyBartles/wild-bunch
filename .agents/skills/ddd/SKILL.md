@@ -5,7 +5,7 @@ description: Use when modeling a complex business domain, defining bounded conte
   when a more specific skill already owns the abstraction.
 metadata:
   source-id: ddd
-  source-path: sources/first_party/skills/ddd/SKILL.md
+  source-path: codex-marketplace/plugins/architecture-pack/skills/ddd/SKILL.md
   provenance-name: Ddd first-party skill
   source-category: first_party
   status: active

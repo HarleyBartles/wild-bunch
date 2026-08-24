@@ -6,7 +6,7 @@ description: Use when about to take action and environment constraints could cha
   proceeding.
 metadata:
   source-id: inspecting-the-environment
-  source-path: sources/first_party/skills/inspecting-the-environment/SKILL.md
+  source-path: codex-marketplace/plugins/superpowers-plus/skills/inspecting-the-environment/SKILL.md
   provenance-name: Inspecting The Environment first-party skill
   source-category: first_party
   status: active
@@ -104,7 +104,7 @@ tested the relevant surface. Otherwise preserve uncertainty.
 
 ## Composition
 
-Start with `@using-superpowers` as the workflow-selection entrypoint.
+Start with `@using-superpowers-plus` as the workflow-selection entrypoint.
 
 Use `@connector-safety` before any mutation or blocked-write recovery,
 including GitHub writes, Linear writes, file mutations, or other high-risk
@@ -131,7 +131,7 @@ it does not execute the work itself.
 
 This skill discovers and records the operating environment. It does not:
 - authorize mutations (that's `connector-safety`);
-- prove GitHub state (that's `using-github`);
+- prove GitHub state (that's `using-github-mcp`);
 - shape Linear issues (that's `linear-issue-shaping`);
 - implement code or execute workflows (that's the specialist workflow's job);
 - replace source-of-truth verification (that's `verification-before-completion`).

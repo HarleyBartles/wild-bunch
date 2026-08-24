@@ -1,32 +1,34 @@
 ---
 name: writing-skills
-description: "Use when creating new skills, editing existing skills, or verifying skills work before deployment"
+description: Use when creating new skills, editing existing skills, or verifying skills
+  work before deployment
 metadata:
-  source_category: "third_party"
-  upstream_name: "writing-skills"
-  upstream_version: "v6.2.0"
-  adaptation_overlay: "adapters/codex/superpowers-plus/writing-skills"
-  projection_plugin: "superpowers-plus"
-  source_author: "obra"
-  source_license: "MIT"
-  source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/writing-skills/SKILL.md"
-  content_mode: "adapted"
-  adapted_author: "Harley Bartles"
-  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  source-id: writing-skills
+  source-path: codex-marketplace/plugins/superpowers-plus/skills/writing-skills/SKILL.md
+  provenance-name: Writing Skills first-party skill
+  source-category: first_party
+  status: active
+  owner: Harley Bartles
+  scope: Use when creating new skills, editing existing skills, or verifying skills
+    work before deployment
   use_when:
-    - "Use when creating, editing, or verifying a skill before deployment."
-    - "Use when turning a learned technique into reusable guidance."
-    - "Use when a skill needs pressure-tested process documentation."
+  - Use when creating, editing, or verifying a skill before deployment.
+  - Use when turning a learned technique into reusable guidance.
+  - Use when a skill needs pressure-tested process documentation.
   do_not_use_when:
-    - "Do not use for one-off solutions."
-    - "Do not use for project-specific conventions."
-    - "Do not use when mechanical validation or regex suffices."
-  use_after: [test-driven-development]
-  use_before: [requesting-code-review, verification-before-completion]
-  use_with: [writing-with-clarity]
-  related_skills: [test-driven-development, requesting-code-review, verification-before-completion, writing-with-clarity]
+  - Do not use for one-off solutions.
+  - Do not use for project-specific conventions.
+  - Do not use when mechanical validation or regex suffices.
+  related_skills:
+  - test-driven-development
+  - requesting-code-review
+  - verification-before-completion
+  - writing-with-clarity
+license: MIT
 ---
+## Provenance
+
+This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/writing-skills/` for reference.
 
 # Writing Skills
 
@@ -34,15 +36,17 @@ metadata:
 
 **Writing skills IS Test-Driven Development applied to process documentation.**
 
-**Personal skills live in your runtime's skills directory** (`~/.claude/skills/` on Claude Code) — see [codex-tools.md](../using-superpowers/references/codex-tools.md) or [gemini-tools.md](../using-superpowers/references/gemini-tools.md) for the path on those runtimes. Codex, Copilot CLI, and Gemini CLI all also recognize `~/.agents/skills/` as a cross-runtime alias.
+**Personal skills live in your runtime's skills directory** (`~/.claude/skills/` on Claude Code) — see [codex-tools.md](../using-superpowers-plus/references/codex-tools.md) or [gemini-tools.md](../using-superpowers-plus/references/gemini-tools.md) for the path on those runtimes. Codex, Copilot CLI, and Gemini CLI all also recognize `~/.agents/skills/` as a cross-runtime alias.
 
 You write test cases (pressure scenarios with subagents), watch them fail (baseline behavior), write the skill (documentation), watch tests pass (agents comply), and refactor (close loopholes).
 
 **Core principle:** If you didn't watch an agent fail without the skill, you don't know if the skill teaches the right thing.
 
-**REQUIRED BACKGROUND:** You MUST understand superpowers:test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle. This skill adapts TDD to documentation.
+**REQUIRED BACKGROUND:** You MUST understand /test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle. This skill adapts TDD to documentation.
 
 **Official guidance:** For Anthropic's official skill authoring best practices, see anthropic-best-practices.md. This document provides additional patterns and guidelines that complement the TDD-focused approach in this skill.
+
+**Custody, lanes, and scaffolding:** For choosing between local and marketplace custody, understanding source-grounded authority, and the clean-room/redistribution boundary, see [references/local-and-marketplace-custody.md](references/local-and-marketplace-custody.md) and [references/source-grounded-authoring.md](references/source-grounded-authoring.md). Use [references/skill-authoring-checklist.md](references/skill-authoring-checklist.md) as a step-by-step authoring and review guide. To scaffold a new skill after choosing custody and lane, run `scripts/new_skill.py` (or `scripts/new-skill.sh` on bash).
 
 ## What is a Skill?
 
@@ -305,8 +309,8 @@ wc -w skills/path/SKILL.md
 **When writing documentation that references other skills:**
 
 Use skill name only, with explicit requirement markers:
-- ✅ Good: `**REQUIRED SUB-SKILL:** Use superpowers:test-driven-development`
-- ✅ Good: `**REQUIRED BACKGROUND:** You MUST understand superpowers:systematic-debugging`
+- ✅ Good: ``**REQUIRED SUB-SKILL:** Use `/test-driven-development` ``
+- ✅ Good: ``**REQUIRED BACKGROUND:** You MUST understand `/systematic-debugging` ``
 - ❌ Bad: `See skills/testing/test-driven-development` (unclear if required)
 - ❌ Bad: `@skills/testing/test-driven-development/SKILL.md` (force-loads, burns context)
 
@@ -415,7 +419,7 @@ Edit skill without testing? Same violation.
 - Don't "adapt" while running tests
 - Delete means delete
 
-**REQUIRED BACKGROUND:** The superpowers:test-driven-development skill explains why this matters. Same principles apply to documentation.
+**REQUIRED BACKGROUND:** The /test-driven-development skill explains why this matters. Same principles apply to documentation.
 
 ## Testing All Skill Types
 

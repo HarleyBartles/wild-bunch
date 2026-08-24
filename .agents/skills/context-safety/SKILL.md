@@ -1,26 +1,24 @@
 ---
 name: context-safety
-description: Use when large or context-heavy text writes need bounded composition,
-  200-line chunking, deliberate compaction boundaries, and atomic replacement. Use
-  when a write may exceed the safe threshold or when inline composition risks
-  exhausting context.
+description: Use when a text write is expected to exceed the safe threshold for the
+  remaining session context, when a document is very large or context-heavy, or when
+  a normal editor write path would be brittle.
 metadata:
   source-id: context-safety
-  source-path: sources/first_party/skills/context-safety/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/context-safety/SKILL.md
   provenance-name: Context Safety first-party skill
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: large text write safety, bounded composition, compaction boundaries, and atomic replacement
+  scope: very large text write safety, bounded composition, compaction boundaries, and atomic replacement.
   use_when:
-  - Use when composing or editing large text files
-  - Use when inline composition would risk consuming the remaining context
-  - Use when tool-call boundaries are the right checkpoint for preserving durable state
-  - Use when `/compact` should happen only after durable state has been preserved
-  - Use when safe staging and atomic replacement are required
+  - Use when a text write is expected to exceed 2,000 lines or 1 MB of UTF-8 text.
+  - Use when inline composition would risk consuming the remaining session context.
+  - Use when safe staging and atomic replacement are required for a large text write.
+  - Use when `/compact` should happen only after durable state has been preserved.
   do_not_use_when:
-  - Do not use when the change is small and can be written directly
-  - Do not use when the task is unrelated to large or context-heavy text writes
+  - Do not use when the change is small and can be written directly.
+  - Do not use when the task is unrelated to large or context-heavy text writes.
   related_skills:
   - repo-worker-base
   - connector-safety
@@ -31,7 +29,7 @@ license: MIT
 
 Use this skill when a text write may be large enough to make a normal editor write path brittle, or when inline composition would risk exhausting the remaining session context.
 Use when a document may exceed the safe threshold or when the main session should not carry the whole composition inline.
-target 200 lines per chunk. absolute red limit max 400 lines per chunk.
+target 2,000 lines per chunk. absolute red limit max 4,000 lines per chunk.
 
 ## Core rule
 
@@ -57,32 +55,32 @@ Do not treat `/compact` as a universal rescue button. If compaction is needed in
 
 ## Pre-composition context pressure
 
-Before composing a large document, decide whether the composition itself will exceed the session's remaining context budget.
+Before composing a large document, decide whether the composition itself will exceed the safe threshold.
 
 Treat a write as context-risky when either of these is true:
 
-- the output is likely to exceed about 200 lines;
-- the session has already accumulated significant subagent output, research, or file reads in context.
+- the output is likely to exceed about 2,000 lines;
+- the output is likely to exceed about 1 MB of UTF-8 text.
 
 When context-risky:
 
 1. Do not compose the whole document as one inline string in the main session.
 2. Prefer a clean-context worker/subagent write with only the required inputs.
-3. Or generate the document in bounded sections with sequential append calls, keeping each section near the 200-line target and well below the 400-line ceiling.
+3. Or generate the document in bounded sections with sequential append calls, keeping each section near the 2,000-line target and well below the 4,000-line ceiling.
 4. Still apply the existing chunked/temp-file write mechanics inside the chosen path.
 
-If the output is expected to hit the 300 line cutoff or more, split it into smaller chunks before starting so the chunks stay under the target and comfortably below the limit.
+If the output is expected to land around 1,500 lines or more, split it into smaller chunks before starting so the chunks stay under the target and comfortably below the limit.
 
 ## Large-write threshold
 
 Treat a write as large when either of these is true:
 
-- more than 200 lines;
-- more than 256 KB of UTF-8 text.
+- more than 2,000 lines;
+- more than 1 MB of UTF-8 text.
 
-If a chunk would exceed 400 lines, split it before writing.
+If a chunk would exceed 4,000 lines, split it before writing.
 
-If a write is expected to land around 300 lines or more, split it into smaller chunks before starting so the chunks come in under the 200-line target and stay well under the hard limit.
+If a write is expected to land around 1,500 lines or more, split it into smaller chunks before starting so the chunks come in under the 2,000-line target and stay well under the hard limit.
 
 ## Safe sequence
 
@@ -98,27 +96,32 @@ If a write is expected to land around 300 lines or more, split it into smaller c
 ```python
 from pathlib import Path
 
+TARGET_LINES = 2000
+HARD_LIMIT = 4000
+LARGE_BYTES = 1_000_000
 
-def iter_line_chunks(lines: list[str], chunk_lines: int = 200):
+
+def iter_line_chunks(lines: list[str], chunk_lines: int = TARGET_LINES):
     for start in range(0, len(lines), chunk_lines):
         yield lines[start:start + chunk_lines]
 
 
-def write_large_text(target: Path, text: str) -> None:
+def write_large_text(target: Path, text: str, scratch_root: Path) -> None:
+
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = text.splitlines()
     byte_size = len(text.encode("utf-8"))
     ends_with_newline = text.endswith("\n")
-    chunk_lines = 150 if len(lines) >= 300 else 200 if len(lines) > 200 else len(lines)
-    is_large = len(lines) > 200 or byte_size > 256_000
+    chunk_lines = 1500 if len(lines) >= 3000 else TARGET_LINES if len(lines) > TARGET_LINES else len(lines)
+    is_large = len(lines) > TARGET_LINES or byte_size > LARGE_BYTES
 
-    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp = scratch_root / f"{target.name}.tmp"
 
     if is_large:
         with tmp.open("w", encoding="utf-8", newline="\n") as handle:
             for chunk_index, chunk in enumerate(iter_line_chunks(lines, chunk_lines=chunk_lines)):
-                if len(chunk) > 400:
-                    raise RuntimeError("chunk exceeds the absolute 400-line limit")
+                if len(chunk) > HARD_LIMIT:
+                    raise RuntimeError("chunk exceeds the absolute hard limit")
                 handle.write("\n".join(chunk))
                 is_last_chunk = chunk_index == ((len(lines) - 1) // chunk_lines)
                 if not is_last_chunk or ends_with_newline:
@@ -141,7 +144,7 @@ def write_large_text(target: Path, text: str) -> None:
 
 ## Windows notes
 
-- Keep temp files on the same volume as the target so `Path.replace()` stays atomic.
+- Keep temp files on the same volume as the target so `Path.replace()` stays atomic. `sdd-workspace` produces an off-repo scratch that is a sibling of the main checkout, which is normally on the same volume.
 - Prefer explicit `encoding="utf-8"` and `newline="\n"` for text generation.
 - If a tool or editor has trouble with a very large file, route through a script instead of the interactive editor.
 - If the repo has a safer existing helper for batch writes, use that helper instead of inventing a second path.
@@ -154,11 +157,11 @@ If you would be tempted to compose a large document inline in the main session c
 
 ## Scratch folder for large temporary outputs
 
-For large temporary outputs that don't need to be committed, consider using the centralized scratch folder instead of bounded composition.
+For large temporary outputs that don't need to be committed, use the centralized off-repo scratch provided by `subagent-workspace/scripts/sdd-workspace` (or `sdd-workspace.ps1` on Windows). It resolves `<main-checkout>/../_agent-scratch/<branch>/<plan-basename>/`, which is always outside the repo tree and on the same volume as the working tree.
 
 ### When to use scratch folder vs. bounded composition
 
-Use the scratch folder (`../_agent-scratch/<repo-name>/<branch-name>`) when:
+Use the scratch folder when:
 
 - The output is temporary and will be discarded after the session
 - The output is large intermediate data (logs, temporary analysis results, intermediate artifacts)
@@ -177,21 +180,16 @@ Use bounded composition when:
 - **Disposable**: Not persistent beyond the agent's session
 - **Outside repo**: Prevents accidental commits
 - **Per-branch**: Matches worktree/branch name for isolation
+- **Same volume as repo**: Staging files there keeps `Path.replace()` atomic
 - **Auto-cleanup**: Agents must clean up scratch folder when cleaning up worktree
 - **Not for durable work**: Use the repo for persistent changes
 
-### Scratch folder structure
-
-- **Scratch root**: `../_agent-scratch/`
-- **Per-repo**: `../_agent-scratch/<repo-name>/`
-- **Per-branch**: `../_agent-scratch/<repo-name>/<branch-name>/`
-
 ### Usage pattern
 
-1. Create scratch folder when needed: `../_agent-scratch/<repo-name>/<branch-name>/`
-2. Write large temporary outputs to scratch folder
-3. Use the temporary outputs as needed during the session
-4. Clean up scratch folder when work is complete (when cleaning up worktree)
+1. Resolve the scratch folder: run `subagent-workspace/scripts/sdd-workspace` with no plan file and capture the printed path.
+2. Write large temporary outputs (e.g. the `.tmp` staging file in `write_large_text`) to that scratch folder.
+3. Use the temporary outputs as needed during the session.
+4. Clean up the scratch folder when work is complete (when cleaning up worktree).
 
 ### Cleanup guidance
 

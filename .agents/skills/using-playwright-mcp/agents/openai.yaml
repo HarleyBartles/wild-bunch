@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: using-playwright-mcp
+  source_category: first_party
+interface:
+  display_name: Using Playwright MCP
+  short_description: Route Playwright MCP work by intent and fall back safely to non-MCP surfaces.
+  default_prompt: Use /using-playwright-mcp when working with the Playwright MCP server. Start with the MCP use-case file that matches the intent, and only use references/other-playwright-tools.md after confirming the MCP does not cover the task.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

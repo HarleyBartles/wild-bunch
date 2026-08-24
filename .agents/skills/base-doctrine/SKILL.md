@@ -8,7 +8,7 @@ description: Use when cross-runtime doctrine store for cross-project operating i
   worker-copy attention guards, and lower-skill format conflicts.
 metadata:
   source-id: base-doctrine
-  source-path: sources/first_party/skills/base-doctrine/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/base-doctrine/SKILL.md
   provenance-name: Base Doctrine first-party skill
   source-category: first_party
   status: active
@@ -45,7 +45,7 @@ Use this skill as the cross-runtime doctrine store for cross-project operating i
 - Failure, correction, and trust posture: read `references/failure-and-trust-posture.md`.
 - Worker and subagent continuity, dispatch lifecycle, or evidence-based stall handling: read `references/worker-continuity.md`.
 - Output shape, reserved artifact forms, YAML-vs-non-YAML conflicts, worker-copy attention guards, or artifact authority: read `references/output-artifact-shape.md`.
-- Report partitioning, report laundering, worker returns, verification summaries, publication notes, or closure summaries: read `references/report-hygiene.md`.
+- Report partitioning, report laundering, worker returns, verification summaries, publication notes, or closure summaries: read `writing-with-clarity/references/report-hygiene-checklist.md`.
 - Quick map: read `references/doctrine-index.md`.
 
 ## Core control-plane rule
@@ -60,7 +60,7 @@ Load `references/durable-doctrine-routing.md` when the current task asks where d
 
 Load `references/output-artifact-shape.md` only when the current task involves output format authority, reserved workspace forms, dispatch/continuity confusion, YAML-shaped content, reusable handoff shapes, or lower-skill output templates that may conflict with project/workspace conventions.
 
-Load `references/report-hygiene.md` only when the current task involves drafting or reviewing report-like surfaces — worker returns, verification summaries, publication notes, closure summaries, or continuity notes — where reporting language could change the authority of information.
+Load `writing-with-clarity/references/report-hygiene-checklist.md` only when the current task involves drafting or reviewing report-like surfaces — worker returns, verification summaries, publication notes, closure summaries, or continuity notes — where reporting language could change the authority of information.
 
 Use the most specific project skill, workflow skill, plugin, repo skill, or repo playbook when one owns the work. Use this skill only for base doctrine that crosses projects or prevents recurring GPT failure modes.
 

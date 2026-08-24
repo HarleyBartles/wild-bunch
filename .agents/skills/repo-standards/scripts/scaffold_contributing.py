@@ -30,7 +30,7 @@ def _repo_root() -> Path:
 
 
 def _template_path() -> Path:
-    return Path(__file__).resolve().parent.parent / "templates" / "CONTRIBUTING.md"
+    return Path(__file__).resolve().parent.parent / "templates" / "contributing-template.md"
 
 
 def _has_required_boilerplate(content: str) -> bool:
@@ -60,7 +60,7 @@ exit codes:
   0  CONTRIBUTING.md is present/valid or was written
   1  drift detected, template missing, or write failed"""
     parser = argparse.ArgumentParser(
-        description="Scaffold the repo's root CONTRIBUTING.md entry point.",
+        description="Scaffold the repo's root CONTRIBUTING.md entry point. (mixed)",
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

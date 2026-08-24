@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: systematic-debugging
+  source_category: first_party
+interface:
+  display_name: Systematic Debugging
+  short_description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+  default_prompt: Use /systematic-debugging to use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

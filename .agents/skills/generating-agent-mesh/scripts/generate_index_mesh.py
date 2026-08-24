@@ -21,10 +21,31 @@ def _repo_root() -> Path:
     """Return the repo root from git, or the parent of the tools dir as a fallback."""
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
         env=_stripped_env(),
     )
     return Path(result.stdout.strip())
+
+
+# Import the shared checkout helper from the repo's tools/ directory. The only
+# bundled copy lives inside the repo-standards skill; other skills rely on
+# repo-standards having deployed tools/shared_checkout.py.
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_SHARED_CHECKOUT_PATH: Path | None = None
+for _parent in _SCRIPT_DIR.parents:
+    _candidate = _parent / "tools" / "shared_checkout.py"
+    if _candidate.is_file():
+        _SHARED_CHECKOUT_PATH = _parent / "tools"
+        break
+if _SHARED_CHECKOUT_PATH is None:
+    raise RuntimeError("tools/shared_checkout.py not found; run repo-standards --apply")
+sys.path.insert(0, str(_SHARED_CHECKOUT_PATH))
+import shared_checkout  # noqa: E402
+
+
+_SCRIPT_NAME = "generate-index-mesh"
 
 
 def _powershell_cmd() -> list[str]:
@@ -85,13 +106,14 @@ ROOT = _repo_root()
 EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", ".pytest_cache", ".superpowers"}
 EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", ".superpowers"}
 EXCLUDED_FILE_NAMES = {".git", ".gitkeep"}
+INDEX_FILE_NAMES = {"INDEX.md", "INDEX.json"}
 THIRD_PARTY_ROOT = ROOT / "sources" / "third_party"
 SKILL_ZIPS_ROOT = ROOT / "generated" / "skill-zips"
 NON_CANONICAL_GUARD_ROOTS = {ROOT / ".agents" / "docs" / "superpowers"}
 
 
-def _load_tracked() -> tuple[set[Path], set[Path]]:
-    """Return (tracked_dirs, tracked_files) from git ls-files."""
+def _load_tracked() -> tuple[set[Path], set[Path], set[Path]]:
+    """Return (tracked_dirs, tracked_files, content_dirs) from git ls-files."""
     result = subprocess.run(
         ["git", "ls-files"],
         cwd=ROOT,
@@ -115,7 +137,15 @@ def _load_tracked() -> tuple[set[Path], set[Path]]:
     # The repo root itself is an implicit target (root INDEX.md) even though
     # no tracked file lives directly at the root.
     tracked_dirs.add(ROOT)
-    return tracked_dirs, tracked_files
+    content_dirs: set[Path] = {ROOT}
+    for f in tracked_files:
+        if f.name in INDEX_FILE_NAMES:
+            continue
+        for parent in f.parents:
+            content_dirs.add(parent)
+            if parent == ROOT:
+                break
+    return tracked_dirs, tracked_files, content_dirs
 
 
 def _load_ignored_index_paths(tracked_dirs: set[Path]) -> set[str]:
@@ -137,9 +167,7 @@ def _load_ignored_index_paths(tracked_dirs: set[Path]) -> set[str]:
         env=_stripped_env(),
     )
     if result.returncode not in (0, 1):
-        raise subprocess.CalledProcessError(
-            result.returncode, result.args, output=result.stdout, stderr=result.stderr
-        )
+        raise subprocess.CalledProcessError(result.returncode, result.args, output=result.stdout, stderr=result.stderr)
     if result.stdout:
         for raw_path in result.stdout.rstrip(b"\x00").split(b"\x00"):
             decoded = raw_path.decode("utf-8")
@@ -148,7 +176,7 @@ def _load_ignored_index_paths(tracked_dirs: set[Path]) -> set[str]:
     return ignored
 
 
-TRACKED_DIRS, TRACKED_FILES = _load_tracked()
+TRACKED_DIRS, TRACKED_FILES, CONTENT_DIRS = _load_tracked()
 IGNORED_INDEX_PATHS = _load_ignored_index_paths(TRACKED_DIRS)
 
 
@@ -187,7 +215,7 @@ def should_descend(child: Path) -> bool:
         and not is_under(child, SKILL_ZIPS_ROOT)
         and not is_non_canonical_guard(child)
         and not is_index_ignored(child)
-        and child in TRACKED_DIRS
+        and child in CONTENT_DIRS
     )
 
 
@@ -205,25 +233,25 @@ def should_index(path: Path) -> bool:
         return False
     if is_under(path, SKILL_ZIPS_ROOT):
         return False
-    if path not in TRACKED_DIRS:
+    if path not in CONTENT_DIRS:
         return False
     return not is_skill_root(path)
 
 
-def rel_link(target: Path, label: str | None = None) -> str:
-    rel = quote(target.relative_to(ROOT).as_posix(), safe="/#")
+def rel_link(current: Path, target: Path, label: str | None = None) -> str:
+    rel = quote(target.relative_to(current).as_posix(), safe="/#")
     return f"[{label or target.name}]({rel})"
 
 
 def dir_link(current: Path, child: Path) -> str | None:
     skill_md = child / "SKILL.md"
     if skill_md.exists():
-        target = quote(skill_md.relative_to(ROOT).as_posix(), safe="/#")
+        target = quote(skill_md.relative_to(current).as_posix(), safe="/#")
         return f"[{child.name}]({target})"
     if should_index(child):
-        target = quote(child.relative_to(ROOT).as_posix() + "/INDEX.md", safe="/#")
+        target = quote(child.relative_to(current).as_posix() + "/INDEX.md", safe="/#")
         return f"[{child.name}]({target})"
-    target = quote(child.relative_to(ROOT).as_posix() + "/", safe="/#")
+    target = quote(child.relative_to(current).as_posix() + "/", safe="/#")
     return f"[{child.name}]({target})"
 
 
@@ -231,7 +259,7 @@ def render_index(path: Path) -> str:
     dirs = []
     files = []
     for entry in sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.casefold(), p.name)):
-        if entry.name == "INDEX.md":
+        if entry.name in INDEX_FILE_NAMES:
             continue
         if entry.is_dir():
             if entry.name in EXCLUDED_DIR_NAMES:
@@ -242,7 +270,7 @@ def render_index(path: Path) -> str:
                 continue
             if is_skill_root(path):
                 continue
-            if entry not in TRACKED_DIRS:
+            if entry not in CONTENT_DIRS and not is_skill_root(entry):
                 continue
             dirs.append(entry)
         else:
@@ -253,7 +281,10 @@ def render_index(path: Path) -> str:
             files.append(entry)
 
     lines: list[str] = ["# INDEX.md", ""]
-    lines.append("This index is generated by the `generating-agent-mesh` skill (`.agents/skills/generating-agent-mesh/scripts/generate-index-mesh`).")
+    lines.append(
+        "This index is generated by the `generating-agent-mesh` skill "
+        "(`.agents/skills/generating-agent-mesh/scripts/generate-index-mesh`)."
+    )
     lines.append("")
 
     if dirs:
@@ -267,7 +298,7 @@ def render_index(path: Path) -> str:
     if files:
         lines.append("## Files")
         for child in files:
-            lines.append(f"- {rel_link(child)}")
+            lines.append(f"- {rel_link(path, child)}")
         lines.append("")
 
     if not dirs and not files:
@@ -329,18 +360,25 @@ def walk_index_targets() -> list[IndexTarget]:
 
 
 def configure_root(repo_root: Path) -> None:
-    global ROOT, THIRD_PARTY_ROOT, SKILL_ZIPS_ROOT, NON_CANONICAL_GUARD_ROOTS, TRACKED_DIRS, TRACKED_FILES, IGNORED_INDEX_PATHS
+    global ROOT, THIRD_PARTY_ROOT, SKILL_ZIPS_ROOT, NON_CANONICAL_GUARD_ROOTS, TRACKED_DIRS, TRACKED_FILES, CONTENT_DIRS, IGNORED_INDEX_PATHS  # noqa: E501
     ROOT = repo_root
     THIRD_PARTY_ROOT = ROOT / "sources" / "third_party"
     SKILL_ZIPS_ROOT = ROOT / "generated" / "skill-zips"
     NON_CANONICAL_GUARD_ROOTS = {ROOT / ".agents" / "docs" / "superpowers"}
-    TRACKED_DIRS, TRACKED_FILES = _load_tracked()
+    TRACKED_DIRS, TRACKED_FILES, CONTENT_DIRS = _load_tracked()
     IGNORED_INDEX_PATHS = _load_ignored_index_paths(TRACKED_DIRS)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Generate or validate the repo-wide INDEX.md mesh")
+    parser = argparse.ArgumentParser(description="Generate or validate the repo-wide INDEX.md mesh. (mixed)")
     parser.add_argument("--check", action="store_true", help="validate without writing")
+    parser.add_argument("--apply", action="store_true", help="generate INDEX.md files")
+    parser.add_argument(
+        "--allow-shared-checkout",
+        action="store_true",
+        help="Approve generating INDEX.md files in a shared or git-worktree checkout. "
+        "Only pass this if you intend to mutate this checkout.",
+    )
     parser.add_argument("--repo-root", type=Path, default=None, help="repo root to process")
     args = parser.parse_args(argv)
 
@@ -350,11 +388,23 @@ def main(argv: list[str] | None = None) -> int:
     # Re-validate we are not in a submodule
     result = subprocess.run(
         ["git", "rev-parse", "--show-superproject-working-tree"],
-        cwd=ROOT, capture_output=True, text=True,
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
         env=_stripped_env(),
     )
     if result.returncode == 0 and result.stdout.strip():
         raise RuntimeError("This script must not run inside a git submodule")
+
+    if not args.check and not args.apply:
+        args.check = True
+
+    if args.allow_shared_checkout and not args.apply:
+        print("error: --allow-shared-checkout requires --apply", file=sys.stderr)
+        return 1
+
+    if not args.check and not shared_checkout.approve_mutation(ROOT, _SCRIPT_NAME, args.allow_shared_checkout):
+        return 1
 
     targets = walk_index_targets()
     expected_paths = {target.path for target in targets}
@@ -393,8 +443,7 @@ def main(argv: list[str] | None = None) -> int:
         if missing:
             mismatches.extend(f"missing: {path.relative_to(ROOT)}" for path in missing)
         mismatches.extend(
-            f"ERROR: generate_index_mesh_extra hook: {msg}"
-            for msg in _run_index_mesh_extra_hook(ROOT, check=True)
+            f"ERROR: generate_index_mesh_extra hook: {msg}" for msg in _run_index_mesh_extra_hook(ROOT, check=True)
         )
         if mismatches:
             raise ValueError("INDEX mesh is stale or inconsistent:\n" + "\n".join(mismatches))

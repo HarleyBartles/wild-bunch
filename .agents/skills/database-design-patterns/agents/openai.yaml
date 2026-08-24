@@ -2,8 +2,6 @@ version: 1
 metadata:
   skill_name: database-design-patterns
   source_category: first_party
-  plugin: architecture-pack
-  projection_plugin: architecture-pack
 interface:
   display_name: Database Design Patterns
   short_description: Use when designing relational database schemas, normalizing data, choosing keys and constraints, or applying transactions, indexing, and partitioning patterns.

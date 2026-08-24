@@ -201,7 +201,7 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(result);
         Assert.True(result!.Success);
-        Assert.Equal(destinationTownId, result.CurrentJournal.CurrentTown.Id);
+        Assert.Equal(destinationTownId, result.CurrentJournal.CurrentTown!.Id);
         Assert.True(result.CurrentJournal.LogEntries.Count >= 4);
 
         var payload = await response.Content.ReadAsStringAsync();

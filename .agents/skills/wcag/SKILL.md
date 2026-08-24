@@ -5,7 +5,7 @@ description: Use when auditing web content accessibility against WCAG 2.2 or map
   design or automated tooling setup only.
 metadata:
   source-id: wcag
-  source-path: sources/first_party/skills/wcag/SKILL.md
+  source-path: codex-marketplace/plugins/frontend-pack/skills/wcag/SKILL.md
   provenance-name: Wcag first-party skill
   source-category: first_party
   status: active

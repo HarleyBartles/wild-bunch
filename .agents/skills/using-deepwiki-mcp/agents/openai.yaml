@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: using-deepwiki-mcp
+  source_category: first_party
+interface:
+  display_name: Using DeepWiki MCP
+  short_description: Decide when and how to query DeepWiki-generated documentation for a GitHub repo.
+  default_prompt: Use /using-deepwiki-mcp when you need high-level orientation, conventions, or cross-repo context from the DeepWiki MCP. Start by detecting the current repo or confirming the owner/repo, then route to the right tool and verify critical facts.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

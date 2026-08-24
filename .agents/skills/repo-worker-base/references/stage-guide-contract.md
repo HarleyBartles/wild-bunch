@@ -7,10 +7,10 @@ guide for design, planning, implementation, or code review.
 
 ## Contract
 
-The canonical local guide home is .agents/guides/. The retired
+The canonical local guide home is .agents/runbooks/. The retired
 .agents/docs/guides/ home is forbidden for new authored guides. The canonical
-home contains four first-class thin overlays: design-guide.md, planning-guide.md,
-implementing-guide.md, and code-review-guide.md. A repository may declare
+home contains four first-class thin overlays: design.md, planning.md,
+implementing.md, and code-review.md. A repository may declare
 additional guides, but each must name one stage and remain local.
 
 Each guide supplies only repository-specific paths, commands, exclusions, CI,

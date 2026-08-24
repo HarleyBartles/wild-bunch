@@ -25,7 +25,7 @@
 ## 2026-06-14
 
 - Landed the MARK-122 v2 worker-dispatch-linear update: worker-ready Linear issue shaping, explicit external handoff text, and the no-execution-lane status model.
-- Kept the projection assets aligned with the active repo root and the updated source/version surfaces.
+- Kept the bundle assets aligned with the active repo root and the updated source/version surfaces.
 
 ## 2026-06-13
 

@@ -1,31 +1,37 @@
 ---
 name: receiving-code-review
-description: "Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation"
+description: Use when receiving code review feedback, before implementing suggestions,
+  especially if feedback seems unclear or technically questionable - requires technical
+  rigor and verification, not performative agreement or blind implementation
 metadata:
-  source_category: "third_party"
-  upstream_name: "receiving-code-review"
-  upstream_version: "v6.2.0"
-  adaptation_overlay: "adapters/codex/superpowers-plus/receiving-code-review"
-  projection_plugin: "superpowers-plus"
-  source_author: "obra"
-  source_license: "MIT"
-  source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/receiving-code-review/SKILL.md"
-  content_mode: "adapted"
-  adapted_author: "Harley Bartles"
-  adaptation_note: "Added marketplace frontmatter metadata block and skill-routing triggers to the upstream skill without modifying the instruction body."
+  source-id: receiving-code-review
+  source-path: codex-marketplace/plugins/superpowers-plus/skills/receiving-code-review/SKILL.md
+  provenance-name: Receiving Code Review first-party skill
+  source-category: first_party
+  status: active
+  owner: Harley Bartles
+  scope: Use when receiving code review feedback, before implementing suggestions,
+    especially if feedback seems unclear or technically questionable - requires technical
+    rigor and verification, not performative agreement or blind implementation
   use_when:
-    - "Use when receiving code review feedback before implementing suggestions."
-    - "Use when feedback is unclear or technically questionable."
-    - "Use when the suggestion needs verification against codebase reality."
+  - Use when receiving code review feedback before implementing suggestions.
+  - Use when feedback is unclear or technically questionable.
+  - Use when the suggestion needs verification against codebase reality.
   do_not_use_when:
-    - "Do not use when there is no external feedback to evaluate."
-    - "Do not use to dismiss feedback without technical reasoning."
-    - "Do not use to implement suggestions blindly."
-  use_after: [requesting-code-review]
-  use_before: [executing-plans, subagent-driven-development]
-  related_skills: [requesting-code-review, executing-plans, subagent-driven-development, finishing-a-development-branch]
+  - Do not use when there is no external feedback to evaluate.
+  - Do not use to dismiss feedback without technical reasoning.
+  - Do not use to implement suggestions blindly.
+  related_skills:
+  - requesting-code-review
+  - iterative-review
+  - executing-plans
+  - subagent-driven-development
+  - finishing-a-development-branch
+license: MIT
 ---
+## Provenance
+
+This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/receiving-code-review/` for reference.
 
 # Code Review Reception
 

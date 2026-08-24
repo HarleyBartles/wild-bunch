@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: writing-skills
+  source_category: first_party
+interface:
+  display_name: Writing Skills
+  short_description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+  default_prompt: Use /writing-skills to use when creating new skills, editing existing skills, or verifying skills work before deployment
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

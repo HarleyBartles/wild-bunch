@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Iterative review router state",
+  "description": "Canonical router state for the iterative-review skill. Written only by next_node.py --propose or setup.",
+  "type": "object",
+  "required": ["pr", "current_node", "previous_node", "round", "max_fix_rounds", "scratch_dir"],
+  "properties": {
+    "pr": {
+      "type": "object",
+      "required": ["branch", "base", "head_sha"],
+      "properties": {
+        "branch": {"type": "string"},
+        "base": {"type": "string"},
+        "head_sha": {"type": "string"},
+        "pr_number": {"type": ["string", "integer"]}
+      }
+    },
+    "current_node": {"type": "string"},
+    "previous_node": {"type": "string"},
+    "round": {"type": "integer", "minimum": 1},
+    "max_fix_rounds": {"type": "integer", "minimum": 1},
+    "max_rounds_by_severity": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 1}
+    },
+    "max_rounds_by_finding": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 1}
+    },
+    "non_trivial_fix": {"type": "boolean"},
+    "contested": {"type": "boolean"},
+    "blocked_class": {"type": "string", "enum": ["contested", "tool-blocked"]},
+    "scratch_dir": {"type": "string"},
+    "ledger_path": {"type": "string"}
+  }
+}

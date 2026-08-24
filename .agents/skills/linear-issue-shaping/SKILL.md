@@ -7,7 +7,7 @@ description: 'Use when Linear-backed issue, project, and document shaping: creat
   any execution lane; treat worker-ready as issue-ready only.'
 metadata:
   source-id: linear-issue-shaping
-  source-path: sources/first_party/skills/linear-issue-shaping/SKILL.md
+  source-path: codex-marketplace/plugins/repo-worker-pack/skills/linear-issue-shaping/SKILL.md
   provenance-name: Linear Issue Shaping first-party skill
   source-category: first_party
   status: active
@@ -66,7 +66,7 @@ For ordinary worker issues, keep the safe default as `assignee: me`, with `deleg
 When a Linear issue is intended to become worker-send-ready for repo or code execution, always compose this stack:
 
 ```text
-work-mode-router -> /using-superpowers -> linear-issue-shaping -> verification-before-completion
+/using-superpowers-plus -> linear-issue-shaping -> verification-before-completion
 ```
 
 Use this skill first to fetch or create the durable Linear issue surface, classify the lane, and preserve the Linear state convention.
@@ -77,7 +77,7 @@ Use the route-state block and compact packet shape to check or repair the implem
 
 For route-state blocks, allow investigation seams and understanding questions plus the compact route-state block. The route-state block is a control/index surface for workflow phase classification, not the implementation plan. Route-state blocks must not become the full implementation plan.
 
-Approved plans live in the repo under `.agents/superpowers/plans/`. After a plan merges, plan-only PRs and implementation PRs are separate by default unless the issue explicitly authorizes a combined PR.
+Approved plans live in the repo under `.agents/plans/`. After a plan merges, plan-only PRs and implementation PRs are separate by default unless the issue explicitly authorizes a combined PR.
 
 If the approved plan is stale but the drift is repairable and stays inside the approved scope, repair the repo-resident plan in the execution branch, keep the route-state block current, and include the repaired plan in the execution PR. If the drift changes scope materially, invalidates the approved direction, or makes execution unsafe, stop for human review.
 
@@ -94,7 +94,7 @@ For worker-ready implementation issues, keep the issue body compact and treat it
 - goal and repo target stay in the issue body;
 - dense scope, implementation detail, validation, and return evidence move into attached Linear documents;
 - a compact route-state block is required for non-trivial repo/code issues to support workflow phase classification;
-- the route-state block contains workflow phase markers (design_needed, planning_needed, etc.) and is used by work-mode-router to classify the current phase;
+- the route-state block contains workflow phase markers (design_needed, planning_needed, etc.);
 - do not put the full implementation plan, validation matrix, or dense evidence dump into the route-state block;
 - do not use the route-state block as a readiness state or second plan;
 - do not keep a separate compactor trigger for normal worker issue shaping.

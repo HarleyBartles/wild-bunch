@@ -60,8 +60,8 @@ public sealed class MapGeneratorDevSaltsTests
             var layout1 = world1.Towns.ElementAt(i).Layout;
             var layout2 = world2.Towns.ElementAt(i).Layout;
             
-            Assert.Equal(layout1.Buildings, layout2.Buildings);
-            Assert.Equal(layout1.LayoutSalts, layout2.LayoutSalts);
+            Assert.Equal(layout1!.Buildings, layout2!.Buildings);
+            Assert.Equal(layout1!.LayoutSalts, layout2!.LayoutSalts);
         }
     }
 
@@ -94,7 +94,7 @@ public sealed class MapGeneratorDevSaltsTests
         var layout1 = world1.Towns.ElementAt(0).Layout;
         var layout2 = world2.Towns.ElementAt(0).Layout;
         
-        Assert.NotEqual(layout1.Buildings, layout2.Buildings);
+        Assert.NotEqual(layout1!.Buildings, layout2!.Buildings);
     }
 
     [Fact]
@@ -119,14 +119,14 @@ public sealed class MapGeneratorDevSaltsTests
         
         // Dev salts should be on the layout
         var layoutWithDev = worldWithDev.Towns.ElementAt(0).Layout;
-        Assert.Equal("dev-buildings", layoutWithDev.LayoutSalts.BuildingsSalt);
-        Assert.Equal("dev-roads", layoutWithDev.LayoutSalts.RoadsSalt);
-        Assert.Equal("dev-dirt", layoutWithDev.LayoutSalts.DirtSalt);
-        Assert.Equal("dev-props", layoutWithDev.LayoutSalts.PropsSalt);
-        
+        Assert.Equal("dev-buildings", layoutWithDev!.LayoutSalts!.BuildingsSalt);
+        Assert.Equal("dev-roads", layoutWithDev!.LayoutSalts!.RoadsSalt);
+        Assert.Equal("dev-dirt", layoutWithDev!.LayoutSalts!.DirtSalt);
+        Assert.Equal("dev-props", layoutWithDev!.LayoutSalts!.PropsSalt);
+
         // Layouts should differ
         var layoutWithoutDev = worldWithoutDev.Towns.ElementAt(0).Layout;
-        Assert.NotEqual(layoutWithDev.Buildings, layoutWithoutDev.Buildings);
+        Assert.NotEqual(layoutWithDev!.Buildings, layoutWithoutDev!.Buildings);
     }
 
     [Fact]
@@ -144,17 +144,17 @@ public sealed class MapGeneratorDevSaltsTests
         var layout = world.Towns.ElementAt(0).Layout;
         
         // Layout should have the derived salts, not null
-        Assert.NotNull(layout.LayoutSalts);
-        Assert.NotNull(layout.LayoutSalts.BuildingsSalt);
-        Assert.NotNull(layout.LayoutSalts.RoadsSalt);
-        Assert.NotNull(layout.LayoutSalts.DirtSalt);
-        Assert.NotNull(layout.LayoutSalts.PropsSalt);
-        
+        Assert.NotNull(layout!.LayoutSalts!);
+        Assert.NotNull(layout!.LayoutSalts!.BuildingsSalt);
+        Assert.NotNull(layout!.LayoutSalts!.RoadsSalt);
+        Assert.NotNull(layout!.LayoutSalts!.DirtSalt);
+        Assert.NotNull(layout!.LayoutSalts!.PropsSalt);
+
         // Salts should be different for different towns (deterministic partitioning)
         if (world.Towns.Count > 1)
         {
             var layout2 = world.Towns.ElementAt(1).Layout;
-            Assert.NotEqual(layout.LayoutSalts.BuildingsSalt, layout2.LayoutSalts.BuildingsSalt);
+            Assert.NotEqual(layout!.LayoutSalts!.BuildingsSalt, layout2!.LayoutSalts!.BuildingsSalt);
         }
     }
 }

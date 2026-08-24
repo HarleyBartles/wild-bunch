@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: dispatching-parallel-agents
+  source_category: first_party
+interface:
+  display_name: Dispatching Parallel Agents
+  short_description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+  default_prompt: Use /dispatching-parallel-agents to use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

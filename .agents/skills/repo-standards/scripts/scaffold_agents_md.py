@@ -58,7 +58,7 @@ exit codes:
   0  AGENTS.md is valid or was written successfully
   1  drift detected, the template is missing, or write failed"""
     parser = argparse.ArgumentParser(
-        description="Scaffold or validate the root AGENTS.md router.",
+        description="Scaffold or validate the root AGENTS.md router. (mixed)",
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

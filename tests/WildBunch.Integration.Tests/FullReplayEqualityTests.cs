@@ -190,8 +190,8 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
         session.MarkEventsCommitted();
 
         // Start journey and advance days
-        var reloaded = await repo.GetByIdAsync(session.Id);
-        var preview = ResolveTravelPreview(reloaded!, new TownId("quartzsite"));
+        var reloaded = (await repo.GetByIdAsync(session.Id))!;
+        var preview = ResolveTravelPreview(reloaded, new TownId("quartzsite"));
         reloaded.StartJourney(preview);
 
         // Force quiet days and complete the journey

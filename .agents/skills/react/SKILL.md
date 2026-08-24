@@ -5,7 +5,7 @@ description: Use when building or reviewing React component architecture, hooks 
   routing, or state management owned by another skill.
 metadata:
   source-id: react
-  source-path: sources/first_party/skills/react/SKILL.md
+  source-path: codex-marketplace/plugins/frontend-pack/skills/react/SKILL.md
   provenance-name: React first-party skill
   source-category: first_party
   status: active

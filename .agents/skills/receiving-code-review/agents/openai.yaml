@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: receiving-code-review
+  source_category: first_party
+interface:
+  display_name: Receiving Code Review
+  short_description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+  default_prompt: Use /receiving-code-review to use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

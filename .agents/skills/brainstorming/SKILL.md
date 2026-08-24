@@ -1,32 +1,34 @@
 ---
 name: brainstorming
-description: "Use when starting any creative work such as creating features, building components, adding functionality, or modifying behavior."
+description: Use when starting any creative work such as creating features, building
+  components, adding functionality, or modifying behavior.
 metadata:
-  source_category: "third_party"
-  upstream_name: "brainstorming"
-  upstream_version: "v6.2.0"
-  adaptation_overlay: "adapters/codex/superpowers-plus/brainstorming"
-  projection_plugin: "superpowers-plus"
-  source_author: "obra"
-  source_license: "MIT"
-  source_repo: "https://github.com/obra/superpowers"
-  source_path: "sources/third_party/superpowers/obra-superpowers/v6.2.0/skills/brainstorming/SKILL.md"
-  content_mode: "adapted"
-  adapted_author: "Harley Bartles"
-  adaptation_note: "Repointed Superpowers path references to the `.agents/superpowers/` convention, added spec-readiness and epic-scope handoff gates, and normalized marketplace frontmatter metadata."
+  source-id: brainstorming
+  source-path: codex-marketplace/plugins/superpowers-plus/skills/brainstorming/SKILL.md
+  provenance-name: Brainstorming first-party skill
+  source-category: first_party
+  status: active
+  owner: Harley Bartles
+  scope: Use when starting any creative work such as creating features, building components,
+    adding functionality, or modifying behavior.
   use_when:
-    - "Use when starting any new feature, component, or modification."
-    - "Use when the human frames a creative or build goal and no approved spec exists."
-    - "Use when a project needs intent, constraints, and approach clarified before implementation."
+  - Use when starting any new feature, component, or modification.
+  - Use when the human frames a creative or build goal and no approved spec exists.
+  - Use when a project needs intent, constraints, and approach clarified before implementation.
   do_not_use_when:
-    - "Do not use when an approved spec or plan already exists and is ready for execution."
-    - "Do not use as a substitute for writing-plans or executing-plans."
-    - "Do not use when the task is pure execution without design decisions."
-  use_after: [using-superpowers]
-  use_before: [handoff-gates, working-with-epics, writing-plans]
-  use_with: [working-with-epics]
-  related_skills: [using-superpowers, handoff-gates, writing-plans, working-with-epics]
+  - Do not use when an approved spec or plan already exists and is ready for execution.
+  - Do not use as a substitute for writing-plans or executing-plans.
+  - Do not use when the task is pure execution without design decisions.
+  related_skills:
+  - using-superpowers-plus
+  - handoff-gates
+  - writing-plans
+  - writing-roadmaps
+license: MIT
 ---
+## Provenance
+
+This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/brainstorming/` for reference.
 
 # Brainstorming Ideas Into Designs
 
@@ -46,16 +48,15 @@ Every project goes through this process. A todo list, a single-function utility,
 
 You MUST create a task for each of these items and complete them in order:
 
-1. **Explore project context** — check files, docs, recent commits
-2. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
+1. **Load baseline and local guide** — read this skill's baseline (`references/design-baseline.md`) and the repo's `.agents/runbooks/design.md` before executing the stage checklist.
+2. **Explore project context** — check files, docs, recent commits
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `.agents/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Spec readiness gate** — use `handoff-gates` spec-readiness lane. Rate the spec (8/10 floor, 9/10 target). Report the final rating.
-10. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+6. **Write design doc** — save to `.agents/specs/YYYY-MM-DD-<topic>-design.md` and commit
+7. **Spec self-review & readiness gate** — quick inline check for placeholders, contradictions, ambiguity, scope; then use a reviewer subagent or `handoff-gates` spec-readiness lane. Rate the spec (8/10 floor, 9/10 target). Report the final rating.
+8. **User reviews written spec** — ask user to review the spec file and the final rating before proceeding.
+9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -63,34 +64,33 @@ You MUST create a task for each of these items and complete them in order:
 digraph brainstorming {
     "Explore project context" [shape=box];
     "Scope too large for one spec?" [shape=diamond];
-    "Invoke working-with-epics" [shape=doublecircle];
+    "Invoke writing-roadmaps" [shape=doublecircle];
     "Ask clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
     "Write design doc" [shape=box];
-    "Spec self-review\n(fix inline)" [shape=box];
+    "Spec self-review &\nreadiness gate" [shape=box];
     "User reviews spec?" [shape=diamond];
-    "Spec readiness gate" [shape=box];
     "Invoke writing-plans skill" [shape=doublecircle];
 
     "Explore project context" -> "Scope too large for one spec?";
-    "Scope too large for one spec?" -> "Invoke working-with-epics" [label="yes"];
+    "Scope too large for one spec?" -> "Invoke writing-roadmaps" [label="yes"];
     "Scope too large for one spec?" -> "Ask clarifying questions" [label="no"];
     "Ask clarifying questions" -> "Propose 2-3 approaches";
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
     "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "User reviews spec?";
+    "Write design doc" -> "Spec self-review &\nreadiness gate";
+    "Spec self-review &\nreadiness gate" -> "Spec self-review &\nreadiness gate" [label="fix inline"];
+    "Spec self-review &\nreadiness gate" -> "User reviews spec?" [label="meets floor"];
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Spec readiness gate" [label="approved"];
-    "Spec readiness gate" -> "Invoke writing-plans skill";
+    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
 }
 ```
 
-**The normal terminal state is invoking writing-plans.** If the project is too large for a single spec, invoke `working-with-epics` instead. Do NOT invoke frontend-design, mcp-builder, or any other implementation skill directly from brainstorming.
+**The normal terminal state is invoking writing-plans.** If the project is too large for a single spec, invoke `writing-roadmaps` instead. Do NOT invoke frontend-design, mcp-builder, or any other implementation skill directly from brainstorming.
 
 ## The Process
 
@@ -98,10 +98,11 @@ digraph brainstorming {
 
 - Check out the current project state first (files, docs, recent commits)
 - Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
-- If the project is too large for a single spec, stop and invoke `working-with-epics` to build a sequenced roadmap and write Plan 1. Do not brainstorm the whole epic in one pass or continue with detailed design questions until Plan 1 is approved.
+- If the project is too large for a single spec, stop and invoke `writing-roadmaps` to build a sequenced roadmap and write Plan 1. Do not brainstorm the whole epic in one pass or continue with detailed design questions until Plan 1 is approved.
 - For appropriately-scoped projects, ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple questions
+- If a single missing fact blocks the next step, invoke `/asking-clarifying-questions` before guessing.
 - Focus on understanding: purpose, constraints, success criteria
 
 **Exploring approaches:**
@@ -136,7 +137,7 @@ digraph brainstorming {
 
 **Documentation:**
 
-- Write the validated design (spec) to `.agents/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
+- Write the validated design (spec) to `.agents/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
@@ -163,21 +164,4 @@ Wait for the user's response. If they request changes, make them and re-run the 
 - Invoke the writing-plans skill to create a detailed implementation plan
 - Do NOT invoke any other skill. writing-plans is the next step.
 
-## Visual Companion
 
-A browser-based companion for showing mockups, diagrams, and visual options during brainstorming. Available as a tool — not a mode. Accepting the companion means it's available for questions that benefit from visual treatment; it does NOT mean every question goes through the browser.
-
-**Offering the companion (just-in-time):** Do NOT offer it upfront. Wait until a question would genuinely be clearer shown than told — a real mockup / layout / diagram question, not merely a UI *topic*. The first time that happens, offer it then, as its own message:
-> "This next part might be easier if I show you — I can put together mockups, diagrams, and comparisons in a browser tab as we go. It's still new and can be token-intensive. Want me to? I'll open it for you."
-
-**This offer MUST be its own message.** Only the offer — no clarifying question, summary, or other content. Wait for the user's response. If they accept, start the server with `--open` so their browser opens to the first screen automatically. If they decline, continue text-only and don't offer again unless they raise it.
-
-**Per-question decision:** Even after the user accepts, decide FOR EACH QUESTION whether to use the browser or the terminal. The test: **would the user understand this better by seeing it than reading it?**
-
-- **Use the browser** for content that IS visual — mockups, wireframes, layout comparisons, architecture diagrams, side-by-side visual designs
-- **Use the terminal** for content that is text — requirements questions, conceptual choices, tradeoff lists, A/B/C/D text options, scope decisions
-
-A question about a UI topic is not automatically a visual question. "What does personality mean in this context?" is a conceptual question — use the terminal. "Which wizard layout works better?" is a visual question — use the browser.
-
-If they agree to the companion, read the detailed guide before proceeding:
-`skills/brainstorming/visual-companion.md`
