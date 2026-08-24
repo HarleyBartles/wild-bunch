@@ -102,6 +102,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Setup Python
         uses: actions/setup-python@v6
